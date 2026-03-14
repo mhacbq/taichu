@@ -29,6 +29,7 @@ class Points extends BaseController
         return $this->success([
             'balance' => $userModel->points,
             'baziCount' => $baziCount,
+            'first_bazi' => $baziCount === 0, // 首次排盘标记
             'tarotCount' => 0, // 可以添加塔罗记录表后统计
             'totalSpent' => PointsRecord::where('user_id', $user['sub'])
                 ->where('points', '<', 0)

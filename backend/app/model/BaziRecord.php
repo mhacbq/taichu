@@ -29,6 +29,7 @@ class BaziRecord extends Model
         'hour_gan' => 'string',
         'hour_zhi' => 'string',
         'analysis' => 'string',
+        'is_first' => 'int',
         'created_at' => 'datetime',
     ];
     

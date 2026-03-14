@@ -67,20 +67,54 @@
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
+          <div class="footer-quote">
+            <p>{{ randomQuote }}</p>
+          </div>
           <div class="footer-links">
             <router-link to="/help">帮助中心</router-link>
             <router-link to="/profile">个人中心</router-link>
             <a href="#" @click.prevent="showFeedback">意见反馈</a>
           </div>
-          <p>&copy; 2025 太初命理 - AI智能命理分析平台</p>
+          <p>&copy; 2025 太初命理 - 愿你在迷茫中找到方向 ✨</p>
         </div>
       </div>
     </footer>
+    
+    <!-- 浮动心情陪伴组件 -->
+    <div v-if="isLoggedIn" class="floating-companion" :class="{ expanded: showCompanion }">
+      <div class="companion-avatar" @click="toggleCompanion">
+        <span class="companion-icon">🌸</span>
+        <span v-if="!showCompanion" class="companion-pulse"></span>
+      </div>
+      <div v-if="showCompanion" class="companion-content">
+        <div class="companion-header">
+          <span>💝 今日陪伴</span>
+          <button class="close-btn" @click="toggleCompanion">✕</button>
+        </div>
+        <div class="companion-message">
+          <p>{{ companionMessage }}</p>
+        </div>
+        <div class="companion-actions">
+          <router-link to="/daily" class="companion-btn" @click="showCompanion = false">
+            <span>🌟</span>
+            <span>查看运势</span>
+          </router-link>
+          <router-link to="/bazi" class="companion-btn" @click="showCompanion = false">
+            <span>📅</span>
+            <span>八字排盘</span>
+          </router-link>
+          <router-link to="/tarot" class="companion-btn" @click="showCompanion = false">
+            <span>🎴</span>
+            <span>塔罗占卜</span>
+          </router-link>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
@@ -92,6 +126,43 @@ const isLoggedIn = ref(false)
 const userNickname = ref('')
 const userPoints = ref(0)
 const showMobileMenu = ref(false)
+const showCompanion = ref(false)
+
+// 暖心语录
+const companionMessages = [
+  '无论今天过得怎样，都要记得你值得被温柔以待。',
+  '有时候走得慢一点没关系，重要的是方向正确。',
+  '你已经做得很好了，给自己一点鼓励吧！',
+  '迷茫的时候，不妨先停下来，听听内心的声音。',
+  '生活总有起起落落，但请相信，一切都会好起来的。',
+  '不要和别人比较，每个人的花期都不同。',
+  '累了就休息一下，这不是放弃，而是为了走得更远。',
+  '你的感受很重要，不要忽视自己的情绪。',
+  '今天的你，已经很棒了！',
+  '相信自己，你比想象中更有力量。',
+]
+
+const companionMessage = computed(() => {
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24))
+  return companionMessages[dayOfYear % companionMessages.length]
+})
+
+const footerQuotes = [
+  '✨ 愿你在迷茫中找到方向',
+  '🌸 迷茫不是软弱，而是成长的开始',
+  '💝 你值得被这个世界温柔以待',
+  '🌟 相信自己，你比想象中更有力量',
+  '🌱 慢慢来，没关系',
+]
+
+const randomQuote = computed(() => {
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24))
+  return footerQuotes[dayOfYear % footerQuotes.length]
+})
+
+const toggleCompanion = () => {
+  showCompanion.value = !showCompanion.value
+}
 
 // 检查登录状态
 const checkLoginStatus = () => {
@@ -353,12 +424,28 @@ onMounted(() => {
 
 .footer {
   background: rgba(0, 0, 0, 0.3);
-  padding: 30px 0;
+  padding: 40px 0;
   color: rgba(255, 255, 255, 0.6);
 }
 
 .footer-content {
   text-align: center;
+}
+
+.footer-quote {
+  margin-bottom: 20px;
+}
+
+.footer-quote p {
+  color: rgba(233, 69, 96, 0.9);
+  font-size: 16px;
+  font-style: italic;
+  animation: fadeIn 2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .footer-links {
@@ -383,6 +470,149 @@ onMounted(() => {
   font-size: 13px;
 }
 
+/* 浮动陪伴组件 */
+.floating-companion {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 999;
+}
+
+.companion-avatar {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.companion-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.5);
+}
+
+.companion-icon {
+  font-size: 28px;
+}
+
+.companion-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(233, 69, 96, 0.4);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.companion-content {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 280px;
+  background: rgba(30, 30, 50, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.companion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.companion-message {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.companion-message p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.companion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.companion-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.companion-btn:hover {
+  background: rgba(233, 69, 96, 0.2);
+  color: #fff;
+  transform: translateX(5px);
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .desktop-nav {
@@ -395,6 +625,16 @@ onMounted(() => {
   
   .mobile-menu-btn {
     display: block;
+  }
+  
+  .floating-companion {
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .companion-content {
+    width: 260px;
+    right: -10px;
   }
 }
 

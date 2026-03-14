@@ -5,7 +5,7 @@
         <div class="error-code">404</div>
         <div class="error-icon">🔮</div>
         <h1>页面未找到</h1>
-        <p>您寻找的页面似乎已经消失在命运的迷雾中...</p>
+        <p>您寻找的页面似乎迷失在浩瀚的网络中了...</p>
         <div class="error-actions">
           <router-link to="/" class="btn-primary">
             返回首页

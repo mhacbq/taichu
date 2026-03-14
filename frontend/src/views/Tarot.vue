@@ -34,14 +34,52 @@
         </div>
       </div>
 
+      <!-- 问题引导区域 -->
+      <div class="question-guide card" v-if="!question && cards.length === 0">
+        <h3>
+          <span class="guide-icon">💭</span>
+          不知道问什么？选择一个你关心的话题
+        </h3>
+        <div class="topic-tabs">
+          <div 
+            v-for="topic in questionTopics" 
+            :key="topic.id"
+            class="topic-tab"
+            :class="{ active: selectedTopic === topic.id }"
+            @click="selectTopic(topic.id)"
+          >
+            <span class="topic-icon">{{ topic.icon }}</span>
+            <span class="topic-name">{{ topic.name }}</span>
+          </div>
+        </div>
+        <div class="question-templates" v-if="selectedTopic">
+          <p class="template-hint">点击选择一个问题，或以此为灵感输入你自己的问题：</p>
+          <div class="template-list">
+            <div 
+              v-for="(template, index) in currentTemplates" 
+              :key="index"
+              class="template-item"
+              @click="selectQuestion(template)"
+            >
+              <span class="template-bullet">•</span>
+              <span class="template-text">{{ template }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="question-section card">
         <h3>您想咨询的问题</h3>
         <el-input
           v-model="question"
           type="textarea"
           :rows="3"
-          placeholder="请描述您想咨询的问题，越具体越好..."
+          placeholder="描述你的困惑，越具体越好。比如：'我应该接受这份新工作吗？'"
         />
+        <div class="question-hint" v-if="question">
+          <span class="hint-icon">💡</span>
+          <span>好的问题通常是开放性的，以"我应该..."或"我该如何..."开头</span>
+        </div>
         <el-button
           type="primary"
           size="large"
@@ -50,6 +88,7 @@
           :disabled="!question || currentPoints < 5"
           class="draw-btn"
         >
+          <span class="btn-icon">🎴</span>
           开始抽牌
         </el-button>
       </div>
@@ -141,6 +180,57 @@ const spreads = [
   { id: 'celtic', name: '凯尔特十字', icon: '🔮', description: '深度分析，全面解读' },
 ]
 
+// 问题引导话题
+const questionTopics = [
+  { id: 'career', name: '工作事业', icon: '💼' },
+  { id: 'love', name: '感情关系', icon: '💕' },
+  { id: 'growth', name: '个人成长', icon: '🌱' },
+  { id: 'decision', name: '选择困难', icon: '🤔' },
+  { id: 'relation', name: '人际关系', icon: '👥' },
+]
+
+// 问题模板
+const questionTemplates = {
+  career: [
+    '我是否应该接受这份新工作offer？',
+    '现在是我换工作的合适时机吗？',
+    '我应该如何提升自己在工作中的表现？',
+    '我的职业发展方向应该是什么？',
+    '如何应对目前工作中的困难和挑战？',
+    '我应该创业还是继续打工？',
+  ],
+  love: [
+    '这段感情是否值得我继续投入？',
+    '我应该主动表白还是再等等看？',
+    '如何改善我和伴侣之间的关系？',
+    '我什么时候能遇到合适的人？',
+    '前任还会回到我身边吗？',
+    '我应该放下这段感情吗？',
+  ],
+  growth: [
+    '我该如何克服目前的迷茫状态？',
+    '我最大的优势和需要改进的地方是什么？',
+    '如何实现我今年的目标？',
+    '我应该学习什么新技能？',
+    '如何建立更好的自信心？',
+    '我该如何找到人生的方向？',
+  ],
+  decision: [
+    '我应该选择A还是B？',
+    '现在采取行动是好时机吗？',
+    '我应该继续坚持还是及时止损？',
+    '如何做出不会后悔的决定？',
+    '我应该听从内心还是理性分析？',
+  ],
+  relation: [
+    '如何改善我和家人之间的关系？',
+    '我应该如何与朋友沟通这个问题？',
+    '这个人是否值得我信任？',
+    '如何处理与同事的冲突？',
+    '我该如何扩大自己的社交圈？',
+  ],
+}
+
 const selectedSpread = ref('three')
 const question = ref('')
 const loading = ref(false)
@@ -150,6 +240,19 @@ const currentPoints = ref(0)
 const cardDetailVisible = ref(false)
 const selectedCard = ref(null)
 const selectedCardIndex = ref(0)
+const selectedTopic = ref('')
+
+const currentTemplates = computed(() => {
+  return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
+})
+
+const selectTopic = (topicId) => {
+  selectedTopic.value = topicId
+}
+
+const selectQuestion = (template) => {
+  question.value = template
+}
 
 // 塔罗牌详细解读数据
 const cardDetailedMeanings = {
@@ -532,9 +635,132 @@ const getCardAdvice = (card) => {
   color: #fff;
 }
 
+.question-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 15px;
+  background: rgba(103, 194, 58, 0.1);
+  border: 1px solid rgba(103, 194, 58, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.hint-icon {
+  font-size: 16px;
+}
+
 .draw-btn {
   margin-top: 20px;
   width: 100%;
+}
+
+.btn-icon {
+  margin-right: 5px;
+}
+
+/* 问题引导 */
+.question-guide {
+  max-width: 700px;
+  margin: 0 auto 30px;
+}
+
+.question-guide h3 {
+  color: #fff;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-icon {
+  font-size: 24px;
+}
+
+.topic-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.topic-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.topic-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(233, 69, 96, 0.3);
+}
+
+.topic-tab.active {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.3));
+  border-color: #e94560;
+}
+
+.topic-icon {
+  font-size: 18px;
+}
+
+.topic-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.question-templates {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.template-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.template-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.template-item:hover {
+  background: rgba(233, 69, 96, 0.1);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  transform: translateX(5px);
+}
+
+.template-bullet {
+  color: #e94560;
+  font-weight: bold;
+}
+
+.template-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .cards-result {

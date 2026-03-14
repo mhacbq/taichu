@@ -6,12 +6,44 @@
         <h1 class="section-title">八字排盘</h1>
       </div>
       
-      <div class="bazi-form card">
+      <!-- 暖心提示 -->
+      <div class="warm-tip card" v-if="!result">
+        <span class="tip-icon">💝</span>
+        <div class="tip-content">
+          <p class="tip-title">八字排盘能帮你了解什么？</p>
+          <p class="tip-desc">你的性格优势 · 适合的发展方向 · 未来运势起伏 · 人际关系建议</p>
+        </div>
+      </div>
+      
+      <div class="bazi-form card" v-if="!result">
         <!-- 积分消耗提示 -->
         <div class="points-hint">
           <span class="hint-icon">💎</span>
-          <span>本次排盘将消耗 <strong>10 积分</strong></span>
+          <span>
+            <span v-if="isFirstBazi">🎁 首次排盘免费</span>
+            <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
+          </span>
           <span class="current-points">当前积分: {{ currentPoints }}</span>
+        </div>
+
+        <!-- 简版/专业版切换 -->
+        <div class="version-toggle">
+          <span class="toggle-label">排盘模式：</span>
+          <el-radio-group v-model="versionMode" size="small">
+            <el-radio-button label="simple">
+              <span class="mode-option">
+                <span class="mode-icon">🌱</span>
+                简化版
+              </span>
+            </el-radio-button>
+            <el-radio-button label="pro">
+              <span class="mode-option">
+                <span class="mode-icon">🔮</span>
+                专业版
+              </span>
+            </el-radio-button>
+          </el-radio-group>
+          <p class="version-hint">{{ versionHint }}</p>
         </div>
 
         <div class="form-group">
@@ -24,6 +56,7 @@
             value-format="YYYY-MM-DD HH:mm:ss"
             class="full-width"
           />
+          <p class="form-hint">不知道具体时辰？选个大概的时间也可以</p>
         </div>
         
         <div class="form-group">
@@ -34,23 +67,23 @@
           </el-radio-group>
         </div>
         
-        <div class="form-group">
+        <div class="form-group" v-if="versionMode === 'pro'">
           <label>
             出生地点
-            <el-tooltip content="真太阳时是根据出生地的经度计算的真实太阳时间，确保八字排盘更准确" placement="top">
+            <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
               <span class="help-icon">❓</span>
             </el-tooltip>
           </label>
           <el-select-v2
             v-model="location"
             :options="cityOptions"
-            placeholder="请选择出生城市"
+            placeholder="请选择出生城市（可选）"
             class="full-width"
             filterable
             clearable
             :height="200"
           />
-          <p class="form-hint">💡 选择出生地点可计算真太阳时，使排盘更准确</p>
+          <p class="form-hint">💡 不知道出生地可以跳过，默认使用北京时间</p>
         </div>
         
         <el-button 
@@ -58,13 +91,13 @@
           size="large" 
           @click="showConfirm" 
           :loading="loading"
-          :disabled="currentPoints < 10"
+          :disabled="!isFirstBazi && currentPoints < 10"
         >
-          开始排盘
+          {{ isFirstBazi ? '🎁 首次免费排盘' : '开始排盘' }}
         </el-button>
 
         <!-- 积分不足提示 -->
-        <div v-if="currentPoints < 10" class="insufficient-points">
+        <div v-if="!isFirstBazi && currentPoints < 10" class="insufficient-points">
           <p>💡 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
         </div>
       </div>
@@ -206,8 +239,47 @@
           </div>
         </div>
         
+        <!-- 通俗解读：这对我意味着什么 -->
+        <div class="simple-interpretation" v-if="result.simpleInterpretation">
+          <h3>
+            <span class="section-icon">💡</span>
+            这对我意味着什么？
+            <span class="section-subtitle">通俗解读</span>
+          </h3>
+          <div class="interpretation-cards">
+            <div class="interp-card personality">
+              <div class="interp-header">
+                <span class="interp-icon">🎭</span>
+                <h4>我的性格特点</h4>
+              </div>
+              <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
+            </div>
+            <div class="interp-card career">
+              <div class="interp-header">
+                <span class="interp-icon">💼</span>
+                <h4>适合的发展方向</h4>
+              </div>
+              <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
+            </div>
+            <div class="interp-card relationship">
+              <div class="interp-header">
+                <span class="interp-icon">💕</span>
+                <h4>人际关系建议</h4>
+              </div>
+              <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
+            </div>
+            <div class="interp-card advice">
+              <div class="interp-header">
+                <span class="interp-icon">🌟</span>
+                <h4>给你的建议</h4>
+              </div>
+              <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
+            </div>
+          </div>
+        </div>
+
         <div class="bazi-analysis">
-          <h3>命理分析</h3>
+          <h3>详细命理分析</h3>
           <div class="analysis-content" v-html="result.analysis"></div>
         </div>
 
@@ -215,7 +287,7 @@
         <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
           <h3>
             大运走势
-            <el-tooltip content="大运是十年一个周期的运势变化，影响人生不同阶段的吉凶祸福" placement="top">
+            <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
               <span class="help-icon">❓</span>
             </el-tooltip>
           </h3>
@@ -243,7 +315,7 @@
         <div class="liunian-section" v-if="result.liunian && result.liunian.length > 0">
           <h3>
             流年运势
-            <el-tooltip content="流年是每年的运势变化，结合大运可精准预测年度吉凶" placement="top">
+            <el-tooltip content="流年是每年的运势参考，结合大运提供年度生活建议" placement="top">
               <span class="help-icon">❓</span>
             </el-tooltip>
           </h3>
@@ -286,7 +358,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { calculateBazi as calculateBaziApi, getPointsBalance } from '../api'
 import BackButton from '../components/BackButton.vue'
@@ -299,6 +371,15 @@ const result = ref(null)
 const currentPoints = ref(0)
 const confirmVisible = ref(false)
 const saving = ref(false)
+const versionMode = ref('simple') // 'simple' or 'pro'
+const isFirstBazi = ref(true) // 是否首次排盘
+
+// 版本提示
+const versionHint = computed(() => {
+  return versionMode.value === 'simple' 
+    ? '简化版：适合新手，只看核心信息，不用填出生地'
+    : '专业版：适合进阶，包含真太阳时、大运流年等详细分析'
+})
 
 // 中国城市数据
 const cities = [
@@ -316,12 +397,13 @@ const cityOptions = computed(() => {
   }))
 })
 
-// 获取当前积分
+// 获取当前积分和首次排盘状态
 const loadPoints = async () => {
   try {
     const response = await getPointsBalance()
     if (response.code === 0) {
       currentPoints.value = response.data.balance
+      isFirstBazi.value = response.data.first_bazi !== false
     }
   } catch (error) {
     console.error('获取积分失败:', error)
@@ -334,11 +416,17 @@ const showConfirm = () => {
     ElMessage.warning('请选择出生日期')
     return
   }
-  if (currentPoints.value < 10) {
+  if (!isFirstBazi.value && currentPoints.value < 10) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
-  confirmVisible.value = true
+  
+  // 首次排盘直接计算，不显示确认框
+  if (isFirstBazi.value) {
+    calculateBazi()
+  } else {
+    confirmVisible.value = true
+  }
 }
 
 // 确认排盘
@@ -354,11 +442,13 @@ const calculateBazi = async () => {
       birthDate: birthDate.value,
       gender: gender.value,
       location: location.value,
+      mode: versionMode.value,
     })
     
     if (response.code === 0) {
       result.value = response.data
       currentPoints.value = response.data.remaining_points
+      isFirstBazi.value = false
       ElMessage.success('排盘成功')
     } else {
       ElMessage.error(response.message || '排盘失败')
@@ -583,6 +673,161 @@ const shareResult = () => {
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.8;
   white-space: pre-line;
+}
+
+/* 暖心提示 */
+.warm-tip {
+  max-width: 600px;
+  margin: 0 auto 25px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px 25px;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
+  border: 1px solid rgba(233, 69, 96, 0.2);
+}
+
+.tip-icon {
+  font-size: 36px;
+}
+
+.tip-content {
+  text-align: left;
+}
+
+.tip-title {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.tip-desc {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* 版本切换 */
+.version-toggle {
+  margin-bottom: 25px;
+  text-align: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.toggle-label {
+  color: rgba(255, 255, 255, 0.7);
+  margin-right: 10px;
+  font-size: 14px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mode-icon {
+  font-size: 16px;
+}
+
+.version-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+/* 通俗解读 */
+.simple-interpretation {
+  margin: 30px 0;
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
+  border: 1px solid rgba(103, 194, 58, 0.2);
+  border-radius: 15px;
+  padding: 25px;
+}
+
+.simple-interpretation h3 {
+  color: #fff;
+  text-align: center;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.section-icon {
+  font-size: 24px;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: normal;
+}
+
+.interpretation-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.interp-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.interp-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.interp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.interp-icon {
+  font-size: 28px;
+}
+
+.interp-header h4 {
+  color: #fff;
+  font-size: 16px;
+}
+
+.interp-content {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.interp-card.personality {
+  border-left: 3px solid #e94560;
+}
+
+.interp-card.career {
+  border-left: 3px solid #409eff;
+}
+
+.interp-card.relationship {
+  border-left: 3px solid #e6a23c;
+}
+
+.interp-card.advice {
+  border-left: 3px solid #67c23a;
+}
+
+@media (max-width: 768px) {
+  .interpretation-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 日主信息 */
