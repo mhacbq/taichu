@@ -5,8 +5,10 @@ namespace app\controller;
 
 use app\BaseController;
 use app\model\User;
+use app\model\InviteRecord;
 use Firebase\JWT\JWT;
 use think\facade\Config;
+use think\facade\Db;
 
 class Auth extends BaseController
 {
@@ -28,8 +30,10 @@ class Auth extends BaseController
         
         // 查找或创建用户
         $user = User::findByOpenid($openid);
+        $isNewUser = false;
         
         if (!$user) {
+            $isNewUser = true;
             $user = User::create([
                 'openid' => $openid,
                 'nickname' => $data['nickname'] ?? '微信用户' . mt_rand(1000, 9999),
@@ -40,6 +44,11 @@ class Auth extends BaseController
             // 新用户赠送积分
             $user->addPoints(100);
             \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            
+            // 处理邀请码
+            if (!empty($data['invite_code'])) {
+                $this->processInviteCode($user->id, $data['invite_code']);
+            }
         }
         
         // 更新登录时间
@@ -64,6 +73,7 @@ class Auth extends BaseController
         return $this->success([
             'token' => $token,
             'expire' => $ttl,
+            'is_new_user' => $isNewUser,
             'user' => [
                 'id' => $user->id,
                 'nickname' => $user->nickname,
@@ -71,6 +81,69 @@ class Auth extends BaseController
                 'points' => $user->points,
             ],
         ], '登录成功');
+    }
+    
+    /**
+     * 处理邀请码
+     */
+    protected function processInviteCode(int $newUserId, string $inviteCode)
+    {
+        $inviterId = InviteRecord::getInviterByCode($inviteCode);
+        
+        if (!$inviterId || $inviterId === $newUserId) {
+            return;
+        }
+        
+        // 检查是否已经被邀请过
+        $exists = InviteRecord::where('invitee_id', $newUserId)->find();
+        if ($exists) {
+            return;
+        }
+        
+        $rewardPoints = 20;
+        
+        Db::startTrans();
+        try {
+            // 记录邀请关系
+            InviteRecord::create([
+                'inviter_id' => $inviterId,
+                'invitee_id' => $newUserId,
+                'invite_code' => $inviteCode,
+                'points_reward' => $rewardPoints,
+            ]);
+            
+            // 给邀请人增加积分
+            $inviter = User::find($inviterId);
+            if ($inviter) {
+                $inviter->addPoints($rewardPoints);
+                \app\model\PointsRecord::record(
+                    $inviterId, 
+                    '邀请好友奖励', 
+                    $rewardPoints, 
+                    'invite',
+                    $newUserId,
+                    '邀请用户ID: ' . $newUserId
+                );
+            }
+            
+            // 给被邀请人也增加积分
+            $invitee = User::find($newUserId);
+            if ($invitee) {
+                $invitee->addPoints($rewardPoints);
+                \app\model\PointsRecord::record(
+                    $newUserId, 
+                    '被邀请奖励', 
+                    $rewardPoints, 
+                    'invited',
+                    $inviterId,
+                    '填写邀请码奖励'
+                );
+            }
+            
+            Db::commit();
+        } catch (\Exception $e) {
+            Db::rollback();
+        }
     }
     
     /**
@@ -85,6 +158,9 @@ class Auth extends BaseController
             return $this->error('用户不存在', 404);
         }
         
+        // 获取邀请统计
+        $inviteStats = InviteRecord::getInviteStats($user['sub']);
+        
         return $this->success([
             'id' => $userInfo->id,
             'nickname' => $userInfo->nickname,
@@ -93,6 +169,9 @@ class Auth extends BaseController
             'phone' => $userInfo->phone,
             'points' => $userInfo->points,
             'last_login_at' => $userInfo->last_login_at,
+            'invite_code' => 'TC' . strtoupper(substr($userInfo->id, -6)),
+            'invite_count' => $inviteStats['invite_count'],
+            'invite_points' => $inviteStats['total_points'],
         ]);
     }
     

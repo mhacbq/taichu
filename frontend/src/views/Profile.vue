@@ -133,22 +133,51 @@
           <h3>🎁 邀请好友赚积分</h3>
           <div class="invite-content">
             <p class="invite-desc">每邀请一位好友注册，您和好友各获得 <strong>20积分</strong></p>
-            <div class="invite-code">
+            
+            <!-- 邀请码 -->
+            <div class="invite-code-box">
               <span class="code-label">您的邀请码：</span>
-              <span class="code-value">{{ inviteCode }}</span>
-              <el-button type="primary" size="small" @click="copyInviteCode">
-                复制
-              </el-button>
+              <div class="code-display">
+                <span class="code-value">{{ inviteCode || '加载中...' }}</span>
+                <el-button type="primary" size="small" @click="copyInviteCode">
+                  <span class="btn-icon">📋</span> 复制
+                </el-button>
+              </div>
             </div>
+            
+            <!-- 快速分享 -->
+            <div class="share-buttons">
+              <p class="share-label">快速分享：</p>
+              <div class="share-btns">
+                <el-button type="success" size="small" @click="shareToWechat">
+                  <span class="btn-icon">💬</span> 微信
+                </el-button>
+                <el-button type="primary" size="small" @click="copyInviteLink">
+                  <span class="btn-icon">🔗</span> 复制链接
+                </el-button>
+              </div>
+            </div>
+            
+            <!-- 邀请统计 -->
             <div class="invite-stats">
-              <div class="stat">
+              <div class="stat-card">
                 <span class="stat-value">{{ inviteCount }}</span>
                 <span class="stat-label">已邀请</span>
               </div>
-              <div class="stat">
+              <div class="stat-card">
                 <span class="stat-value">{{ invitePoints }}</span>
                 <span class="stat-label">获得积分</span>
               </div>
+            </div>
+            
+            <!-- 邀请规则 -->
+            <div class="invite-rules">
+              <h4>📋 邀请规则</h4>
+              <ul>
+                <li>好友通过您的邀请码注册，双方各得20积分</li>
+                <li>每位好友仅限奖励一次</li>
+                <li>禁止恶意刷量，违规将取消奖励</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -216,6 +245,7 @@ const pointsMethods = ref([
 const inviteCode = ref('')
 const inviteCount = ref(0)
 const invitePoints = ref(0)
+const inviteLink = ref('')
 
 const loadUserData = async () => {
   try {
@@ -227,6 +257,12 @@ const loadUserData = async () => {
     
     if (userRes.code === 0) {
       userInfo.value = userRes.data
+      // 使用后端返回的邀请码和统计
+      inviteCode.value = userRes.data.invite_code || ''
+      inviteCount.value = userRes.data.invite_count || 0
+      invitePoints.value = userRes.data.invite_points || 0
+      // 生成邀请链接
+      inviteLink.value = `${window.location.origin}/login?invite_code=${inviteCode.value}`
     }
     
     if (pointsRes.code === 0) {
@@ -332,22 +368,55 @@ const handleMethodAction = (method) => {
 
 // 复制邀请码
 const copyInviteCode = () => {
+  if (!inviteCode.value) {
+    ElMessage.warning('邀请码加载中，请稍后再试')
+    return
+  }
   navigator.clipboard.writeText(inviteCode.value).then(() => {
     ElMessage.success('邀请码已复制到剪贴板')
+  }).catch(() => {
+    ElMessage.error('复制失败，请手动复制')
   })
 }
 
-// 生成邀请码
-const generateInviteCode = () => {
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  if (userInfo.id) {
-    inviteCode.value = 'TC' + userInfo.id.toString().slice(-6).toUpperCase()
+// 复制邀请链接
+const copyInviteLink = () => {
+  if (!inviteLink.value) {
+    ElMessage.warning('链接生成中，请稍后再试')
+    return
+  }
+  navigator.clipboard.writeText(inviteLink.value).then(() => {
+    ElMessage.success('邀请链接已复制到剪贴板')
+  }).catch(() => {
+    ElMessage.error('复制失败，请手动复制')
+  })
+}
+
+// 分享到微信
+const shareToWechat = () => {
+  const shareText = `我在用「太初命理」进行八字排盘和运势分析，非常准确！
+
+使用我的邀请码【${inviteCode.value}】注册，我们双方都能获得20积分奖励！
+
+快来试试吧 👇
+${inviteLink.value}`
+
+  if (navigator.share) {
+    navigator.share({
+      title: '邀请你使用太初命理',
+      text: shareText
+    })
+  } else {
+    navigator.clipboard.writeText(shareText).then(() => {
+      ElMessage.success('分享内容已复制，请粘贴到微信发送给好友')
+    }).catch(() => {
+      ElMessage.error('复制失败，请手动复制')
+    })
   }
 }
 
 onMounted(() => {
   loadUserData()
-  generateInviteCode()
 })
 </script>
 
@@ -709,14 +778,25 @@ onMounted(() => {
 .invite-desc {
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 25px;
+  font-size: 15px;
 }
 
-.invite-code {
-  background: rgba(255, 255, 255, 0.05);
+.invite-code-box {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
   border: 2px dashed rgba(233, 69, 96, 0.5);
   border-radius: 12px;
   padding: 20px;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
+}
+
+.code-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.code-display {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -724,38 +804,89 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.code-label {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-}
-
 .code-value {
   color: #e94560;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
+  font-family: monospace;
+}
+
+.share-buttons {
+  margin-bottom: 25px;
+}
+
+.share-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.share-btns {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.share-btns .btn-icon {
+  margin-right: 3px;
 }
 
 .invite-stats {
   display: flex;
   justify-content: center;
-  gap: 50px;
+  gap: 30px;
+  margin-bottom: 25px;
 }
 
-.invite-stats .stat {
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px 30px;
   text-align: center;
+  min-width: 100px;
 }
 
-.invite-stats .stat-value {
+.stat-card .stat-value {
   display: block;
   font-size: 28px;
   font-weight: bold;
   color: #e94560;
 }
 
-.invite-stats .stat-label {
+.stat-card .stat-label {
+  display: block;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
+  margin-top: 5px;
+}
+
+.invite-rules {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 15px;
+  text-align: left;
+}
+
+.invite-rules h4 {
+  color: #ffd700;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.invite-rules ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.invite-rules li {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.invite-rules li:last-child {
+  margin-bottom: 0;
 }
 
 @media (max-width: 768px) {

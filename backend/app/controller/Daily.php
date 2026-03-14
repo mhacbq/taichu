@@ -22,10 +22,17 @@ class Daily extends BaseController
      */
     public function fortune()
     {
+        $user = $this->request->user;
         $fortune = DailyFortune::getToday();
         
         $yi = explode(',', $fortune->yi);
         $ji = explode(',', $fortune->ji);
+        
+        // 获取用户八字信息，生成个性化运势
+        $personalized = null;
+        if ($user) {
+            $personalized = $this->generatePersonalizedFortune($user['sub'], $fortune);
+        }
         
         return $this->success([
             'date' => $fortune->date,
@@ -46,7 +53,145 @@ class Daily extends BaseController
                 'love' => $fortune->love_desc,
                 'health' => $fortune->health_desc,
             ],
+            'personalized' => $personalized,
         ]);
+    }
+    
+    /**
+     * 生成个性化运势
+     */
+    protected function generatePersonalizedFortune(int $userId, $fortune): ?array
+    {
+        // 获取用户最近的八字排盘记录
+        $baziRecord = Db::name('bazi_record')
+            ->where('user_id', $userId)
+            ->order('created_at', 'desc')
+            ->find();
+        
+        if (!$baziRecord) {
+            return null;
+        }
+        
+        // 计算今日干支
+        $today = date('Y-m-d');
+        $year = (int)date('Y', strtotime($today));
+        $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        
+        $todayGanIndex = ($year - 4) % 10;
+        $todayZhiIndex = ($year - 4) % 12;
+        $todayGan = $tianGan[$todayGanIndex];
+        $todayZhi = $diZhi[$todayZhiIndex];
+        
+        // 用户日主
+        $dayMaster = $baziRecord['day_gan'];
+        
+        // 五行属性
+        $ganWuXing = [
+            '甲' => '木', '乙' => '木',
+            '丙' => '火', '丁' => '火',
+            '戊' => '土', '己' => '土',
+            '庚' => '金', '辛' => '金',
+            '壬' => '水', '癸' => '水'
+        ];
+        $zhiWuXing = [
+            '子' => '水', '丑' => '土', '寅' => '木', '卯' => '木',
+            '辰' => '土', '巳' => '火', '午' => '火', '未' => '土',
+            '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'
+        ];
+        
+        $dayMasterWuxing = $ganWuXing[$dayMaster];
+        $todayGanWuxing = $ganWuXing[$todayGan];
+        $todayZhiWuxing = $zhiWuXing[$todayZhi];
+        
+        // 五行关系
+        $wuxingShengKe = [
+            '金' => ['生' => '水', '克' => '木', '被生' => '土', '被克' => '火'],
+            '木' => ['生' => '火', '克' => '土', '被生' => '水', '被克' => '金'],
+            '水' => ['生' => '木', '克' => '火', '被生' => '金', '被克' => '土'],
+            '火' => ['生' => '土', '克' => '金', '被生' => '木', '被克' => '水'],
+            '土' => ['生' => '金', '克' => '水', '被生' => '火', '被克' => '木']
+        ];
+        
+        // 计算今日与日主的关系
+        $relation = '';
+        $luckLevel = '平';
+        $advice = '';
+        
+        if ($todayGanWuxing === $dayMasterWuxing) {
+            $relation = '比劫';
+            $luckLevel = '平';
+            $advice = '今日比肩劫财，适合与朋友合作，但需注意财物安全，避免借贷纠纷。';
+        } elseif ($wuxingShengKe[$dayMasterWuxing]['被生'] === $todayGanWuxing) {
+            $relation = '印绶';
+            $luckLevel = '吉';
+            $advice = '今日印绶当令，贵人运佳，适合学习进修、寻求长辈指导，学业事业有进。';
+        } elseif ($wuxingShengKe[$dayMasterWuxing]['生'] === $todayGanWuxing) {
+            $relation = '食伤';
+            $luckLevel = '平';
+            $advice = '今日食伤生财，创意灵感丰富，适合艺术创作、表达自我，但要注意言行分寸。';
+        } elseif ($wuxingShengKe[$dayMasterWuxing]['被克'] === $todayGanWuxing) {
+            $relation = '官杀';
+            $luckLevel = '凶';
+            $advice = '今日官杀攻身，压力较大，需谨慎行事，避免冲动决策，注意身体健康。';
+        } else {
+            $relation = '财星';
+            $luckLevel = '吉';
+            $advice = '今日财星高照，财运亨通，适合理财投资、商务谈判，有意外收获之机。';
+        }
+        
+        // 根据今日运势基础分和个人关系调整
+        $baseScore = $fortune->overall_score;
+        $adjustedScore = $baseScore;
+        if ($luckLevel === '吉') {
+            $adjustedScore = min(100, $baseScore + 5);
+        } elseif ($luckLevel === '凶') {
+            $adjustedScore = max(40, $baseScore - 5);
+        }
+        
+        return [
+            'hasBazi' => true,
+            'dayMaster' => $dayMaster,
+            'dayMasterWuxing' => $dayMasterWuxing,
+            'todayGanZhi' => $todayGan . $todayZhi,
+            'todayWuxing' => $todayGanWuxing . $todayZhiWuxing,
+            'relation' => $relation,
+            'luckLevel' => $luckLevel,
+            'advice' => $advice,
+            'personalScore' => $adjustedScore,
+            'luckyColors' => $this->getLuckyColorsByWuxing($dayMasterWuxing),
+            'luckyDirections' => $this->getLuckyDirectionsByWuxing($dayMasterWuxing),
+        ];
+    }
+    
+    /**
+     * 根据五行获取幸运色
+     */
+    protected function getLuckyColorsByWuxing(string $wuxing): array
+    {
+        $colors = [
+            '金' => ['白色', '金色', '银色'],
+            '木' => ['绿色', '青色', '翠色'],
+            '水' => ['黑色', '蓝色', '灰色'],
+            '火' => ['红色', '紫色', '橙色'],
+            '土' => ['黄色', '棕色', '咖啡色']
+        ];
+        return $colors[$wuxing] ?? ['黄色'];
+    }
+    
+    /**
+     * 根据五行获取幸运方位
+     */
+    protected function getLuckyDirectionsByWuxing(string $wuxing): array
+    {
+        $directions = [
+            '金' => ['西方', '西北方'],
+            '木' => ['东方', '东南方'],
+            '水' => ['北方'],
+            '火' => ['南方'],
+            '土' => ['中央', '东北方', '西南方']
+        ];
+        return $directions[$wuxing] ?? ['中央'];
     }
     
     /**

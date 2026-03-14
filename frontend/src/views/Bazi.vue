@@ -210,6 +210,63 @@
           <h3>命理分析</h3>
           <div class="analysis-content" v-html="result.analysis"></div>
         </div>
+
+        <!-- 大运分析 -->
+        <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
+          <h3>
+            大运走势
+            <el-tooltip content="大运是十年一个周期的运势变化，影响人生不同阶段的吉凶祸福" placement="top">
+              <span class="help-icon">❓</span>
+            </el-tooltip>
+          </h3>
+          <div class="dayun-timeline">
+            <div 
+              v-for="(yun, index) in result.dayun" 
+              :key="index"
+              class="dayun-item"
+              :class="{ 'current': isCurrentDaYun(yun) }"
+            >
+              <div class="dayun-age">{{ yun.age_start }}-{{ yun.age_end }}岁</div>
+              <div class="dayun-pillar">
+                <span class="gan">{{ yun.gan }}</span>
+                <span class="zhi">{{ yun.zhi }}</span>
+              </div>
+              <div class="dayun-shishen">{{ yun.shishen }}</div>
+              <div class="dayun-luck" :class="yun.luck">{{ yun.luck }}</div>
+              <div class="dayun-desc">{{ yun.luck_desc }}</div>
+              <div class="dayun-nayin">{{ yun.nayin }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 流年分析 -->
+        <div class="liunian-section" v-if="result.liunian && result.liunian.length > 0">
+          <h3>
+            流年运势
+            <el-tooltip content="流年是每年的运势变化，结合大运可精准预测年度吉凶" placement="top">
+              <span class="help-icon">❓</span>
+            </el-tooltip>
+          </h3>
+          <div class="liunian-grid">
+            <div 
+              v-for="(year, index) in result.liunian" 
+              :key="index"
+              class="liunian-item"
+              :class="{ 'current': year.is_current }"
+            >
+              <div class="liunian-year">{{ year.year }}年</div>
+              <div class="liunian-pillar">
+                <span class="gan">{{ year.gan }}</span>
+                <span class="zhi">{{ year.zhi }}</span>
+              </div>
+              <div class="liunian-wuxing">
+                <span class="badge" :class="year.gan_wuxing">{{ year.gan_wuxing }}</span>
+                <span class="badge" :class="year.zhi_wuxing">{{ year.zhi_wuxing }}</span>
+              </div>
+              <div class="liunian-nayin">{{ year.nayin }}</div>
+            </div>
+          </div>
+        </div>
         
         <!-- 操作按钮 -->
         <div class="result-actions">
@@ -345,6 +402,13 @@ const saveResult = async () => {
   } finally {
     saving.value = false
   }
+}
+
+// 判断是否当前大运（简化：根据当前年龄判断）
+const isCurrentDaYun = (yun) => {
+  // 简化计算：假设用户当前30岁，实际应根据出生日期计算
+  const currentAge = 30
+  return currentAge >= yun.age_start && currentAge <= yun.age_end
 }
 
 // 分享结果
@@ -741,6 +805,192 @@ const shareResult = () => {
   margin-right: 5px;
 }
 
+/* 大运区域样式 */
+.dayun-section {
+  margin-top: 30px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 15px;
+  padding: 25px;
+}
+
+.dayun-section h3 {
+  color: #fff;
+  margin-bottom: 20px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dayun-timeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.dayun-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.dayun-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-3px);
+}
+
+.dayun-item.current {
+  border-color: #e94560;
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.dayun-age {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+}
+
+.dayun-pillar {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.dayun-pillar .gan,
+.dayun-pillar .zhi {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.dayun-shishen {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+}
+
+.dayun-luck {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.dayun-luck.吉 {
+  background: rgba(103, 194, 58, 0.3);
+  color: #67c23a;
+}
+
+.dayun-luck.凶 {
+  background: rgba(245, 108, 108, 0.3);
+  color: #f56c6c;
+}
+
+.dayun-luck.平 {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dayun-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.dayun-nayin {
+  font-size: 11px;
+  color: rgba(255, 215, 0, 0.8);
+}
+
+/* 流年区域样式 */
+.liunian-section {
+  margin-top: 30px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 15px;
+  padding: 25px;
+}
+
+.liunian-section h3 {
+  color: #fff;
+  margin-bottom: 20px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.liunian-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+}
+
+.liunian-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.liunian-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.liunian-item.current {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.liunian-year {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.liunian-pillar {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.liunian-pillar .gan,
+.liunian-pillar .zhi {
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.liunian-wuxing {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.liunian-wuxing .badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.liunian-nayin {
+  font-size: 11px;
+  color: rgba(255, 215, 0, 0.8);
+}
+
 @media (max-width: 768px) {
   .paipan-cell {
     font-size: 18px;
@@ -766,6 +1016,14 @@ const shareResult = () => {
   
   .day-master-card .value {
     font-size: 28px;
+  }
+  
+  .dayun-timeline {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .liunian-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

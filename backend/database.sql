@@ -134,4 +134,21 @@ CREATE TABLE `tc_checkin_record` (
   KEY `idx_date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='签到记录表';
 
+-- ----------------------------
+-- 邀请记录表
+-- ----------------------------
+DROP TABLE IF EXISTS `tc_invite_record`;
+CREATE TABLE `tc_invite_record` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `inviter_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '邀请人ID',
+  `invitee_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '被邀请人ID',
+  `invite_code` varchar(20) NOT NULL DEFAULT '' COMMENT '邀请码',
+  `points_reward` int(11) NOT NULL DEFAULT '20' COMMENT '奖励积分',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_invitee` (`invitee_id`),
+  KEY `idx_inviter` (`inviter_id`),
+  KEY `idx_invite_code` (`invite_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='邀请记录表';
+
 SET FOREIGN_KEY_CHECKS = 1;
