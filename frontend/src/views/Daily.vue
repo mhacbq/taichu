@@ -2,7 +2,10 @@
   <div class="daily-page">
     <div class="container">
       <h1 class="section-title">每日运势</h1>
-      
+
+      <!-- 签到卡片 -->
+      <CheckinCard />
+
       <div class="date-display card">
         <div class="lunar-date">
           <span class="label">农历</span>
@@ -88,6 +91,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDailyFortune } from '../api'
+import CheckinCard from '../components/CheckinCard.vue'
 
 const solarDate = ref('')
 const lunarDate = ref('')
