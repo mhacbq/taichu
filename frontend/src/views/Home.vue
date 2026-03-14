@@ -57,17 +57,9 @@
             </ul>
           </div>
           <div class="about-stats">
-            <div class="stat-item">
-              <span class="stat-number">10万+</span>
-              <span class="stat-label">服务用户</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">50万+</span>
-              <span class="stat-label">分析次数</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">98%</span>
-              <span class="stat-label">好评率</span>
+            <div class="stat-item" v-for="stat in stats" :key="stat.label">
+              <span class="stat-number">{{ stat.number }}</span>
+              <span class="stat-label">{{ stat.label }}</span>
             </div>
           </div>
         </div>
@@ -77,7 +69,30 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
+import { getHomeStats } from '../api'
+
+const stats = ref([
+  { number: '加载中...', label: '服务用户' },
+  { number: '加载中...', label: '分析次数' },
+  { number: '98%', label: '好评率' },
+])
+
+const loadStats = async () => {
+  try {
+    const response = await getHomeStats()
+    if (response.code === 0) {
+      stats.value = response.data.stats
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadStats()
+})
 </script>
 
 <style scoped>

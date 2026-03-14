@@ -117,4 +117,21 @@ CREATE TABLE `tc_feedback` (
   KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户反馈表';
 
+-- ----------------------------
+-- 签到记录表
+-- ----------------------------
+DROP TABLE IF EXISTS `tc_checkin_record`;
+CREATE TABLE `tc_checkin_record` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) unsigned NOT NULL DEFAULT '0',
+  `date` date NOT NULL COMMENT '签到日期',
+  `consecutive_days` int(11) NOT NULL DEFAULT '1' COMMENT '连续签到天数',
+  `points` int(11) NOT NULL DEFAULT '0' COMMENT '获得积分',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_date` (`user_id`, `date`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='签到记录表';
+
 SET FOREIGN_KEY_CHECKS = 1;

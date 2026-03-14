@@ -1,5 +1,9 @@
 import request from './request'
 
+// 统计数据
+export const getStats = () => request.get('/stats')
+export const getHomeStats = () => request.get('/stats/home')
+
 // 用户认证
 export const login = (data) => request.post('/auth/login', data)
 export const getUserInfo = () => request.get('/auth/userinfo')
@@ -15,6 +19,8 @@ export const interpretTarot = (data) => request.post('/tarot/interpret', data)
 // 每日运势
 export const getDailyFortune = () => request.get('/daily/fortune')
 export const getTodayLuck = () => request.get('/daily/luck')
+export const dailyCheckin = () => request.post('/daily/checkin')
+export const getCheckinStatus = () => request.get('/daily/checkin-status')
 
 // 积分系统
 export const getPointsBalance = () => request.get('/points/balance')

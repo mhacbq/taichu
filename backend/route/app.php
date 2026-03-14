@@ -18,8 +18,15 @@ Route::group('api', function () {
             'data' => [
                 'status' => 'ok',
                 'time' => date('Y-m-d H:i:s'),
+                'version' => '1.0.0',
             ],
         ]);
+    });
+    
+    // 统计数据（公开）
+    Route::group('stats', function () {
+        Route::get('', 'Stats/index');
+        Route::get('home', 'Stats/home');
     });
     
     // 认证相关
@@ -45,6 +52,8 @@ Route::group('api', function () {
     Route::group('daily', function () {
         Route::get('fortune', 'Daily/fortune');
         Route::get('luck', 'Daily/luck');
+        Route::post('checkin', 'Daily/checkin');
+        Route::get('checkin-status', 'Daily/checkinStatus');
     });
     
     // 积分系统
@@ -61,7 +70,10 @@ Route::group('api', function () {
         Route::get('my-list', 'Feedback/myList');
     });
     
-})->middleware([\app\middleware\Cors::class]);
+})->middleware([
+    \app\middleware\Cors::class,
+    \app\middleware\RateLimit::class,
+]);
 
 // 404处理
 Route::miss(function() {

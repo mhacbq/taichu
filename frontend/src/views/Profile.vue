@@ -3,6 +3,9 @@
     <div class="container">
       <h1 class="section-title">个人中心</h1>
       
+      <!-- 签到卡片 -->
+      <CheckinCard />
+
       <div class="profile-grid">
         <!-- 用户信息卡片 -->
         <div class="user-info card">
@@ -99,6 +102,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, submitFeedback } from '../api'
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
+import CheckinCard from '../components/CheckinCard.vue'
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
