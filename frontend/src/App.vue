@@ -74,6 +74,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getPointsBalance } from './api'
 
 const router = useRouter()
 const route = useRoute()
@@ -93,10 +94,28 @@ const checkLoginStatus = () => {
     const user = JSON.parse(userInfo)
     userNickname.value = user.nickname || '用户'
     userPoints.value = user.points || 0
+    // 刷新积分
+    refreshPoints()
   } else {
     isLoggedIn.value = false
     userNickname.value = ''
     userPoints.value = 0
+  }
+}
+
+// 刷新积分
+const refreshPoints = async () => {
+  try {
+    const response = await getPointsBalance()
+    if (response.code === 0) {
+      userPoints.value = response.data.balance
+      // 更新本地存储
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      userInfo.points = response.data.balance
+      localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    }
+  } catch (error) {
+    console.error('刷新积分失败:', error)
   }
 }
 

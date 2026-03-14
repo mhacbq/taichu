@@ -1,7 +1,10 @@
 <template>
   <div class="profile-page">
     <div class="container">
-      <h1 class="section-title">个人中心</h1>
+      <div class="page-header">
+        <BackButton />
+        <h1 class="section-title">个人中心</h1>
+      </div>
       
       <!-- 签到卡片 -->
       <CheckinCard />
@@ -69,6 +72,36 @@
             </div>
           </div>
           <el-empty v-else description="暂无排盘记录" />
+          <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
+            <el-pagination
+              v-model:current-page="baziCurrentPage"
+              v-model:page-size="baziPageSize"
+              :total="baziTotal"
+              layout="prev, pager, next"
+              @current-change="loadBaziHistory"
+            />
+          </div>
+        </div>
+
+        <!-- 塔罗历史 -->
+        <div class="history-section card">
+          <h3>塔罗占卜历史</h3>
+          <div class="history-list" v-if="tarotHistory.length > 0">
+            <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
+              <div class="history-info">
+                <span class="history-date">{{ formatTime(record.date) }}</span>
+                <span class="history-question" :title="record.question">{{ record.question }}</span>
+              </div>
+              <div class="tarot-cards">
+                <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
+                  {{ card.emoji }}<small v-if="card.reversed">逆</small>
+                </span>
+                <span v-if="record.cards.length > 3" class="more-cards">+{{ record.cards.length - 3 }}</span>
+              </div>
+              <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看</el-button>
+            </div>
+          </div>
+          <el-empty v-else description="暂无占卜记录" />
         </div>
 
         <!-- 反馈建议 -->
@@ -103,6 +136,7 @@ import { ElMessage } from 'element-plus'
 import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, submitFeedback } from '../api'
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
+import BackButton from '../components/BackButton.vue'
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
@@ -110,9 +144,15 @@ const baziCount = ref(0)
 const tarotCount = ref(0)
 const pointsHistory = ref([])
 const baziHistory = ref([])
+const tarotHistory = ref([])
 const feedbackContent = ref('')
 const feedbackContact = ref('')
 const feedbackLoading = ref(false)
+
+// 分页相关
+const baziCurrentPage = ref(1)
+const baziPageSize = ref(5)
+const baziTotal = ref(0)
 
 const loadUserData = async () => {
   try {
@@ -120,7 +160,6 @@ const loadUserData = async () => {
       getUserInfo(),
       getPointsBalance(),
       getPointsHistory(),
-      getBaziHistory(),
     ])
     
     if (userRes.code === 0) {
@@ -137,14 +176,38 @@ const loadUserData = async () => {
       pointsHistory.value = historyRes.data || []
     }
     
-    // Load bazi history
-    const baziRes = await getBaziHistory()
-    if (baziRes.code === 0) {
-      baziHistory.value = baziRes.data || []
-    }
+    // 加载排盘历史
+    await loadBaziHistory()
+    
+    // 加载本地保存的塔罗历史
+    loadTarotHistory()
   } catch (error) {
     console.error('加载用户数据失败:', error)
   }
+}
+
+// 加载排盘历史（支持分页）
+const loadBaziHistory = async () => {
+  try {
+    const baziRes = await getBaziHistory(baziPageSize.value)
+    if (baziRes.code === 0) {
+      const allData = baziRes.data || []
+      baziTotal.value = allData.length
+      
+      // 前端分页
+      const start = (baziCurrentPage.value - 1) * baziPageSize.value
+      const end = start + baziPageSize.value
+      baziHistory.value = allData.slice(start, end)
+    }
+  } catch (error) {
+    console.error('加载排盘历史失败:', error)
+  }
+}
+
+// 加载本地塔罗历史
+const loadTarotHistory = () => {
+  const saved = JSON.parse(localStorage.getItem('tarot_saved') || '[]')
+  tarotHistory.value = saved.slice(0, 10) // 显示最近10条
 }
 
 const submitFeedbackForm = async () => {
@@ -177,8 +240,16 @@ const submitFeedbackForm = async () => {
 }
 
 const viewDetail = (record) => {
-  // TODO: 查看排盘详情
-  ElMessage.info('功能开发中...')
+  // 显示排盘详情弹窗
+  ElMessage.info('八字详情：' + record.yearGan + record.yearZhi + ' ' + 
+    record.monthGan + record.monthZhi + ' ' + 
+    record.dayGan + record.dayZhi + ' ' + 
+    record.hourGan + record.hourZhi)
+}
+
+const viewTarotDetail = (record) => {
+  const cardNames = record.cards.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
+  ElMessage.info(`塔罗牌：${cardNames}`)
 }
 
 onMounted(() => {
@@ -189,6 +260,17 @@ onMounted(() => {
 <style scoped>
 .profile-page {
   padding: 60px 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.page-header .section-title {
+  margin: 0;
 }
 
 .profile-grid {
@@ -392,6 +474,71 @@ onMounted(() => {
   margin-top: 5px;
 }
 
+/* 塔罗历史样式 */
+.tarot-item {
+  align-items: center;
+}
+
+.history-question {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 5px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarot-cards {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.tarot-mini {
+  font-size: 20px;
+  position: relative;
+}
+
+.tarot-mini small {
+  font-size: 8px;
+  color: #e94560;
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+}
+
+.more-cards {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 5px;
+}
+
+/* 分页样式 */
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.el-pagination) {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-hover-color: #e94560;
+  --el-pagination-button-color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next),
+:deep(.el-pagination .number) {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+:deep(.el-pagination .number.active) {
+  background: #e94560;
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   .profile-grid {
     grid-template-columns: 1fr;
@@ -401,6 +548,10 @@ onMounted(() => {
   .history-section,
   .feedback-section {
     grid-column: 1;
+  }
+  
+  .history-question {
+    max-width: 120px;
   }
 }
 </style>

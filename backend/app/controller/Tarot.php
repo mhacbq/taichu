@@ -14,30 +14,30 @@ class Tarot extends BaseController
     
     protected $middleware = [\app\middleware\Auth::class];
     
-    // 塔罗牌数组
+    // 塔罗牌数组（包含图片/emoji和颜色）
     protected $tarotCards = [
-        ['name' => '愚者', 'meaning' => '新的开始，冒险，纯真'],
-        ['name' => '魔术师', 'meaning' => '创造力，技巧，意志力'],
-        ['name' => '女祭司', 'meaning' => '直觉，神秘，潜意识'],
-        ['name' => '皇后', 'meaning' => '丰饶，母性，自然'],
-        ['name' => '皇帝', 'meaning' => '权威，结构，父亲'],
-        ['name' => '教皇', 'meaning' => '传统，精神指导，信仰'],
-        ['name' => '恋人', 'meaning' => '爱情，选择，和谐'],
-        ['name' => '战车', 'meaning' => '意志力，胜利，控制'],
-        ['name' => '力量', 'meaning' => '勇气，耐心，内在力量'],
-        ['name' => '隐者', 'meaning' => '内省，孤独，指引'],
-        ['name' => '命运之轮', 'meaning' => '命运，周期，转折点'],
-        ['name' => '正义', 'meaning' => '公正，真理，因果'],
-        ['name' => '倒吊人', 'meaning' => '牺牲，等待，新视角'],
-        ['name' => '死神', 'meaning' => '结束，转变，新生'],
-        ['name' => '节制', 'meaning' => '平衡，调和，耐心'],
-        ['name' => '恶魔', 'meaning' => '束缚，物质主义，诱惑'],
-        ['name' => '塔', 'meaning' => '突然变化，觉醒，破坏'],
-        ['name' => '星星', 'meaning' => '希望，灵感，宁静'],
-        ['name' => '月亮', 'meaning' => '幻觉，恐惧，潜意识'],
-        ['name' => '太阳', 'meaning' => '快乐，成功，活力'],
-        ['name' => '审判', 'meaning' => '重生，觉醒，宽恕'],
-        ['name' => '世界', 'meaning' => '完成，成就，旅行'],
+        ['name' => '愚者', 'meaning' => '新的开始，冒险，纯真', 'emoji' => '🃏', 'color' => '#ff9f43', 'element' => '风'],
+        ['name' => '魔术师', 'meaning' => '创造力，技巧，意志力', 'emoji' => '🎩', 'color' => '#ff6b6b', 'element' => '风'],
+        ['name' => '女祭司', 'meaning' => '直觉，神秘，潜意识', 'emoji' => '🌙', 'color' => '#4834d4', 'element' => '水'],
+        ['name' => '皇后', 'meaning' => '丰饶，母性，自然', 'emoji' => '👑', 'color' => '#6ab04c', 'element' => '土'],
+        ['name' => '皇帝', 'meaning' => '权威，结构，父亲', 'emoji' => '⚡', 'color' => '#eb4d4b', 'element' => '火'],
+        ['name' => '教皇', 'meaning' => '传统，精神指导，信仰', 'emoji' => '🔑', 'color' => '#f9ca24', 'element' => '土'],
+        ['name' => '恋人', 'meaning' => '爱情，选择，和谐', 'emoji' => '💕', 'color' => '#ff7979', 'element' => '风'],
+        ['name' => '战车', 'meaning' => '意志力，胜利，控制', 'emoji' => '🏆', 'color' => '#22a6b3', 'element' => '水'],
+        ['name' => '力量', 'meaning' => '勇气，耐心，内在力量', 'emoji' => '🦁', 'color' => '#f0932b', 'element' => '火'],
+        ['name' => '隐者', 'meaning' => '内省，孤独，指引', 'emoji' => '🕯️', 'color' => '#535c68', 'element' => '土'],
+        ['name' => '命运之轮', 'meaning' => '命运，周期，转折点', 'emoji' => '☸️', 'color' => '#be2edd', 'element' => '火'],
+        ['name' => '正义', 'meaning' => '公正，真理，因果', 'emoji' => '⚖️', 'color' => '#30336b', 'element' => '风'],
+        ['name' => '倒吊人', 'meaning' => '牺牲，等待，新视角', 'emoji' => '🙃', 'color' => '#16a085', 'element' => '水'],
+        ['name' => '死神', 'meaning' => '结束，转变，新生', 'emoji' => '💀', 'color' => '#2f3542', 'element' => '水'],
+        ['name' => '节制', 'meaning' => '平衡，调和，耐心', 'emoji' => '🏺', 'color' => '#7bed9f', 'element' => '火'],
+        ['name' => '恶魔', 'meaning' => '束缚，物质主义，诱惑', 'emoji' => '👿', 'color' => '#8B0000', 'element' => '土'],
+        ['name' => '塔', 'meaning' => '突然变化，觉醒，破坏', 'emoji' => '🗼', 'color' => '#e74c3c', 'element' => '火'],
+        ['name' => '星星', 'meaning' => '希望，灵感，宁静', 'emoji' => '⭐', 'color' => '#74b9ff', 'element' => '风'],
+        ['name' => '月亮', 'meaning' => '幻觉，恐惧，潜意识', 'emoji' => '🌕', 'color' => '#dfe6e9', 'element' => '水'],
+        ['name' => '太阳', 'meaning' => '快乐，成功，活力', 'emoji' => '☀️', 'color' => '#f1c40f', 'element' => '火'],
+        ['name' => '审判', 'meaning' => '重生，觉醒，宽恕', 'emoji' => '📯', 'color' => '#9b59b6', 'element' => '火'],
+        ['name' => '世界', 'meaning' => '完成，成就，旅行', 'emoji' => '🌍', 'color' => '#3498db', 'element' => '土'],
     ];
     
     /**
@@ -140,6 +140,9 @@ class Tarot extends BaseController
             $cards[] = [
                 'name' => $card['name'],
                 'meaning' => $card['meaning'],
+                'emoji' => $card['emoji'],
+                'color' => $card['color'],
+                'element' => $card['element'],
                 'reversed' => mt_rand(0, 1) === 1, // 随机正逆位
             ];
         }

@@ -4,6 +4,21 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="container">
+        <!-- 用户积分卡片 -->
+        <div v-if="isLoggedIn" class="user-points-card">
+          <div class="points-display">
+            <span class="points-icon">💎</span>
+            <div class="points-info">
+              <span class="points-label">我的积分</span>
+              <span class="points-value">{{ userPoints }}</span>
+            </div>
+          </div>
+          <div class="points-actions">
+            <router-link to="/profile" class="points-btn checkin">签到领积分</router-link>
+            <router-link to="/bazi" class="points-btn">去排盘</router-link>
+          </div>
+        </div>
+        
         <div class="hero-content">
           <h1 class="hero-title">探索命运的奥秘</h1>
           <p class="hero-subtitle">AI智能命理分析，为您提供专业的八字、塔罗、运势解读</p>
@@ -71,13 +86,16 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
-import { getHomeStats } from '../api'
+import { getHomeStats, getPointsBalance } from '../api'
 
 const stats = ref([
   { number: '加载中...', label: '服务用户' },
   { number: '加载中...', label: '分析次数' },
   { number: '98%', label: '好评率' },
 ])
+
+const isLoggedIn = ref(false)
+const userPoints = ref(0)
 
 const loadStats = async () => {
   try {
@@ -90,16 +108,107 @@ const loadStats = async () => {
   }
 }
 
+const loadUserPoints = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    isLoggedIn.value = false
+    return
+  }
+  
+  isLoggedIn.value = true
+  try {
+    const response = await getPointsBalance()
+    if (response.code === 0) {
+      userPoints.value = response.data.balance
+    }
+  } catch (error) {
+    console.error('加载积分失败:', error)
+  }
+}
+
 onMounted(() => {
   loadStats()
+  loadUserPoints()
 })
 </script>
 
 <style scoped>
 .hero {
-  padding: 120px 0 100px;
+  padding: 80px 0 100px;
   text-align: center;
   background: radial-gradient(ellipse at center, rgba(233, 69, 96, 0.15) 0%, transparent 70%);
+}
+
+/* 用户积分卡片 */
+.user-points-card {
+  max-width: 400px;
+  margin: 0 auto 40px;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 20px;
+  padding: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(10px);
+}
+
+.points-display {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.points-icon {
+  font-size: 36px;
+}
+
+.points-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.points-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.points-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.points-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.points-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.points-btn.checkin {
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
+}
+
+.points-btn:not(.checkin) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.points-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .hero-title {

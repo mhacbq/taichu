@@ -1,7 +1,10 @@
 <template>
   <div class="daily-page">
     <div class="container">
-      <h1 class="section-title">每日运势</h1>
+      <div class="page-header">
+        <BackButton />
+        <h1 class="section-title">每日运势</h1>
+      </div>
 
       <!-- 签到卡片 -->
       <CheckinCard />
@@ -92,6 +95,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
+import BackButton from '../components/BackButton.vue'
 
 const solarDate = ref('')
 const lunarDate = ref('')
@@ -128,6 +132,17 @@ onMounted(() => {
 <style scoped>
 .daily-page {
   padding: 60px 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.page-header .section-title {
+  margin: 0;
 }
 
 .date-display {

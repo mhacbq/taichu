@@ -1,7 +1,10 @@
 <template>
   <div class="tarot-page">
     <div class="container">
-      <h1 class="section-title">塔罗占卜</h1>
+      <div class="page-header">
+        <BackButton />
+        <h1 class="section-title">塔罗占卜</h1>
+      </div>
 
       <!-- 积分提示 -->
       <div class="points-hint card">
@@ -60,12 +63,13 @@
             class="tarot-card"
             :class="{ reversed: card.reversed }"
           >
-            <div class="card-inner">
-              <div class="card-front">
-                <div class="card-number">{{ index + 1 }}</div>
-                <div class="card-name">{{ card.name }}</div>
-                <div class="card-position">{{ getPositionName(index) }}</div>
-              </div>
+            <div class="card-inner" :style="getCardStyle(card)">
+              <div class="card-number">{{ index + 1 }}</div>
+              <div class="card-emoji">{{ card.emoji }}</div>
+              <div class="card-name">{{ card.name }}</div>
+              <div class="card-position">{{ getPositionName(index) }}</div>
+              <div class="card-element" :class="card.element">{{ card.element }}</div>
+              <div v-if="card.reversed" class="reversed-badge">逆位</div>
             </div>
           </div>
         </div>
@@ -73,6 +77,19 @@
         <div class="interpretation">
           <h3>牌面解读</h3>
           <div class="interpretation-content" v-html="interpretation"></div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="result-actions">
+          <el-button type="primary" @click="saveTarotResult">
+            <span class="btn-icon">💾</span> 保存记录
+          </el-button>
+          <el-button @click="shareTarotResult">
+            <span class="btn-icon">📤</span> 分享
+          </el-button>
+          <el-button @click="resetTarot">
+            <span class="btn-icon">🔄</span> 重新占卜
+          </el-button>
         </div>
       </div>
     </div>
@@ -83,6 +100,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance } from '../api'
+import BackButton from '../components/BackButton.vue'
 
 const spreads = [
   { id: 'single', name: '单张牌', icon: '🎴', description: '简单直接，适合快速解答' },
@@ -183,11 +201,74 @@ const drawCards = async () => {
 onMounted(() => {
   loadPoints()
 })
+
+// 获取卡片样式
+const getCardStyle = (card) => {
+  return {
+    background: `linear-gradient(135deg, ${card.color}40 0%, ${card.color}20 100%)`,
+    borderColor: card.color
+  }
+}
+
+// 保存塔罗结果
+const saveTarotResult = () => {
+  const savedResults = JSON.parse(localStorage.getItem('tarot_saved') || '[]')
+  savedResults.unshift({
+    date: new Date().toISOString(),
+    question: question.value,
+    cards: cards.value,
+    interpretation: interpretation.value,
+    spread: selectedSpread.value
+  })
+  if (savedResults.length > 50) {
+    savedResults.pop()
+  }
+  localStorage.setItem('tarot_saved', JSON.stringify(savedResults))
+  ElMessage.success('保存成功，可在个人中心查看')
+}
+
+// 分享塔罗结果
+const shareTarotResult = () => {
+  const cardNames = cards.value.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
+  const shareText = `我在太初命理进行了塔罗占卜\n` +
+    `问题：${question.value}\n` +
+    `抽到的牌：${cardNames}\n` +
+    `快来体验吧！`
+  
+  if (navigator.share) {
+    navigator.share({
+      title: '我的塔罗占卜结果',
+      text: shareText
+    })
+  } else {
+    navigator.clipboard.writeText(shareText).then(() => {
+      ElMessage.success('分享内容已复制到剪贴板')
+    })
+  }
+}
+
+// 重置占卜
+const resetTarot = () => {
+  cards.value = []
+  interpretation.value = ''
+  question.value = ''
+}
 </script>
 
 <style scoped>
 .tarot-page {
   padding: 60px 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.page-header .section-title {
+  margin: 0;
 }
 
 .points-hint {
@@ -360,6 +441,80 @@ onMounted(() => {
   white-space: pre-line;
 }
 
+/* 塔罗牌样式 */
+.card-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 15px;
+  border: 2px solid rgba(233, 69, 96, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tarot-card:hover .card-inner {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.tarot-card.reversed .card-inner {
+  transform: rotate(180deg);
+}
+
+.tarot-card.reversed:hover .card-inner {
+  transform: rotate(180deg) translateY(-5px);
+}
+
+.card-emoji {
+  font-size: 48px;
+  margin: 10px 0;
+}
+
+.card-element {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-top: 8px;
+}
+
+.card-element.火 { background: rgba(255, 69, 0, 0.3); color: #ff6347; }
+.card-element.水 { background: rgba(30, 144, 255, 0.3); color: #87ceeb; }
+.card-element.木 { background: rgba(34, 139, 34, 0.3); color: #90ee90; }
+.card-element.金 { background: rgba(255, 215, 0, 0.3); color: #ffd700; }
+.card-element.土 { background: rgba(139, 69, 19, 0.3); color: #deb887; }
+.card-element.风 { background: rgba(147, 112, 219, 0.3); color: #dda0dd; }
+
+.reversed-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(233, 69, 96, 0.8);
+  color: #fff;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+/* 操作按钮 */
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+
+.result-actions .btn-icon {
+  margin-right: 5px;
+}
+
 @media (max-width: 768px) {
   .spread-options {
     grid-template-columns: 1fr;
@@ -371,7 +526,15 @@ onMounted(() => {
   
   .tarot-card {
     width: 120px;
-    height: 200px;
+    height: 220px;
+  }
+  
+  .card-emoji {
+    font-size: 36px;
+  }
+  
+  .card-name {
+    font-size: 14px;
   }
 }
 </style>
