@@ -5,6 +5,7 @@ import Tarot from '../views/Tarot.vue'
 import Daily from '../views/Daily.vue'
 import Profile from '../views/Profile.vue'
 import Login from '../views/Login.vue'
+import Help from '../views/Help.vue'
 import NotFound from '../views/NotFound.vue'
 
 const routes = [
@@ -43,6 +44,12 @@ const routes = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/help',
+    name: 'Help',
+    component: Help,
+    meta: { public: true }
   },
   {
     path: '/:pathMatch(.*)*',

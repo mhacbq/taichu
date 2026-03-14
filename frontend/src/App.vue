@@ -14,6 +14,7 @@
           <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
           <router-link to="/daily" class="nav-link">每日运势</router-link>
           <router-link to="/profile" class="nav-link">个人中心</router-link>
+          <router-link to="/help" class="nav-link">帮助</router-link>
         </div>
 
         <!-- 用户操作区 -->
@@ -49,6 +50,7 @@
         <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">塔罗占卜</router-link>
         <router-link to="/daily" class="mobile-nav-link" @click="showMobileMenu = false">每日运势</router-link>
         <router-link to="/profile" class="mobile-nav-link" @click="showMobileMenu = false">个人中心</router-link>
+        <router-link to="/help" class="mobile-nav-link" @click="showMobileMenu = false">帮助中心</router-link>
         <div class="mobile-nav-divider"></div>
         <template v-if="isLoggedIn">
           <div class="mobile-user-info">
@@ -64,7 +66,14 @@
     </main>
     <footer class="footer">
       <div class="container">
-        <p>&copy; 2025 太初命理 - AI智能命理分析平台</p>
+        <div class="footer-content">
+          <div class="footer-links">
+            <router-link to="/help">帮助中心</router-link>
+            <router-link to="/profile">个人中心</router-link>
+            <a href="#" @click.prevent="showFeedback">意见反馈</a>
+          </div>
+          <p>&copy; 2025 太初命理 - AI智能命理分析平台</p>
+        </div>
       </div>
     </footer>
   </div>
@@ -136,6 +145,11 @@ const handleLogout = () => {
   ElMessage.success('已退出登录')
   router.push('/')
   showMobileMenu.value = false
+}
+
+// 显示反馈
+const showFeedback = () => {
+  router.push('/profile')
 }
 
 // 监听路由变化，检查登录状态
@@ -339,9 +353,34 @@ onMounted(() => {
 
 .footer {
   background: rgba(0, 0, 0, 0.3);
-  padding: 20px 0;
-  text-align: center;
+  padding: 30px 0;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-content {
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 15px;
+}
+
+.footer-links a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #e94560;
+}
+
+.footer p {
+  font-size: 13px;
 }
 
 /* 响应式 */
