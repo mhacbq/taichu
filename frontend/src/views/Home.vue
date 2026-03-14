@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <GuideModal />
     <!-- Hero Section -->
     <section class="hero">
       <div class="container">
@@ -74,6 +75,10 @@
     </section>
   </div>
 </template>
+
+<script setup>
+import GuideModal from '../components/GuideModal.vue'
+</script>
 
 <style scoped>
 .hero {

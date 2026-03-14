@@ -37,7 +37,7 @@
             <div v-for="record in pointsHistory" :key="record.id" class="points-item">
               <div class="points-info">
                 <span class="points-action">{{ record.action }}</span>
-                <span class="points-time">{{ record.createdAt }}</span>
+                <span class="points-time" :title="formatDate(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
               </div>
               <span class="points-change" :class="{ positive: record.points > 0, negative: record.points < 0 }">
                 {{ record.points > 0 ? '+' : '' }}{{ record.points }}
@@ -53,8 +53,8 @@
           <div class="history-list" v-if="baziHistory.length > 0">
             <div v-for="record in baziHistory" :key="record.id" class="history-item">
               <div class="history-info">
-                <span class="history-date">{{ record.birthDate }}</span>
-                <span class="history-gender">{{ record.gender === 'male' ? '男' : '女' }}</span>
+                <span class="history-date" :title="formatDateTime(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
+                <span class="history-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
               </div>
               <div class="history-bazi">
                 <span class="bazi-pillar">{{ record.yearGan }}{{ record.yearZhi }}</span>
@@ -71,15 +71,23 @@
         <!-- 反馈建议 -->
         <div class="feedback-section card">
           <h3>反馈建议</h3>
-          <el-input
-            v-model="feedbackContent"
-            type="textarea"
-            :rows="4"
-            placeholder="请输入您的意见或建议，帮助我们改进服务..."
-          />
-          <el-button type="primary" @click="submitFeedbackForm" :loading="feedbackLoading">
-            提交反馈
-          </el-button>
+          <div class="feedback-form">
+            <el-input
+              v-model="feedbackContent"
+              type="textarea"
+              :rows="4"
+              placeholder="请输入您的意见或建议，帮助我们改进服务..."
+              class="feedback-input"
+            />
+            <el-input
+              v-model="feedbackContact"
+              placeholder="请输入您的手机号或邮箱（方便我们回复您）"
+              class="contact-input"
+            />
+            <el-button type="primary" @click="submitFeedbackForm" :loading="feedbackLoading">
+              提交反馈
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -90,6 +98,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, submitFeedback } from '../api'
+import { formatTime, formatDate, formatDateTime } from '../utils/format'
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
@@ -98,6 +107,7 @@ const tarotCount = ref(0)
 const pointsHistory = ref([])
 const baziHistory = ref([])
 const feedbackContent = ref('')
+const feedbackContact = ref('')
 const feedbackLoading = ref(false)
 
 const loadUserData = async () => {
@@ -144,11 +154,13 @@ const submitFeedbackForm = async () => {
     const response = await submitFeedback({
       content: feedbackContent.value,
       type: 'suggestion',
+      contact: feedbackContact.value,
     })
     
     if (response.code === 0) {
       ElMessage.success('反馈提交成功，感谢您的建议！')
       feedbackContent.value = ''
+      feedbackContact.value = ''
     } else {
       ElMessage.error(response.message || '提交失败')
     }
@@ -353,6 +365,27 @@ onMounted(() => {
 
 .feedback-section .el-button {
   margin-top: 15px;
+}
+
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.feedback-input,
+.contact-input {
+  width: 100%;
+}
+
+.contact-input {
+  margin-top: 5px;
+}
+
+.history-birth {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 5px;
 }
 
 @media (max-width: 768px) {
