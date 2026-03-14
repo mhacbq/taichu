@@ -1,0 +1,28 @@
+{
+  "name": "taichu/backend",
+  "description": "太初命理 - PHP ThinkPHP 8 Backend",
+  "type": "project",
+  "require": {
+    "php": ">=8.0",
+    "topthink/framework": "^8.0",
+    "topthink/think-orm": "^3.0",
+    "firebase/php-jwt": "^6.10",
+    "topthink/think-filesystem": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "app\\": "app"
+    }
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "@php think service:discover",
+      "@php think vendor:publish"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "topthink/think-installer": true
+    }
+  }
+}
