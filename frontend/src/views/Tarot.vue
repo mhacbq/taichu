@@ -56,12 +56,14 @@
 
       <div v-if="cards.length > 0" class="cards-result card">
         <h3>您的牌阵</h3>
+        <p class="cards-hint">💡 点击任意牌查看详细解读</p>
         <div class="cards-display">
           <div 
             v-for="(card, index) in cards" 
             :key="index"
             class="tarot-card"
             :class="{ reversed: card.reversed }"
+            @click="showCardDetail(card, index)"
           >
             <div class="card-inner" :style="getCardStyle(card)">
               <div class="card-number">{{ index + 1 }}</div>
@@ -92,6 +94,37 @@
           </el-button>
         </div>
       </div>
+
+      <!-- 单张牌详情弹窗 -->
+      <el-dialog
+        v-model="cardDetailVisible"
+        :title="selectedCard?.name + ' - ' + (selectedCard?.reversed ? '逆位' : '正位')"
+        width="500px"
+        class="card-detail-dialog"
+      >
+        <div v-if="selectedCard" class="card-detail">
+          <div class="detail-header" :style="getCardStyle(selectedCard)">
+            <span class="detail-emoji">{{ selectedCard.emoji }}</span>
+            <span class="detail-element" :class="selectedCard.element">{{ selectedCard.element }}</span>
+          </div>
+          <div class="detail-content">
+            <h4>牌面含义</h4>
+            <p class="detail-meaning">{{ selectedCard.meaning }}</p>
+            
+            <h4>详细解读</h4>
+            <div class="detail-interpretation">
+              <div class="interp-section">
+                <h5>{{ selectedCard.reversed ? '逆位' : '正位' }}含义</h5>
+                <p>{{ getCardDetailedMeaning(selectedCard) }}</p>
+              </div>
+              <div class="interp-section">
+                <h5>关键启示</h5>
+                <p>{{ getCardAdvice(selectedCard) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -114,6 +147,123 @@ const loading = ref(false)
 const cards = ref([])
 const interpretation = ref('')
 const currentPoints = ref(0)
+const cardDetailVisible = ref(false)
+const selectedCard = ref(null)
+const selectedCardIndex = ref(0)
+
+// 塔罗牌详细解读数据
+const cardDetailedMeanings = {
+  '愚者': {
+    upright: '新的开始，充满潜力和可能性，勇敢地迈出第一步',
+    reversed: '缺乏计划，过于冲动，需要更多思考和准备',
+    advice: '相信自己的直觉，但也要脚踏实地'
+  },
+  '魔术师': {
+    upright: '创造力爆发，拥有实现目标的资源和能力',
+    reversed: '技能未充分发挥，可能存在欺骗或操纵',
+    advice: '运用你的才能，相信自己有实现梦想的能力'
+  },
+  '女祭司': {
+    upright: '倾听内心的声音，直觉会给你正确的指引',
+    reversed: '忽视直觉，过于依赖理性分析',
+    advice: '静心冥想，答案就在你心中'
+  },
+  '皇后': {
+    upright: '丰饶与滋养，享受生活中的美好事物',
+    reversed: '过度放纵，缺乏安全感',
+    advice: '关爱自己，同时也关爱身边的人'
+  },
+  '皇帝': {
+    upright: '建立秩序和结构，展现领导力',
+    reversed: '专横跋扈，过度控制',
+    advice: '建立稳定的框架，但不要过于僵化'
+  },
+  '教皇': {
+    upright: '遵循传统智慧，寻求精神指导',
+    reversed: '打破传统，走自己的路',
+    advice: '尊重传统，但也要有自己的判断'
+  },
+  '恋人': {
+    upright: '和谐的关系，重要的选择，爱情的到来',
+    reversed: '关系失衡，选择困难',
+    advice: '跟随内心，做出真诚的选择'
+  },
+  '战车': {
+    upright: '意志坚定，克服困难，取得胜利',
+    reversed: '方向不明，力量分散',
+    advice: '保持专注，控制好自己的情绪'
+  },
+  '力量': {
+    upright: '内在的力量，以柔克刚，耐心与勇气',
+    reversed: '失去信心，被恐惧支配',
+    advice: '相信自己的力量，温柔而坚定地面对挑战'
+  },
+  '隐者': {
+    upright: ' introspection, seeking inner wisdom, solitude',
+    reversed: 'isolation, loneliness, rejecting guidance',
+    advice: 'Take time to reflect and find your inner light'
+  },
+  '命运之轮': {
+    upright: '命运的转折，周期的变化，把握机会',
+    reversed: '抗拒变化，错失良机',
+    advice: '顺应变化，把握命运的转机'
+  },
+  '正义': {
+    upright: '公正公平，因果报应，理性决策',
+    reversed: '不公正，逃避责任',
+    advice: '做出公正的决定，承担相应的责任'
+  },
+  '倒吊人': {
+    upright: '牺牲与等待，新的视角，耐心',
+    reversed: '抗拒改变，无谓的牺牲',
+    advice: '换个角度看问题，有时等待是最好的选择'
+  },
+  '死神': {
+    upright: '结束与转变，新的开始，放下过去',
+    reversed: '抗拒结束，停滞不前',
+    advice: '接受变化，结束是为了更好的开始'
+  },
+  '节制': {
+    upright: '平衡与调和，耐心，中庸之道',
+    reversed: '极端，失衡，过度',
+    advice: '保持平衡，避免走极端'
+  },
+  '恶魔': {
+    upright: '物质诱惑，束缚，上瘾',
+    reversed: '挣脱束缚，重获自由',
+    advice: '认识到束缚你的东西，勇敢挣脱'
+  },
+  '塔': {
+    upright: '突然的变化，觉醒，打破旧有模式',
+    reversed: '避免改变，内在的崩溃',
+    advice: '接受必要的改变，从中学习成长'
+  },
+  '星星': {
+    upright: '希望与灵感，宁静，信心的恢复',
+    reversed: '失去信心，绝望',
+    advice: '保持希望，相信美好的未来'
+  },
+  '月亮': {
+    upright: '幻觉与恐惧，潜意识，直觉',
+    reversed: '真相大白，恐惧消散',
+    advice: '面对内心的恐惧，寻找真相'
+  },
+  '太阳': {
+    upright: '快乐与成功，活力，积极能量',
+    reversed: '暂时的阴霾，失去信心',
+    advice: '保持乐观，阳光总在风雨后'
+  },
+  '审判': {
+    upright: '重生与觉醒，宽恕，新的开始',
+    reversed: '自我怀疑，逃避审判',
+    advice: '接受自己的过去，勇敢地开始新篇章'
+  },
+  '世界': {
+    upright: '完成与成就，圆满，旅行的结束',
+    reversed: '未完成，延迟，缺乏closure',
+    advice: '庆祝你的成就，准备开始新的旅程'
+  }
+}
 
 // 获取当前积分
 const loadPoints = async () => {
@@ -252,6 +402,27 @@ const resetTarot = () => {
   cards.value = []
   interpretation.value = ''
   question.value = ''
+}
+
+// 显示卡片详情
+const showCardDetail = (card, index) => {
+  selectedCard.value = card
+  selectedCardIndex.value = index
+  cardDetailVisible.value = true
+}
+
+// 获取卡片详细含义
+const getCardDetailedMeaning = (card) => {
+  const meaning = cardDetailedMeanings[card.name]
+  if (!meaning) return card.meaning
+  return card.reversed ? meaning.reversed : meaning.upright
+}
+
+// 获取卡片建议
+const getCardAdvice = (card) => {
+  const meaning = cardDetailedMeanings[card.name]
+  if (!meaning) return '相信直觉，找到属于你的答案'
+  return meaning.advice
 }
 </script>
 
@@ -513,6 +684,93 @@ const resetTarot = () => {
 
 .result-actions .btn-icon {
   margin-right: 5px;
+}
+
+.cards-hint {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.tarot-card {
+  cursor: pointer;
+}
+
+/* 卡片详情弹窗 */
+.card-detail-dialog :deep(.el-dialog__header) {
+  text-align: center;
+}
+
+.card-detail-dialog :deep(.el-dialog__title) {
+  color: #fff;
+  font-size: 20px;
+}
+
+.card-detail {
+  text-align: center;
+}
+
+.detail-header {
+  padding: 30px;
+  border-radius: 15px;
+  margin-bottom: 25px;
+  position: relative;
+}
+
+.detail-emoji {
+  font-size: 80px;
+}
+
+.detail-element {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.detail-content {
+  text-align: left;
+}
+
+.detail-content h4 {
+  color: #e94560;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.detail-meaning {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.detail-interpretation {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.interp-section {
+  margin-bottom: 20px;
+}
+
+.interp-section:last-child {
+  margin-bottom: 0;
+}
+
+.interp-section h5 {
+  color: #ffd700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.interp-section p {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.7;
 }
 
 @media (max-width: 768px) {

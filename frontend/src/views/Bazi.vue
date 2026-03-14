@@ -35,8 +35,22 @@
         </div>
         
         <div class="form-group">
-          <label>出生地点（用于真太阳时计算）</label>
-          <el-input v-model="location" placeholder="如：北京市" />
+          <label>
+            出生地点
+            <el-tooltip content="真太阳时是根据出生地的经度计算的真实太阳时间，确保八字排盘更准确" placement="top">
+              <span class="help-icon">❓</span>
+            </el-tooltip>
+          </label>
+          <el-select-v2
+            v-model="location"
+            :options="cityOptions"
+            placeholder="请选择出生城市"
+            class="full-width"
+            filterable
+            clearable
+            :height="200"
+          />
+          <p class="form-hint">💡 选择出生地点可计算真太阳时，使排盘更准确</p>
         </div>
         
         <el-button 
@@ -229,6 +243,22 @@ const currentPoints = ref(0)
 const confirmVisible = ref(false)
 const saving = ref(false)
 
+// 中国城市数据
+const cities = [
+  '北京市', '上海市', '广州市', '深圳市', '杭州市', '南京市', '武汉市', '成都市', '西安市',
+  '重庆市', '天津市', '苏州市', '长沙市', '郑州市', '沈阳市', '青岛市', '宁波市', '东莞市',
+  '佛山市', '合肥市', '大连市', '厦门市', '福州市', '哈尔滨市', '济南市', '温州市', '长春市',
+  '石家庄市', '常州市', '泉州市', '南宁市', '贵阳市', '南昌市', '昆明市', '乌鲁木齐市',
+  '兰州市', '呼和浩特市', '海口市', '银川市', '西宁市', '拉萨市', '台北市', '香港', '澳门'
+]
+
+const cityOptions = computed(() => {
+  return cities.map(city => ({
+    value: city,
+    label: city
+  }))
+})
+
 // 获取当前积分
 const loadPoints = async () => {
   try {
@@ -406,6 +436,18 @@ const shareResult = () => {
   margin-bottom: 10px;
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
+}
+
+.help-icon {
+  margin-left: 5px;
+  cursor: help;
+  opacity: 0.7;
+}
+
+.form-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  margin-top: 8px;
 }
 
 .full-width {

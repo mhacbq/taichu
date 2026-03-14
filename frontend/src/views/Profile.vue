@@ -104,6 +104,55 @@
           <el-empty v-else description="暂无占卜记录" />
         </div>
 
+        <!-- 积分获取攻略 -->
+        <div class="points-guide-section card">
+          <h3>💎 积分获取攻略</h3>
+          <div class="points-methods">
+            <div class="method-item" v-for="method in pointsMethods" :key="method.id">
+              <div class="method-icon">{{ method.icon }}</div>
+              <div class="method-info">
+                <h4>{{ method.name }}</h4>
+                <p>{{ method.desc }}</p>
+              </div>
+              <div class="method-reward">+{{ method.points }}</div>
+              <el-button 
+                v-if="method.action" 
+                type="primary" 
+                size="small"
+                @click="handleMethodAction(method)"
+              >
+                {{ method.actionText }}
+              </el-button>
+              <span v-else class="completed-badge">✓</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 邀请好友 -->
+        <div class="invite-section card">
+          <h3>🎁 邀请好友赚积分</h3>
+          <div class="invite-content">
+            <p class="invite-desc">每邀请一位好友注册，您和好友各获得 <strong>20积分</strong></p>
+            <div class="invite-code">
+              <span class="code-label">您的邀请码：</span>
+              <span class="code-value">{{ inviteCode }}</span>
+              <el-button type="primary" size="small" @click="copyInviteCode">
+                复制
+              </el-button>
+            </div>
+            <div class="invite-stats">
+              <div class="stat">
+                <span class="stat-value">{{ inviteCount }}</span>
+                <span class="stat-label">已邀请</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">{{ invitePoints }}</span>
+                <span class="stat-label">获得积分</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 反馈建议 -->
         <div class="feedback-section card">
           <h3>反馈建议</h3>
@@ -153,6 +202,20 @@ const feedbackLoading = ref(false)
 const baziCurrentPage = ref(1)
 const baziPageSize = ref(5)
 const baziTotal = ref(0)
+
+// 积分获取方式
+const pointsMethods = ref([
+  { id: 1, icon: '📅', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
+  { id: 2, icon: '🎁', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
+  { id: 3, icon: '👥', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
+  { id: 4, icon: '📤', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
+  { id: 5, icon: '💬', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
+])
+
+// 邀请相关
+const inviteCode = ref('')
+const inviteCount = ref(0)
+const invitePoints = ref(0)
 
 const loadUserData = async () => {
   try {
@@ -252,8 +315,39 @@ const viewTarotDetail = (record) => {
   ElMessage.info(`塔罗牌：${cardNames}`)
 }
 
+// 处理积分获取方式点击
+const handleMethodAction = (method) => {
+  switch (method.action) {
+    case 'checkin':
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      break
+    case 'invite':
+      document.querySelector('.invite-section')?.scrollIntoView({ behavior: 'smooth' })
+      break
+    case 'feedback':
+      document.querySelector('.feedback-section')?.scrollIntoView({ behavior: 'smooth' })
+      break
+  }
+}
+
+// 复制邀请码
+const copyInviteCode = () => {
+  navigator.clipboard.writeText(inviteCode.value).then(() => {
+    ElMessage.success('邀请码已复制到剪贴板')
+  })
+}
+
+// 生成邀请码
+const generateInviteCode = () => {
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  if (userInfo.id) {
+    inviteCode.value = 'TC' + userInfo.id.toString().slice(-6).toUpperCase()
+  }
+}
+
 onMounted(() => {
   loadUserData()
+  generateInviteCode()
 })
 </script>
 
@@ -537,6 +631,131 @@ onMounted(() => {
 :deep(.el-pagination .number.active) {
   background: #e94560;
   color: #fff;
+}
+
+/* 积分获取攻略 */
+.points-guide-section h3 {
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.points-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.method-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.method-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.method-icon {
+  font-size: 28px;
+  width: 50px;
+  height: 50px;
+  background: rgba(233, 69, 96, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.method-info {
+  flex: 1;
+}
+
+.method-info h4 {
+  color: #fff;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.method-info p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+.method-reward {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.completed-badge {
+  color: #67C23A;
+  font-size: 18px;
+}
+
+/* 邀请好友 */
+.invite-section h3 {
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.invite-content {
+  text-align: center;
+}
+
+.invite-desc {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 25px;
+}
+
+.invite-code {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(233, 69, 96, 0.5);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.code-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.code-value {
+  color: #e94560;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.invite-stats {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+}
+
+.invite-stats .stat {
+  text-align: center;
+}
+
+.invite-stats .stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: bold;
+  color: #e94560;
+}
+
+.invite-stats .stat-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 @media (max-width: 768px) {
