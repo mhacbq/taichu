@@ -4,6 +4,7 @@ declare (strict_types = 1);
 namespace app\controller;
 
 use app\BaseController;
+use app\model\AiPrompt;
 use think\Request;
 use think\facade\Config;
 
@@ -22,13 +23,25 @@ class AiAnalysis extends BaseController
     }
 
     /**
+     * 获取提示词
+     */
+    private function getPrompt(string $type, string $promptKey = null): ?AiPrompt
+    {
+        if ($promptKey) {
+            return AiPrompt::getByKey($promptKey);
+        }
+        return AiPrompt::getDefault($type);
+    }
+
+    /**
      * AI八字解盘
      * 将八字数据发送到AI API进行分析
      */
     public function analyzeBazi(Request $request)
     {
         $baziData = $request->param('bazi');
-        $prompt = $request->param('prompt', '');
+        $promptKey = $request->param('prompt_key', '');
+        $customPrompt = $request->param('prompt', '');
         
         if (empty($baziData)) {
             return json(['code' => 400, 'message' => '八字数据不能为空']);
@@ -41,11 +54,26 @@ class AiAnalysis extends BaseController
             return json(['code' => 500, 'message' => 'AI解盘服务未配置']);
         }
 
-        // 构建八字信息的系统提示
-        $systemPrompt = $this->buildBaziSystemPrompt($baziData);
+        // 获取提示词配置
+        $prompt = $this->getPrompt('bazi', $promptKey);
         
-        // 如果用户提供了自定义提示，则使用自定义提示
-        $userPrompt = $prompt ?: '请为我详细解读这个八字命盘';
+        if (!$prompt) {
+            // 使用默认构建的提示词
+            $systemPrompt = $this->buildBaziSystemPrompt($baziData);
+            $userPrompt = $customPrompt ?: '请为我详细解读这个八字命盘';
+        } else {
+            // 使用配置的提示词
+            $systemPrompt = $prompt->system_prompt;
+            $variables = $this->buildBaziVariables($baziData);
+            $userPrompt = $prompt->renderUserPrompt($variables);
+            
+            if ($customPrompt) {
+                $userPrompt .= "\n\n用户额外问题：" . $customPrompt;
+            }
+            
+            // 增加使用次数
+            $prompt->incrementUsage();
+        }
 
         try {
             // 调用AI API
@@ -56,7 +84,8 @@ class AiAnalysis extends BaseController
                 'message' => 'success',
                 'data' => [
                     'analysis' => $response,
-                    'model' => $config['model'] ?? 'DeepSeek-V3.2'
+                    'model' => $config['model'] ?? 'DeepSeek-V3.2',
+                    'prompt_used' => $prompt ? $prompt->name : 'default'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -74,7 +103,8 @@ class AiAnalysis extends BaseController
     public function analyzeBaziStream(Request $request)
     {
         $baziData = $request->param('bazi');
-        $prompt = $request->param('prompt', '');
+        $promptKey = $request->param('prompt_key', '');
+        $customPrompt = $request->param('prompt', '');
         
         if (empty($baziData)) {
             return json(['code' => 400, 'message' => '八字数据不能为空']);
@@ -86,8 +116,23 @@ class AiAnalysis extends BaseController
             return json(['code' => 500, 'message' => 'AI解盘服务未配置']);
         }
 
-        $systemPrompt = $this->buildBaziSystemPrompt($baziData);
-        $userPrompt = $prompt ?: '请为我详细解读这个八字命盘';
+        // 获取提示词配置
+        $prompt = $this->getPrompt('bazi', $promptKey);
+        
+        if (!$prompt) {
+            $systemPrompt = $this->buildBaziSystemPrompt($baziData);
+            $userPrompt = $customPrompt ?: '请为我详细解读这个八字命盘';
+        } else {
+            $systemPrompt = $prompt->system_prompt;
+            $variables = $this->buildBaziVariables($baziData);
+            $userPrompt = $prompt->renderUserPrompt($variables);
+            
+            if ($customPrompt) {
+                $userPrompt .= "\n\n用户额外问题：" . $customPrompt;
+            }
+            
+            $prompt->incrementUsage();
+        }
 
         // 设置SSE响应头
         header('Content-Type: text/event-stream');
@@ -105,7 +150,38 @@ class AiAnalysis extends BaseController
     }
 
     /**
-     * 构建八字系统提示
+     * 构建八字变量
+     */
+    private function buildBaziVariables(array $baziData): array
+    {
+        return [
+            'year_gan' => $baziData['year']['gan'] ?? '',
+            'year_zhi' => $baziData['year']['zhi'] ?? '',
+            'year_nayin' => $baziData['year']['nayin'] ?? '',
+            'year_shishen' => $baziData['year']['shishen'] ?? '',
+            'month_gan' => $baziData['month']['gan'] ?? '',
+            'month_zhi' => $baziData['month']['zhi'] ?? '',
+            'month_nayin' => $baziData['month']['nayin'] ?? '',
+            'month_shishen' => $baziData['month']['shishen'] ?? '',
+            'day_gan' => $baziData['day']['gan'] ?? '',
+            'day_zhi' => $baziData['day']['zhi'] ?? '',
+            'day_nayin' => $baziData['day']['nayin'] ?? '',
+            'day_master' => $baziData['day_master'] ?? '',
+            'day_master_wuxing' => $baziData['day_master_wuxing'] ?? '',
+            'hour_gan' => $baziData['hour']['gan'] ?? '',
+            'hour_zhi' => $baziData['hour']['zhi'] ?? '',
+            'hour_nayin' => $baziData['hour']['nayin'] ?? '',
+            'hour_shishen' => $baziData['hour']['shishen'] ?? '',
+            'wuxing_jin' => $baziData['wuxing_stats']['金'] ?? 0,
+            'wuxing_mu' => $baziData['wuxing_stats']['木'] ?? 0,
+            'wuxing_shui' => $baziData['wuxing_stats']['水'] ?? 0,
+            'wuxing_huo' => $baziData['wuxing_stats']['火'] ?? 0,
+            'wuxing_tu' => $baziData['wuxing_stats']['土'] ?? 0,
+        ];
+    }
+
+    /**
+     * 构建八字系统提示（默认提示词）
      */
     private function buildBaziSystemPrompt(array $baziData): string
     {
