@@ -685,8 +685,9 @@ class Paipan extends BaseController
     
     /**
      * 计算八字
+     * 公开方法，可供其他控制器调用
      */
-    protected function calculateBazi(string $birthDate): array
+    public function calculateBazi(string $birthDate): array
     {
         $timestamp = strtotime($birthDate);
         $year = (int)date('Y', $timestamp);

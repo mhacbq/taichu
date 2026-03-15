@@ -19,6 +19,7 @@ class CacheService
     const TAG_AI = 'ai_analysis';      // AI分析
     const TAG_DAILY = 'daily';         // 每日运势
     const TAG_USER = 'user';           // 用户相关
+    const TAG_HEHUN = 'hehun';         // 八字合婚
     
     /**
      * 默认过期时间（秒）
@@ -207,5 +208,18 @@ class CacheService
         $dayunString = $dayun['gan'] . $dayun['zhi'] . $dayun['start_age'];
         $hash = md5($dayunString . $dayMaster);
         return 'dayun:analysis:' . $hash;
+    }
+    
+    /**
+     * 生成八字合婚缓存键
+     * 
+     * @param string $maleBirthDate 男方出生日期
+     * @param string $femaleBirthDate 女方出生日期
+     * @return string
+     */
+    public static function hehunKey(string $maleBirthDate, string $femaleBirthDate): string
+    {
+        $hash = md5($maleBirthDate . $femaleBirthDate);
+        return 'hehun:calc:' . $hash;
     }
 }
