@@ -20,7 +20,8 @@ class Vip extends BaseController
      */
     public function info(): Json
     {
-        $userId = $this->request->userId;
+        $user = $this->request->user;
+        $userId = $user['sub'];
         
         // 检查VIP功能是否开启
         if (!ConfigService::isFeatureEnabled('vip')) {
@@ -104,7 +105,8 @@ class Vip extends BaseController
      */
     public function subscribe(): Json
     {
-        $userId = $this->request->userId;
+        $user = $this->request->user;
+        $userId = $user['sub'];
         $vipType = $this->request->post('type', '');
         $payMethod = $this->request->post('pay_method', 'wechat');
         
@@ -148,7 +150,8 @@ class Vip extends BaseController
      */
     public function orders(): Json
     {
-        $userId = $this->request->userId;
+        $user = $this->request->user;
+        $userId = $user['sub'];
         $page = (int) $this->request->get('page', 1);
         $limit = (int) $this->request->get('limit', 10);
         

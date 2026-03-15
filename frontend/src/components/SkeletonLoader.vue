@@ -1,158 +1,142 @@
 <template>
-  <div class="skeleton-loader" :class="{ 'skeleton-pulse': animate }">
+  <!-- 骨架屏组件 -->
+  <div class="skeleton-loader" :class="{ animate: animate }">
     <!-- 卡片骨架 -->
     <template v-if="type === 'card'">
       <div class="skeleton-card">
         <div class="skeleton-header">
-          <div class="skeleton-avatar" :style="{ width: avatarSize, height: avatarSize }"></div>
+          <div class="skeleton-avatar" v-if="avatar"></div>
           <div class="skeleton-lines">
             <div class="skeleton-line" :style="{ width: titleWidth }"></div>
-            <div class="skeleton-line" style="width: 60%"></div>
+            <div class="skeleton-line short"></div>
           </div>
         </div>
-        <div class="skeleton-body">
-          <div class="skeleton-line" v-for="i in lines" :key="i" :style="{ width: `${Math.random() * 40 + 60}%` }"></div>
+        <div class="skeleton-content">
+          <div class="skeleton-line" v-for="i in lines" :key="i"></div>
         </div>
       </div>
     </template>
-
+    
     <!-- 列表骨架 -->
     <template v-else-if="type === 'list'">
       <div class="skeleton-list">
-        <div class="skeleton-list-item" v-for="i in rows" :key="i">
-          <div class="skeleton-circle" v-if="showIcon"></div>
-          <div class="skeleton-content">
-            <div class="skeleton-line" :style="{ width: `${Math.random() * 30 + 50}%` }"></div>
-            <div class="skeleton-line short" style="width: 30%"></div>
+        <div class="skeleton-item" v-for="i in rows" :key="i">
+          <div class="skeleton-avatar" v-if="avatar"></div>
+          <div class="skeleton-lines">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
           </div>
         </div>
       </div>
     </template>
-
-    <!-- 统计骨架 -->
-    <template v-else-if="type === 'stats'">
-      <div class="skeleton-stats">
-        <div class="skeleton-stat-item" v-for="i in 3" :key="i">
-          <div class="skeleton-circle large"></div>
-          <div class="skeleton-line" style="width: 60%"></div>
-        </div>
-      </div>
-    </template>
-
+    
     <!-- 文本骨架 -->
     <template v-else-if="type === 'text'">
       <div class="skeleton-text">
-        <div class="skeleton-line" v-for="i in lines" :key="i" :style="{ width: i === lines ? `${Math.random() * 40 + 40}%` : '100%' }"></div>
+        <div class="skeleton-line" v-for="i in lines" :key="i" :style="{ width: i === lines ? `${lastLineWidth}%` : '100%' }"></div>
       </div>
     </template>
-
+    
     <!-- 图片骨架 -->
     <template v-else-if="type === 'image'">
-      <div class="skeleton-image" :style="{ width, height }">
-        <div class="skeleton-image-icon">🖼️</div>
-      </div>
+      <div class="skeleton-image" :style="{ width, height, borderRadius }"></div>
+    </template>
+    
+    <!-- 自定义骨架 -->
+    <template v-else>
+      <slot></slot>
     </template>
   </div>
 </template>
 
 <script setup>
 defineProps({
+  // 骨架类型: card, list, text, image, custom
   type: {
     type: String,
-    default: 'card',
-    validator: (value) => ['card', 'list', 'stats', 'text', 'image'].includes(value)
+    default: 'card'
   },
+  // 是否显示动画
+  animate: {
+    type: Boolean,
+    default: true
+  },
+  // 是否显示头像
+  avatar: {
+    type: Boolean,
+    default: false
+  },
+  // 文本行数
   lines: {
     type: Number,
     default: 3
   },
+  // 列表行数
   rows: {
     type: Number,
     default: 5
   },
-  avatarSize: {
-    type: String,
-    default: '50px'
-  },
+  // 标题宽度
   titleWidth: {
     type: String,
-    default: '70%'
+    default: '60%'
   },
+  // 最后一行宽度
+  lastLineWidth: {
+    type: Number,
+    default: 80
+  },
+  // 图片宽度
   width: {
     type: String,
     default: '100%'
   },
+  // 图片高度
   height: {
     type: String,
     default: '200px'
   },
-  showIcon: {
-    type: Boolean,
-    default: true
-  },
-  animate: {
-    type: Boolean,
-    default: true
+  // 圆角
+  borderRadius: {
+    type: String,
+    default: '8px'
   }
 })
 </script>
 
 <style scoped>
 .skeleton-loader {
-  --skeleton-bg: rgba(255, 255, 255, 0.1);
-  --skeleton-shine: rgba(255, 255, 255, 0.2);
+  width: 100%;
 }
 
-.skeleton-pulse .skeleton-line,
-.skeleton-pulse .skeleton-circle,
-.skeleton-pulse .skeleton-avatar,
-.skeleton-pulse .skeleton-image {
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* 通用元素 */
+/* 通用骨架元素样式 */
 .skeleton-line {
-  height: 12px;
-  background: var(--skeleton-bg);
-  border-radius: 6px;
-  margin-bottom: 10px;
-}
-
-.skeleton-line:last-child {
-  margin-bottom: 0;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 12px;
 }
 
 .skeleton-line.short {
   width: 40%;
 }
 
-.skeleton-circle {
-  width: 40px;
-  height: 40px;
-  background: var(--skeleton-bg);
-  border-radius: 50%;
-  flex-shrink: 0;
+.skeleton-line:last-child {
+  margin-bottom: 0;
 }
 
-.skeleton-circle.large {
-  width: 60px;
-  height: 60px;
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* 卡片骨架 */
 .skeleton-card {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
+  border-radius: 12px;
   padding: 20px;
 }
 
@@ -163,18 +147,16 @@ defineProps({
   margin-bottom: 20px;
 }
 
-.skeleton-avatar {
-  background: var(--skeleton-bg);
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.skeleton-lines {
+.skeleton-header .skeleton-lines {
   flex: 1;
 }
 
-.skeleton-body .skeleton-line {
-  margin-bottom: 12px;
+.skeleton-header .skeleton-line {
+  margin-bottom: 8px;
+}
+
+.skeleton-header .skeleton-line:last-child {
+  width: 40%;
 }
 
 /* 列表骨架 */
@@ -184,97 +166,60 @@ defineProps({
   gap: 15px;
 }
 
-.skeleton-list-item {
+.skeleton-item {
   display: flex;
   align-items: center;
   gap: 15px;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
 }
 
-.skeleton-content {
+.skeleton-item .skeleton-lines {
   flex: 1;
-}
-
-.skeleton-content .skeleton-line {
-  margin-bottom: 8px;
-}
-
-/* 统计骨架 */
-.skeleton-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.skeleton-stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-}
-
-/* 文本骨架 */
-.skeleton-text {
-  padding: 10px 0;
-}
-
-.skeleton-text .skeleton-line {
-  margin-bottom: 15px;
-  height: 14px;
 }
 
 /* 图片骨架 */
 .skeleton-image {
-  background: var(--skeleton-bg);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 150px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.skeleton-image-icon {
-  font-size: 40px;
-  opacity: 0.3;
-}
-
-/* 加载动画效果 */
-@keyframes skeleton-shine {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.skeleton-line,
-.skeleton-circle,
-.skeleton-avatar,
-.skeleton-image {
+/* 闪烁动画 */
+.skeleton-loader.animate .skeleton-line,
+.skeleton-loader.animate .skeleton-avatar,
+.skeleton-loader.animate .skeleton-image {
   background: linear-gradient(
     90deg,
-    var(--skeleton-bg) 25%,
-    var(--skeleton-shine) 50%,
-    var(--skeleton-bg) 75%
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
   );
   background-size: 200% 100%;
-  animation: skeleton-shine 1.5s ease-in-out infinite;
+  animation: shimmer 1.5s infinite;
 }
 
-@media (max-width: 768px) {
-  .skeleton-stats {
-    grid-template-columns: 1fr;
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
   }
-  
-  .skeleton-header {
-    flex-direction: column;
-    text-align: center;
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 脉冲动画 */
+.skeleton-loader.animate.pulse .skeleton-line,
+.skeleton-loader.animate.pulse .skeleton-avatar,
+.skeleton-loader.animate.pulse .skeleton-image {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
   }
 }
 </style>

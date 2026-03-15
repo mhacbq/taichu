@@ -101,24 +101,36 @@ class PointsProduct extends Model
     }
     
     /**
-     * 减少库存
+     * 减少库存（原子操作）
      */
     public static function decreaseStock(int $productId, int $quantity = 1): bool
     {
-        $product = self::find($productId);
+        // 使用数据库原生操作确保原子性
+        $result = Db::name('tc_points_product')
+            ->where('id', $productId)
+            ->where('stock', '>=', $quantity)
+            ->where('status', self::STATUS_ONLINE)
+            ->dec('stock', $quantity)
+            ->inc('sold_count', $quantity)
+            ->update();
         
-        if (!$product || $product['stock'] < $quantity) {
+        // 如果影响行数为0，说明库存不足或商品已下架
+        if ($result === 0) {
             return false;
         }
         
-        $product->stock -= $quantity;
-        $product->sold_count += $quantity;
+        // 检查是否售罄，如果是则更新状态
+        $currentStock = Db::name('tc_points_product')
+            ->where('id', $productId)
+            ->value('stock');
         
-        if ($product['stock'] <= 0) {
-            $product->status = self::STATUS_SOLDOUT;
+        if ($currentStock !== null && $currentStock <= 0) {
+            Db::name('tc_points_product')
+                ->where('id', $productId)
+                ->update(['status' => self::STATUS_SOLDOUT]);
         }
         
-        return $product->save();
+        return true;
     }
     
     /**

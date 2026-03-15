@@ -67,7 +67,7 @@ class User extends Model
     }
     
     /**
-     * 扣除积分（使用乐观锁防止并发问题）
+     * 扣除积分（使用数据库行锁防止并发问题）
      */
     public function deductPoints(int $points): bool
     {
@@ -75,22 +75,47 @@ class User extends Model
             return false;
         }
         
-        // 使用数据库原生操作确保原子性
-        $result = Db::name('tc_user')
-            ->where('id', $this->id)
-            ->where('points', '>=', $points)
-            ->dec('points', $points)
-            ->update();
-        
-        // 如果更新失败（影响行数为0），说明积分不足或并发冲突
-        if ($result === 0) {
-            return false;
+        // 使用事务和行锁确保并发安全
+        Db::startTrans();
+        try {
+            // 使用FOR UPDATE锁定行，防止并发问题
+            $userData = Db::name('tc_user')
+                ->where('id', $this->id)
+                ->lock(true)
+                ->find();
+            
+            if (!$userData) {
+                Db::rollback();
+                return false;
+            }
+            
+            // 检查积分是否足够
+            if ($userData['points'] < $points) {
+                Db::rollback();
+                return false;
+            }
+            
+            // 执行扣除
+            $result = Db::name('tc_user')
+                ->where('id', $this->id)
+                ->dec('points', $points)
+                ->update();
+            
+            if ($result === 0) {
+                Db::rollback();
+                return false;
+            }
+            
+            Db::commit();
+            
+            // 刷新模型中的积分数据
+            $this->refresh();
+            
+            return true;
+        } catch (\Exception $e) {
+            Db::rollback();
+            throw $e;
         }
-        
-        // 刷新模型中的积分数据
-        $this->refresh();
-        
-        return true;
     }
     
     /**

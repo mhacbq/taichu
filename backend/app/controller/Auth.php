@@ -35,11 +35,23 @@ class Auth extends BaseController
         
         if (!$user) {
             $isNewUser = true;
+            
+            // 过滤昵称，防止XSS攻击
+            $nickname = $data['nickname'] ?? '';
+            $nickname = $this->filterXss($nickname);
+            if (empty($nickname)) {
+                $nickname = '微信用户' . random_int(1000, 9999);
+            }
+            
+            // 过滤头像URL
+            $avatar = $data['avatar'] ?? '';
+            $avatar = $this->filterUrl($avatar);
+            
             $user = User::create([
                 'openid' => $openid,
-                'nickname' => $data['nickname'] ?? '微信用户' . mt_rand(1000, 9999),
-                'avatar' => $data['avatar'] ?? '',
-                'gender' => $data['gender'] ?? 0,
+                'nickname' => $nickname,
+                'avatar' => $avatar,
+                'gender' => in_array($data['gender'] ?? 0, [0, 1, 2]) ? $data['gender'] : 0,
             ]);
             
             // 新用户赠送积分
@@ -164,13 +176,24 @@ class Auth extends BaseController
         
         Db::startTrans();
         try {
+            // 过滤昵称，防止XSS攻击
+            $nickname = $data['nickname'] ?? '';
+            $nickname = $this->filterXss($nickname);
+            if (empty($nickname)) {
+                $nickname = '用户' . substr($phone, -4);
+            }
+            
+            // 过滤头像URL
+            $avatar = $data['avatar'] ?? '';
+            $avatar = $this->filterUrl($avatar);
+            
             // 创建用户
             $user = User::create([
                 'phone' => $phone,
                 'password' => password_hash($password, PASSWORD_DEFAULT),
-                'nickname' => $data['nickname'] ?? '用户' . substr($phone, -4),
-                'avatar' => $data['avatar'] ?? '',
-                'gender' => $data['gender'] ?? 0,
+                'nickname' => $nickname,
+                'avatar' => $avatar,
+                'gender' => in_array($data['gender'] ?? 0, [0, 1, 2]) ? $data['gender'] : 0,
             ]);
             
             // 新用户赠送积分
@@ -189,6 +212,37 @@ class Auth extends BaseController
             Db::rollback();
             return $this->error('注册失败：' . $e->getMessage());
         }
+    }
+    
+    /**
+     * 过滤XSS内容
+     */
+    protected function filterXss(string $text): string
+    {
+        // 移除HTML标签
+        $text = strip_tags($text);
+        // 转义特殊字符
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        // 限制长度
+        return substr($text, 0, 50);
+    }
+    
+    /**
+     * 过滤URL
+     */
+    protected function filterUrl(string $url): string
+    {
+        if (empty($url)) {
+            return '';
+        }
+        
+        // 只允许http和https协议
+        $parsed = parse_url($url);
+        if (!isset($parsed['scheme']) || !in_array($parsed['scheme'], ['http', 'https'])) {
+            return '';
+        }
+        
+        return $url;
     }
     
     /**
@@ -228,11 +282,27 @@ class Auth extends BaseController
      */
     protected function processInviteCode(int $newUserId, string $inviteCode)
     {
+        // 邀请码尝试次数限制 - 防止暴力枚举
+        $ip = $this->request->ip();
+        $attemptKey = 'invite_code_attempt:' . md5($ip);
+        $attempts = Cache::get($attemptKey, 0);
+        
+        if ($attempts >= 10) {
+            // 记录但不阻止，只是标记为可疑
+            trace("邀请码尝试次数过多: IP={$ip}, UserId={$newUserId}", 'warning');
+        }
+        
+        // 更新尝试次数
+        Cache::set($attemptKey, $attempts + 1, 3600);
+        
         $inviterId = InviteRecord::getInviterByCode($inviteCode);
         
         if (!$inviterId || $inviterId === $newUserId) {
             return;
         }
+        
+        // 验证成功，清除尝试记录
+        Cache::delete($attemptKey);
         
         // 检查是否已经被邀请过
         $exists = InviteRecord::where('invitee_id', $newUserId)->find();
@@ -334,7 +404,24 @@ class Auth extends BaseController
         
         foreach ($allowFields as $field) {
             if (isset($data[$field])) {
-                $updateData[$field] = $data[$field];
+                $value = $data[$field];
+                
+                // 对昵称进行XSS过滤
+                if ($field === 'nickname') {
+                    $value = $this->filterXss($value);
+                }
+                
+                // 对头像URL进行过滤
+                if ($field === 'avatar') {
+                    $value = $this->filterUrl($value);
+                }
+                
+                // 验证性别范围
+                if ($field === 'gender') {
+                    $value = in_array($value, [0, 1, 2]) ? $value : 0;
+                }
+                
+                $updateData[$field] = $value;
             }
         }
         

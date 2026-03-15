@@ -120,10 +120,53 @@ class PointsShop extends BaseController
         // 开始事务
         Db::startTrans();
         try {
-            // 扣除积分
-            $userModel->deductPoints($pointsCost);
+            // 1. 先锁定商品行并检查库存（使用FOR UPDATE防止并发问题）
+            $productLocked = Db::name('tc_points_product')
+                ->where('id', $productId)
+                ->where('status', PointsProduct::STATUS_ONLINE)
+                ->lock(true)
+                ->find();
             
-            // 记录积分变动
+            if (!$productLocked) {
+                Db::rollback();
+                return $this->error('商品不存在或已下架');
+            }
+            
+            if ($productLocked['stock'] < 1) {
+                Db::rollback();
+                return $this->error('商品已售罄');
+            }
+            
+            // 2. 扣除积分（使用行锁保护）
+            $deductResult = Db::name('tc_user')
+                ->where('id', $userId)
+                ->where('points', '>=', $pointsCost)
+                ->dec('points', $pointsCost)
+                ->update();
+            
+            if ($deductResult === 0) {
+                Db::rollback();
+                return $this->error('积分不足，无法兑换', 403, [
+                    'need_points' => $pointsCost,
+                    'current_points' => $userModel->points,
+                    'shortage' => $pointsCost - $userModel->points,
+                ]);
+            }
+            
+            // 3. 减少库存（原子操作）
+            $stockResult = Db::name('tc_points_product')
+                ->where('id', $productId)
+                ->where('stock', '>=', 1)
+                ->dec('stock', 1)
+                ->inc('sold_count', 1)
+                ->update();
+            
+            if ($stockResult === 0) {
+                Db::rollback();
+                return $this->error('商品库存不足');
+            }
+            
+            // 4. 记录积分变动
             \app\model\PointsRecord::record(
                 $userId,
                 '积分商城兑换',
@@ -133,10 +176,7 @@ class PointsShop extends BaseController
                 "兑换商品：{$product['name']}"
             );
             
-            // 减少库存
-            PointsProduct::decreaseStock($productId);
-            
-            // 创建兑换记录
+            // 5. 创建兑换记录
             $exchange = PointsExchange::createExchange(
                 $userId,
                 $productId,
@@ -144,7 +184,7 @@ class PointsShop extends BaseController
                 $pointsCost
             );
             
-            // 处理兑换（根据不同商品类型）
+            // 6. 处理兑换（根据不同商品类型）
             $processResult = $exchange->processExchange();
             
             if ($processResult['success']) {
@@ -158,6 +198,9 @@ class PointsShop extends BaseController
                     ]);
                     $exchange->save();
                 }
+                
+                // 更新用户模型中的积分
+                $userModel->refresh();
                 
                 Db::commit();
                 
@@ -179,7 +222,9 @@ class PointsShop extends BaseController
             
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('兑换失败：' . $e->getMessage());
+            // 记录详细错误日志，但返回通用错误信息
+            trace('积分兑换失败: ' . $e->getMessage(), 'error');
+            return $this->error('兑换失败，请稍后重试');
         }
     }
     

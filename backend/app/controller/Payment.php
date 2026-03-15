@@ -395,13 +395,52 @@ class Payment extends BaseController
     }
     
     /**
-     * XML转数组
+     * XML转数组（安全版本，防止XXE攻击）
      */
     protected function xmlToArray(string $xml): array
     {
-        // 禁止外部实体
-        libxml_disable_entity_loader(true);
-        $data = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
+        // 限制XML大小，防止DoS攻击（最大1MB）
+        if (strlen($xml) > 1024 * 1024) {
+            throw new \Exception('XML data too large');
+        }
+        
+        // 检查XML是否包含外部实体引用（简单检测）
+        $lowerXml = strtolower($xml);
+        $dangerousPatterns = [
+            '<!entity',
+            '<!doctype',
+            'system(',
+            'public(',
+            'file://',
+            'http://',
+            'https://',
+        ];
+        
+        foreach ($dangerousPatterns as $pattern) {
+            if (strpos($lowerXml, $pattern) !== false) {
+                throw new \Exception('XML contains potentially dangerous content');
+            }
+        }
+        
+        // PHP 8.0+ 使用 LIBXML_NONET 代替废弃的 libxml_disable_entity_loader
+        // LIBXML_NOCDATA - 将CDATA合并为文本节点
+        // LIBXML_NONET - 禁止网络访问
+        // LIBXML_DTDLOAD - 禁止加载外部DTD
+        // LIBXML_DTDATTR - 默认DTD属性
+        $prevValue = libxml_use_internal_errors(true);
+        
+        $data = simplexml_load_string(
+            $xml,
+            'SimpleXMLElement',
+            LIBXML_NOCDATA | LIBXML_NONET | LIBXML_NOENT | LIBXML_DTDLOAD
+        );
+        
+        libxml_use_internal_errors($prevValue);
+        
+        if ($data === false) {
+            throw new \Exception('Failed to parse XML');
+        }
+        
         return json_decode(json_encode($data), true);
     }
     

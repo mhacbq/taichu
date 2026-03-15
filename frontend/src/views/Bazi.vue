@@ -869,8 +869,17 @@
               <span class="spinner"></span>
               <span>AI正在深度分析你的八字...</span>
             </div>
+            <div class="ai-loading-timeout" v-if="aiLoadingTime > 0">
+              <span class="timeout-text">预计等待 {{ aiLoadingTime }} 秒</span>
+            </div>
             <div class="ai-stream-content" v-if="aiStreamContent">
               {{ aiStreamContent }}
+            </div>
+            <div class="ai-loading-actions">
+              <el-button type="danger" size="small" @click="cancelAiAnalysis">
+                <el-icon><CircleClose /></el-icon>
+                取消分析
+              </el-button>
             </div>
           </div>
         </div>
@@ -899,9 +908,9 @@ import {
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
   getYearlyFortune, 
-  getYearlyTrend, 
+  getYearlyTrend as getYearlyTrendApi, 
   getDayunAnalysis, 
-  getDayunChart,
+  getDayunChart as getDayunChartApi,
   getFortunePointsCost 
 } from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
@@ -1021,7 +1030,7 @@ const confirmPointsConsume = async () => {
       await getDayunFortuneAnalysis()
       break
     case 'chart':
-      await getDayunChart()
+      await getDayunChartData()
       break
   }
 }
@@ -1053,11 +1062,11 @@ const getYearlyFortuneAnalysis = async () => {
 }
 
 // 获取流年趋势数据（用于K线图）
-const getYearlyTrend = async () => {
+const getYearlyTrendData = async () => {
   if (!result.value?.id) return
   
   try {
-    const response = await getYearlyTrend({
+    const response = await getYearlyTrendApi({
       bazi_id: result.value.id,
       start_year: selectedYear.value - 5,
       end_year: selectedYear.value + 5
@@ -1098,12 +1107,12 @@ const getDayunFortuneAnalysis = async () => {
 }
 
 // 获取大运K线图数据
-const getDayunChart = async () => {
+const getDayunChartData = async () => {
   if (!result.value?.id) return
   
   dayunChartLoading.value = true
   try {
-    const response = await getDayunChart({
+    const response = await getDayunChartApi({
       bazi_id: result.value.id
     })
     
@@ -1277,10 +1286,23 @@ const startAiAnalysis = async () => {
   
   aiAnalyzing.value = true
   aiStreamContent.value = ''
+  aiLoadingTime.value = 60
+  
+  // 创建AbortController用于取消请求
+  aiAbortController.value = new AbortController()
+  
+  // 启动倒计时
+  aiLoadingTimer.value = setInterval(() => {
+    if (aiLoadingTime.value > 0) {
+      aiLoadingTime.value--
+    } else {
+      clearInterval(aiLoadingTimer.value)
+    }
+  }, 1000)
   
   try {
     // 尝试使用流式API
-    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value)
+    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value.signal)
     
     if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
       // 流式响应
@@ -1290,6 +1312,12 @@ const startAiAnalysis = async () => {
       let fullContent = ''
       
       while (true) {
+        // 检查是否被取消
+        if (aiAbortController.value.signal.aborted) {
+          reader.cancel()
+          break
+        }
+        
         const { done, value } = await reader.read()
         if (done) break
         
@@ -1315,13 +1343,15 @@ const startAiAnalysis = async () => {
         }
       }
       
-      aiAnalysisResult.value = {
-        analysis: fullContent,
-        model: 'AI'
+      if (!aiAbortController.value.signal.aborted) {
+        aiAnalysisResult.value = {
+          analysis: fullContent,
+          model: 'AI'
+        }
       }
     } else {
       // 非流式响应
-      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value)
+      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value.signal)
       if (res.code === 0) {
         aiAnalysisResult.value = res.data
         currentPoints.value = res.data.remaining_points || currentPoints.value - 30
@@ -1330,11 +1360,29 @@ const startAiAnalysis = async () => {
       }
     }
   } catch (error) {
-    console.error('AI解盘错误:', error)
-    ElMessage.error('AI解盘服务暂时不可用，请稍后重试')
+    if (error.name === 'AbortError') {
+      ElMessage.info('已取消AI分析')
+    } else {
+      console.error('AI解盘错误:', error)
+      ElMessage.error('AI解盘服务暂时不可用，请稍后重试')
+    }
   } finally {
     aiAnalyzing.value = false
+    clearInterval(aiLoadingTimer.value)
+    aiLoadingTime.value = 0
+    aiAbortController.value = null
   }
+}
+
+// 取消AI分析
+const cancelAiAnalysis = () => {
+  if (aiAbortController.value) {
+    aiAbortController.value.abort()
+  }
+  aiAnalyzing.value = false
+  clearInterval(aiLoadingTimer.value)
+  aiLoadingTime.value = 0
+  ElMessage.info('已取消AI分析')
 }
 
 // 清除AI结果
@@ -3338,6 +3386,22 @@ const formatAiContent = (content) => {
   min-height: 100px;
   max-height: 400px;
   overflow-y: auto;
+}
+
+.ai-loading-timeout {
+  text-align: center;
+  margin: 10px 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ai-loading-timeout .timeout-text {
+  font-size: 14px;
+}
+
+.ai-loading-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
 }
 
 @media (max-width: 768px) {

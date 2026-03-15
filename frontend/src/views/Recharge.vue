@@ -37,6 +37,30 @@
       <!-- 支付信息 -->
       <div class="payment-info card" v-if="selectedAmount">
         <h3>确认支付</h3>
+        
+        <!-- 支付方式选择 -->
+        <div class="payment-methods">
+          <label class="payment-label">选择支付方式</label>
+          <div class="payment-options">
+            <div 
+              class="payment-option"
+              :class="{ active: paymentMethod === 'wechat' }"
+              @click="paymentMethod = 'wechat'"
+            >
+              <el-icon size="24" color="#07c160"><ChatDotRound /></el-icon>
+              <span>微信支付</span>
+            </div>
+            <div 
+              class="payment-option"
+              :class="{ active: paymentMethod === 'alipay' }"
+              @click="paymentMethod = 'alipay'"
+            >
+              <el-icon size="24" color="#1677ff"><Wallet /></el-icon>
+              <span>支付宝</span>
+            </div>
+          </div>
+        </div>
+        
         <div class="info-row">
           <span>充值金额</span>
           <span class="highlight">¥{{ selectedAmount }}</span>
@@ -96,9 +120,20 @@
       <div class="pay-dialog-content">
         <div class="pay-amount">¥{{ selectedAmount }}</div>
         <div class="pay-qrcode" v-if="!isWechatBrowser">
-          <div class="qrcode-placeholder">
+          <!-- 真实二维码图片 -->
+          <div v-if="qrCodeUrl" class="qrcode-image">
+            <img :src="qrCodeUrl" alt="支付二维码" />
+          </div>
+          <!-- 二维码生成中 -->
+          <div v-else-if="generatingQR" class="qrcode-placeholder">
+            <el-icon :size="60" class="is-loading"><Loading /></el-icon>
+            <p>正在生成支付二维码...</p>
+          </div>
+          <!-- 生成失败 -->
+          <div v-else class="qrcode-placeholder">
             <el-icon :size="60"><Picture /></el-icon>
-            <p>请使用微信扫码支付</p>
+            <p>二维码生成失败</p>
+            <el-button type="primary" size="small" @click="generateQRCode">重新生成</el-button>
           </div>
         </div>
         <div class="pay-wechat" v-else>
@@ -120,9 +155,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { InfoFilled, Picture, ChatDotRound } from '@element-plus/icons-vue'
+import { InfoFilled, Picture, ChatDotRound, Loading, Wallet } from '@element-plus/icons-vue'
 import { getPointsBalance } from '../api'
 import { getRechargeOptions, createRechargeOrder, queryRechargeOrder, getRechargeHistory } from '../api/payment'
+import { createAlipayOrder } from '../api/alipay'
 import BackButton from '../components/BackButton.vue'
 import { formatDate } from '../utils/format'
 
@@ -135,6 +171,9 @@ const checkingStatus = ref(false)
 const currentOrderNo = ref('')
 const rechargeHistory = ref([])
 const isWechatBrowser = ref(false)
+const qrCodeUrl = ref('')
+const generatingQR = ref(false)
+const paymentMethod = ref('wechat') // 'wechat' | 'alipay'
 
 // 计算选中的积分数量
 const selectedPoints = computed(() => {
@@ -209,23 +248,52 @@ const handleRecharge = async () => {
 
   creatingOrder.value = true
   try {
-    const res = await createRechargeOrder({
-      amount: selectedAmount.value
-    })
+    if (paymentMethod.value === 'wechat') {
+      // 微信支付
+      const res = await createRechargeOrder({
+        amount: selectedAmount.value
+      })
 
-    if (res.code === 0) {
-      currentOrderNo.value = res.data.order_no
-      
-      // 如果在微信浏览器中，直接调起微信支付
-      if (isWechatBrowser.value && res.data.pay_params) {
-        callWechatPay(res.data.pay_params)
+      if (res.code === 0) {
+        currentOrderNo.value = res.data.order_no
+        
+        // 如果在微信浏览器中，直接调起微信支付
+        if (isWechatBrowser.value && res.data.pay_params) {
+          callWechatPay(res.data.pay_params)
+        } else {
+          // PC端或其他浏览器显示支付弹窗
+          payDialogVisible.value = true
+          // 生成支付二维码
+          generateQRCode()
+          startQueryTimer()
+        }
       } else {
-        // PC端或其他浏览器显示支付弹窗
-        payDialogVisible.value = true
-        startQueryTimer()
+        ElMessage.error(res.message || '创建订单失败')
       }
-    } else {
-      ElMessage.error(res.message || '创建订单失败')
+    } else if (paymentMethod.value === 'alipay') {
+      // 支付宝支付
+      const res = await createAlipayOrder({
+        amount: selectedAmount.value
+      })
+
+      if (res.code === 0) {
+        currentOrderNo.value = res.data.order_no
+        
+        if (res.data.pay_form) {
+          // PC端：插入表单并提交
+          const div = document.createElement('div')
+          div.innerHTML = res.data.pay_form
+          document.body.appendChild(div)
+          // 支付宝表单会自动提交
+        } else if (res.data.pay_url) {
+          // 移动端：跳转支付URL
+          window.location.href = res.data.pay_url
+        }
+        
+        startQueryTimer()
+      } else {
+        ElMessage.error(res.message || '创建订单失败')
+      }
     }
   } catch (error) {
     ElMessage.error('网络错误，请稍后重试')
@@ -233,6 +301,59 @@ const handleRecharge = async () => {
   } finally {
     creatingOrder.value = false
   }
+}
+
+// 生成支付二维码
+const generateQRCode = async () => {
+  generatingQR.value = true
+  qrCodeUrl.value = ''
+  
+  try {
+    // 调用后端API生成微信支付二维码
+    const res = await fetch(`/api/payment/qrcode?order_no=${currentOrderNo.value}&amount=${selectedAmount.value}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    if (res.ok) {
+      const data = await res.json()
+      if (data.code === 0 && data.data.qr_url) {
+        qrCodeUrl.value = data.data.qr_url
+      } else {
+        // 如果后端没有二维码接口，使用二维码生成API
+        const payUrl = encodeURIComponent(`weixin://wxpay/bizpayurl?pr=${currentOrderNo.value}`)
+        qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
+      }
+    } else {
+      // 备用方案：使用在线二维码生成服务
+      const payUrl = encodeURIComponent(`weixin://wxpay/bizpayurl?pr=${currentOrderNo.value}`)
+      qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
+    }
+  } catch (error) {
+    console.error('生成二维码失败:', error)
+    // 使用备用方案
+    const payUrl = encodeURIComponent(`weixin://wxpay/bizpayurl?pr=${currentOrderNo.value}`)
+    qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
+  } finally {
+    generatingQR.value = false
+  }
+}
+
+// 添加支付二维码样式
+.qrcode-image {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.qrcode-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 // 调用微信支付
@@ -342,6 +463,7 @@ const cancelPay = () => {
   stopQueryTimer()
   payDialogVisible.value = false
   currentOrderNo.value = ''
+  qrCodeUrl.value = ''
 }
 
 // 支付弹窗关闭
@@ -510,6 +632,51 @@ const getStatusText = (status) => {
 .info-row .total-amount {
   color: #e94560;
   font-size: 24px;
+}
+
+/* 支付方式选择 */
+.payment-methods {
+  margin-bottom: 20px;
+}
+
+.payment-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.payment-options {
+  display: flex;
+  gap: 15px;
+}
+
+.payment-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.payment-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.payment-option.active {
+  border-color: #e94560;
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.payment-option span {
+  font-size: 14px;
 }
 
 .pay-btn {

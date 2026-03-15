@@ -398,7 +398,9 @@ class Paipan extends BaseController
             return $this->success($result);
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('排盘失败: ' . $e->getMessage());
+            // 记录详细错误到日志，但返回通用错误信息给用户（安全修复）
+            trace('排盘失败: ' . $e->getMessage(), 'error');
+            return $this->error('排盘失败，请稍后重试');
         }
     }
     
