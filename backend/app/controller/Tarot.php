@@ -75,19 +75,47 @@ class Tarot extends BaseController
         // 抽牌
         $cards = $this->drawCards($numCards);
         
-        // 扣除积分
+        // 扣除积分（使用行锁确保原子性）
         Db::startTrans();
         try {
-            $userModel->deductPoints(self::TAROT_POINTS_COST);
+            // 1. 重新查询用户（带行锁），确保获取最新积分并防止并发
+            $userData = Db::name('tc_user')
+                ->where('id', $user['sub'])
+                ->where('status', 1)
+                ->lock(true)
+                ->find();
             
-            PointsRecord::record(
-                $user['sub'],
-                '塔罗占卜消耗',
-                -self::TAROT_POINTS_COST,
-                'tarot',
-                0,
-                "牌阵: {$spread}"
-            );
+            if (!$userData) {
+                Db::rollback();
+                return $this->error('用户不存在', 404);
+            }
+            
+            if ($userData['points'] < self::TAROT_POINTS_COST) {
+                Db::rollback();
+                return $this->error('积分不足，请先充值', 403);
+            }
+            
+            // 2. 扣除积分
+            $updateResult = Db::name('tc_user')
+                ->where('id', $user['sub'])
+                ->dec('points', self::TAROT_POINTS_COST)
+                ->update();
+            
+            if ($updateResult === 0) {
+                Db::rollback();
+                return $this->error('积分扣除失败，请重试');
+            }
+            
+            // 3. 记录积分变动（使用Db保持在同一事务）
+            Db::name('tc_points_record')->insert([
+                'user_id' => $user['sub'],
+                'action' => '塔罗占卜消耗',
+                'points' => -self::TAROT_POINTS_COST,
+                'type' => 'tarot',
+                'related_id' => 0,
+                'remark' => "牌阵: {$spread}",
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
             
             Db::commit();
             
@@ -95,10 +123,14 @@ class Tarot extends BaseController
                 'cards' => $cards,
                 'spread' => $spread,
                 'points_cost' => self::TAROT_POINTS_COST,
-                'remaining_points' => $userModel->points,
+                'remaining_points' => $userData['points'] - self::TAROT_POINTS_COST,
             ]);
         } catch (\Exception $e) {
             Db::rollback();
+            \think\facade\Log::error('塔罗抽牌失败: ' . $e->getMessage(), [
+                'user_id' => $user['sub'],
+                'spread' => $spread,
+            ]);
             return $this->error('抽牌失败: ' . $e->getMessage());
         }
     }

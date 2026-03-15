@@ -386,6 +386,17 @@ const showConfirm = async () => {
     ElMessage.warning('请输入您想咨询的问题')
     return
   }
+  
+  // 重新获取最新积分，避免竞态条件
+  try {
+    const response = await getPointsBalance()
+    if (response.code === 0) {
+      currentPoints.value = response.data.balance
+    }
+  } catch (error) {
+    console.error('获取积分失败:', error)
+  }
+  
   if (currentPoints.value < 5) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return

@@ -42,24 +42,26 @@ class BaziRecord extends Model
     ];
     
     /**
-     * 获取用户的排盘历史
+     * 获取用户的排盘历史（过滤敏感字段）
      */
     public static function getUserHistory(int $userId, int $limit = 20): array
     {
         return self::where('user_id', $userId)
             ->order('created_at', 'desc')
             ->limit($limit)
+            ->field('id,birth_date,gender,location,year_gan,year_zhi,month_gan,month_zhi,day_gan,day_zhi,hour_gan,hour_zhi,analysis,is_public,share_code,view_count,created_at')
             ->select()
             ->toArray();
     }
     
     /**
-     * 获取用户的排盘历史（分页）
+     * 获取用户的排盘历史（分页，过滤敏感字段）
      */
     public static function getUserHistoryPaged(int $userId, int $page = 1, int $pageSize = 10): array
     {
         $query = self::where('user_id', $userId)
-            ->order('created_at', 'desc');
+            ->order('created_at', 'desc')
+            ->field('id,birth_date,gender,location,year_gan,year_zhi,month_gan,month_zhi,day_gan,day_zhi,hour_gan,hour_zhi,analysis,is_public,share_code,view_count,created_at');
         
         $total = $query->count();
         $list = $query->page($page, $pageSize)->select()->toArray();
@@ -76,22 +78,26 @@ class BaziRecord extends Model
     }
     
     /**
-     * 生成分享码
+     * 生成分享码（带最大重试次数限制）
      */
-    protected static function generateShareCode(): string
+    protected static function generateShareCode(int $maxRetries = 10): string
     {
         $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        $code = '';
-        for ($i = 0; $i < 8; $i++) {
-            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        
+        for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
+            $code = '';
+            for ($i = 0; $i < 8; $i++) {
+                $code .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            
+            // 检查是否重复
+            if (!self::where('share_code', $code)->find()) {
+                return $code;
+            }
         }
         
-        // 检查是否重复
-        if (self::where('share_code', $code)->find()) {
-            return self::generateShareCode();
-        }
-        
-        return $code;
+        // 达到最大重试次数，使用UUID风格保证唯一性
+        return uniqid('bazi_', true);
     }
     
     /**

@@ -106,22 +106,26 @@ class TarotRecord extends Model
     }
     
     /**
-     * 生成分享码
+     * 生成分享码（带最大重试次数限制）
      */
-    protected static function generateShareCode(): string
+    protected static function generateShareCode(int $maxRetries = 10): string
     {
         $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        $code = '';
-        for ($i = 0; $i < 8; $i++) {
-            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        
+        for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
+            $code = '';
+            for ($i = 0; $i < 8; $i++) {
+                $code .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            
+            // 检查是否重复
+            if (!self::where('share_code', $code)->find()) {
+                return $code;
+            }
         }
         
-        // 检查是否重复
-        if (self::where('share_code', $code)->find()) {
-            return self::generateShareCode();
-        }
-        
-        return $code;
+        // 达到最大重试次数，使用UUID风格保证唯一性
+        return uniqid('tarot_', true);
     }
     
     /**

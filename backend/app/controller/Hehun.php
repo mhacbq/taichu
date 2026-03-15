@@ -1282,22 +1282,342 @@ PROMPT;
     protected function generateReport(array $data, string $format): array
     {
         $filename = 'hehun_' . md5(serialize($data)) . '_' . time();
+        $storagePath = public_path() . 'storage/hehun/';
         
-        // 模拟生成成功
+        // 确保目录存在
+        if (!is_dir($storagePath)) {
+            mkdir($storagePath, 0755, true);
+        }
+        
+        // 生成HTML报告内容
+        $htmlContent = $this->buildReportHtml($data);
+        
         if ($format === 'pdf') {
-            $pdfPath = '/storage/hehun/' . $filename . '.pdf';
+            // 保存HTML文件，用户可以用浏览器打印为PDF
+            $filePath = $storagePath . $filename . '.html';
+            file_put_contents($filePath, $htmlContent);
+            
+            // 生成可访问的URL
+            $baseUrl = request()->scheme() . '://' . request()->host();
+            $url = $baseUrl . '/storage/hehun/' . $filename . '.html';
+            
             return [
                 'success' => true,
-                'url' => 'https://example.com' . $pdfPath,
-                'message' => 'PDF报告生成成功'
+                'url' => $url,
+                'message' => '报告生成成功，请在浏览器中打开并选择"打印为PDF"'
             ];
         } else {
-            $imagePath = '/storage/hehun/' . $filename . '.png';
+            // 生成图片格式（使用HTML截图的替代方案）
+            $filePath = $storagePath . $filename . '.html';
+            file_put_contents($filePath, $htmlContent);
+            
+            $baseUrl = request()->scheme() . '://' . request()->host();
+            $url = $baseUrl . '/storage/hehun/' . $filename . '.html';
+            
             return [
                 'success' => true,
-                'url' => 'https://example.com' . $imagePath,
-                'message' => '图片报告生成成功'
+                'url' => $url,
+                'message' => '报告生成成功，请截图保存'
             ];
         }
+    }
+    
+    /**
+     * 构建报告HTML内容
+     */
+    protected function buildReportHtml(array $data): string
+    {
+        $male = $data['male'] ?? [];
+        $female = $data['female'] ?? [];
+        $result = $data['result'] ?? [];
+        $analysis = $data['analysis'] ?? [];
+        $score = $data['score'] ?? 0;
+        $grade = $data['grade'] ?? '中等';
+        $reportTitle = $data['report_title'] ?? '八字合婚分析报告';
+        $generatedAt = date('Y年m月d日 H:i');
+        
+        $maleName = $male['name'] ?? '男方';
+        $femaleName = $female['name'] ?? '女方';
+        
+        // 五维度评分
+        $dimensions = $result['dimensions'] ?? [];
+        $wuxingScore = $dimensions['wuxing'] ?? 0;
+        $shengxiaoScore = $dimensions['shengxiao'] ?? 0;
+        $riyuanScore = $dimensions['riyuan'] ?? 0;
+        $tianmingScore = $dimensions['tianming'] ?? 0;
+        $dayunScore = $dimensions['dayun'] ?? 0;
+        
+        // 建议
+        $suggestions = $result['suggestions'] ?? [];
+        $suggestionsHtml = '';
+        foreach ($suggestions as $i => $suggestion) {
+            $num = $i + 1;
+            $suggestionsHtml .= "<div class='suggestion-item'><span class='suggestion-num'>{$num}</span>{$suggestion}</div>";
+        }
+        
+        // 流年分析
+        $liunian = $analysis['liunian'] ?? [];
+        $liunianHtml = '';
+        if (!empty($liunian)) {
+            $liunianHtml = "<div class='section'><h3>🗓️ 未来三年流年运势</h3>";
+            foreach ($liunian as $year => $yearData) {
+                $yearDesc = $yearData['description'] ?? '';
+                $yearLuck = $yearData['fortune'] ?? '平';
+                $luckClass = $yearLuck === '吉' ? 'luck-good' : ($yearLuck === '凶' ? 'luck-bad' : 'luck-neutral');
+                $liunianHtml .= "<div class='liunian-item'><span class='year-tag'>{$year}年</span><span class='luck-badge {$luckClass}'>{$yearLuck}</span><span>{$yearDesc}</span></div>";
+            }
+            $liunianHtml .= "</div>";
+        }
+        
+        // 化解方案
+        $huajie = $analysis['huajie'] ?? [];
+        $huajieHtml = '';
+        if (!empty($huajie)) {
+            $huajieHtml = "<div class='section'><h3>🔮 化解方案</h3>";
+            foreach ($huajie as $h) {
+                $huajieHtml .= "<div class='huajie-item'><strong>{$h['title']}</strong><p>{$h['content']}</p></div>";
+            }
+            $huajieHtml .= "</div>";
+        }
+        
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$reportTitle}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header .subtitle { opacity: 0.9; font-size: 14px; }
+        .header .datetime { margin-top: 10px; font-size: 12px; opacity: 0.8; }
+        .content { padding: 30px; }
+        .couple-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .person-card { text-align: center; }
+        .person-card .gender { font-size: 32px; margin-bottom: 5px; }
+        .person-card .name { font-size: 18px; font-weight: bold; color: #333; }
+        .person-card .bazi { font-size: 14px; color: #666; margin-top: 5px; }
+        .score-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 16px;
+            color: white;
+        }
+        .score-value { font-size: 64px; font-weight: bold; }
+        .score-label { font-size: 18px; margin-top: 10px; }
+        .grade-badge {
+            display: inline-block;
+            padding: 8px 24px;
+            background: white;
+            color: #f5576c;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .section { margin: 25px 0; }
+        .section h3 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .dimensions {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .dimension-item {
+            text-align: center;
+            padding: 15px 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .dimension-item .dim-score { font-size: 24px; font-weight: bold; color: #667eea; }
+        .dimension-item .dim-name { font-size: 12px; color: #666; margin-top: 5px; }
+        .suggestion-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+        }
+        .suggestion-num {
+            width: 24px;
+            height: 24px;
+            background: #ffc107;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .liunian-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: #e3f2fd;
+            border-radius: 8px;
+        }
+        .year-tag {
+            background: #2196f3;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        .luck-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-right: 10px;
+        }
+        .luck-good { background: #4caf50; color: white; }
+        .luck-bad { background: #f44336; color: white; }
+        .luck-neutral { background: #9e9e9e; color: white; }
+        .huajie-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f3e5f5;
+            border-radius: 8px;
+        }
+        .huajie-item strong { color: #7b1fa2; }
+        .huajie-item p { margin-top: 8px; color: #555; line-height: 1.6; }
+        .analysis-content {
+            line-height: 1.8;
+            color: #444;
+            text-align: justify;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #999;
+            font-size: 12px;
+        }
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>八字合婚分析报告</h1>
+            <div class="subtitle">太初命理 · 专业合婚分析</div>
+            <div class="datetime">生成时间：{$generatedAt}</div>
+        </div>
+        
+        <div class="content">
+            <div class="couple-info">
+                <div class="person-card">
+                    <div class="gender">👨</div>
+                    <div class="name">{$maleName}</div>
+                    <div class="bazi">{$male['year']} {$male['month']} {$male['day']} {$male['hour']}</div>
+                </div>
+                <div style="display:flex;align-items:center;font-size:24px;color:#667eea;">💕</div>
+                <div class="person-card">
+                    <div class="gender">👩</div>
+                    <div class="name">{$femaleName}</div>
+                    <div class="bazi">{$female['year']} {$female['month']} {$female['day']} {$female['hour']}</div>
+                </div>
+            </div>
+            
+            <div class="score-section">
+                <div class="score-value">{$score}</div>
+                <div class="score-label">综合匹配分数</div>
+                <div class="grade-badge">{$grade}</div>
+            </div>
+            
+            <div class="section">
+                <h3>📊 五维度详细评分</h3>
+                <div class="dimensions">
+                    <div class="dimension-item">
+                        <div class="dim-score">{$wuxingScore}</div>
+                        <div class="dim-name">五行互补</div>
+                    </div>
+                    <div class="dimension-item">
+                        <div class="dim-score">{$shengxiaoScore}</div>
+                        <div class="dim-name">生肖配对</div>
+                    </div>
+                    <div class="dimension-item">
+                        <div class="dim-score">{$riyuanScore}</div>
+                        <div class="dim-name">日元合婚</div>
+                    </div>
+                    <div class="dimension-item">
+                        <div class="dim-score">{$tianmingScore}</div>
+                        <div class="dim-name">天命分析</div>
+                    </div>
+                    <div class="dimension-item">
+                        <div class="dim-score">{$dayunScore}</div>
+                        <div class="dim-name">大运同步</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>💡 专业建议</h3>
+                {$suggestionsHtml}
+            </div>
+            
+            {$liunianHtml}
+            {$huajieHtml}
+            
+            <div class="section">
+                <h3>📝 AI深度分析</h3>
+                <div class="analysis-content">
+                    {$analysis['ai_analysis'] ?? '暂无详细分析'}
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>本报告由太初命理AI系统生成，仅供参考</p>
+            <p>© 太初命理 - 探索命运的奥秘</p>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
     }
 }

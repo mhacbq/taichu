@@ -49,10 +49,17 @@ class RechargeOrder extends Model
     
     /**
      * 生成唯一订单号
+     * 格式：年月日时分秒(14) + 微秒(6) + 随机数(4) + 进程ID(4)
      */
     public static function generateOrderNo(): string
     {
-        return date('YmdHis') . substr(microtime(true) * 10000, -6) . mt_rand(10, 99);
+        // 使用更高精度的随机数和进程ID来避免并发冲突
+        $microTime = microtime(true);
+        $microSeconds = sprintf('%06d', ($microTime - floor($microTime)) * 1000000);
+        $randomPart = sprintf('%04d', random_int(0, 9999));
+        $processId = sprintf('%04d', getmypid() % 10000);
+        
+        return date('YmdHis') . $microSeconds . $randomPart . $processId;
     }
     
     /**

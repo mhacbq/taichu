@@ -74,9 +74,12 @@ class Paipan extends BaseController
             return $this->error('用户不存在', 404);
         }
         
-        // 检查是否是首次排盘
-        $baziCount = BaziRecord::where('user_id', $user['sub'])->count();
-        $isFirstBazi = ($baziCount === 0);
+        // 检查是否是首次排盘（基于积分记录，防止删除记录后重复获取免费）
+        $hasBaziRecord = BaziRecord::where('user_id', $user['sub'])->count() > 0;
+        $hasPointsRecord = PointsRecord::where('user_id', $user['sub'])
+            ->where('type', 'bazi')
+            ->count() > 0;
+        $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
         
         // 非首次排盘需要检查积分
         if (!$isFirstBazi && $userModel->points < self::BAZI_POINTS_COST) {
@@ -329,9 +332,12 @@ class Paipan extends BaseController
             return $this->error('用户不存在', 404);
         }
         
-        // 检查是否是首次排盘
-        $baziCount = BaziRecord::where('user_id', $user['sub'])->count();
-        $isFirstBazi = ($baziCount === 0);
+        // 检查是否是首次排盘（基于积分记录，防止删除记录后重复获取免费）
+        $hasBaziRecord = BaziRecord::where('user_id', $user['sub'])->count() > 0;
+        $hasPointsRecord = PointsRecord::where('user_id', $user['sub'])
+            ->where('type', 'bazi')
+            ->count() > 0;
+        $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
         
         // 非首次排盘需要检查积分
         if (!$isFirstBazi && $userModel->points < self::BAZI_POINTS_COST) {

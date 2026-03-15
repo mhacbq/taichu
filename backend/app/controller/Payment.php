@@ -332,8 +332,8 @@ class Payment extends BaseController
             return $this->xmlResponse('FAIL', '订单不存在');
         }
         
-        // 9. 验证订单金额
-        $expectedFee = (int) ($order->amount * 100);
+        // 9. 验证订单金额（使用round避免浮点精度问题）
+        $expectedFee = (int) round($order->amount * 100);
         
         if ($totalFee !== $expectedFee) {
             \think\facade\Log::error("支付回调：订单金额不匹配", [
