@@ -95,6 +95,58 @@ Route::group('api', function () {
         Route::get('history', 'Payment/getUserRechargeHistory');
     });
     
+    // 系统配置（公开接口）
+    Route::group('config', function () {
+        Route::get('client', 'Config/clientConfig');
+        Route::get('features', 'Config/featureSwitches');
+    });
+    
+    // AI分析
+    Route::group('ai', function () {
+        Route::post('analyze', 'AiAnalysis/analyze');
+        Route::post('analyze-stream', 'AiAnalysis/analyzeStream');
+        Route::get('history', 'AiAnalysis/history');
+    });
+    
+    // VIP会员
+    Route::group('vip', function () {
+        Route::get('info', 'Vip/info');
+        Route::get('benefits', 'Vip/benefits');
+        Route::post('subscribe', 'Vip/subscribe');
+        Route::get('orders', 'Vip/orders');
+    });
+    
+    // 积分任务
+    Route::group('tasks', function () {
+        Route::get('list', 'PointsTask/list');
+        Route::post('complete', 'PointsTask/complete');
+        Route::get('my-tasks', 'PointsTask/myTasks');
+    });
+    
+    // 分享与邀请
+    Route::group('share', function () {
+        Route::post('generate-poster', 'Share/generatePoster');
+        Route::post('record', 'Share/recordShare');
+        Route::get('invite-info', 'Share/inviteInfo');
+    });
+    
+    // 八字合婚
+    Route::group('hehun', function () {
+        Route::post('calculate', 'Hehun/calculate');
+        Route::get('history', 'Hehun/history');
+    });
+    
+    // 取名建议
+    Route::group('qiming', function () {
+        Route::post('suggest', 'Qiming/suggest');
+        Route::get('history', 'Qiming/history');
+    });
+    
+    // 吉日查询
+    Route::group('jiri', function () {
+        Route::post('query', 'Jiri/query');
+    });
+    
 })->middleware([
     \app\middleware\HttpsEnforce::class,
     \app\middleware\Cors::class,
@@ -104,6 +156,31 @@ Route::group('api', function () {
 
 // 支付回调（不需要认证）
 Route::post('api/payment/notify', 'Payment/notify');
+
+// 后台管理路由
+Route::group('api/admin', function () {
+    // 配置管理
+    Route::group('config', function () {
+        Route::get('', 'admin.Config/index');
+        Route::get('features', 'admin.Config/features');
+        Route::post('update', 'admin.Config/update');
+        Route::post('update-batch', 'admin.Config/updateBatch');
+        Route::post('update-feature', 'admin.Config/updateFeature');
+        Route::post('update-features', 'admin.Config/updateFeatures');
+        Route::get('vip', 'admin.Config/vip');
+        Route::post('update-vip', 'admin.Config/updateVip');
+        Route::get('points', 'admin.Config/points');
+        Route::post('update-points', 'admin.Config/updatePoints');
+        Route::get('marketing', 'admin.Config/marketing');
+        Route::post('update-marketing', 'admin.Config/updateMarketing');
+        Route::post('refresh-cache', 'admin.Config/refreshCache');
+    });
+    
+})->middleware([
+    \app\middleware\HttpsEnforce::class,
+    \app\middleware\Cors::class,
+    \app\middleware\Auth::class,  // 需要管理员认证
+]);
 
 // 404处理
 Route::miss(function() {
