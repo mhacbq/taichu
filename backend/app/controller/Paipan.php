@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\BaziRecord;
 use app\model\PointsRecord;
 use app\service\CacheService;
+use app\service\BaziInterpretationService;
 use think\facade\Db;
 
 class Paipan extends BaseController
@@ -18,6 +19,17 @@ class Paipan extends BaseController
     const ENABLE_CACHE = true;
     
     protected $middleware = [\app\middleware\Auth::class];
+    
+    /**
+     * @var BaziInterpretationService
+     */
+    protected $interpretationService;
+    
+    public function __construct()
+    {
+        parent::__construct();
+        $this->interpretationService = new BaziInterpretationService();
+    }
     
     /**
      * 八字排盘
@@ -73,11 +85,12 @@ class Paipan extends BaseController
         // 计算八字
         $bazi = $this->calculateBazi($birthDate);
         
-        // 生成分析
-        $analysis = $this->generateAnalysis($bazi, $gender);
+        // 使用专业解读服务生成分析
+        $fullInterpretation = $this->interpretationService->generateFullInterpretation($bazi, $gender);
+        $simpleInterpretation = $this->interpretationService->generateSimpleInterpretation($bazi, $gender);
         
-        // 生成通俗解读
-        $simpleInterpretation = $this->generateSimpleInterpretation($bazi, $gender);
+        // 生成详细分析报告
+        $analysis = $this->generateDetailedAnalysis($fullInterpretation);
         
         // 计算大运（专业版）
         $daYun = [];
@@ -135,6 +148,7 @@ class Paipan extends BaseController
                 'bazi' => $bazi,
                 'analysis' => $analysis,
                 'simpleInterpretation' => $simpleInterpretation,
+                'fullInterpretation' => $fullInterpretation, // 新增专业解读
                 'points_cost' => $pointsCost,
                 'remaining_points' => $userModel->points,
                 'is_first_bazi' => $isFirstBazi,
@@ -153,6 +167,7 @@ class Paipan extends BaseController
                     'bazi' => $bazi,
                     'analysis' => $analysis,
                     'simpleInterpretation' => $simpleInterpretation,
+                    'fullInterpretation' => $fullInterpretation,
                     'dayun' => $daYun ?? [],
                     'liunian' => $liuNian ?? [],
                 ];
@@ -889,7 +904,34 @@ class Paipan extends BaseController
     }
     
     /**
-     * 生成命理分析
+     * 生成详细命理分析报告
+     */
+    protected function generateDetailedAnalysis(array $interpretation): string
+    {
+        $analysis = '';
+        
+        // 基本信息
+        $basic = $interpretation['basic'];
+        $analysis .= "【日主特性】\n";
+        $analysis .= "你的日主为{$basic['day_master']}（{$basic['day_master_nature']}），如同{$basic['day_master_symbol']}。\n";
+        $analysis .= "主要特质：" . implode('、', $basic['traits']) . "。\n\n";
+        
+        // 喜用神
+        $yongshen = $interpretation['yongshen'];
+        $analysis .= "【命局格局】\n";
+        $analysis .= $yongshen['desc'] . "\n\n";
+        
+        // 五行分析
+        $wuxing = $interpretation['wuxing'];
+        $analysis .= "【五行分析】\n";
+        $analysis .= "五行平衡度：{$wuxing['balance_score']}分（满分100）。\n";
+        $analysis .= "最旺五行：{$wuxing['dominant']}；最弱五行：{$wuxing['weakest']}。\n\n";
+        
+        return $analysis;
+    }
+    
+    /**
+     * 生成命理分析（兼容旧版）
      */
     protected function generateAnalysis(array $bazi, string $gender): string
     {
