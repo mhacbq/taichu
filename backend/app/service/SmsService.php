@@ -170,9 +170,22 @@ class SmsService
     /**
      * 验证短信验证码
      * 增加失败次数限制，防止暴力破解
+     * 
+     * 本地测试模式：使用验证码 "123456" 可以直接通过验证（仅用于开发环境）
      */
     public static function verifyCode(string $phone, string $code, string $type): bool
     {
+        // 本地测试模式：特定测试验证码直接通过
+        $isLocalTestMode = env('APP_DEBUG', false) || env('SMS_TEST_MODE', false);
+        $testCode = env('SMS_TEST_CODE', '123456');
+        
+        if ($isLocalTestMode && $code === $testCode) {
+            // 测试模式下使用固定验证码，直接返回成功
+            trace("[SMS TEST MODE] 手机号 {$phone} 使用测试验证码 {$testCode} 通过验证", 'info');
+            InviteRecord::clearVerifyFail($phone, $type);
+            return true;
+        }
+        
         // 1. 检查失败次数限制
         if (!InviteRecord::checkVerifyFailLimit($phone, $type)) {
             throw new \Exception('验证失败次数过多，请重新获取验证码');

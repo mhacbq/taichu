@@ -14,19 +14,19 @@ class Stats extends BaseController
     public function index()
     {
         // 用户总数
-        $userCount = Db::name('user')->where('status', 1)->count();
+        $userCount = Db::name('tc_user')->where('status', 1)->count();
         
         // 八字排盘次数
-        $baziCount = Db::name('bazi_record')->count();
+        $baziCount = Db::name('tc_bazi_record')->count();
         
         // 塔罗占卜次数（如果没有塔罗记录表，先返回模拟数据）
-        $tarotCount = Db::name('tarot_record')->count() ?? 0;
+        $tarotCount = Db::name('tc_tarot_record')->count() ?? 0;
         
         // 总分析次数
         $totalAnalysis = $baziCount + $tarotCount;
         
         // 今日活跃用户
-        $todayActive = Db::name('user')
+        $todayActive = Db::name('tc_user')
             ->where('last_login_at', '>=', date('Y-m-d'))
             ->count();
         

@@ -18,37 +18,37 @@ class Dashboard extends BaseController
         $yesterday = date('Y-m-d', strtotime('-1 day'));
         
         // 总用户数
-        $totalUsers = Db::name('user')->where('status', 1)->count();
+        $totalUsers = Db::name('tc_user')->where('status', 1)->count();
         
         // 今日新增用户
-        $todayNewUsers = Db::name('user')
+        $todayNewUsers = Db::name('tc_user')
             ->where('created_at', '>=', $today)
             ->count();
         
         // 昨日新增用户
-        $yesterdayNewUsers = Db::name('user')
+        $yesterdayNewUsers = Db::name('tc_user')
             ->where('created_at', '>=', $yesterday)
             ->where('created_at', '<', $today)
             ->count();
         
         // 今日八字排盘次数
-        $todayBazi = Db::name('bazi_record')
+        $todayBazi = Db::name('tc_bazi_record')
             ->where('created_at', '>=', $today)
             ->count();
         
         // 昨日八字排盘次数
-        $yesterdayBazi = Db::name('bazi_record')
+        $yesterdayBazi = Db::name('tc_bazi_record')
             ->where('created_at', '>=', $yesterday)
             ->where('created_at', '<', $today)
             ->count();
         
         // 塔罗占卜次数
-        $todayTarot = Db::name('points_history')
+        $todayTarot = Db::name('tc_points_record')
             ->where('action', 'like', '%塔罗%')
             ->where('created_at', '>=', $today)
             ->count();
         
-        $yesterdayTarot = Db::name('points_history')
+        $yesterdayTarot = Db::name('tc_points_record')
             ->where('action', 'like', '%塔罗%')
             ->where('created_at', '>=', $yesterday)
             ->where('created_at', '<', $today)
@@ -104,13 +104,13 @@ class Dashboard extends BaseController
             $dates[] = date('m-d', strtotime($date));
             
             // 新增用户
-            $newUsers[] = Db::name('user')
+            $newUsers[] = Db::name('tc_user')
                 ->where('created_at', '>=', $date)
                 ->where('created_at', '<', date('Y-m-d', strtotime($date . ' +1 day')))
                 ->count();
             
             // 活跃用户（有操作记录）
-            $activeUsers[] = Db::name('bazi_record')
+            $activeUsers[] = Db::name('tc_bazi_record')
                 ->where('created_at', '>=', $date)
                 ->where('created_at', '<', date('Y-m-d', strtotime($date . ' +1 day')))
                 ->count();
@@ -129,9 +129,9 @@ class Dashboard extends BaseController
     public function realtime()
     {
         // 获取最近的排盘记录
-        $recentBazi = Db::name('bazi_record')
+        $recentBazi = Db::name('tc_bazi_record')
             ->alias('br')
-            ->join('user u', 'br.user_id = u.id', 'LEFT')
+            ->join('tc_user u', 'br.user_id = u.id', 'LEFT')
             ->field('br.created_at, u.phone')
             ->order('br.created_at', 'DESC')
             ->limit(10)
@@ -157,12 +157,12 @@ class Dashboard extends BaseController
     {
         if ($type === 'feature') {
             // 功能使用分布
-            $baziCount = Db::name('bazi_record')->count();
-            $tarotCount = Db::name('points_history')
+            $baziCount = Db::name('tc_bazi_record')->count();
+            $tarotCount = Db::name('tc_points_record')
                 ->where('action', 'like', '%塔罗%')
                 ->count();
-            $dailyCount = Db::name('daily_fortune')->count();
-            $exchangeCount = Db::name('points_exchange')->count();
+            $dailyCount = Db::name('tc_daily_fortune')->count();
+            $exchangeCount = Db::name('tc_points_exchange')->count();
             
             return $this->success([
                 ['name' => '八字排盘', 'value' => $baziCount],
