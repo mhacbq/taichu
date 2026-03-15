@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace app\model;
 
 use think\Model;
+use think\facade\Db;
 
 class User extends Model
 {
@@ -66,14 +67,51 @@ class User extends Model
     }
     
     /**
-     * 扣除积分
+     * 扣除积分（使用乐观锁防止并发问题）
      */
     public function deductPoints(int $points): bool
     {
-        if ($this->points < $points) {
+        if ($points <= 0) {
             return false;
         }
-        $this->points -= $points;
-        return $this->save();
+        
+        // 使用数据库原生操作确保原子性
+        $result = Db::name('tc_user')
+            ->where('id', $this->id)
+            ->where('points', '>=', $points)
+            ->dec('points', $points)
+            ->update();
+        
+        // 如果更新失败（影响行数为0），说明积分不足或并发冲突
+        if ($result === 0) {
+            return false;
+        }
+        
+        // 刷新模型中的积分数据
+        $this->refresh();
+        
+        return true;
+    }
+    
+    /**
+     * 增加积分（使用原子操作）
+     */
+    public function addPointsAtomic(int $points): bool
+    {
+        if ($points <= 0) {
+            return false;
+        }
+        
+        $result = Db::name('tc_user')
+            ->where('id', $this->id)
+            ->inc('points', $points)
+            ->update();
+        
+        if ($result === 0) {
+            return false;
+        }
+        
+        $this->refresh();
+        return true;
     }
 }

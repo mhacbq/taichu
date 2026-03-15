@@ -72,10 +72,14 @@ class Admin extends BaseController
         $query = User::order('id', 'desc');
 
         if ($username) {
-            $query->where('username|nickname', 'like', "%$username%");
+            // 净化输入，防止SQL注入
+            $username = preg_replace('/[%_\\]/', '', $username);
+            $query->whereLike('username|nickname', "%{$username}%");
         }
         if ($phone) {
-            $query->where('phone', 'like', "%$phone%");
+            // 净化输入，防止SQL注入
+            $phone = preg_replace('/[%_\\]/', '', $phone);
+            $query->whereLike('phone', "%{$phone}%");
         }
         if ($status !== '') {
             $query->where('status', $status);
