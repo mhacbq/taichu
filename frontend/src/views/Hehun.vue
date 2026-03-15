@@ -236,7 +236,7 @@
             v-for="item in history" 
             :key="item.id"
             class="history-item"
-            @click="loadHistory(item)"
+            @click="loadHistoryDetail(item)"
           >
             <div class="history-info">
               <span class="history-names">{{ item.male_name }} & {{ item.female_name }}</span>
@@ -422,7 +422,7 @@ const loadHistory = async () => {
 }
 
 // 加载历史记录详情
-const loadHistory = async (item) => {
+const loadHistoryDetail = async (item) => {
   // 填充表单
   form.maleName = item.male_name
   form.femaleName = item.female_name
