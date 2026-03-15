@@ -7,6 +7,7 @@ import Profile from '../views/Profile.vue'
 import Login from '../views/Login.vue'
 import Help from '../views/Help.vue'
 import NotFound from '../views/NotFound.vue'
+import Recharge from '../views/Recharge.vue'
 
 const routes = [
   {
@@ -43,6 +44,12 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/recharge',
+    name: 'Recharge',
+    component: Recharge,
     meta: { requiresAuth: true }
   },
   {

@@ -44,6 +44,16 @@ Route::group('api/admin', function () {
         Route::put('points/rules', 'Admin/savePointsRules');
         Route::get('points/stats', 'Admin/pointsStats');
         
+        // 支付管理
+        Route::get('payment/config', 'AdminPayment/getConfig');
+        Route::post('payment/config', 'AdminPayment/saveConfig');
+        Route::get('payment/orders', 'AdminPayment/getOrders');
+        Route::get('payment/orders/:id', 'AdminPayment/getOrderDetail');
+        Route::post('payment/orders/:id/complete', 'AdminPayment/manualComplete');
+        Route::post('payment/orders/:id/cancel', 'AdminPayment/cancelOrder');
+        Route::get('payment/stats', 'AdminPayment/getStats');
+        Route::get('payment/trend', 'AdminPayment/getTrend');
+        
         // 反馈管理
         Route::get('feedback', 'Admin/feedbackList');
         Route::get('feedback/:id', 'Admin/feedbackDetail');

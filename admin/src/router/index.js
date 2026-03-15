@@ -175,6 +175,26 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/payment',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/payment/orders',
+    meta: { title: '支付管理', icon: 'Wallet' },
+    children: [
+      {
+        path: 'orders',
+        name: 'PaymentOrders',
+        component: () => import('@/views/payment/orders.vue'),
+        meta: { title: '充值订单' }
+      },
+      {
+        path: 'config',
+        name: 'PaymentConfig',
+        component: () => import('@/views/payment/config.vue'),
+        meta: { title: '支付配置' }
+      }
+    ]
+  },
+  {
     path: '/feedback',
     component: () => import('@/layout/index.vue'),
     redirect: '/feedback/list',

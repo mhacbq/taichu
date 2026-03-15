@@ -70,10 +70,21 @@ Route::group('api', function () {
         Route::get('my-list', 'Feedback/myList');
     });
     
+    // 支付相关
+    Route::group('payment', function () {
+        Route::get('options', 'Payment/getRechargeOptions');
+        Route::post('create-order', 'Payment/createOrder');
+        Route::get('query-order', 'Payment/queryOrder');
+        Route::get('history', 'Payment/getUserRechargeHistory');
+    });
+    
 })->middleware([
     \app\middleware\Cors::class,
     \app\middleware\RateLimit::class,
 ]);
+
+// 支付回调（不需要认证）
+Route::post('api/payment/notify', 'Payment/notify');
 
 // 404处理
 Route::miss(function() {
