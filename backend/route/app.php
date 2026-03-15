@@ -65,6 +65,11 @@ Route::group('api', function () {
     Route::group('tarot', function () {
         Route::post('draw', 'Tarot/draw');
         Route::post('interpret', 'Tarot/interpret');
+        Route::post('save-record', 'Tarot/saveRecord');
+        Route::get('history', 'Tarot/history');
+        Route::get('detail', 'Tarot/detail');
+        Route::post('delete-record', 'Tarot/deleteRecord');
+        Route::post('set-public', 'Tarot/setPublic');
     });
     
     // 每日运势
@@ -175,6 +180,10 @@ Route::group('api', function () {
 Route::post('api/payment/notify', 'Payment/notify');
 Route::post('api/alipay/notify', 'Alipay/notify');
 Route::get('api/alipay/return', 'Alipay/return');
+
+// 公开分享接口
+Route::get('api/tarot/share', 'Tarot/share');
+Route::get('api/bazi/share', 'Paipan/share');
 
 // 后台管理路由
 Route::group('api/admin', function () {

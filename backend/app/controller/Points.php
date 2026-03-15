@@ -6,10 +6,25 @@ namespace app\controller;
 use app\BaseController;
 use app\model\PointsRecord;
 use app\model\BaziRecord;
+use app\service\PointsService;
 
 class Points extends BaseController
 {
     protected $middleware = [\app\middleware\Auth::class];
+    
+    /**
+     * @var PointsService
+     */
+    protected $pointsService;
+    
+    /**
+     * 构造函数
+     */
+    public function initialize()
+    {
+        parent::initialize();
+        $this->pointsService = new PointsService();
+    }
     
     /**
      * 获取积分余额
@@ -30,10 +45,10 @@ class Points extends BaseController
             'balance' => $userModel->points,
             'baziCount' => $baziCount,
             'first_bazi' => $baziCount === 0, // 首次排盘标记
-            'tarotCount' => 0, // 可以添加塔罗记录表后统计
-            'totalSpent' => PointsRecord::where('user_id', $user['sub'])
+            'tarotCount' => \app\model\TarotRecord::where('user_id', $user['sub'])->count(),
+            'totalSpent' => abs(PointsRecord::where('user_id', $user['sub'])
                 ->where('points', '<', 0)
-                ->sum('points'),
+                ->sum('points')),
             'totalEarned' => PointsRecord::where('user_id', $user['sub'])
                 ->where('points', '>', 0)
                 ->sum('points'),
@@ -41,26 +56,43 @@ class Points extends BaseController
     }
     
     /**
-     * 获取积分历史
+     * 获取积分历史（支持分页）
      */
     public function history()
     {
         $user = $this->request->user;
-        $limit = $this->request->get('limit', 50);
+        $page = (int)$this->request->get('page', 1);
+        $pageSize = (int)$this->request->get('page_size', 20);
         
-        $records = PointsRecord::getUserRecords($user['sub'], (int)$limit);
+        // 限制最大页大小
+        $pageSize = min(max($pageSize, 1), 100);
         
-        return $this->success($records);
+        $query = PointsRecord::where('user_id', $user['sub'])
+            ->order('created_at', 'desc');
+        
+        $total = $query->count();
+        $list = $query->page($page, $pageSize)->select()->toArray();
+        
+        return $this->success([
+            'list' => $list,
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => $total,
+                'total_pages' => (int)ceil($total / $pageSize),
+            ],
+        ]);
     }
     
     /**
-     * 消耗积分
+     * 消耗积分（事务完整版）
      */
     public function consume()
     {
         $data = $this->request->post();
         $user = $this->request->user;
         
+        // 参数验证
         if (empty($data['points']) || empty($data['action'])) {
             return $this->error('缺少必要参数');
         }
@@ -72,38 +104,38 @@ class Points extends BaseController
             return $this->error('积分数量无效');
         }
         
-        $userModel = \app\model\User::find($user['sub']);
-        
-        if (!$userModel) {
-            return $this->error('用户不存在', 404);
+        if ($points > 10000) {
+            return $this->error('单次扣除积分不能超过10000');
         }
         
-        if ($userModel->points < $points) {
-            return $this->error('积分不足', 403);
-        }
-        
-        // 扣除积分
-        if ($userModel->deductPoints($points)) {
-            PointsRecord::record(
+        try {
+            $result = $this->pointsService->consume(
                 $user['sub'],
+                $points,
                 $action,
-                -$points,
                 $data['type'] ?? 'consume',
                 $data['related_id'] ?? 0,
                 $data['remark'] ?? ''
             );
             
-            return $this->success([
-                'balance' => $userModel->points,
-                'consumed' => $points,
-            ], '积分扣除成功');
+            if ($result['success']) {
+                return $this->success([
+                    'balance' => $result['balance'],
+                    'consumed' => $points,
+                    'record_id' => $result['record_id'],
+                ], $result['message']);
+            } else {
+                $code = $result['message'] === '积分不足' ? 403 : 500;
+                return $this->error($result['message'], $code);
+            }
+        } catch (\Exception $e) {
+            \think\facade\Log::error('积分扣除异常: ' . $e->getMessage());
+            return $this->error('积分扣除失败，请稍后重试', 500);
         }
-        
-        return $this->error('积分扣除失败');
     }
     
     /**
-     * 充值积分（测试用）
+     * 充值积分（事务完整版）
      */
     public function recharge()
     {
@@ -120,29 +152,32 @@ class Points extends BaseController
             return $this->error('充值积分数量无效');
         }
         
-        $userModel = \app\model\User::find($user['sub']);
-        
-        if (!$userModel) {
-            return $this->error('用户不存在', 404);
+        if ($points > 100000) {
+            return $this->error('单次充值积分不能超过100000');
         }
         
-        // 增加积分
-        if ($userModel->addPoints($points)) {
-            PointsRecord::record(
+        try {
+            $result = $this->pointsService->add(
                 $user['sub'],
-                $data['action'] ?? '积分充值',
                 $points,
+                $data['action'] ?? '积分充值',
                 'recharge',
                 0,
                 $data['remark'] ?? ''
             );
             
-            return $this->success([
-                'balance' => $userModel->points,
-                'recharged' => $points,
-            ], '充值成功');
+            if ($result['success']) {
+                return $this->success([
+                    'balance' => $result['balance'],
+                    'recharged' => $points,
+                    'record_id' => $result['record_id'],
+                ], $result['message']);
+            } else {
+                return $this->error($result['message'], 500);
+            }
+        } catch (\Exception $e) {
+            \think\facade\Log::error('积分充值异常: ' . $e->getMessage());
+            return $this->error('充值失败，请稍后重试', 500);
         }
-        
-        return $this->error('充值失败');
     }
 }

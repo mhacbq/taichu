@@ -14,10 +14,19 @@ export const getUserInfo = () => request.get('/auth/userinfo')
 // 八字排盘
 export const calculateBazi = (data) => request.post('/paipan/bazi', data)
 export const getBaziHistory = (params) => request.get('/paipan/history', { params })
+export const setBaziSharePublic = (data) => request.post('/paipan/set-share-public', data)
+export const deleteBaziRecord = (data) => request.post('/paipan/delete-record', data)
+export const getBaziShare = (params) => request.get('/bazi/share', { params })
 
 // 塔罗占卜
 export const drawTarot = (data) => request.post('/tarot/draw', data)
 export const interpretTarot = (data) => request.post('/tarot/interpret', data)
+export const saveTarotRecord = (data) => request.post('/tarot/save-record', data)
+export const getTarotHistory = (params) => request.get('/tarot/history', { params })
+export const getTarotDetail = (params) => request.get('/tarot/detail', { params })
+export const deleteTarotRecord = (data) => request.post('/tarot/delete-record', data)
+export const setTarotPublic = (data) => request.post('/tarot/set-public', data)
+export const getTarotShare = (params) => request.get('/tarot/share', { params })
 
 // 每日运势
 export const getDailyFortune = () => request.get('/daily/fortune')

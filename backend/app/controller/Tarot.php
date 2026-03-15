@@ -5,6 +5,7 @@ namespace app\controller;
 
 use app\BaseController;
 use app\model\PointsRecord;
+use app\model\TarotRecord;
 use think\facade\Db;
 
 class Tarot extends BaseController
@@ -182,5 +183,187 @@ class Tarot extends BaseController
         }
         
         return $interpretation;
+    }
+    
+    /**
+     * 保存塔罗占卜记录
+     */
+    public function saveRecord()
+    {
+        $data = $this->request->post();
+        $user = $this->request->user;
+        
+        // 参数验证
+        if (empty($data['spread_type']) || empty($data['cards'])) {
+            return $this->error('缺少必要参数');
+        }
+        
+        $spreadType = $data['spread_type'];
+        $question = $data['question'] ?? '';
+        $cards = $data['cards'];
+        $interpretation = $data['interpretation'] ?? '';
+        $aiAnalysis = $data['ai_analysis'] ?? '';
+        
+        // 验证牌阵类型
+        $validSpreads = ['single', 'three', 'celtic', 'relationship'];
+        if (!in_array($spreadType, $validSpreads)) {
+            return $this->error('牌阵类型不正确');
+        }
+        
+        // 创建记录
+        $record = TarotRecord::createRecord(
+            $user['sub'],
+            $spreadType,
+            $question,
+            $cards,
+            $interpretation,
+            $aiAnalysis,
+            $this->request->ip()
+        );
+        
+        if ($record) {
+            return $this->success([
+                'record_id' => $record->id,
+                'share_code' => $record->share_code,
+            ], '保存成功');
+        }
+        
+        return $this->error('保存失败');
+    }
+    
+    /**
+     * 获取塔罗历史记录（分页）
+     */
+    public function history()
+    {
+        $user = $this->request->user;
+        $page = (int)$this->request->get('page', 1);
+        $pageSize = (int)$this->request->get('page_size', 10);
+        
+        // 限制最大页大小
+        $pageSize = min(max($pageSize, 1), 50);
+        
+        $history = TarotRecord::getUserHistory($user['sub'], $page, $pageSize);
+        
+        return $this->success($history);
+    }
+    
+    /**
+     * 获取单条塔罗记录详情
+     */
+    public function detail()
+    {
+        $user = $this->request->user;
+        $id = (int)$this->request->get('id');
+        
+        if (!$id) {
+            return $this->error('记录ID不能为空');
+        }
+        
+        $record = TarotRecord::getByIdWithAuth($id, $user['sub']);
+        
+        if (!$record) {
+            return $this->error('记录不存在或无权限查看', 404);
+        }
+        
+        // 如果不是自己的记录，增加查看次数
+        if ($record->user_id !== $user['sub']) {
+            $record->incrementViewCount();
+        }
+        
+        return $this->success([
+            'id' => $record->id,
+            'spread_type' => $record->spread_type,
+            'spread_name' => $record->getSpreadName(),
+            'question' => $record->question,
+            'cards' => is_string($record->cards) ? json_decode($record->cards, true) : $record->cards,
+            'interpretation' => $record->interpretation,
+            'ai_analysis' => $record->ai_analysis,
+            'is_public' => $record->is_public,
+            'share_code' => $record->share_code,
+            'view_count' => $record->view_count,
+            'created_at' => $record->created_at,
+        ]);
+    }
+    
+    /**
+     * 删除塔罗记录
+     */
+    public function deleteRecord()
+    {
+        $user = $this->request->user;
+        $id = (int)$this->request->post('id');
+        
+        if (!$id) {
+            return $this->error('记录ID不能为空');
+        }
+        
+        if (TarotRecord::deleteById($id, $user['sub'])) {
+            return $this->success([], '删除成功');
+        }
+        
+        return $this->error('删除失败，记录不存在');
+    }
+    
+    /**
+     * 设置记录公开状态
+     */
+    public function setPublic()
+    {
+        $user = $this->request->user;
+        $id = (int)$this->request->post('id');
+        $isPublic = (bool)$this->request->post('is_public', false);
+        
+        if (!$id) {
+            return $this->error('记录ID不能为空');
+        }
+        
+        $record = TarotRecord::where('id', $id)
+            ->where('user_id', $user['sub'])
+            ->find();
+        
+        if (!$record) {
+            return $this->error('记录不存在', 404);
+        }
+        
+        if ($record->setPublic($isPublic)) {
+            return $this->success([
+                'is_public' => $isPublic,
+                'share_code' => $record->share_code,
+            ], '设置成功');
+        }
+        
+        return $this->error('设置失败');
+    }
+    
+    /**
+     * 通过分享码查看塔罗记录（无需登录）
+     */
+    public function share()
+    {
+        $shareCode = $this->request->get('code');
+        
+        if (empty($shareCode)) {
+            return $this->error('分享码不能为空');
+        }
+        
+        $record = TarotRecord::findByShareCode($shareCode);
+        
+        if (!$record) {
+            return $this->error('分享记录不存在或已失效', 404);
+        }
+        
+        // 增加查看次数
+        $record->incrementViewCount();
+        
+        return $this->success([
+            'spread_type' => $record->spread_type,
+            'spread_name' => $record->getSpreadName(),
+            'question' => $record->question,
+            'cards' => is_string($record->cards) ? json_decode($record->cards, true) : $record->cards,
+            'interpretation' => $record->interpretation,
+            'view_count' => $record->view_count,
+            'created_at' => $record->created_at,
+        ]);
     }
 }

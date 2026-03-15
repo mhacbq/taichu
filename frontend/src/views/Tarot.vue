@@ -171,7 +171,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance } from '../api'
+import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, shareTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
 
 const spreads = [
@@ -463,39 +463,67 @@ const getCardStyle = (card) => {
   }
 }
 
-// 保存塔罗结果
-const saveTarotResult = () => {
-  const savedResults = JSON.parse(localStorage.getItem('tarot_saved') || '[]')
-  savedResults.unshift({
-    date: new Date().toISOString(),
-    question: question.value,
-    cards: cards.value,
-    interpretation: interpretation.value,
-    spread: selectedSpread.value
-  })
-  if (savedResults.length > 50) {
-    savedResults.pop()
+// 当前保存的记录信息
+const savedRecordId = ref(null)
+const savedShareCode = ref(null)
+
+// 保存塔罗结果到后端
+const saveTarotResult = async () => {
+  if (savedRecordId.value) {
+    ElMessage.info('已经保存过了')
+    return
   }
-  localStorage.setItem('tarot_saved', JSON.stringify(savedResults))
-  ElMessage.success('保存成功，可在个人中心查看')
+  
+  try {
+    const response = await saveTarotRecord({
+      spread_type: selectedSpread.value,
+      question: question.value,
+      cards: cards.value,
+      interpretation: interpretation.value,
+      ai_analysis: ''
+    })
+    
+    if (response.code === 0) {
+      savedRecordId.value = response.data.record_id
+      savedShareCode.value = response.data.share_code
+      ElMessage.success('保存成功，可在个人中心查看历史记录')
+    } else {
+      ElMessage.error(response.message || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存塔罗记录失败:', error)
+    ElMessage.error('保存失败，请稍后重试')
+  }
 }
 
 // 分享塔罗结果
-const shareTarotResult = () => {
+const shareTarotResult = async () => {
+  // 如果没有保存过，先保存
+  if (!savedRecordId.value) {
+    await saveTarotResult()
+  }
+  
+  if (!savedShareCode.value) {
+    return
+  }
+  
+  // 生成分享链接
+  const shareUrl = `${window.location.origin}/tarot/share/${savedShareCode.value}`
   const cardNames = cards.value.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
   const shareText = `我在太初命理进行了塔罗占卜\n` +
     `问题：${question.value}\n` +
     `抽到的牌：${cardNames}\n` +
-    `快来体验吧！`
+    `查看详情：${shareUrl}`
   
   if (navigator.share) {
     navigator.share({
       title: '我的塔罗占卜结果',
-      text: shareText
+      text: shareText,
+      url: shareUrl
     })
   } else {
     navigator.clipboard.writeText(shareText).then(() => {
-      ElMessage.success('分享内容已复制到剪贴板')
+      ElMessage.success('分享链接已复制到剪贴板')
     })
   }
 }
@@ -505,6 +533,8 @@ const resetTarot = () => {
   cards.value = []
   interpretation.value = ''
   question.value = ''
+  savedRecordId.value = null
+  savedShareCode.value = null
 }
 
 // 显示卡片详情

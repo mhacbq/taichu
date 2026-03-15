@@ -30,7 +30,15 @@ class BaziRecord extends Model
         'hour_zhi' => 'string',
         'analysis' => 'string',
         'is_first' => 'int',
+        'is_public' => 'int',          // 是否公开
+        'share_code' => 'string',      // 分享码
+        'view_count' => 'int',         // 查看次数
         'created_at' => 'datetime',
+    ];
+    
+    protected $defaultValues = [
+        'is_public' => 0,
+        'view_count' => 0,
     ];
     
     /**
@@ -65,5 +73,90 @@ class BaziRecord extends Model
                 'total_pages' => (int)ceil($total / $pageSize),
             ],
         ];
+    }
+    
+    /**
+     * 生成分享码
+     */
+    protected static function generateShareCode(): string
+    {
+        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        $code = '';
+        for ($i = 0; $i < 8; $i++) {
+            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+        
+        // 检查是否重复
+        if (self::where('share_code', $code)->find()) {
+            return self::generateShareCode();
+        }
+        
+        return $code;
+    }
+    
+    /**
+     * 设置分享状态
+     */
+    public function setSharePublic(bool $isPublic): bool
+    {
+        if ($isPublic && empty($this->share_code)) {
+            $this->share_code = self::generateShareCode();
+        }
+        $this->is_public = $isPublic ? 1 : 0;
+        return $this->save();
+    }
+    
+    /**
+     * 根据分享码查找记录
+     */
+    public static function findByShareCode(string $shareCode): ?self
+    {
+        return self::where('share_code', $shareCode)
+            ->where('is_public', 1)
+            ->find();
+    }
+    
+    /**
+     * 获取单条记录（检查权限）
+     */
+    public static function getByIdWithAuth(int $id, int $userId): ?self
+    {
+        $record = self::find($id);
+        
+        if (!$record) {
+            return null;
+        }
+        
+        // 是自己的记录或是公开的记录
+        if ($record->user_id === $userId || $record->is_public === 1) {
+            return $record;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 增加查看次数
+     */
+    public function incrementViewCount(): void
+    {
+        $this->view_count++;
+        $this->save();
+    }
+    
+    /**
+     * 删除记录
+     */
+    public static function deleteById(int $id, int $userId): bool
+    {
+        $record = self::where('id', $id)
+            ->where('user_id', $userId)
+            ->find();
+        
+        if ($record) {
+            return $record->delete();
+        }
+        
+        return false;
     }
 }

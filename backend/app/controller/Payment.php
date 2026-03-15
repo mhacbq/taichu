@@ -261,73 +261,127 @@ class Payment extends BaseController
      */
     public function notify()
     {
-        // 获取原始XML数据
+        // 1. 获取原始XML数据
         $xml = file_get_contents('php://input');
         
         if (empty($xml)) {
+            \think\facade\Log::warning('支付回调：收到空数据');
             return $this->xmlResponse('FAIL', '无效的数据');
         }
         
-        // 解析XML
-        $data = $this->xmlToArray($xml);
-        
-        if (empty($data)) {
+        // 2. 解析XML
+        try {
+            $data = $this->xmlToArray($xml);
+        } catch (\Exception $e) {
+            \think\facade\Log::error('支付回调：XML解析失败 - ' . $e->getMessage());
             return $this->xmlResponse('FAIL', '解析失败');
         }
         
-        // 验证返回状态
-        if ($data['return_code'] !== 'SUCCESS') {
+        // 3. 验证返回状态
+        if (($data['return_code'] ?? '') !== 'SUCCESS') {
+            \think\facade\Log::warning('支付回调：通信失败 - ' . ($data['return_msg'] ?? ''));
             return $this->xmlResponse('FAIL', $data['return_msg'] ?? '通信失败');
         }
         
-        // 获取配置验证签名
+        // 4. 获取配置验证签名
         $config = PaymentConfig::getWechatConfig();
         if (!$config) {
+            \think\facade\Log::error('支付回调：支付配置不存在');
             return $this->xmlResponse('FAIL', '配置错误');
         }
         
-        // 验证签名
+        // 5. 验证签名
         $sign = $data['sign'] ?? '';
         unset($data['sign']);
         
         if ($this->generateSign($data, $config['api_key']) !== $sign) {
+            \think\facade\Log::error('支付回调：签名验证失败', ['order_no' => $data['out_trade_no'] ?? '']);
             return $this->xmlResponse('FAIL', '签名验证失败');
         }
         
-        // 验证业务结果
-        if ($data['result_code'] !== 'SUCCESS') {
-            return $this->xmlResponse('SUCCESS'); // 业务失败也返回成功，避免微信重复通知
+        // 6. 验证业务结果
+        if (($data['result_code'] ?? '') !== 'SUCCESS') {
+            // 业务失败也返回成功，避免微信重复通知
+            \think\facade\Log::info('支付回调：业务失败', [
+                'order_no' => $data['out_trade_no'] ?? '',
+                'err_code' => $data['err_code'] ?? '',
+                'err_code_des' => $data['err_code_des'] ?? '',
+            ]);
+            return $this->xmlResponse('SUCCESS');
         }
         
-        // 查找订单
+        // 7. 提取关键信息
         $orderNo = $data['out_trade_no'] ?? '';
+        $payOrderNo = $data['transaction_id'] ?? '';
+        $notifyId = $data['notify_id'] ?? ''; // 微信支付通知ID，用于幂等性
+        $totalFee = (int) ($data['total_fee'] ?? 0);
+        $timeEnd = $data['time_end'] ?? '';
+        
+        \think\facade\Log::info('支付回调：开始处理', [
+            'order_no' => $orderNo,
+            'pay_order_no' => $payOrderNo,
+            'notify_id' => $notifyId,
+            'total_fee' => $totalFee,
+        ]);
+        
+        // 8. 查找订单
         $order = RechargeOrder::findByOrderNo($orderNo);
         
         if (!$order) {
+            \think\facade\Log::error('支付回调：订单不存在', ['order_no' => $orderNo]);
             return $this->xmlResponse('FAIL', '订单不存在');
         }
         
-        // 如果订单已处理，直接返回成功
-        if ($order->status === RechargeOrder::STATUS_PAID) {
-            return $this->xmlResponse('SUCCESS');
-        }
-        
-        // 验证订单金额
-        $totalFee = (int) $data['total_fee'];
+        // 9. 验证订单金额
         $expectedFee = (int) ($order->amount * 100);
         
         if ($totalFee !== $expectedFee) {
-            trace("订单金额不匹配：订单{$orderNo}，微信支付{$totalFee}分，系统记录{$expectedFee}分", 'error');
+            \think\facade\Log::error("支付回调：订单金额不匹配", [
+                'order_no' => $orderNo,
+                'wx_fee' => $totalFee,
+                'expected_fee' => $expectedFee,
+            ]);
             return $this->xmlResponse('FAIL', '金额不匹配');
         }
         
-        // 标记订单为已支付
-        $payOrderNo = $data['transaction_id'] ?? '';
-        if ($order->markAsPaid($payOrderNo, $data)) {
-            return $this->xmlResponse('SUCCESS');
+        // 10. 处理支付（带事务和幂等性保护）
+        try {
+            $result = $order->markAsPaid($payOrderNo, $data, $notifyId);
+            
+            if ($result['success']) {
+                if ($result['is_duplicate'] ?? false) {
+                    \think\facade\Log::info('支付回调：重复通知，已处理', [
+                        'order_no' => $orderNo,
+                        'notify_id' => $notifyId,
+                    ]);
+                } else {
+                    \think\facade\Log::info('支付回调：处理成功', [
+                        'order_no' => $orderNo,
+                        'pay_order_no' => $payOrderNo,
+                        'points' => $order->points,
+                    ]);
+                }
+                return $this->xmlResponse('SUCCESS');
+            } else {
+                \think\facade\Log::error('支付回调：处理失败', [
+                    'order_no' => $orderNo,
+                    'message' => $result['message'],
+                ]);
+                // 如果订单正在处理中，返回SUCCESS避免微信重复通知
+                if ($result['message'] === '订单正在处理中') {
+                    return $this->xmlResponse('SUCCESS');
+                }
+                return $this->xmlResponse('FAIL', $result['message']);
+            }
+        } catch (\Exception $e) {
+            \think\facade\Log::error('支付回调：处理异常', [
+                'order_no' => $orderNo,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // 发生异常返回FAIL，让微信重试
+            return $this->xmlResponse('FAIL', '处理异常');
         }
-        
-        return $this->xmlResponse('FAIL', '处理失败');
     }
     
     /**
