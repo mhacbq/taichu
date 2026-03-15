@@ -36,6 +36,8 @@ Route::group('api', function () {
         Route::post('phone-register', 'Auth/phoneRegister');
         Route::get('userinfo', 'Auth/userinfo');
         Route::put('profile', 'Auth/updateProfile');
+        Route::get('invite-leaderboard', 'Auth/inviteLeaderboard');
+        Route::get('my-invites', 'Auth/myInvites');
     });
     
     // 短信相关
@@ -79,6 +81,17 @@ Route::group('api', function () {
         Route::get('history', 'Points/history');
         Route::post('consume', 'Points/consume');
         Route::post('recharge', 'Points/recharge');
+    });
+    
+    // 积分商城
+    Route::group('shop', function () {
+        Route::get('home', 'PointsShop/home');
+        Route::get('products', 'PointsShop/products');
+        Route::get('product-detail', 'PointsShop/productDetail');
+        Route::post('exchange', 'PointsShop/exchange');
+        Route::get('my-exchanges', 'PointsShop/myExchanges');
+        Route::get('exchange-detail', 'PointsShop/exchangeDetail');
+        Route::post('fill-address', 'PointsShop/fillAddress');
     });
     
     // 用户反馈

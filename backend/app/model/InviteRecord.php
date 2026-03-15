@@ -139,4 +139,99 @@ class InviteRecord extends Model
         $key = "sms_verify_fail:{$phone}:{$type}";
         Cache::delete($key);
     }
+    
+    /**
+     * 获取邀请排行榜
+     * 
+     * @param int $limit 返回数量
+     * @param string $period 周期：all(全部), month(本月), week(本周)
+     * @return array 排行榜数据
+     */
+    public static function getLeaderboard(int $limit = 20, string $period = 'all'): array
+    {
+        $query = self::alias('ir')
+            ->field([
+                'ir.inviter_id',
+                'u.nickname',
+                'u.avatar',
+                'COUNT(ir.id) as invite_count',
+                'SUM(ir.points_reward) as total_points',
+                'MAX(ir.created_at) as last_invite_time'
+            ])
+            ->join('tc_user u', 'ir.inviter_id = u.id')
+            ->where('ir.status', 1);
+        
+        // 根据周期筛选
+        switch ($period) {
+            case 'month':
+                $query->whereMonth('ir.created_at', date('m'));
+                break;
+            case 'week':
+                $query->whereWeek('ir.created_at');
+                break;
+            case 'all':
+            default:
+                // 不限制时间
+                break;
+        }
+        
+        $leaderboard = $query->group('ir.inviter_id')
+            ->order('invite_count', 'desc')
+            ->order('total_points', 'desc')
+            ->limit($limit)
+            ->select();
+        
+        $result = [];
+        $rank = 1;
+        
+        foreach ($leaderboard as $item) {
+            $result[] = [
+                'rank' => $rank,
+                'user_id' => $item['inviter_id'],
+                'nickname' => $item['nickname'] ?? '神秘用户',
+                'avatar' => $item['avatar'] ?? '',
+                'invite_count' => (int)$item['invite_count'],
+                'total_points' => (int)$item['total_points'],
+                'last_invite_time' => $item['last_invite_time'],
+            ];
+            $rank++;
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 获取用户的排名信息
+     */
+    public static function getUserRank(int $userId, string $period = 'all'): ?array
+    {
+        // 先获取用户的基本统计
+        $userStats = self::getInviteStats($userId);
+        
+        if ($userStats['invite_count'] === 0) {
+            return null;
+        }
+        
+        // 计算排名
+        $query = self::where('status', 1)
+            ->group('inviter_id')
+            ->having('COUNT(id) > ' . $userStats['invite_count']);
+        
+        switch ($period) {
+            case 'month':
+                $query->whereMonth('created_at', date('m'));
+                break;
+            case 'week':
+                $query->whereWeek('created_at');
+                break;
+        }
+        
+        $rank = $query->count() + 1;
+        
+        return [
+            'rank' => $rank,
+            'invite_count' => $userStats['invite_count'],
+            'total_points' => $userStats['total_points'],
+        ];
+    }
 }

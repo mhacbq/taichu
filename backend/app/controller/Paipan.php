@@ -8,6 +8,7 @@ use app\model\BaziRecord;
 use app\model\PointsRecord;
 use app\service\CacheService;
 use app\service\BaziInterpretationService;
+use app\service\FortuneAnalysisService;
 use think\facade\Db;
 
 class Paipan extends BaseController
@@ -25,10 +26,16 @@ class Paipan extends BaseController
      */
     protected $interpretationService;
     
+    /**
+     * @var FortuneAnalysisService
+     */
+    protected $fortuneAnalysisService;
+    
     public function __construct()
     {
         parent::__construct();
         $this->interpretationService = new BaziInterpretationService();
+        $this->fortuneAnalysisService = new FortuneAnalysisService();
     }
     
     /**
@@ -95,13 +102,17 @@ class Paipan extends BaseController
         // 计算大运（专业版）
         $daYun = [];
         $liuNian = [];
+        $fortuneAnalysis = null;
         if ($mode === 'pro') {
             $daYun = $this->calculateDaYun($bazi, $gender, $birthDate);
-            $daYun = $this->analyzeDaYunLuck($daYun, $bazi);
+            $daYun = $this->analyzeDaYunTrend($daYun, $bazi);
             
             // 计算流年（最近5年）
             $currentYear = (int)date('Y');
             $liuNian = $this->calculateLiuNian($currentYear, 5);
+            
+            // 大运流年综合分析
+            $fortuneAnalysis = $this->fortuneAnalysisService->analyzeDaYunLiuNian($bazi, $daYun, $liuNian);
         }
         
         Db::startTrans();
@@ -158,6 +169,7 @@ class Paipan extends BaseController
             if ($mode === 'pro') {
                 $result['dayun'] = $daYun;
                 $result['liunian'] = $liuNian;
+                $result['fortune_analysis'] = $fortuneAnalysis;
             }
             
             // 缓存排盘结果（用于复用）
@@ -170,6 +182,7 @@ class Paipan extends BaseController
                     'fullInterpretation' => $fullInterpretation,
                     'dayun' => $daYun ?? [],
                     'liunian' => $liuNian ?? [],
+                    'fortune_analysis' => $fortuneAnalysis ?? null,
                 ];
                 CacheService::set($cacheKey, $cacheData, CacheService::TTL_WEEK, CacheService::TAG_BAZI);
             }
@@ -379,6 +392,7 @@ class Paipan extends BaseController
             if ($mode === 'pro') {
                 $result['dayun'] = $cachedResult['dayun'] ?? [];
                 $result['liunian'] = $cachedResult['liunian'] ?? [];
+                $result['fortune_analysis'] = $cachedResult['fortune_analysis'] ?? null;
             }
             
             return $this->success($result);
