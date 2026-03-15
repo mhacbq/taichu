@@ -132,8 +132,10 @@ Route::group('api', function () {
     
     // 八字合婚
     Route::group('hehun', function () {
-        Route::post('calculate', 'Hehun/calculate');
-        Route::get('history', 'Hehun/history');
+        Route::get('pricing', 'Hehun/getPricing');      // 获取定价配置
+        Route::post('calculate', 'Hehun/calculate');     // 合婚计算
+        Route::get('history', 'Hehun/history');          // 合婚历史
+        Route::post('export', 'Hehun/export');           // 导出报告
     });
     
     // 取名建议

@@ -13,14 +13,27 @@ use think\facade\Db;
 
 /**
  * 八字合婚控制器
+ * 
+ * 分层付费设计：
+ * - 免费层：基础合婚分数、简单等级评定、1条基础建议
+ * - 付费层（80积分）：五维度详细评分、AI深度分析、化解方案、流年分析
+ * - VIP层：所有付费功能免费
  */
 class Hehun extends BaseController
 {
-    // 合婚所需积分（默认80，可通过配置调整）
+    // 合婚基础积分（免费预览后解锁详细报告）
     const HEHUN_POINTS_COST = 80;
+    
+    // 导出报告额外积分
+    const HEHUN_EXPORT_COST = 30;
     
     // 是否启用缓存
     const ENABLE_CACHE = true;
+    
+    // 分层配置
+    const TIER_FREE = 'free';
+    const TIER_PREMIUM = 'premium';
+    const TIER_VIP = 'vip';
     
     protected $middleware = [\app\middleware\Auth::class];
     
@@ -149,7 +162,93 @@ class Hehun extends BaseController
     ];
     
     /**
-     * 八字合婚计算
+     * 获取合婚定价配置
+     */
+    public function getPricing()
+    {
+        $user = $this->request->user;
+        $userModel = User::find($user['sub']);
+        $isVip = $userModel->is_vip ?? false;
+        
+        // 获取基础积分消耗
+        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $exportPoints = ConfigService::get('points_cost_hehun_export', self::HEHUN_EXPORT_COST);
+        
+        // 检查是否新用户
+        $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
+        
+        // 计算实际消耗（含折扣）
+        $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
+        
+        return $this->success([
+            'tier' => [
+                'free' => [
+                    'name' => '免费预览',
+                    'price' => 0,
+                    'features' => [
+                        '基础合婚分数（总分）',
+                        '简单等级评定',
+                        '1条基础建议',
+                        '双方八字展示'
+                    ],
+                    'is_available' => true
+                ],
+                'premium' => [
+                    'name' => '详细报告',
+                    'price' => $costInfo['final'],
+                    'original_price' => $costInfo['original'],
+                    'discount' => $costInfo['discount'] > 0 ? [
+                        'percent' => $costInfo['discount'],
+                        'reason' => $costInfo['reason'],
+                        'saved' => $costInfo['saved']
+                    ] : null,
+                    'features' => [
+                        '五维度详细评分',
+                        'AI深度分析',
+                        '专业化解方案',
+                        '流年合婚分析',
+                        '大运同步分析',
+                        '子女缘分析',
+                        '保存历史记录'
+                    ],
+                    'is_available' => $isVip || $userModel->points >= $costInfo['final']
+                ],
+                'vip' => [
+                    'name' => 'VIP特权',
+                    'price' => 0,
+                    'features' => [
+                        '所有详细报告功能',
+                        '无限次合婚分析',
+                        '导出报告免费',
+                        '优先AI分析',
+                        '专家咨询折扣'
+                    ],
+                    'is_vip' => $isVip,
+                    'is_available' => $isVip
+                ]
+            ],
+            'export' => [
+                'pdf_points' => $isVip ? 0 : $exportPoints,
+                'image_points' => $isVip ? 0 : $exportPoints
+            ],
+            'user_status' => [
+                'is_vip' => $isVip,
+                'points' => $userModel->points,
+                'is_new_user' => $isNewUser
+            ]
+        ]);
+    }
+    
+    /**
+     * 八字合婚计算 - 支持分层付费
+     * 
+     * 请求参数：
+     * - maleBirthDate: 男方出生日期
+     * - femaleBirthDate: 女方出生日期
+     * - maleName: 男方姓名（可选）
+     * - femaleName: 女方姓名（可选）
+     * - tier: 层级（free/premium，默认premium）
+     * - useAi: 是否使用AI分析（付费层）
      */
     public function calculate()
     {
@@ -163,12 +262,56 @@ class Hehun extends BaseController
         
         $maleName = $data['maleName'] ?? '男方';
         $femaleName = $data['femaleName'] ?? '女方';
-        $useAi = $data['useAi'] ?? true; // 默认使用AI分析
+        $tier = $data['tier'] ?? self::TIER_PREMIUM; // free 或 premium
+        $useAi = $data['useAi'] ?? true;
         
-        // 获取合婚积分消耗
-        $pointsCost = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        // 计算双方八字（免费层也需要）
+        $paipanController = new Paipan();
+        $maleBazi = $paipanController->calculateBazi($data['maleBirthDate']);
+        $femaleBazi = $paipanController->calculateBazi($data['femaleBirthDate']);
         
-        // 检查用户积分和VIP状态
+        // 执行完整合婚分析
+        $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName);
+        
+        // 如果是免费层，只返回基础信息
+        if ($tier === self::TIER_FREE) {
+            return $this->success([
+                'tier' => self::TIER_FREE,
+                'male_bazi' => [
+                    'year' => $maleBazi['year']['gan'] . $maleBazi['year']['zhi'],
+                    'month' => $maleBazi['month']['gan'] . $maleBazi['month']['zhi'],
+                    'day' => $maleBazi['day']['gan'] . $maleBazi['day']['zhi'],
+                    'hour' => $maleBazi['hour']['gan'] . $maleBazi['hour']['zhi'],
+                    'day_master' => $maleBazi['day_master']
+                ],
+                'female_bazi' => [
+                    'year' => $femaleBazi['year']['gan'] . $femaleBazi['year']['zhi'],
+                    'month' => $femaleBazi['month']['gan'] . $femaleBazi['month']['zhi'],
+                    'day' => $femaleBazi['day']['gan'] . $femaleBazi['day']['zhi'],
+                    'hour' => $femaleBazi['hour']['gan'] . $femaleBazi['hour']['zhi'],
+                    'day_master' => $femaleBazi['day_master']
+                ],
+                'hehun' => [
+                    'score' => $hehunResult['score'],
+                    'level' => $hehunResult['level'],
+                    'level_text' => $hehunResult['level_text'],
+                    'comment' => $hehunResult['comment'],
+                    'suggestions' => [count($hehunResult['suggestions']) > 0 ? $hehunResult['suggestions'][0] : '双方缘分尚可，建议查看详细报告了解更多。']
+                ],
+                'preview_hint' => '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告',
+                'pricing' => $this->getQuickPricing($user['sub'])
+            ]);
+        }
+        
+        // 付费层逻辑
+        return $this->processPremiumHehun($data, $user, $maleBazi, $femaleBazi, $hehunResult, $maleName, $femaleName, $useAi);
+    }
+    
+    /**
+     * 处理付费层合婚
+     */
+    protected function processPremiumHehun(array $data, array $user, array $maleBazi, array $femaleBazi, array $hehunResult, string $maleName, string $femaleName, bool $useAi)
+    {
         $userModel = User::find($user['sub']);
         if (!$userModel) {
             return $this->error('用户不存在', 404);
@@ -177,31 +320,24 @@ class Hehun extends BaseController
         $isVip = $userModel->is_vip ?? false;
         $vipUnlockHehun = ConfigService::get('vip_unlock_hehun', true);
         
-        // VIP用户且配置允许则免积分
+        // VIP用户免积分
         $needPoints = !($isVip && $vipUnlockHehun);
         
-        if ($needPoints && $userModel->points < $pointsCost) {
-            return $this->error('积分不足，请先充值或开通VIP', 403);
+        // 计算实际积分消耗
+        $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
+        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
+        $finalPoints = $costInfo['final'];
+        
+        if ($needPoints && $userModel->points < $finalPoints) {
+            return $this->error('积分不足，请先充值或开通VIP', 403, [
+                'need_points' => $finalPoints,
+                'current_points' => $userModel->points,
+                'shortage' => $finalPoints - $userModel->points
+            ]);
         }
         
-        // 检查缓存
-        $cacheKey = CacheService::hehunKey($data['maleBirthDate'], $data['femaleBirthDate']);
-        if (self::ENABLE_CACHE) {
-            $cachedResult = CacheService::get($cacheKey);
-            if ($cachedResult) {
-                return $this->processCachedHehun($cachedResult, $user, $data, $pointsCost, $needPoints);
-            }
-        }
-        
-        // 计算双方八字
-        $paipanController = new Paipan();
-        $maleBazi = $paipanController->calculateBazi($data['maleBirthDate']);
-        $femaleBazi = $paipanController->calculateBazi($data['femaleBirthDate']);
-        
-        // 执行合婚分析
-        $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName);
-        
-        // AI深度分析
+        // AI深度分析（付费层）
         $aiAnalysis = null;
         if ($useAi) {
             $aiAnalysis = $this->generateAiAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
@@ -212,13 +348,12 @@ class Hehun extends BaseController
         try {
             // 扣除积分（非VIP用户）
             if ($needPoints) {
-                $userModel->deductPoints($pointsCost);
+                $userModel->deductPoints($finalPoints);
                 
-                // 记录积分变动
                 PointsRecord::record(
                     $user['sub'],
-                    '八字合婚消耗',
-                    -$pointsCost,
+                    '八字合婚-详细报告',
+                    -$finalPoints,
                     'hehun',
                     0,
                     "男方: {$data['maleBirthDate']}, 女方: {$data['femaleBirthDate']}"
@@ -239,23 +374,36 @@ class Hehun extends BaseController
                 'result' => json_encode($hehunResult),
                 'ai_analysis' => $aiAnalysis ? json_encode($aiAnalysis) : null,
                 'is_ai_analysis' => $useAi,
-                'points_cost' => $needPoints ? $pointsCost : 0,
+                'points_cost' => $needPoints ? $finalPoints : 0,
             ]);
             
             Db::commit();
             
             $result = [
                 'id' => $record->id,
+                'tier' => $isVip ? self::TIER_VIP : self::TIER_PREMIUM,
                 'male_bazi' => $maleBazi,
                 'female_bazi' => $femaleBazi,
                 'hehun' => $hehunResult,
                 'ai_analysis' => $aiAnalysis,
-                'points_cost' => $needPoints ? $pointsCost : 0,
-                'remaining_points' => $userModel->points,
-                'is_vip_free' => !$needPoints,
+                'pricing' => [
+                    'points_cost' => $needPoints ? $finalPoints : 0,
+                    'original_points' => $costInfo['original'],
+                    'discount' => $costInfo['discount'] > 0 ? [
+                        'percent' => $costInfo['discount'],
+                        'reason' => $costInfo['reason'],
+                        'saved' => $costInfo['saved']
+                    ] : null
+                ],
+                'user_status' => [
+                    'remaining_points' => $userModel->points,
+                    'is_vip' => $isVip,
+                    'is_vip_free' => !$needPoints
+                ]
             ];
             
             // 缓存结果
+            $cacheKey = CacheService::hehunKey($data['maleBirthDate'], $data['femaleBirthDate']);
             if (self::ENABLE_CACHE) {
                 CacheService::set($cacheKey, $result, CacheService::TTL_WEEK, CacheService::TAG_HEHUN);
             }
@@ -266,6 +414,28 @@ class Hehun extends BaseController
             Db::rollback();
             return $this->error('合婚分析失败: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * 快速获取定价信息（用于免费层提示）
+     */
+    protected function getQuickPricing(int $userId): array
+    {
+        $userModel = User::find($userId);
+        $isVip = $userModel->is_vip ?? false;
+        $isNewUser = HehunRecord::getUserCount($userId) === 0;
+        
+        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
+        
+        return [
+            'unlock_points' => $isVip ? 0 : $costInfo['final'],
+            'is_vip' => $isVip,
+            'discount_info' => $costInfo['discount'] > 0 ? [
+                'percent' => $costInfo['discount'],
+                'reason' => $costInfo['reason']
+            ] : null
+        ];
     }
     
     /**
@@ -914,5 +1084,120 @@ PROMPT;
             ->select();
         
         return $this->success($history);
+    }
+    
+    /**
+     * 导出合婚报告
+     * 
+     * 支持格式：pdf（专业报告）、image（分享长图）
+     */
+    public function export()
+    {
+        $data = $this->request->post();
+        $user = $this->request->user;
+        
+        // 验证参数
+        if (empty($data['record_id'])) {
+            return $this->error('请提供合婚记录ID');
+        }
+        
+        $format = $data['format'] ?? 'pdf';
+        $template = $data['template'] ?? 'default';
+        
+        // 获取合婚记录
+        $record = HehunRecord::where('id', $data['record_id'])
+            ->where('user_id', $user['sub'])
+            ->find();
+        
+        if (!$record) {
+            return $this->error('合婚记录不存在', 404);
+        }
+        
+        // 检查用户VIP状态
+        $userModel = User::find($user['sub']);
+        $isVip = $userModel->is_vip ?? false;
+        
+        // 计算导出积分消耗
+        $exportPoints = ConfigService::get('points_cost_hehun_export', self::HEHUN_EXPORT_COST);
+        $needPoints = !$isVip;
+        
+        if ($needPoints && $userModel->points < $exportPoints) {
+            return $this->error('积分不足，导出报告需要 ' . $exportPoints . ' 积分', 403);
+        }
+        
+        // 生成报告
+        try {
+            $reportData = [
+                'male_name' => $record->male_name,
+                'female_name' => $record->female_name,
+                'male_bazi' => json_decode($record->male_bazi, true),
+                'female_bazi' => json_decode($record->female_bazi, true),
+                'hehun' => json_decode($record->result, true),
+                'ai_analysis' => $record->ai_analysis ? json_decode($record->ai_analysis, true) : null,
+                'score' => $record->score,
+                'level' => $record->level,
+                'created_at' => $record->create_time,
+                'template' => $template
+            ];
+            
+            // 生成报告文件
+            $exportResult = $this->generateReport($reportData, $format);
+            
+            if (!$exportResult['success']) {
+                return $this->error('报告生成失败: ' . $exportResult['message']);
+            }
+            
+            // 扣除积分（非VIP）
+            if ($needPoints) {
+                $userModel->deductPoints($exportPoints);
+                
+                PointsRecord::record(
+                    $user['sub'],
+                    '导出合婚报告',
+                    -$exportPoints,
+                    'hehun_export',
+                    $record->id,
+                    "格式: {$format}, 记录ID: {$record->id}"
+                );
+            }
+            
+            return $this->success([
+                'record_id' => $record->id,
+                'format' => $format,
+                'template' => $template,
+                'download_url' => $exportResult['url'],
+                'expires_at' => date('Y-m-d H:i:s', strtotime('+30 days')),
+                'points_cost' => $needPoints ? $exportPoints : 0,
+                'remaining_points' => $userModel->points
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->error('报告生成失败: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * 生成报告文件
+     */
+    protected function generateReport(array $data, string $format): array
+    {
+        $filename = 'hehun_' . md5(serialize($data)) . '_' . time();
+        
+        // 模拟生成成功
+        if ($format === 'pdf') {
+            $pdfPath = '/storage/hehun/' . $filename . '.pdf';
+            return [
+                'success' => true,
+                'url' => 'https://example.com' . $pdfPath,
+                'message' => 'PDF报告生成成功'
+            ];
+        } else {
+            $imagePath = '/storage/hehun/' . $filename . '.png';
+            return [
+                'success' => true,
+                'url' => 'https://example.com' . $imagePath,
+                'message' => '图片报告生成成功'
+            ];
+        }
     }
 }

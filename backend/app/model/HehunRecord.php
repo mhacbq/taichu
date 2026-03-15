@@ -29,6 +29,7 @@ class HehunRecord extends Model
         'female_bazi' => 'json',
         'result' => 'json',
         'ai_analysis' => 'json',
+        'export_expires_at' => 'datetime',
         'create_time' => 'datetime',
         'update_time' => 'datetime',
     ];
