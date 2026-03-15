@@ -57,42 +57,13 @@ class Paipan extends BaseController
         
         $mode = $data['mode'] ?? 'pro';
         
-        // 检查缓存（相同八字结果可复用）
-        if (self::ENABLE_CACHE) {
-            $cacheKey = CacheService::baziKey($data['birthDate'], $data['gender']);
-            $cachedResult = CacheService::get($cacheKey);
-            
-            if ($cachedResult) {
-                // 直接使用缓存的排盘结果，但仍需扣除积分
-                return $this->processCachedResult($cachedResult, $user, $data['birthDate'], $mode);
-            }
-        }
-        
-        // 检查用户积分
-        $userModel = \app\model\User::find($user['sub']);
-        if (!$userModel) {
-            return $this->error('用户不存在', 404);
-        }
-        
-        // 检查是否是首次排盘（基于积分记录，防止删除记录后重复获取免费）
-        $hasBaziRecord = BaziRecord::where('user_id', $user['sub'])->count() > 0;
-        $hasPointsRecord = PointsRecord::where('user_id', $user['sub'])
-            ->where('type', 'bazi')
-            ->count() > 0;
-        $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
-        
-        // 非首次排盘需要检查积分
-        if (!$isFirstBazi && $userModel->points < self::BAZI_POINTS_COST) {
-            return $this->error('积分不足，请先充值', 403);
-        }
-        
         // 解析出生日期
         $birthDate = $data['birthDate'];
         $gender = $data['gender'];
         $location = $data['location'] ?? '';
         $mode = $data['mode'] ?? 'pro'; // 'simple' or 'pro'
         
-        // 计算八字
+        // 计算八字（在事务外计算，减少锁持有时间）
         $bazi = $this->calculateBazi($birthDate);
         
         // 使用专业解读服务生成分析
@@ -118,23 +89,58 @@ class Paipan extends BaseController
             $fortuneAnalysis = $this->fortuneAnalysisService->analyzeDaYunLiuNian($bazi, $daYun, $liuNian);
         }
         
+        // ===== 使用数据库行锁防止并发问题 =====
         Db::startTrans();
         try {
+            // 1. 使用行锁查询用户，防止并发修改积分
+            $userData = Db::name('tc_user')
+                ->where('id', $user['sub'])
+                ->where('status', 1)
+                ->lock(true)
+                ->find();
+            
+            if (!$userData) {
+                Db::rollback();
+                return $this->error('用户不存在', 404);
+            }
+            
+            // 2. 检查是否是首次排盘（基于积分记录，防止删除记录后重复获取免费）
+            $hasBaziRecord = BaziRecord::where('user_id', $user['sub'])->count() > 0;
+            $hasPointsRecord = PointsRecord::where('user_id', $user['sub'])
+                ->where('type', 'bazi')
+                ->count() > 0;
+            $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
+            
+            // 3. 非首次排盘需要检查积分
+            if (!$isFirstBazi && $userData['points'] < self::BAZI_POINTS_COST) {
+                Db::rollback();
+                return $this->error('积分不足，请先充值', 403);
+            }
+            
             $pointsCost = $isFirstBazi ? 0 : self::BAZI_POINTS_COST;
             
-            // 非首次排盘扣除积分
+            // 4. 非首次排盘扣除积分（使用原子操作）
             if (!$isFirstBazi) {
-                $userModel->deductPoints(self::BAZI_POINTS_COST);
+                $updateResult = Db::name('tc_user')
+                    ->where('id', $user['sub'])
+                    ->dec('points', self::BAZI_POINTS_COST)
+                    ->update();
+                
+                if ($updateResult === 0) {
+                    Db::rollback();
+                    return $this->error('积分扣除失败，请重试');
+                }
                 
                 // 记录积分变动
-                PointsRecord::record(
-                    $user['sub'],
-                    '八字排盘消耗',
-                    -self::BAZI_POINTS_COST,
-                    'bazi',
-                    0,
-                    "排盘日期: {$birthDate}"
-                );
+                Db::name('tc_points_record')->insert([
+                    'user_id' => $user['sub'],
+                    'action' => '八字排盘消耗',
+                    'points' => -self::BAZI_POINTS_COST,
+                    'type' => 'bazi',
+                    'related_id' => 0,
+                    'remark' => "排盘日期: {$birthDate}",
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
             }
             
             // 保存排盘记录
@@ -157,14 +163,19 @@ class Paipan extends BaseController
             
             Db::commit();
             
+            // 查询最新的积分余额
+            $remainingPoints = Db::name('tc_user')
+                ->where('id', $user['sub'])
+                ->value('points');
+            
             $result = [
                 'id' => $record->id,
                 'bazi' => $bazi,
                 'analysis' => $analysis,
                 'simpleInterpretation' => $simpleInterpretation,
-                'fullInterpretation' => $fullInterpretation, // 新增专业解读
+                'fullInterpretation' => $fullInterpretation,
                 'points_cost' => $pointsCost,
-                'remaining_points' => $userModel->points,
+                'remaining_points' => $remainingPoints,
                 'is_first_bazi' => $isFirstBazi,
             ];
             

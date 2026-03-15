@@ -70,8 +70,10 @@ export const recordShare = (data) => request.post('/share/record', data)
 export const getInviteInfo = () => request.get('/share/invite-info')
 
 // 八字合婚
+export const getHehunPricing = () => request.get('/hehun/pricing')
 export const calculateHehun = (data) => request.post('/hehun/calculate', data)
 export const getHehunHistory = (params) => request.get('/hehun/history', { params })
+export const exportHehunReport = (data) => request.post('/hehun/export', data)
 
 // 取名建议
 export const suggestNames = (data) => request.post('/qiming/suggest', data)
@@ -79,3 +81,9 @@ export const getQimingHistory = (params) => request.get('/qiming/history', { par
 
 // 吉日查询
 export const queryJiri = (data) => request.post('/jiri/query', data)
+
+// 六爻占卜
+export const getLiuyaoPricing = () => request.get('/liuyao/pricing')
+export const liuyaoDivination = (data) => request.post('/liuyao/divination', data)
+export const getLiuyaoHistory = (params) => request.get('/liuyao/history', { params })
+export const deleteLiuyaoRecord = (data) => request.post('/liuyao/delete', data)

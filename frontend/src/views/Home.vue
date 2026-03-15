@@ -87,10 +87,28 @@
             <router-link to="/tarot" class="feature-link">立即体验 →</router-link>
           </div>
           <div class="feature-card">
+            <div class="feature-icon">☯</div>
+            <h3>六爻占卜</h3>
+            <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
+            <router-link to="/liuyao" class="feature-link">立即体验 →</router-link>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💕</div>
+            <h3>八字合婚</h3>
+            <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
+            <router-link to="/hehun" class="feature-link">立即体验 →</router-link>
+          </div>
+          <div class="feature-card">
             <div class="feature-icon">🌟</div>
             <h3>每日指南</h3>
             <p>基于出生日期的每日幸运指数，生活参考，娱乐消遣</p>
             <router-link to="/daily" class="feature-link">立即体验 →</router-link>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>更多功能</h3>
+            <p>取名建议、吉日查询等更多命理功能，满足您的不同需求</p>
+            <router-link to="/profile" class="feature-link">探索更多 →</router-link>
           </div>
         </div>
       </div>
@@ -562,7 +580,7 @@ onMounted(() => {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+  gap: 24px;
 }
 
 .feature-card {

@@ -313,52 +313,71 @@ class Hehun extends BaseController
      */
     protected function processPremiumHehun(array $data, array $user, array $maleBazi, array $femaleBazi, array $hehunResult, string $maleName, string $femaleName, bool $useAi)
     {
-        $userModel = User::find($user['sub']);
-        if (!$userModel) {
-            return $this->error('用户不存在', 404);
-        }
-        
-        $isVip = $userModel->is_vip ?? false;
-        $vipUnlockHehun = ConfigService::get('vip_unlock_hehun', true);
-        
-        // VIP用户免积分
-        $needPoints = !($isVip && $vipUnlockHehun);
-        
-        // 计算实际积分消耗
-        $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
-        $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
-        $finalPoints = $costInfo['final'];
-        
-        if ($needPoints && $userModel->points < $finalPoints) {
-            return $this->error('积分不足，请先充值或开通VIP', 403, [
-                'need_points' => $finalPoints,
-                'current_points' => $userModel->points,
-                'shortage' => $finalPoints - $userModel->points
-            ]);
-        }
-        
-        // AI深度分析（付费层）
+        // AI深度分析（付费层）- 在事务外执行AI调用
         $aiAnalysis = null;
         if ($useAi) {
             $aiAnalysis = $this->generateAiAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
         }
         
-        // 开始事务
+        // 计算实际积分消耗（事务外计算）
+        $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
+        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
+        $finalPoints = $costInfo['final'];
+        
+        // ===== 使用数据库行锁防止并发问题 =====
         Db::startTrans();
         try {
-            // 扣除积分（非VIP用户）
+            // 1. 使用行锁查询用户
+            $userData = Db::name('tc_user')
+                ->where('id', $user['sub'])
+                ->where('status', 1)
+                ->lock(true)
+                ->find();
+            
+            if (!$userData) {
+                Db::rollback();
+                return $this->error('用户不存在', 404);
+            }
+            
+            $isVip = $userData['is_vip'] ?? false;
+            $vipUnlockHehun = ConfigService::get('vip_unlock_hehun', true);
+            
+            // VIP用户免积分
+            $needPoints = !($isVip && $vipUnlockHehun);
+            
+            // 2. 检查积分余额
+            if ($needPoints && $userData['points'] < $finalPoints) {
+                Db::rollback();
+                return $this->error('积分不足，请先充值或开通VIP', 403, [
+                    'need_points' => $finalPoints,
+                    'current_points' => $userData['points'],
+                    'shortage' => $finalPoints - $userData['points']
+                ]);
+            }
+            
+            // 3. 扣除积分（非VIP用户，使用原子操作）
             if ($needPoints) {
-                $userModel->deductPoints($finalPoints);
+                $updateResult = Db::name('tc_user')
+                    ->where('id', $user['sub'])
+                    ->dec('points', $finalPoints)
+                    ->update();
                 
-                PointsRecord::record(
-                    $user['sub'],
-                    '八字合婚-详细报告',
-                    -$finalPoints,
-                    'hehun',
-                    0,
-                    "男方: {$data['maleBirthDate']}, 女方: {$data['femaleBirthDate']}"
-                );
+                if ($updateResult === 0) {
+                    Db::rollback();
+                    return $this->error('积分扣除失败，请重试');
+                }
+                
+                // 记录积分变动
+                Db::name('tc_points_record')->insert([
+                    'user_id' => $user['sub'],
+                    'action' => '八字合婚-详细报告',
+                    'points' => -$finalPoints,
+                    'type' => 'hehun',
+                    'related_id' => 0,
+                    'remark' => "男方: {$data['maleBirthDate']}, 女方: {$data['femaleBirthDate']}",
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
             }
             
             // 保存合婚记录
@@ -380,6 +399,11 @@ class Hehun extends BaseController
             
             Db::commit();
             
+            // 查询最新的积分余额
+            $remainingPoints = Db::name('tc_user')
+                ->where('id', $user['sub'])
+                ->value('points');
+            
             $result = [
                 'id' => $record->id,
                 'tier' => $isVip ? self::TIER_VIP : self::TIER_PREMIUM,
@@ -397,7 +421,7 @@ class Hehun extends BaseController
                     ] : null
                 ],
                 'user_status' => [
-                    'remaining_points' => $userModel->points,
+                    'remaining_points' => $remainingPoints,
                     'is_vip' => $isVip,
                     'is_vip_free' => !$needPoints
                 ]

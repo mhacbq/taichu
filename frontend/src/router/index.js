@@ -9,6 +9,8 @@ import Login from '../views/Login.vue'
 import Help from '../views/Help.vue'
 import NotFound from '../views/NotFound.vue'
 import Recharge from '../views/Recharge.vue'
+import Hehun from '../views/Hehun.vue'
+import Liuyao from '../views/Liuyao.vue'
 
 const routes = [
   {
@@ -79,6 +81,34 @@ const routes = [
       requiresAuth: true,
       seo: seoConfigs.recharge,
       breadcrumb: [{ name: '首页', url: '/' }, { name: '积分充值', url: '/recharge' }]
+    }
+  },
+  {
+    path: '/hehun',
+    name: 'Hehun',
+    component: Hehun,
+    meta: { 
+      requiresAuth: true,
+      seo: {
+        title: '八字合婚 - 太初命理',
+        description: '通过双方八字分析婚姻匹配度，了解缘分深浅',
+        keywords: '八字合婚,婚姻配对,八字匹配,缘分分析'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '八字合婚', url: '/hehun' }]
+    }
+  },
+  {
+    path: '/liuyao',
+    name: 'Liuyao',
+    component: Liuyao,
+    meta: { 
+      requiresAuth: true,
+      seo: {
+        title: '六爻占卜 - 太初命理',
+        description: '传统周易六爻占卜，解答心中疑惑',
+        keywords: '六爻占卜,周易,算卦,问事,预测'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '六爻占卜', url: '/liuyao' }]
     }
   },
   {
