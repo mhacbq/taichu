@@ -171,7 +171,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, shareTarotRecord } from '../api'
+import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
 
 const spreads = [
