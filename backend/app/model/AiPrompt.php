@@ -10,6 +10,7 @@ use think\Model;
  */
 class AiPrompt extends Model
 {
+    // 注意：此表不使用tc_前缀
     protected $table = 'ai_prompts';
     
     // 自动写入时间戳
