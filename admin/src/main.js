@@ -7,6 +7,7 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import App from './App.vue'
 import router from './router'
 import './styles/index.scss'
+import { setupPermissionDirectives } from './directives/permission'
 
 const app = createApp(App)
 
@@ -14,6 +15,9 @@ const app = createApp(App)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+
+// 注册权限指令
+setupPermissionDirectives(app)
 
 app.use(createPinia())
 app.use(router)

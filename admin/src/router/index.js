@@ -62,9 +62,21 @@ export const asyncRoutes = [
   {
     path: '/content',
     component: () => import('@/layout/index.vue'),
-    redirect: '/content/bazi',
+    redirect: '/content/pages',
     meta: { title: '内容管理', icon: 'Document' },
     children: [
+      {
+        path: 'pages',
+        name: 'Pages',
+        component: () => import('@/views/content/pages.vue'),
+        meta: { title: '页面管理' }
+      },
+      {
+        path: 'pages/:id/history',
+        name: 'PageHistory',
+        component: () => import('@/views/content/page-history.vue'),
+        meta: { title: '页面历史', hidden: true }
+      },
       {
         path: 'bazi',
         name: 'BaziRecords',
@@ -82,6 +94,19 @@ export const asyncRoutes = [
         name: 'DailyFortune',
         component: () => import('@/views/content/daily.vue'),
         meta: { title: '每日运势' }
+      }
+    ]
+  },
+  {
+    path: '/editor',
+    component: () => import('@/layout/index.vue'),
+    meta: { title: '页面编辑', icon: 'Edit', hidden: true },
+    children: [
+      {
+        path: 'page/:id',
+        name: 'PageEditor',
+        component: () => import('@/views/editor/page-editor.vue'),
+        meta: { title: '编辑页面', hidden: true }
       }
     ]
   },
