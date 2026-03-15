@@ -117,7 +117,7 @@
         
         <div class="interpretation">
           <h3>牌面解读</h3>
-          <div class="interpretation-content" v-html="interpretation"></div>
+          <div class="interpretation-content">{{ interpretation }}</div>
         </div>
         
         <!-- 操作按钮 -->

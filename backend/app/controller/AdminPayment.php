@@ -114,12 +114,14 @@ class AdminPayment extends BaseController
         
         // 关键词搜索（订单号、用户ID、用户昵称）
         if ($keyword) {
+            // 净化关键词，防止SQL注入
+            $keyword = preg_replace('/[%_\\]/', '', $keyword);
             $query->where(function($q) use ($keyword) {
-                $q->where('order_no', 'like', "%{$keyword}%")
-                  ->whereOr('pay_order_no', 'like', "%{$keyword}%")
+                $q->whereLike('order_no', "%{$keyword}%")
+                  ->whereOrLike('pay_order_no', "%{$keyword}%")
                   ->whereOr('user_id', 'in', function($sq) use ($keyword) {
                       $sq->table('users')
-                         ->where('nickname', 'like', "%{$keyword}%")
+                         ->whereLike('nickname', "%{$keyword}%")
                          ->field('id');
                   });
             });

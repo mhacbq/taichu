@@ -280,7 +280,7 @@
 
         <div class="bazi-analysis">
           <h3>详细命理分析</h3>
-          <div class="analysis-content" v-html="result.analysis"></div>
+          <div class="analysis-content">{{ result.analysis }}</div>
         </div>
 
         <!-- 大运分析 -->
@@ -415,6 +415,7 @@ import { ElMessage } from 'element-plus'
 import { calculateBazi as calculateBaziApi, getPointsBalance } from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
 import BackButton from '../components/BackButton.vue'
+import { sanitizeHtml } from '../utils/sanitize'
 
 const birthDate = ref('')
 const gender = ref('male')
@@ -652,10 +653,13 @@ const clearAiResult = () => {
   aiPrompt.value = ''
 }
 
-// 格式化AI内容（简单的换行处理）
+// 格式化AI内容（净化HTML并处理换行）
 const formatAiContent = (content) => {
   if (!content) return ''
-  return content
+  // 先净化HTML，防止XSS攻击
+  const cleanContent = sanitizeHtml(content, false) // 先转为纯文本
+  // 再处理换行
+  return cleanContent
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
     .replace(/^(.+)$/, '<p>$1</p>')

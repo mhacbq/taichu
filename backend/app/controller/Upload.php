@@ -249,7 +249,9 @@ class Upload extends BaseController
                 ->order('created_at', 'desc');
             
             if ($keyword) {
-                $query->where('original_name', 'like', "%{$keyword}%");
+                // 净化关键词，防止SQL注入
+                $keyword = preg_replace('/[%_]/', '', $keyword);
+                $query->whereLike('original_name', "%{$keyword}%");
             }
             
             $list = $query->page($page, $pageSize)->select();
