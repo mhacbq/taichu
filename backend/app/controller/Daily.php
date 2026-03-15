@@ -63,7 +63,7 @@ class Daily extends BaseController
     protected function generatePersonalizedFortune(int $userId, $fortune): ?array
     {
         // 获取用户最近的八字排盘记录
-        $baziRecord = Db::name('bazi_record')
+        $baziRecord = Db::name('tc_bazi_record')
             ->where('user_id', $userId)
             ->order('created_at', 'desc')
             ->find();
