@@ -119,6 +119,43 @@
         </template>
       </el-dialog>
 
+      <!-- 积分消耗确认对话框 -->
+      <el-dialog
+        v-model="pointsConfirmVisible"
+        title="确认使用积分"
+        width="400px"
+        class="points-confirm-dialog"
+      >
+        <div class="points-confirm-content">
+          <div class="points-icon">💎</div>
+          <p class="points-title">
+            {{ 
+              pointsConfirmType === 'yearly' ? '流年运势分析' : 
+              pointsConfirmType === 'dayun' ? '大运运势评分' : 
+              '运势K线图' 
+            }}
+          </p>
+          <p class="points-desc">
+            此功能将消耗 
+            <strong>
+              {{ 
+                pointsConfirmType === 'yearly' ? fortunePointsCost.yearly_fortune : 
+                pointsConfirmType === 'dayun' ? fortunePointsCost.dayun_analysis : 
+                fortunePointsCost.dayun_chart 
+              }} 
+              积分
+            </strong>
+          </p>
+          <p class="points-balance">当前积分: {{ currentPoints }}</p>
+        </div>
+        <template #footer>
+          <el-button @click="pointsConfirmVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmPointsConsume">
+            确认使用
+          </el-button>
+        </template>
+      </el-dialog>
+
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-state card">
         <div class="loading-animation">
@@ -474,6 +511,318 @@
           </div>
         </div>
         
+        <!-- 流年运势分析 -->
+        <div class="yearly-fortune-section" v-if="result.bazi">
+          <h3>
+            <span class="section-icon">📅</span>
+            流年运势深度分析
+            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.yearly_fortune }}积分</el-tag>
+          </h3>
+          
+          <!-- 年份选择 -->
+          <div class="year-selector">
+            <span class="selector-label">选择年份：</span>
+            <el-slider
+              v-model="selectedYear"
+              :min="new Date().getFullYear() - 3"
+              :max="new Date().getFullYear() + 7"
+              :step="1"
+              show-stops
+              class="year-slider"
+            />
+            <span class="selected-year">{{ selectedYear }}年</span>
+          </div>
+          
+          <!-- 流年分析结果 -->
+          <div v-if="yearlyFortuneResult" class="yearly-result">
+            <div class="yearly-header">
+              <div class="year-info">
+                <span class="year-number">{{ yearlyFortuneResult.year }}</span>
+                <span class="year-ganzhi">{{ yearlyFortuneResult.ganzhi }}年</span>
+                <span class="year-nayin">{{ yearlyFortuneResult.nayin }}</span>
+              </div>
+              <div class="score-display">
+                <div class="score-circle" :class="getScoreClass(yearlyFortuneResult.score)">
+                  <span class="score-value">{{ yearlyFortuneResult.score }}</span>
+                  <span class="score-label">运势评分</span>
+                </div>
+                <div class="rating-badge" :class="getScoreClass(yearlyFortuneResult.score)">
+                  {{ yearlyFortuneResult.rating }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="yearly-analysis">
+              <div class="analysis-card overall">
+                <h4>🎯 整体运势</h4>
+                <p>{{ yearlyFortuneResult.overall }}</p>
+              </div>
+              
+              <div class="analysis-grid">
+                <div class="analysis-card">
+                  <h4>💼 事业运势</h4>
+                  <p>{{ yearlyFortuneResult.career }}</p>
+                </div>
+                <div class="analysis-card">
+                  <h4>💰 财富运势</h4>
+                  <p>{{ yearlyFortuneResult.wealth }}</p>
+                </div>
+                <div class="analysis-card">
+                  <h4>💕 感情运势</h4>
+                  <p>{{ yearlyFortuneResult.relationship }}</p>
+                </div>
+                <div class="analysis-card">
+                  <h4>🏃 健康提醒</h4>
+                  <p>{{ yearlyFortuneResult.health }}</p>
+                </div>
+              </div>
+              
+              <div class="analysis-card advice">
+                <h4>🌟 开运建议</h4>
+                <p>{{ yearlyFortuneResult.advice }}</p>
+              </div>
+              
+              <div class="lucky-info">
+                <div class="lucky-section">
+                  <h5>✨ 幸运月份</h5>
+                  <div class="lucky-tags">
+                    <span v-for="month in yearlyFortuneResult.lucky_months" :key="month" class="lucky-tag good">
+                      {{ month }}月
+                    </span>
+                  </div>
+                </div>
+                <div class="lucky-section">
+                  <h5>⚠️ 注意月份</h5>
+                  <div class="lucky-tags">
+                    <span v-for="month in yearlyFortuneResult.unlucky_months" :key="month" class="lucky-tag bad">
+                      {{ month }}月
+                    </span>
+                  </div>
+                </div>
+                <div class="lucky-section">
+                  <h5>🎨 幸运颜色</h5>
+                  <div class="lucky-tags">
+                    <span v-for="color in yearlyFortuneResult.lucky_colors" :key="color" class="lucky-tag color">
+                      {{ color }}
+                    </span>
+                  </div>
+                </div>
+                <div class="lucky-section">
+                  <h5>🔢 幸运数字</h5>
+                  <div class="lucky-tags">
+                    <span v-for="num in yearlyFortuneResult.lucky_numbers" :key="num" class="lucky-tag number">
+                      {{ num }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 分析按钮 -->
+          <div v-else class="analysis-actions">
+            <p class="analysis-desc">基于你的八字，AI为你深度分析流年运势</p>
+            <el-button 
+              type="warning" 
+              size="large"
+              :loading="yearlyFortuneLoading"
+              :disabled="currentPoints < fortunePointsCost.yearly_fortune"
+              @click="showPointsConfirm('yearly')"
+            >
+              <span class="btn-icon">✨</span>
+              {{ currentPoints < fortunePointsCost.yearly_fortune ? '积分不足' : '开始流年分析' }}
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 大运运势分析 -->
+        <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
+          <h3>
+            <span class="section-icon">🎯</span>
+            大运运势评分
+            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_analysis }}积分</el-tag>
+          </h3>
+          
+          <!-- 大运选择 -->
+          <div class="dayun-selector">
+            <span class="selector-label">选择大运：</span>
+            <el-radio-group v-model="selectedDayunIndex" size="small">
+              <el-radio-button 
+                v-for="(yun, index) in result.dayun" 
+                :key="index" 
+                :label="index"
+              >
+                {{ yun.gan }}{{ yun.zhi }} ({{ yun.age_start }}-{{ yun.age_end }}岁)
+              </el-radio-button>
+            </el-radio-group>
+          </div>
+          
+          <!-- 大运分析结果 -->
+          <div v-if="dayunAnalysisResult" class="dayun-analysis-result">
+            <div class="dayun-header">
+              <div class="dayun-info">
+                <span class="dayun-name">{{ dayunAnalysisResult.dayun.gan }}{{ dayunAnalysisResult.dayun.zhi }}</span>
+                <span class="dayun-shishen">{{ dayunAnalysisResult.dayun.shishen }}</span>
+                <span class="dayun-age">{{ dayunAnalysisResult.dayun.start_age }}-{{ dayunAnalysisResult.dayun.end_age }}岁</span>
+              </div>
+              <div class="dayun-level-badge" :class="getScoreClass(dayunAnalysisResult.overall_score)">
+                {{ dayunAnalysisResult.fortune_level }}
+              </div>
+            </div>
+            
+            <div class="dayun-scores">
+              <div class="score-item">
+                <span class="score-name">综合</span>
+                <el-progress 
+                  :percentage="dayunAnalysisResult.scores.overall" 
+                  :color="getScoreColor(dayunAnalysisResult.scores.overall)"
+                  :stroke-width="12"
+                  class="score-progress"
+                />
+                <span class="score-value">{{ dayunAnalysisResult.scores.overall }}</span>
+              </div>
+              <div class="score-item">
+                <span class="score-name">事业</span>
+                <el-progress 
+                  :percentage="dayunAnalysisResult.scores.career" 
+                  :color="getScoreColor(dayunAnalysisResult.scores.career)"
+                  :stroke-width="10"
+                  class="score-progress"
+                />
+                <span class="score-value">{{ dayunAnalysisResult.scores.career }}</span>
+              </div>
+              <div class="score-item">
+                <span class="score-name">财运</span>
+                <el-progress 
+                  :percentage="dayunAnalysisResult.scores.wealth" 
+                  :color="getScoreColor(dayunAnalysisResult.scores.wealth)"
+                  :stroke-width="10"
+                  class="score-progress"
+                />
+                <span class="score-value">{{ dayunAnalysisResult.scores.wealth }}</span>
+              </div>
+              <div class="score-item">
+                <span class="score-name">感情</span>
+                <el-progress 
+                  :percentage="dayunAnalysisResult.scores.relationship" 
+                  :color="getScoreColor(dayunAnalysisResult.scores.relationship)"
+                  :stroke-width="10"
+                  class="score-progress"
+                />
+                <span class="score-value">{{ dayunAnalysisResult.scores.relationship }}</span>
+              </div>
+              <div class="score-item">
+                <span class="score-name">健康</span>
+                <el-progress 
+                  :percentage="dayunAnalysisResult.scores.health" 
+                  :color="getScoreColor(dayunAnalysisResult.scores.health)"
+                  :stroke-width="10"
+                  class="score-progress"
+                />
+                <span class="score-value">{{ dayunAnalysisResult.scores.health }}</span>
+              </div>
+            </div>
+            
+            <div class="dayun-analysis-text">
+              <div class="text-card" v-for="(text, key) in dayunAnalysisResult.analysis" :key="key">
+                <p>{{ text }}</p>
+              </div>
+            </div>
+            
+            <div class="key-suggestions">
+              <h4>💡 关键建议</h4>
+              <ul>
+                <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
+                  {{ suggestion }}
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- 分析按钮 -->
+          <div v-else class="analysis-actions">
+            <p class="analysis-desc">深度分析此大运的各方面运势评分</p>
+            <el-button 
+              type="primary" 
+              size="large"
+              :loading="dayunAnalysisLoading"
+              :disabled="currentPoints < fortunePointsCost.dayun_analysis"
+              @click="showPointsConfirm('dayun')"
+            >
+              <span class="btn-icon">📊</span>
+              {{ currentPoints < fortunePointsCost.dayun_analysis ? '积分不足' : '开始大运评分' }}
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 运势K线图 -->
+        <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
+          <h3>
+            <span class="section-icon">📈</span>
+            运势K线图
+            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_chart }}积分</el-tag>
+          </h3>
+          
+          <!-- K线图结果 -->
+          <div v-if="dayunChartData" class="chart-result">
+            <div class="chart-summary">
+              <p>{{ dayunChartData.summary }}</p>
+              <div v-if="dayunChartData.best_period" class="best-period">
+                <span class="best-label">最佳时期：</span>
+                <span class="best-value">
+                  {{ dayunChartData.best_period.dayun_name }}运 
+                  ({{ dayunChartData.best_period.age_range }})
+                  评分{{ dayunChartData.best_period.dayun_score }}分
+                </span>
+              </div>
+            </div>
+            
+            <div class="chart-container">
+              <div v-for="(dayun, index) in dayunChartData.chart_data" :key="index" class="chart-dayun">
+                <div class="chart-dayun-header">
+                  <span class="dayun-title">{{ dayun.dayun_name }}运</span>
+                  <span class="dayun-score" :class="getScoreClass(dayun.overall_score)">
+                    {{ dayun.overall_score }}分
+                  </span>
+                  <span class="dayun-trend">{{ dayun.trend }}</span>
+                </div>
+                <div class="chart-years">
+                  <div 
+                    v-for="year in dayun.years" 
+                    :key="year.year"
+                    class="chart-year-bar"
+                    :class="{ 'current': year.is_current }"
+                    :style="{ height: year.score + '%' }"
+                    :title="`${year.year}年 (${year.age}岁): ${year.score}分`"
+                  >
+                    <span class="year-label">{{ year.year }}</span>
+                    <span class="year-score">{{ year.score }}</span>
+                  </div>
+                </div>
+                <div class="chart-legend">
+                  <span>{{ dayun.start_age }}-{{ dayun.end_age }}岁</span>
+                  <span :class="getScoreClass(dayun.overall_score)">{{ dayun.fortune_level }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 生成按钮 -->
+          <div v-else class="analysis-actions">
+            <p class="analysis-desc">可视化展示你一生的大运走势，找到最佳发展时期</p>
+            <el-button 
+              type="success" 
+              size="large"
+              :loading="dayunChartLoading"
+              :disabled="currentPoints < fortunePointsCost.dayun_chart"
+              @click="showPointsConfirm('chart')"
+            >
+              <span class="btn-icon">📈</span>
+              {{ currentPoints < fortunePointsCost.dayun_chart ? '积分不足' : '生成运势K线图' }}
+            </el-button>
+          </div>
+        </div>
+
         <!-- AI智能解盘 -->
         <div class="ai-analysis-section" v-if="result.bazi">
           <h3>
@@ -546,7 +895,15 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { calculateBazi as calculateBaziApi, getPointsBalance } from '../api'
+import { 
+  calculateBazi as calculateBaziApi, 
+  getPointsBalance, 
+  getYearlyFortune, 
+  getYearlyTrend, 
+  getDayunAnalysis, 
+  getDayunChart,
+  getFortunePointsCost 
+} from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
 import BackButton from '../components/BackButton.vue'
 import { sanitizeHtml } from '../utils/sanitize'
@@ -568,6 +925,29 @@ const aiPrompt = ref('')
 const aiAnalyzing = ref(false)
 const aiAnalysisResult = ref(null)
 const aiStreamContent = ref('')
+
+// 流年运势相关
+const fortunePointsCost = ref({
+  yearly_fortune: 30,
+  dayun_analysis: 50,
+  dayun_chart: 30
+})
+const selectedYear = ref(new Date().getFullYear())
+const yearlyFortuneResult = ref(null)
+const yearlyFortuneLoading = ref(false)
+const yearlyTrendData = ref(null)
+
+// 大运分析相关
+const selectedDayunIndex = ref(0)
+const dayunAnalysisResult = ref(null)
+const dayunAnalysisLoading = ref(false)
+const dayunChartData = ref(null)
+const dayunChartLoading = ref(false)
+
+// 积分消耗确认对话框
+const pointsConfirmVisible = ref(false)
+const pointsConfirmType = ref('') // 'yearly', 'dayun', 'chart'
+const pointsConfirmData = ref({})
 
 // 版本提示
 const versionHint = computed(() => {
@@ -600,9 +980,162 @@ const loadPoints = async () => {
       currentPoints.value = response.data.balance
       isFirstBazi.value = response.data.first_bazi !== false
     }
+    
+    // 获取运势分析积分消耗
+    const costResponse = await getFortunePointsCost()
+    if (costResponse.code === 0) {
+      fortunePointsCost.value = costResponse.data
+    }
   } catch (error) {
     console.error('获取积分失败:', error)
   }
+}
+
+// 显示积分消耗确认对话框
+const showPointsConfirm = (type, data = {}) => {
+  const costs = {
+    'yearly': fortunePointsCost.value.yearly_fortune,
+    'dayun': fortunePointsCost.value.dayun_analysis,
+    'chart': fortunePointsCost.value.dayun_chart
+  }
+  
+  if (currentPoints.value < costs[type]) {
+    ElMessage.warning(`积分不足，需要${costs[type]}积分，请先签到领取积分`)
+    return
+  }
+  
+  pointsConfirmType.value = type
+  pointsConfirmData.value = data
+  pointsConfirmVisible.value = true
+}
+
+// 确认消耗积分
+const confirmPointsConsume = async () => {
+  pointsConfirmVisible.value = false
+  
+  switch (pointsConfirmType.value) {
+    case 'yearly':
+      await getYearlyFortuneAnalysis()
+      break
+    case 'dayun':
+      await getDayunFortuneAnalysis()
+      break
+    case 'chart':
+      await getDayunChart()
+      break
+  }
+}
+
+// 获取流年运势分析
+const getYearlyFortuneAnalysis = async () => {
+  if (!result.value?.id) return
+  
+  yearlyFortuneLoading.value = true
+  try {
+    const response = await getYearlyFortune({
+      bazi_id: result.value.id,
+      year: selectedYear.value
+    })
+    
+    if (response.code === 0) {
+      yearlyFortuneResult.value = response.data
+      currentPoints.value = response.data.remaining_points
+      ElMessage.success('流年运势分析完成！')
+    } else {
+      ElMessage.error(response.message || '分析失败')
+    }
+  } catch (error) {
+    console.error('流年运势分析错误:', error)
+    ElMessage.error('分析失败，请稍后重试')
+  } finally {
+    yearlyFortuneLoading.value = false
+  }
+}
+
+// 获取流年趋势数据（用于K线图）
+const getYearlyTrend = async () => {
+  if (!result.value?.id) return
+  
+  try {
+    const response = await getYearlyTrend({
+      bazi_id: result.value.id,
+      start_year: selectedYear.value - 5,
+      end_year: selectedYear.value + 5
+    })
+    
+    if (response.code === 0) {
+      yearlyTrendData.value = response.data
+    }
+  } catch (error) {
+    console.error('获取流年趋势失败:', error)
+  }
+}
+
+// 获取大运运势分析
+const getDayunFortuneAnalysis = async () => {
+  if (!result.value?.id) return
+  
+  dayunAnalysisLoading.value = true
+  try {
+    const response = await getDayunAnalysis({
+      bazi_id: result.value.id,
+      dayun_index: selectedDayunIndex.value
+    })
+    
+    if (response.code === 0) {
+      dayunAnalysisResult.value = response.data
+      currentPoints.value = response.data.remaining_points
+      ElMessage.success('大运运势分析完成！')
+    } else {
+      ElMessage.error(response.message || '分析失败')
+    }
+  } catch (error) {
+    console.error('大运运势分析错误:', error)
+    ElMessage.error('分析失败，请稍后重试')
+  } finally {
+    dayunAnalysisLoading.value = false
+  }
+}
+
+// 获取大运K线图数据
+const getDayunChart = async () => {
+  if (!result.value?.id) return
+  
+  dayunChartLoading.value = true
+  try {
+    const response = await getDayunChart({
+      bazi_id: result.value.id
+    })
+    
+    if (response.code === 0) {
+      dayunChartData.value = response.data
+      currentPoints.value = response.data.remaining_points
+      ElMessage.success('运势K线图生成完成！')
+    } else {
+      ElMessage.error(response.message || '生成失败')
+    }
+  } catch (error) {
+    console.error('大运K线图生成错误:', error)
+    ElMessage.error('生成失败，请稍后重试')
+  } finally {
+    dayunChartLoading.value = false
+  }
+}
+
+// 获取评分颜色
+const getScoreColor = (score) => {
+  if (score >= 80) return '#67c23a'
+  if (score >= 60) return '#e6a23c'
+  if (score >= 40) return '#f56c6c'
+  return '#909399'
+}
+
+// 获取评分等级样式
+const getScoreClass = (score) => {
+  if (score >= 80) return 'excellent'
+  if (score >= 60) return 'good'
+  if (score >= 40) return 'average'
+  return 'poor'
 }
 
 // 显示确认对话框
@@ -2116,6 +2649,600 @@ const formatAiContent = (content) => {
   color: rgba(255, 215, 0, 0.8);
 }
 
+/* 积分确认对话框 */
+.points-confirm-dialog .points-confirm-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.points-confirm-dialog .points-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.points-confirm-dialog .points-title {
+  font-size: 20px;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.points-confirm-dialog .points-desc {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 10px;
+}
+
+.points-confirm-dialog .points-desc strong {
+  color: #ffd700;
+  font-size: 20px;
+}
+
+.points-confirm-dialog .points-balance {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 流年运势分析 */
+.yearly-fortune-section {
+  margin-top: 30px;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(233, 69, 96, 0.05));
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 20px;
+  padding: 30px;
+}
+
+.yearly-fortune-section h3 {
+  color: #fff;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.year-selector {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+
+.selector-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.year-slider {
+  flex: 1;
+}
+
+.selected-year {
+  color: #ff6b6b;
+  font-size: 18px;
+  font-weight: bold;
+  min-width: 70px;
+}
+
+/* 流年分析结果 */
+.yearly-result {
+  animation: fadeInUp 0.5s ease;
+}
+
+.yearly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+}
+
+.year-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.year-number {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+.year-ganzhi {
+  font-size: 20px;
+  color: #fff;
+}
+
+.year-nayin {
+  font-size: 14px;
+  color: rgba(255, 215, 0, 0.9);
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.score-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.score-circle.excellent { border-color: #67c23a; }
+.score-circle.good { border-color: #e6a23c; }
+.score-circle.average { border-color: #f56c6c; }
+.score-circle.poor { border-color: #909399; }
+
+.score-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.score-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rating-badge {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.rating-badge.excellent { background: linear-gradient(135deg, #67c23a, #85ce61); }
+.rating-badge.good { background: linear-gradient(135deg, #e6a23c, #ebb563); }
+.rating-badge.average { background: linear-gradient(135deg, #f56c6c, #f78989); }
+.rating-badge.poor { background: linear-gradient(135deg, #909399, #a6a9ad); }
+
+/* 分析卡片 */
+.yearly-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analysis-card {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.analysis-card h4 {
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analysis-card p {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.analysis-card.overall {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.1));
+  border: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.analysis-card.advice {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.15), rgba(133, 206, 97, 0.1));
+  border: 1px solid rgba(103, 194, 58, 0.3);
+}
+
+/* 幸运信息 */
+.lucky-info {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.lucky-section h5 {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.lucky-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lucky-tag {
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 13px;
+}
+
+.lucky-tag.good {
+  background: rgba(103, 194, 58, 0.3);
+  color: #67c23a;
+}
+
+.lucky-tag.bad {
+  background: rgba(245, 108, 108, 0.3);
+  color: #f56c6c;
+}
+
+.lucky-tag.color {
+  background: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+.lucky-tag.number {
+  background: rgba(64, 158, 255, 0.3);
+  color: #409eff;
+}
+
+/* 大运运势分析 */
+.dayun-fortune-section {
+  margin-top: 30px;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.1), rgba(83, 168, 255, 0.05));
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  border-radius: 20px;
+  padding: 30px;
+}
+
+.dayun-fortune-section h3 {
+  color: #fff;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dayun-selector {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+/* 大运分析结果 */
+.dayun-analysis-result {
+  animation: fadeInUp 0.5s ease;
+}
+
+.dayun-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+}
+
+.dayun-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dayun-name {
+  font-size: 32px;
+  font-weight: bold;
+  color: #409eff;
+}
+
+.dayun-shishen {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 5px 12px;
+  background: rgba(64, 158, 255, 0.2);
+  border-radius: 15px;
+}
+
+.dayun-age {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.dayun-level-badge {
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.dayun-level-badge.excellent { background: linear-gradient(135deg, #67c23a, #85ce61); }
+.dayun-level-badge.good { background: linear-gradient(135deg, #e6a23c, #ebb563); }
+.dayun-level-badge.average { background: linear-gradient(135deg, #f56c6c, #f78989); }
+.dayun-level-badge.poor { background: linear-gradient(135deg, #909399, #a6a9ad); }
+
+/* 分数条 */
+.dayun-scores {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.score-item:last-child {
+  margin-bottom: 0;
+}
+
+.score-name {
+  width: 50px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.score-progress {
+  flex: 1;
+}
+
+.score-value {
+  width: 40px;
+  text-align: right;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* 分析文本 */
+.dayun-analysis-text {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.text-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 15px;
+}
+
+.text-card p {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+/* 关键建议 */
+.key-suggestions {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 193, 7, 0.05));
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.key-suggestions h4 {
+  color: #ffd700;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.key-suggestions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.key-suggestions li {
+  color: rgba(255, 255, 255, 0.85);
+  padding: 8px 0;
+  padding-left: 20px;
+  position: relative;
+  font-size: 14px;
+}
+
+.key-suggestions li::before {
+  content: '💡';
+  position: absolute;
+  left: 0;
+}
+
+/* 运势K线图 */
+.fortune-chart-section {
+  margin-top: 30px;
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
+  border: 1px solid rgba(103, 194, 58, 0.3);
+  border-radius: 20px;
+  padding: 30px;
+}
+
+.fortune-chart-section h3 {
+  color: #fff;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chart-result {
+  animation: fadeInUp 0.5s ease;
+}
+
+.chart-summary {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.chart-summary p {
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 10px;
+}
+
+.best-period {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.best-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.best-value {
+  color: #67c23a;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* K线图表容器 */
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.chart-dayun {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.chart-dayun-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.dayun-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.dayun-score {
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.dayun-score.excellent { background: rgba(103, 194, 58, 0.3); color: #67c23a; }
+.dayun-score.good { background: rgba(230, 162, 60, 0.3); color: #e6a23c; }
+.dayun-score.average { background: rgba(245, 108, 108, 0.3); color: #f56c6c; }
+.dayun-score.poor { background: rgba(144, 147, 153, 0.3); color: #909399; }
+
+.dayun-trend {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.chart-years {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 150px;
+  padding: 10px 0;
+  margin-bottom: 10px;
+}
+
+.chart-year-bar {
+  flex: 1;
+  min-width: 20px;
+  background: linear-gradient(to top, #67c23a, #85ce61);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 5px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.chart-year-bar:hover {
+  opacity: 0.8;
+  transform: scaleX(1.1);
+}
+
+.chart-year-bar.current {
+  background: linear-gradient(to top, #ffd700, #ffec8b);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.year-label {
+  position: absolute;
+  bottom: -20px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+.year-score {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.7);
+  font-weight: bold;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 25px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 分析按钮区域 */
+.analysis-actions {
+  text-align: center;
+  padding: 30px;
+}
+
+.analysis-desc {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
 /* AI解盘区域 */
 .ai-analysis-section {
   margin-top: 30px;
@@ -2254,6 +3381,71 @@ const formatAiContent = (content) => {
   
   .ai-content {
     font-size: 14px;
+  }
+  
+  /* 流年运势响应式 */
+  .yearly-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .year-info {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .year-number {
+    font-size: 28px;
+  }
+  
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .lucky-info {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* 大运分析响应式 */
+  .dayun-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .dayun-info {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .dayun-name {
+    font-size: 24px;
+  }
+  
+  .score-item {
+    flex-wrap: wrap;
+  }
+  
+  .score-name {
+    width: 40px;
+  }
+  
+  /* K线图响应式 */
+  .chart-years {
+    height: 120px;
+  }
+  
+  .chart-year-bar {
+    min-width: 15px;
+  }
+  
+  .year-label {
+    font-size: 8px;
+    transform: rotate(-45deg);
+    bottom: -15px;
+  }
+  
+  .year-score {
+    font-size: 8px;
   }
 }
 </style>

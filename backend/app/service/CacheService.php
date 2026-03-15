@@ -180,4 +180,32 @@ class CacheService
     {
         return Cache::dec($key, $step);
     }
+    
+    /**
+     * 生成流年运势缓存键
+     * 
+     * @param array $bazi 八字数据
+     * @param int $year 年份
+     * @return string
+     */
+    public static function yearlyFortuneKey(array $bazi, int $year): string
+    {
+        $baziString = json_encode($bazi);
+        $hash = md5($baziString . $year);
+        return 'yearly:fortune:' . $year . ':' . $hash;
+    }
+    
+    /**
+     * 生成大运分析缓存键
+     * 
+     * @param array $dayun 大运数据
+     * @param string $dayMaster 日主
+     * @return string
+     */
+    public static function dayunKey(array $dayun, string $dayMaster): string
+    {
+        $dayunString = $dayun['gan'] . $dayun['zhi'] . $dayun['start_age'];
+        $hash = md5($dayunString . $dayMaster);
+        return 'dayun:analysis:' . $hash;
+    }
 }

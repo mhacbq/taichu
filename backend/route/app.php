@@ -50,6 +50,15 @@ Route::group('api', function () {
         Route::get('history', 'Paipan/history');
     });
     
+    // 运势分析（积分消耗功能）
+    Route::group('fortune', function () {
+        Route::get('points-cost', 'Fortune/getYearlyFortunePoints');
+        Route::post('yearly', 'Fortune/yearlyFortune');
+        Route::get('yearly-trend', 'Fortune/yearlyTrend');
+        Route::post('dayun-analysis', 'Fortune/dayunAnalysis');
+        Route::post('dayun-chart', 'Fortune/dayunChart');
+    });
+    
     // 塔罗相关
     Route::group('tarot', function () {
         Route::post('draw', 'Tarot/draw');
