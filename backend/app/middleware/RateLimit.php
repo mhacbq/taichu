@@ -96,6 +96,9 @@ class RateLimit
         if (count($requests) >= $config['max_requests']) {
             $retryAfter = min($requests) + $config['window'] - $now;
             
+            // 获取请求来源，添加CORS头
+            $origin = $request->header('Origin') ?: '*';
+            
             return response(json_encode([
                 'code' => 429,
                 'message' => '请求过于频繁，请稍后再试',
@@ -104,6 +107,10 @@ class RateLimit
                 ],
             ]), 429, [
                 'Content-Type' => 'application/json',
+                'Access-Control-Allow-Origin' => $origin,
+                'Access-Control-Allow-Headers' => 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin',
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                'Access-Control-Allow-Credentials' => 'true',
                 'X-RateLimit-Limit' => $config['max_requests'],
                 'X-RateLimit-Remaining' => 0,
                 'X-RateLimit-Reset' => $now + $retryAfter,
