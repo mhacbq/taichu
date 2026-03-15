@@ -98,22 +98,22 @@ class HttpsEnforce
     protected function addSecurityHeaders($response): void
     {
         // HSTS - 强制使用HTTPS（6个月）
-        $response->header('Strict-Transport-Security', 'max-age=15768000; includeSubDomains; preload');
+        $response->header(['Strict-Transport-Security' => 'max-age=15768000; includeSubDomains; preload']);
         
         // 防止点击劫持
-        $response->header('X-Frame-Options', 'SAMEORIGIN');
+        $response->header(['X-Frame-Options' => 'SAMEORIGIN']);
         
         // XSS保护
-        $response->header('X-XSS-Protection', '1; mode=block');
+        $response->header(['X-XSS-Protection' => '1; mode=block']);
         
         // 内容类型嗅探保护
-        $response->header('X-Content-Type-Options', 'nosniff');
+        $response->header(['X-Content-Type-Options' => 'nosniff']);
         
         // 引用来源策略
-        $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->header(['Referrer-Policy' => 'strict-origin-when-cross-origin']);
         
         // 权限策略
-        $response->header('Permissions-Policy', 
-            'camera=(), microphone=(), geolocation=(self), payment=()');
+        $response->header(['Permissions-Policy' => 
+            'camera=(), microphone=(), geolocation=(self), payment=()']);
     }
 }

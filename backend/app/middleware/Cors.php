@@ -23,11 +23,13 @@ class Cors
         $response = $next($request);
         
         // 添加 CORS 头
-        $response->header('Access-Control-Allow-Origin', $origin);
-        $response->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin');
-        $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-        $response->header('Access-Control-Allow-Credentials', 'true');
-        $response->header('Access-Control-Max-Age', '86400');
+        $response->header([
+            'Access-Control-Allow-Origin' => $origin,
+            'Access-Control-Allow-Headers' => 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin',
+            'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+            'Access-Control-Allow-Credentials' => 'true',
+            'Access-Control-Max-Age' => '86400',
+        ]);
         
         return $response;
     }
