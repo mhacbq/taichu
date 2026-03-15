@@ -6,12 +6,16 @@ namespace app\controller;
 use app\BaseController;
 use app\model\BaziRecord;
 use app\model\PointsRecord;
+use app\service\CacheService;
 use think\facade\Db;
 
 class Paipan extends BaseController
 {
     // 排盘所需积分
     const BAZI_POINTS_COST = 10;
+    
+    // 是否启用排盘结果缓存
+    const ENABLE_CACHE = true;
     
     protected $middleware = [\app\middleware\Auth::class];
     
@@ -30,6 +34,19 @@ class Paipan extends BaseController
         
         if (empty($data['gender'])) {
             return $this->error('请提供性别');
+        }
+        
+        $mode = $data['mode'] ?? 'pro';
+        
+        // 检查缓存（相同八字结果可复用）
+        if (self::ENABLE_CACHE) {
+            $cacheKey = CacheService::baziKey($data['birthDate'], $data['gender']);
+            $cachedResult = CacheService::get($cacheKey);
+            
+            if ($cachedResult) {
+                // 直接使用缓存的排盘结果，但仍需扣除积分
+                return $this->processCachedResult($cachedResult, $user, $data['birthDate'], $mode);
+            }
         }
         
         // 检查用户积分
@@ -127,6 +144,19 @@ class Paipan extends BaseController
             if ($mode === 'pro') {
                 $result['dayun'] = $daYun;
                 $result['liunian'] = $liuNian;
+            }
+            
+            // 缓存排盘结果（用于复用）
+            if (self::ENABLE_CACHE) {
+                $cacheKey = CacheService::baziKey($birthDate, $gender);
+                $cacheData = [
+                    'bazi' => $bazi,
+                    'analysis' => $analysis,
+                    'simpleInterpretation' => $simpleInterpretation,
+                    'dayun' => $daYun ?? [],
+                    'liunian' => $liuNian ?? [],
+                ];
+                CacheService::set($cacheKey, $cacheData, CacheService::TTL_WEEK, CacheService::TAG_BAZI);
             }
             
             return $this->success($result);
@@ -258,6 +288,89 @@ class Paipan extends BaseController
         }
         
         return $advice;
+    }
+    
+    /**
+     * 处理缓存结果
+     * 复用缓存的八字计算结果，但仍需记录和扣除积分
+     */
+    protected function processCachedResult(array $cachedResult, array $user, string $birthDate, string $mode)
+    {
+        $userModel = \app\model\User::find($user['sub']);
+        if (!$userModel) {
+            return $this->error('用户不存在', 404);
+        }
+        
+        // 检查是否是首次排盘
+        $baziCount = BaziRecord::where('user_id', $user['sub'])->count();
+        $isFirstBazi = ($baziCount === 0);
+        
+        // 非首次排盘需要检查积分
+        if (!$isFirstBazi && $userModel->points < self::BAZI_POINTS_COST) {
+            return $this->error('积分不足，请先充值', 403);
+        }
+        
+        Db::startTrans();
+        try {
+            $pointsCost = $isFirstBazi ? 0 : self::BAZI_POINTS_COST;
+            
+            // 非首次排盘扣除积分
+            if (!$isFirstBazi) {
+                $userModel->deductPoints(self::BAZI_POINTS_COST);
+                
+                // 记录积分变动
+                PointsRecord::record(
+                    $user['sub'],
+                    '八字排盘消耗',
+                    -self::BAZI_POINTS_COST,
+                    'bazi',
+                    0,
+                    "排盘日期: {$birthDate} (使用缓存结果)"
+                );
+            }
+            
+            // 保存排盘记录
+            $record = BaziRecord::create([
+                'user_id' => $user['sub'],
+                'birth_date' => $birthDate,
+                'gender' => 'unknown', // 从缓存获取时可能不知道性别
+                'location' => '',
+                'year_gan' => $cachedResult['bazi']['year']['gan'],
+                'year_zhi' => $cachedResult['bazi']['year']['zhi'],
+                'month_gan' => $cachedResult['bazi']['month']['gan'],
+                'month_zhi' => $cachedResult['bazi']['month']['zhi'],
+                'day_gan' => $cachedResult['bazi']['day']['gan'],
+                'day_zhi' => $cachedResult['bazi']['day']['zhi'],
+                'hour_gan' => $cachedResult['bazi']['hour']['gan'],
+                'hour_zhi' => $cachedResult['bazi']['hour']['zhi'],
+                'analysis' => $cachedResult['analysis'],
+                'is_first' => $isFirstBazi,
+            ]);
+            
+            Db::commit();
+            
+            $result = [
+                'id' => $record->id,
+                'bazi' => $cachedResult['bazi'],
+                'analysis' => $cachedResult['analysis'],
+                'simpleInterpretation' => $cachedResult['simpleInterpretation'],
+                'points_cost' => $pointsCost,
+                'remaining_points' => $userModel->points,
+                'is_first_bazi' => $isFirstBazi,
+                'from_cache' => true,
+            ];
+            
+            // 专业版额外数据
+            if ($mode === 'pro') {
+                $result['dayun'] = $cachedResult['dayun'] ?? [];
+                $result['liunian'] = $cachedResult['liunian'] ?? [];
+            }
+            
+            return $this->success($result);
+        } catch (\Exception $e) {
+            Db::rollback();
+            return $this->error('排盘失败: ' . $e->getMessage());
+        }
     }
     
     /**
