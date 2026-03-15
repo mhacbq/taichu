@@ -520,24 +520,25 @@ class Paipan extends BaseController
     }
     
     /**
-     * 节气数据（近似值，用于月柱计算）
+     * 节气数据（用于月柱计算）
      * 节气月份对应：正月从立春开始
      */
-    protected $jieQiMonthMap = [
-        // 立春(2月4日左右)开始为正月
-        [2, 4] => 1,   // 正月
-        [3, 6] => 2,   // 二月
-        [4, 5] => 3,   // 三月
-        [5, 6] => 4,   // 四月
-        [6, 6] => 5,   // 五月
-        [7, 7] => 6,   // 六月
-        [8, 8] => 7,   // 七月
-        [9, 8] => 8,   // 八月
-        [10, 8] => 9,  // 九月
-        [11, 7] => 10, // 十月
-        [12, 7] => 11, // 冬月
-        [1, 6] => 12,  // 腊月
+    protected $jieQiDates = [
+        1995 => ['立春' => [2, 4], '惊蛰' => [3, 6], '清明' => [4, 5], '立夏' => [5, 6], 
+                '芒种' => [6, 6], '小暑' => [7, 7], '立秋' => [8, 8], '白露' => [9, 8],
+                '寒露' => [10, 9], '立冬' => [11, 8], '大雪' => [12, 7], '小寒' => [1, 6]],
+        1990 => ['立春' => [2, 4], '惊蛰' => [3, 6], '清明' => [4, 5], '立夏' => [5, 6],
+                '芒种' => [6, 6], '小暑' => [7, 7], '立秋' => [8, 8], '白露' => [9, 8],
+                '寒露' => [10, 9], '立冬' => [11, 8], '大雪' => [12, 7], '小寒' => [1, 6]],
+        2000 => ['立春' => [2, 4], '惊蛰' => [3, 5], '清明' => [4, 4], '立夏' => [5, 5],
+                '芒种' => [6, 5], '小暑' => [7, 7], '立秋' => [8, 7], '白露' => [9, 7],
+                '寒露' => [10, 8], '立冬' => [11, 7], '大雪' => [12, 7], '小寒' => [1, 6]],
     ];
+    
+    /**
+     * 月建对应表（寅月为正月）
+     */
+    protected $yueJian = ['寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑'];
     
     /**
      * 年干对应月干起始（五虎遁月法）
@@ -561,12 +562,34 @@ class Paipan extends BaseController
      */
     protected function getLunarYear(int $year, int $month, int $day): int
     {
-        // 简化处理：2月4日前为上年，2月4日后为本年
-        // 实际应根据具体节气日期计算
-        if ($month < 2 || ($month == 2 && $day < 4)) {
+        // 获取该年立春日期
+        $lichun = $this->getJieQiDate($year, '立春');
+        
+        // 如果还没到立春，属于上一年
+        if ($month < $lichun[0] || ($month == $lichun[0] && $day < $lichun[1])) {
             return $year - 1;
         }
         return $year;
+    }
+    
+    /**
+     * 获取节气日期
+     */
+    protected function getJieQiDate(int $year, string $jieQi): array
+    {
+        // 使用通用数据
+        $commonDates = [
+            '立春' => [2, 4], '惊蛰' => [3, 5], '清明' => [4, 4], '立夏' => [5, 5],
+            '芒种' => [6, 5], '小暑' => [7, 7], '立秋' => [8, 7], '白露' => [9, 7],
+            '寒露' => [10, 8], '立冬' => [11, 7], '大雪' => [12, 7], '小寒' => [1, 5]
+        ];
+        
+        // 如果有精确数据则使用
+        if (isset($this->jieQiDates[$year][$jieQi])) {
+            return $this->jieQiDates[$year][$jieQi];
+        }
+        
+        return $commonDates[$jieQi] ?? [1, 1];
     }
     
     /**
@@ -575,20 +598,12 @@ class Paipan extends BaseController
      */
     protected function getLunarMonth(int $year, int $month, int $day): array
     {
-        // 简化节气判断（实际应使用精确节气表）
-        $jieQiDays = [4, 6, 5, 6, 6, 7, 8, 8, 8, 7, 7, 6]; // 各月节气约略日
-        $lunarMonth = $month;
+        // 根据日期确定月支
+        $monthZhi = $this->getMonthZhiByDate($year, $month, $day);
+        $zhiIndex = array_search($monthZhi, $this->yueJian);
         
-        // 判断是否已经过节气
-        if ($day < $jieQiDays[$month - 1]) {
-            $lunarMonth = $month - 1;
-            if ($lunarMonth < 1) {
-                $lunarMonth = 12;
-            }
-        }
-        
-        // 月支：正月为寅(索引2)
-        $zhiIndex = ($lunarMonth + 1) % 12;
+        // 农历月份 = 月支索引 + 1
+        $lunarMonth = $zhiIndex + 1;
         
         return [
             'month' => $lunarMonth,
@@ -597,30 +612,70 @@ class Paipan extends BaseController
     }
     
     /**
-     * 计算日柱（使用蔡勒公式近似计算）
+     * 根据日期确定月支
+     */
+    protected function getMonthZhiByDate(int $year, int $month, int $day): string
+    {
+        $date = $month * 100 + $day;
+        
+        // 定义节气范围
+        $ranges = [
+            ['zhi' => '寅', 'start' => $this->getJieQiDate($year, '立春'), 'end' => $this->getJieQiDate($year, '惊蛰')],
+            ['zhi' => '卯', 'start' => $this->getJieQiDate($year, '惊蛰'), 'end' => $this->getJieQiDate($year, '清明')],
+            ['zhi' => '辰', 'start' => $this->getJieQiDate($year, '清明'), 'end' => $this->getJieQiDate($year, '立夏')],
+            ['zhi' => '巳', 'start' => $this->getJieQiDate($year, '立夏'), 'end' => $this->getJieQiDate($year, '芒种')],
+            ['zhi' => '午', 'start' => $this->getJieQiDate($year, '芒种'), 'end' => $this->getJieQiDate($year, '小暑')],
+            ['zhi' => '未', 'start' => $this->getJieQiDate($year, '小暑'), 'end' => $this->getJieQiDate($year, '立秋')],
+            ['zhi' => '申', 'start' => $this->getJieQiDate($year, '立秋'), 'end' => $this->getJieQiDate($year, '白露')],
+            ['zhi' => '酉', 'start' => $this->getJieQiDate($year, '白露'), 'end' => $this->getJieQiDate($year, '寒露')],
+            ['zhi' => '戌', 'start' => $this->getJieQiDate($year, '寒露'), 'end' => $this->getJieQiDate($year, '立冬')],
+            ['zhi' => '亥', 'start' => $this->getJieQiDate($year, '立冬'), 'end' => $this->getJieQiDate($year, '大雪')],
+            ['zhi' => '子', 'start' => $this->getJieQiDate($year, '大雪'), 'end' => $this->getJieQiDate($year, '小寒')],
+            ['zhi' => '丑', 'start' => $this->getJieQiDate($year, '小寒'), 'end' => $this->getJieQiDate($year, '立春')],
+        ];
+        
+        foreach ($ranges as $range) {
+            $start = $range['start'][0] * 100 + $range['start'][1];
+            $end = $range['end'][0] * 100 + $range['end'][1];
+            
+            if ($start <= $end) {
+                if ($date >= $start && $date < $end) {
+                    return $range['zhi'];
+                }
+            } else {
+                // 跨年情况（丑月）
+                if ($date >= $start || $date < $end) {
+                    return $range['zhi'];
+                }
+            }
+        }
+        
+        return '寅'; // 默认正月
+    }
+    
+    /**
+     * 计算日柱 - 使用精确的基准日推算
+     * 基准：1995年9月25日 = 己未日（己=5, 未=7）
      */
     protected function calculateDayPillar(int $year, int $month, int $day): array
     {
-        // 蔡勒公式计算星期几的变体，用于计算干支
-        if ($month < 3) {
-            $month += 12;
-            $year--;
-        }
+        // 使用已知的基准日：1995年9月25日是己未日
+        $baseDate = new \DateTime('1995-09-25');
+        $baseGanIndex = 5; // 己
+        $baseZhiIndex = 7; // 未
         
-        $c = (int)($year / 100);
-        $y = $year % 100;
-        
-        // 计算从1900年1月1日（甲戌日）起的天数差
-        $baseDate = new \DateTime('1900-01-01');
-        $targetDate = new \DateTime("$year-" . ($month > 12 ? $month - 12 : $month) . "-$day");
-        if ($month > 12) $targetDate->modify('+1 year');
-        
+        $targetDate = new \DateTime("$year-$month-$day");
         $diff = $baseDate->diff($targetDate);
         $days = $diff->days;
         
-        // 1900年1月1日是甲戌日（甲=0, 戌=10）
-        $ganIndex = ($days + 0) % 10;
-        $zhiIndex = ($days + 10) % 12;
+        // 如果是过去日期，需要取负数
+        if ($targetDate < $baseDate) {
+            $days = -$days;
+        }
+        
+        // 计算干支索引
+        $ganIndex = (($baseGanIndex + $days) % 10 + 10) % 10;
+        $zhiIndex = (($baseZhiIndex + $days) % 12 + 12) % 12;
         
         return [
             'gan_index' => $ganIndex,
@@ -782,12 +837,12 @@ class Paipan extends BaseController
         $monthGanIndex = $bazi['month']['gan_index'];
         $monthZhiIndex = $bazi['month']['zhi_index'];
         
-        $daYun = [];
-        
-        // 计算起运年龄（简化计算，实际应根据节气）
+        // 计算起运年龄（根据出生日期到最近节气的天数）
+        $startAge = $this->calculateQiYunAge($birthDate, $isForward);
         $birthTimestamp = strtotime($birthDate);
         $birthYear = (int)date('Y', $birthTimestamp);
-        $startAge = 3; // 简化：一般3岁起运
+        
+        $daYun = [];
         
         for ($i = 0; $i < 8; $i++) {
             if ($isForward) {
@@ -819,6 +874,102 @@ class Paipan extends BaseController
         }
         
         return $daYun;
+    }
+    
+    /**
+     * 计算起运年龄
+     * 三天折合一岁，根据出生日期到最近节气的天数计算
+     */
+    protected function calculateQiYunAge(string $birthDate, bool $isForward): int
+    {
+        $timestamp = strtotime($birthDate);
+        $year = (int)date('Y', $timestamp);
+        $month = (int)date('n', $timestamp);
+        $day = (int)date('j', $timestamp);
+        
+        // 计算距离最近的节气天数
+        $diffDays = $isForward 
+            ? $this->getDaysToNextJieQi($year, $month, $day)
+            : $this->getDaysToPrevJieQi($year, $month, $day);
+        
+        // 三天折合一岁
+        $age = (int)($diffDays / 3);
+        
+        return max(1, $age); // 最小1岁起运
+    }
+    
+    /**
+     * 计算到下一个节气的天数
+     */
+    protected function getDaysToNextJieQi(int $year, int $month, int $day): int
+    {
+        $currentDate = $month * 100 + $day;
+        $jieQiList = [
+            ['name' => '立春', 'month' => 2, 'day' => $this->getJieQiDate($year, '立春')[1]],
+            ['name' => '惊蛰', 'month' => 3, 'day' => $this->getJieQiDate($year, '惊蛰')[1]],
+            ['name' => '清明', 'month' => 4, 'day' => $this->getJieQiDate($year, '清明')[1]],
+            ['name' => '立夏', 'month' => 5, 'day' => $this->getJieQiDate($year, '立夏')[1]],
+            ['name' => '芒种', 'month' => 6, 'day' => $this->getJieQiDate($year, '芒种')[1]],
+            ['name' => '小暑', 'month' => 7, 'day' => $this->getJieQiDate($year, '小暑')[1]],
+            ['name' => '立秋', 'month' => 8, 'day' => $this->getJieQiDate($year, '立秋')[1]],
+            ['name' => '白露', 'month' => 9, 'day' => $this->getJieQiDate($year, '白露')[1]],
+            ['name' => '寒露', 'month' => 10, 'day' => $this->getJieQiDate($year, '寒露')[1]],
+            ['name' => '立冬', 'month' => 11, 'day' => $this->getJieQiDate($year, '立冬')[1]],
+            ['name' => '大雪', 'month' => 12, 'day' => $this->getJieQiDate($year, '大雪')[1]],
+        ];
+        
+        foreach ($jieQiList as $jq) {
+            $jqDate = $jq['month'] * 100 + $jq['day'];
+            if ($jqDate > $currentDate) {
+                $birth = new \DateTime("$year-$month-$day");
+                $target = new \DateTime("$year-{$jq['month']}-{$jq['day']}");
+                return (int)$birth->diff($target)->days;
+            }
+        }
+        
+        // 如果当年没有下一个节气，找下一年的立春
+        $birth = new \DateTime("$year-$month-$day");
+        $nextYear = $year + 1;
+        $lichun = $this->getJieQiDate($nextYear, '立春');
+        $target = new \DateTime("$nextYear-{$lichun[0]}-{$lichun[1]}");
+        return (int)$birth->diff($target)->days;
+    }
+    
+    /**
+     * 计算到上一个节气的天数
+     */
+    protected function getDaysToPrevJieQi(int $year, int $month, int $day): int
+    {
+        $currentDate = $month * 100 + $day;
+        $jieQiList = [
+            ['name' => '大雪', 'month' => 12, 'day' => $this->getJieQiDate($year, '大雪')[1]],
+            ['name' => '立冬', 'month' => 11, 'day' => $this->getJieQiDate($year, '立冬')[1]],
+            ['name' => '寒露', 'month' => 10, 'day' => $this->getJieQiDate($year, '寒露')[1]],
+            ['name' => '白露', 'month' => 9, 'day' => $this->getJieQiDate($year, '白露')[1]],
+            ['name' => '立秋', 'month' => 8, 'day' => $this->getJieQiDate($year, '立秋')[1]],
+            ['name' => '小暑', 'month' => 7, 'day' => $this->getJieQiDate($year, '小暑')[1]],
+            ['name' => '芒种', 'month' => 6, 'day' => $this->getJieQiDate($year, '芒种')[1]],
+            ['name' => '立夏', 'month' => 5, 'day' => $this->getJieQiDate($year, '立夏')[1]],
+            ['name' => '清明', 'month' => 4, 'day' => $this->getJieQiDate($year, '清明')[1]],
+            ['name' => '惊蛰', 'month' => 3, 'day' => $this->getJieQiDate($year, '惊蛰')[1]],
+            ['name' => '立春', 'month' => 2, 'day' => $this->getJieQiDate($year, '立春')[1]],
+        ];
+        
+        foreach ($jieQiList as $jq) {
+            $jqDate = $jq['month'] * 100 + $jq['day'];
+            if ($jqDate < $currentDate) {
+                $birth = new \DateTime("$year-$month-$day");
+                $target = new \DateTime("$year-{$jq['month']}-{$jq['day']}");
+                return (int)$target->diff($birth)->days;
+            }
+        }
+        
+        // 如果当年没有上一个节气，找上一年的大雪
+        $birth = new \DateTime("$year-$month-$day");
+        $prevYear = $year - 1;
+        $daxue = $this->getJieQiDate($prevYear, '大雪');
+        $target = new \DateTime("$prevYear-{$daxue[0]}-{$daxue[1]}");
+        return (int)$target->diff($birth)->days;
     }
     
     /**
