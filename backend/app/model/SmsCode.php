@@ -10,6 +10,7 @@ use think\Model;
  */
 class SmsCode extends Model
 {
+    // 注意：此表不使用tc_前缀
     protected $name = 'sms_codes';
     
     protected $autoWriteTimestamp = true;
