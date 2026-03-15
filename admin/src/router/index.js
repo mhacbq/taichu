@@ -175,6 +175,46 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/payment',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/payment/orders',
+    meta: { title: '支付管理', icon: 'Wallet' },
+    children: [
+      {
+        path: 'orders',
+        name: 'PaymentOrders',
+        component: () => import('@/views/payment/orders.vue'),
+        meta: { title: '充值订单' }
+      },
+      {
+        path: 'config',
+        name: 'PaymentConfig',
+        component: () => import('@/views/payment/config.vue'),
+        meta: { title: '支付配置' }
+      }
+    ]
+  },
+  {
+    path: '/sms',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/sms/config',
+    meta: { title: '短信管理', icon: 'Message' },
+    children: [
+      {
+        path: 'config',
+        name: 'SmsConfig',
+        component: () => import('@/views/sms/config.vue'),
+        meta: { title: '短信配置' }
+      },
+      {
+        path: 'records',
+        name: 'SmsRecords',
+        component: () => import('@/views/sms/records.vue'),
+        meta: { title: '发送记录' }
+      }
+    ]
+  },
+  {
     path: '/feedback',
     component: () => import('@/layout/index.vue'),
     redirect: '/feedback/list',

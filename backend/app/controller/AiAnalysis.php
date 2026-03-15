@@ -5,6 +5,7 @@ namespace app\controller;
 
 use app\BaseController;
 use app\model\AiPrompt;
+use app\service\CacheService;
 use think\Request;
 use think\facade\Config;
 
@@ -14,6 +15,12 @@ use think\facade\Config;
  */
 class AiAnalysis extends BaseController
 {
+    // 是否启用AI分析缓存（相同八字结果可复用）
+    const ENABLE_CACHE = true;
+    
+    // 缓存有效期（7天）
+    const CACHE_TTL = 604800;
+    
     /**
      * AI解盘配置缓存
      */

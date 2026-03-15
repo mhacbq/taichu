@@ -1,0 +1,26 @@
+-- 八字合婚记录表
+CREATE TABLE IF NOT EXISTS `hehun_records` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `user_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '用户ID',
+  `male_name` varchar(50) NOT NULL DEFAULT '' COMMENT '男方姓名',
+  `female_name` varchar(50) NOT NULL DEFAULT '' COMMENT '女方姓名',
+  `male_birth_date` varchar(50) NOT NULL DEFAULT '' COMMENT '男方出生日期',
+  `female_birth_date` varchar(50) NOT NULL DEFAULT '' COMMENT '女方出生日期',
+  `male_bazi` json DEFAULT NULL COMMENT '男方八字',
+  `female_bazi` json DEFAULT NULL COMMENT '女方八字',
+  `score` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '合婚得分(0-100)',
+  `level` varchar(20) NOT NULL DEFAULT '' COMMENT '合婚等级',
+  `result` json DEFAULT NULL COMMENT '合婚结果详情',
+  `ai_analysis` json DEFAULT NULL COMMENT 'AI分析结果',
+  `is_ai_analysis` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否使用AI分析',
+  `points_cost` int(11) NOT NULL DEFAULT '0' COMMENT '消耗积分',
+  `export_url` varchar(500) DEFAULT NULL COMMENT '导出报告URL',
+  `export_format` varchar(20) DEFAULT NULL COMMENT '导出格式(pdf/image)',
+  `export_expires_at` datetime DEFAULT NULL COMMENT '导出链接过期时间',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='八字合婚记录表';

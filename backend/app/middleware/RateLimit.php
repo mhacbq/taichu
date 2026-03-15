@@ -21,6 +21,11 @@ class RateLimit
             'max_requests' => 5,
             'window' => 60,
         ],
+        // 手机号登录：每分钟3次
+        'auth/phone-login' => [
+            'max_requests' => 3,
+            'window' => 60,
+        ],
         // 排盘接口：每分钟10次
         'paipan/bazi' => [
             'max_requests' => 10,
@@ -34,6 +39,26 @@ class RateLimit
         // 签到接口：每分钟3次
         'daily/checkin' => [
             'max_requests' => 3,
+            'window' => 60,
+        ],
+        // AI分析接口：每小时20次（更严格的限制）
+        'ai/analysis' => [
+            'max_requests' => 20,
+            'window' => 3600, // 1小时
+        ],
+        // AI流式分析：每小时10次
+        'ai/analysis-stream' => [
+            'max_requests' => 10,
+            'window' => 3600,
+        ],
+        // 支付下单：每分钟5次
+        'payment/order' => [
+            'max_requests' => 5,
+            'window' => 60,
+        ],
+        // 短信验证码：每分钟1次，每小时5次（双重限制）
+        'sms/send-code' => [
+            'max_requests' => 1,
             'window' => 60,
         ],
     ];

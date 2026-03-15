@@ -249,7 +249,9 @@ class Upload extends BaseController
                 ->order('created_at', 'desc');
             
             if ($keyword) {
-                $query->where('original_name', 'like', "%{$keyword}%");
+                // 净化关键词，防止SQL注入
+                $keyword = preg_replace('/[%_]/', '', $keyword);
+                $query->whereLike('original_name', "%{$keyword}%");
             }
             
             $list = $query->page($page, $pageSize)->select();
@@ -308,8 +310,8 @@ class Upload extends BaseController
             return '图片大小不能超过' . ($config['max_size'] / 1024 / 1024) . 'MB';
         }
         
-        // 检查扩展名
-        $ext = strtolower($file->getOriginalExtension());
+        // 检查扩展名 - 使用getExtension()而非getOriginalExtension()，防止客户端伪造
+        $ext = strtolower($file->getExtension());
         if (!in_array($ext, $config['allowed_ext'])) {
             return '只支持 ' . implode(', ', $config['allowed_ext']) . ' 格式的图片';
         }
@@ -320,7 +322,81 @@ class Upload extends BaseController
             return '图片格式不正确';
         }
         
+        // 检查文件头Magic Bytes，验证真实文件类型
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $realMime = finfo_file($finfo, $file->getPathname());
+        finfo_close($finfo);
+        
+        $allowedMimes = [
+            'image/jpeg' => ['image/jpeg', 'image/jpg'],
+            'image/png' => ['image/png'],
+            'image/gif' => ['image/gif'],
+            'image/webp' => ['image/webp'],
+        ];
+        
+        if (!isset($allowedMimes[$mime]) || !in_array($realMime, $allowedMimes[$mime])) {
+            return '图片文件内容验证失败';
+        }
+        
+        // 对图片进行二次渲染，清除可能存在的恶意代码
+        if (!$this->reImage($file->getPathname(), $ext)) {
+            return '图片文件验证失败，可能包含恶意内容';
+        }
+        
         return true;
+    }
+    
+    /**
+     * 图片二次渲染
+     */
+    protected function reImage(string $filepath, string $ext): bool
+    {
+        try {
+            switch ($ext) {
+                case 'jpg':
+                case 'jpeg':
+                    $image = @imagecreatefromjpeg($filepath);
+                    if (!$image) return false;
+                    imagejpeg($image, $filepath, 90);
+                    imagedestroy($image);
+                    break;
+                    
+                case 'png':
+                    $image = @imagecreatefrompng($filepath);
+                    if (!$image) return false;
+                    // 保留透明通道
+                    imagealphablending($image, false);
+                    imagesavealpha($image, true);
+                    imagepng($image, $filepath, 6);
+                    imagedestroy($image);
+                    break;
+                    
+                case 'gif':
+                    // GIF文件只验证是否能正确打开
+                    $image = @imagecreatefromgif($filepath);
+                    if (!$image) return false;
+                    imagedestroy($image);
+                    break;
+                    
+                case 'webp':
+                    if (!function_exists('imagecreatefromwebp')) {
+                        // 如果系统不支持webp，只检查文件头
+                        return true;
+                    }
+                    $image = @imagecreatefromwebp($filepath);
+                    if (!$image) return false;
+                    imagewebp($image, $filepath, 90);
+                    imagedestroy($image);
+                    break;
+                    
+                default:
+                    return false;
+            }
+            
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
