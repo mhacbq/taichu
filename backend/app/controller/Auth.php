@@ -309,7 +309,7 @@ class Auth extends BaseController
             'phone' => $userInfo->phone,
             'points' => $userInfo->points,
             'last_login_at' => $userInfo->last_login_at,
-            'invite_code' => 'TC' . strtoupper(substr($userInfo->id, -6)),
+            'invite_code' => InviteRecord::getOrCreateInviteCode($userInfo->id),
             'invite_count' => $inviteStats['invite_count'],
             'invite_points' => $inviteStats['total_points'],
         ]);

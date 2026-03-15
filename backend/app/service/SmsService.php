@@ -5,6 +5,8 @@ namespace app\service;
 
 use app\model\SmsConfig;
 use app\model\SmsCode;
+use app\model\InviteRecord;
+use think\facade\Cache;
 
 /**
  * 短信服务类
@@ -167,9 +169,35 @@ class SmsService
     
     /**
      * 验证短信验证码
+     * 增加失败次数限制，防止暴力破解
      */
     public static function verifyCode(string $phone, string $code, string $type): bool
     {
-        return SmsCode::verifyCode($phone, $code, $type);
+        // 1. 检查失败次数限制
+        if (!InviteRecord::checkVerifyFailLimit($phone, $type)) {
+            throw new \Exception('验证失败次数过多，请重新获取验证码');
+        }
+        
+        // 2. 执行验证码验证
+        $result = SmsCode::verifyCode($phone, $code, $type);
+        
+        // 3. 记录失败或清除记录
+        if (!$result) {
+            InviteRecord::recordVerifyFail($phone, $type);
+        } else {
+            InviteRecord::clearVerifyFail($phone, $type);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 获取验证码验证剩余次数
+     */
+    public static function getVerifyRemainingAttempts(string $phone, string $type): int
+    {
+        $key = "sms_verify_fail:{$phone}:{$type}";
+        $failCount = Cache::get($key, 0);
+        return max(0, 5 - $failCount);
     }
 }
