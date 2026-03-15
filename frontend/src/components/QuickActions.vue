@@ -46,6 +46,20 @@ const quickActions = [
     color: '#9f7aea',
   },
   {
+    path: '/liuyao',
+    icon: '☯',
+    title: '六爻占卜',
+    description: '周易问事解疑惑',
+    color: '#38b2ac',
+  },
+  {
+    path: '/hehun',
+    icon: '💕',
+    title: '八字合婚',
+    description: '分析婚姻匹配度',
+    color: '#ed64a6',
+  },
+  {
     path: '/daily',
     icon: '🌟',
     title: '每日运势',

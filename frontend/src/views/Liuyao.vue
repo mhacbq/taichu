@@ -1,0 +1,895 @@
+<template>
+  <div class="liuyao-page">
+    <div class="container">
+      <!-- 页面标题 -->
+      <div class="page-header">
+        <h1 class="page-title">
+          <span class="title-icon">☯</span>
+          六爻占卜
+        </h1>
+        <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
+      </div>
+
+      <!-- 占卜结果 -->
+      <div v-if="result" class="result-section">
+        <div class="result-card">
+          <div class="result-header">
+            <h2>占卜结果</h2>
+            <span v-if="result.is_first" class="first-free-badge">首次免费</span>
+          </div>
+
+          <!-- 问题 -->
+          <div class="question-box">
+            <span class="label">占问：</span>
+            <span class="question-text">{{ result.question }}</span>
+          </div>
+
+          <!-- 卦象展示 -->
+          <div class="gua-display">
+            <div class="gua-info">
+              <h3 class="gua-name">{{ result.gua.name }}</h3>
+              <p class="gua-code">卦象代码：{{ result.gua.code }}</p>
+            </div>
+
+            <!-- 六爻图形 -->
+            <div class="yao-container">
+              <div v-for="(yao, index) in result.yao_result" :key="index" class="yao-line"
+                :class="{ 'moving': yao == 0 || yao == 3, 'yang': yao >= 2, 'yin': yao <= 1 }">
+                <span class="yao-mark">{{ getYaoMark(yao) }}</span>
+                <span class="yao-bar"></span>
+                <span class="yao-name">{{ result.yao_names[index] }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 卦辞 -->
+          <div class="gua-ci-section">
+            <h4>卦辞</h4>
+            <p class="gua-ci">{{ result.gua.gua_ci }}</p>
+          </div>
+
+          <!-- 解读 -->
+          <div class="interpretation-section">
+            <h4>卦象解读</h4>
+            <pre class="interpretation-text">{{ result.interpretation }}</pre>
+          </div>
+
+          <!-- AI分析 -->
+          <div v-if="result.ai_analysis" class="ai-section">
+            <h4>
+              <span>🤖</span>
+              AI深度分析
+            </h4>
+            <div class="ai-content">{{ result.ai_analysis.content }}</div>
+          </div>
+
+          <!-- 消耗信息 -->
+          <div class="points-info">
+            <span v-if="result.points_cost > 0">消耗 {{ result.points_cost }} 积分</span>
+            <span v-else>本次免费</span>
+            <span>剩余 {{ result.remaining_points }} 积分</span>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="action-buttons">
+            <button class="btn-secondary" @click="resetForm">
+              <span>🔄</span> 再次占卜
+            </button>
+            <button class="btn-primary" @click="saveResult">
+              <span>💾</span> 保存结果
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 占卜表单 -->
+      <div v-else class="form-section">
+        <div class="form-card">
+          <h2>心诚则灵</h2>
+          <p class="form-tip">请静心思考您要询问的问题，问题越具体，占卜结果越准确</p>
+
+          <div class="form-group">
+            <label>您的问题 <span class="required">*</span></label>
+            <textarea v-model="form.question" rows="4" placeholder="例如：
+• 我最近的考试能通过吗？
+• 这份工作适合我吗？
+• 我和TA的感情发展如何？
+• 这个项目能成功吗？" maxlength="100"></textarea>
+            <span class="char-count">{{ form.question.length }}/100</span>
+          </div>
+
+          <div class="options-section">
+            <label class="option-item">
+              <input type="checkbox" v-model="form.useAi" />
+              <span>使用AI深度分析（更准确、更详细）</span>
+            </label>
+          </div>
+
+          <!-- 定价信息 -->
+          <div class="pricing-info" v-if="pricing">
+            <div v-if="pricing.is_first_free" class="pricing-free">
+              <span>🎁 首次占卜免费</span>
+            </div>
+            <div v-else-if="pricing.is_vip_free" class="pricing-vip">
+              <span>👑 VIP免费</span>
+            </div>
+            <div v-else class="pricing-normal">
+              <span>本次消耗 {{ pricing.cost }} 积分</span>
+            </div>
+          </div>
+
+          <button class="btn-submit" @click="submitDivination" :disabled="isLoading || !form.question.trim()">
+            <span v-if="isLoading" class="loading"></span>
+            <span v-else>
+              <span class="btn-icon">☯</span>
+              开始占卜
+            </span>
+          </button>
+
+          <div class="history-link" v-if="history.length > 0">
+            <a @click="showHistory = true">查看历史记录 ({{ history.length }}条)</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 历史记录弹窗 -->
+      <div v-if="showHistory" class="modal-overlay" @click.self="showHistory = false">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>历史记录</h3>
+            <button class="close-btn" @click="showHistory = false">×</button>
+          </div>
+          <div class="history-list">
+            <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistory(item)">
+              <div class="history-main">
+                <p class="history-question">{{ item.question }}</p>
+                <p class="history-gua">{{ item.gua_name }} · {{ formatDate(item.created_at) }}</p>
+              </div>
+              <button class="delete-btn" @click.stop="deleteRecord(item.id)">🗑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
+
+// 表单数据
+const form = reactive({
+  question: '',
+  useAi: true,
+})
+
+// 状态
+const isLoading = ref(false)
+const result = ref(null)
+const pricing = ref(null)
+const history = ref([])
+const showHistory = ref(false)
+
+// 爻标记
+const getYaoMark = (yao) => {
+  if (yao === 0) return '×' // 老阴
+  if (yao === 3) return '○' // 老阳
+  return '' // 少阴少阳
+}
+
+// 获取定价
+const loadPricing = async () => {
+  try {
+    const response = await getLiuyaoPricing()
+    if (response.code === 0) {
+      pricing.value = response.data
+    }
+  } catch (error) {
+    console.error('获取定价失败:', error)
+  }
+}
+
+// 加载历史记录
+const loadHistory = async () => {
+  try {
+    const response = await getLiuyaoHistory({ page: 1, page_size: 50 })
+    if (response.code === 0) {
+      history.value = response.data.list || []
+    }
+  } catch (error) {
+    console.error('获取历史记录失败:', error)
+  }
+}
+
+// 提交占卜
+const submitDivination = async () => {
+  if (!form.question.trim()) {
+    ElMessage.warning('请输入占卜问题')
+    return
+  }
+
+  if (form.question.length < 2) {
+    ElMessage.warning('问题太短了，请详细描述您的问题')
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const response = await liuyaoDivination({
+      question: form.question.trim(),
+      useAi: form.useAi,
+    })
+
+    if (response.code === 0) {
+      result.value = response.data
+      loadHistory() // 刷新历史
+    } else {
+      ElMessage.error(response.message)
+    }
+  } catch (error) {
+    ElMessage.error('占卜失败，请重试')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 重置表单
+const resetForm = () => {
+  result.value = null
+  form.question = ''
+  loadPricing() // 重新获取定价（可能是首次了）
+}
+
+// 保存结果
+const saveResult = () => {
+  ElMessage.success('结果已自动保存到历史记录')
+}
+
+// 加载历史记录详情
+const loadHistory = (item) => {
+  result.value = {
+    id: item.id,
+    question: item.question,
+    yao_result: item.yao_result,
+    yao_names: item.yao_result.map(yao => {
+      const names = ['老阴', '少阴', '少阳', '老阳']
+      return names[yao]
+    }),
+    gua: {
+      name: item.gua_name,
+      code: item.gua_code,
+      gua_ci: item.gua_ci,
+    },
+    interpretation: item.interpretation,
+    ai_analysis: item.ai_analysis,
+    points_cost: item.consumed_points,
+    remaining_points: 0, // 历史记录不显示剩余积分
+  }
+  showHistory.value = false
+}
+
+// 删除记录
+const deleteRecord = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条记录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+
+    const response = await deleteLiuyaoRecord({ id })
+    if (response.code === 0) {
+      ElMessage.success('删除成功')
+      loadHistory()
+    } else {
+      ElMessage.error(response.message)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('zh-CN')
+}
+
+// 初始化
+onMounted(() => {
+  loadPricing()
+  loadHistory()
+})
+</script>
+
+<style scoped>
+.liuyao-page {
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-title {
+  font-size: 36px;
+  color: #fff;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.title-icon {
+  font-size: 42px;
+}
+
+.page-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+}
+
+/* 表单样式 */
+.form-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.form-card h2 {
+  color: #fff;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.form-tip {
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.form-group label .required {
+  color: #e94560;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.form-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.char-count {
+  display: block;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.options-section {
+  margin: 20px 0;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.option-item input {
+  width: 18px;
+  height: 18px;
+  accent-color: #e94560;
+}
+
+.pricing-info {
+  text-align: center;
+  padding: 16px;
+  background: rgba(233, 69, 96, 0.1);
+  border-radius: 12px;
+  margin: 20px 0;
+}
+
+.pricing-free,
+.pricing-vip {
+  color: #67c23a;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pricing-normal {
+  color: #fff;
+  font-size: 16px;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-submit:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+}
+
+.btn-icon {
+  font-size: 24px;
+}
+
+.loading {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.history-link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.history-link a {
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.history-link a:hover {
+  color: #e94560;
+}
+
+/* 结果卡片 */
+.result-section {
+  margin-bottom: 40px;
+}
+
+.result-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.result-header h2 {
+  color: #fff;
+  margin: 0;
+}
+
+.first-free-badge {
+  background: linear-gradient(135deg, #67c23a, #85ce61);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.question-box {
+  padding: 16px 20px;
+  background: rgba(233, 69, 96, 0.1);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.question-box .label {
+  color: #e94560;
+  font-weight: 600;
+}
+
+.question-box .question-text {
+  color: #fff;
+  font-size: 16px;
+}
+
+/* 卦象展示 */
+.gua-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.gua-info {
+  text-align: center;
+}
+
+.gua-name {
+  color: #ffd700;
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.gua-code {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+/* 六爻图形 */
+.yao-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.yao-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.yao-line.moving {
+  background: rgba(233, 69, 96, 0.2);
+}
+
+.yao-mark {
+  width: 24px;
+  text-align: center;
+  font-size: 18px;
+  color: #e94560;
+  font-weight: bold;
+}
+
+.yao-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  position: relative;
+}
+
+.yao-line.yang .yao-bar {
+  background: #fff;
+}
+
+.yao-line.yin .yao-bar::before,
+.yao-line.yin .yao-bar::after {
+  content: '';
+  position: absolute;
+  width: 45%;
+  height: 100%;
+  background: #fff;
+  border-radius: 3px;
+}
+
+.yao-line.yin .yao-bar::after {
+  right: 0;
+}
+
+.yao-name {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  min-width: 50px;
+}
+
+/* 卦辞 */
+.gua-ci-section {
+  padding: 20px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.gua-ci-section h4 {
+  color: #ffd700;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.gua-ci {
+  color: #fff;
+  line-height: 1.8;
+  font-size: 15px;
+  margin: 0;
+}
+
+/* 解读 */
+.interpretation-section {
+  margin-bottom: 24px;
+}
+
+.interpretation-section h4 {
+  color: #fff;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.interpretation-text {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.8;
+  font-size: 14px;
+  white-space: pre-wrap;
+  margin: 0;
+  font-family: inherit;
+}
+
+/* AI分析 */
+.ai-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: rgba(103, 194, 58, 0.1);
+  border-radius: 12px;
+  border-left: 4px solid #67c23a;
+}
+
+.ai-section h4 {
+  color: #67c23a;
+  margin-bottom: 12px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-content {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+/* 积分信息 */
+.points-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #1a1a2e;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  color: #fff;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.history-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-question {
+  color: #fff;
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-gua {
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  font-size: 12px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 8px;
+  font-size: 16px;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.history-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  color: #ff4d4f;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 28px;
+  }
+
+  .form-card,
+  .result-card {
+    padding: 24px;
+  }
+
+  .gua-display {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+</style>
