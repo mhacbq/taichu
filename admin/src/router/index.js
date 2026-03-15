@@ -98,6 +98,44 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/site',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/site/content',
+    meta: { title: '网站内容', icon: 'Monitor' },
+    children: [
+      {
+        path: 'content',
+        name: 'ContentManager',
+        component: () => import('@/views/site-content/content-manager.vue'),
+        meta: { title: '内容管理' }
+      },
+      {
+        path: 'testimonials',
+        name: 'TestimonialsManager',
+        component: () => import('@/views/site-content/testimonials.vue'),
+        meta: { title: '用户评价' }
+      },
+      {
+        path: 'faq',
+        name: 'FaqManager',
+        component: () => import('@/views/site-content/faq.vue'),
+        meta: { title: 'FAQ管理' }
+      },
+      {
+        path: 'tarot-cards',
+        name: 'TarotCardsManager',
+        component: () => import('@/views/site-content/tarot-cards.vue'),
+        meta: { title: '塔罗牌管理' }
+      },
+      {
+        path: 'question-templates',
+        name: 'QuestionTemplatesManager',
+        component: () => import('@/views/site-content/question-templates.vue'),
+        meta: { title: '问题模板' }
+      }
+    ]
+  },
+  {
     path: '/editor',
     component: () => import('@/layout/index.vue'),
     meta: { title: '页面编辑', icon: 'Edit', hidden: true },
