@@ -4,6 +4,18 @@ declare(strict_types=1);
 
 // 应用入口文件
 
+// 处理 CORS 预检请求（在框架加载前处理，确保跨域正常）
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+    header("Access-Control-Allow-Origin: $origin");
+    header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');
+    http_response_code(204);
+    exit;
+}
+
 // 定义应用目录
 define('APP_PATH', __DIR__ . '/../app/');
 
