@@ -72,16 +72,11 @@ class Daily extends BaseController
             return null;
         }
         
-        // 计算今日干支
+        // 计算今日干支（使用公历转干支算法）
         $today = date('Y-m-d');
-        $year = (int)date('Y', strtotime($today));
-        $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
-        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
-        
-        $todayGanIndex = ($year - 4) % 10;
-        $todayZhiIndex = ($year - 4) % 12;
-        $todayGan = $tianGan[$todayGanIndex];
-        $todayZhi = $diZhi[$todayZhiIndex];
+        $todayGanZhi = $this->getDayGanZhi($today);
+        $todayGan = mb_substr($todayGanZhi, 0, 1);
+        $todayZhi = mb_substr($todayGanZhi, 1, 1);
         
         // 用户日主
         $dayMaster = $baziRecord['day_gan'];
@@ -195,6 +190,39 @@ class Daily extends BaseController
     }
     
     /**
+     * 获取指定日期的日干支
+     * 使用公历转干支算法
+     */
+    protected function getDayGanZhi(string $date): string
+    {
+        $timestamp = strtotime($date);
+        $year = (int)date('Y', $timestamp);
+        $month = (int)date('m', $timestamp);
+        $day = (int)date('d', $timestamp);
+        
+        // 天干地支数组
+        $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        
+        // 计算儒略日数（简化算法）
+        $a = floor((14 - $month) / 12);
+        $y = $year + 4800 - $a;
+        $m = $month + 12 * $a - 3;
+        
+        $julianDay = $day + floor((153 * $m + 2) / 5) + 365 * $y + floor($y / 4) - floor($y / 100) + floor($y / 400) - 32045;
+        
+        // 日干支计算（以1900-01-31为基准，当天是甲子日）
+        $baseJulianDay = 2415021; // 1900-01-31的儒略日
+        $offset = $julianDay - $baseJulianDay;
+        
+        // 计算日干支索引
+        $ganIndex = ($offset % 10 + 10) % 10;
+        $zhiIndex = ($offset % 12 + 12) % 12;
+        
+        return $tianGan[$ganIndex] . $diZhi[$zhiIndex];
+    }
+    
+    /**
      * 获取今日宜忌
      */
     public function luck()
@@ -234,6 +262,10 @@ class Daily extends BaseController
     {
         $colors = ['红色', '黄色', '蓝色', '绿色', '紫色', '橙色', '白色', '黑色'];
         $keys = array_rand($colors, 2);
+        // 确保$keys是数组（当选择2个元素时array_rand返回数组，选择1个时返回单个键）
+        if (!is_array($keys)) {
+            $keys = [$keys, ($keys + 1) % count($colors)];
+        }
         return [$colors[$keys[0]], $colors[$keys[1]]];
     }
     
@@ -244,6 +276,10 @@ class Daily extends BaseController
     {
         $directions = ['东', '南', '西', '北', '东南', '东北', '西南', '西北'];
         $keys = array_rand($directions, 2);
+        // 确保$keys是数组
+        if (!is_array($keys)) {
+            $keys = [$keys, ($keys + 1) % count($directions)];
+        }
         return [$directions[$keys[0]], $directions[$keys[1]]];
     }
     

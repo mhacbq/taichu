@@ -74,9 +74,12 @@ class Paipan extends BaseController
             return $this->error('用户不存在', 404);
         }
         
-        // 检查是否是首次排盘
-        $baziCount = BaziRecord::where('user_id', $user['sub'])->count();
-        $isFirstBazi = ($baziCount === 0);
+        // 检查是否是首次排盘（基于积分记录，防止删除记录后重复获取免费）
+        $hasBaziRecord = BaziRecord::where('user_id', $user['sub'])->count() > 0;
+        $hasPointsRecord = PointsRecord::where('user_id', $user['sub'])
+            ->where('type', 'bazi')
+            ->count() > 0;
+        $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
         
         // 非首次排盘需要检查积分
         if (!$isFirstBazi && $userModel->points < self::BAZI_POINTS_COST) {
@@ -329,9 +332,12 @@ class Paipan extends BaseController
             return $this->error('用户不存在', 404);
         }
         
-        // 检查是否是首次排盘
-        $baziCount = BaziRecord::where('user_id', $user['sub'])->count();
-        $isFirstBazi = ($baziCount === 0);
+        // 检查是否是首次排盘（基于积分记录，防止删除记录后重复获取免费）
+        $hasBaziRecord = BaziRecord::where('user_id', $user['sub'])->count() > 0;
+        $hasPointsRecord = PointsRecord::where('user_id', $user['sub'])
+            ->where('type', 'bazi')
+            ->count() > 0;
+        $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
         
         // 非首次排盘需要检查积分
         if (!$isFirstBazi && $userModel->points < self::BAZI_POINTS_COST) {
@@ -398,19 +404,25 @@ class Paipan extends BaseController
             return $this->success($result);
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('排盘失败: ' . $e->getMessage());
+            // 记录详细错误到日志，但返回通用错误信息给用户（安全修复）
+            trace('排盘失败: ' . $e->getMessage(), 'error');
+            return $this->error('排盘失败，请稍后重试');
         }
     }
     
     /**
-     * 获取排盘历史
+     * 获取排盘历史（支持后端分页）
      */
     public function history()
     {
         $user = $this->request->user;
-        $limit = $this->request->get('limit', 20);
+        $page = (int)$this->request->get('page', 1);
+        $pageSize = (int)$this->request->get('page_size', 10);
         
-        $history = BaziRecord::getUserHistory($user['sub'], (int)$limit);
+        // 限制最大页大小
+        $pageSize = min(max($pageSize, 1), 50);
+        
+        $history = BaziRecord::getUserHistoryPaged($user['sub'], $page, $pageSize);
         
         return $this->success($history);
     }
@@ -1115,5 +1127,95 @@ class Paipan extends BaseController
         $analysis .= "健康方面需注意脾胃保养，保持规律作息。";
         
         return $analysis;
+    }
+    
+    /**
+     * 设置排盘分享状态
+     */
+    public function setSharePublic()
+    {
+        $user = $this->request->user;
+        $id = (int)$this->request->post('id');
+        $isPublic = (bool)$this->request->post('is_public', false);
+        
+        if (!$id) {
+            return $this->error('记录ID不能为空');
+        }
+        
+        $record = BaziRecord::where('id', $id)
+            ->where('user_id', $user['sub'])
+            ->find();
+        
+        if (!$record) {
+            return $this->error('记录不存在', 404);
+        }
+        
+        if ($record->setSharePublic($isPublic)) {
+            return $this->success([
+                'is_public' => $isPublic,
+                'share_code' => $record->share_code,
+                'share_url' => $isPublic ? "/bazi/share/{$record->share_code}" : null,
+            ], '设置成功');
+        }
+        
+        return $this->error('设置失败');
+    }
+    
+    /**
+     * 删除排盘记录
+     */
+    public function deleteRecord()
+    {
+        $user = $this->request->user;
+        $id = (int)$this->request->post('id');
+        
+        if (!$id) {
+            return $this->error('记录ID不能为空');
+        }
+        
+        if (BaziRecord::deleteById($id, $user['sub'])) {
+            return $this->success([], '删除成功');
+        }
+        
+        return $this->error('删除失败，记录不存在');
+    }
+    
+    /**
+     * 通过分享码查看排盘（无需登录）
+     */
+    public function share()
+    {
+        $shareCode = $this->request->get('code');
+        
+        if (empty($shareCode)) {
+            return $this->error('分享码不能为空');
+        }
+        
+        $record = BaziRecord::findByShareCode($shareCode);
+        
+        if (!$record) {
+            return $this->error('分享记录不存在或已失效', 404);
+        }
+        
+        // 增加查看次数
+        $record->incrementViewCount();
+        
+        // 构建八字数据
+        $bazi = [
+            'year' => ['gan' => $record->year_gan, 'zhi' => $record->year_zhi],
+            'month' => ['gan' => $record->month_gan, 'zhi' => $record->month_zhi],
+            'day' => ['gan' => $record->day_gan, 'zhi' => $record->day_zhi],
+            'hour' => ['gan' => $record->hour_gan, 'zhi' => $record->hour_zhi],
+        ];
+        
+        return $this->success([
+            'birth_date' => $record->birth_date,
+            'gender' => $record->gender,
+            'location' => $record->location,
+            'bazi' => $bazi,
+            'analysis' => $record->analysis,
+            'view_count' => $record->view_count,
+            'created_at' => $record->created_at,
+        ]);
     }
 }

@@ -261,73 +261,127 @@ class Payment extends BaseController
      */
     public function notify()
     {
-        // 获取原始XML数据
+        // 1. 获取原始XML数据
         $xml = file_get_contents('php://input');
         
         if (empty($xml)) {
+            \think\facade\Log::warning('支付回调：收到空数据');
             return $this->xmlResponse('FAIL', '无效的数据');
         }
         
-        // 解析XML
-        $data = $this->xmlToArray($xml);
-        
-        if (empty($data)) {
+        // 2. 解析XML
+        try {
+            $data = $this->xmlToArray($xml);
+        } catch (\Exception $e) {
+            \think\facade\Log::error('支付回调：XML解析失败 - ' . $e->getMessage());
             return $this->xmlResponse('FAIL', '解析失败');
         }
         
-        // 验证返回状态
-        if ($data['return_code'] !== 'SUCCESS') {
+        // 3. 验证返回状态
+        if (($data['return_code'] ?? '') !== 'SUCCESS') {
+            \think\facade\Log::warning('支付回调：通信失败 - ' . ($data['return_msg'] ?? ''));
             return $this->xmlResponse('FAIL', $data['return_msg'] ?? '通信失败');
         }
         
-        // 获取配置验证签名
+        // 4. 获取配置验证签名
         $config = PaymentConfig::getWechatConfig();
         if (!$config) {
+            \think\facade\Log::error('支付回调：支付配置不存在');
             return $this->xmlResponse('FAIL', '配置错误');
         }
         
-        // 验证签名
+        // 5. 验证签名
         $sign = $data['sign'] ?? '';
         unset($data['sign']);
         
         if ($this->generateSign($data, $config['api_key']) !== $sign) {
+            \think\facade\Log::error('支付回调：签名验证失败', ['order_no' => $data['out_trade_no'] ?? '']);
             return $this->xmlResponse('FAIL', '签名验证失败');
         }
         
-        // 验证业务结果
-        if ($data['result_code'] !== 'SUCCESS') {
-            return $this->xmlResponse('SUCCESS'); // 业务失败也返回成功，避免微信重复通知
+        // 6. 验证业务结果
+        if (($data['result_code'] ?? '') !== 'SUCCESS') {
+            // 业务失败也返回成功，避免微信重复通知
+            \think\facade\Log::info('支付回调：业务失败', [
+                'order_no' => $data['out_trade_no'] ?? '',
+                'err_code' => $data['err_code'] ?? '',
+                'err_code_des' => $data['err_code_des'] ?? '',
+            ]);
+            return $this->xmlResponse('SUCCESS');
         }
         
-        // 查找订单
+        // 7. 提取关键信息
         $orderNo = $data['out_trade_no'] ?? '';
+        $payOrderNo = $data['transaction_id'] ?? '';
+        $notifyId = $data['notify_id'] ?? ''; // 微信支付通知ID，用于幂等性
+        $totalFee = (int) ($data['total_fee'] ?? 0);
+        $timeEnd = $data['time_end'] ?? '';
+        
+        \think\facade\Log::info('支付回调：开始处理', [
+            'order_no' => $orderNo,
+            'pay_order_no' => $payOrderNo,
+            'notify_id' => $notifyId,
+            'total_fee' => $totalFee,
+        ]);
+        
+        // 8. 查找订单
         $order = RechargeOrder::findByOrderNo($orderNo);
         
         if (!$order) {
+            \think\facade\Log::error('支付回调：订单不存在', ['order_no' => $orderNo]);
             return $this->xmlResponse('FAIL', '订单不存在');
         }
         
-        // 如果订单已处理，直接返回成功
-        if ($order->status === RechargeOrder::STATUS_PAID) {
-            return $this->xmlResponse('SUCCESS');
-        }
-        
-        // 验证订单金额
-        $totalFee = (int) $data['total_fee'];
-        $expectedFee = (int) ($order->amount * 100);
+        // 9. 验证订单金额（使用round避免浮点精度问题）
+        $expectedFee = (int) round($order->amount * 100);
         
         if ($totalFee !== $expectedFee) {
-            trace("订单金额不匹配：订单{$orderNo}，微信支付{$totalFee}分，系统记录{$expectedFee}分", 'error');
+            \think\facade\Log::error("支付回调：订单金额不匹配", [
+                'order_no' => $orderNo,
+                'wx_fee' => $totalFee,
+                'expected_fee' => $expectedFee,
+            ]);
             return $this->xmlResponse('FAIL', '金额不匹配');
         }
         
-        // 标记订单为已支付
-        $payOrderNo = $data['transaction_id'] ?? '';
-        if ($order->markAsPaid($payOrderNo, $data)) {
-            return $this->xmlResponse('SUCCESS');
+        // 10. 处理支付（带事务和幂等性保护）
+        try {
+            $result = $order->markAsPaid($payOrderNo, $data, $notifyId);
+            
+            if ($result['success']) {
+                if ($result['is_duplicate'] ?? false) {
+                    \think\facade\Log::info('支付回调：重复通知，已处理', [
+                        'order_no' => $orderNo,
+                        'notify_id' => $notifyId,
+                    ]);
+                } else {
+                    \think\facade\Log::info('支付回调：处理成功', [
+                        'order_no' => $orderNo,
+                        'pay_order_no' => $payOrderNo,
+                        'points' => $order->points,
+                    ]);
+                }
+                return $this->xmlResponse('SUCCESS');
+            } else {
+                \think\facade\Log::error('支付回调：处理失败', [
+                    'order_no' => $orderNo,
+                    'message' => $result['message'],
+                ]);
+                // 如果订单正在处理中，返回SUCCESS避免微信重复通知
+                if ($result['message'] === '订单正在处理中') {
+                    return $this->xmlResponse('SUCCESS');
+                }
+                return $this->xmlResponse('FAIL', $result['message']);
+            }
+        } catch (\Exception $e) {
+            \think\facade\Log::error('支付回调：处理异常', [
+                'order_no' => $orderNo,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // 发生异常返回FAIL，让微信重试
+            return $this->xmlResponse('FAIL', '处理异常');
         }
-        
-        return $this->xmlResponse('FAIL', '处理失败');
     }
     
     /**
@@ -395,13 +449,52 @@ class Payment extends BaseController
     }
     
     /**
-     * XML转数组
+     * XML转数组（安全版本，防止XXE攻击）
      */
     protected function xmlToArray(string $xml): array
     {
-        // 禁止外部实体
-        libxml_disable_entity_loader(true);
-        $data = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
+        // 限制XML大小，防止DoS攻击（最大1MB）
+        if (strlen($xml) > 1024 * 1024) {
+            throw new \Exception('XML data too large');
+        }
+        
+        // 检查XML是否包含外部实体引用（简单检测）
+        $lowerXml = strtolower($xml);
+        $dangerousPatterns = [
+            '<!entity',
+            '<!doctype',
+            'system(',
+            'public(',
+            'file://',
+            'http://',
+            'https://',
+        ];
+        
+        foreach ($dangerousPatterns as $pattern) {
+            if (strpos($lowerXml, $pattern) !== false) {
+                throw new \Exception('XML contains potentially dangerous content');
+            }
+        }
+        
+        // PHP 8.0+ 使用 LIBXML_NONET 代替废弃的 libxml_disable_entity_loader
+        // LIBXML_NOCDATA - 将CDATA合并为文本节点
+        // LIBXML_NONET - 禁止网络访问
+        // LIBXML_DTDLOAD - 禁止加载外部DTD
+        // LIBXML_DTDATTR - 默认DTD属性
+        $prevValue = libxml_use_internal_errors(true);
+        
+        $data = simplexml_load_string(
+            $xml,
+            'SimpleXMLElement',
+            LIBXML_NOCDATA | LIBXML_NONET | LIBXML_NOENT | LIBXML_DTDLOAD
+        );
+        
+        libxml_use_internal_errors($prevValue);
+        
+        if ($data === false) {
+            throw new \Exception('Failed to parse XML');
+        }
+        
         return json_decode(json_encode($data), true);
     }
     

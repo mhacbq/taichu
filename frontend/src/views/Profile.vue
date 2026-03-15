@@ -285,18 +285,16 @@ const loadUserData = async () => {
   }
 }
 
-// 加载排盘历史（支持分页）
+// 加载排盘历史（后端分页）
 const loadBaziHistory = async () => {
   try {
-    const baziRes = await getBaziHistory(baziPageSize.value)
+    const baziRes = await getBaziHistory({
+      page: baziCurrentPage.value,
+      page_size: baziPageSize.value
+    })
     if (baziRes.code === 0) {
-      const allData = baziRes.data || []
-      baziTotal.value = allData.length
-      
-      // 前端分页
-      const start = (baziCurrentPage.value - 1) * baziPageSize.value
-      const end = start + baziPageSize.value
-      baziHistory.value = allData.slice(start, end)
+      baziHistory.value = baziRes.data.list || []
+      baziTotal.value = baziRes.data.pagination?.total || 0
     }
   } catch (error) {
     console.error('加载排盘历史失败:', error)

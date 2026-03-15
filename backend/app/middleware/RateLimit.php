@@ -74,6 +74,12 @@ class RateLimit
         // 获取限流配置
         $config = $this->config[$path] ?? $this->config['default'];
         
+        // VIP用户放宽限制（2倍）
+        $isVip = $this->isVipUser($request);
+        if ($isVip) {
+            $config['max_requests'] = (int)($config['max_requests'] * 2);
+        }
+        
         // 生成缓存key
         $key = "rate_limit:{$path}:{$clientId}";
         
@@ -116,10 +122,48 @@ class RateLimit
                 'X-RateLimit-Limit' => $config['max_requests'],
                 'X-RateLimit-Remaining' => $config['max_requests'] - count($requests),
                 'X-RateLimit-Reset' => $now + $config['window'],
+                'X-RateLimit-VIP' => $isVip ? '1' : '0',
             ]);
         }
         
         return $response;
+    }
+    
+    /**
+     * 检查用户是否为VIP
+     */
+    protected function isVipUser($request): bool
+    {
+        // 检查用户是否已登录
+        if (!$request->user || !isset($request->user['sub'])) {
+            return false;
+        }
+        
+        // 从用户信息中检查VIP状态
+        // 优先使用缓存中的VIP状态
+        $cacheKey = 'user_vip_status:' . $request->user['sub'];
+        $vipStatus = Cache::get($cacheKey);
+        
+        if ($vipStatus !== null) {
+            return (bool)$vipStatus;
+        }
+        
+        // 从数据库查询VIP状态
+        try {
+            $user = \app\model\User::find($request->user['sub']);
+            if ($user && isset($user->is_vip) && $user->is_vip) {
+                // 缓存VIP状态5分钟
+                Cache::set($cacheKey, 1, 300);
+                return true;
+            }
+            // 缓存非VIP状态5分钟
+            Cache::set($cacheKey, 0, 300);
+        } catch (\Exception $e) {
+            // 查询失败时默认非VIP
+            return false;
+        }
+        
+        return false;
     }
     
     /**

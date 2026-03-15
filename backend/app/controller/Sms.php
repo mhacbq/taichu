@@ -38,28 +38,63 @@ class Sms extends BaseController
             return $this->error('无效的验证码类型');
         }
         
-        // 防刷限制 - 使用缓存限制同一IP
         $ip = $this->request->ip();
-        $ipKey = 'sms_ip_limit:' . $ip;
+        
+        // 防刷限制 - IP级别（每小时20次）
+        $ipKey = 'sms_ip_limit:' . md5($ip);
         $ipCount = Cache::get($ipKey, 0);
         if ($ipCount >= 20) {
             return $this->error('发送过于频繁，请稍后再试', 429);
+        }
+        
+        // 防刷限制 - 手机号级别（每小时5次）
+        $phoneKey = 'sms_phone_limit:' . md5($phone);
+        $phoneCount = Cache::get($phoneKey, 0);
+        if ($phoneCount >= 5) {
+            return $this->error('该手机号发送过于频繁，请1小时后再试', 429);
+        }
+        
+        // 防刷限制 - 图形验证码验证（连续3次后需要）
+        $captchaKey = 'sms_captcha_required:' . md5($phone);
+        $failCount = Cache::get('sms_send_fail:' . md5($phone), 0);
+        if ($failCount >= 3) {
+            if (empty($data['captcha']) || empty($data['captcha_key'])) {
+                return $this->error('请完成图形验证码', 403, ['need_captcha' => true]);
+            }
+            // 验证图形验证码
+            $captchaValid = $this->verifyCaptcha($data['captcha_key'], $data['captcha']);
+            if (!$captchaValid) {
+                return $this->error('图形验证码错误');
+            }
         }
         
         // 发送验证码
         $result = SmsService::sendVerifyCode($phone, $type, $ip);
         
         if ($result['success']) {
-            // 增加IP限制计数
+            // 增加限制计数
             Cache::set($ipKey, $ipCount + 1, 3600);
+            Cache::set($phoneKey, $phoneCount + 1, 3600);
             
             return $this->success([
                 'expire' => $result['expire'] ?? 300,
-                'wait' => $result['wait'] ?? 0,
+                'wait' => $result['wait'] ?? 60,
             ], '验证码已发送');
         }
         
+        // 记录失败次数
+        Cache::set('sms_send_fail:' . md5($phone), $failCount + 1, 3600);
+        
         return $this->error($result['message']);
+    }
+    
+    /**
+     * 验证图形验证码
+     */
+    protected function verifyCaptcha(string $key, string $code): bool
+    {
+        // 调用验证码服务进行验证
+        return \app\service\CaptchaService::verify($key, $code);
     }
     
     /**

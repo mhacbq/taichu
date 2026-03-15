@@ -149,6 +149,15 @@ class InviteRecord extends Model
      */
     public static function getLeaderboard(int $limit = 20, string $period = 'all'): array
     {
+        // 严格验证period参数，防止SQL注入
+        $allowedPeriods = ['all', 'month', 'week'];
+        if (!in_array($period, $allowedPeriods, true)) {
+            $period = 'all';
+        }
+        
+        // 限制limit范围，防止数据泄露
+        $limit = max(1, min($limit, 100));
+        
         $query = self::alias('ir')
             ->field([
                 'ir.inviter_id',
@@ -161,13 +170,16 @@ class InviteRecord extends Model
             ->join('tc_user u', 'ir.inviter_id = u.id')
             ->where('ir.status', 1);
         
-        // 根据周期筛选
+        // 根据周期筛选 - 使用安全的查询构建器方法
         switch ($period) {
             case 'month':
                 $query->whereMonth('ir.created_at', date('m'));
                 break;
             case 'week':
-                $query->whereWeek('ir.created_at');
+                // 使用安全的日期范围查询替代whereWeek
+                $startOfWeek = date('Y-m-d 00:00:00', strtotime('monday this week'));
+                $endOfWeek = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+                $query->whereBetween('ir.created_at', [$startOfWeek, $endOfWeek]);
                 break;
             case 'all':
             default:
@@ -185,10 +197,14 @@ class InviteRecord extends Model
         $rank = 1;
         
         foreach ($leaderboard as $item) {
+            // 对昵称进行XSS过滤
+            $nickname = $item['nickname'] ?? '神秘用户';
+            $nickname = htmlspecialchars($nickname, ENT_QUOTES, 'UTF-8');
+            
             $result[] = [
                 'rank' => $rank,
                 'user_id' => $item['inviter_id'],
-                'nickname' => $item['nickname'] ?? '神秘用户',
+                'nickname' => $nickname,
                 'avatar' => $item['avatar'] ?? '',
                 'invite_count' => (int)$item['invite_count'],
                 'total_points' => (int)$item['total_points'],

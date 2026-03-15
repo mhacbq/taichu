@@ -51,20 +51,36 @@ class YearlyFortuneService
             throw new \Exception('用户不存在');
         }
         
-        if ($userModel->points < self::YEARLY_FORTUNE_POINTS_COST) {
-            throw new \Exception('积分不足，需要' . self::YEARLY_FORTUNE_POINTS_COST . '积分', 403);
+        // 使用事务保护积分扣除和AI分析
+        Db::startTrans();
+        try {
+            // 先尝试扣除积分（使用数据库行锁确保原子性）
+            $deductResult = Db::name('tc_user')
+                ->where('id', $userId)
+                ->where('points', '>=', self::YEARLY_FORTUNE_POINTS_COST)
+                ->dec('points', self::YEARLY_FORTUNE_POINTS_COST)
+                ->update();
+            
+            if ($deductResult === 0) {
+                Db::rollback();
+                throw new \Exception('积分不足，需要' . self::YEARLY_FORTUNE_POINTS_COST . '积分', 403);
+            }
+            
+            // 记录积分变动
+            PointsRecord::record(
+                $userId,
+                '流年运势AI分析',
+                -self::YEARLY_FORTUNE_POINTS_COST,
+                'yearly_fortune',
+                0,
+                "年份: {$year}"
+            );
+            
+            Db::commit();
+        } catch (\Exception $e) {
+            Db::rollback();
+            throw $e;
         }
-        
-        // 扣除积分
-        $userModel->deductPoints(self::YEARLY_FORTUNE_POINTS_COST);
-        PointsRecord::record(
-            $userId,
-            '流年运势AI分析',
-            -self::YEARLY_FORTUNE_POINTS_COST,
-            'yearly_fortune',
-            0,
-            "年份: {$year}"
-        );
         
         // 调用AI分析
         $analysis = $this->callAiForYearlyFortune($bazi, $gender, $year);
