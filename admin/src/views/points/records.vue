@@ -1,0 +1,127 @@
+<template>
+  <div class="app-container">
+    <el-card class="search-form" shadow="never">
+      <el-form :model="queryForm" inline>
+        <el-form-item label="用户ID">
+          <el-input v-model="queryForm.user_id" placeholder="请输入用户ID" clearable />
+        </el-form-item>
+        <el-form-item label="变动类型">
+          <el-select v-model="queryForm.type" placeholder="全部类型" clearable>
+            <el-option label="增加" value="add" />
+            <el-option label="减少" value="reduce" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never">
+      <el-table v-loading="loading" :data="recordList" stripe>
+        <el-table-column type="index" label="#" width="50" />
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="user_id" label="用户ID" width="100" />
+        <el-table-column prop="type" label="类型" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.type === 'add' ? 'success' : 'danger'">
+              {{ row.type === 'add' ? '增加' : '减少' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="amount" label="变动数量" width="100">
+          <template #default="{ row }">
+            <span :class="row.type === 'add' ? 'text-success' : 'text-danger'">
+              {{ row.type === 'add' ? '+' : '-' }}{{ row.amount }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="balance" label="变动后余额" width="100" />
+        <el-table-column prop="reason" label="变动原因" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="created_at" label="时间" width="160" />
+      </el-table>
+
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="queryForm.page"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { getPointsRecords } from '@/api/points'
+
+const loading = ref(false)
+const recordList = ref([])
+const total = ref(0)
+
+const queryForm = reactive({
+  user_id: '',
+  type: '',
+  page: 1,
+  pageSize: 20
+})
+
+onMounted(() => {
+  loadRecords()
+})
+
+async function loadRecords() {
+  loading.value = true
+  try {
+    const { data } = await getPointsRecords(queryForm)
+    recordList.value = data.list || []
+    total.value = data.total || 0
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleSearch() {
+  queryForm.page = 1
+  loadRecords()
+}
+
+function handleReset() {
+  Object.assign(queryForm, {
+    user_id: '',
+    type: '',
+    page: 1,
+    pageSize: 20
+  })
+  loadRecords()
+}
+
+function handleSizeChange(val) {
+  queryForm.pageSize = val
+  loadRecords()
+}
+
+function handleCurrentChange(val) {
+  queryForm.page = val
+  loadRecords()
+}
+</script>
+
+<style lang="scss" scoped>
+.search-form {
+  margin-bottom: 20px;
+}
+
+.text-success {
+  color: #67c23a;
+}
+
+.text-danger {
+  color: #f56c6c;
+}
+</style>

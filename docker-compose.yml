@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: taichu-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: taichu123456
+      MYSQL_DATABASE: taichu
+      MYSQL_USER: taichu
+      MYSQL_PASSWORD: taichu123
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - taichu-network
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # PHP后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: taichu-backend
+    restart: always
+    environment:
+      APP_DEBUG: false
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: taichu
+      DB_USER: taichu
+      DB_PASSWORD: taichu123
+      JWT_SECRET: taichu-jwt-secret-key-change-in-production
+    volumes:
+      - ./backend:/var/www/html
+      - /var/www/html/vendor
+      - /var/www/html/runtime
+    ports:
+      - "8080:80"
+    networks:
+      - taichu-network
+    depends_on:
+      - mysql
+
+  # Nginx前端服务
+  nginx:
+    image: nginx:alpine
+    container_name: taichu-nginx
+    restart: always
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - taichu-network
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+
+networks:
+  taichu-network:
+    driver: bridge
