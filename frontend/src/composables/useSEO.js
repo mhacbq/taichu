@@ -49,7 +49,7 @@ export function useSEO(options = {}) {
   })
 
   // 站点基础URL
-  const baseUrl = import.meta.env.VITE_SITE_URL || 'https://taichu.mingli.com'
+  const baseUrl = import.meta.env.VITE_SITE_URL || 'https://taichu.chat'
   const fullUrl = url ? `${baseUrl}${url}` : baseUrl
   const fullImage = image.startsWith('http') ? image : `${baseUrl}${image}`
 
@@ -222,11 +222,11 @@ export function generateWebsiteSchema() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: '太初命理',
-    url: 'https://taichu.mingli.com',
+    url: 'https://taichu.chat',
     description: '专业的AI智能命理分析平台',
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://taichu.mingli.com/search?q={search_term_string}',
+      target: 'https://taichu.chat/search?q={search_term_string}',
       'query-input': 'required name=search_term_string'
     }
   }
@@ -240,8 +240,8 @@ export function generateOrganizationSchema() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: '太初命理',
-    url: 'https://taichu.mingli.com',
-    logo: 'https://taichu.mingli.com/logo.png',
+    url: 'https://taichu.chat',
+    logo: 'https://taichu.chat/logo.png',
     description: '专业的AI智能命理分析平台',
     sameAs: [
       'https://weibo.com/taichu',

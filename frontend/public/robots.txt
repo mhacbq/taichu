@@ -27,7 +27,7 @@ Disallow: /*.docx$
 Crawl-delay: 1
 
 # 站点地图
-Sitemap: https://taichu.mingli.com/sitemap.xml
+Sitemap: https://taichu.chat/sitemap.xml
 
 # 百度爬虫专用
 User-agent: Baiduspider

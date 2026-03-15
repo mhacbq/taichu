@@ -349,7 +349,7 @@ Allow: /
 Disallow: /admin/
 Disallow: /profile/
 Disallow: /api/
-Sitemap: https://taichu.mingli.com/sitemap.xml
+Sitemap: https://taichu.chat/sitemap.xml
 `)
 
 // 提交状态

@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS `tc_seo_robots` (
 
 -- 插入默认robots配置
 INSERT INTO `tc_seo_robots` (`user_agent`, `rules`, `crawl_delay`, `sitemap_url`) VALUES
-('*', '[{"type": "allow", "path": "/"}, {"type": "disallow", "path": "/admin/"}, {"type": "disallow", "path": "/profile/"}, {"type": "disallow", "path": "/api/"}]', 1, 'https://taichu.mingli.com/sitemap.xml'),
+('*', '[{"type": "allow", "path": "/"}, {"type": "disallow", "path": "/admin/"}, {"type": "disallow", "path": "/profile/"}, {"type": "disallow", "path": "/api/"}]', 1, 'https://taichu.chat/sitemap.xml'),
 ('Baiduspider', '[{"type": "allow", "path": "/"}, {"type": "disallow", "path": "/admin/"}]', 1, ''),
 ('Sogou spider', '[{"type": "allow", "path": "/"}]', 1, ''),
 ('360Spider', '[{"type": "allow", "path": "/"}]', 1, '');
@@ -225,12 +225,12 @@ DELIMITER ;
 -- ========================================================
 
 INSERT INTO `tc_seo_indexed_pages` (`url`, `page_route`, `title`, `baidu_status`, `bing_status`, `organic_traffic`) VALUES
-('https://taichu.mingli.com/', '/', '太初命理 - AI智能命理分析平台', 'indexed', 'indexed', 1250),
-('https://taichu.mingli.com/bazi', '/bazi', '免费八字排盘_在线生辰八字测算', 'indexed', 'indexed', 680),
-('https://taichu.mingli.com/tarot', '/tarot', '免费塔罗牌占卜_在线塔罗测试', 'indexed', 'indexed', 520),
-('https://taichu.mingli.com/daily', '/daily', '今日运势查询_每日星座运势', 'indexed', 'pending', 380),
-('https://taichu.mingli.com/help', '/help', '帮助中心_使用指南_常见问题', 'indexed', 'indexed', 95),
-('https://taichu.mingli.com/recharge', '/recharge', '积分充值_购买命理服务', 'pending', 'pending', 42);
+('https://taichu.chat/', '/', '太初命理 - AI智能命理分析平台', 'indexed', 'indexed', 1250),
+('https://taichu.chat/bazi', '/bazi', '免费八字排盘_在线生辰八字测算', 'indexed', 'indexed', 680),
+('https://taichu.chat/tarot', '/tarot', '免费塔罗牌占卜_在线塔罗测试', 'indexed', 'indexed', 520),
+('https://taichu.chat/daily', '/daily', '今日运势查询_每日星座运势', 'indexed', 'pending', 380),
+('https://taichu.chat/help', '/help', '帮助中心_使用指南_常见问题', 'indexed', 'indexed', 95),
+('https://taichu.chat/recharge', '/recharge', '积分充值_购买命理服务', 'pending', 'pending', 42);
 
 -- ========================================================
 -- 初始化流量统计数据
