@@ -340,6 +340,58 @@
           </div>
         </div>
         
+        <!-- AI智能解盘 -->
+        <div class="ai-analysis-section" v-if="result.bazi">
+          <h3>
+            <span class="section-icon">🤖</span>
+            AI智能解盘
+            <el-tag type="warning" size="small" class="ml-2">消耗30积分</el-tag>
+          </h3>
+          
+          <!-- AI解盘结果 -->
+          <div v-if="aiAnalysisResult" class="ai-result">
+            <div class="ai-result-header">
+              <span class="ai-model">{{ aiAnalysisResult.model || 'AI' }} 解读</span>
+              <el-button type="primary" link size="small" @click="clearAiResult">
+                重新解读
+              </el-button>
+            </div>
+            <div class="ai-content" v-html="formatAiContent(aiAnalysisResult.analysis)"></div>
+          </div>
+          
+          <!-- AI解盘输入 -->
+          <div v-else-if="!aiAnalyzing" class="ai-input">
+            <p class="ai-desc">基于你的八字信息，让AI为你提供深度分析</p>
+            <el-input
+              v-model="aiPrompt"
+              type="textarea"
+              :rows="2"
+              placeholder="输入你想问的问题（可选），例如：我的事业运势如何？"
+              class="mb-3"
+            />
+            <el-button 
+              type="warning" 
+              size="large"
+              :disabled="currentPoints < 30"
+              @click="startAiAnalysis"
+            >
+              <span class="btn-icon">✨</span>
+              {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
+            </el-button>
+          </div>
+          
+          <!-- AI解盘加载中 -->
+          <div v-else class="ai-loading">
+            <div class="ai-loading-spinner">
+              <span class="spinner"></span>
+              <span>AI正在深度分析你的八字...</span>
+            </div>
+            <div class="ai-stream-content" v-if="aiStreamContent">
+              {{ aiStreamContent }}
+            </div>
+          </div>
+        </div>
+
         <!-- 操作按钮 -->
         <div class="result-actions">
           <el-button type="primary" @click="saveResult" :loading="saving">
@@ -361,6 +413,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { calculateBazi as calculateBaziApi, getPointsBalance } from '../api'
+import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
 import BackButton from '../components/BackButton.vue'
 
 const birthDate = ref('')
@@ -521,6 +574,91 @@ const shareResult = () => {
       ElMessage.error('复制失败，请手动复制')
     })
   }
+}
+
+// AI解盘
+const startAiAnalysis = async () => {
+  if (currentPoints.value < 30) {
+    ElMessage.warning('积分不足，请先签到领取积分')
+    return
+  }
+  
+  aiAnalyzing.value = true
+  aiStreamContent.value = ''
+  
+  try {
+    // 尝试使用流式API
+    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value)
+    
+    if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
+      // 流式响应
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      
+      let fullContent = ''
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6)
+            if (data === '[DONE]') continue
+            
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.choices?.[0]?.delta?.content) {
+                const content = parsed.choices[0].delta.content
+                fullContent += content
+                aiStreamContent.value = fullContent
+              }
+            } catch (e) {
+              // 忽略解析错误
+            }
+          }
+        }
+      }
+      
+      aiAnalysisResult.value = {
+        analysis: fullContent,
+        model: 'AI'
+      }
+    } else {
+      // 非流式响应
+      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value)
+      if (res.code === 0) {
+        aiAnalysisResult.value = res.data
+        currentPoints.value = res.data.remaining_points || currentPoints.value - 30
+      } else {
+        ElMessage.error(res.message || 'AI解盘失败')
+      }
+    }
+  } catch (error) {
+    console.error('AI解盘错误:', error)
+    ElMessage.error('AI解盘服务暂时不可用，请稍后重试')
+  } finally {
+    aiAnalyzing.value = false
+  }
+}
+
+// 清除AI结果
+const clearAiResult = () => {
+  aiAnalysisResult.value = null
+  aiStreamContent.value = ''
+  aiPrompt.value = ''
+}
+
+// 格式化AI内容（简单的换行处理）
+const formatAiContent = (content) => {
+  if (!content) return ''
+  return content
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^(.+)$/, '<p>$1</p>')
 }
 </script>
 
@@ -1236,6 +1374,103 @@ const shareResult = () => {
   color: rgba(255, 215, 0, 0.8);
 }
 
+/* AI解盘区域 */
+.ai-analysis-section {
+  margin-top: 30px;
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
+  border: 1px solid rgba(103, 194, 58, 0.2);
+  border-radius: 15px;
+  padding: 25px;
+}
+
+.ai-analysis-section h3 {
+  color: #fff;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.ai-desc {
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.ai-input {
+  text-align: center;
+}
+
+.ai-result {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.ai-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-model {
+  color: #67c23a;
+  font-weight: 500;
+}
+
+.ai-content {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.8;
+  font-size: 15px;
+}
+
+.ai-content p {
+  margin-bottom: 12px;
+}
+
+.ai-loading {
+  text-align: center;
+  padding: 30px;
+}
+
+.ai-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ai-loading-spinner .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(103, 194, 58, 0.3);
+  border-top-color: #67c23a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-stream-content {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  min-height: 100px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 @media (max-width: 768px) {
   .paipan-cell {
     font-size: 18px;
@@ -1269,6 +1504,14 @@ const shareResult = () => {
   
   .liunian-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .ai-analysis-section {
+    padding: 15px;
+  }
+  
+  .ai-content {
+    font-size: 14px;
   }
 }
 </style>
