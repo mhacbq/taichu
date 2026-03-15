@@ -1,0 +1,32 @@
+-- 八字排盘记录表（模型使用tc_bazi_record）
+CREATE TABLE IF NOT EXISTS `tc_bazi_record` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `birth_date` DATE NOT NULL COMMENT '出生日期',
+    `birth_time` TIME DEFAULT NULL COMMENT '出生时间',
+    `gender` VARCHAR(10) NOT NULL COMMENT '性别: male/female',
+    `location` VARCHAR(100) DEFAULT '' COMMENT '出生地点',
+    `is_lunar` TINYINT DEFAULT 0 COMMENT '是否农历: 0公历 1农历',
+    `year_gan` VARCHAR(10) DEFAULT '' COMMENT '年干',
+    `year_zhi` VARCHAR(10) DEFAULT '' COMMENT '年支',
+    `month_gan` VARCHAR(10) DEFAULT '' COMMENT '月干',
+    `month_zhi` VARCHAR(10) DEFAULT '' COMMENT '月支',
+    `day_gan` VARCHAR(10) DEFAULT '' COMMENT '日干',
+    `day_zhi` VARCHAR(10) DEFAULT '' COMMENT '日支',
+    `hour_gan` VARCHAR(10) DEFAULT '' COMMENT '时干',
+    `hour_zhi` VARCHAR(10) DEFAULT '' COMMENT '时支',
+    `bazi_json` JSON NULL COMMENT '完整八字数据（JSON）',
+    `analysis` TEXT COMMENT '分析报告',
+    `is_first` TINYINT DEFAULT 0 COMMENT '是否首次排盘: 0否 1是',
+    `is_public` TINYINT DEFAULT 0 COMMENT '是否公开: 0私密 1公开',
+    `share_code` VARCHAR(50) DEFAULT '' COMMENT '分享码',
+    `view_count` INT DEFAULT 0 COMMENT '查看次数',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_birth_date` (`birth_date`),
+    INDEX `idx_is_public` (`is_public`),
+    INDEX `idx_share_code` (`share_code`),
+    INDEX `idx_is_first` (`is_first`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='八字排盘记录表';
