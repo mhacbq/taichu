@@ -140,7 +140,7 @@
             <button class="close-btn" @click="showHistory = false">×</button>
           </div>
           <div class="history-list">
-            <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistory(item)">
+            <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
               <div class="history-main">
                 <p class="history-question">{{ item.question }}</p>
                 <p class="history-gua">{{ item.gua_name }} · {{ formatDate(item.created_at) }}</p>
@@ -248,7 +248,7 @@ const saveResult = () => {
 }
 
 // 加载历史记录详情
-const loadHistory = (item) => {
+const loadHistoryDetail = (item) => {
   result.value = {
     id: item.id,
     question: item.question,
