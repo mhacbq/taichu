@@ -340,22 +340,6 @@ const generateQRCode = async () => {
   }
 }
 
-// 添加支付二维码样式
-.qrcode-image {
-  width: 200px;
-  height: 200px;
-  margin: 0 auto;
-  background: #fff;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.qrcode-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 // 调用微信支付
 const callWechatPay = (payParams) => {
   if (typeof WeixinJSBridge === 'undefined') {
@@ -831,5 +815,21 @@ const getStatusText = (status) => {
   .options-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 支付二维码样式 */
+.qrcode-image {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.qrcode-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 </style>
