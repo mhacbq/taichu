@@ -44,4 +44,26 @@ class BaziRecord extends Model
             ->select()
             ->toArray();
     }
+    
+    /**
+     * 获取用户的排盘历史（分页）
+     */
+    public static function getUserHistoryPaged(int $userId, int $page = 1, int $pageSize = 10): array
+    {
+        $query = self::where('user_id', $userId)
+            ->order('created_at', 'desc');
+        
+        $total = $query->count();
+        $list = $query->page($page, $pageSize)->select()->toArray();
+        
+        return [
+            'list' => $list,
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => $total,
+                'total_pages' => (int)ceil($total / $pageSize),
+            ],
+        ];
+    }
 }

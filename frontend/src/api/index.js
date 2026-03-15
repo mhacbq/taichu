@@ -13,7 +13,7 @@ export const getUserInfo = () => request.get('/auth/userinfo')
 
 // 八字排盘
 export const calculateBazi = (data) => request.post('/paipan/bazi', data)
-export const getBaziHistory = () => request.get('/paipan/history')
+export const getBaziHistory = (params) => request.get('/paipan/history', { params })
 
 // 塔罗占卜
 export const drawTarot = (data) => request.post('/tarot/draw', data)

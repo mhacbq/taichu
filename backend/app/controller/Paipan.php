@@ -405,14 +405,18 @@ class Paipan extends BaseController
     }
     
     /**
-     * 获取排盘历史
+     * 获取排盘历史（支持后端分页）
      */
     public function history()
     {
         $user = $this->request->user;
-        $limit = $this->request->get('limit', 20);
+        $page = (int)$this->request->get('page', 1);
+        $pageSize = (int)$this->request->get('page_size', 10);
         
-        $history = BaziRecord::getUserHistory($user['sub'], (int)$limit);
+        // 限制最大页大小
+        $pageSize = min(max($pageSize, 1), 50);
+        
+        $history = BaziRecord::getUserHistoryPaged($user['sub'], $page, $pageSize);
         
         return $this->success($history);
     }

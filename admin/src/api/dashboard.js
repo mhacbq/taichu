@@ -29,3 +29,10 @@ export function getChartData(type, params) {
     params
   })
 }
+
+export function getPendingFeedback() {
+  return request({
+    url: '/dashboard/pending-feedback',
+    method: 'get'
+  })
+}

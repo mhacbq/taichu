@@ -87,28 +87,18 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import { getStatistics } from '@/api/dashboard'
+import { getStatistics, getTrendData, getRealtimeData, getChartData, getPendingFeedback } from '@/api/dashboard'
+import { ElMessage } from 'element-plus'
 
 const statistics = ref([
-  { title: '总用户数', value: 12580, trend: 12.5, color: '#409eff', icon: 'UserFilled' },
-  { title: '今日新增', value: 128, trend: 8.2, color: '#67c23a', icon: 'User' },
-  { title: '八字排盘', value: 8562, trend: -2.1, color: '#e6a23c', icon: 'Calendar' },
-  { title: '塔罗占卜', value: 4321, trend: 15.3, color: '#f56c6c', icon: 'MagicStick' }
+  { title: '总用户数', value: 0, trend: 0, color: '#409eff', icon: 'UserFilled' },
+  { title: '今日新增', value: 0, trend: 0, color: '#67c23a', icon: 'User' },
+  { title: '八字排盘', value: 0, trend: 0, color: '#e6a23c', icon: 'Calendar' },
+  { title: '塔罗占卜', value: 0, trend: 0, color: '#f56c6c', icon: 'MagicStick' }
 ])
 
-const realtimeData = ref([
-  { time: '10:23:45', action: '八字排盘', user: '用户138****8888' },
-  { time: '10:22:12', action: '塔罗抽牌', user: '用户139****6666' },
-  { time: '10:20:08', action: '用户注册', user: '新用户' },
-  { time: '10:18:33', action: '每日运势', user: '用户137****9999' },
-  { time: '10:15:21', action: '积分兑换', user: '用户136****5555' }
-])
-
-const pendingFeedback = ref([
-  { content: '八字分析结果不够详细，希望能增加更多解读', type: '建议', time: '2026-03-15 09:30' },
-  { content: '塔罗牌加载太慢，体验不好', type: '问题', time: '2026-03-15 08:45' },
-  { content: '积分规则不清楚', type: '咨询', time: '2026-03-14 16:20' }
-])
+const realtimeData = ref([])
+const pendingFeedback = ref([])
 
 const userChart = ref(null)
 const featureChart = ref(null)
@@ -117,7 +107,7 @@ let featureChartInstance = null
 
 onMounted(() => {
   initCharts()
-  loadStatistics()
+  loadAllData()
 })
 
 onUnmounted(() => {
@@ -125,16 +115,97 @@ onUnmounted(() => {
   featureChartInstance?.dispose()
 })
 
+async function loadAllData() {
+  await Promise.all([
+    loadStatistics(),
+    loadRealtimeData(),
+    loadPendingFeedback(),
+    loadTrendData(),
+    loadChartData()
+  ])
+}
+
+async function loadStatistics() {
+  try {
+    const res = await getStatistics()
+    if (res.code === 0) {
+      const data = res.data
+      statistics.value = [
+        { title: '总用户数', value: data.totalUsers?.value || 0, trend: data.totalUsers?.trend || 0, color: '#409eff', icon: 'UserFilled' },
+        { title: '今日新增', value: data.todayNewUsers?.value || 0, trend: data.todayNewUsers?.trend || 0, color: '#67c23a', icon: 'User' },
+        { title: '八字排盘', value: data.todayBazi?.value || 0, trend: data.todayBazi?.trend || 0, color: '#e6a23c', icon: 'Calendar' },
+        { title: '塔罗占卜', value: data.todayTarot?.value || 0, trend: data.todayTarot?.trend || 0, color: '#f56c6c', icon: 'MagicStick' }
+      ]
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+  }
+}
+
+async function loadRealtimeData() {
+  try {
+    const res = await getRealtimeData()
+    if (res.code === 0) {
+      realtimeData.value = res.data || []
+    }
+  } catch (error) {
+    console.error('加载实时数据失败:', error)
+  }
+}
+
+async function loadPendingFeedback() {
+  try {
+    const res = await getPendingFeedback()
+    if (res.code === 0) {
+      pendingFeedback.value = res.data || []
+    }
+  } catch (error) {
+    console.error('加载待处理反馈失败:', error)
+  }
+}
+
+async function loadTrendData() {
+  try {
+    const res = await getTrendData({ days: 7 })
+    if (res.code === 0) {
+      updateUserChart(res.data)
+    }
+  } catch (error) {
+    console.error('加载趋势数据失败:', error)
+  }
+}
+
+async function loadChartData() {
+  try {
+    const res = await getChartData('feature')
+    if (res.code === 0) {
+      updateFeatureChart(res.data)
+    }
+  } catch (error) {
+    console.error('加载图表数据失败:', error)
+  }
+}
+
 function initCharts() {
-  // 用户增长趋势图
-  userChartInstance = echarts.init(userChart.value)
+  // 初始化图表实例
+  if (userChart.value) {
+    userChartInstance = echarts.init(userChart.value)
+  }
+  if (featureChart.value) {
+    featureChartInstance = echarts.init(featureChart.value)
+  }
+}
+
+function updateUserChart(data) {
+  if (!userChartInstance) return
+  
   userChartInstance.setOption({
     tooltip: { trigger: 'axis' },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      data: data.dates || []
     },
     yAxis: { type: 'value' },
     series: [
@@ -142,20 +213,22 @@ function initCharts() {
         name: '新增用户',
         type: 'line',
         smooth: true,
-        data: [120, 132, 101, 134, 90, 230, 210],
+        data: data.newUsers || [],
         areaStyle: { opacity: 0.3 }
       },
       {
         name: '活跃用户',
         type: 'line',
         smooth: true,
-        data: [220, 182, 191, 234, 290, 330, 310]
+        data: data.activeUsers || []
       }
     ]
   })
+}
 
-  // 功能使用分布图
-  featureChartInstance = echarts.init(featureChart.value)
+function updateFeatureChart(data) {
+  if (!featureChartInstance) return
+  
   featureChartInstance.setOption({
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
@@ -170,29 +243,15 @@ function initCharts() {
         emphasis: {
           label: { show: true, fontSize: 20, fontWeight: 'bold' }
         },
-        data: [
-          { value: 1048, name: '八字排盘' },
-          { value: 735, name: '塔罗占卜' },
-          { value: 580, name: '每日运势' },
-          { value: 484, name: '积分兑换' },
-          { value: 300, name: '其他' }
-        ]
+        data: data || []
       }
     ]
   })
 }
 
-async function loadStatistics() {
-  try {
-    const { data } = await getStatistics()
-    // 更新统计数据
-  } catch (error) {
-    console.error(error)
-  }
-}
-
 function handleFeedback(row) {
   console.log('处理反馈', row)
+  ElMessage.info('处理反馈功能开发中')
 }
 </script>
 

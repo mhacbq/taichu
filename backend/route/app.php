@@ -131,9 +131,11 @@ Route::group('api', function () {
     
     // 积分任务
     Route::group('tasks', function () {
-        Route::get('list', 'PointsTask/list');
-        Route::post('complete', 'PointsTask/complete');
-        Route::get('my-tasks', 'PointsTask/myTasks');
+        Route::get('list', 'Task/list');
+        Route::post('complete', 'Task/complete');
+        Route::post('checkin', 'Task/checkin');
+        Route::get('checkin-status', 'Task/checkinStatus');
+        Route::get('stats', 'Task/stats');
     });
     
     // 分享与邀请
@@ -171,9 +173,20 @@ Route::group('api', function () {
 
 // 支付回调（不需要认证）
 Route::post('api/payment/notify', 'Payment/notify');
+Route::post('api/alipay/notify', 'Alipay/notify');
+Route::get('api/alipay/return', 'Alipay/return');
 
 // 后台管理路由
 Route::group('api/admin', function () {
+    // 仪表盘
+    Route::group('dashboard', function () {
+        Route::get('statistics', 'admin.Dashboard/statistics');
+        Route::get('trend', 'admin.Dashboard/trend');
+        Route::get('realtime', 'admin.Dashboard/realtime');
+        Route::get('chart/:type', 'admin.Dashboard/chart');
+        Route::get('pending-feedback', 'admin.Dashboard/pendingFeedback');
+    });
+    
     // 配置管理
     Route::group('config', function () {
         Route::get('', 'admin.Config/index');
