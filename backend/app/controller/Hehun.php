@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\HehunRecord;
 use app\model\PointsRecord;
 use app\model\User;
+use app\service\AiService;
 use app\service\CacheService;
 use app\service\ConfigService;
 use think\facade\Db;
@@ -855,30 +856,57 @@ class Hehun extends BaseController
     
     /**
      * AI深度分析
+     * 
+     * 优先使用真实AI服务，如不可用则使用规则引擎分析
      */
     protected function generateAiAnalysis(array $hehunResult, array $maleBazi, array $femaleBazi, string $maleName, string $femaleName): ?array
     {
         try {
-            // 构建提示词
-            $prompt = $this->buildAiPrompt($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
+            // 初始化AI服务
+            $aiService = new AiService();
             
-            // 调用AI服务（这里使用模拟数据，实际应调用AI API）
-            // $aiService = new \app\service\AiService();
-            // $response = $aiService->analyze($prompt);
+            // 检查AI服务是否可用
+            if ($aiService->isAvailable()) {
+                // 调用真实AI分析
+                $aiResult = $aiService->analyzeHehun($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
+                
+                if ($aiResult) {
+                    return array_merge($aiResult, [
+                        'provider' => $aiService->getProvider(),
+                        'is_ai_generated' => true,
+                    ]);
+                }
+            }
             
-            // 模拟AI分析结果
-            return [
-                'summary' => $this->generateAiSummary($hehunResult, $maleName, $femaleName),
-                'personality_match' => $this->analyzePersonalityMatch($maleBazi, $femaleBazi),
-                'life_suggestions' => $this->generateLifeSuggestions($hehunResult),
-                'auspicious_dates' => $this->suggestAuspiciousDates(),
-                'is_simulated' => true,
-                'note' => '这是基于八字规则的智能分析，实际项目中可接入AI大模型API'
-            ];
+            // AI服务不可用，使用规则引擎分析
+            return $this->generateRuleBasedAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
             
         } catch (\Exception $e) {
-            return null;
+            \think\facade\Log::error('AI分析失败: ' . $e->getMessage());
+            return $this->generateRuleBasedAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
         }
+    }
+    
+    /**
+     * 基于规则的智能分析（AI不可用时降级使用）
+     */
+    protected function generateRuleBasedAnalysis(array $hehunResult, array $maleBazi, array $femaleBazi, string $maleName, string $femaleName): array
+    {
+        return [
+            'summary' => $this->generateAiSummary($hehunResult, $maleName, $femaleName),
+            'personality_match' => $this->analyzePersonalityMatch($maleBazi, $femaleBazi),
+            'marriage_prospect' => $this->analyzeMarriageProspect($hehunResult),
+            'career_wealth' => $this->analyzeCareerWealth($maleBazi, $femaleBazi),
+            'children_fate' => $this->analyzeChildrenFate($maleBazi, $femaleBazi),
+            'suggestions' => $this->generateLifeSuggestions($hehunResult),
+            'auspicious_info' => [
+                'best_years' => $this->suggestAuspiciousYears($maleBazi, $femaleBazi),
+                'auspicious_months' => ['农历二月', '农历八月', '农历十月'],
+                'notes' => '避开双方生肖相冲的月份'
+            ],
+            'is_ai_generated' => false,
+            'note' => '当前使用规则引擎分析，配置AI API后可获得更专业的解读'
+        ];
     }
     
     /**
@@ -1026,6 +1054,78 @@ PROMPT;
         }
         
         return $dates;
+    }
+    
+    /**
+     * 分析婚姻前景
+     */
+    protected function analyzeMarriageProspect(array $hehunResult): string
+    {
+        $score = $hehunResult['score'];
+        $level = $hehunResult['level'];
+        
+        if ($level === 'excellent') {
+            return '双方八字高度契合，婚姻基础稳固。婚后感情和谐，能够相互扶持，白头偕老的可能性极高。建议把握良缘，用心经营。';
+        } elseif ($level === 'good') {
+            return '八字配合良好，婚姻前景乐观。双方性格互补，能够相互理解和包容。婚后生活会比较顺遂，偶有分歧也能妥善化解。';
+        } elseif ($level === 'medium') {
+            return '八字配合中等，婚姻需要双方共同努力。虽然有一定缘分基础，但也存在一些小冲克。建议婚前多了解，婚后多沟通，共同面对挑战。';
+        } else {
+            return '八字配合一般，婚姻需要格外用心经营。双方存在一些冲克因素，建议慎重考虑。如决定在一起，可通过择吉日、风水调理等方式化解。';
+        }
+    }
+    
+    /**
+     * 分析事业财运配合
+     */
+    protected function analyzeCareerWealth(array $maleBazi, array $femaleBazi): string
+    {
+        $maleDayMaster = $maleBazi['day_master_wuxing'];
+        $femaleDayMaster = $femaleBazi['day_master_wuxing'];
+        
+        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
+        
+        if ($shengRelation[$maleDayMaster] === $femaleDayMaster) {
+            return '男方日主生女方，事业财运上男方对女方有助益。适合共同创业或男方主导事业、女方辅助管理的模式。财运方面能够相互促进，共同积累财富。';
+        } elseif ($shengRelation[$femaleDayMaster] === $maleDayMaster) {
+            return '女方日主生男方，事业财运上女方对男方有助益。适合女方在幕后支持，男方在前台发展的模式。财运稳定，女方理财能力较强。';
+        } else {
+            return '双方日主五行关系为比劫或相克，事业财运上需要各自独立发展。建议保持经济独立，共同制定家庭财务规划，避免因金钱产生矛盾。';
+        }
+    }
+    
+    /**
+     * 分析子女缘
+     */
+    protected function analyzeChildrenFate(array $maleBazi, array $femaleBazi): string
+    {
+        $maleStats = $maleBazi['wuxing_stats'];
+        $femaleStats = $femaleBazi['wuxing_stats'];
+        
+        $analysis = '根据双方八字分析，';
+        
+        if ($maleStats['水'] >= 1 && $femaleStats['木'] >= 1) {
+            $analysis .= '子女缘分较好，有望生育健康聪明的子女。建议顺其自然，不必过于焦虑。';
+        } else {
+            $analysis .= '子女缘分中等，可能需要一些时间。建议保持良好心态，注意身体健康。';
+        }
+        
+        return $analysis;
+    }
+    
+    /**
+     * 建议适合结婚的年份
+     */
+    protected function suggestAuspiciousYears(array $maleBazi, array $femaleBazi): array
+    {
+        $currentYear = (int)date('Y');
+        $years = [];
+        
+        for ($i = 1; $i <= 5; $i++) {
+            $years[] = ($currentYear + $i) . '年（建议择吉日）';
+        }
+        
+        return $years;
     }
     
     /**
