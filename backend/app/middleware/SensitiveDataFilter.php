@@ -100,7 +100,7 @@ class SensitiveDataFilter
                 $filtered[$key] = $this->filterSensitiveData($value, $fullKey);
             } else {
                 // 检查是否是敏感字段
-                $lowerKey = strtolower($key);
+                $lowerKey = strtolower((string) $key);
                 $isSensitive = false;
                 
                 foreach ($this->sensitiveFields as $sensitive) {
@@ -215,7 +215,7 @@ class SensitiveDataFilter
     protected function maskResponseData(array $data): array
     {
         foreach ($data as $key => $value) {
-            $lowerKey = strtolower($key);
+            $lowerKey = strtolower((string) $key);
             
             if (is_array($value)) {
                 $data[$key] = $this->maskResponseData($value);
