@@ -32,8 +32,16 @@ Route::group('api', function () {
     // 认证相关
     Route::group('auth', function () {
         Route::post('login', 'Auth/login');
+        Route::post('phone-login', 'Auth/phoneLogin');
+        Route::post('phone-register', 'Auth/phoneRegister');
         Route::get('userinfo', 'Auth/userinfo');
         Route::put('profile', 'Auth/updateProfile');
+    });
+    
+    // 短信相关
+    Route::group('sms', function () {
+        Route::post('send-code', 'Sms/sendCode');
+        Route::post('verify-code', 'Sms/verifyCode');
     });
     
     // 排盘相关

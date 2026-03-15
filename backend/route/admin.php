@@ -54,6 +54,13 @@ Route::group('api/admin', function () {
         Route::get('payment/stats', 'AdminPayment/getStats');
         Route::get('payment/trend', 'AdminPayment/getTrend');
         
+        // 短信管理
+        Route::get('sms/config', 'AdminSms/getConfig');
+        Route::post('sms/config', 'AdminSms/saveConfig');
+        Route::post('sms/test', 'AdminSms/testSend');
+        Route::get('sms/stats', 'AdminSms/getStats');
+        Route::get('sms/records', 'AdminSms/getRecords');
+        
         // 反馈管理
         Route::get('feedback', 'Admin/feedbackList');
         Route::get('feedback/:id', 'Admin/feedbackDetail');

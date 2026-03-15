@@ -49,6 +49,14 @@ class User extends Model
     }
     
     /**
+     * 根据手机号查找用户
+     */
+    public static function findByPhone(string $phone): ?self
+    {
+        return self::where('phone', $phone)->where('status', 1)->find();
+    }
+    
+    /**
      * 增加积分
      */
     public function addPoints(int $points): bool

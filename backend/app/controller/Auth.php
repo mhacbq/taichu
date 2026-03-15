@@ -6,6 +6,7 @@ namespace app\controller;
 use app\BaseController;
 use app\model\User;
 use app\model\InviteRecord;
+use app\service\SmsService;
 use Firebase\JWT\JWT;
 use think\facade\Config;
 use think\facade\Db;
@@ -55,7 +56,146 @@ class Auth extends BaseController
         $user->last_login_at = date('Y-m-d H:i:s');
         $user->save();
         
-        // 生成JWT Token
+        return $this->generateTokenResponse($user, $isNewUser);
+    }
+    
+    /**
+     * 手机号登录/注册
+     */
+    public function phoneLogin()
+    {
+        $data = $this->request->post();
+        
+        // 验证参数
+        if (empty($data['phone'])) {
+            return $this->error('请输入手机号');
+        }
+        if (empty($data['code'])) {
+            return $this->error('请输入验证码');
+        }
+        
+        $phone = $data['phone'];
+        $code = $data['code'];
+        
+        // 验证手机号格式
+        if (!preg_match('/^1[3-9]\d{9}$/', $phone)) {
+            return $this->error('手机号格式不正确');
+        }
+        
+        // 验证短信验证码
+        $verifyResult = SmsService::verifyCode($phone, $code, 'login');
+        if (!$verifyResult) {
+            return $this->error('验证码错误或已过期');
+        }
+        
+        // 查找或创建用户
+        $user = User::findByPhone($phone);
+        $isNewUser = false;
+        
+        if (!$user) {
+            $isNewUser = true;
+            $user = User::create([
+                'phone' => $phone,
+                'nickname' => '用户' . substr($phone, -4),
+                'avatar' => '',
+                'gender' => 0,
+            ]);
+            
+            // 新用户赠送积分
+            $user->addPoints(100);
+            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            
+            // 处理邀请码
+            if (!empty($data['invite_code'])) {
+                $this->processInviteCode($user->id, $data['invite_code']);
+            }
+        }
+        
+        // 更新登录时间
+        $user->last_login_at = date('Y-m-d H:i:s');
+        $user->save();
+        
+        return $this->generateTokenResponse($user, $isNewUser);
+    }
+    
+    /**
+     * 手机号注册
+     */
+    public function phoneRegister()
+    {
+        $data = $this->request->post();
+        
+        // 验证参数
+        if (empty($data['phone'])) {
+            return $this->error('请输入手机号');
+        }
+        if (empty($data['code'])) {
+            return $this->error('请输入验证码');
+        }
+        if (empty($data['password'])) {
+            return $this->error('请设置密码');
+        }
+        
+        $phone = $data['phone'];
+        $code = $data['code'];
+        $password = $data['password'];
+        
+        // 验证手机号格式
+        if (!preg_match('/^1[3-9]\d{9}$/', $phone)) {
+            return $this->error('手机号格式不正确');
+        }
+        
+        // 验证密码强度
+        if (strlen($password) < 6) {
+            return $this->error('密码长度不能少于6位');
+        }
+        
+        // 检查手机号是否已注册
+        $existingUser = User::findByPhone($phone);
+        if ($existingUser) {
+            return $this->error('该手机号已注册，请直接登录');
+        }
+        
+        // 验证短信验证码
+        $verifyResult = SmsService::verifyCode($phone, $code, 'register');
+        if (!$verifyResult) {
+            return $this->error('验证码错误或已过期');
+        }
+        
+        Db::startTrans();
+        try {
+            // 创建用户
+            $user = User::create([
+                'phone' => $phone,
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'nickname' => $data['nickname'] ?? '用户' . substr($phone, -4),
+                'avatar' => $data['avatar'] ?? '',
+                'gender' => $data['gender'] ?? 0,
+            ]);
+            
+            // 新用户赠送积分
+            $user->addPoints(100);
+            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            
+            // 处理邀请码
+            if (!empty($data['invite_code'])) {
+                $this->processInviteCode($user->id, $data['invite_code']);
+            }
+            
+            Db::commit();
+            
+            return $this->generateTokenResponse($user, true, '注册成功');
+        } catch (\Exception $e) {
+            Db::rollback();
+            return $this->error('注册失败：' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * 生成Token响应
+     */
+    protected function generateTokenResponse(User $user, bool $isNewUser = false, string $message = '登录成功')
+    {
         $secret = Config::get('jwt.secret');
         $ttl = Config::get('jwt.ttl');
         
@@ -65,7 +205,6 @@ class Auth extends BaseController
             'iat' => time(),
             'exp' => time() + $ttl,
             'sub' => $user->id,
-            'openid' => $openid,
         ];
         
         $token = JWT::encode($payload, $secret, 'HS256');
@@ -78,9 +217,10 @@ class Auth extends BaseController
                 'id' => $user->id,
                 'nickname' => $user->nickname,
                 'avatar' => $user->avatar,
+                'phone' => $user->phone,
                 'points' => $user->points,
             ],
-        ], '登录成功');
+        ], $message);
     }
     
     /**
