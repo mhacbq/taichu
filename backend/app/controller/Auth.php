@@ -15,6 +15,11 @@ use think\facade\Db;
 
 class Auth extends BaseController
 {
+    // 常量定义
+    protected const MIN_PASSWORD_LENGTH = 6;
+    protected const MAX_NICKNAME_LENGTH = 50;
+    protected const REGISTER_POINTS = 100;
+    
     /**
      * 手机号登录/注册
      */
@@ -62,8 +67,8 @@ class Auth extends BaseController
                 ]);
                 
                 // 新用户赠送积分
-                $user->addPoints(100);
-                PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+                $user->addPoints(self::REGISTER_POINTS);
+                PointsRecord::record($user->id, '新用户注册奖励', self::REGISTER_POINTS, 'register');
                 
                 // 处理邀请码
                 if (!empty($data['invite_code'])) {
@@ -114,8 +119,8 @@ class Auth extends BaseController
         }
         
         // 验证密码强度
-        if (strlen($password) < 6) {
-            return $this->error('密码长度不能少于6位');
+        if (strlen($password) < self::MIN_PASSWORD_LENGTH) {
+            return $this->error('密码长度不能少于' . self::MIN_PASSWORD_LENGTH . '位');
         }
         
         // 检查手机号是否已注册
@@ -153,8 +158,8 @@ class Auth extends BaseController
             ]);
             
             // 新用户赠送积分
-            $user->addPoints(100);
-            PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            $user->addPoints(self::REGISTER_POINTS);
+            PointsRecord::record($user->id, '新用户注册奖励', self::REGISTER_POINTS, 'register');
             
             // 处理邀请码
             if (!empty($data['invite_code'])) {
@@ -182,7 +187,7 @@ class Auth extends BaseController
         // 转义特殊字符
         $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
         // 限制长度
-        return substr($text, 0, 50);
+        return substr($text, 0, self::MAX_NICKNAME_LENGTH);
     }
     
     /**

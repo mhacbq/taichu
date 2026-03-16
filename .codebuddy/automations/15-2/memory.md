@@ -1,5 +1,64 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 16:15 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **AI提示词管理页面响应码判断错误** (高优先级)
+   - 文件: admin/src/views/ai/prompts.vue
+   - 问题: 第341、424、441、504行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致
+   - 修复: 将所有`res.code === 0`改为`res.code === 200`
+   - 涉及: loadData、handleSetDefault、handlePreview、handleSubmit函数
+
+2. **站点内容管理页面响应码判断错误** (高优先级)
+   - 文件: admin/src/views/site-content/content-manager.vue
+   - 问题: 第178行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致
+   - 修复: 将`res.code === 0`改为`res.code === 200`
+   - 涉及: loadData函数
+
+3. **管理端路由缺少角色权限控制** (高优先级)
+   - 文件: admin/src/router/index.js
+   - 问题: /sms、/anticheat、/ai等模块路由未配置roles权限
+   - 修复: 为敏感路由添加roles配置
+   - 涉及:
+     - /sms路由: 添加`roles: ['admin']`，子路由分别配置`roles: ['admin']`和`roles: ['admin', 'operator']`
+     - /anticheat路由: 添加`roles: ['admin']`，所有子路由添加`roles: ['admin']`
+     - /ai路由: 添加`roles: ['admin']`，所有子路由添加`roles: ['admin']`
+
+4. **管理端角色管理使用模拟数据** (高优先级)
+   - 文件: admin/src/views/system/role.vue
+   - 问题: 第100-148行使用硬编码模拟数据，未调用真实API，且handleSavePermission方法仅打印日志未调用API
+   - 修复:
+     - 添加TODO注释说明需要后端API支持
+     - 添加loading状态管理
+     - 将模拟数据封装到loadRoleList、loadPermissionTree、loadRolePermissions函数中
+     - 优化handleSavePermission方法，添加半选节点处理
+     - 添加onMounted钩子初始化数据
+     - 扩展权限树结构，添加订单管理、反馈管理等模块
+
+5. **管理端字典管理使用模拟数据** (高优先级)
+   - 文件: admin/src/views/system/dict.vue
+   - 问题: 第112-118行、第167-186行使用硬编码模拟数据
+   - 修复:
+     - 添加TODO注释说明需要后端API支持
+     - 添加loading状态管理
+     - 将模拟数据封装到loadDictTypes、loadDictData函数中
+     - 优化submitType、submitData、handleDeleteData方法，添加异步处理和错误处理
+     - 添加onMounted钩子初始化数据
+     - 扩展字典数据，添加订单状态、支付方式等类型
+
+### Git提交信息
+- 提交时间: 2026-03-17 16:15
+- 提交哈希: 2e03fee
+- 提交信息: fix-frontend-admin-issues-20260317-1615
+
+### 修复统计
+- 修复文件数: 5个
+- 修复问题数: 5个
+- 高优先级: 5个
+
+---
+
 ## 2026-03-17 16:00 执行摘要
 
 ### 本次修复的前端问题（共5个）

@@ -386,14 +386,10 @@ class SiteContent extends BaseController
             ->page($page, $limit)
             ->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -403,11 +399,7 @@ class SiteContent extends BaseController
     {
         $list = TarotSpread::getEnabledList();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -459,14 +451,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -477,11 +465,7 @@ class SiteContent extends BaseController
         $category = $request->param('category');
         $list = QuestionTemplate::getEnabledList($category);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -531,14 +515,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -555,7 +535,7 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = DailyFortuneTemplate::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '模板不存在']);
+                    return $this->error('模板不存在', 404);
                 }
                 $item->save($data);
             } else {

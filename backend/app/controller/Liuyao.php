@@ -183,7 +183,7 @@ class Liuyao extends BaseController
             $data = $this->request->post();
             
             if (empty($data['yao_code']) || empty($data['question'])) {
-                return $this->error('参数错误');
+                return $this->error('参数错误', 400);
             }
             
             // 构建提示词

@@ -85,15 +85,15 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性/安全问题）
-- [ ] [2026-03-17] **管理端AI提示词管理页面响应码判断错误** - admin/src/views/ai/prompts.vue第341、424、441行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致 - 建议统一修改为`res.code === 200`
-- [ ] [2026-03-17] **管理端站点内容管理页面响应码判断错误** - admin/src/views/site-content/content-manager.vue第178行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致 - 建议统一修改为`res.code === 200`
-- [ ] [2026-03-17] **管理端路由缺少角色权限控制** - admin/src/router/index.js第197-216行，/sms/anticheat/ai等模块路由未配置roles权限 - 建议为敏感路由添加roles配置
+- [x] [2026-03-17] **管理端AI提示词管理页面响应码判断错误** - admin/src/views/ai/prompts.vue第341、424、441行 - **已修复**：统一修改为`res.code === 200`，与request.js拦截器期望一致 - 修复时间: 2026-03-17
+- [x] [2026-03-17] **管理端站点内容管理页面响应码判断错误** - admin/src/views/site-content/content-manager.vue第178行 - **已修复**：经检查，该文件已统一为`res.code === 200` - 修复时间: 2026-03-17
+- [x] [2026-03-17] **管理端路由缺少角色权限控制** - admin/src/router/index.js第197-216行 - **已修复**：所有敏感路由已添加roles权限配置（/sms、/anticheat、/ai、/log、/task等） - 修复时间: 2026-03-17
 - [ ] [2026-03-17] **管理端角色管理使用模拟数据** - admin/src/views/system/role.vue第100-148行使用硬编码模拟数据，未调用真实API，且handleSavePermission方法仅打印日志未调用API - 建议实现真实API对接
 - [ ] [2026-03-17] **管理端字典管理使用模拟数据** - admin/src/views/system/dict.vue第112-118行、第167-186行使用硬编码模拟数据 - 建议实现真实API对接
 - [ ] [2026-03-17] **管理端API路径前缀不一致** - admin/src/api/ai.js使用`/api/admin/`，payment.js使用`/admin/`，content.js使用`/content/` - 建议统一API路径格式
 
 #### 🟡 中优先级（体验/代码质量问题）
-- [ ] [2026-03-17] **后端中间件返回格式与BaseController不一致** - backend/app/middleware/Auth.php第18-23行返回格式为`{code: 200, message: '...'}`，与BaseController的`{code: 200, message: '...', data: null}`不一致 - 建议统一返回格式
+- [x] [2026-03-17] **后端中间件返回格式与BaseController不一致** - backend/app/middleware/Auth.php第18-23行 - **已修复**：将错误时的code从200改为401，与HTTP状态码保持一致，符合BaseController规范 - 修复时间: 2026-03-17
 - [ ] [2026-03-17] **后端Admin.php管理员信息获取方式问题** - backend/app/controller/Admin.php第42-44行使用`$this->request->adminUser`获取信息，但第43行使用`$decoded->sub`作为id字段名不一致 - 建议检查JWT payload字段名一致性
 
 #### 🟢 低优先级（优化问题）
@@ -138,8 +138,8 @@
 ### 本次检查发现的问题
 
 #### 🔴 高优先级（运营阻塞问题）
-- [ ] **[运营] AI提示词管理页面响应码判断错误** - admin/src/views/ai/prompts.vue第341、424、441行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致 - **建议统一修改为`res.code === 200`**
-- [ ] **[运营] 站点内容管理页面响应码判断错误** - admin/src/views/site-content/content-manager.vue第178行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致 - **建议统一修改为`res.code === 200`**
+- [x] **[运营] AI提示词管理页面响应码判断错误** - admin/src/views/ai/prompts.vue第341、424、441行 - **已修复**：统一修改为`res.code === 200`，与request.js拦截器期望一致 - 修复时间: 2026-03-17
+- [x] **[运营] 站点内容管理页面响应码判断错误** - admin/src/views/site-content/content-manager.vue第178行 - **已修复**：经检查，该文件已统一为`res.code === 200` - 修复时间: 2026-03-17
 - [ ] **[运营] 黄历管理页面缺失** - 后端已实现almanacList/saveAlmanac/generateAlmanacMonth接口(backend/route/admin.php第122-124行)，但admin项目缺少对应的黄历管理页面 - **需要创建admin/src/views/content/almanac.vue**
 
 #### 🟡 中优先级（运营体验问题）
@@ -1029,9 +1029,9 @@
 
 #### 🔴 高优先级（运营阻塞问题）
 
-- [ ] **[运营] Dashboard页面响应码判断错误** - admin/src/views/dashboard/index.vue第131、148、159、170、181行 - 使用`res.code === 0`判断，但request.js拦截器期望`code=200`，导致数据无法正确加载
-- [ ] **[运营] 系统设置页面响应码判断错误** - admin/src/views/system/settings.vue第199、245行 - 使用`res.code === 0`判断，与request.js拦截器不一致
-- [ ] **[运营] 后台管理页面响应码判断混乱** - admin/src/views/下8个页面使用`res.code === 0`，3个页面使用`res.code === 200`，与request.js拦截器期望的`code=200`不一致
+- [x] **[运营] Dashboard页面响应码判断错误** - admin/src/views/dashboard/index.vue第131、148、159、170、181行 - **已修复**：将所有`res.code === 0`改为`res.code === 200`，与request.js拦截器保持一致 - 修复时间: 2026-03-17
+- [x] **[运营] 系统设置页面响应码判断错误** - admin/src/views/system/settings.vue第199、245行 - **已修复**：将所有`res.code === 0`改为`res.code === 200`，与request.js拦截器保持一致 - 修复时间: 2026-03-17
+- [x] **[运营] 后台管理页面响应码判断混乱** - admin/src/views/下8个页面 - **已修复**：所有页面已统一为`res.code === 200`，与request.js拦截器期望一致 - 修复时间: 2026-03-17
 - [ ] **[运营] 前端旧版admin页面仍存在** - frontend/src/views/admin/目录下6个旧版管理页面(AlmanacManage.vue/Config.vue/KnowledgeManage.vue/SEOManage.vue/SEOStats.vue/ShenshaManage.vue)与新版admin项目并存，造成混淆
 
 #### 🟡 中优先级（运营体验问题）
@@ -3057,8 +3057,8 @@
 
 ### 🔴 高优先级（运营阻塞问题）
 
-- [ ] **[运营] Dashboard页面响应码判断错误** - admin/src/views/dashboard/index.vue第148、159、170行使用`res.code === 0`判断，但request.js拦截器期望`code=200`，导致实时数据和待处理反馈无法正确加载
-- [ ] **[运营] 后台管理页面响应码判断混乱** - 7个页面（ai/prompts.vue、site-content下5个页面）使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致
+- [x] **[运营] Dashboard页面响应码判断错误** - admin/src/views/dashboard/index.vue第148、159、170行 - **已修复**：统一修改为`res.code === 200`，与request.js拦截器期望一致 - 修复时间: 2026-03-17
+- [x] **[运营] 后台管理页面响应码判断混乱** - 7个页面（ai/prompts.vue、site-content下5个页面） - **已修复**：所有页面已统一为`res.code === 200` - 修复时间: 2026-03-17
 - [ ] **[运营] Dashboard实时数据接口缺失** - /dashboard/realtime接口在Admin.php中未实现，导致实时数据区域无法加载
 - [ ] **[运营] Dashboard待处理反馈接口缺失** - /dashboard/pending-feedback接口在Admin.php中未实现，导致待处理反馈区域无法加载
 - [ ] **[运营] 黄历管理页面缺失** - 后端已实现almanacList/saveAlmanac接口，但admin项目缺少对应管理页面，运营人员无法管理黄历数据

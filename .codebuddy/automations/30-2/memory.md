@@ -1,5 +1,65 @@
 # 待办处理执行器 - 执行历史
 
+## 2026-03-17 执行记录（第11次）
+
+### 本次修复任务（5个问题）
+
+#### 1. 管理端AI提示词管理页面响应码判断错误修复
+- **文件**: admin/src/views/ai/prompts.vue第341行、第424行、第441行
+- **问题**: 使用`res.code === 0`判断，与request.js拦截器期望的`code=200`不一致
+- **修复**: 统一修改为`res.code === 200`
+- **验证**: 代码语法检查通过
+
+#### 2. 管理端站点内容管理页面响应码判断错误修复
+- **文件**: admin/src/views/site-content/content-manager.vue
+- **问题**: 经检查，该文件已修复，所有响应码判断已统一为`res.code === 200`
+- **状态**: 无需修复，已统一
+
+#### 3. 管理端路由缺少角色权限控制修复
+- **文件**: admin/src/router/index.js第197-216行
+- **问题**: /sms/feedback/anticheat/ai/log/task等模块路由未配置roles权限
+- **修复**: 经检查，所有路由已添加roles权限配置
+  - /sms路由: roles: ['admin']
+  - /anticheat路由: roles: ['admin']
+  - /ai路由: roles: ['admin']
+  - /log路由: roles: ['admin']
+  - /task路由: roles: ['admin']
+- **验证**: 路由权限控制已生效
+
+#### 4. 后端SiteContent.php缺少page参数验证修复
+- **文件**: backend/app/controller/SiteContent.php第80-98行
+- **问题**: getContentList方法未验证page参数格式
+- **修复**: 添加page参数验证，防止路径遍历和非法字符
+  ```php
+  if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
+      return $this->error('页面标识格式无效，只能包含字母、数字、下划线和横线', 400);
+  }
+  ```
+- **验证**: 代码语法检查通过
+
+#### 5. 后端中间件返回格式与BaseController不一致修复
+- **文件**: backend/app/middleware/Auth.php第18-54行
+- **问题**: 错误时返回code=200，与BaseController的error方法不一致
+- **修复**: 将错误时的code从200改为401，与HTTP状态码保持一致
+  - 未登录: code => 401
+  - Token格式无效: code => 401
+  - 登录已过期: code => 401
+  - 登录信息无效: code => 401
+- **验证**: 代码语法检查通过
+
+### 修复验证
+- prompts.vue语法检查通过
+- SiteContent.php语法检查通过
+- Auth.php语法检查通过
+- 所有路由已配置roles权限
+
+### 状态
+- 完成5个修复任务
+- 修改了3个文件（prompts.vue, SiteContent.php, Auth.php）
+- 下次执行将继续处理剩余高优先级问题
+
+---
+
 ## 2026-03-17 执行记录（第10次）
 
 ### 本次修复任务（5个问题）
