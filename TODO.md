@@ -86,11 +86,11 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性/安全问题）
-- [ ] [2026-03-17 23:00] **后端Hehun.php变量未定义错误** - backend/app/controller/Hehun.php第513行 - `analyzeHehun`方法中使用了未定义的`$data`变量，会导致运行时错误 - 建议添加`$data`参数或修改调用方式
-- [ ] [2026-03-17 23:00] **后端Hehun.php XSS安全风险** - backend/app/controller/Hehun.php第1376-1400行 - `buildReportHtml`方法中部分输出字段未正确转义，存在XSS风险 - 建议对所有输出到HTML的变量使用`htmlspecialchars`转义
-- [ ] [2026-03-17 23:00] **后端Cors中间件允许任意来源** - backend/app/middleware/Cors.php第11行 - CORS配置允许任意来源(`$origin = $request->header('Origin') ?: '*'`)，存在安全风险 - 建议限制允许的域名列表
-- [ ] [2026-03-17 23:00] **管理端路由缺少角色权限控制** - admin/src/router/index.js第21-362行 - 所有路由配置中都没有设置`meta.roles`属性，导致所有登录用户都能访问所有页面 - 建议为敏感路由添加角色权限控制
-- [ ] [2026-03-17 23:00] **管理端敏感操作缺少权限控制** - admin/src/views/payment/orders.vue第121-136行 - 补单和退款按钮没有权限控制，应该限制只有特定角色才能执行 - 建议添加`v-permission`指令
+- [x] [2026-03-17 23:00] **后端Hehun.php变量未定义错误** - backend/app/controller/Hehun.php第513行 - **已修复**：修改`analyzeHehun`方法签名，添加`$maleBirthDate`和`$femaleBirthDate`参数，并更新调用处传递正确的参数 - 修复时间: 2026-03-17
+- [x] [2026-03-17 23:00] **后端Hehun.php XSS安全风险** - backend/app/controller/Hehun.php第1376-1400行 - **已修复**：对`$score`和五维度评分变量进行强制类型转换和转义，防止XSS攻击 - 修复时间: 2026-03-17
+- [x] [2026-03-17 23:00] **后端Cors中间件允许任意来源** - backend/app/middleware/Cors.php第11行 - **已修复**：添加`$allowedOrigins`白名单和`getAllowedOrigin()`方法验证请求来源，只允许特定的域名访问 - 修复时间: 2026-03-17
+- [x] [2026-03-17 23:00] **管理端路由缺少角色权限控制** - admin/src/router/index.js第21-362行 - **已修复**：为敏感路由（积分管理、支付管理、系统设置）添加`meta.roles`属性，限制只有admin和operator角色可以访问 - 修复时间: 2026-03-17
+- [x] [2026-03-17 23:00] **管理端敏感操作缺少权限控制** - admin/src/views/payment/orders.vue第121-136行 - **已修复**：添加`canModifyOrder`计算属性检查用户角色，只有admin角色才能看到补单和退款按钮 - 修复时间: 2026-03-17
 - [ ] [2026-03-17 23:00] **管理端API密钥明文显示风险** - admin/src/views/system/settings.vue第101-109行 - AI配置的API密钥从API获取并显示在输入框中，存在安全风险 - 建议后端返回时对密钥进行脱敏处理
 - [ ] [2026-03-17 23:00] **管理端角色管理权限保存未调用API** - admin/src/views/system/role.vue第199-203行 - 保存权限只是打印日志，没有调用后端API保存权限配置 - 建议添加API调用保存权限数据
 
@@ -99,7 +99,7 @@
 - [ ] [2026-03-17 23:00] **后端Hehun.php路径遍历风险** - backend/app/controller/Hehun.php第1331-1336行 - 使用`public_path()`拼接路径但没有验证文件名 - 建议验证路径安全性
 - [ ] [2026-03-17 23:00] **管理端Dashboard响应码判断混乱** - admin/src/views/dashboard/index.vue第131、148、159、170、181行 - 同一文件中对API响应码的判断标准不一致，有的用`res.code === 200`，有的用`res.code === 0` - 建议统一为`res.code === 200`
 - [ ] [2026-03-17 23:00] **管理端API路径前缀不一致** - admin/src/api/ai.js第12、23、35行 - AI相关API使用了`/api/admin/`前缀，而其他API文件有的使用`/admin/`，有的不使用前缀 - 建议统一API路径前缀
-- [ ] [2026-03-17 23:00] **管理端敏感词编辑功能API调用错误** - admin/src/views/system/sensitive.vue第221-239行 - 编辑和添加都调用`addSensitiveWord` API，应该区分添加和更新接口 - 建议根据`isEdit`调用不同的API
+- [x] [2026-03-17 23:00] **管理端敏感词编辑功能API调用错误** - admin/src/views/system/sensitive.vue第221-239行 - 编辑和添加都调用`addSensitiveWord` API - **已修复**：添加updateSensitiveWord函数，根据isEdit状态调用不同API - 修复时间: 2026-03-17
 - [ ] [2026-03-17 23:00] **管理端字典管理数据操作未调用API** - admin/src/views/system/dict.vue第196-229行 - 字典类型和字典数据的增删改查都是模拟数据，没有调用真实API - 建议添加API调用实现真实的数据持久化
 - [ ] [2026-03-17 23:00] **管理端支付配置测试连接功能虚假** - admin/src/views/payment/config.vue第198-209行 - 测试连接功能只是模拟延迟，没有真实调用微信支付接口验证配置 - 建议调用后端测试接口验证配置
 
@@ -142,7 +142,7 @@
 #### 🟡 中优先级（体验/代码质量问题）
 - [ ] [2026-03-17 22:00] **后台管理页面响应码判断混乱** - admin/src/views/dashboard/index.vue第148、159、170行使用`res.code === 0`，与request.js拦截器期望的`code=200`不一致 - 建议统一修改为`res.code === 200`
 - [ ] [2026-03-17 22:00] **后台site-content页面响应码判断不一致** - admin/src/views/site-content/下testimonials.vue/tarot-cards.vue/question-templates.vue/faq.vue/content-manager.vue使用`res.code === 0` - 建议统一为`res.code === 200`
-- [ ] [2026-03-17 22:00] **后台AI提示词页面响应码判断不一致** - admin/src/views/ai/prompts.vue多处使用`res.code === 0` - 建议统一为`res.code === 200`
+- [x] [2026-03-17 22:00] **后台AI提示词页面响应码判断不一致** - admin/src/views/ai/prompts.vue多处使用`res.code === 0` - **已修复**：统一为`res.code === 200` - 修复时间: 2026-03-17
 - [ ] [2026-03-17 22:00] **后端Upload.php部分返回使用json()** - 第51、251、260行使用`json()`返回，与其他使用`$this->success()/$this->error()`的方法不一致 - 建议统一使用BaseController方法
 - [ ] [2026-03-17 22:00] **后端AiPrompt.php部分返回使用json()** - 第73行使用`json()`返回，与BaseController方法不一致 - 建议统一使用`$this->error()`
 
