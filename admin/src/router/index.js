@@ -218,19 +218,19 @@ export const asyncRoutes = [
     path: '/feedback',
     component: () => import('@/layout/index.vue'),
     redirect: '/feedback/list',
-    meta: { title: '反馈管理', icon: 'ChatDotRound' },
+    meta: { title: '反馈管理', icon: 'ChatDotRound', roles: ['admin', 'operator'] },
     children: [
       {
         path: 'list',
         name: 'FeedbackList',
         component: () => import('@/views/feedback/list.vue'),
-        meta: { title: '反馈列表' }
+        meta: { title: '反馈列表', roles: ['admin', 'operator'] }
       },
       {
         path: 'category',
         name: 'FeedbackCategory',
         component: () => import('@/views/feedback/category.vue'),
-        meta: { title: '分类管理' }
+        meta: { title: '分类管理', roles: ['admin'] }
       }
     ]
   },
@@ -316,25 +316,25 @@ export const asyncRoutes = [
     path: '/log',
     component: () => import('@/layout/index.vue'),
     redirect: '/log/operation',
-    meta: { title: '日志管理', icon: 'List' },
+    meta: { title: '日志管理', icon: 'List', roles: ['admin'] },
     children: [
       {
         path: 'operation',
         name: 'OperationLog',
         component: () => import('@/views/log/operation.vue'),
-        meta: { title: '操作日志' }
+        meta: { title: '操作日志', roles: ['admin'] }
       },
       {
         path: 'login',
         name: 'LoginLog',
         component: () => import('@/views/log/login.vue'),
-        meta: { title: '登录日志' }
+        meta: { title: '登录日志', roles: ['admin'] }
       },
       {
         path: 'api',
         name: 'ApiLog',
         component: () => import('@/views/log/api.vue'),
-        meta: { title: 'API日志' }
+        meta: { title: 'API日志', roles: ['admin'] }
       }
     ]
   },
@@ -342,19 +342,19 @@ export const asyncRoutes = [
     path: '/task',
     component: () => import('@/layout/index.vue'),
     redirect: '/task/list',
-    meta: { title: '任务调度', icon: 'Timer' },
+    meta: { title: '任务调度', icon: 'Timer', roles: ['admin'] },
     children: [
       {
         path: 'list',
         name: 'TaskList',
         component: () => import('@/views/task/list.vue'),
-        meta: { title: '任务列表' }
+        meta: { title: '任务列表', roles: ['admin'] }
       },
       {
         path: 'logs',
         name: 'TaskLogs',
         component: () => import('@/views/task/logs.vue'),
-        meta: { title: '执行日志' }
+        meta: { title: '执行日志', roles: ['admin'] }
       }
     ]
   },

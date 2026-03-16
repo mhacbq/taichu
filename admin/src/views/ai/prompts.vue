@@ -454,7 +454,7 @@ const handlePreview = async (row) => {
 const handleDuplicate = async (row) => {
   try {
     const res = await duplicatePrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('复制成功')
       loadData()
     } else {

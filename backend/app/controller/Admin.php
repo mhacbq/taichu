@@ -38,10 +38,10 @@ class Admin extends BaseController
     {
         parent::initialize();
         
-        // 从JWT token中获取管理员信息
-        $user = $this->request->user ?? [];
-        $this->adminId = $user['sub'] ?? 0;
-        $this->adminName = $user['nickname'] ?? 'Unknown';
+        // 从JWT token中获取管理员信息（后台管理使用adminUser）
+        $adminUser = $this->request->adminUser ?? [];
+        $this->adminId = $adminUser['sub'] ?? 0;
+        $this->adminName = $adminUser['nickname'] ?? 'Unknown';
     }
     
     /**

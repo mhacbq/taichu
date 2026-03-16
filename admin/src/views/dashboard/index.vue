@@ -145,7 +145,7 @@ async function loadStatistics() {
 async function loadRealtimeData() {
   try {
     const res = await getRealtimeData()
-    if (res.code === 0) {
+    if (res.code === 200) {
       realtimeData.value = res.data || []
     }
   } catch (error) {

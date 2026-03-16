@@ -409,8 +409,8 @@ class Upload extends BaseController
             return '文件大小不能超过' . ($config['max_size'] / 1024 / 1024) . 'MB';
         }
         
-        // 检查扩展名
-        $ext = strtolower($file->getOriginalExtension());
+        // 检查扩展名 - 使用getExtension()获取真实扩展名，防止客户端伪造
+        $ext = strtolower($file->getExtension());
         if (!in_array($ext, $config['allowed_ext'])) {
             return '只支持 ' . implode(', ', $config['allowed_ext']) . ' 格式的文件';
         }
