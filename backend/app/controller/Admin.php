@@ -138,6 +138,107 @@ class Admin extends BaseController
     }
 
     /**
+     * 获取Dashboard趋势数据
+     */
+    public function dashboardTrend()
+    {
+        // 检查权限
+        if (!$this->checkPermission('stats_view')) {
+            return $this->error('无权限访问统计数据', 403);
+        }
+
+        try {
+            // 获取最近7天的用户注册趋势
+            $userTrend = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = date('Y-m-d', strtotime("-{$i} days"));
+                $count = User::where('created_at', '>=', $date . ' 00:00:00')
+                    ->where('created_at', '<=', $date . ' 23:59:59')
+                    ->count();
+                $userTrend[] = [
+                    'date' => $date,
+                    'count' => $count
+                ];
+            }
+
+            // 获取最近7天的功能使用趋势
+            $baziTrend = [];
+            $tarotTrend = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = date('Y-m-d', strtotime("-{$i} days"));
+                $baziCount = BaziRecord::where('created_at', '>=', $date . ' 00:00:00')
+                    ->where('created_at', '<=', $date . ' 23:59:59')
+                    ->count();
+                $tarotCount = TarotRecord::where('created_at', '>=', $date . ' 00:00:00')
+                    ->where('created_at', '<=', $date . ' 23:59:59')
+                    ->count();
+                $baziTrend[] = ['date' => $date, 'count' => $baziCount];
+                $tarotTrend[] = ['date' => $date, 'count' => $tarotCount];
+            }
+
+            return $this->success([
+                'user_trend' => $userTrend,
+                'bazi_trend' => $baziTrend,
+                'tarot_trend' => $tarotTrend
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取趋势数据失败: ' . $e->getMessage());
+            return $this->error('获取趋势数据失败', 500);
+        }
+    }
+
+    /**
+     * 获取图表数据
+     */
+    public function chartData($type)
+    {
+        // 检查权限
+        if (!$this->checkPermission('stats_view')) {
+            return $this->error('无权限访问统计数据', 403);
+        }
+
+        try {
+            switch ($type) {
+                case 'user_source':
+                    // 用户来源分布
+                    $data = [
+                        ['name' => '直接访问', 'value' => User::where('source', 'direct')->count()],
+                        ['name' => '搜索引擎', 'value' => User::where('source', 'search')->count()],
+                        ['name' => '社交媒体', 'value' => User::where('source', 'social')->count()],
+                        ['name' => '邀请注册', 'value' => User::where('source', 'invite')->count()],
+                        ['name' => '其他', 'value' => User::where('source', 'other')->count()],
+                    ];
+                    break;
+
+                case 'feature_usage':
+                    // 功能使用分布
+                    $data = [
+                        ['name' => '八字排盘', 'value' => BaziRecord::count()],
+                        ['name' => '塔罗占卜', 'value' => TarotRecord::count()],
+                        ['name' => '每日运势', 'value' => DailyFortune::count()],
+                    ];
+                    break;
+
+                case 'user_status':
+                    // 用户状态分布
+                    $data = [
+                        ['name' => '正常', 'value' => User::where('status', 1)->count()],
+                        ['name' => '禁用', 'value' => User::where('status', 0)->count()],
+                    ];
+                    break;
+
+                default:
+                    return $this->error('未知的图表类型', 400);
+            }
+
+            return $this->success($data, '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取图表数据失败: ' . $e->getMessage());
+            return $this->error('获取图表数据失败', 500);
+        }
+    }
+
+    /**
      * 获取用户列表
      */
     public function users(Request $request)
@@ -157,14 +258,14 @@ class Admin extends BaseController
             $query = User::order('id', 'desc');
 
             if ($username) {
-                // 净化输入，防止SQL注入
+                // 使用参数绑定防止SQL注入
                 $username = preg_replace('/[%_\\\\]/', '', $username);
-                $query->whereLike('username|nickname', "%{$username}%");
+                $query->whereLike('username|nickname', '%' . $username . '%');
             }
             if ($phone) {
-                // 净化输入，防止SQL注入
+                // 使用参数绑定防止SQL注入
                 $phone = preg_replace('/[%_\\\\]/', '', $phone);
-                $query->whereLike('phone', "%{$phone}%");
+                $query->whereLike('phone', '%' . $phone . '%');
             }
             if ($status !== '') {
                 $query->where('status', $status);
@@ -290,16 +391,13 @@ class Admin extends BaseController
             $total = $query->count();
             $list = $query->page($page, $pageSize)->select();
 
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $list,
-                    'total' => $total
-                ]
-            ]);
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
         } catch (\Exception $e) {
             Log::error('获取八字记录失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取记录失败，请稍后重试']);
+            return $this->error('获取记录失败，请稍后重试', 500);
         }
     }
 
@@ -316,7 +414,7 @@ class Admin extends BaseController
         try {
             $record = BaziRecord::find($id);
             if (!$record) {
-                return json(['code' => 404, 'message' => '记录不存在']);
+                return $this->error('记录不存在', 404);
             }
 
             // 记录操作前的数据
@@ -332,10 +430,10 @@ class Admin extends BaseController
                 'before_data' => $beforeData,
             ]);
 
-            return json(['code' => 200, 'message' => '删除成功']);
+            return $this->success(null, '删除成功');
         } catch (\Exception $e) {
             Log::error('删除八字记录失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '删除失败，请稍后重试']);
+            return $this->error('删除失败，请稍后重试', 500);
         }
     }
 
@@ -367,16 +465,13 @@ class Admin extends BaseController
             $total = $query->count();
             $list = $query->page($page, $pageSize)->select();
 
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $list,
-                    'total' => $total
-                ]
-            ]);
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
         } catch (\Exception $e) {
             Log::error('获取积分记录失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取积分记录失败，请稍后重试']);
+            return $this->error('获取积分记录失败，请稍后重试', 500);
         }
     }
 
@@ -418,7 +513,7 @@ class Admin extends BaseController
 
             $user = User::find($userId);
             if (!$user) {
-                return json(['code' => 404, 'message' => '用户不存在']);
+                return $this->error('用户不存在', 404);
             }
 
             // 记录调整前的积分
@@ -430,7 +525,7 @@ class Admin extends BaseController
             } else {
                 $result = $user->deductPoints($amount);
                 if (!$result) {
-                    return json(['code' => 400, 'message' => '用户积分不足']);
+                    return $this->error('用户积分不足', 400);
                 }
             }
 
@@ -456,7 +551,7 @@ class Admin extends BaseController
                 'after_data' => ['points' => $user->points],
             ]);
 
-            return json(['code' => 200, 'message' => '调整成功']);
+            return $this->success(null, '调整成功');
         } catch (\Exception $e) {
             Log::error('调整积分失败: ' . $e->getMessage());
             
@@ -469,7 +564,7 @@ class Admin extends BaseController
                 'error_msg' => $e->getMessage(),
             ]);
             
-            return json(['code' => 500, 'message' => '调整失败，请稍后重试']);
+            return $this->error('调整失败，请稍后重试', 500);
         }
     }
 
@@ -480,7 +575,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('feedback_view')) {
-            return json(['code' => 403, 'message' => '无权限查看反馈列表']);
+            return $this->error('无权限查看反馈列表', 403);
         }
 
         try {
@@ -501,16 +596,13 @@ class Admin extends BaseController
             $total = $query->count();
             $list = $query->page($page, $pageSize)->select();
 
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $list,
-                    'total' => $total
-                ]
-            ]);
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
         } catch (\Exception $e) {
             Log::error('获取反馈列表失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取反馈列表失败，请稍后重试']);
+            return $this->error('获取反馈列表失败，请稍后重试', 500);
         }
     }
 
@@ -521,7 +613,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('content_manage')) {
-            return json(['code' => 403, 'message' => '无权限回复反馈']);
+            return $this->error('无权限回复反馈', 403);
         }
         
         try {
@@ -530,7 +622,7 @@ class Admin extends BaseController
 
             $feedback = Feedback::find($id);
             if (!$feedback) {
-                return json(['code' => 404, 'message' => '反馈不存在']);
+                return $this->error('反馈不存在', 404);
             }
 
             $oldStatus = $feedback->status;
@@ -548,10 +640,10 @@ class Admin extends BaseController
                 'after_data' => ['status' => $status, 'reply' => $reply],
             ]);
 
-            return json(['code' => 200, 'message' => '回复成功']);
+            return $this->success(null, '回复成功');
         } catch (\Exception $e) {
             Log::error('回复反馈失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '回复失败，请稍后重试']);
+            return $this->error('回复失败，请稍后重试', 500);
         }
     }
 
@@ -562,7 +654,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('config_manage')) {
-            return json(['code' => 403, 'message' => '无权限查看系统设置']);
+            return $this->error('无权限查看系统设置', 403);
         }
         
         try {
@@ -585,13 +677,10 @@ class Admin extends BaseController
                 'detail' => '查看系统设置',
             ]);
 
-            return json([
-                'code' => 200,
-                'data' => $settings
-            ]);
+            return $this->success($settings, '获取成功');
         } catch (\Exception $e) {
             Log::error('获取系统设置失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取设置失败，请稍后重试']);
+            return $this->error('获取设置失败，请稍后重试', 500);
         }
     }
 
@@ -602,7 +691,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('config_manage')) {
-            return json(['code' => 403, 'message' => '无权限修改系统设置']);
+            return $this->error('无权限修改系统设置', 403);
         }
         
         try {
@@ -616,10 +705,10 @@ class Admin extends BaseController
 
             // TODO: 实现设置保存逻辑
 
-            return json(['code' => 200, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
             Log::error('保存系统设置失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '保存失败，请稍后重试']);
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -640,13 +729,163 @@ class Admin extends BaseController
             
             $result = AdminLog::getLogList($params, $page, $perPage);
             
-            return json([
-                'code' => 200,
-                'data' => $result
-            ]);
+            return $this->success($result, '获取成功');
         } catch (\Exception $e) {
             Log::error('获取操作日志失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取日志失败，请稍后重试']);
+            return $this->error('获取日志失败，请稍后重试', 500);
         }
+    }
+
+    /**
+     * 获取待处理反馈数量
+     */
+    public function pendingFeedback()
+    {
+        // 检查权限
+        if (!$this->checkPermission('feedback_view')) {
+            return $this->error('无权限查看反馈', 403);
+        }
+
+        try {
+            $count = Feedback::where('status', 0)->count();
+            $list = Feedback::where('status', 0)
+                ->order('created_at', 'desc')
+                ->limit(5)
+                ->select()
+                ->toArray();
+
+            return $this->success([
+                'count' => $count,
+                'list' => $list
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取待处理反馈失败: ' . $e->getMessage());
+            return $this->error('获取待处理反馈失败', 500);
+        }
+    }
+
+    /**
+     * 获取实时数据
+     */
+    public function realtime()
+    {
+        // 检查权限
+        if (!$this->checkPermission('stats_view')) {
+            return $this->error('无权限访问统计数据', 403);
+        }
+
+        try {
+            // 获取今日数据
+            $todayUsers = User::where('created_at', '>=', date('Y-m-d'))->count();
+            $todayBazi = BaziRecord::where('created_at', '>=', date('Y-m-d'))->count();
+            $todayTarot = TarotRecord::where('created_at', '>=', date('Y-m-d'))->count();
+            $todayFeedback = Feedback::where('created_at', '>=', date('Y-m-d'))->count();
+
+            // 获取在线用户数（最近15分钟内有活动的用户）
+            $onlineUsers = User::where('last_active', '>=', date('Y-m-d H:i:s', strtotime('-15 minutes')))->count();
+
+            // 获取待处理反馈数
+            $pendingFeedback = Feedback::where('status', 0)->count();
+
+            return $this->success([
+                'today_users' => $todayUsers,
+                'today_bazi' => $todayBazi,
+                'today_tarot' => $todayTarot,
+                'today_feedback' => $todayFeedback,
+                'online_users' => $onlineUsers,
+                'pending_feedback' => $pendingFeedback,
+                'timestamp' => date('Y-m-d H:i:s')
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取实时数据失败: ' . $e->getMessage());
+            return $this->error('获取实时数据失败', 500);
+        }
+    }
+
+    /**
+     * 导出用户数据
+     */
+    public function exportUsers(Request $request)
+    {
+        // 检查权限
+        if (!$this->checkPermission('user_manage')) {
+            return $this->error('无权限导出用户数据', 403);
+        }
+
+        try {
+            $params = $request->get();
+            $query = User::order('id', 'desc');
+
+            // 搜索条件
+            if (!empty($params['keyword'])) {
+                $keyword = $params['keyword'];
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('nickname', 'like', "%{$keyword}%")
+                      ->whereOr('phone', 'like', "%{$keyword}%");
+                });
+            }
+
+            // 状态筛选
+            if (isset($params['status']) && $params['status'] !== '') {
+                $query->where('status', (int)$params['status']);
+            }
+
+            // 时间范围
+            if (!empty($params['startDate'])) {
+                $query->where('created_at', '>=', $params['startDate']);
+            }
+            if (!empty($params['endDate'])) {
+                $query->where('created_at', '<=', $params['endDate'] . ' 23:59:59');
+            }
+
+            $users = $query->select()->toArray();
+
+            // 生成CSV内容
+            $headers = ['ID', '昵称', '手机号', '积分', 'VIP等级', '状态', '注册时间', '最后登录'];
+            $csv = implode(',', $headers) . "\n";
+
+            foreach ($users as $user) {
+                $row = [
+                    $user['id'],
+                    $this->escapeCsv($user['nickname'] ?? ''),
+                    $user['phone'] ?? '',
+                    $user['points'] ?? 0,
+                    $user['vip_level'] ?? 0,
+                    $user['status'] == 1 ? '正常' : ($user['status'] == 0 ? '禁用' : '未知'),
+                    $user['created_at'] ?? '',
+                    $user['last_active'] ?? ''
+                ];
+                $csv .= implode(',', $row) . "\n";
+            }
+
+            // 添加BOM头以支持中文
+            $csv = "\xEF\xBB\xBF" . $csv;
+
+            // 记录操作日志
+            $this->logOperation('导出用户数据', 'user', [
+                'target_id' => 0,
+                'detail' => '导出用户数据，共' . count($users) . '条记录'
+            ]);
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="users_' . date('YmdHis') . '.csv"'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('导出用户数据失败: ' . $e->getMessage());
+            return $this->error('导出失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * CSV字段转义
+     */
+    private function escapeCsv(string $field): string
+    {
+        $field = str_replace('"', '""', $field);
+        if (strpos($field, ',') !== false || strpos($field, '"') !== false || strpos($field, "\n") !== false) {
+            $field = '"' . $field . '"';
+        }
+        return $field;
     }
 }

@@ -1,18 +1,66 @@
 # 网站逻辑检查任务 - 执行记录
 
 ## 执行时间
-2026-03-16 18:00（第十九轮检查）
+2026-03-16 19:00（第二十轮检查）
 
 ## 执行摘要
-本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查，共发现**15个新问题**并记录到TODO.md文件中。
+本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查，共发现**8个新问题**并记录到TODO.md文件中。
 
 ---
 
-## 第十九轮检查 - 2026-03-16
+## 第二十轮检查 - 2026-03-16
 
 ### 本次检查发现的新问题
 
-### 🔴 高优先级（6个）
+### 🔴 高优先级（4个）
+1. **前端Hehun.vue JSON解析缺少错误处理** - loadHistoryDetail函数中多处JSON.parse没有try-catch包裹
+2. **后端Hehun.php buildReportHtml方法XSS安全风险** - 直接拼接用户输入到HTML，没有进行HTML转义
+3. **后端Liuyao.php qiGua方法缺少事务处理** - saveRecord调用在异常时无法回滚
+4. **后端Admin.php users方法SQL注入风险** - 虽然使用了preg_replace过滤，但仍使用字符串拼接方式
+
+### 🟡 中优先级（4个）
+5. 前端AlmanacManage.vue API调用缺失 - submitForm和generateMonth函数只有模拟延迟
+6. 后端Hehun.php calculatePointsCost数组键名错误 - 调用返回的数组键名与实际不符
+7. 前端管理端页面缺少错误边界处理 - 多个管理页面没有错误边界处理
+8. 后端Content.php返回格式不统一 - 只使用json()返回，没有使用继承方法
+
+## 检查范围
+- 前端Vue组件：4个关键文件（Bazi.vue, Tarot.vue, Liuyao.vue, Hehun.vue）
+- 后端PHP控制器：5个文件（Hehun.php, Liuyao.php, Admin.php, Content.php, ConfigService.php）
+- 管理端页面：1个文件（AlmanacManage.vue）
+
+## 修复建议优先级
+
+**尽快修复（P1）**:
+1. 修复Hehun.vue JSON解析错误处理（添加try-catch）
+2. 修复Hehun.php XSS安全风险（添加htmlspecialchars转义）
+3. 修复Liuyao.php事务处理（添加Db::startTrans）
+4. 修复Admin.php SQL注入风险（改用参数绑定）
+
+**后续优化（P2）**:
+5. 实现AlmanacManage.vue真实API调用
+6. 核对Hehun.php数组键名
+7. 添加管理端错误边界处理
+8. 统一Content.php返回格式
+
+## 累计问题统计
+- 🔴 高优先级：累计61个（含历史）
+- 🟡 中优先级：累计91个（含历史）
+- 🟢 低优先级：累计45个（含历史）
+
+## 下次检查建议
+1. 优先修复P1级别问题（特别是安全相关问题）
+2. 实现管理端真实API接口
+3. 统一代码风格和返回格式
+4. 加强错误处理和边界情况处理
+
+---
+
+*最后更新: 2026-03-16 - 第二十轮检查*
+
+## 本次检查发现的新问题
+
+### 🔴 高优先级（5个）
 1. **后端Hehun.php XSS安全风险** - buildReportHtml方法直接拼接用户输入到HTML
 2. **后端Hehun.php数组键名错误** - buildReportHtml方法使用的数组键名与实际参数结构不符
 3. **后端Hehun.php未定义方法调用** - 调用多个未确认存在的方法（getUserCount、calculatePointsCost、isAvailable等）

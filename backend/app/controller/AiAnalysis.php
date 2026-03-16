@@ -51,6 +51,16 @@ class AiAnalysis extends BaseController
         if (!is_array($baziData)) {
             return $this->error('八字数据格式错误，应为数组类型', 400);
         }
+        
+        // 限制八字数据大小，防止过大请求
+        if (count($baziData) > 100 || strlen(json_encode($baziData)) > 10000) {
+            return $this->error('八字数据过大', 400);
+        }
+        
+        // 限制自定义提示词长度
+        if (!empty($customPrompt) && mb_strlen($customPrompt) > 2000) {
+            return $this->error('自定义提示词不能超过2000字符', 400);
+        }
 
         $config = $this->getAiConfig();
         
@@ -110,6 +120,16 @@ class AiAnalysis extends BaseController
         
         if (!is_array($baziData)) {
             return $this->error('八字数据格式错误，应为数组类型', 400);
+        }
+        
+        // 限制八字数据大小，防止过大请求
+        if (count($baziData) > 100 || strlen(json_encode($baziData)) > 10000) {
+            return $this->error('八字数据过大', 400);
+        }
+        
+        // 限制自定义提示词长度
+        if (!empty($customPrompt) && mb_strlen($customPrompt) > 2000) {
+            return $this->error('自定义提示词不能超过2000字符', 400);
         }
 
         $config = $this->getAiConfig();

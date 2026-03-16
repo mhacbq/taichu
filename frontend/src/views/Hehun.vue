@@ -421,19 +421,46 @@ const loadHistory = async () => {
   }
 }
 
+// 安全解析JSON
+const safeJsonParse = (jsonStr, defaultVal = null) => {
+  if (!jsonStr) return defaultVal
+  try {
+    return JSON.parse(jsonStr)
+  } catch (e) {
+    console.warn('JSON解析失败:', jsonStr, e)
+    return defaultVal
+  }
+}
+
 // 加载历史记录详情
 const loadHistoryDetail = async (item) => {
-  // 填充表单
-  form.maleName = item.male_name
-  form.femaleName = item.female_name
-  // 显示结果
-  premiumResult.value = {
-    hehun: JSON.parse(item.result),
-    ai_analysis: item.ai_analysis ? JSON.parse(item.ai_analysis) : null,
-    male_bazi: JSON.parse(item.male_bazi),
-    female_bazi: JSON.parse(item.female_bazi),
+  try {
+    // 填充表单
+    form.maleName = item.male_name
+    form.femaleName = item.female_name
+    // 显示结果 - 使用安全解析，每个字段独立处理
+    const hehunData = safeJsonParse(item.result, {})
+    const aiAnalysisData = safeJsonParse(item.ai_analysis, null)
+    const maleBaziData = safeJsonParse(item.male_bazi, {})
+    const femaleBaziData = safeJsonParse(item.female_bazi, {})
+
+    // 检查必要数据是否存在
+    if (!hehunData || Object.keys(hehunData).length === 0) {
+      ElMessage.warning('合婚结果数据不完整')
+      return
+    }
+
+    premiumResult.value = {
+      hehun: hehunData,
+      ai_analysis: aiAnalysisData,
+      male_bazi: maleBaziData,
+      female_bazi: femaleBaziData,
+    }
+    freeResult.value = null
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
+    ElMessage.error('历史记录数据格式错误，无法加载')
   }
-  freeResult.value = null
 }
 
 // 格式化日期

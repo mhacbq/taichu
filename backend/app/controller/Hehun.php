@@ -1360,8 +1360,22 @@ PROMPT;
         $reportTitle = $data['report_title'] ?? '八字合婚分析报告';
         $generatedAt = date('Y年m月d日 H:i');
         
-        $maleName = $male['name'] ?? '男方';
-        $femaleName = $female['name'] ?? '女方';
+        $maleName = htmlspecialchars($male['name'] ?? '男方', ENT_QUOTES, 'UTF-8');
+        $femaleName = htmlspecialchars($female['name'] ?? '女方', ENT_QUOTES, 'UTF-8');
+        
+        // 转义八字数据
+        $maleYear = htmlspecialchars($male['year'] ?? '', ENT_QUOTES, 'UTF-8');
+        $maleMonth = htmlspecialchars($male['month'] ?? '', ENT_QUOTES, 'UTF-8');
+        $maleDay = htmlspecialchars($male['day'] ?? '', ENT_QUOTES, 'UTF-8');
+        $maleHour = htmlspecialchars($male['hour'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleYear = htmlspecialchars($female['year'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleMonth = htmlspecialchars($female['month'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleDay = htmlspecialchars($female['day'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleHour = htmlspecialchars($female['hour'] ?? '', ENT_QUOTES, 'UTF-8');
+        
+        // 转义其他输出
+        $safeReportTitle = htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8');
+        $safeGrade = htmlspecialchars($grade, ENT_QUOTES, 'UTF-8');
         
         // 五维度评分
         $dimensions = $result['dimensions'] ?? [];
@@ -1376,7 +1390,8 @@ PROMPT;
         $suggestionsHtml = '';
         foreach ($suggestions as $i => $suggestion) {
             $num = $i + 1;
-            $suggestionsHtml .= "<div class='suggestion-item'><span class='suggestion-num'>{$num}</span>{$suggestion}</div>";
+            $safeSuggestion = htmlspecialchars((string)$suggestion, ENT_QUOTES, 'UTF-8');
+            $suggestionsHtml .= "<div class='suggestion-item'><span class='suggestion-num'>{$num}</span>{$safeSuggestion}</div>";
         }
         
         // 流年分析
@@ -1385,10 +1400,11 @@ PROMPT;
         if (!empty($liunian)) {
             $liunianHtml = "<div class='section'><h3>🗓️ 未来三年流年运势</h3>";
             foreach ($liunian as $year => $yearData) {
-                $yearDesc = $yearData['description'] ?? '';
-                $yearLuck = $yearData['fortune'] ?? '平';
+                $yearDesc = htmlspecialchars($yearData['description'] ?? '', ENT_QUOTES, 'UTF-8');
+                $yearLuck = htmlspecialchars($yearData['fortune'] ?? '平', ENT_QUOTES, 'UTF-8');
+                $safeYear = htmlspecialchars((string)$year, ENT_QUOTES, 'UTF-8');
                 $luckClass = $yearLuck === '吉' ? 'luck-good' : ($yearLuck === '凶' ? 'luck-bad' : 'luck-neutral');
-                $liunianHtml .= "<div class='liunian-item'><span class='year-tag'>{$year}年</span><span class='luck-badge {$luckClass}'>{$yearLuck}</span><span>{$yearDesc}</span></div>";
+                $liunianHtml .= "<div class='liunian-item'><span class='year-tag'>{$safeYear}年</span><span class='luck-badge {$luckClass}'>{$yearLuck}</span><span>{$yearDesc}</span></div>";
             }
             $liunianHtml .= "</div>";
         }
@@ -1399,7 +1415,9 @@ PROMPT;
         if (!empty($huajie)) {
             $huajieHtml = "<div class='section'><h3>🔮 化解方案</h3>";
             foreach ($huajie as $h) {
-                $huajieHtml .= "<div class='huajie-item'><strong>{$h['title']}</strong><p>{$h['content']}</p></div>";
+                $safeTitle = htmlspecialchars($h['title'] ?? '', ENT_QUOTES, 'UTF-8');
+                $safeContent = htmlspecialchars($h['content'] ?? '', ENT_QUOTES, 'UTF-8');
+                $huajieHtml .= "<div class='huajie-item'><strong>{$safeTitle}</strong><p>{$safeContent}</p></div>";
             }
             $huajieHtml .= "</div>";
         }
@@ -1410,7 +1428,7 @@ PROMPT;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{$reportTitle}</title>
+    <title>{$safeReportTitle}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 

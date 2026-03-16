@@ -17,6 +17,8 @@ Route::group('api/admin', function () {
         Route::get('dashboard/statistics', 'Admin/dashboard');
         Route::get('dashboard/trend', 'Admin/dashboardTrend');
         Route::get('dashboard/chart/:type', 'Admin/chartData');
+        Route::get('dashboard/realtime', 'Admin/realtime');
+        Route::get('dashboard/pending-feedback', 'Admin/pendingFeedback');
         
         // 用户管理
         Route::get('users', 'Admin/users');

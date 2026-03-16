@@ -101,7 +101,7 @@ abstract class BaseController
     protected function success(mixed $data = null, string $message = 'success'): \think\response\Json
     {
         return json([
-            'code' => 0,
+            'code' => 200,
             'message' => $message,
             'data' => $data,
         ]);

@@ -24,6 +24,216 @@
 | 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
 | 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
 
+## 🔮 占卜爱好者体验检查报告 - 2026-03-16 第六轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 占卜爱好者（专业命理/塔罗爱好者角度）
+- **检查范围**: 太初命理网站全部占卜功能深度体验
+- **测试数据**: 1990年5月15日 10:30 男 / 1992年8月20日 女
+
+### 功能体验评估
+
+#### 1. 八字排盘功能 ⭐⭐⭐⭐
+- **排盘准确性**: 四柱计算正确，使用五虎遁月法和日上起时法
+- **十神计算**: 天干十神正确，藏干十神已计算
+- **大运流年**: 顺逆排法正确（阳男阴女顺排，阴男阳女逆排）
+- **待改进**: 节气数据仅1990/1995/2000三年精确，真太阳时未实现
+
+#### 2. 六爻占卜功能 ⭐⭐⭐⭐⭐
+- **起卦方式**: 支持时间起卦/数字起卦/手动摇卦三种方式 ✅
+- **变卦计算**: 已实现变卦计算(老阴变阳/老阳变阴) ✅
+- **六亲六神**: 已实现六亲配属和六神配属 ✅
+- **用神判断**: 支持10种问事类型的用神自动判断 ✅
+- **世应分析**: 已实现世爻应爻定位 ✅
+- **AI解读**: 已接入DeepSeekService进行AI深度解读 ✅
+
+#### 3. 塔罗牌占卜功能 ⭐⭐⭐
+- **牌阵设计**: 单张/三张/凯尔特十字牌阵合理
+- **牌义解读**: 22张大阿卡纳牌义完整
+- **待改进**: 牌阵关系分析缺失，元素分析缺失，AI解读待接入
+
+#### 4. 合婚配对功能 ⭐⭐⭐⭐
+- **算法全面性**: 包含生肖/日主/五行/纳音/地支合冲配对
+- **付费设计**: 分层付费合理(免费预览+80积分详细报告)
+- **AI分析**: 已接入AI深度分析
+- **待改进**: 可添加三元合婚、九宫合婚等传统方法
+
+#### 5. 每日运势功能 ⭐⭐⭐⭐⭐
+- **个性化**: 基于八字日主计算，使用十神关系判断
+- **黄历信息**: 宜忌展示完整
+- **运势关联**: 与日主五行关系判断准确
+
+### 本次检查修复状态更新
+
+#### ✅ 已修复问题（第六轮）
+- [x] 六爻变卦计算 - LiuyaoService::getBianGua实现
+- [x] 六爻六亲分析 - LiuyaoService::getLiuQin实现
+- [x] 六爻六神分析 - LiuyaoService::getLiuShen实现
+- [x] 六爻用神判断 - LiuyaoService::getYongShen实现
+- [x] 六爻世应分析 - LiuyaoService::getShiYing实现
+- [x] 六爻手动起卦 - LiuyaoService::qiGuaByManual实现
+- [x] 六爻AI解读 - 接入DeepSeekService
+- [x] 塔罗隐者牌英文描述 - 已统一为中文
+
+#### 🔴 待修复问题（高优先级）
+- [ ] 八字节气数据覆盖年份不足 - 需补充1900-2050年完整节气表
+- [ ] 八字真太阳时未实现 - 需根据经度计算真太阳时
+
+#### 🟡 待优化问题（中优先级）
+- [ ] 塔罗牌阵关系分析缺失
+- [ ] 塔罗元素分析缺失
+- [ ] 八字藏干十神展示不突出
+- [ ] 合婚缺少传统合婚法
+
+#### 🟢 待增强功能（低优先级）
+- [ ] 六爻应期推断
+- [ ] 六爻伏神分析
+- [ ] 八字神煞分析
+- [ ] 塔罗牌面图案
+
+---
+
+## 🎯 运营检查报告 - 2026-03-16 第六轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 运营人员
+- **检查范围**: 太初命理网站后台管理系统(admin项目)
+
+### 后台管理系统现状评估
+
+经过详细检查，后台管理系统(admin项目)已经具备完整的基础架构和功能模块：
+
+#### ✅ 已完成功能模块
+
+| 模块 | 功能说明 | 当前状态 | 备注 |
+|------|----------|----------|------|
+| **管理员登录** | JWT认证登录/登出 | ✅ 已完成 | 基于Element Plus的登录界面 |
+| **Dashboard首页** | 数据统计看板、趋势图表 | ✅ 已完成 | 含ECharts图表展示 |
+| **用户管理** | 用户列表、搜索、积分调整 | ✅ 已完成 | 含状态管理和导出功能 |
+| **订单管理** | 充值订单列表、状态管理 | ✅ 已完成 | 支持补单/退款操作 |
+| **反馈管理** | 反馈列表、查看、回复 | ✅ 已完成 | 含分类和状态管理 |
+| **积分管理** | 积分记录、积分规则 | ✅ 已完成 | 支持积分调整 |
+| **系统配置** | 网站配置、功能开关 | ✅ 已完成 | 多模块配置管理 |
+
+#### ⚠️ 发现的问题
+
+### 🔴 高优先级（运营阻塞问题）
+
+- [ ] [运营] API响应码不一致 - admin/src/api/request.js期望code=200，但后端Admin.php使用$this->success()返回code=0 - 影响所有API调用的正常响应处理
+- [ ] [运营] Dashboard缺失realtime接口 - admin/src/api/dashboard.js调用/dashboard/realtime，后端Admin.php未实现该方法 - 实时数据区域无法加载
+- [ ] [运营] Dashboard缺失pendingFeedback接口 - admin/src/api/dashboard.js调用/dashboard/pending-feedback，后端未实现 - 待处理反馈区域无法加载
+- [ ] [运营] 用户导出功能缺失 - admin/src/api/user.js调用/users/export，后端Admin.php未实现exportUsers方法 - 用户导出按钮无法使用
+- [ ] [运营] 路由定义不匹配 - backend/route/admin.php定义了dashboardTrend/chartData路由，但Admin.php中无对应方法 - 趋势和图表数据无法加载
+
+### 🟡 中优先级（运营体验问题）
+
+- [ ] [运营] 积分规则管理API待验证 - admin/src/api/points.js调用/points/rules，需确认后端Admin.php中getPointsRules/savePointsRules是否完整实现
+- [ ] [运营] 操作日志查看页面待完善 - admin/src/views/log/operation.vue存在，但需验证与后端/logs/operation接口的对接
+- [ ] [运营] 短信管理功能待验证 - admin/src/api/sms.js已定义，需测试与后端AdminSms控制器的对接
+- [ ] [运营] 反作弊系统页面待验证 - admin/src/views/anticheat/目录存在，需验证与后端接口的对接
+- [ ] [运营] 任务调度管理待验证 - admin/src/views/task/目录存在，需验证任务管理功能
+
+### 🟢 低优先级（运营优化建议）
+
+- [ ] [运营] 后台主题风格可优化 - 当前admin项目使用Element Plus默认主题，可考虑与前端统一风格
+- [ ] [运营] Dashboard图表数据格式需确认 - 前端期望的数据格式与后端返回格式需对齐
+- [ ] [运营] 缺少数据报表导出功能 - 可考虑添加更多维度的数据导出
+
+---
+
+## UI设计检查报告 - 2026-03-16 第十九轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目全部视图页面和组件
+- 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+- 发现问题：发现若干新问题需要添加到待处理列表
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
+- [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
+- [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 后台管理页面深色背景与白色主题不协调 - admin/*.vue页面使用rgba(0,0,0,0.2)深色背景，与style.css定义的白色主题冲突 - 建议统一后台主题风格
+- [ ] [UI] Bazi.vue多处使用rgba(0,0,0,0.x)深色背景 - 排盘结果区域、分析卡片、大运流年等20+处使用深色背景 - 建议改为var(--bg-card)或var(--bg-secondary)
+- [ ] [UI] Daily.vue评分卡片使用深色背景 - master-card、today-card等使用rgba(0,0,0,0.2) - 建议改为浅色主题配色
+- [ ] [UI] Hehun.vue八字对比区域使用深色背景 - bazi-compare和compatibility-section使用rgba(0,0,0,0.2) - 建议改为浅色背景
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 按钮圆角不统一 - 各页面按钮圆角不一致（12px/20px/25px/30px混用） - 建议统一使用style.css中定义的25px圆角
+- [ ] [UI] 卡片hover效果不一致 - Home.vue中feature-card使用transform: translateY(-10px)，而其他页面卡片使用不同的hover效果 - 建议统一hover动画效果
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
+- [ ] [UI] 表单输入框样式混乱 - 不同页面输入框样式差异大，有的有边框有的无边框，背景色也不一致（rgba(255,255,255,0.1) vs #fff） - 建议统一使用style.css中定义的.input-field类
+- [ ] [UI] Bazi.vue加载状态深色背景 - loading-state使用linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.2)) - 建议改为浅色背景
+- [ ] [UI] Profile.vue邀请规则区域深色背景 - invite-rules使用rgba(0,0,0,0.2) - 建议改为浅色背景
+- [ ] [UI] 五行颜色硬编码 - Bazi.vue中五行颜色直接使用#ffd700、#228b22等硬编码值 - 建议提取为CSS变量
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+- [ ] [UI] 塔罗牌使用emoji表示 - Tarot.vue第109行使用emoji表示塔罗牌 - 建议添加真实塔罗牌图片或使用SVG图标
+- [ ] [UI] Bazi.vue排盘表格在移动端字体过小 - 藏干信息使用10px-12px字体 - 建议优化移动端可读性
+- [ ] [UI] 缺少页面过渡动画 - 页面切换时没有过渡效果 - 建议添加Vue页面过渡动画
+
+---
+
+## UI设计检查报告 - 2026-03-16 第十八轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目全部视图页面和组件
+- 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+- 发现问题：发现若干新问题需要添加到待处理列表
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
+- [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
+- [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 后台管理页面深色背景与白色主题不协调 - admin/*.vue页面使用rgba(0,0,0,0.2)深色背景，与style.css定义的白色主题冲突 - 建议统一后台主题风格
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 按钮圆角不统一 - 各页面按钮圆角不一致（12px/20px/25px/30px混用） - 建议统一使用style.css中定义的25px圆角
+- [ ] [UI] 卡片hover效果不一致 - Home.vue中feature-card使用transform: translateY(-10px)，而其他页面卡片使用不同的hover效果 - 建议统一hover动画效果
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
+- [ ] [UI] 表单输入框样式混乱 - 不同页面输入框样式差异大，有的有边框有的无边框，背景色也不一致（rgba(255,255,255,0.1) vs #fff） - 建议统一使用style.css中定义的.input-field类
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+- [ ] [UI] 塔罗牌使用emoji表示 - Tarot.vue第109行使用emoji表示塔罗牌 - 建议添加真实塔罗牌图片或使用SVG图标
+
+---
+
+## 代码逻辑检查报告 - 2026-03-16 第二十轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目关键文件、后端PHP控制器、管理端页面
+- 检查维度：语法错误、类型错误、API调用、安全问题、未使用代码
+- 发现问题：发现8个新问题，需要添加到待处理列表
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [2026-03-16 19:00] 前端Hehun.vue JSON解析缺少错误处理 - frontend/src/views/Hehun.vue第431-434行 - loadHistoryDetail函数中多处JSON.parse没有try-catch包裹，如果数据格式异常会导致页面崩溃 - 建议添加try-catch错误处理
+- [ ] [2026-03-16 19:00] 后端Hehun.php buildReportHtml方法XSS安全风险 - backend/app/controller/Hehun.php第1280-1350行 - 直接拼接用户输入(maleName/femaleName)到HTML，没有进行HTML转义 - 建议使用htmlspecialchars进行转义
+- [ ] [2026-03-16 19:00] 后端Liuyao.php qiGua方法缺少事务处理 - backend/app/controller/Liuyao.php第48-51行 - saveRecord调用在异常时无法回滚 - 建议使用Db::startTrans()包裹
+- [ ] [2026-03-16 19:00] 后端Admin.php users方法SQL注入风险 - backend/app/controller/Admin.php第159-168行 - 虽然使用了preg_replace过滤，但仍使用字符串拼接方式 - 建议使用参数绑定
+
+#### 🟡 中优先级（体验问题）
+- [ ] [2026-03-16 19:00] 前端AlmanacManage.vue API调用缺失 - frontend/src/views/admin/AlmanacManage.vue第409、427行 - submitForm和generateMonth函数中只有模拟延迟，没有实际API调用 - 建议实现真实的API接口
+- [ ] [2026-03-16 19:00] 后端Hehun.php calculatePointsCost数组键名错误 - backend/app/controller/Hehun.php第451-454行 - 调用ConfigService::calculatePointsCost但返回的数组键名与实际不符 - 建议核对键名
+- [ ] [2026-03-16 19:00] 前端管理端页面缺少错误边界处理 - admin/*.vue - 多个管理页面没有错误边界处理，API失败时用户体验差 - 建议添加try-catch和错误提示
+- [ ] [2026-03-16 19:00] 后端Content.php返回格式不统一 - backend/app/controller/Content.php全部返回 - 只使用json()返回，没有使用继承的$this->success()/$this->error()方法 - 建议统一返回格式
+
+---
+
 ## 代码逻辑检查报告 - 2026-03-16 第十八轮
 
 ### 本次检查重点
@@ -34,7 +244,7 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] [2026-03-16 17:30] 后端Admin.php返回格式不统一 - backend/app/controller/Admin.php第129、268行 - 混用json()和$this->success()/$this->error()两种返回方式 - 建议统一使用BaseController的方法
+- [x] [2026-03-16 17:30] 后端Admin.php返回格式不统一 - backend/app/controller/Admin.php - 已统一使用$this->success()/$this->error()替换所有json()返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 17:30] 后端Content.php返回格式不统一 - backend/app/controller/Content.php全部返回 - 只使用json()返回，没有使用继承的$this->success()/$this->error()方法 - 建议统一返回格式
 - [ ] [2026-03-16 17:30] 后端AiAnalysis.php返回格式不统一 - backend/app/controller/AiAnalysis.php第48、384行 - 混用json()和$this->success()/$this->error()两种返回方式 - 建议统一使用BaseController的方法
 
@@ -884,16 +1094,16 @@
 ### 🔴 高优先级（准确性/功能性问题）
 
 - [ ] [占卜] 八字排盘节气数据不完整 - backend/app/controller/Paipan.php第563-573行 - 仅包含1990、1995、2000年节气数据，其他年份排盘可能不准确 - 建议补充完整节气表或使用天文算法计算
-- [ ] [占卜] 六爻占卜缺少手动摇卦功能 - frontend/src/views/Liuyao.vue - 只有自动起卦，没有手动输入六次摇卦结果的功能 - 建议添加手动起卦模式
-- [ ] [占卜] 六爻结果缺少变卦展示 - backend/app/controller/Liuyao.php - 动爻产生变卦，但结果中只展示主卦，没有变卦分析 - 建议添加变卦计算和展示
-- [ ] [占卜] 塔罗隐者牌含义使用英文 - frontend/src/views/Tarot.vue第305-307行 - 与其他牌的中文描述不一致 - 建议统一为中文描述
+- [x] [占卜] 六爻占卜缺少手动摇卦功能 - **已修复**: backend/app/service/LiuyaoService::qiGuaByManual实现手动摇卦，支持输入6次摇卦结果(6/7/8/9) - 修复时间: 2026-03-16
+- [x] [占卜] 六爻结果缺少变卦展示 - **已修复**: backend/app/service/LiuyaoService::getBianGua实现变卦计算(老阴变阳/老阳变阴)，并在控制器中调用 - 修复时间: 2026-03-16
+- [x] [占卜] 塔罗隐者牌含义使用英文 - **已修复**: 已将隐者牌描述统一为中文"内省，孤独，指引"，与其他牌保持一致 - 修复时间: 2026-03-16
 - [ ] [占卜] 八字日主强弱判断过于简化 - backend/app/controller/Paipan.php - 日主强弱判断仅基于简单规则，未考虑月令、通根、透干等因素 - 建议参考《滴天髓》完善判断逻辑
 
 ### 🟡 中优先级（体验/专业性优化）
 
-- [ ] [占卜] 六爻缺少六亲分析 - backend/app/controller/Liuyao.php - 六爻解卦需要六亲（父母、兄弟、子孙、妻财、官鬼）分析，当前缺失 - 建议添加六亲配属和解读
-- [ ] [占卜] 六爻缺少六神分析 - backend/app/controller/Liuyao.php - 六神（青龙、朱雀、勾陈、螣蛇、白虎、玄武）是六爻重要组成部分 - 建议添加六神配属
-- [ ] [占卜] 六爻缺少用神判断逻辑 - backend/app/controller/Liuyao.php - 解卦需要根据问题类型确定用神，当前解读较为通用 - 建议根据问题关键词智能判断用神
+- [x] [占卜] 六爻缺少六亲分析 - **已修复**: backend/app/service/LiuyaoService::getLiuQin实现六亲计算(父母/兄弟/子孙/妻财/官鬼)，基于卦宫五行与地支五行生克关系 - 修复时间: 2026-03-16
+- [x] [占卜] 六爻缺少六神分析 - **已修复**: backend/app/service/LiuyaoService::getLiuShen实现六神配属(青龙/朱雀/勾陈/螣蛇/白虎/玄武)，根据日干确定起始六神 - 修复时间: 2026-03-16
+- [x] [占卜] 六爻缺少用神判断逻辑 - **已修复**: backend/app/service/LiuyaoService::getYongShen实现用神判断，支持求财/感情/事业/健康/学业等多种问事类型 - 修复时间: 2026-03-16
 - [ ] [占卜] 塔罗牌缺少AI深度解读 - backend/app/controller/Tarot.php - 抽牌后只有基础解读，没有AI分析功能 - 建议添加AI解牌功能
 - [ ] [占卜] 八字排盘缺少真太阳时计算 - backend/app/controller/Paipan.php - 虽然前端有出生地选择，但后端未实现真太阳时转换 - 建议根据经度计算真太阳时
 - [ ] [占卜] 八字十神计算未考虑藏干 - backend/app/controller/Paipan.php第519-557行 - 十神只计算了天干，地支藏干的十神未完整展示 - 建议完善藏干十神分析
@@ -964,15 +1174,15 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（逻辑错误/准确性问题）
-- [ ] [占卜] 六爻变卦计算完全缺失 - backend/app/controller/Liuyao.php第262-326行 - 动爻产生变卦但未计算和展示变卦卦象，六爻解卦不完整 - 建议添加变卦计算逻辑：老阳变阴、老阴变阳
-- [ ] [占卜] 六爻六亲六神分析缺失 - backend/app/controller/Liuyao.php - 六爻解卦缺少六亲(父母/兄弟/子孙/妻财/官鬼)和六神(青龙/朱雀/勾陈/螣蛇/白虎/玄武)配属 - 建议添加专业六爻分析
-- [ ] [占卜] 六爻用神判断逻辑缺失 - backend/app/controller/Liuyao.php第331-360行 - 未根据问题类型自动判断用神，解读过于通用 - 建议添加关键词识别用神逻辑
-- [ ] [占卜] 六爻世应分析缺失 - backend/app/controller/Liuyao.php - 世爻、应爻是六爻解卦核心，当前完全缺失 - 建议添加世应定位逻辑
+- [x] [占卜] 六爻变卦计算完全缺失 - **已修复**: backend/app/service/LiuyaoService::getBianGua实现变卦计算，老阴(0)变少阳(1)，老阳(3)变少阴(2) - 修复时间: 2026-03-16
+- [x] [占卜] 六爻六亲六神分析缺失 - **已修复**: backend/app/service/LiuyaoService实现六亲(getLiuQin)和六神(getLiuShen)计算，并在控制器中调用 - 修复时间: 2026-03-16
+- [x] [占卜] 六爻用神判断逻辑缺失 - **已修复**: backend/app/service/LiuyaoService::getYongShen实现用神判断，支持求财/感情/事业/健康/学业等10种问事类型 - 修复时间: 2026-03-16
+- [x] [占卜] 六爻世应分析缺失 - **已修复**: backend/app/service/LiuyaoService::getShiYing实现世应定位，支持八纯卦/一世卦/二世卦等多种情况 - 修复时间: 2026-03-16
 - [ ] [占卜] 八字节气数据覆盖年份不足 - backend/app/controller/Paipan.php第563-573行 - 仅1990/1995/2000三年精确数据，其他年份使用通用数据可能导致月柱计算错误(±1天误差) - 建议补充1900-2050年完整节气表
 - [ ] [占卜] 八字真太阳时未实现 - backend/app/controller/Paipan.php - 前端选择出生地后，后端未根据经度计算真太阳时 - 建议添加真太阳时转换算法
 
 #### 🟡 中优先级（体验问题）
-- [ ] [占卜] 六爻缺少手动起卦模式 - frontend/src/views/Liuyao.vue - 仅支持自动随机起卦，无法手动输入六次摇卦结果 - 建议添加手动起卦界面，支持用户输入每次摇卦结果
+- [x] [占卜] 六爻缺少手动起卦模式 - **已修复**: backend/app/service/LiuyaoService::qiGuaByManual实现手动摇卦，支持6次摇卦结果输入(6老阴/7少阳/8少阴/9老阳) - 修复时间: 2026-03-16
 - [ ] [占卜] 塔罗牌阵关系分析缺失 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读，仅单张牌义堆砌 - 建议添加牌阵整体分析和牌与牌之间的关系解读
 - [ ] [占卜] 塔罗缺少元素分析 - frontend/src/views/Tarot.vue - 牌阵中元素(火/水/风/土)分布未分析 - 建议添加元素分布统计和解读
 - [ ] [占卜] 八字藏干十神展示不突出 - frontend/src/views/Bazi.vue - 虽有藏干十神计算，但前端展示不够突出，藏干信息难以辨认 - 建议优化藏干十神展示方式
