@@ -86,8 +86,27 @@
 - frontend/src/views/HomeNew.vue
 - frontend/src/components/QuickActions.vue
 
+### 2026-03-17 第五次执行
+- 任务：修复前端TODO.md中的前端相关问题
+- 状态：已完成
+- 修复数量：5个前端问题
+- Git提交：9319f94 - fix-frontend-emoji-icons-and-theme-colors-2026-03-17
+
+#### 已修复问题：
+1. **Bazi.vue多处emoji图标替换** - 已将✓、❓、💡、📅、📈、🤖、✨、💾、📤、🔄等emoji替换为Element Plus图标(Check, QuestionFilled, Lightbulb, Calendar, TrendCharts, Cpu, Magic, Download, Share, RefreshRight)
+2. **Help.vue账号安全图标** - 已将🔐emoji替换为Element Plus的Lock图标，并添加分类图标支持
+3. **Daily.vue白色文字硬编码修复** - 已将多处rgba(255,255,255,x)和#fff白色文字硬编码改为CSS变量(var(--text-primary), var(--text-secondary), var(--text-tertiary))
+4. **Daily.vue深色背景修复** - 已将rgba(0,0,0,0.x)深色背景改为var(--bg-card)和var(--bg-secondary)
+5. **Daily.vue金色硬编码修复** - 已将#ffd700金色硬编码改为var(--primary-color)
+
+#### 修改文件：
+- frontend/src/views/Bazi.vue
+- frontend/src/views/Help.vue
+- frontend/src/views/Daily.vue
+- TODO.md
+
 ## 待修复问题跟踪
-- 主题方向决策（需要用户确认）
+- Bazi.vue粉色系配色问题（粉色阴影、粉色边框、粉色渐变）
+- Bazi.vue深色背景残留（第1873行）
+- 继续批量替换其他文件中的emoji图标
 - 页面背景色与主题冲突（需要用户确认主题方向）
-- 其他UI样式问题（等待主题确定后统一修复）
-- 继续批量替换剩余文件中的emoji图标（Daily.vue, Bazi.vue剩余部分等）

@@ -510,7 +510,7 @@ class Hehun extends BaseController
         $details['nayin'] = $this->getNayinDescription($nayinScore);
         
         // 6. 三元合婚分析（传统合婚法）
-        $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi);
+        $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $data['maleBirthDate'], $data['femaleBirthDate']);
         
         // 7. 九宫合婚分析（传统合婚法）
         $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi);
@@ -1444,6 +1444,9 @@ PROMPT;
             $huajieHtml .= "</div>";
         }
         
+        // AI深度分析 - 转义防止XSS
+        $safeAiAnalysis = htmlspecialchars($analysis['ai_analysis'] ?? '暂无详细分析', ENT_QUOTES, 'UTF-8');
+        
         return <<<HTML
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -1670,7 +1673,7 @@ PROMPT;
             <div class="section">
                 <h3>📝 AI深度分析</h3>
                 <div class="analysis-content">
-                    {$analysis['ai_analysis'] ?? '暂无详细分析'}
+                    {$safeAiAnalysis}
                 </div>
             </div>
         </div>
@@ -1692,10 +1695,10 @@ HTML;
      * 三元：上元、中元、下元
      * 根据出生年份判断所属元运，再看纳音五行生克
      */
-    protected function analyzeSanYuanHehun(array $maleBazi, array $femaleBazi): array
+    protected function analyzeSanYuanHehun(array $maleBazi, array $femaleBazi, string $maleBirthDate, string $femaleBirthDate): array
     {
-        $maleYear = (int)$maleBazi['year']['year'];
-        $femaleYear = (int)$femaleBazi['year']['year'];
+        $maleYear = (int)date('Y', strtotime($maleBirthDate));
+        $femaleYear = (int)date('Y', strtotime($femaleBirthDate));
         
         // 获取纳音五行
         $maleNayin = $this->getNayinWuxing($maleBazi['year']['gan'], $maleBazi['year']['zhi']);

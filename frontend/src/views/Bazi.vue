@@ -903,7 +903,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Medallion, Collection, Money, Briefcase, UserFilled, Warning, Check, Calendar, DataLine, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
 import { 
@@ -1205,6 +1205,14 @@ const calculateBazi = async () => {
 
 onMounted(() => {
   loadPoints()
+})
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  if (aiLoadingTimer.value) {
+    clearInterval(aiLoadingTimer.value)
+    aiLoadingTimer.value = null
+  }
 })
 
 // 保存结果

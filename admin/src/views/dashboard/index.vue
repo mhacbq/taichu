@@ -128,7 +128,7 @@ async function loadAllData() {
 async function loadStatistics() {
   try {
     const res = await getStatistics()
-    if (res.code === 0) {
+    if (res.code === 200) {
       const data = res.data
       statistics.value = [
         { title: '总用户数', value: data.totalUsers?.value || 0, trend: data.totalUsers?.trend || 0, color: '#409eff', icon: 'UserFilled' },
@@ -178,7 +178,7 @@ async function loadTrendData() {
 async function loadChartData() {
   try {
     const res = await getChartData('feature')
-    if (res.code === 0) {
+    if (res.code === 200) {
       updateFeatureChart(res.data)
     }
   } catch (error) {

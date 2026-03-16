@@ -119,6 +119,15 @@ class Liuyao extends BaseController
      */
     private function getGuaInfo(string $mainGua, string $bianGua): array
     {
+        // 验证卦名格式，只允许中文字符
+        $pattern = '/^[\x{4e00}-\x{9fa5}]+$/u';
+        if (!preg_match($pattern, $mainGua) || !preg_match($pattern, $bianGua)) {
+            return [
+                'main' => null,
+                'bian' => null,
+            ];
+        }
+        
         $mainInfo = \think\facade\Db::table('gua_data')
             ->where('gua_name', $mainGua)
             ->find();

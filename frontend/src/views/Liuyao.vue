@@ -156,7 +156,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
 import { YinYang, RefreshRight, Download, Delete, Magic, Present, Trophy } from '@element-plus/icons-vue'
 

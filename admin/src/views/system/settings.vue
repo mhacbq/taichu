@@ -196,7 +196,7 @@ onMounted(async () => {
   // 加载AI配置
   try {
     const res = await getAiConfig()
-    if (res.code === 0 && res.data) {
+    if (res.code === 200 && res.data) {
       aiForm.value = { ...aiForm.value, ...res.data }
       originalAiForm.value = { ...aiForm.value }
     }
@@ -242,7 +242,7 @@ async function handleTestAiConnection() {
   testingAi.value = true
   try {
     const res = await testAiConnection(aiForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('连接成功：' + (res.data.model || '未知模型'))
     } else {
       ElMessage.error(res.message || '连接失败')
