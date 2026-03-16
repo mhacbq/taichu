@@ -169,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
@@ -535,6 +535,9 @@ const shareTarotResult = async () => {
   } else {
     navigator.clipboard.writeText(shareText).then(() => {
       ElMessage.success('分享链接已复制到剪贴板')
+    }).catch(err => {
+      console.error('复制失败:', err)
+      ElMessage.error('复制失败，请手动复制')
     })
   }
 }

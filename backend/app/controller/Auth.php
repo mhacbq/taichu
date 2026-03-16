@@ -6,6 +6,7 @@ namespace app\controller;
 use app\BaseController;
 use app\model\User;
 use app\model\InviteRecord;
+use app\model\PointsRecord;
 use app\service\SmsService;
 use Firebase\JWT\JWT;
 use think\facade\Cache;
@@ -57,7 +58,7 @@ class Auth extends BaseController
             
             // 新用户赠送积分
             $user->addPoints(100);
-            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
             
             // 处理邀请码
             if (!empty($data['invite_code'])) {
@@ -116,7 +117,7 @@ class Auth extends BaseController
             
             // 新用户赠送积分
             $user->addPoints(100);
-            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
             
             // 处理邀请码
             if (!empty($data['invite_code'])) {
@@ -199,7 +200,7 @@ class Auth extends BaseController
             
             // 新用户赠送积分
             $user->addPoints(100);
-            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
             
             // 处理邀请码
             if (!empty($data['invite_code'])) {
@@ -328,7 +329,7 @@ class Auth extends BaseController
             $inviter = User::find($inviterId);
             if ($inviter) {
                 $inviter->addPoints($rewardPoints);
-                \app\model\PointsRecord::record(
+                PointsRecord::record(
                     $inviterId, 
                     '邀请好友奖励', 
                     $rewardPoints, 
@@ -342,7 +343,7 @@ class Auth extends BaseController
             $invitee = User::find($newUserId);
             if ($invitee) {
                 $invitee->addPoints($rewardPoints);
-                \app\model\PointsRecord::record(
+                PointsRecord::record(
                     $newUserId, 
                     '被邀请奖励', 
                     $rewardPoints, 

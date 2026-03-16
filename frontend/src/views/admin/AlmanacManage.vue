@@ -300,7 +300,12 @@ const form = ref({
 })
 
 const rules = {
-  solarDate: [{ required: true, message: '请选择日期', trigger: 'change' }]
+  solarDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
+  yi: [{ required: true, message: '请输入宜事项', trigger: 'blur' }],
+  ji: [{ required: true, message: '请输入忌事项', trigger: 'blur' }],
+  ganzhi: [{ required: true, message: '请输入干支', trigger: 'blur' }],
+  sha: [{ required: true, message: '请输入煞方位', trigger: 'blur' }],
+  zhiri: [{ required: true, message: '请输入值日星宿', trigger: 'blur' }]
 }
 
 // 默认时辰数据

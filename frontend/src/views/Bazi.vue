@@ -218,55 +218,55 @@
           <!-- 天干行 -->
           <div class="paipan-row">
             <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi.year.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.year.gan_wuxing">{{ result.bazi.year.gan_wuxing }}</span>
+              <span class="gan-text">{{ result.bazi?.year?.gan }}</span>
+              <span class="wuxing-badge" :class="result.bazi?.year?.gan_wuxing">{{ result.bazi?.year?.gan_wuxing }}</span>
             </div>
             <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi.month.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.month.gan_wuxing">{{ result.bazi.month.gan_wuxing }}</span>
+              <span class="gan-text">{{ result.bazi?.month?.gan }}</span>
+              <span class="wuxing-badge" :class="result.bazi?.month?.gan_wuxing">{{ result.bazi?.month?.gan_wuxing }}</span>
             </div>
             <div class="paipan-cell highlight">
-              <span class="gan-text">{{ result.bazi.day.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.day.gan_wuxing">{{ result.bazi.day.gan_wuxing }}</span>
+              <span class="gan-text">{{ result.bazi?.day?.gan }}</span>
+              <span class="wuxing-badge" :class="result.bazi?.day?.gan_wuxing">{{ result.bazi?.day?.gan_wuxing }}</span>
               <span class="rizhu-tag">日主</span>
             </div>
             <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi.hour.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.hour.gan_wuxing">{{ result.bazi.hour.gan_wuxing }}</span>
+              <span class="gan-text">{{ result.bazi?.hour?.gan }}</span>
+              <span class="wuxing-badge" :class="result.bazi?.hour?.gan_wuxing">{{ result.bazi?.hour?.gan_wuxing }}</span>
             </div>
           </div>
           <!-- 十神行 -->
           <div class="paipan-row shishen-row">
-            <div class="paipan-cell shishen-cell">{{ result.bazi.year.shishen }}</div>
-            <div class="paipan-cell shishen-cell">{{ result.bazi.month.shishen }}</div>
+            <div class="paipan-cell shishen-cell">{{ result.bazi?.year?.shishen }}</div>
+            <div class="paipan-cell shishen-cell">{{ result.bazi?.month?.shishen }}</div>
             <div class="paipan-cell shishen-cell highlight">日主</div>
-            <div class="paipan-cell shishen-cell">{{ result.bazi.hour.shishen }}</div>
+            <div class="paipan-cell shishen-cell">{{ result.bazi?.hour?.shishen }}</div>
           </div>
           <!-- 地支行 -->
           <div class="paipan-row">
             <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi.year.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.year.zhi_wuxing">{{ result.bazi.year.zhi_wuxing }}</span>
+              <span class="zhi-text">{{ result.bazi?.year?.zhi }}</span>
+              <span class="wuxing-badge zhi" :class="result.bazi?.year?.zhi_wuxing">{{ result.bazi?.year?.zhi_wuxing }}</span>
             </div>
             <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi.month.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.month.zhi_wuxing">{{ result.bazi.month.zhi_wuxing }}</span>
+              <span class="zhi-text">{{ result.bazi?.month?.zhi }}</span>
+              <span class="wuxing-badge zhi" :class="result.bazi?.month?.zhi_wuxing">{{ result.bazi?.month?.zhi_wuxing }}</span>
             </div>
             <div class="paipan-cell highlight">
-              <span class="zhi-text">{{ result.bazi.day.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.day.zhi_wuxing">{{ result.bazi.day.zhi_wuxing }}</span>
+              <span class="zhi-text">{{ result.bazi?.day?.zhi }}</span>
+              <span class="wuxing-badge zhi" :class="result.bazi?.day?.zhi_wuxing">{{ result.bazi?.day?.zhi_wuxing }}</span>
             </div>
             <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi.hour.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.hour.zhi_wuxing">{{ result.bazi.hour.zhi_wuxing }}</span>
+              <span class="zhi-text">{{ result.bazi?.hour?.zhi }}</span>
+              <span class="wuxing-badge zhi" :class="result.bazi?.hour?.zhi_wuxing">{{ result.bazi?.hour?.zhi_wuxing }}</span>
             </div>
           </div>
           <!-- 藏干行 -->
           <div class="paipan-row canggan-row">
             <div class="paipan-cell canggan-cell">
               <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.year.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.year.canggan_shishen[idx] }})</small>
+                <span v-for="(cg, idx) in result.bazi?.year?.canggan || []" :key="idx" class="canggan-item">
+                  {{ cg }}<small>({{ result.bazi?.year?.canggan_shishen?.[idx] }})</small>
                 </span>
               </div>
             </div>
@@ -1297,7 +1297,7 @@ const startAiAnalysis = async () => {
       
       while (true) {
         // 检查是否被取消
-        if (aiAbortController.value.signal.aborted) {
+        if (aiAbortController.value?.signal?.aborted) {
           reader.cancel()
           break
         }
@@ -1327,7 +1327,7 @@ const startAiAnalysis = async () => {
         }
       }
       
-      if (!aiAbortController.value.signal.aborted) {
+      if (!aiAbortController.value?.signal?.aborted) {
         aiAnalysisResult.value = {
           analysis: fullContent,
           model: 'AI'

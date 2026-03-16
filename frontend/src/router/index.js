@@ -1,16 +1,28 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO'
+
+// 首屏关键页面 - 同步加载
 import Home from '../views/Home.vue'
-import Bazi from '../views/Bazi.vue'
-import Tarot from '../views/Tarot.vue'
-import Daily from '../views/Daily.vue'
-import Profile from '../views/Profile.vue'
 import Login from '../views/Login.vue'
-import Help from '../views/Help.vue'
 import NotFound from '../views/NotFound.vue'
-import Recharge from '../views/Recharge.vue'
-import Hehun from '../views/Hehun.vue'
-import Liuyao from '../views/Liuyao.vue'
+
+// 非首屏页面 - 懒加载
+const Bazi = () => import('../views/Bazi.vue')
+const Tarot = () => import('../views/Tarot.vue')
+const Daily = () => import('../views/Daily.vue')
+const Profile = () => import('../views/Profile.vue')
+const Help = () => import('../views/Help.vue')
+const Recharge = () => import('../views/Recharge.vue')
+const Hehun = () => import('../views/Hehun.vue')
+const Liuyao = () => import('../views/Liuyao.vue')
+
+// 管理后台页面（懒加载）
+const AdminConfig = () => import('../views/admin/Config.vue')
+const AdminAlmanacManage = () => import('../views/admin/AlmanacManage.vue')
+const AdminKnowledgeManage = () => import('../views/admin/KnowledgeManage.vue')
+const AdminSEOManage = () => import('../views/admin/SEOManage.vue')
+const AdminSEOStats = () => import('../views/admin/SEOStats.vue')
+const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
 
 const routes = [
   {
@@ -121,6 +133,105 @@ const routes = [
       breadcrumb: [{ name: '首页', url: '/' }, { name: '帮助中心', url: '/help' }]
     }
   },
+  // 管理后台路由
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: AdminConfig,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '管理后台 - 太初命理',
+        description: '系统管理后台'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }]
+    }
+  },
+  {
+    path: '/admin/config',
+    name: 'AdminConfig',
+    component: AdminConfig,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '系统配置 - 太初命理',
+        description: '系统配置管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }, { name: '系统配置', url: '/admin/config' }]
+    }
+  },
+  {
+    path: '/admin/almanac',
+    name: 'AdminAlmanac',
+    component: AdminAlmanacManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '黄历管理 - 太初命理',
+        description: '黄历数据管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }, { name: '黄历管理', url: '/admin/almanac' }]
+    }
+  },
+  {
+    path: '/admin/knowledge',
+    name: 'AdminKnowledge',
+    component: AdminKnowledgeManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '知识库管理 - 太初命理',
+        description: '知识库内容管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }, { name: '知识库', url: '/admin/knowledge' }]
+    }
+  },
+  {
+    path: '/admin/seo',
+    name: 'AdminSEO',
+    component: AdminSEOManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: 'SEO管理 - 太初命理',
+        description: 'SEO设置管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }, { name: 'SEO管理', url: '/admin/seo' }]
+    }
+  },
+  {
+    path: '/admin/seo-stats',
+    name: 'AdminSEOStats',
+    component: AdminSEOStats,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: 'SEO统计 - 太初命理',
+        description: 'SEO数据统计分析'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }, { name: 'SEO统计', url: '/admin/seo-stats' }]
+    }
+  },
+  {
+    path: '/admin/shensha',
+    name: 'AdminShensha',
+    component: AdminShenshaManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '神煞管理 - 太初命理',
+        description: '神煞数据管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '管理后台', url: '/admin' }, { name: '神煞管理', url: '/admin/shensha' }]
+    }
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -145,7 +256,21 @@ const router = createRouter({
   }
 })
 
-// 路由守卫 - SEO优化
+// 检查用户是否为管理员
+function isAdmin() {
+  try {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    // 检查用户角色，支持多种可能的字段名
+    return userInfo.role === 'admin' || 
+           userInfo.is_admin === true || 
+           userInfo.isAdmin === true ||
+           userInfo.type === 'admin'
+  } catch (e) {
+    return false
+  }
+}
+
+// 路由守卫 - SEO优化和权限验证
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const isAuthenticated = !!token
@@ -161,6 +286,15 @@ router.beforeEach((to, from, next) => {
     next({
       name: 'Login',
       query: { redirect: to.fullPath }
+    })
+    return
+  }
+
+  // 需要管理员权限的页面
+  if (to.meta.requiresAdmin && !isAdmin()) {
+    // 可以重定向到403页面或首页
+    next({
+      name: 'Home'
     })
     return
   }

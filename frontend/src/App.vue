@@ -21,22 +21,22 @@
         <div class="user-actions">
           <template v-if="isLoggedIn">
             <span class="points-badge">
-              <span class="points-icon">💎</span>
+              <el-icon class="points-icon" :size="16"><Diamond /></el-icon>
               <span class="points-value">{{ userPoints }}</span>
             </span>
             <el-dropdown @command="handleCommand" trigger="click">
               <span class="user-info">
                 <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
-                <span class="nickname">{{ userNickname }}</span>
+                <span class="nickname">{{ userNickname || '用户' }}</span>
                 <span class="dropdown-arrow">▼</span>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">
-                    <span class="dropdown-icon">👤</span> 个人中心
+                    <el-icon class="dropdown-icon" :size="14"><User /></el-icon> 个人中心
                   </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
-                    <span class="dropdown-icon">🚪</span> 退出登录
+                    <el-icon class="dropdown-icon" :size="14"><SwitchButton /></el-icon> 退出登录
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -83,11 +83,11 @@
           <template v-if="isLoggedIn">
             <div class="mobile-user-info">
               <span class="mobile-avatar">{{ userNickname?.[0] || '用' }}</span>
-              <span class="mobile-nickname">{{ userNickname }}</span>
+              <span class="mobile-nickname">{{ userNickname || '用户' }}</span>
               <span class="mobile-points">💎 {{ userPoints }}</span>
             </div>
             <a href="#" class="mobile-logout-btn" @click.prevent="handleLogout">
-              <span>🚪</span> 退出登录
+              <el-icon :size="16"><SwitchButton /></el-icon> 退出登录
             </a>
           </template>
           <router-link v-else to="/login" class="mobile-login-btn" @click="showMobileMenu = false">
@@ -121,7 +121,7 @@
             <a href="#" @click.prevent="showAbout">关于我们</a>
           </div>
           <div class="footer-divider"></div>
-          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向 ✨</p>
+          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向</p>
         </div>
       </div>
     </footer>
@@ -129,28 +129,28 @@
     <!-- 浮动心情陪伴组件 -->
     <div v-if="isLoggedIn" class="floating-companion" :class="{ expanded: showCompanion }" @click="toggleCompanion">
       <div class="companion-avatar">
-        <span class="companion-icon">🌸</span>
+        <el-icon class="companion-icon" :size="28"><Collection /></el-icon>
         <span v-if="!showCompanion" class="companion-pulse"></span>
       </div>
       <div v-if="showCompanion" class="companion-content" @click.stop>
         <div class="companion-header">
-          <span class="companion-title">💝 今日陪伴</span>
-          <button class="close-btn" @click="showCompanion = false">✕</button>
+          <span class="companion-title"><el-icon :size="16"><Present /></el-icon> 今日陪伴</span>
+          <button class="close-btn" @click="showCompanion = false"><el-icon :size="14"><Close /></el-icon></button>
         </div>
         <div class="companion-message">
           <p>{{ companionMessage }}</p>
         </div>
         <div class="companion-actions">
           <router-link to="/daily" class="companion-btn" @click="showCompanion = false">
-            <span>🌟</span>
+            <el-icon :size="16"><Sunrise /></el-icon>
             <span>查看运势</span>
           </router-link>
           <router-link to="/bazi" class="companion-btn" @click="showCompanion = false">
-            <span>📅</span>
+            <el-icon :size="16"><Calendar /></el-icon>
             <span>八字排盘</span>
           </router-link>
           <router-link to="/tarot" class="companion-btn" @click="showCompanion = false">
-            <span>🎴</span>
+            <el-icon :size="16"><Magic /></el-icon>
             <span>塔罗占卜</span>
           </router-link>
         </div>
@@ -164,6 +164,20 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
+import { 
+  HomeFilled, 
+  Calendar, 
+  Magic, 
+  YinYang, 
+  Star, 
+  User, 
+  SwitchButton, 
+  Diamond, 
+  Close,
+  Present,
+  Collection,
+  Sunrise
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -194,11 +208,11 @@ const companionMessage = computed(() => {
 })
 
 const footerQuotes = [
-  '✨ 愿你在迷茫中找到方向',
-  '🌸 迷茫不是软弱，而是成长的开始',
-  '💝 你值得被这个世界温柔以待',
-  '🌟 相信自己，你比想象中更有力量',
-  '🌱 慢慢来，没关系',
+  '愿你在迷茫中找到方向',
+  '迷茫不是软弱，而是成长的开始',
+  '你值得被这个世界温柔以待',
+  '相信自己，你比想象中更有力量',
+  '慢慢来，没关系',
 ]
 
 const randomQuote = computed(() => {
@@ -532,7 +546,19 @@ onMounted(() => {
   font-size: 20px;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 5px;
+  padding: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.mobile-nav-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .mobile-nav-links {
@@ -763,6 +789,7 @@ onMounted(() => {
 
 .companion-icon {
   font-size: 28px;
+  color: white;
 }
 
 .companion-pulse {

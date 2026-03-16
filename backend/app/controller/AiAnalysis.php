@@ -53,6 +53,10 @@ class AiAnalysis extends BaseController
         if (empty($baziData)) {
             return json(['code' => 400, 'message' => '八字数据不能为空']);
         }
+        
+        if (!is_array($baziData)) {
+            return json(['code' => 400, 'message' => '八字数据格式错误，应为数组类型']);
+        }
 
         $config = $this->getAiConfig();
         
@@ -86,20 +90,13 @@ class AiAnalysis extends BaseController
             // 调用AI API
             $response = $this->callAiApi($systemPrompt, $userPrompt, $config);
             
-            return json([
-                'code' => 0,
-                'message' => 'success',
-                'data' => [
-                    'analysis' => $response,
-                    'model' => $config['model'] ?? 'DeepSeek-V3.2',
-                    'prompt_used' => $prompt ? $prompt->name : 'default'
-                ]
-            ]);
+            return $this->success([
+                'analysis' => $response,
+                'model' => $config['model'] ?? 'DeepSeek-V3.2',
+                'prompt_used' => $prompt ? $prompt->name : 'default'
+            ], 'AI解盘成功');
         } catch (\Exception $e) {
-            return json([
-                'code' => 500,
-                'message' => 'AI解盘失败：' . $e->getMessage()
-            ]);
+            return $this->error('AI解盘失败：' . $e->getMessage(), 500);
         }
     }
 
@@ -116,11 +113,15 @@ class AiAnalysis extends BaseController
         if (empty($baziData)) {
             return json(['code' => 400, 'message' => '八字数据不能为空']);
         }
+        
+        if (!is_array($baziData)) {
+            return $this->error('八字数据格式错误，应为数组类型', 400);
+        }
 
         $config = $this->getAiConfig();
         
         if (empty($config['api_key']) || empty($config['api_url'])) {
-            return json(['code' => 500, 'message' => 'AI解盘服务未配置']);
+            return $this->error('AI解盘服务未配置', 500);
         }
 
         // 获取提示词配置
@@ -275,6 +276,9 @@ class AiAnalysis extends BaseController
             'Content-Type: application/json'
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        // SSL验证配置，防止中间人攻击
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
