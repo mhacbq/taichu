@@ -39,9 +39,9 @@
 - [ ] [2026-03-16 17:30] 后端AiAnalysis.php返回格式不统一 - backend/app/controller/AiAnalysis.php第48、384行 - 混用json()和$this->success()/$this->error()两种返回方式 - 建议统一使用BaseController的方法
 
 #### 🟡 中优先级（体验问题）
-- [ ] [2026-03-16 17:30] 后端Vip.php未使用的导入 - backend/app/controller/Vip.php第7行 - UserVip模型已导入但未使用 - 建议删除未使用的导入
-- [ ] [2026-03-16 17:30] 后端Paipan.php重复变量定义 - backend/app/controller/Paipan.php第58、64行 - $mode变量被重复定义 - 建议删除重复的定义
-- [ ] [2026-03-16 17:30] 后端Paipan.php未使用的本地方法 - backend/app/controller/Paipan.php第214-238行 - generateSimpleInterpretation方法定义了但未使用 - 建议删除未使用的本地方法
+- [x] [2026-03-16 17:30] 后端Vip.php未使用的导入 - backend/app/controller/Vip.php第7行 - 已删除未使用的UserVip模型导入 - 修复时间: 2026-03-16
+- [x] [2026-03-16 17:30] 后端Paipan.php重复变量定义 - backend/app/controller/Paipan.php第58、64行 - 已删除重复的$mode变量定义 - 修复时间: 2026-03-16
+- [x] [2026-03-16 17:30] 后端Paipan.php未使用的本地方法 - backend/app/controller/Paipan.php第214-238行 - 已删除未使用的generateSimpleInterpretation方法及其辅助方法 - 修复时间: 2026-03-16
 - [x] [2026-03-16 17:30] 前端Tarot.vue未使用参数 - frontend/src/views/Tarot.vue第565-568行 - 已修复：将index参数改为_index前缀 - 修复时间: 2026-03-16
 - [x] [2026-03-16 17:30] 前端App.vue未使用的导入 - frontend/src/App.vue第167行 - 已修复：删除未使用的HomeFilled图标导入 - 修复时间: 2026-03-16
 
