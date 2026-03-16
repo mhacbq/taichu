@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\PointsRecord;
 use app\model\TarotRecord;
 use think\facade\Db;
+use think\facade\Log;
 
 class Tarot extends BaseController
 {
@@ -127,11 +128,12 @@ class Tarot extends BaseController
             ]);
         } catch (\Exception $e) {
             Db::rollback();
-            \think\facade\Log::error('塔罗抽牌失败: ' . $e->getMessage(), [
-                'user_id' => $user['sub'],
+            Log::error('塔罗抽牌失败: ' . $e->getMessage(), [
+                'user_id' => $user['sub'] ?? 0,
                 'spread' => $spread,
+                'trace' => $e->getTraceAsString()
             ]);
-            return $this->error('抽牌失败: ' . $e->getMessage());
+            return $this->error('抽牌失败，请稍后重试', 500);
         }
     }
     

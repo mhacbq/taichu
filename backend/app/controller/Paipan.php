@@ -10,6 +10,7 @@ use app\service\CacheService;
 use app\service\BaziInterpretationService;
 use app\service\FortuneAnalysisService;
 use think\facade\Db;
+use think\facade\Log;
 
 class Paipan extends BaseController
 {
@@ -214,7 +215,12 @@ class Paipan extends BaseController
             return $this->success($result);
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('排盘失败: ' . $e->getMessage());
+            Log::error('八字排盘失败: ' . $e->getMessage(), [
+                'user_id' => $user['sub'] ?? 0,
+                'birth_date' => $birthDate ?? '',
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->error('排盘失败，请稍后重试', 500);
         }
     }
     

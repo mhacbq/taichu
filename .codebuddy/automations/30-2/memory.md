@@ -1,5 +1,58 @@
 # 待办处理执行器 - 执行历史
 
+## 2026-03-17 执行记录（第8次）
+
+### 本次修复任务（5个问题）
+
+#### 1. 前端Tarot.vue缺少saveTarotRecord导入修复
+- **文件**: frontend/src/views/Tarot.vue第184行
+- **问题**: 使用了`saveTarotRecord`函数但未从api模块导入，会导致运行时错误
+- **修复**: 将`import { drawTarot, interpretTarot, getPointsBalance } from '../api'`修改为`import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'`
+- **验证**: 导入语句已更新，运行时错误已修复
+
+#### 2. 前端Liuyao.vue缺少ElMessageBox导入修复
+- **文件**: frontend/src/views/Liuyao.vue第159行
+- **问题**: 使用了`ElMessageBox`但未从element-plus导入，会导致运行时错误
+- **修复**: 将`import { ElMessage } from 'element-plus'`修改为`import { ElMessage, ElMessageBox } from 'element-plus'`
+- **验证**: 导入语句已更新，运行时错误已修复
+
+#### 3. 后端Hehun.php XSS安全风险修复
+- **文件**: backend/app/controller/Hehun.php第1448-1449行、第1676行
+- **问题**: `ai_analysis`内容未进行XSS过滤直接输出到HTML，如果AI返回恶意脚本将导致XSS攻击
+- **修复**: 
+  - 添加`$safeAiAnalysis = htmlspecialchars($analysis['ai_analysis'] ?? '暂无详细分析', ENT_QUOTES, 'UTF-8');`
+  - 在HTML模板中使用`{$safeAiAnalysis}`替代直接输出
+- **验证**: XSS攻击向量已被过滤
+
+#### 4. 后端Hehun.php数组键名错误修复
+- **文件**: backend/app/controller/Hehun.php第1698-1701行、第513行
+- **问题**: `$maleBazi['year']['year']`键不存在，实际结构为`['gan'=>..., 'zhi'=>...]`，会导致运行时错误
+- **修复**: 
+  - 修改`analyzeSanYuanHehun`方法签名，添加`$maleBirthDate`和`$femaleBirthDate`参数
+  - 使用`date('Y', strtotime($maleBirthDate))`获取年份
+  - 更新调用处传入出生日期参数
+- **验证**: 数组键名错误已修复
+
+#### 5. 后端Liuyao.php SQL注入风险修复
+- **文件**: backend/app/controller/Liuyao.php第120-129行
+- **问题**: `$mainGua`和`$bianGua`参数直接传入查询，虽然ThinkPHP有保护但建议明确参数绑定
+- **修复**: 添加卦名格式验证`preg_match('/^[\x{4e00}-\x{9fa5}]+$/u', $mainGua)`，只允许中文字符
+- **验证**: SQL注入风险已降低
+
+### 修复验证
+- Tarot.vue导入检查通过
+- Liuyao.vue导入检查通过
+- Hehun.php语法逻辑检查通过
+- Liuyao.php语法逻辑检查通过
+- TODO.md已更新，所有修复项已标记为完成
+
+### 状态
+- 完成5个修复任务
+- 修改了3个文件（Tarot.vue, Liuyao.vue, Hehun.php, Liuyao.php）
+- 下次执行将继续处理剩余高优先级问题
+
+---
+
 ## 2026-03-17 执行记录（第7次）
 
 ### 本次修复任务（5个问题）

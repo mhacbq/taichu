@@ -51,7 +51,7 @@ class AdminAuth extends BaseController
             'iss' => 'taichu-admin',
             'iat' => time(),
             'exp' => time() + 86400, // 24小时过期
-            'sub' => 1,
+            'sub' => $admin['id'],
             'username' => $username,
             'roles' => ['admin'],
             'is_admin' => true
@@ -59,14 +59,10 @@ class AdminAuth extends BaseController
 
         $token = JWT::encode($payload, $this->jwtKey, 'HS256');
 
-        return json([
-            'code' => 200,
-            'message' => '登录成功',
-            'data' => [
-                'token' => $token,
-                'expires_in' => 86400
-            ]
-        ]);
+        return $this->success([
+            'token' => $token,
+            'expires_in' => 86400
+        ], '登录成功');
     }
 
     /**
@@ -77,7 +73,7 @@ class AdminAuth extends BaseController
         $authHeader = $request->header('Authorization');
         
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-            return json(['code' => 401, 'message' => '未授权']);
+            return $this->error('未授权', 401);
         }
 
         $token = substr($authHeader, 7);
@@ -85,18 +81,15 @@ class AdminAuth extends BaseController
         try {
             $decoded = JWT::decode($token, new Key($this->jwtKey, 'HS256'));
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'id' => $decoded->sub,
-                    'username' => $decoded->username,
-                    'avatar' => '',
-                    'roles' => $decoded->roles,
-                    'permissions' => ['*']
-                ]
-            ]);
+            return $this->success([
+                'id' => $decoded->sub,
+                'username' => $decoded->username,
+                'avatar' => '',
+                'roles' => $decoded->roles,
+                'permissions' => ['*']
+            ], '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 401, 'message' => 'Token无效']);
+            return $this->error('Token无效', 401);
         }
     }
 

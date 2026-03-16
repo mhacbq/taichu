@@ -704,18 +704,90 @@ class Admin extends BaseController
         try {
             $settings = $request->post();
             
-            // 记录操作前的设置（这里简化处理）
+            if (empty($settings) || !is_array($settings)) {
+                return $this->error('设置数据不能为空', 400);
+            }
+            
+            // 获取操作前的设置用于日志记录
+            $configKeys = array_keys($settings);
+            $oldSettings = Db::name('system_config')
+                ->whereIn('config_key', $configKeys)
+                ->column('config_value', 'config_key');
+            
+            // 批量更新配置
+            $updateCount = 0;
+            foreach ($settings as $key => $value) {
+                // 验证配置键名格式
+                if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
+                    continue;
+                }
+                
+                // 获取配置类型
+                $config = Db::name('system_config')
+                    ->where('config_key', $key)
+                    ->find();
+                
+                if ($config) {
+                    // 根据类型处理值
+                    $processedValue = $this->processConfigValue($value, $config['config_type']);
+                    
+                    Db::name('system_config')
+                        ->where('config_key', $key)
+                        ->update([
+                            'config_value' => $processedValue,
+                            'updated_at' => date('Y-m-d H:i:s')
+                        ]);
+                    $updateCount++;
+                } else {
+                    // 新增配置项，默认为string类型
+                    Db::name('system_config')->insert([
+                        'config_key' => $key,
+                        'config_value' => is_array($value) ? json_encode($value) : (string)$value,
+                        'config_type' => is_array($value) ? 'json' : 'string',
+                        'category' => 'custom',
+                        'is_editable' => 1,
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ]);
+                    $updateCount++;
+                }
+            }
+            
+            // 记录操作日志
             $this->logOperation('update', 'config', [
                 'detail' => '更新系统设置',
+                'before_data' => $oldSettings,
                 'after_data' => $settings,
             ]);
 
-            // TODO: 实现设置保存逻辑
-
-            return $this->success(null, '保存成功');
+            return $this->success(['updated_count' => $updateCount], '保存成功');
         } catch (\Exception $e) {
-            Log::error('保存系统设置失败: ' . $e->getMessage());
+            Log::error('保存系统设置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'settings' => $settings ?? [],
+                'trace' => $e->getTraceAsString()
+            ]);
             return $this->error('保存失败，请稍后重试', 500);
+        }
+    }
+    
+    /**
+     * 处理配置值根据类型
+     */
+    protected function processConfigValue($value, string $type): string
+    {
+        switch ($type) {
+            case 'json':
+                return is_array($value) ? json_encode($value) : (string)$value;
+            case 'bool':
+                return $value ? '1' : '0';
+            case 'int':
+                return (string)(int)$value;
+            case 'float':
+                return (string)(float)$value;
+            case 'string':
+            default:
+                return (string)$value;
         }
     }
     
