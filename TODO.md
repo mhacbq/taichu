@@ -24,7 +24,7 @@
 | 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
 | 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
 
-## UI设计检查报告 - 2026-03-16 第十二轮
+## UI设计检查报告 - 2026-03-16 第十三轮
 
 ### 本次检查重点
 - 检查范围：前端Vue项目全部视图页面和组件
@@ -39,6 +39,8 @@
 - [ ] [UI] 首页Hero区域文字颜色与背景冲突 - Home.vue多处使用白色文字（color: #fff, rgba(255,255,255,0.7)等），在浅色背景下不可见 - 建议改为使用var(--text-primary)和var(--text-secondary)
 - [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
 - [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
+- [ ] [UI] 八字排盘加载状态深色背景与白色主题冲突 - Bazi.vue第1420行loading-state使用深色背景（rgba(0,0,0,0.3)），与白色主题不协调 - 建议改为浅色背景或使用主题CSS变量
+- [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
 
 #### 🟡 中优先级（体验问题）
 - [ ] [UI] 导航栏大量使用emoji图标 - App.vue使用☯、💎、👤、🚪、🏠、📅、🎴、💕、🌟、🌸、💝等emoji作为图标 - 建议引入@element-plus/icons-vue统一图标系统
@@ -146,14 +148,14 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] [2026-03-16 14:00] 前端Tarot.vue缺少computed导入 - frontend/src/views/Tarot.vue第172行 - 使用computed()但只从vue导入了ref, onMounted - 建议添加import { ref, onMounted, computed } from 'vue'
-- [ ] [2026-03-16 14:00] 后端AiAnalysis.php cURL缺少SSL验证 - backend/app/controller/AiAnalysis.php第276-294行 - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置防止中间人攻击
-- [ ] [2026-03-16 14:00] 前端App.vue localStorage解析缺少异常处理 - frontend/src/App.vue第220-221行 - JSON.parse(userInfo)可能抛出异常导致页面崩溃 - 建议使用try-catch包裹
+- [x] [2026-03-16 14:00] 前端Tarot.vue缺少computed导入 - frontend/src/views/Tarot.vue第172行 - 已添加import { ref, onMounted, computed } from 'vue' - 修复时间: 2026-03-16
+- [x] [2026-03-16 14:30] 后端AiAnalysis.php cURL缺少SSL验证 - backend/app/controller/AiAnalysis.php第276-294行 - 已添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST配置，启用SSL验证防止中间人攻击 - 修复时间: 2026-03-16
+- [x] [2026-03-16 14:00] 前端App.vue localStorage解析缺少异常处理 - frontend/src/App.vue第220-221行 - JSON.parse(userInfo)可能抛出异常导致页面崩溃 - 已添加try-catch包裹和错误处理 - 修复时间: 2026-03-16
 
 #### 🟡 中优先级（体验问题）
-- [ ] [2026-03-16 14:00] 后端Auth.php PointsRecord模型使用全局命名空间 - backend/app/controller/Auth.php第60,119,331,345行 - 使用\app\model\PointsRecord而非导入的use语句 - 建议统一添加use app\model\PointsRecord;
-- [ ] [2026-03-16 14:00] 后端Admin.php使用全局命名空间调用DailyFortune - backend/app/controller/Admin.php第99-100行 - 使用\app\model\DailyFortune而非导入 - 建议添加use语句或统一导入规范
-- [ ] [2026-03-16 14:00] 后端AiAnalysis.php返回码格式不一致 - backend/app/controller/AiAnalysis.php第54-55行、第103-106行 - 错误使用code=400/500，成功使用code=0 - 建议统一使用BaseController的success/error方法
+- [x] [2026-03-16 14:30] 后端Auth.php PointsRecord模型使用全局命名空间 - backend/app/controller/Auth.php第60,119,331,345行 - 已添加use app\model\PointsRecord;导入语句，并替换所有\app\model\PointsRecord为直接使用导入的类 - 修复时间: 2026-03-16
+- [x] [2026-03-16 14:30] 后端Admin.php使用全局命名空间调用DailyFortune - backend/app/controller/Admin.php第99-100行 - 已添加use app\model\DailyFortune;导入语句，并替换所有\app\model\DailyFortune为直接使用导入的类 - 修复时间: 2026-03-16
+- [x] [2026-03-16 14:30] 后端AiAnalysis.php返回码格式不一致 - backend/app/controller/AiAnalysis.php第54-55行、第103-106行 - 已统一使用BaseController的success()和error()方法替换所有json()返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 14:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - ENABLE_CACHE和CACHE_TTL定义但未使用 - 建议实现缓存逻辑或移除未使用的常量
 - [ ] [2026-03-16 14:00] 前端router/index.js未使用的导入 - frontend/src/router/index.js第2行 - generateWebsiteSchema导入但未使用 - 建议删除未使用的导入
 - [ ] [2026-03-16 14:00] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue - 只有solarDate字段有验证规则，其他重要字段没有验证 - 建议添加完整的表单验证规则
@@ -172,7 +174,7 @@
 ### 🔴 高优先级（功能性问题）
 
 - [ ] [2026-03-16 12:30] 前端Tarot.vue缺少computed导入 - frontend/src/views/Tarot.vue第172行 - 建议添加import { ref, onMounted, computed } from 'vue'
-- [ ] [2026-03-16 12:30] 前端Bazi.vue缺少CircleClose图标导入 - frontend/src/views/Bazi.vue第880行 - 建议添加import { CircleClose } from '@element-plus/icons-vue'
+- [x] [2026-03-16 12:30] 前端Bazi.vue缺少CircleClose图标导入 - frontend/src/views/Bazi.vue第880行 - 已添加import { CircleClose } from '@element-plus/icons-vue' - 修复时间: 2026-03-16
 - [ ] [2026-03-16 12:30] 后端Auth.php微信登录使用模拟逻辑 - backend/app/controller/Auth.php第31行 - 使用$openid = 'wx_' . md5($data['code'])模拟微信登录，生产环境存在严重安全风险 - 建议实现真实微信API调用
 - [ ] [2026-03-16 12:30] 后端Auth.php邀请码暴力枚举防护不完整 - backend/app/controller/Auth.php第284-358行 - 尝试次数超过限制后仅记录日志但不阻止操作，用户无感知 - 建议超过限制直接返回错误并阻止继续尝试
 - [ ] [2026-03-16 12:30] 后端AiAnalysis.php cURL缺少SSL验证 - backend/app/controller/AiAnalysis.php第276-294行 - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置
@@ -290,8 +292,8 @@
 - [ ] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实际调用API加载数据 - 建议实现真实的API调用和分页逻辑
 - [ ] [2026-03-16] 前端KnowledgeManage.vue搜索缺少防抖 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖处理，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
 - [ ] [2026-03-16] 前端KnowledgeManage.vue图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue第158-169行 - 上传组件只有on-success回调，没有on-error处理 - 建议添加:on-error="handleCoverError"和错误处理函数
-- [ ] [2026-03-16] 前端Config.vue未使用loading变量 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有在页面加载时使用 - 建议在onMounted中使用loading状态
-- [ ] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用，onMounted和onUnmounted为空 - 建议实现图表初始化逻辑或删除未使用的代码
+- [x] [2026-03-16] 前端Config.vue未使用loading变量 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有使用 - 已删除未使用的loading变量 - 修复时间: 2026-03-16
+- [x] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用，onMounted和onUnmounted为空 - 已删除未使用的代码和导入 - 修复时间: 2026-03-16
 - [ ] [UI] 按钮样式不统一 - 各页面按钮圆角不一致（12px/20px/25px/30px混用），有的使用渐变有的使用纯色 - 建议统一使用style.css中定义的.btn-primary（25px圆角）
 - [ ] [UI] 卡片圆角不统一 - 各页面卡片圆角不一致（12px/15px/16px/20px混用） - 建议统一为16px或20px
 - [ ] [UI] 表单输入框样式混乱 - 不同页面输入框样式差异大，有的有边框有的无边框，背景色也不一致（rgba(255,255,255,0.1) vs #fff） - 建议统一使用style.css中定义的.input-field类
@@ -324,10 +326,10 @@
 - [ ] [2026-03-16] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
 - [ ] [2026-03-16] 前端AlmanacManage.vue API调用缺失 - frontend/src/views/admin/AlmanacManage.vue第397-428行 - submitForm和generateMonth函数中只有模拟延迟，没有实际API调用 - 建议添加真实的API保存和生成调用
 - [ ] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，filteredList计算属性没有实现分页切片 - 建议实现分页逻辑：list.slice((page.value - 1) * pageSize.value, page.value * pageSize.value)
-- [ ] [2026-03-16] 前端KnowledgeManage.vue搜索缺少防抖 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖处理，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
-- [ ] [2026-03-16] 前端KnowledgeManage.vue图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue第158-169行 - 上传组件只有on-success回调，没有on-error处理 - 建议添加:on-error="handleCoverError"和错误处理函数
-- [ ] [2026-03-16] 前端Config.vue未使用loading变量 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有在页面加载时使用 - 建议在onMounted中使用loading状态
-- [ ] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用，onMounted和onUnmounted为空 - 建议实现图表初始化逻辑或删除未使用的代码
+- [x] [2026-03-16] 前端KnowledgeManage.vue搜索缺少防抖 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖处理 - 已添加防抖函数和watch处理，300ms延迟 - 修复时间: 2026-03-16
+- [x] [2026-03-16] 前端KnowledgeManage.vue图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue第158-169行 - 上传组件只有on-success回调 - 已添加on-error="handleCoverError"和错误处理函数 - 修复时间: 2026-03-16
+- [x] [2026-03-16] 前端Config.vue未使用loading变量 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有使用 - 已删除未使用的loading变量 - 修复时间: 2026-03-16
+- [x] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用 - 已删除未使用的代码和导入 - 修复时间: 2026-03-16
 - [ ] [UI] 按钮样式不统一 - 各页面按钮样式不一致，有的使用渐变背景（linear-gradient(135deg, #e94560, #ff6b6b)），有的使用纯色，圆角也不统一（12px/25px/30px） - 建议统一使用style.css中定义的.btn-primary和.btn-secondary类
 - [ ] [UI] 卡片圆角不统一 - 各页面卡片圆角不一致（12px/15px/16px/20px） - 建议统一使用16px或20px圆角
 - [ ] [UI] 表单输入框样式不统一 - 不同页面输入框样式差异大，有的有边框，有的无边框，背景色也不一致 - 建议统一使用style.css中定义的.input-field类
@@ -560,8 +562,8 @@
 - [ ] [2026-03-16] 后端AiAnalysis.php未实现的缓存功能 - backend/app/controller/AiAnalysis.php第18-22行 - 定义了ENABLE_CACHE和CACHE_TTL常量但未使用 - 建议实现AI分析结果缓存逻辑
 - [ ] [2026-03-16] 后端Content.php潜在空指针风险 - backend/app/controller/Content.php第85-86行 - 使用$request->adminId和$request->adminName可能不存在 - 建议添加空值检查或使用默认值
 - [ ] [2026-03-16] 前端Bazi.vue内存泄漏风险 - frontend/src/views/Bazi.vue第1183-1187行、1298-1304行 - setInterval创建的定时器在组件卸载时没有被清理 - 建议在onUnmounted钩子中清理定时器
-- [ ] [2026-03-16] 前端Config.vue未使用loading变量 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有在页面加载时使用 - 建议在onMounted中使用loading状态
-- [ ] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用，onMounted和onUnmounted为空 - 建议实现图表初始化逻辑或删除未使用的代码
+- [x] [2026-03-16] 前端Config.vue未使用loading变量 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有使用 - 已删除未使用的loading变量 - 修复时间: 2026-03-16
+- [x] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用 - 已删除未使用的代码和导入 - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
 - [ ] [2026-03-16] 后端Auth.php重复代码 - backend/app/controller/Auth.php多处 - 新用户赠送积分和记录积分变动的代码在多个方法中重复 - 建议提取公共方法rewardNewUser($user)
 - [ ] [2026-03-16] 后端AdminAuthService缓存键冲突风险 - backend/app/service/AdminAuthService.php第21行 - 缓存键前缀admin:permissions:可能与其他系统冲突 - 建议添加应用特定的前缀如taichu:admin:permissions:
@@ -611,4 +613,66 @@
 - [x] [2026-03-16] 前端Bazi.vue中AI解盘相关变量未定义 - frontend/src/views/Bazi.vue - 已添加aiLoadingTime、aiAbortController、aiLoadingTimer的ref定义 - 修复时间: 2026-03-16
 
 ---
-*最后更新: 2026-03-16 - 占卜爱好者体验检查*
+
+## 占卜功能体验检查报告 - 2026-03-16 第二轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 占卜爱好者（专业命理/塔罗爱好者角度）
+- **检查范围**: 太初命理网站全部占卜功能深度体验
+- **测试生辰**: 1990年5月15日 10:30 男 / 1992年8月20日 女
+
+### 功能体验结果
+
+#### 1. 八字排盘功能
+- **排盘计算**: 四柱计算逻辑基本正确，使用五虎遁月法和日上起时法
+- **节气问题**: 确认节气数据仅1990、1995、2000三年，其他年份使用通用数据(±1天误差)
+- **十神计算**: 天干十神计算正确，但藏干十神展示不完整
+- **真太阳时**: 前端有出生地选择，后端未实现经度转换
+
+#### 2. 六爻占卜功能
+- **起卦逻辑**: 钱币占卜模拟正确(老阴/少阴/少阳/老阳)
+- **变卦缺失**: 动爻产生变卦但未展示变卦卦象
+- **六亲六神**: 完全缺失，解卦不够专业
+- **手动起卦**: 仅支持自动起卦，无手动输入功能
+
+#### 3. 塔罗牌占卜功能
+- **牌阵设计**: 单张/三张/凯尔特十字牌阵合理
+- **隐者牌问题**: 确认第305-307行使用英文描述
+- **AI解读**: 仅有基础解读，无AI深度分析
+- **牌阵关系**: 多张牌缺乏关联性解读
+
+#### 4. 合婚配对功能
+- **算法全面性**: 包含生肖/日主/五行/纳音配对
+- **分层付费**: 设计合理(免费预览+付费详细报告)
+- **传统方法**: 缺少三元合婚、九宫合婚等
+
+#### 5. 每日运势功能
+- **个性化**: 基于八字日主计算，逻辑正确
+- **黄历信息**: 宜忌展示完整
+- **运势关联**: 与日主五行关系判断准确
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（逻辑错误/准确性问题）
+- [ ] [占卜] 节气数据覆盖年份不足 - backend/app/controller/Paipan.php第563-573行 - 仅1990/1995/2000三年精确数据，其他年份使用通用数据可能导致月柱计算错误(±1天误差) - 建议补充1900-2050年完整节气表
+- [ ] [占卜] 六爻变卦计算缺失 - backend/app/controller/Liuyao.php第262-326行 - 有动爻时未计算和展示变卦，六爻解卦不完整 - 建议添加变卦计算逻辑
+- [ ] [占卜] 塔罗隐者牌英文描述 - frontend/src/views/Tarot.vue第305-307行 - upright/reversed/advice均为英文，与其他21张牌中文描述不一致 - 建议统一翻译为中文
+- [ ] [占卜] 八字排盘真太阳时未实现 - backend/app/controller/Paipan.php - 前端选择出生地后，后端未根据经度计算真太阳时 - 建议添加真太阳时转换算法
+
+#### 🟡 中优先级（体验问题）
+- [ ] [占卜] 六爻缺少手动起卦模式 - frontend/src/views/Liuyao.vue - 仅支持自动随机起卦，无法手动输入六次摇卦结果 - 建议添加手动起卦界面
+- [ ] [占卜] 六爻六亲六神分析缺失 - backend/app/controller/Liuyao.php - 解卦缺少六亲(父母/兄弟/子孙/妻财/官鬼)和六神(青龙/朱雀等)配属 - 建议添加专业六爻分析
+- [ ] [占卜] 六爻用神判断逻辑缺失 - backend/app/controller/Liuyao.php - 未根据问题类型自动判断用神 - 建议添加关键词识别用神逻辑
+- [ ] [占卜] 塔罗缺少AI深度解读 - backend/app/controller/Tarot.php - 仅有基础牌义，无AI解牌功能 - 建议添加AI解牌接口
+- [ ] [占卜] 八字藏干十神展示不完整 - backend/app/controller/Paipan.php第819-829行 - 虽有藏干十神计算，但前端展示不够突出 - 建议优化藏干十神展示
+
+#### 🟢 低优先级（专业性优化）
+- [ ] [占卜] 八字可增加神煞分析 - backend/app/controller/Paipan.php - 可添加天乙贵人、文昌、桃花、驿马等常用神煞 - 建议参考《三命通会》
+- [ ] [占卜] 八字大运流年细节不足 - backend/app/controller/Paipan.php - 缺少交运时间、流年神煞等信息 - 建议丰富大运流年展示
+- [ ] [占卜] 塔罗牌阵关系分析缺失 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读 - 建议添加牌阵整体分析
+- [ ] [占卜] 合婚可增加传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚、紫微合婚等 - 建议丰富合婚算法
+- [ ] [占卜] 六爻应期推断缺失 - backend/app/controller/Liuyao.php - 解卦时可尝试推断事情发生时间 - 建议添加应期分析
+
+---
+*最后更新: 2026-03-16 - 占卜爱好者体验检查第二轮*

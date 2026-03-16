@@ -216,11 +216,21 @@ const checkLoginStatus = () => {
   const userInfo = localStorage.getItem('userInfo')
   
   if (token && userInfo) {
-    isLoggedIn.value = true
-    const user = JSON.parse(userInfo)
-    userNickname.value = user.nickname || '用户'
-    userPoints.value = user.points || 0
-    refreshPoints()
+    try {
+      isLoggedIn.value = true
+      const user = JSON.parse(userInfo)
+      userNickname.value = user?.nickname || '用户'
+      userPoints.value = user?.points || 0
+      refreshPoints()
+    } catch (e) {
+      console.error('解析用户信息失败:', e)
+      // 清除无效的登录状态
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      isLoggedIn.value = false
+      userNickname.value = ''
+      userPoints.value = 0
+    }
   } else {
     isLoggedIn.value = false
     userNickname.value = ''

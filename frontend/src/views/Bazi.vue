@@ -904,6 +904,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { CircleClose } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -934,6 +935,9 @@ const aiPrompt = ref('')
 const aiAnalyzing = ref(false)
 const aiAnalysisResult = ref(null)
 const aiStreamContent = ref('')
+const aiLoadingTime = ref(0)
+const aiAbortController = ref(null)
+const aiLoadingTimer = ref(null)
 
 // 流年运势相关
 const fortunePointsCost = ref({
@@ -944,7 +948,6 @@ const fortunePointsCost = ref({
 const selectedYear = ref(new Date().getFullYear())
 const yearlyFortuneResult = ref(null)
 const yearlyFortuneLoading = ref(false)
-const yearlyTrendData = ref(null)
 
 // 大运分析相关
 const selectedDayunIndex = ref(0)
@@ -1058,25 +1061,6 @@ const getYearlyFortuneAnalysis = async () => {
     ElMessage.error('分析失败，请稍后重试')
   } finally {
     yearlyFortuneLoading.value = false
-  }
-}
-
-// 获取流年趋势数据（用于K线图）
-const getYearlyTrendData = async () => {
-  if (!result.value?.id) return
-  
-  try {
-    const response = await getYearlyTrendApi({
-      bazi_id: result.value.id,
-      start_year: selectedYear.value - 5,
-      end_year: selectedYear.value + 5
-    })
-    
-    if (response.code === 0) {
-      yearlyTrendData.value = response.data
-    }
-  } catch (error) {
-    console.error('获取流年趋势失败:', error)
   }
 }
 
@@ -1351,7 +1335,7 @@ const startAiAnalysis = async () => {
       }
     } else {
       // 非流式响应
-      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value.signal)
+      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
       if (res.code === 0) {
         aiAnalysisResult.value = res.data
         currentPoints.value = res.data.remaining_points || currentPoints.value - 30

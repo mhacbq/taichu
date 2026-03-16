@@ -30,7 +30,7 @@
               </div>
               <el-switch
                 v-model="item.enabled"
-                @change="(val) => updateFeature(key, val)"
+                @change="(val) => handleUpdateFeature(key, val)"
                 :loading="savingFeatures[key]"
               />
             </div>
@@ -316,7 +316,6 @@ import {
 } from '../../api/admin'
 
 const activeTab = ref('features')
-const loading = ref(false)
 const saving = ref({
   vip: false,
   points: false,
@@ -398,7 +397,7 @@ const loadFeatures = async () => {
 }
 
 // 更新单个功能开关
-const updateFeature = async (key, enabled) => {
+const handleUpdateFeature = async (key, enabled) => {
   savingFeatures.value[key] = true
   try {
     const res = await updateFeature(key, enabled)
