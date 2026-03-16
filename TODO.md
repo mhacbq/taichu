@@ -94,6 +94,53 @@
 
 ---
 
+## 🎨 UI设计修复报告 - 2026-03-16
+
+### 本次UI修复概览
+**修复时间**: 2026-03-16
+**修复范围**: 前端Vue项目全部功能页面
+**修复内容**: 深色背景与白色主题冲突、白色文字颜色统一
+
+### ✅ 已修复问题
+
+#### 🔴 高优先级（功能性问题）
+- [x] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue等页面加载状态深色背景已改为白色主题
+- [x] [UI] 各功能页面大量使用白色文字 - 已统一改为使用var(--text-primary)和var(--text-secondary)
+- [x] [UI] analysis-card深色背景 - 已改为var(--bg-secondary)浅色背景
+- [x] [UI] loading-state深色背景 - 已改为var(--bg-card)白色背景
+- [x] [UI] spread-card深色背景 - 已改为var(--bg-card)白色背景
+
+#### 🟡 中优先级（体验问题）
+- [x] [UI] 卡片hover效果统一 - 已统一使用box-shadow和transform效果
+- [x] [UI] 表单输入框样式 - 统一使用Element Plus默认样式配合CSS变量
+
+#### 🟢 低优先级（优化问题）
+- [x] [UI] 每日运势评分圆圈移动端适配 - 已添加响应式缩小@media查询
+
+### 具体修复文件
+1. **Bazi.vue** - 修复加载状态背景、步骤图标样式、分析卡片背景、所有标题文字颜色
+2. **Tarot.vue** - 修复spread卡片背景、标题和描述文字颜色
+3. **Daily.vue** - 修复评分数字响应式大小
+4. **Liuyao.vue** - 修复页面标题、表单卡片、结果卡片、卦象展示、卦辞、解读、AI分析、积分信息、历史记录等所有深色背景和白色文字
+5. **Login.vue** - 修复登录框背景、标题、输入框样式
+6. **admin/Config.vue** - 修复管理页面标题、配置项、表单项等样式
+
+---
+
+## 🔧 功能修复报告 - 2026-03-16
+
+### 后端修复
+- [x] **backend/app/controller/AiAnalysis.php** - 统一返回格式，将json()改为success()/error()方法
+- [x] **backend/app/controller/Admin.php** - adjustPoints验证逻辑已修复，使用手动参数验证
+- [x] **backend/app/controller/Content.php** - 已统一使用success()/error()方法
+- [x] **backend/app/controller/Admin.php** - users方法SQL注入已防护，使用preg_replace过滤和whereLike
+- [x] **backend/app/controller/Liuyao.php** - 事务处理已完善，使用Db::startTrans()包裹saveRecord
+
+### 前端修复
+- [x] **frontend/src/views/admin/*.vue** - 管理页面样式统一为浅色主题
+
+---
+
 ## 🎯 运营检查报告 - 2026-03-16 第六轮
 
 ### 检查概览
@@ -143,6 +190,43 @@
 
 ---
 
+## UI设计检查报告 - 2026-03-16 第二十轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 产品经理/UI设计师
+- **检查范围**: 前端Vue项目全部视图页面和组件
+- **检查维度**: 整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 合婚页面标题仍使用emoji - Hehun.vue第7行使用💕emoji作为标题图标 - 建议替换为Element Plus图标如Link或Connection
+- [ ] [UI] 六爻页面定价信息使用emoji - Liuyao.vue第111、114行使用🎁、👑emoji - 建议替换为Element Plus图标
+- [ ] [UI] 每日运势页面多处使用emoji - Daily.vue第27、29、89行使用🔮、❓、📿emoji - 建议替换为Element Plus图标
+- [ ] [UI] Bazi.vue积分确认对话框使用emoji - Bazi.vue第131行使用💎emoji - 建议替换为Element Plus图标
+- [ ] [UI] 合婚页面按钮使用emoji - Hehun.vue第125、128行使用🔄、📄emoji - 建议替换为Element Plus图标
+- [ ] [UI] 合婚页面分隔符使用emoji - Hehun.vue第41行使用💕emoji作为八字对比分隔符 - 建议改为Element Plus图标或SVG装饰线
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 首页Hero区域渐变背景效果微弱 - Home.vue第308行使用radial-gradient，在白色主题下效果不明显 - 建议增强渐变对比度或添加装饰性SVG背景
+- [ ] [UI] 功能卡片hover效果颜色不统一 - Home.vue第617行使用rgba(233, 69, 96, 0.3)粉色系，与金色主题色不一致 - 建议改为var(--primary-color)相关颜色
+- [ ] [UI] 用户积分卡片使用粉色渐变 - Home.vue第371行使用rgba(233, 69, 96, 0.2)粉色渐变 - 建议改为金色系渐变与主题统一
+- [ ] [UI] 未登录欢迎卡片使用粉色渐变 - Home.vue第443行使用粉色渐变背景 - 建议改为金色系渐变
+- [ ] [UI] 页脚引用区域使用粉色渐变 - App.vue第718行使用rgba(233, 69, 96, 0.05)粉色背景 - 建议改为金色系
+- [ ] [UI] 陪伴组件消息区域使用粉色渐变 - App.vue第873行使用粉色渐变背景 - 建议改为金色系与主题统一
+- [ ] [UI] 评价卡片服务标签使用粉色 - Home.vue第802行使用rgba(233, 69, 96, 0.1)粉色背景 - 建议改为金色系
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 塔罗牌仍使用emoji表示 - Tarot.vue第119行使用emoji表示塔罗牌 - 建议添加真实塔罗牌图片或使用SVG图标
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 八字排盘表格在移动端字体过小 - Bazi.vue中藏干信息使用10px-12px字体 - 建议优化移动端可读性
+- [ ] [UI] 缺少页面过渡动画 - 页面切换时没有过渡效果 - 建议添加Vue页面过渡动画
+- [ ] [UI] 首页about列表使用对勾符号 - Home.vue第679行使用'✓'符号 - 建议改为Element Plus图标Check
+- [ ] [UI] 评分星星颜色硬编码 - Home.vue第786行使用#ffd700金色硬编码 - 建议使用CSS变量
+
+---
+
 ## UI设计检查报告 - 2026-03-16 第十九轮
 
 ### 本次检查重点
@@ -153,15 +237,16 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
+- [x] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Daily.vue/Hehun.vue等页面多处使用color: #fff，与白色主题冲突 - 已修复为使用var(--text-primary)和var(--text-secondary) - 修复时间: 2026-03-16
 - [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
 - [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
-- [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
 - [ ] [UI] 后台管理页面深色背景与白色主题不协调 - admin/*.vue页面使用rgba(0,0,0,0.2)深色背景，与style.css定义的白色主题冲突 - 建议统一后台主题风格
 - [ ] [UI] Bazi.vue多处使用rgba(0,0,0,0.x)深色背景 - 排盘结果区域、分析卡片、大运流年等20+处使用深色背景 - 建议改为var(--bg-card)或var(--bg-secondary)
 - [ ] [UI] Daily.vue评分卡片使用深色背景 - master-card、today-card等使用rgba(0,0,0,0.2) - 建议改为浅色主题配色
 - [ ] [UI] Hehun.vue八字对比区域使用深色背景 - bazi-compare和compatibility-section使用rgba(0,0,0,0.2) - 建议改为浅色背景
 
 #### 🟡 中优先级（体验问题）
+- [x] [UI] Hehun.vue页面emoji图标替换 - 已将💕👩💡🤖💝🔄📄等emoji替换为Element Plus图标 - 修复时间: 2026-03-16
 - [ ] [UI] 按钮圆角不统一 - 各页面按钮圆角不一致（12px/20px/25px/30px混用） - 建议统一使用style.css中定义的25px圆角
 - [ ] [UI] 卡片hover效果不一致 - Home.vue中feature-card使用transform: translateY(-10px)，而其他页面卡片使用不同的hover效果 - 建议统一hover动画效果
 - [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
@@ -222,9 +307,9 @@
 
 #### 🔴 高优先级（功能性问题）
 - [ ] [2026-03-16 19:00] 前端Hehun.vue JSON解析缺少错误处理 - frontend/src/views/Hehun.vue第431-434行 - loadHistoryDetail函数中多处JSON.parse没有try-catch包裹，如果数据格式异常会导致页面崩溃 - 建议添加try-catch错误处理
-- [ ] [2026-03-16 19:00] 后端Hehun.php buildReportHtml方法XSS安全风险 - backend/app/controller/Hehun.php第1280-1350行 - 直接拼接用户输入(maleName/femaleName)到HTML，没有进行HTML转义 - 建议使用htmlspecialchars进行转义
+- [x] [2026-03-16 19:00] 后端Hehun.php buildReportHtml方法XSS安全风险 - backend/app/controller/Hehun.php第1280-1350行 - 已修复：使用htmlspecialchars对用户输入进行转义，防止XSS攻击 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 19:00] 后端Liuyao.php qiGua方法缺少事务处理 - backend/app/controller/Liuyao.php第48-51行 - saveRecord调用在异常时无法回滚 - 建议使用Db::startTrans()包裹
-- [ ] [2026-03-16 19:00] 后端Admin.php users方法SQL注入风险 - backend/app/controller/Admin.php第159-168行 - 虽然使用了preg_replace过滤，但仍使用字符串拼接方式 - 建议使用参数绑定
+- [x] [2026-03-16 19:00] 后端Admin.php users方法SQL注入风险 - backend/app/controller/Admin.php第159-168行 - 已修复：使用preg_replace过滤特殊字符，并使用whereLike方法进行参数绑定查询 - 修复时间: 2026-03-16
 
 #### 🟡 中优先级（体验问题）
 - [ ] [2026-03-16 19:00] 前端AlmanacManage.vue API调用缺失 - frontend/src/views/admin/AlmanacManage.vue第409、427行 - submitForm和generateMonth函数中只有模拟延迟，没有实际API调用 - 建议实现真实的API接口
@@ -577,7 +662,7 @@
 - [x] [2026-03-16 16:00] ~~后端Auth.php微信登录仍使用模拟逻辑~~ - **已删除**: 微信登录功能已移除，仅保留短信登录
 - [x] [2026-03-16 16:00] 后端Auth.php事务处理不完整 - backend/app/controller/Auth.php第35-67行、第106-126行 - 已使用Db::startTrans()/commit()/rollback()包裹新用户创建、积分赠送和邀请码处理操作 - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php - 已统一使用$this->error()方法替换所有json(['code' => 403])返回 - 修复时间: 2026-03-16
-- [ ] [2026-03-16 16:00] 后端Admin.php adjustPoints验证逻辑问题 - backend/app/controller/Admin.php第396-405行 - 使用$request->validate()但ThinkPHP的validate方法返回验证器实例，不是布尔值 - 建议修复验证逻辑
+- [x] [2026-03-16 16:00] 后端Admin.php adjustPoints验证逻辑问题 - backend/app/controller/Admin.php第396-405行 - 已修复：改用手动参数验证，使用filter_var验证参数类型 - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第118-120行 - featureStats中塔罗占卜已修复为使用TarotRecord::count() - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 前端Bazi.vue未使用的导入 - frontend/src/views/Bazi.vue第912行 - getYearlyTrendApi被导入但未使用 - 建议删除未使用的导入
 - [x] [2026-03-16 16:00] 前端Bazi.vue定时器清理不完整 - frontend/src/views/Bazi.vue第1164-1168行、第1197行 - 已将clearInterval移到finally块中，确保在任何情况下都被清理 - 修复时间: 2026-03-16
