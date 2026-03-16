@@ -212,3 +212,45 @@
 - 后端Liuyao.php aiInterpretation方法事务处理
 
 ---
+
+## 2026-03-17 15:45 执行记录
+
+### 本次修复的5个后端问题
+
+1. **AdminAuth.php硬编码用户ID** (安全)
+   - 文件: `backend/app/controller/AdminAuth.php`
+   - 问题: JWT payload中`sub`字段硬编码为1，应该使用实际管理员ID
+   - 修复: 改为使用`'sub' => $admin['id']`，确保JWT中包含正确的管理员ID
+
+2. **Paipan.php异常信息泄露** (安全)
+   - 文件: `backend/app/controller/Paipan.php`
+   - 问题: 生产环境直接将异常消息返回给客户端，可能泄露敏感信息
+   - 修复: 添加Log::error记录详细日志，但返回通用错误消息'排盘失败，请稍后重试'给客户端
+
+3. **Tarot.php异常信息泄露** (安全)
+   - 文件: `backend/app/controller/Tarot.php`
+   - 问题: 生产环境直接将异常消息返回给客户端，可能泄露敏感信息
+   - 修复: 使用Log类记录详细日志，但返回通用错误消息'抽牌失败，请稍后重试'给客户端
+
+4. **Admin.php saveSettings未实现** (逻辑错误)
+   - 文件: `backend/app/controller/Admin.php`
+   - 问题: 方法有TODO注释，实际未实现保存逻辑但返回成功消息
+   - 修复: 实现完整的设置保存逻辑，包括配置验证、类型处理、批量更新和操作日志记录
+
+5. **AdminAuth.php返回格式不统一** (API规范)
+   - 文件: `backend/app/controller/AdminAuth.php`
+   - 问题: login和info方法混用json()和$this->success()/$this->error()，导致响应格式不一致
+   - 修复: 统一使用BaseController的success()和error()方法，确保返回格式一致
+
+### Git提交
+- 提交ID: `b04a0c8`
+- 提交信息: `fix-backend-multiple-issues-20250317-1545`
+- 已推送到: origin/master
+
+### 待修复问题
+- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
+- 后端AdminAuth中间件日志记录敏感信息过滤
+- 后端Hehun.php buildReportHtml其他字段XSS防护
+- 后端Liuyao.php aiInterpretation方法事务处理
+
+---

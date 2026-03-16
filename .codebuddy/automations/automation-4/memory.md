@@ -1,5 +1,40 @@
 # 待办处理执行器 - 执行记录
 
+## 2026-03-17 执行记录（第十八次）
+
+### 本次处理任务
+- **任务**: 修复前端Bazi.vue未使用的图标导入
+- **优先级**: 中优先级（代码质量问题）
+
+### 修复内容
+**问题**: frontend/src/views/Bazi.vue第908行导入了多个未使用的图标（Medallion、Collection、DataLine）。
+
+**修复的文件**:
+1. **frontend/src/views/Bazi.vue**
+   - 移除了未使用的图标导入：Medallion、Collection、DataLine
+   - 保留其他实际使用的图标导入
+
+**修改前**:
+```javascript
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Medallion, Collection, Money, Briefcase, UserFilled, Warning, Check, Calendar, DataLine, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
+```
+
+**修改后**:
+```javascript
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
+```
+
+### 验证结果
+- 代码清理完成，无lint错误
+- 保留的图标均在模板中有实际使用
+- 减少 bundle 体积，提升代码可维护性
+
+### 待办状态更新
+- 已将Bazi.vue未使用导入清理从"待处理项目"移到"已完成项目"
+- 更新了TODO.md文件
+
+---
+
 ## 2026-03-17 执行记录（第十七次）
 
 ### 本次处理任务

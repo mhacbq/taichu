@@ -218,7 +218,7 @@ const testimonials = ref([
   {
     name: '小雨',
     avatar: '雨',
-    avatarColor: '#e94560',
+    avatarColor: '#B8860B',
     rating: 5,
     content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到我的喜用神和适合的发展方向，突然有了方向感，现在已经在准备转行了！',
     service: '八字排盘'

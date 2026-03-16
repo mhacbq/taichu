@@ -905,7 +905,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Medallion, Collection, Money, Briefcase, UserFilled, Warning, Check, Calendar, DataLine, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 

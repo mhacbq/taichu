@@ -953,7 +953,7 @@ const getCardAdvice = (card) => {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(233, 69, 96, 0.8);
+  background: rgba(184, 134, 11, 0.8);
   color: #fff;
   font-size: 10px;
   padding: 3px 8px;

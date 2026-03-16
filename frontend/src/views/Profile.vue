@@ -691,7 +691,7 @@ onMounted(() => {
 
 :deep(.el-pagination) {
   --el-pagination-bg-color: transparent;
-  --el-pagination-hover-color: #e94560;
+  --el-pagination-hover-color: var(--primary-color, #B8860B);
   --el-pagination-button-color: rgba(255, 255, 255, 0.8);
 }
 
@@ -703,7 +703,7 @@ onMounted(() => {
 }
 
 :deep(.el-pagination .number.active) {
-  background: #e94560;
+  background: var(--primary-color, #B8860B);
   color: #fff;
 }
 
@@ -856,7 +856,7 @@ onMounted(() => {
   display: block;
   font-size: 28px;
   font-weight: bold;
-  color: #e94560;
+  color: var(--primary-color, #B8860B);
 }
 
 .stat-card .stat-label {

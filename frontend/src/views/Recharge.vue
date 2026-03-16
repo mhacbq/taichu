@@ -655,8 +655,8 @@ const getStatusText = (status) => {
 }
 
 .payment-option.active {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color, #B8860B);
+  background: rgba(184, 134, 11, 0.1);
 }
 
 .payment-option span {
