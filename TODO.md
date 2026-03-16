@@ -260,15 +260,15 @@
 - [ ] [2026-03-16 17:00] 后端Paipan.php调用未定义服务方法 - backend/app/controller/Paipan.php第70-71、74行 - 调用interpretationService和fortuneAnalysisService的方法，但这些服务类未导入或可能不存在 - 建议确认服务类存在并添加正确的use导入语句
 - [ ] [2026-03-16 17:00] 后端AiAnalysis.php流式请求缺少SSL验证 - backend/app/controller/AiAnalysis.php第355-358行 - callAiApiStream方法中cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置
 - [ ] [2026-03-16 17:00] 后端Admin.php SQL注入风险 - backend/app/controller/Admin.php第163-170行 - 用户名和手机号搜索使用字符串拼接，虽然有preg_replace过滤但仍存在风险 - 建议使用参数绑定替代字符串拼接
-- [ ] [2026-03-16 17:00] 前端Bazi.vue藏干访问缺少可选链 - frontend/src/views/Bazi.vue第275-291行 - 月柱、日柱、时柱藏干访问没有使用可选链，而年柱已使用result.bazi?.year?.canggan - 建议统一使用可选链和默认值
+- [x] [2026-03-16 17:00] 前端Bazi.vue藏干访问缺少可选链 - frontend/src/views/Bazi.vue第275-291行 - 已统一使用可选链和默认值：result.bazi?.month?.canggan || [] - 修复时间: 2026-03-16
 
 #### 🟡 中优先级（体验问题）
 - [x] [2026-03-16 17:00] 后端Admin.php API返回格式不一致 - backend/app/controller/Admin.php第129、184、224行等 - 已统一使用$this->error()和$this->success()替代json()返回 - 修复时间: 2026-03-16
 - [x] [2026-03-16 17:00] 后端Admin.php updateUserStatus缺少输入验证 - backend/app/controller/Admin.php第245行 - 已添加in_array验证确保status只能是0/1/2 - 修复时间: 2026-03-16
 - [x] [2026-03-16 17:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 已将emoji图标替换为图标库名称(star/document/diamond/heart/service/gift) - 修复时间: 2026-03-16
 - [ ] [2026-03-16 17:00] 后端AiAnalysis.php缺少输入长度限制 - backend/app/controller/AiAnalysis.php第49-51、109-111行 - baziData和customPrompt没有长度限制 - 建议添加长度验证
-- [ ] [2026-03-16 17:00] 前端App.vue未使用的图标导入 - frontend/src/App.vue第167-185行 - 导入了多个未使用的图标组件(HomeFilled、Timer、Reading等) - 建议删除未使用的导入
-- [ ] [2026-03-16 17:00] 前端Tarot.vue selectedCardIndex变量未使用 - frontend/src/views/Tarot.vue第242行 - 变量被赋值但从未使用 - 建议删除该变量
+- [x] [2026-03-16 17:00] 前端App.vue未使用的图标导入 - frontend/src/App.vue第167-185行 - 已删除未使用的图标导入(Home、Timer、Reading、Link、SunriseIcon) - 修复时间: 2026-03-16
+- [x] [2026-03-16 17:00] 前端Tarot.vue selectedCardIndex变量未使用 - frontend/src/views/Tarot.vue第242行 - 已删除该变量定义和showCardDetail函数中的赋值 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 17:00] 前端管理端页面API调用缺失 - admin/AlmanacManage.vue/KnowledgeManage.vue/SEOManage.vue - submitForm、generateMonth等函数只有模拟延迟没有实际API调用 - 建议实现真实的API接口
 
 ---
@@ -308,7 +308,7 @@
 - [ ] [2026-03-16 16:00] 后端Admin.php adjustPoints验证逻辑问题 - backend/app/controller/Admin.php第396-405行 - 使用$request->validate()但ThinkPHP的validate方法返回验证器实例，不是布尔值 - 建议修复验证逻辑
 - [x] [2026-03-16 16:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第118-120行 - featureStats中塔罗占卜已修复为使用TarotRecord::count() - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 前端Bazi.vue未使用的导入 - frontend/src/views/Bazi.vue第912行 - getYearlyTrendApi被导入但未使用 - 建议删除未使用的导入
-- [ ] [2026-03-16 16:00] 前端Bazi.vue定时器清理不完整 - frontend/src/views/Bazi.vue第1164-1168行、第1197行 - stepInterval在错误情况下可能未被清理 - 建议在try-catch-finally中确保定时器被清理
+- [x] [2026-03-16 16:00] 前端Bazi.vue定时器清理不完整 - frontend/src/views/Bazi.vue第1164-1168行、第1197行 - 已将clearInterval移到finally块中，确保在任何情况下都被清理 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 前端Tarot.vue未使用变量 - frontend/src/views/Tarot.vue第242行 - selectedCardIndex变量声明后从未读取 - 建议删除未使用的变量
 - [ ] [2026-03-16 16:00] 前端管理端页面API调用均为模拟实现 - Config.vue/AlmanacManage.vue/KnowledgeManage.vue/SEOManage.vue/SEOStats.vue/ShenshaManage.vue都是模拟数据或setTimeout模拟 - 建议实现真实的API接口调用
 - [ ] [2026-03-16 16:00] 前端管理端分页逻辑不完整 - KnowledgeManage.vue/SEOStats.vue/ShenshaManage.vue分页组件存在但数据未按分页切片或loadData为空 - 建议实现完整的分页逻辑
@@ -775,7 +775,7 @@
 - [ ] [2026-03-16] 后端Content.php输入验证不完整 - backend/app/controller/Content.php第67-76行 - savePage和importPage方法对blocks数组的验证不够完整 - 建议添加更严格的输入验证
 - [ ] [2026-03-16] 后端Content.php潜在SQL注入风险 - backend/app/controller/Content.php第363-365行 - keyword参数直接拼接到like查询中 - 建议添加preg_replace过滤特殊字符
 - [ ] [2026-03-16] 前端Bazi.vue未使用变量和函数 - frontend/src/views/Bazi.vue第950行、1068-1084行 - yearlyTrendData变量和getYearlyTrendData函数定义后从未使用 - 建议删除未使用的代码
-- [ ] [2026-03-16] 前端Tarot.vue未使用变量 - frontend/src/views/Tarot.vue第242行 - selectedCardIndex变量定义后从未读取 - 建议删除或使用该变量
+- [x] [2026-03-16] 前端Tarot.vue未使用变量 - frontend/src/views/Tarot.vue第242行 - 已删除selectedCardIndex变量定义和showCardDetail函数中的赋值 - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 前端App.vue潜在空值访问 - frontend/src/views/App.vue第221行 - 从localStorage获取userInfo后直接访问nickname属性，可能为null - 建议使用可选链user?.nickname
 - [ ] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实际调用API加载数据 - 建议实现真实的API调用和分页逻辑
 - [ ] [2026-03-16] 前端KnowledgeManage.vue搜索缺少防抖 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖处理，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
