@@ -101,28 +101,33 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CommonTable from '@/components/CommonTable/index.vue'
 
+// TODO: 后端需要实现字典管理API接口
+// GET /api/admin/system/dict-types - 获取字典类型列表
+// POST /api/admin/system/dict-types - 创建字典类型
+// PUT /api/admin/system/dict-types/:id - 更新字典类型
+// DELETE /api/admin/system/dict-types/:id - 删除字典类型
+// GET /api/admin/system/dict-data - 获取字典数据列表
+// POST /api/admin/system/dict-data - 创建字典数据
+// PUT /api/admin/system/dict-data/:id - 更新字典数据
+// DELETE /api/admin/system/dict-data/:id - 删除字典数据
+
 // 搜索关键词
 const typeSearch = ref('')
+const loading = ref(false)
 
 // 字典类型列表
-const dictTypes = ref([
-  { id: 1, name: '用户状态', code: 'user_status', description: '用户账号状态' },
-  { id: 2, name: '反馈类型', code: 'feedback_type', description: '用户反馈类型' },
-  { id: 3, name: '风险等级', code: 'risk_level', description: '风险事件等级' },
-  { id: 4, name: '积分类型', code: 'points_type', description: '积分变动类型' },
-  { id: 5, name: '任务状态', code: 'task_status', description: '定时任务状态' }
-])
+const dictTypes = ref([])
 
 // 过滤后的类型
 const filteredTypes = computed(() => {
   if (!typeSearch.value) return dictTypes.value
   const keyword = typeSearch.value.toLowerCase()
-  return dictTypes.value.filter(t => 
-    t.name.toLowerCase().includes(keyword) || 
+  return dictTypes.value.filter(t =>
+    t.name.toLowerCase().includes(keyword) ||
     t.code.toLowerCase().includes(keyword)
   )
 })
@@ -156,33 +161,95 @@ const dataDialog = reactive({
   form: { label: '', value: '', sort: 0, status: 1 }
 })
 
+// 加载字典类型列表
+const loadDictTypes = async () => {
+  loading.value = true
+  try {
+    // TODO: 调用后端API获取字典类型列表
+    // const res = await getDictTypes()
+    // if (res.code === 200) {
+    //   dictTypes.value = res.data
+    // }
+
+    // 临时使用模拟数据，等待后端接口
+    dictTypes.value = [
+      { id: 1, name: '用户状态', code: 'user_status', description: '用户账号状态' },
+      { id: 2, name: '反馈类型', code: 'feedback_type', description: '用户反馈类型' },
+      { id: 3, name: '风险等级', code: 'risk_level', description: '风险事件等级' },
+      { id: 4, name: '积分类型', code: 'points_type', description: '积分变动类型' },
+      { id: 5, name: '任务状态', code: 'task_status', description: '定时任务状态' },
+      { id: 6, name: '订单状态', code: 'order_status', description: '充值订单状态' },
+      { id: 7, name: '支付方式', code: 'payment_method', description: '支付方式类型' }
+    ]
+  } catch (error) {
+    ElMessage.error('加载字典类型失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 选择类型
 function handleTypeSelect(row) {
   selectedType.value = row
   // 加载该类型的字典数据
-  loadDictData(row.code)
+  if (row) {
+    loadDictData(row.code)
+  } else {
+    dictData.value = []
+  }
 }
 
 // 加载字典数据
-function loadDictData(typeCode) {
-  // 模拟数据
-  const mockData = {
-    user_status: [
-      { id: 1, label: '正常', value: '1', sort: 1, status: 1 },
-      { id: 2, label: '禁用', value: '0', sort: 2, status: 1 }
-    ],
-    feedback_type: [
-      { id: 3, label: '问题反馈', value: 'bug', sort: 1, status: 1 },
-      { id: 4, label: '功能建议', value: 'feature', sort: 2, status: 1 },
-      { id: 5, label: '投诉举报', value: 'complaint', sort: 3, status: 1 }
-    ],
-    risk_level: [
-      { id: 6, label: '高危', value: 'high', sort: 1, status: 1 },
-      { id: 7, label: '中危', value: 'medium', sort: 2, status: 1 },
-      { id: 8, label: '低危', value: 'low', sort: 3, status: 1 }
-    ]
+const loadDictData = async (typeCode) => {
+  try {
+    // TODO: 调用后端API获取字典数据
+    // const res = await getDictData(typeCode)
+    // if (res.code === 200) {
+    //   dictData.value = res.data
+    // }
+
+    // 临时使用模拟数据，等待后端接口
+    const mockData = {
+      user_status: [
+        { id: 1, label: '正常', value: '1', sort: 1, status: 1 },
+        { id: 2, label: '禁用', value: '0', sort: 2, status: 1 }
+      ],
+      feedback_type: [
+        { id: 3, label: '问题反馈', value: 'bug', sort: 1, status: 1 },
+        { id: 4, label: '功能建议', value: 'feature', sort: 2, status: 1 },
+        { id: 5, label: '投诉举报', value: 'complaint', sort: 3, status: 1 }
+      ],
+      risk_level: [
+        { id: 6, label: '高危', value: 'high', sort: 1, status: 1 },
+        { id: 7, label: '中危', value: 'medium', sort: 2, status: 1 },
+        { id: 8, label: '低危', value: 'low', sort: 3, status: 1 }
+      ],
+      points_type: [
+        { id: 9, label: '充值', value: 'recharge', sort: 1, status: 1 },
+        { id: 10, label: '消费', value: 'consume', sort: 2, status: 1 },
+        { id: 11, label: '赠送', value: 'gift', sort: 3, status: 1 },
+        { id: 12, label: '退款', value: 'refund', sort: 4, status: 1 }
+      ],
+      task_status: [
+        { id: 13, label: '运行中', value: 'running', sort: 1, status: 1 },
+        { id: 14, label: '已暂停', value: 'paused', sort: 2, status: 1 },
+        { id: 15, label: '已停止', value: 'stopped', sort: 3, status: 1 }
+      ],
+      order_status: [
+        { id: 16, label: '待支付', value: 'pending', sort: 1, status: 1 },
+        { id: 17, label: '已支付', value: 'paid', sort: 2, status: 1 },
+        { id: 18, label: '已取消', value: 'cancelled', sort: 3, status: 1 },
+        { id: 19, label: '已退款', value: 'refunded', sort: 4, status: 1 }
+      ],
+      payment_method: [
+        { id: 20, label: '微信支付', value: 'wechat', sort: 1, status: 1 },
+        { id: 21, label: '支付宝', value: 'alipay', sort: 2, status: 1 }
+      ]
+    }
+    dictData.value = mockData[typeCode] || []
+  } catch (error) {
+    ElMessage.error('加载字典数据失败')
   }
-  dictData.value = mockData[typeCode] || []
 }
 
 // 新增类型
@@ -193,9 +260,24 @@ function handleAddType() {
 }
 
 // 提交类型
-function submitType() {
-  typeDialog.visible = false
-  ElMessage.success('保存成功')
+async function submitType() {
+  try {
+    // TODO: 调用后端API保存字典类型
+    // const api = typeDialog.isEdit ? updateDictType : createDictType
+    // const res = await api(typeDialog.form)
+    // if (res.code === 200) {
+    //   ElMessage.success(typeDialog.isEdit ? '修改成功' : '新增成功')
+    //   typeDialog.visible = false
+    //   loadDictTypes()
+    // }
+
+    // 临时模拟保存成功，等待后端接口
+    ElMessage.success(typeDialog.isEdit ? '修改成功' : '新增成功')
+    typeDialog.visible = false
+    await loadDictTypes()
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
 
 // 新增数据
@@ -216,17 +298,58 @@ function handleEditData(row) {
 async function handleDeleteData(row) {
   try {
     await ElMessageBox.confirm('确定删除该字典数据吗？', '提示', { type: 'warning' })
+
+    // TODO: 调用后端API删除字典数据
+    // const res = await deleteDictData(row.id)
+    // if (res.code === 200) {
+    //   ElMessage.success('删除成功')
+    //   if (selectedType.value) {
+    //     loadDictData(selectedType.value.code)
+    //   }
+    // }
+
+    // 临时模拟删除成功，等待后端接口
     ElMessage.success('删除成功')
-  } catch {
-    // 取消
+    if (selectedType.value) {
+      await loadDictData(selectedType.value.code)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 
 // 提交数据
-function submitData() {
-  dataDialog.visible = false
-  ElMessage.success('保存成功')
+async function submitData() {
+  try {
+    // TODO: 调用后端API保存字典数据
+    // const api = dataDialog.isEdit ? updateDictData : createDictData
+    // const data = { ...dataDialog.form, type_code: selectedType.value?.code }
+    // const res = await api(data)
+    // if (res.code === 200) {
+    //   ElMessage.success(dataDialog.isEdit ? '修改成功' : '新增成功')
+    //   dataDialog.visible = false
+    //   if (selectedType.value) {
+    //     loadDictData(selectedType.value.code)
+    //   }
+    // }
+
+    // 临时模拟保存成功，等待后端接口
+    ElMessage.success(dataDialog.isEdit ? '修改成功' : '新增成功')
+    dataDialog.visible = false
+    if (selectedType.value) {
+      await loadDictData(selectedType.value.code)
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
+
+// 页面加载时初始化
+onMounted(() => {
+  loadDictTypes()
+})
 </script>
 
 <style lang="scss" scoped>

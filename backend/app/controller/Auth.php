@@ -73,7 +73,9 @@ class Auth extends BaseController
                 Db::commit();
             } catch (\Exception $e) {
                 Db::rollback();
-                return $this->error('用户创建失败：' . $e->getMessage());
+                // 记录错误日志，但返回通用错误消息，避免泄露敏感信息
+                Log::error('用户创建失败：' . $e->getMessage());
+                return $this->error('用户创建失败，请稍后重试');
             }
         }
         
@@ -164,7 +166,9 @@ class Auth extends BaseController
             return $this->generateTokenResponse($user, true, '注册成功');
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('注册失败：' . $e->getMessage());
+            // 记录错误日志，但返回通用错误消息，避免泄露敏感信息
+            Log::error('注册失败：' . $e->getMessage());
+            return $this->error('注册失败，请稍后重试');
         }
     }
     

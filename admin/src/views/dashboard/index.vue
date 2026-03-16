@@ -156,7 +156,7 @@ async function loadRealtimeData() {
 async function loadPendingFeedback() {
   try {
     const res = await getPendingFeedback()
-    if (res.code === 0) {
+    if (res.code === 200) {
       pendingFeedback.value = res.data || []
     }
   } catch (error) {
@@ -167,7 +167,7 @@ async function loadPendingFeedback() {
 async function loadTrendData() {
   try {
     const res = await getTrendData({ days: 7 })
-    if (res.code === 0) {
+    if (res.code === 200) {
       updateUserChart(res.data)
     }
   } catch (error) {

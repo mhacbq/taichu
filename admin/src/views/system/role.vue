@@ -91,61 +91,125 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const treeRef = ref(null)
+const loading = ref(false)
+
+// TODO: 后端需要实现角色管理API接口
+// GET /api/admin/system/roles - 获取角色列表
+// POST /api/admin/system/roles - 创建角色
+// PUT /api/admin/system/roles/:id - 更新角色
+// DELETE /api/admin/system/roles/:id - 删除角色
+// GET /api/admin/system/roles/:id/permissions - 获取角色权限
+// PUT /api/admin/system/roles/:id/permissions - 更新角色权限
+// GET /api/admin/system/permissions - 获取所有权限树
 
 // 角色列表
-const roleList = ref([
-  { id: 1, name: '超级管理员', code: 'super_admin', status: 1 },
-  { id: 2, name: '运营管理员', code: 'operation', status: 1 },
-  { id: 3, name: '客服人员', code: 'customer_service', status: 1 },
-  { id: 4, name: '审计人员', code: 'auditor', status: 0 }
-])
+const roleList = ref([])
 
 // 选中的角色
 const selectedRole = ref(null)
 
 // 权限树
-const permissionTree = ref([
-  {
-    id: 'dashboard',
-    name: '仪表盘',
-    children: [
-      { id: 'dashboard:view', name: '查看仪表盘' },
-      { id: 'dashboard:export', name: '导出报表' }
+const permissionTree = ref([])
+
+// 加载角色列表
+const loadRoleList = async () => {
+  loading.value = true
+  try {
+    // TODO: 调用后端API获取角色列表
+    // const res = await getRoleList()
+    // if (res.code === 200) {
+    //   roleList.value = res.data
+    // }
+
+    // 临时使用模拟数据，等待后端接口
+    roleList.value = [
+      { id: 1, name: '超级管理员', code: 'super_admin', status: 1 },
+      { id: 2, name: '运营管理员', code: 'operation', status: 1 },
+      { id: 3, name: '客服人员', code: 'customer_service', status: 1 },
+      { id: 4, name: '审计人员', code: 'auditor', status: 0 }
     ]
-  },
-  {
-    id: 'user',
-    name: '用户管理',
-    children: [
-      { id: 'user:view', name: '查看用户' },
-      { id: 'user:edit', name: '编辑用户' },
-      { id: 'user:disable', name: '禁用/启用用户' },
-      { id: 'user:points', name: '调整积分' }
-    ]
-  },
-  {
-    id: 'content',
-    name: '内容管理',
-    children: [
-      { id: 'content:view', name: '查看内容' },
-      { id: 'content:delete', name: '删除内容' }
-    ]
-  },
-  {
-    id: 'system',
-    name: '系统设置',
-    children: [
-      { id: 'system:settings', name: '基础配置' },
-      { id: 'system:sensitive', name: '敏感词管理' },
-      { id: 'system:admin', name: '管理员管理' },
-      { id: 'system:role', name: '角色权限管理' }
-    ]
+  } catch (error) {
+    ElMessage.error('加载角色列表失败')
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 加载权限树
+const loadPermissionTree = async () => {
+  try {
+    // TODO: 调用后端API获取权限树
+    // const res = await getPermissionTree()
+    // if (res.code === 200) {
+    //   permissionTree.value = res.data
+    // }
+
+    // 临时使用模拟数据，等待后端接口
+    permissionTree.value = [
+      {
+        id: 'dashboard',
+        name: '仪表盘',
+        children: [
+          { id: 'dashboard:view', name: '查看仪表盘' },
+          { id: 'dashboard:export', name: '导出报表' }
+        ]
+      },
+      {
+        id: 'user',
+        name: '用户管理',
+        children: [
+          { id: 'user:view', name: '查看用户' },
+          { id: 'user:edit', name: '编辑用户' },
+          { id: 'user:disable', name: '禁用/启用用户' },
+          { id: 'user:points', name: '调整积分' }
+        ]
+      },
+      {
+        id: 'order',
+        name: '订单管理',
+        children: [
+          { id: 'order:view', name: '查看订单' },
+          { id: 'order:refund', name: '订单退款' },
+          { id: 'order:complete', name: '手动补单' }
+        ]
+      },
+      {
+        id: 'content',
+        name: '内容管理',
+        children: [
+          { id: 'content:view', name: '查看内容' },
+          { id: 'content:delete', name: '删除内容' },
+          { id: 'content:daily', name: '每日运势管理' }
+        ]
+      },
+      {
+        id: 'feedback',
+        name: '反馈管理',
+        children: [
+          { id: 'feedback:view', name: '查看反馈' },
+          { id: 'feedback:reply', name: '回复反馈' }
+        ]
+      },
+      {
+        id: 'system',
+        name: '系统设置',
+        children: [
+          { id: 'system:settings', name: '基础配置' },
+          { id: 'system:sensitive', name: '敏感词管理' },
+          { id: 'system:notice', name: '系统公告' },
+          { id: 'system:admin', name: '管理员管理' },
+          { id: 'system:role', name: '角色权限管理' }
+        ]
+      }
+    ]
+  } catch (error) {
+    ElMessage.error('加载权限树失败')
+  }
+}
 
 // 已选权限
 const selectedPermissions = ref([])
@@ -169,10 +233,34 @@ const rules = {
 }
 
 // 选择角色
-function handleRoleSelect(index) {
+async function handleRoleSelect(index) {
   selectedRole.value = roleList.value.find(r => r.id.toString() === index)
-  // 加载该角色的权限
-  selectedPermissions.value = ['dashboard:view', 'user:view'] // 模拟数据
+  if (selectedRole.value) {
+    // 加载该角色的权限
+    await loadRolePermissions(selectedRole.value.id)
+  }
+}
+
+// 加载角色权限
+const loadRolePermissions = async (roleId) => {
+  try {
+    // TODO: 调用后端API获取角色权限
+    // const res = await getRolePermissions(roleId)
+    // if (res.code === 200) {
+    //   selectedPermissions.value = res.data
+    // }
+
+    // 临时使用模拟数据，等待后端接口
+    const mockPermissions = {
+      1: ['dashboard:view', 'dashboard:export', 'user:view', 'user:edit', 'user:disable', 'user:points', 'order:view', 'order:refund', 'order:complete', 'content:view', 'content:delete', 'content:daily', 'feedback:view', 'feedback:reply', 'system:settings', 'system:sensitive', 'system:notice', 'system:admin', 'system:role'],
+      2: ['dashboard:view', 'user:view', 'user:edit', 'order:view', 'content:view', 'feedback:view', 'feedback:reply'],
+      3: ['dashboard:view', 'user:view', 'feedback:view', 'feedback:reply'],
+      4: ['dashboard:view', 'user:view', 'content:view']
+    }
+    selectedPermissions.value = mockPermissions[roleId] || []
+  } catch (error) {
+    ElMessage.error('加载角色权限失败')
+  }
 }
 
 // 新增角色
@@ -183,10 +271,25 @@ function handleAddRole() {
 }
 
 // 提交角色
-function submitRole() {
-  // 保存逻辑
-  dialog.visible = false
-  ElMessage.success(dialog.isEdit ? '修改成功' : '新增成功')
+async function submitRole() {
+  try {
+    // TODO: 调用后端API保存角色
+    // const api = dialog.isEdit ? updateRole : createRole
+    // const res = await api(dialog.form)
+    // if (res.code === 200) {
+    //   ElMessage.success(dialog.isEdit ? '修改成功' : '新增成功')
+    //   dialog.visible = false
+    //   loadRoleList()
+    // }
+
+    // 临时模拟保存成功，等待后端接口
+    ElMessage.success(dialog.isEdit ? '修改成功' : '新增成功')
+    dialog.visible = false
+    // 重新加载列表
+    await loadRoleList()
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
 
 // 展开/收起全部
@@ -196,11 +299,35 @@ function handleExpandAll() {
 }
 
 // 保存权限
-function handleSavePermission() {
+async function handleSavePermission() {
+  if (!selectedRole.value) {
+    ElMessage.warning('请先选择角色')
+    return
+  }
   const checkedKeys = treeRef.value?.getCheckedKeys()
-  console.log('保存权限:', checkedKeys)
-  ElMessage.success('权限保存成功')
+  const halfCheckedKeys = treeRef.value?.getHalfCheckedKeys()
+  const allKeys = [...checkedKeys, ...halfCheckedKeys]
+
+  try {
+    // TODO: 调用后端API保存角色权限
+    // const res = await saveRolePermissions(selectedRole.value.id, allKeys)
+    // if (res.code === 200) {
+    //   ElMessage.success('权限保存成功')
+    // }
+
+    // 临时模拟保存成功，等待后端接口
+    console.log('保存权限:', allKeys)
+    ElMessage.success('权限保存成功')
+  } catch (error) {
+    ElMessage.error('保存权限失败')
+  }
 }
+
+// 页面加载时初始化
+onMounted(() => {
+  loadRoleList()
+  loadPermissionTree()
+})
 </script>
 
 <style lang="scss" scoped>

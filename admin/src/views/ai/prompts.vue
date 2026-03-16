@@ -338,7 +338,7 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getPromptList(queryForm)
-    if (res.code === 0) {
+    if (res.code === 200) {
       tableData.value = res.data.list
       total.value = res.data.total
     }
@@ -421,7 +421,7 @@ const handleDelete = async (row) => {
 const handleSetDefault = async (row) => {
   try {
     const res = await setDefaultPrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('设置成功')
       loadData()
     } else {
@@ -438,7 +438,7 @@ const handlePreview = async (row) => {
   previewLoading.value = true
   try {
     const res = await previewPrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       previewData.value = res.data
     } else {
       ElMessage.error(res.message || '预览失败')
@@ -501,7 +501,7 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     const res = await savePrompt(data)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
       loadData()

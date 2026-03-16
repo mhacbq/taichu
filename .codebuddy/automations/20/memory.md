@@ -2,6 +2,35 @@
 
 ## 执行历史
 
+### 2026-03-17 第八次执行
+- **任务**: 修复前端TODO.md中的前端相关问题
+- **状态**: 已完成
+- **修复数量**: 7个前端UI问题
+- **Git提交**: d3ea6fd - fix-frontend-pink-theme-colors-2026-03-17-batch8
+
+#### 已修复问题：
+1. **NotFound.vue粉色系配色和emoji** - 404错误码渐变从粉色改为金色，emoji图标替换为Element Plus的Magic图标
+2. **Bazi.vue粉色系配色** - 输入框hover/focus状态阴影、专业解读区域背景、特质标签、阅读卡片hover边框、日主卡片颜色、日主标签背景
+3. **Tarot.vue粉色系配色** - 积分不足链接颜色、模板项hover状态、模板项目符号、详情内容标题颜色
+4. **Recharge.vue粉色系配色** - 总金额颜色、支付金额颜色
+5. **Profile.vue粉色系配色** - 头像渐变、统计数值、八字高亮柱、塔罗小图标、方法图标背景、邀请码值颜色
+6. **Help.vue粉色系配色** - 问题图标渐变背景
+7. **HomeNew.vue粉色系配色** - 标题高亮渐变、主按钮渐变、评分填充、功能区块背景、CTA区块渐变
+
+#### 修改文件：
+- frontend/src/views/NotFound.vue
+- frontend/src/views/Bazi.vue
+- frontend/src/views/Tarot.vue
+- frontend/src/views/Recharge.vue
+- frontend/src/views/Profile.vue
+- frontend/src/views/Help.vue
+- frontend/src/views/HomeNew.vue
+
+### 主题一致性改进
+本次修复将多个页面中残留的粉色系配色（rgba(233, 69, 96)）统一替换为金色系（rgba(184, 134, 11)），与整体白色主题保持一致。
+
+---
+
 ### 2026-03-17 第七次执行
 - **任务**: 修复前端TODO.md中的前端相关问题
 - **状态**: 已完成
@@ -156,7 +185,6 @@
 - TODO.md
 
 ## 待修复问题跟踪
-- Bazi.vue粉色系配色问题（粉色阴影、粉色边框、粉色渐变）
-- Bazi.vue深色背景残留（第1873行）
-- 继续批量替换其他文件中的emoji图标
-- 页面背景色与主题冲突（需要用户确认主题方向）
+- Bazi.vue粉色系配色问题（粉色阴影、粉色边框、粉色渐变）- 已修复
+- 继续批量替换其他文件中的emoji图标 - 进行中
+- 页面背景色与主题冲突（需要用户确认主题方向）- 已统一为白色主题

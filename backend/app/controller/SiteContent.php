@@ -56,6 +56,11 @@ class SiteContent extends BaseController
         $page = $request->param('page', 'home');
         $contents = $request->param('contents', []);
         
+        // 验证page参数格式，防止路径遍历和非法字符
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
+            return $this->error('页面标识格式无效，只能包含字母、数字、下划线和横线', 400);
+        }
+        
         if (empty($contents)) {
             return $this->error('内容不能为空', 400);
         }
@@ -76,6 +81,11 @@ class SiteContent extends BaseController
     {
         $page = $request->param('page', 'home');
         $key = $request->param('key');
+        
+        // 验证page参数格式，防止路径遍历和非法字符
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
+            return $this->error('页面标识格式无效，只能包含字母、数字、下划线和横线', 400);
+        }
         
         $query = SiteContentModel::where('page', $page);
         
@@ -169,11 +179,7 @@ class SiteContent extends BaseController
     {
         $list = Testimonial::getEnabledList(10);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -246,14 +252,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -264,11 +266,7 @@ class SiteContent extends BaseController
         $category = $request->param('category');
         $list = Faq::getEnabledList($category);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -286,7 +284,7 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = Faq::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => 'FAQ不存在']);
+                    return $this->error('FAQ不存在', 404);
                 }
                 $item->save($data);
             } else {
@@ -337,14 +335,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -363,7 +357,7 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = TarotCard::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '塔罗牌不存在']);
+                    return $this->error('塔罗牌不存在', 404);
                 }
                 $item->save($data);
             } else {

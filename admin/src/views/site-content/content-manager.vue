@@ -175,7 +175,7 @@ const loadData = async () => {
       page: queryForm.page,
       key: queryForm.key
     })
-    if (res.code === 0) {
+    if (res.code === 200) {
       tableData.value = res.data
     }
   } catch (error) {

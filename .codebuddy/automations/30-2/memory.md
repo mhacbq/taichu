@@ -1,5 +1,54 @@
 # 待办处理执行器 - 执行历史
 
+## 2026-03-17 执行记录（第10次）
+
+### 本次修复任务（5个问题）
+
+#### 1. 后端Config.php响应格式不统一修复
+- **文件**: backend/app/controller/Config.php第22-26行、第36-40行
+- **问题**: 使用`json(['code' => 0])`返回，与其他控制器使用`$this->success()`不一致
+- **修复**: 将`json(['code' => 0, ...])`改为`$this->success($data)`，统一返回code=200
+- **验证**: 代码语法检查通过
+
+#### 2. 后端Admin.php管理员信息获取错误修复
+- **文件**: backend/app/controller/Admin.php第42-44行
+- **问题**: 使用`$this->request->user`获取用户信息，但后台管理应使用`$this->request->adminUser`
+- **修复**: 修改为`$adminUser = $this->request->adminUser ?? []`
+- **验证**: 代码语法检查通过
+
+#### 3. 后端Upload.php文件扩展名验证风险修复
+- **文件**: backend/app/controller/Upload.php第413行
+- **问题**: 使用`getOriginalExtension()`获取客户端提供的扩展名，存在安全风险
+- **修复**: 将`getOriginalExtension()`改为`getExtension()`，获取真实扩展名防止客户端伪造
+- **验证**: 代码语法检查通过
+
+#### 4. 后端Auth.php异常信息泄露修复
+- **文件**: backend/app/controller/Auth.php第76行、第169行
+- **问题**: 用户创建/注册失败时直接返回`$e->getMessage()`，可能泄露敏感信息
+- **修复**: 添加`Log::error()`记录详细错误日志，返回通用错误消息给用户
+- **验证**: 代码语法检查通过
+
+#### 5. 管理端Dashboard响应码判断混乱修复
+- **文件**: admin/src/views/dashboard/index.vue第159行、第170行
+- **问题**: 使用`res.code === 0`判断，但request.js拦截器期望`code=200`
+- **修复**: 统一修改为`res.code === 200`
+- **验证**: 代码语法检查通过
+
+### 修复验证
+- Config.php语法检查通过
+- Admin.php语法检查通过
+- Upload.php语法检查通过
+- Auth.php语法检查通过
+- dashboard/index.vue语法检查通过
+- TODO.md已更新，所有修复项已标记为完成
+
+### 状态
+- 完成5个修复任务
+- 修改了5个文件
+- 下次执行将继续处理剩余高优先级问题
+
+---
+
 ## 2026-03-17 执行记录（第9次）
 
 ### 本次修复任务（5个问题）

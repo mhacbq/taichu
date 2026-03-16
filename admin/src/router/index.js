@@ -198,19 +198,19 @@ export const asyncRoutes = [
     path: '/sms',
     component: () => import('@/layout/index.vue'),
     redirect: '/sms/config',
-    meta: { title: '短信管理', icon: 'Message' },
+    meta: { title: '短信管理', icon: 'Message', roles: ['admin'] },
     children: [
       {
         path: 'config',
         name: 'SmsConfig',
         component: () => import('@/views/sms/config.vue'),
-        meta: { title: '短信配置' }
+        meta: { title: '短信配置', roles: ['admin'] }
       },
       {
         path: 'records',
         name: 'SmsRecords',
         component: () => import('@/views/sms/records.vue'),
-        meta: { title: '发送记录' }
+        meta: { title: '发送记录', roles: ['admin', 'operator'] }
       }
     ]
   },
@@ -238,25 +238,25 @@ export const asyncRoutes = [
     path: '/anticheat',
     component: () => import('@/layout/index.vue'),
     redirect: '/anticheat/events',
-    meta: { title: '反作弊系统', icon: 'WarningFilled' },
+    meta: { title: '反作弊系统', icon: 'WarningFilled', roles: ['admin'] },
     children: [
       {
         path: 'events',
         name: 'RiskEvents',
         component: () => import('@/views/anticheat/events.vue'),
-        meta: { title: '风险事件' }
+        meta: { title: '风险事件', roles: ['admin'] }
       },
       {
         path: 'rules',
         name: 'RiskRules',
         component: () => import('@/views/anticheat/rules.vue'),
-        meta: { title: '风险规则' }
+        meta: { title: '风险规则', roles: ['admin'] }
       },
       {
         path: 'devices',
         name: 'DeviceFingerprint',
         component: () => import('@/views/anticheat/devices.vue'),
-        meta: { title: '设备指纹' }
+        meta: { title: '设备指纹', roles: ['admin'] }
       }
     ]
   },
@@ -264,19 +264,19 @@ export const asyncRoutes = [
     path: '/ai',
     component: () => import('@/layout/index.vue'),
     redirect: '/ai/prompts',
-    meta: { title: 'AI管理', icon: 'Cpu' },
+    meta: { title: 'AI管理', icon: 'Cpu', roles: ['admin'] },
     children: [
       {
         path: 'prompts',
         name: 'AiPrompts',
         component: () => import('@/views/ai/prompts.vue'),
-        meta: { title: '提示词管理' }
+        meta: { title: '提示词管理', roles: ['admin'] }
       },
       {
         path: 'config',
         name: 'AiConfig',
         component: () => import('@/views/system/settings.vue'),
-        meta: { title: 'AI配置' }
+        meta: { title: 'AI配置', roles: ['admin'] }
       }
     ]
   },
