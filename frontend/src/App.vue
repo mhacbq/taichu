@@ -3,7 +3,7 @@
     <nav class="navbar">
       <div class="container nav-container">
         <router-link to="/" class="logo">
-          <span class="logo-icon">☯</span>
+          <el-icon class="logo-icon" :size="26"><YinYang /></el-icon>
           <span>太初命理</span>
         </router-link>
         
@@ -84,7 +84,7 @@
             <div class="mobile-user-info">
               <span class="mobile-avatar">{{ userNickname?.[0] || '用' }}</span>
               <span class="mobile-nickname">{{ userNickname || '用户' }}</span>
-              <span class="mobile-points">💎 {{ userPoints }}</span>
+              <span class="mobile-points"><el-icon :size="14"><Diamond /></el-icon> {{ userPoints }}</span>
             </div>
             <a href="#" class="mobile-logout-btn" @click.prevent="handleLogout">
               <el-icon :size="16"><SwitchButton /></el-icon> 退出登录
@@ -108,7 +108,7 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <span class="footer-logo">☯ 太初命理</span>
+            <span class="footer-logo"><el-icon :size="24"><YinYang /></el-icon> 太初命理</span>
             <p class="footer-tagline">传承千年智慧，指引人生方向</p>
           </div>
           <div class="footer-quote">
@@ -176,7 +176,8 @@ import {
   Close,
   Present,
   Collection,
-  Sunrise
+  Sunrise,
+  Link
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

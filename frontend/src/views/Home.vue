@@ -7,7 +7,11 @@
         <!-- 暖心问候语 - 已登录 -->
         <div v-if="isLoggedIn" class="warm-greeting">
           <div class="greeting-content">
-            <span class="greeting-icon">{{ greetingIcon }}</span>
+            <span class="greeting-icon">
+              <el-icon v-if="greetingIcon === 'morning'" :size="32"><Sunrise /></el-icon>
+              <el-icon v-else-if="greetingIcon === 'afternoon'" :size="32"><Sunny /></el-icon>
+              <el-icon v-else :size="32"><Moon /></el-icon>
+            </span>
             <div class="greeting-text">
               <h3>{{ greetingText }}</h3>
               <p class="daily-quote">{{ dailyQuote }}</p>
@@ -18,7 +22,7 @@
         <!-- 用户积分卡片 - 已登录 -->
         <div v-if="isLoggedIn" class="user-points-card">
           <div class="points-display">
-            <span class="points-icon">💎</span>
+            <el-icon class="points-icon" :size="32"><Diamond /></el-icon>
             <div class="points-info">
               <span class="points-label">我的积分</span>
               <span class="points-value">{{ userPoints }}</span>
@@ -33,7 +37,7 @@
         <!-- 未登录引导卡片 -->
         <div v-else class="guest-welcome-card">
           <div class="welcome-content">
-            <span class="welcome-icon">🌸</span>
+            <el-icon class="welcome-icon" :size="40"><Cherry /></el-icon>
             <div class="welcome-text">
               <h3>嗨，你好呀</h3>
               <p>迷茫的时候，来这里找找答案吧</p>
@@ -44,9 +48,9 @@
             <router-link to="/login" class="welcome-btn secondary">注册领100积分</router-link>
           </div>
           <div class="welcome-features">
-            <span class="feature-tag">🎁 新用户送100积分</span>
-            <span class="feature-tag">✨ 首次排盘免费</span>
-            <span class="feature-tag">🔮 八字塔罗每日运势</span>
+            <span class="feature-tag"><el-icon><Present /></el-icon> 新用户送100积分</span>
+            <span class="feature-tag"><el-icon><Star /></el-icon> 首次排盘免费</span>
+            <span class="feature-tag"><el-icon><MagicStick /></el-icon> 八字塔罗每日运势</span>
           </div>
         </div>
         
@@ -55,16 +59,16 @@
           <p class="hero-subtitle">不是预测命运，而是帮你更懂自己<br>八字、塔罗、运势，为你的困惑寻找答案</p>
           <div class="hero-actions">
             <router-link to="/bazi" class="btn-primary">
-              <span class="btn-icon">📅</span>
+              <el-icon class="btn-icon"><Calendar /></el-icon>
               开始排盘
               <span class="btn-badge">首测免费</span>
             </router-link>
             <router-link to="/tarot" class="btn-secondary">
-              <span class="btn-icon">🎴</span>
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
               塔罗占卜
             </router-link>
           </div>
-          <p class="hero-hint">💡 已有 {{ userCount }}+ 用户在这里找到答案</p>
+          <p class="hero-hint"><el-icon><Star /></el-icon> 已有 {{ userCount }}+ 用户在这里找到答案</p>
         </div>
       </div>
     </section>
@@ -75,37 +79,37 @@
         <h2 class="section-title">我们的服务</h2>
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">☯</div>
+            <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
             <h3>八字分析</h3>
             <p>基于传统文化的性格分析，了解您的个性特点、发展方向、人际关系</p>
             <router-link to="/bazi" class="feature-link">立即体验 →</router-link>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🎴</div>
+            <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
             <h3>塔罗测试</h3>
             <p>趣味塔罗牌阵探索，为您的困惑提供思考角度，发现内心可能</p>
             <router-link to="/tarot" class="feature-link">立即体验 →</router-link>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">☯</div>
+            <div class="feature-icon"><el-icon :size="48"><Switch /></el-icon></div>
             <h3>六爻占卜</h3>
             <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
             <router-link to="/liuyao" class="feature-link">立即体验 →</router-link>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">💕</div>
+            <div class="feature-icon"><el-icon :size="48"><Link /></el-icon></div>
             <h3>八字合婚</h3>
             <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
             <router-link to="/hehun" class="feature-link">立即体验 →</router-link>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🌟</div>
+            <div class="feature-icon"><el-icon :size="48"><Star /></el-icon></div>
             <h3>每日指南</h3>
             <p>基于出生日期的每日幸运指数，生活参考，娱乐消遣</p>
             <router-link to="/daily" class="feature-link">立即体验 →</router-link>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🎯</div>
+            <div class="feature-icon"><el-icon :size="48"><Aim /></el-icon></div>
             <h3>更多功能</h3>
             <p>取名建议、吉日查询等更多命理功能，满足您的不同需求</p>
             <router-link to="/profile" class="feature-link">探索更多 →</router-link>
@@ -121,7 +125,7 @@
         <div class="testimonials-grid">
           <div class="testimonial-card" v-for="(item, index) in testimonials" :key="index">
             <div class="testimonial-header">
-              <div class="testimonial-avatar">{{ item.avatar }}</div>
+              <div class="testimonial-avatar" :style="{ backgroundColor: item.avatarColor }">{{ item.avatar }}</div>
               <div class="testimonial-info">
                 <h4>{{ item.name }}</h4>
                 <div class="testimonial-rating">
@@ -168,6 +172,7 @@
 import { ref, onMounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
+import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, User, UserFilled, Present, Switch, Link } from '@element-plus/icons-vue'
 
 const stats = ref([
   { number: '加载中...', label: '服务用户' },
@@ -182,9 +187,9 @@ const userCount = ref(12000)
 // 问候语数据
 const hour = new Date().getHours()
 const greetingIcon = computed(() => {
-  if (hour < 12) return '🌅'
-  if (hour < 18) return '☀️'
-  return '🌙'
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
 })
 
 const greetingText = computed(() => {
@@ -212,42 +217,48 @@ const dailyQuote = computed(() => {
 const testimonials = ref([
   {
     name: '小雨',
-    avatar: '👩',
+    avatar: '雨',
+    avatarColor: '#e94560',
     rating: 5,
     content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到我的喜用神和适合的发展方向，突然有了方向感，现在已经在准备转行了！',
     service: '八字排盘'
   },
   {
     name: '阿杰',
-    avatar: '👨',
+    avatar: '杰',
+    avatarColor: '#409eff',
     rating: 5,
     content: '感情遇到瓶颈期，塔罗给了我很大的启发。不是告诉我该怎么做，而是帮我理清了自己真正想要的是什么。现在已经和女友和好了。',
     service: '塔罗占卜'
   },
   {
     name: '小陈',
-    avatar: '👦',
+    avatar: '陈',
+    avatarColor: '#67c23a',
     rating: 5,
     content: '工作压力很大的时候，每天早上的运势推送成了我的精神支柱。有时候看到"今天适合休息"就会给自己放个假，感觉被理解了。',
     service: '每日运势'
   },
   {
     name: '琳琳',
-    avatar: '👩‍💼',
+    avatar: '琳',
+    avatarColor: '#e6a23c',
     rating: 5,
     content: '作为INFJ，常常陷入自我怀疑。八字分析让我更接纳自己的性格特点，原来我生来就是这样，不是我有问题。',
     service: '八字排盘'
   },
   {
     name: '大鹏',
-    avatar: '👨‍💻',
+    avatar: '鹏',
+    avatarColor: '#909399',
     rating: 5,
     content: '一直纠结要不要跳槽，塔罗占卜给了我很中肯的建议。现在的新工作虽然累但是很开心，很感谢当时的指引。',
     service: '塔罗占卜'
   },
   {
     name: '思思',
-    avatar: '👩‍🎨',
+    avatar: '思',
+    avatarColor: '#b882f0',
     rating: 5,
     content: '第一次用的时候还半信半疑，但结果真的挺准的。尤其是大运分析，让我知道未来几年需要注意什么，心里有底多了。',
     service: '八字排盘'
@@ -341,14 +352,14 @@ onMounted(() => {
 }
 
 .greeting-text h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 18px;
   margin-bottom: 5px;
   font-weight: 500;
 }
 
 .daily-quote {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 14px;
   font-style: italic;
 }
@@ -385,13 +396,13 @@ onMounted(() => {
 
 .points-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .points-value {
   font-size: 28px;
   font-weight: bold;
-  color: #ffd700;
+  color: var(--primary-color);
 }
 
 .points-actions {
@@ -415,9 +426,9 @@ onMounted(() => {
 }
 
 .points-btn:not(.checkin) {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .points-btn:hover {
@@ -453,13 +464,13 @@ onMounted(() => {
 }
 
 .welcome-text h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 22px;
   margin-bottom: 5px;
 }
 
 .welcome-text p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -484,9 +495,9 @@ onMounted(() => {
 }
 
 .welcome-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .welcome-btn:hover {
@@ -502,18 +513,21 @@ onMounted(() => {
 }
 
 .feature-tag {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
   padding: 6px 12px;
   border-radius: 15px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .hero-title {
   font-size: 56px;
   font-weight: bold;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #fff 0%, #e94560 50%, #ffd700 100%);
+  background: linear-gradient(135deg, var(--text-primary) 0%, #e94560 50%, #ff6b6b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -521,7 +535,7 @@ onMounted(() => {
 
 .hero-subtitle {
   font-size: 20px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 40px;
   max-width: 600px;
   margin-left: auto;
@@ -536,10 +550,10 @@ onMounted(() => {
 
 .btn-secondary {
   background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--border-color);
   padding: 12px 32px;
   border-radius: 25px;
-  color: white;
+  color: var(--text-primary);
   font-size: 16px;
   cursor: pointer;
   text-decoration: none;
@@ -550,8 +564,8 @@ onMounted(() => {
 }
 
 .btn-secondary:hover {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color);
+  background: rgba(233, 69, 96, 0.05);
 }
 
 .btn-icon {
@@ -568,9 +582,12 @@ onMounted(() => {
 }
 
 .hero-hint {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .features {
@@ -584,19 +601,21 @@ onMounted(() => {
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 40px 30px;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
 }
 
 .feature-card:hover {
   transform: translateY(-10px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
   border-color: rgba(233, 69, 96, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .feature-icon {
@@ -607,11 +626,11 @@ onMounted(() => {
 .feature-card h3 {
   font-size: 24px;
   margin-bottom: 15px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .feature-card p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 20px;
 }
@@ -629,7 +648,7 @@ onMounted(() => {
 
 .about {
   padding: 80px 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
 }
 
 .about-content {
@@ -640,7 +659,7 @@ onMounted(() => {
 }
 
 .about-text p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   line-height: 1.8;
   margin-bottom: 20px;
 }
@@ -650,7 +669,7 @@ onMounted(() => {
 }
 
 .about-list li {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   padding: 10px 0;
   padding-left: 25px;
   position: relative;
@@ -673,8 +692,10 @@ onMounted(() => {
 .stat-item {
   text-align: center;
   padding: 30px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 15px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-number {
@@ -689,14 +710,14 @@ onMounted(() => {
 }
 
 .stat-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 /* 用户评价区域 */
 .testimonials {
   padding: 80px 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
 }
 
 .testimonials .section-title {
@@ -711,17 +732,19 @@ onMounted(() => {
 }
 
 .testimonial-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 20px;
   padding: 25px;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .testimonial-card:hover {
   transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
   border-color: rgba(233, 69, 96, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .testimonial-header {
@@ -734,16 +757,17 @@ onMounted(() => {
 .testimonial-avatar {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 20px;
+  color: white;
+  font-weight: 500;
 }
 
 .testimonial-info h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   margin-bottom: 5px;
 }
@@ -754,7 +778,7 @@ onMounted(() => {
 }
 
 .testimonial-rating .star {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--border-color);
   font-size: 14px;
 }
 
@@ -763,7 +787,7 @@ onMounted(() => {
 }
 
 .testimonial-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.7;
   font-size: 14px;
   margin-bottom: 15px;
@@ -775,8 +799,8 @@ onMounted(() => {
 }
 
 .service-tag {
-  background: rgba(233, 69, 96, 0.2);
-  color: #e94560;
+  background: rgba(233, 69, 96, 0.1);
+  color: var(--primary-color);
   padding: 4px 12px;
   border-radius: 15px;
   font-size: 12px;

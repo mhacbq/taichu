@@ -21,7 +21,9 @@
               class="login-input"
               maxlength="11"
             >
-              <template #prefix>📱</template>
+              <template #prefix>
+                <el-icon><Phone /></el-icon>
+              </template>
             </el-input>
             <div class="code-input-row">
               <el-input
@@ -31,7 +33,9 @@
                 class="login-input code-input"
                 maxlength="6"
               >
-                <template #prefix>🔐</template>
+                <template #prefix>
+                  <el-icon><Lock /></el-icon>
+                </template>
               </el-input>
               <el-button 
                 size="large" 
@@ -56,8 +60,8 @@
         </div>
 
         <div class="login-tips">
-          <p>💡 登录后可获得 100 积分新手礼包</p>
-          <p>🔒 我们严格保护您的隐私信息</p>
+          <p><el-icon><Lightbulb /></el-icon> 登录后可获得 100 积分新手礼包</p>
+          <p><el-icon><LockIcon /></el-icon> 我们严格保护您的隐私信息</p>
           <p class="agreement-tip">
             登录即表示同意
             <el-link type="primary" :underline="false" @click="showAgreement">用户协议</el-link>
@@ -74,6 +78,7 @@
 import { ref, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Phone, Lock, Lightbulb, Lock as LockIcon } from '@element-plus/icons-vue'
 import { phoneLogin, sendSmsCode } from '../api'
 import { validatePhone } from '../utils/validators'
 
