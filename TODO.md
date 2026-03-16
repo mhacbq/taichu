@@ -95,7 +95,7 @@
 - [ ] [2026-03-17 20:00] **后端异常信息泄露** - Paipan.php第215-218行、Tarot.php第129-135行 - 生产环境直接将异常消息返回给客户端，可能泄露敏感信息 - 建议记录日志后返回通用错误消息
 
 #### 🟡 中优先级（体验/代码质量问题）
-- [ ] [2026-03-17 20:00] **前端Bazi.vue定时器清理不完整** - frontend/src/views/Bazi.vue第1164-1168行、第1295-1301行 - `stepInterval`和`aiLoadingTimer`在组件卸载时未被清理，可能导致内存泄漏 - 建议添加`onUnmounted`钩子清理定时器
+- [x] [2026-03-17 20:00] **前端Bazi.vue定时器清理不完整** - frontend/src/views/Bazi.vue第1164-1168行、第1295-1301行 - **已修复**：添加`onUnmounted`钩子清理`aiLoadingTimer`定时器，防止内存泄漏 - 修复时间: 2026-03-17
 - [ ] [2026-03-17 20:00] **前端未使用的导入清理** - Bazi.vue第908行、Tarot.vue第186行、Liuyao.vue第161行、Hehun.vue第256行、Daily.vue第176行、App.vue第167-180行 - 多个文件存在未使用的图标导入 - 建议清理未使用的导入
 - [ ] [2026-03-17 20:00] **后端Admin.php saveSettings未实现** - backend/app/controller/Admin.php第697-720行 - 方法有TODO注释，实际未实现保存逻辑但返回成功消息 - 建议实现实际的设置保存逻辑或移除该方法
 - [ ] [2026-03-17 20:00] **后端API返回格式不一致** - AdminAuth.php第62-69行、第80行、第99行 - 混用`json()`和`$this->success()/$this->error()`，导致响应格式不一致 - 建议统一使用BaseController的方法
@@ -145,8 +145,8 @@
 ### 本次检查发现的问题
 
 #### 🔴 高优先级（运营阻塞问题）
-- [ ] **[运营] Dashboard页面响应码判断错误** - admin/src/views/dashboard/index.vue第131、148、159、170、181行 - 使用`res.code === 0`判断，但request.js拦截器期望`code=200`，导致数据无法正确加载 - **需要修改为`res.code === 200`**
-- [ ] **[运营] 系统设置页面响应码判断错误** - admin/src/views/system/settings.vue第199、245行 - 使用`res.code === 0`判断，与request.js拦截器不一致 - **需要修改为`res.code === 200`**
+- [x] **[运营] Dashboard页面响应码判断错误** - admin/src/views/dashboard/index.vue第131、148、159、170、181行 - **已修复**：将所有`res.code === 0`改为`res.code === 200`，与request.js拦截器保持一致 - 修复时间: 2026-03-17
+- [x] **[运营] 系统设置页面响应码判断错误** - admin/src/views/system/settings.vue第199、245行 - **已修复**：将所有`res.code === 0`改为`res.code === 200`，与request.js拦截器保持一致 - 修复时间: 2026-03-17
 - [ ] **[运营] 后台管理页面响应码判断混乱** - admin/src/views/下8个页面使用`res.code === 0`，3个页面使用`res.code === 200`，与request.js拦截器期望的`code=200`不一致 - **建议统一修改为`res.code === 200`**
 - [ ] **[运营] Dashboard实时数据接口缺失** - admin/src/api/dashboard.js调用/dashboard/realtime，后端Admin.php未实现realtime方法 - 实时数据区域无法加载
 - [ ] **[运营] Dashboard待处理反馈接口缺失** - admin/src/api/dashboard.js调用/dashboard/pending-feedback，后端Admin.php未实现pendingFeedback方法 - 待处理反馈区域无法加载
