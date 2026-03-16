@@ -600,11 +600,11 @@ onMounted(() => {
 
 .form-group input:focus {
   outline: none;
-  border-color: #e94560;
+  border-color: var(--primary-color, #B8860B);
 }
 
 .required {
-  color: #e94560;
+  color: var(--primary-color, #B8860B);
 }
 
 .options-section {
@@ -622,13 +622,13 @@ onMounted(() => {
 .option-item input {
   width: 18px;
   height: 18px;
-  accent-color: #e94560;
+  accent-color: var(--primary-color, #B8860B);
 }
 
 .pricing-info {
   text-align: center;
   padding: 16px;
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.1);
   border-radius: 12px;
   margin: 20px 0;
 }
@@ -648,7 +648,7 @@ onMounted(() => {
 }
 
 .discount {
-  background: #e94560;
+  background: var(--primary-color, #B8860B);
   color: #fff;
   padding: 4px 10px;
   border-radius: 20px;
@@ -664,7 +664,7 @@ onMounted(() => {
 .btn-submit {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -685,7 +685,7 @@ onMounted(() => {
 
 .btn-submit:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
 }
 
 .loading {
@@ -722,7 +722,7 @@ onMounted(() => {
 }
 
 .result-card.premium {
-  border-color: rgba(233, 69, 96, 0.3);
+  border-color: rgba(184, 134, 11, 0.3);
 }
 
 .result-header {
@@ -837,7 +837,7 @@ onMounted(() => {
 }
 
 .day-master {
-  color: #e94560;
+  color: var(--primary-color, #B8860B);
   font-size: 13px;
 }
 
@@ -869,9 +869,9 @@ onMounted(() => {
 .upgrade-prompt {
   text-align: center;
   padding: 24px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
   border-radius: 16px;
-  border: 1px dashed rgba(233, 69, 96, 0.3);
+  border: 1px dashed rgba(184, 134, 11, 0.3);
 }
 
 .upgrade-prompt p {
@@ -881,7 +881,7 @@ onMounted(() => {
 
 .btn-upgrade {
   padding: 14px 32px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   color: #fff;
   border: none;
   border-radius: 30px;
@@ -896,7 +896,7 @@ onMounted(() => {
 
 .btn-upgrade:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
 }
 
 .points-tag {
@@ -964,7 +964,7 @@ onMounted(() => {
 
 .dim-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ffd700);
+  background: linear-gradient(90deg, #B8860B, #D4AF37);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
@@ -1041,7 +1041,7 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   color: #fff;
 }
 

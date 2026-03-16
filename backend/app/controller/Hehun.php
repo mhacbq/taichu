@@ -8,6 +8,7 @@ use app\model\HehunRecord;
 use app\model\PointsRecord;
 use app\model\User;
 use app\service\AiService;
+use app\service\BaziCalculationService;
 use app\service\CacheService;
 use app\service\ConfigService;
 use think\facade\Db;
@@ -37,6 +38,17 @@ class Hehun extends BaseController
     const TIER_VIP = 'vip';
     
     protected $middleware = [\app\middleware\Auth::class];
+    
+    /**
+     * @var BaziCalculationService
+     */
+    protected $baziCalculationService;
+    
+    public function __construct()
+    {
+        parent::__construct();
+        $this->baziCalculationService = new BaziCalculationService();
+    }
     
     /**
      * 天干五行
@@ -267,9 +279,9 @@ class Hehun extends BaseController
         $useAi = $data['useAi'] ?? true;
         
         // 计算双方八字（免费层也需要）
-        $paipanController = new Paipan();
-        $maleBazi = $paipanController->calculateBazi($data['maleBirthDate']);
-        $femaleBazi = $paipanController->calculateBazi($data['femaleBirthDate']);
+        // 使用BaziCalculationService服务类，避免直接实例化控制器
+        $maleBazi = $this->baziCalculationService->calculateBazi($data['maleBirthDate']);
+        $femaleBazi = $this->baziCalculationService->calculateBazi($data['femaleBirthDate']);
         
         // 执行完整合婚分析
         $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName);

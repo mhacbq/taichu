@@ -457,8 +457,8 @@ onMounted(() => {
 /* 个性化运势样式 */
 .personalized-fortune {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 .personalized-fortune h2 {
@@ -646,8 +646,8 @@ onMounted(() => {
 }
 
 .lucky-tag.color {
-  background: rgba(233, 69, 96, 0.2);
-  color: #ff6b6b;
+  background: rgba(184, 134, 11, 0.2);
+  color: #B8860B;
 }
 
 .lucky-tag.direction {

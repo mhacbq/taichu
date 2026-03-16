@@ -453,7 +453,7 @@ onMounted(() => {
 .btn-submit {
   width: 100%;
   padding: 18px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -753,13 +753,13 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   color: #fff;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
 }
 
 .btn-secondary {

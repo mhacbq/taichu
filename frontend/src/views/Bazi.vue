@@ -350,7 +350,7 @@
           <!-- 喜用神分析 -->
           <div class="yongshen-section" v-if="result.fullInterpretation.yongshen">
             <div class="ys-header">
-              <span class="ys-icon">✨</span>
+              <el-icon class="ys-icon"><StarFilled /></el-icon>
               <div class="ys-info">
                 <h4>喜用神：{{ result.fullInterpretation.yongshen.shen }}、{{ result.fullInterpretation.yongshen.xi }}</h4>
                 <span class="ys-type">{{ result.fullInterpretation.yongshen.type }}格</span>
@@ -387,7 +387,7 @@
             
             <div class="reading-card" v-if="result.fullInterpretation.relationship">
               <div class="rc-header">
-                <span class="rc-icon">💕</span>
+                <el-icon class="rc-icon"><UserFilled /></el-icon>
                 <h4>感情婚姻</h4>
               </div>
               <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
@@ -403,7 +403,7 @@
             
             <div class="reading-card advice-card" v-if="result.fullInterpretation.advice">
               <div class="rc-header">
-                <span class="rc-icon">🌟</span>
+                <el-icon class="rc-icon"><Lightbulb /></el-icon>
                 <h4>开运建议</h4>
               </div>
               <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
@@ -414,7 +414,7 @@
         <!-- 通俗解读：这对我意味着什么 -->
         <div class="simple-interpretation" v-if="result.simpleInterpretation && !result.fullInterpretation">
           <h3>
-            <span class="section-icon">💡</span>
+            <el-icon class="section-icon"><Lightbulb /></el-icon>
             这对我意味着什么？
             <span class="section-subtitle">通俗解读</span>
           </h3>
@@ -435,14 +435,14 @@
             </div>
             <div class="interp-card relationship">
               <div class="interp-header">
-                <span class="interp-icon">💕</span>
+                <el-icon class="interp-icon"><UserFilled /></el-icon>
                 <h4>人际关系建议</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
             </div>
             <div class="interp-card advice">
               <div class="interp-header">
-                <span class="interp-icon">🌟</span>
+                <el-icon class="interp-icon"><StarFilled /></el-icon>
                 <h4>给你的建议</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
@@ -555,37 +555,37 @@
             
             <div class="yearly-analysis">
               <div class="analysis-card overall">
-                <h4>🎯 整体运势</h4>
+                <h4><el-icon><Aim /></el-icon> 整体运势</h4>
                 <p>{{ yearlyFortuneResult.overall }}</p>
               </div>
               
               <div class="analysis-grid">
                 <div class="analysis-card">
-                  <h4>💼 事业运势</h4>
+                  <h4><el-icon><Briefcase /></el-icon> 事业运势</h4>
                   <p>{{ yearlyFortuneResult.career }}</p>
                 </div>
                 <div class="analysis-card">
-                  <h4>💰 财富运势</h4>
+                  <h4><el-icon><Money /></el-icon> 财富运势</h4>
                   <p>{{ yearlyFortuneResult.wealth }}</p>
                 </div>
                 <div class="analysis-card">
-                  <h4>💕 感情运势</h4>
+                  <h4><el-icon><UserFilled /></el-icon> 感情运势</h4>
                   <p>{{ yearlyFortuneResult.relationship }}</p>
                 </div>
                 <div class="analysis-card">
-                  <h4>🏃 健康提醒</h4>
+                  <h4><el-icon><Warning /></el-icon> 健康提醒</h4>
                   <p>{{ yearlyFortuneResult.health }}</p>
                 </div>
               </div>
               
               <div class="analysis-card advice">
-                <h4>🌟 开运建议</h4>
+                <h4><el-icon><Lightbulb /></el-icon> 开运建议</h4>
                 <p>{{ yearlyFortuneResult.advice }}</p>
               </div>
               
               <div class="lucky-info">
                 <div class="lucky-section">
-                  <h5>✨ 幸运月份</h5>
+                  <h5><el-icon><StarFilled /></el-icon> 幸运月份</h5>
                   <div class="lucky-tags">
                     <span v-for="month in yearlyFortuneResult.lucky_months" :key="month" class="lucky-tag good">
                       {{ month }}月
@@ -593,7 +593,7 @@
                   </div>
                 </div>
                 <div class="lucky-section">
-                  <h5>⚠️ 注意月份</h5>
+                  <h5><el-icon><Warning /></el-icon> 注意月份</h5>
                   <div class="lucky-tags">
                     <span v-for="month in yearlyFortuneResult.unlucky_months" :key="month" class="lucky-tag bad">
                       {{ month }}月
@@ -630,7 +630,7 @@
               :disabled="currentPoints < fortunePointsCost.yearly_fortune"
               @click="showPointsConfirm('yearly')"
             >
-              <span class="btn-icon">✨</span>
+              <el-icon class="btn-icon"><StarFilled /></el-icon>
               {{ currentPoints < fortunePointsCost.yearly_fortune ? '积分不足' : '开始流年分析' }}
             </el-button>
           </div>
@@ -639,7 +639,7 @@
         <!-- 大运运势分析 -->
         <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
           <h3>
-            <span class="section-icon">🎯</span>
+            <el-icon class="section-icon"><Aim /></el-icon>
             大运运势评分
             <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_analysis }}积分</el-tag>
           </h3>
@@ -905,7 +905,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning } from '@element-plus/icons-vue'
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Medallion, Collection, Money, Briefcase, UserFilled, Warning } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -1902,8 +1902,8 @@ const formatAiContent = (content) => {
 }
 
 .paipan-cell.highlight {
-  color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  color: var(--primary-color, #B8860B);
+  background: rgba(184, 134, 11, 0.1);
   border-radius: 10px;
 }
 

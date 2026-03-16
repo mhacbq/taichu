@@ -1,7 +1,54 @@
 # 太初命理网站 - 待办修复列表
 
-> 自动生成时间: 2026-03-16
+> 自动生成时间: 2026-03-17
 > 本文件由自动化检查任务维护
+
+---
+
+## 🎨 UI设计检查报告 - 2026-03-17 第二十三轮
+
+### 检查概览
+- **检查时间**: 2026-03-17
+- **检查人员**: 资深产品经理/UI设计师
+- **检查范围**: 前端Vue项目全部视图页面和组件
+- **检查维度**: 整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+
+### 核心发现
+
+1. **粉色系配色与金色主题冲突仍然存在** - 搜索发现23处rgba(233, 69, 96, 0.x)粉色渐变和硬编码颜色
+2. **深色背景代码残留严重** - 41个文件仍包含rgba(0,0,0,0.x)深色背景样式，与白色主题定义冲突
+3. **白色文字硬编码问题** - 31个文件存在color: #fff或rgba(255,255,255,x)白色文字
+4. **塔罗牌仍使用emoji表示** - Tarot.vue中使用emoji作为牌面展示
+5. **页面过渡动画缺失** - 页面切换体验较生硬
+
+### 新增UI问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] **[UI] Bazi.vue多处使用emoji图标** - 第353、390、406、417、438、445、558、572、582、588、633、642、734、862行使用✨💕🌟💡🎯等emoji - 建议替换为Element Plus图标
+- [ ] **[UI] 八字排盘页面深色背景与白色主题冲突** - Bazi.vue第1873行使用rgba(0,0,0,0.3)深色背景 - 建议使用CSS变量统一背景色
+- [ ] **[UI] 六爻页面按钮使用粉色渐变** - Liuyao.vue第456行使用#e94560粉色渐变 - 建议统一为金色系(#B8860B, #D4AF37)
+- [ ] **[UI] 合婚页面多处粉色配色** - Hehun.vue多处使用rgba(233, 69, 96)粉色系 - 与金色主题冲突
+- [ ] **[UI] 每日运势页面评分圆圈背景使用粉色渐变** - Daily.vue第296行使用金色渐变但其他元素仍使用粉色
+- [ ] **[UI] 按钮hover效果使用粉色阴影** - Bazi.vue第1700行使用rgba(233, 69, 96, 0.3)粉色阴影
+- [ ] **[UI] 输入框focus状态使用粉色边框** - Bazi.vue第1713-1718行使用rgba(233, 69, 96, 0.5)粉色边框
+
+#### 🟡 中优先级（体验问题）
+- [ ] **[UI] 塔罗牌仍使用emoji表示** - Tarot.vue第119行使用emoji作为牌面 - 建议添加真实塔罗牌图片或SVG图标
+- [ ] **[UI] 页面过渡动画缺失** - 页面切换体验较生硬 - 建议添加Vue Transition或CSS动画
+- [ ] **[UI] 按钮圆角不统一** - 各页面按钮圆角不一致（12px/20px/25px/30px混用） - 建议统一使用25px圆角
+- [ ] **[UI] 响应式断点不统一** - 混用576px/768px/992px/1024px/1200px多种断点 - 建议统一使用标准断点
+- [ ] **[UI] 卡片hover效果不一致** - 不同页面卡片hover效果差异大 - 建议统一hover动画
+- [ ] **[UI] 加载状态样式不统一** - 各页面加载动画风格不一致 - 建议统一使用太极图加载动画
+
+#### 🟢 低优先级（美观问题）
+- [ ] **[UI] 高亮文字使用粉色** - Bazi.vue第1905-1908行使用#e94560粉色高亮 - 建议改为金色#B8860B
+- [ ] **[UI] 帮助图标使用emoji** - Bazi.vue第463、491行使用❓emoji - 建议替换为Element Plus图标
+- [ ] **[UI] 运势卡片文字颜色硬编码白色** - Daily.vue多处使用rgba(255,255,255,x)白色文字 - 建议使用CSS变量
+- [ ] **[UI] 五行进度条颜色与主题不协调** - 部分五行颜色过于鲜艳 - 建议调整饱和度
+- [ ] **[UI] 空状态设计缺失** - 部分页面缺少空状态设计 - 建议添加统一的空状态组件
+
+### 主题一致性评估
+整体白色主题已统一，但粉色系代码残留严重（23处），深色背景代码残留（41处），建议批量替换为金色系。
 
 ---
 
@@ -1119,7 +1166,7 @@
 - [x] [2026-03-17] 后端Upload.php目录遍历风险 - backend/app/controller/Upload.php第286-288行 - 已修复：添加realpath()验证文件路径，确保文件在public目录内，防止目录遍历攻击 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 后端Payment.php cURL禁用SSL验证 - backend/app/controller/Payment.php第511-512行 - 已修复：将SSL_VERIFYPEER和SSL_VERIFYHOST设置为true/2，启用SSL验证防止中间人攻击 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 后端SmsService.php cURL禁用SSL验证 - backend/app/service/SmsService.php第156行 - 已修复：将SSL_VERIFYPEER设置为true并添加SSL_VERIFYHOST 2，启用SSL验证 - 修复时间: 2026-03-17
-- [ ] [2026-03-16 21:00] 后端Hehun.php直接实例化控制器 - backend/app/controller/Hehun.php第270-272行 - 直接实例化Paipan控制器调用方法，不符合MVC规范 - 建议将八字计算逻辑提取到服务类
+- [x] [2026-03-16 21:00] 后端Hehun.php直接实例化控制器 - backend/app/controller/Hehun.php第270-272行 - 已修复：创建BaziCalculationService服务类封装八字计算逻辑，Hehun控制器通过构造函数注入使用该服务 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 后端Paipan.php变量语法错误 - backend/app/controller/Paipan.php第1353行 - 已修复：将{absDiff}修正为{$absDiff}，添加缺少的$符号 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 前端Hehun.vue v-html XSS风险 - frontend/src/views/Hehun.vue第103,109行 - 已修复：添加sanitizeHtml函数净化HTML内容，移除script标签、事件处理器和危险伪协议 - 修复时间: 2026-03-17
 - [x] [2026-03-16 16:00] 后端依赖文件缺失 - backend/app/controller/Vip.php引用UserVip、VipOrder模型和VipService服务，但这些文件不存在 - 已创建backend/app/model/UserVip.php、VipOrder.php和backend/app/service/VipService.php - 修复时间: 2026-03-16
@@ -1677,6 +1724,7 @@
 - [x] [2026-03-17] 后端SmsService.php cURL禁用SSL验证 - backend/app/service/SmsService.php第156行 - 已修复：将SSL_VERIFYPEER设置为true并添加SSL_VERIFYHOST 2，启用SSL验证 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 后端Paipan.php变量语法错误 - backend/app/controller/Paipan.php第1353行 - 已修复：将{absDiff}修正为{$absDiff}，添加缺少的$符号 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 前端Hehun.vue v-html XSS风险 - frontend/src/views/Hehun.vue第103,109行 - 已修复：添加sanitizeHtml函数净化HTML内容，移除script标签、事件处理器和危险伪协议 - 修复时间: 2026-03-17
+- [x] [2026-03-17] 后端Hehun.php直接实例化控制器 - backend/app/controller/Hehun.php第270-272行 - 已修复：创建BaziCalculationService服务类封装八字计算逻辑，Hehun控制器通过构造函数注入使用该服务 - 修复时间: 2026-03-17
 
 ### 历史修复记录
 
