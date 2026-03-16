@@ -105,6 +105,6 @@ class AdminAuth extends BaseController
      */
     public function logout()
     {
-        return json(['code' => 200, 'message' => '退出成功']);
+        return $this->success(null, '退出成功');
     }
 }

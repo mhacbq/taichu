@@ -182,11 +182,7 @@ class AiPrompt extends BaseController
      */
     public function getTypes()
     {
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => AiPromptModel::TYPES,
-        ]);
+        return $this->success(AiPromptModel::TYPES, '获取成功');
     }
     
     /**

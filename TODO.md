@@ -1112,11 +1112,11 @@
 
 ### 🔴 高优先级（功能性问题）
 
-- [ ] [2026-03-16 21:00] 后端返回格式不统一 - SiteContent.php/AiPrompt.php/Upload.php/AdminAuth.php - 多个控制器直接使用json()返回，与其他使用success()/error()的控制器不一致 - 建议统一使用BaseController方法
-- [ ] [2026-03-16 21:00] 后端AdminAuth.php硬编码管理员凭据 - backend/app/controller/AdminAuth.php第28行 - 管理员账号密码硬编码在代码中，存在严重安全隐患 - 建议从数据库或配置文件读取并使用密码哈希验证
-- [ ] [2026-03-16 21:00] 后端AdminAuth.php JWT密钥硬编码 - backend/app/controller/AdminAuth.php第17行 - JWT密钥硬编码为'your-admin-jwt-secret-key-change-in-production' - 建议从环境变量或配置文件读取JWT密钥
-- [ ] [2026-03-16 21:00] 后端Upload.php文件上传安全风险 - backend/app/controller/Upload.php第62,133,200行 - 使用getOriginalExtension()获取文件扩展名，可能被客户端伪造 - 建议使用getExtension()获取真实扩展名
-- [ ] [2026-03-16 21:00] 后端Upload.php目录遍历风险 - backend/app/controller/Upload.php第286-288行 - 删除文件时未验证路径，可能导致目录遍历攻击 - 建议验证文件路径是否在允许的目录内
+- [x] [2026-03-17] 后端返回格式不统一 - SiteContent.php/AiPrompt.php/Upload.php/AdminAuth.php - 已修复：将所有json()返回统一改为$this->success()/$this->error()方法，确保API返回格式一致 - 修复时间: 2026-03-17
+- [x] [2026-03-17] 后端AdminAuth.php硬编码管理员凭据 - backend/app/controller/AdminAuth.php第28行 - 已修复：改为从数据库验证管理员账号，使用password_verify()验证密码哈希 - 修复时间: 2026-03-17
+- [x] [2026-03-17] 后端AdminAuth.php JWT密钥硬编码 - backend/app/controller/AdminAuth.php第17行 - 已修复：添加构造函数从环境变量ADMIN_JWT_SECRET读取JWT密钥，未设置时抛出异常 - 修复时间: 2026-03-17
+- [x] [2026-03-17] 后端Upload.php文件上传安全风险 - backend/app/controller/Upload.php第62,133,200行 - 已修复：将getOriginalExtension()改为getExtension()获取真实扩展名，防止客户端伪造 - 修复时间: 2026-03-17
+- [x] [2026-03-17] 后端Upload.php目录遍历风险 - backend/app/controller/Upload.php第286-288行 - 已修复：添加realpath()验证文件路径，确保文件在public目录内，防止目录遍历攻击 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 后端Payment.php cURL禁用SSL验证 - backend/app/controller/Payment.php第511-512行 - 已修复：将SSL_VERIFYPEER和SSL_VERIFYHOST设置为true/2，启用SSL验证防止中间人攻击 - 修复时间: 2026-03-17
 - [x] [2026-03-17] 后端SmsService.php cURL禁用SSL验证 - backend/app/service/SmsService.php第156行 - 已修复：将SSL_VERIFYPEER设置为true并添加SSL_VERIFYHOST 2，启用SSL验证 - 修复时间: 2026-03-17
 - [ ] [2026-03-16 21:00] 后端Hehun.php直接实例化控制器 - backend/app/controller/Hehun.php第270-272行 - 直接实例化Paipan控制器调用方法，不符合MVC规范 - 建议将八字计算逻辑提取到服务类

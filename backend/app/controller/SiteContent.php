@@ -156,14 +156,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -195,7 +191,7 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = Testimonial::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '评价不存在']);
+                    return $this->error('评价不存在', 404);
                 }
                 $item->save($data);
             } else {
@@ -311,12 +307,12 @@ class SiteContent extends BaseController
         
         $item = Faq::find($id);
         if (!$item) {
-            return json(['code' => 404, 'message' => 'FAQ不存在']);
+            return $this->error('FAQ不存在', 404);
         }
         
         $item->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     // ==================== 塔罗牌管理 ====================
@@ -433,16 +429,16 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = TarotSpread::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '牌阵不存在']);
+                    return $this->error('牌阵不存在', 404);
                 }
                 $item->save($data);
             } else {
                 TarotSpread::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            return $this->error('保存失败：' . $e->getMessage(), 500);
         }
     }
     
@@ -505,16 +501,16 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = QuestionTemplate::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '模板不存在']);
+                    return $this->error('模板不存在', 404);
                 }
                 $item->save($data);
             } else {
                 QuestionTemplate::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            return $this->error('保存失败：' . $e->getMessage(), 500);
         }
     }
     

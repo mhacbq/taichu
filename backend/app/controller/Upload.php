@@ -54,18 +54,19 @@ class Upload extends BaseController
             // 验证图片
             $validate = $this->validateImage($file);
             if ($validate !== true) {
-                return json(['code' => 400, 'message' => $validate]);
+                return $this->error($validate, 400);
             }
             
             // 生成保存路径
             $savePath = $this->getSavePath('image');
-            $fileName = $this->generateFileName($file->getOriginalExtension());
+            // 使用getExtension()而非getOriginalExtension()，防止客户端伪造扩展名
+            $fileName = $this->generateFileName($file->getExtension());
             
             // 保存文件
             $info = $file->move(public_path() . $savePath, $fileName);
             
             if (!$info) {
-                return json(['code' => 500, 'message' => '上传失败：' . $file->getError()]);
+                return $this->error('上传失败：' . $file->getError(), 500);
             }
             
             // 生成URL
@@ -80,23 +81,19 @@ class Upload extends BaseController
                 'file_url' => $url,
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMime(),
-                'extension' => $file->getOriginalExtension(),
+                'extension' => $file->getExtension(),
                 'uploaded_by' => $request->adminId ?? 0,
             ]);
             
-            return json([
-                'code' => 200,
-                'message' => '上传成功',
-                'data' => [
-                    'url' => $url,
-                    'name' => $file->getOriginalName(),
-                    'size' => $file->getSize(),
-                    'path' => $savePath . $fileName
-                ]
-            ]);
+            return $this->success([
+                'url' => $url,
+                'name' => $file->getOriginalName(),
+                'size' => $file->getSize(),
+                'path' => $savePath . $fileName
+            ], '上传成功');
             
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '上传失败：' . $e->getMessage()]);
+            return $this->error('上传失败：' . $e->getMessage(), 500);
         }
     }
 
@@ -109,7 +106,7 @@ class Upload extends BaseController
             $files = $request->file('files');
             
             if (!$files) {
-                return json(['code' => 400, 'message' => '请选择要上传的图片']);
+                return $this->error('请选择要上传的图片', 400);
             }
             
             // 确保是数组
@@ -130,7 +127,8 @@ class Upload extends BaseController
                 
                 // 生成保存路径
                 $savePath = $this->getSavePath('image');
-                $fileName = $this->generateFileName($file->getOriginalExtension());
+                // 使用getExtension()而非getOriginalExtension()，防止客户端伪造扩展名
+                $fileName = $this->generateFileName($file->getExtension());
                 
                 // 保存文件
                 $info = $file->move(public_path() . $savePath, $fileName);
@@ -146,7 +144,7 @@ class Upload extends BaseController
                         'file_url' => $url,
                         'file_size' => $file->getSize(),
                         'mime_type' => $file->getMime(),
-                        'extension' => $file->getOriginalExtension(),
+                        'extension' => $file->getExtension(),
                         'uploaded_by' => $request->adminId ?? 0,
                     ]);
                     
@@ -160,20 +158,16 @@ class Upload extends BaseController
                 }
             }
             
-            return json([
-                'code' => 200,
-                'message' => '上传完成',
-                'data' => [
-                    'success' => $results,
-                    'errors' => $errors,
-                    'total' => count($files),
-                    'success_count' => count($results),
-                    'error_count' => count($errors)
-                ]
-            ]);
+            return $this->success([
+                'success' => $results,
+                'errors' => $errors,
+                'total' => count($files),
+                'success_count' => count($results),
+                'error_count' => count($errors)
+            ], '上传完成');
             
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '上传失败：' . $e->getMessage()]);
+            return $this->error('上传失败：' . $e->getMessage(), 500);
         }
     }
 
@@ -186,24 +180,25 @@ class Upload extends BaseController
             $file = $request->file('file');
             
             if (!$file) {
-                return json(['code' => 400, 'message' => '请选择要上传的文件']);
+                return $this->error('请选择要上传的文件', 400);
             }
             
             // 验证文件
             $validate = $this->validateFile($file);
             if ($validate !== true) {
-                return json(['code' => 400, 'message' => $validate]);
+                return $this->error($validate, 400);
             }
             
             // 生成保存路径
             $savePath = $this->getSavePath('file');
-            $fileName = $this->generateFileName($file->getOriginalExtension());
+            // 使用getExtension()而非getOriginalExtension()，防止客户端伪造扩展名
+            $fileName = $this->generateFileName($file->getExtension());
             
             // 保存文件
             $info = $file->move(public_path() . $savePath, $fileName);
             
             if (!$info) {
-                return json(['code' => 500, 'message' => '上传失败：' . $file->getError()]);
+                return $this->error('上传失败：' . $file->getError(), 500);
             }
             
             $url = $this->getFileUrl($savePath . $fileName);
@@ -216,22 +211,18 @@ class Upload extends BaseController
                 'file_url' => $url,
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMime(),
-                'extension' => $file->getOriginalExtension(),
+                'extension' => $file->getExtension(),
                 'uploaded_by' => $request->adminId ?? 0,
             ]);
             
-            return json([
-                'code' => 200,
-                'message' => '上传成功',
-                'data' => [
-                    'url' => $url,
-                    'name' => $file->getOriginalName(),
-                    'size' => $file->getSize()
-                ]
-            ]);
+            return $this->success([
+                'url' => $url,
+                'name' => $file->getOriginalName(),
+                'size' => $file->getSize()
+            ], '上传成功');
             
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '上传失败：' . $e->getMessage()]);
+            return $this->error('上传失败：' . $e->getMessage(), 500);
         }
     }
 
@@ -279,11 +270,19 @@ class Upload extends BaseController
             $file = \app\model\UploadFile::find($id);
             
             if (!$file) {
-                return json(['code' => 404, 'message' => '文件不存在']);
+                return $this->error('文件不存在', 404);
             }
             
-            // 删除物理文件
+            // 删除物理文件 - 验证文件路径防止目录遍历攻击
             $filePath = public_path() . $file->file_path;
+            $realPath = realpath($filePath);
+            $publicPath = realpath(public_path());
+            
+            // 确保文件在public目录内，防止目录遍历攻击
+            if ($realPath === false || strpos($realPath, $publicPath) !== 0) {
+                return $this->error('文件路径无效', 400);
+            }
+            
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -291,10 +290,10 @@ class Upload extends BaseController
             // 删除数据库记录
             $file->delete();
             
-            return json(['code' => 200, 'message' => '删除成功']);
+            return $this->success(null, '删除成功');
             
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
