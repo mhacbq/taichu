@@ -387,7 +387,7 @@ const goToFeedback = () => {
 .q-icon {
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   border-radius: 50%;
   display: flex;
   align-items: center;

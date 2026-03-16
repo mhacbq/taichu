@@ -614,7 +614,7 @@ const getStatusText = (status) => {
 }
 
 .info-row .total-amount {
-  color: #e94560;
+  color: #B8860B;
   font-size: 24px;
 }
 
@@ -760,7 +760,7 @@ const getStatusText = (status) => {
 .pay-amount {
   font-size: 36px;
   font-weight: bold;
-  color: #e94560;
+  color: #B8860B;
   margin-bottom: 20px;
 }
 

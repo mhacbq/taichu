@@ -3,7 +3,9 @@
     <div class="container">
       <div class="error-content">
         <div class="error-code">404</div>
-        <div class="error-icon">🔮</div>
+        <div class="error-icon">
+          <el-icon><Magic /></el-icon>
+        </div>
         <h1>页面未找到</h1>
         <p>您寻找的页面似乎迷失在浩瀚的网络中了...</p>
         <div class="error-actions">
@@ -18,6 +20,10 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import { Magic } from '@element-plus/icons-vue'
+</script>
 
 <style scoped>
 .not-found {
@@ -36,7 +42,7 @@
 .error-code {
   font-size: 120px;
   font-weight: bold;
-  background: linear-gradient(135deg, #e94560, #ffd700);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -47,6 +53,7 @@
 .error-icon {
   font-size: 60px;
   margin-bottom: 20px;
+  color: var(--primary-color);
 }
 
 .error-content h1 {

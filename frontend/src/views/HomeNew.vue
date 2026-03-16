@@ -287,7 +287,7 @@ onMounted(() => {
 }
 
 .title-line.highlight {
-  background: linear-gradient(135deg, #e94560, #ff6b6b, #feca57);
+  background: linear-gradient(135deg, #B8860B, #D4AF37, #F4E4C1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -312,7 +312,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 16px 32px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   color: #fff;
   text-decoration: none;
   border-radius: 30px;
@@ -471,7 +471,7 @@ onMounted(() => {
 
 .score-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: linear-gradient(90deg, #B8860B, #D4AF37);
   border-radius: 2px;
 }
 
@@ -501,7 +501,7 @@ onMounted(() => {
 
 /* Features Section */
 .features-section {
-  background: linear-gradient(180deg, transparent, rgba(233, 69, 96, 0.05), transparent);
+  background: linear-gradient(180deg, transparent, rgba(184, 134, 11, 0.05), transparent);
 }
 
 .features-grid {
@@ -554,9 +554,9 @@ onMounted(() => {
   max-width: 600px;
   margin: 0 auto;
   padding: 48px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(107, 70, 193, 0.1));
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
   border-radius: 24px;
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  border: 1px solid rgba(184, 134, 11, 0.2);
 }
 
 .cta-title {

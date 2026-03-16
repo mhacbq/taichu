@@ -461,7 +461,7 @@ onMounted(() => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
   margin: 0 auto 15px;
   display: flex;
   justify-content: center;
@@ -502,7 +502,7 @@ onMounted(() => {
   display: block;
   font-size: 24px;
   font-weight: bold;
-  color: #e94560;
+  color: #B8860B;
 }
 
 .stat-label {
@@ -613,7 +613,7 @@ onMounted(() => {
 }
 
 .bazi-pillar.highlight {
-  color: #e94560;
+  color: #B8860B;
   font-weight: bold;
 }
 
@@ -670,7 +670,7 @@ onMounted(() => {
 
 .tarot-mini small {
   font-size: 8px;
-  color: #e94560;
+  color: #B8860B;
   position: absolute;
   bottom: -5px;
   right: -5px;
@@ -737,7 +737,7 @@ onMounted(() => {
   font-size: 28px;
   width: 50px;
   height: 50px;
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.1);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -810,7 +810,7 @@ onMounted(() => {
 }
 
 .code-value {
-  color: #e94560;
+  color: #B8860B;
   font-size: 28px;
   font-weight: bold;
   letter-spacing: 3px;

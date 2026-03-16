@@ -1718,11 +1718,11 @@ const formatAiContent = (content) => {
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 0 1px rgba(184, 134, 11, 0.5);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.5);
 }
 
 /* 加载状态 shimmer 效果 */
@@ -1999,8 +1999,8 @@ const formatAiContent = (content) => {
 /* 专业解读区域 */
 .professional-reading {
   margin: 30px 0;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.08), rgba(255, 107, 107, 0.05));
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(184, 134, 11, 0.2);
   border-radius: 20px;
   padding: 30px;
 }
@@ -2067,8 +2067,8 @@ const formatAiContent = (content) => {
 }
 
 .trait-tag {
-  background: rgba(233, 69, 96, 0.2);
-  color: rgba(255, 255, 255, 0.9);
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--text-primary);
   padding: 4px 12px;
   border-radius: 15px;
   font-size: 13px;
@@ -2155,8 +2155,8 @@ const formatAiContent = (content) => {
 
 .reading-card:hover {
   transform: translateY(-5px);
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: var(--bg-secondary);
+  border-color: rgba(184, 134, 11, 0.3);
 }
 
 .reading-card.advice-card {
@@ -2328,15 +2328,15 @@ const formatAiContent = (content) => {
 .day-master-card .value {
   font-size: 36px;
   font-weight: bold;
-  color: #e94560;
+  color: #B8860B;
 }
 
 .day-master-card .wuxing {
-  background: rgba(233, 69, 96, 0.3);
+  background: rgba(184, 134, 11, 0.3);
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 14px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* 排盘表格样式 */
@@ -2390,7 +2390,7 @@ const formatAiContent = (content) => {
 
 .rizhu-tag {
   font-size: 10px;
-  background: #e94560;
+  background: #B8860B;
   color: #fff;
   padding: 2px 6px;
   border-radius: 4px;

@@ -631,7 +631,7 @@ const getCardAdvice = (card) => {
 }
 
 .insufficient-points a {
-  color: #e94560;
+  color: #B8860B;
   text-decoration: underline;
 }
 
@@ -807,13 +807,13 @@ const getCardAdvice = (card) => {
 }
 
 .template-item:hover {
-  background: rgba(233, 69, 96, 0.1);
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: rgba(184, 134, 11, 0.1);
+  border: 1px solid rgba(184, 134, 11, 0.3);
   transform: translateX(5px);
 }
 
 .template-bullet {
-  color: #e94560;
+  color: #B8860B;
   font-weight: bold;
 }
 
@@ -1024,7 +1024,7 @@ const getCardAdvice = (card) => {
 }
 
 .detail-content h4 {
-  color: #e94560;
+  color: #B8860B;
   font-size: 16px;
   margin-bottom: 10px;
 }
