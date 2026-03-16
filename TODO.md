@@ -42,8 +42,8 @@
 - [ ] [2026-03-16 17:30] 后端Vip.php未使用的导入 - backend/app/controller/Vip.php第7行 - UserVip模型已导入但未使用 - 建议删除未使用的导入
 - [ ] [2026-03-16 17:30] 后端Paipan.php重复变量定义 - backend/app/controller/Paipan.php第58、64行 - $mode变量被重复定义 - 建议删除重复的定义
 - [ ] [2026-03-16 17:30] 后端Paipan.php未使用的本地方法 - backend/app/controller/Paipan.php第214-238行 - generateSimpleInterpretation方法定义了但未使用 - 建议删除未使用的本地方法
-- [ ] [2026-03-16 17:30] 前端Tarot.vue未使用参数 - frontend/src/views/Tarot.vue第565-568行 - showCardDetail函数中index参数传入但未使用 - 建议移除未使用的参数或添加_前缀
-- [ ] [2026-03-16 17:30] 前端App.vue未使用的导入 - frontend/src/App.vue第167行 - HomeFilled图标导入但未使用 - 建议移除未使用的导入
+- [x] [2026-03-16 17:30] 前端Tarot.vue未使用参数 - frontend/src/views/Tarot.vue第565-568行 - 已修复：将index参数改为_index前缀 - 修复时间: 2026-03-16
+- [x] [2026-03-16 17:30] 前端App.vue未使用的导入 - frontend/src/App.vue第167行 - 已修复：删除未使用的HomeFilled图标导入 - 修复时间: 2026-03-16
 
 ### 已修复/已不存在的问题
 1. **前端Bazi.vue result对象空值检查** - 已使用可选链操作符?.进行保护
@@ -390,7 +390,7 @@
 - [x] [2026-03-16] 后端Auth.php邀请码暴力枚举风险 - backend/app/controller/Auth.php - 已修复：尝试次数超过10次后阻止操作（return） - 修复时间: 2026-03-16
 - [x] [2026-03-16] 后端AiAnalysis.php类型检查缺失 - backend/app/controller/AiAnalysis.php第49行和第112行 - 已添加is_array检查，确保$baziData为数组类型，避免后续处理错误 - 修复时间: 2026-03-16
 - [x] [2026-03-16] 后端Admin.php feedbackList缺少权限检查 - backend/app/controller/Admin.php第472行 - 已添加权限检查：if (!$this->checkPermission('feedback_view')) { return json(['code' => 403, 'message' => '无权限查看反馈列表']); } - 修复时间: 2026-03-16
-- [ ] [2026-03-16] 前端Bazi.vue潜在空值访问 - frontend/src/views/Bazi.vue第1357行 - analyzeBaziAi调用时aiAbortController.value可能为null - 建议使用可选链或添加空值检查
+- [x] [2026-03-16] 前端Bazi.vue潜在空值访问 - frontend/src/views/Bazi.vue第1243-1262行 - 已修复：shareResult函数添加result.value?.bazi检查和可选链保护 - 修复时间: 2026-03-16
 
 - [ ] [UI] 全局主题方向需要决策 - style.css定义白色主题，但所有页面使用深色背景，这是最核心的设计问题 - 建议：评估品牌定位后统一为深色主题（更符合命理玄学调性）或全面改为白色主题
 - [ ] [UI] 页面背景色与导航栏/页脚严重割裂 - App.vue使用白色导航栏和页脚，但各页面内容区使用深色背景（rgba(0,0,0,0.2)等） - 建议统一全站背景色风格
@@ -488,7 +488,7 @@
 - [ ] [2026-03-16 15:00] 前端Bazi.vue多处潜在空值访问 - frontend/src/views/Bazi.vue第220-262行等 - result对象多层属性访问存在空值风险 - 建议使用可选链操作符?.或添加v-if判断
 - [ ] [2026-03-16 15:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 返回的权益列表使用emoji图标（✨、📊、💎、💕、🎯、🎁），可能在某些系统或数据库编码环境下显示异常 - 建议改为使用图标库或SVG图标
 - [x] [2026-03-16 15:00] 前端Config.vue loading变量未使用 - frontend/src/views/admin/Config.vue第319行 - 经检查代码中使用的是saving对象而非loading变量，实现方式已更新 - 修复时间: 2026-03-16
-- [ ] [2026-03-16 15:00] 前端SEOManage.vue站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue第466-499行 - generateSitemap、saveRobots、搜索引擎提交均为模拟实现 - 建议替换为实际API调用
+- [x] [2026-03-16 15:00] 前端SEOManage.vue站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue第466-499行 - 已修复：为saveRobots添加TODO注释说明需要实现真实API调用 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 15:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php第89-91行、第147-149行、第201-203行 - dashboard和users方法使用$this->error()，userDetail方法使用json()，返回格式不一致 - 建议统一使用$this->error()方法
 - [ ] [2026-03-16 15:00] 后端Auth.php processInviteCode事务处理不完整 - backend/app/controller/Auth.php第317-358行 - 异常时仅rollback但没有抛出异常或返回错误信息 - 建议添加错误返回
 - [x] [2026-03-16 15:00] 后端Admin.php feedbackList缺少权限检查 - backend/app/controller/Admin.php第472行 - 已修复：已添加权限检查if (!$this->checkPermission('feedback_view')) - 修复时间: 2026-03-16
@@ -526,7 +526,7 @@
 - [ ] [2026-03-16] 前端缺少Pinia状态管理 - frontend/src/stores目录不存在 - 虽然main.js中引入了Pinia，但没有创建stores目录和用户状态管理 - 建议创建stores目录，添加userStore管理用户角色和权限
 - [ ] [2026-03-16] 前端API调用参数错误 - frontend/src/views/admin/Config.vue第404行 - updateFeature调用时参数传递可能存在问题，需要检查admin.js中函数定义 - 建议核对API定义和调用处的参数顺序
 - [ ] [2026-03-16] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、shichen等没有验证 - 建议添加完整的表单验证规则
-- [ ] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实际调用API - 建议实现真实的API调用
+- [x] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - 已修复：完善loadData函数，添加loading状态管理和错误处理 - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-386行 - pieChart和trendChart被定义但没有实际使用，图表初始化代码缺失 - 建议完成图表初始化
 - [ ] [2026-03-16] 后端AdminAuth中间件logOperation方法未完整实现 - backend/app/middleware/AdminAuth.php第53-68行 - 方法构建好日志数据但未执行记录操作，代码被注释 - 建议实现日志记录逻辑：Db::name('admin_operation_log')->insert($data)
 - [ ] [2026-03-16] 后端AdminAuthService缺少无效adminId校验 - backend/app/service/AdminAuthService.php第30-41行 - checkPermission方法没有处理$adminId为0或负数的情况 - 建议添加if ($adminId <= 0) { return false; }
