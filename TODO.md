@@ -5,16 +5,59 @@
 
 ## 自动化任务说明
 
-已设置6个自动化任务：
+已设置9个自动化任务（**分工优化版**）：
 
+### 🔍 检查类任务（发现问题）
 | 任务名称 | 频率 | 说明 | 角色 |
 |---------|------|------|------|
-| 网站逻辑检查任务 | 每30分钟 | 检查前端/后端逻辑问题 | 代码审查专家 |
-| 待办处理执行器 | 每30分钟 | **每次自动修复5个问题** | 代码修复专家 |
-| UI设计检查官 | 每30分钟 | 检查UI设计问题 | 产品经理/UI设计师 |
-| 运营人员后台检查 | 每30分钟 | 使用后台管理系统并记录问题 | 运营人员 |
-| 占卜爱好者体验检查 | 每30分钟 | 体验占卜功能并记录准确性问题 | 占卜爱好者 |
-| 前端开发修复任务 | 每20分钟 | **每次修复3-5个前端问题，自动提交git** | 前端开发人员 |
+| 网站逻辑检查任务 | 每30分钟 | 检查前端/后端逻辑问题 | 👨‍💻 代码审查专家 |
+| UI设计检查官 | 每30分钟 | 检查UI设计问题 | 🎨 产品经理/UI设计师 |
+| 运营人员后台检查 | 每30分钟 | 使用后台管理系统并记录问题 | 👔 运营人员 |
+| 占卜爱好者体验检查 | 每30分钟 | 体验占卜功能并记录准确性问题 | 🔮 占卜爱好者 |
+
+### 🔧 修复类任务（解决问题）- **分工优化**
+| 任务名称 | 频率 | 每次修复 | 负责领域 | Git提交 |
+|---------|------|---------|---------|---------|
+| **后端修复专家** | 每15分钟 | **5个后端问题** | PHP后端安全/API/数据库 | ✅ 自动提交 |
+| **前端修复专家** | 每15分钟 | **5个前端问题** | Vue组件/功能逻辑/代码规范 | ✅ 自动提交 |
+| **UI修复专家** | 每15分钟 | **5个UI问题** | 主题统一/样式/响应式/图标 | ✅ 自动提交 |
+| 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
+| 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
+
+## UI设计检查报告 - 2026-03-16 第十二轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目全部视图页面和组件
+- 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+- 发现问题：核心主题不一致问题仍然存在，需要决策
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 主题方向决策 - 这是最核心的设计问题，影响整个网站的视觉一致性 - 建议：考虑到命理玄学的行业属性，建议统一为深色主题（神秘、专业感），或全面改为白色主题（清新、现代感）
+- [ ] [UI] 导航栏与页面内容区视觉割裂 - App.vue使用白色导航栏，但各页面内容区使用深色背景（rgba(0,0,0,0.2)等） - 建议统一全站背景色风格
+- [ ] [UI] 首页Hero区域文字颜色与背景冲突 - Home.vue多处使用白色文字（color: #fff, rgba(255,255,255,0.7)等），在浅色背景下不可见 - 建议改为使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
+- [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 导航栏大量使用emoji图标 - App.vue使用☯、💎、👤、🚪、🏠、📅、🎴、💕、🌟、🌸、💝等emoji作为图标 - 建议引入@element-plus/icons-vue统一图标系统
+- [ ] [UI] 首页大量使用emoji图标 - Home.vue使用🌅、☀️、🌙、💎、🌸、🎁、✨、🔮、📅、🎴、💡、☯、💕、🌟、🎯、👩、👨、👦等emoji - 建议统一使用图标库
+- [ ] [UI] 八字排盘页面使用emoji图标 - Bazi.vue使用💝、💎、🌱、🔮、❓、🎁、⚡等emoji - 建议统一使用图标库
+- [ ] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue使用💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji - 建议统一使用图标库
+- [ ] [UI] 六爻占卜页面使用emoji图标 - Liuyao.vue使用☯、🔄、💾、🗑等emoji - 建议统一使用图标库
+- [ ] [UI] 合婚页面使用emoji图标 - Hehun.vue使用💕、👨、🔓、🤖、💝、🔄、📄等emoji - 建议统一使用图标库
+- [ ] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue第60行mobile-nav-close按钮padding仅5px，实际点击区域不足44px - 建议增大至44x44px
+- [ ] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue第138行close-btn宽度仅28px，不符合44px最小触摸区域规范 - 建议增大至44px
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
+- [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+
+---
 
 ## UI设计检查报告 - 2026-03-16 第十一轮
 
@@ -93,10 +136,48 @@
 
 ---
 
+## 代码逻辑检查报告 - 2026-03-16 第十三轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目关键文件、后端PHP控制器、中间件
+- 检查维度：语法错误、类型错误、API调用、权限控制、安全问题
+- 发现问题：发现15个新问题，其中3个高优先级问题需要尽快修复
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [2026-03-16 14:00] 前端Tarot.vue缺少computed导入 - frontend/src/views/Tarot.vue第172行 - 使用computed()但只从vue导入了ref, onMounted - 建议添加import { ref, onMounted, computed } from 'vue'
+- [ ] [2026-03-16 14:00] 后端AiAnalysis.php cURL缺少SSL验证 - backend/app/controller/AiAnalysis.php第276-294行 - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置防止中间人攻击
+- [ ] [2026-03-16 14:00] 前端App.vue localStorage解析缺少异常处理 - frontend/src/App.vue第220-221行 - JSON.parse(userInfo)可能抛出异常导致页面崩溃 - 建议使用try-catch包裹
+
+#### 🟡 中优先级（体验问题）
+- [ ] [2026-03-16 14:00] 后端Auth.php PointsRecord模型使用全局命名空间 - backend/app/controller/Auth.php第60,119,331,345行 - 使用\app\model\PointsRecord而非导入的use语句 - 建议统一添加use app\model\PointsRecord;
+- [ ] [2026-03-16 14:00] 后端Admin.php使用全局命名空间调用DailyFortune - backend/app/controller/Admin.php第99-100行 - 使用\app\model\DailyFortune而非导入 - 建议添加use语句或统一导入规范
+- [ ] [2026-03-16 14:00] 后端AiAnalysis.php返回码格式不一致 - backend/app/controller/AiAnalysis.php第54-55行、第103-106行 - 错误使用code=400/500，成功使用code=0 - 建议统一使用BaseController的success/error方法
+- [ ] [2026-03-16 14:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - ENABLE_CACHE和CACHE_TTL定义但未使用 - 建议实现缓存逻辑或移除未使用的常量
+- [ ] [2026-03-16 14:00] 前端router/index.js未使用的导入 - frontend/src/router/index.js第2行 - generateWebsiteSchema导入但未使用 - 建议删除未使用的导入
+- [ ] [2026-03-16 14:00] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue - 只有solarDate字段有验证规则，其他重要字段没有验证 - 建议添加完整的表单验证规则
+- [ ] [2026-03-16 14:00] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue - pieChart和trendChart变量定义但未使用 - 建议实现图表初始化或删除未使用的代码
+
+#### 🟢 低优先级（优化问题）
+- [ ] [2026-03-16 14:00] 前端Tarot.vue selectedCardIndex变量未使用 - frontend/src/views/Tarot.vue第242行 - 变量定义后从未读取 - 建议删除该变量
+- [ ] [2026-03-16 14:00] 前端Config.vue loading变量未使用 - frontend/src/views/admin/Config.vue - loading变量定义了但没有使用 - 建议删除或使用该变量
+- [ ] [2026-03-16 14:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 返回的权益列表使用emoji图标 - 建议改为使用图标库或SVG图标
+- [ ] [2026-03-16 14:00] 后端AdminAuthService缓存键前缀可能冲突 - backend/app/service/AdminAuthService.php第21行 - 使用admin:permissions:前缀可能与其他系统冲突 - 建议添加应用特定前缀如taichu:admin:permissions:
+
+---
+
 ## 待处理项目
 
 ### 🔴 高优先级（功能性问题）
 
+- [ ] [2026-03-16 12:30] 前端Tarot.vue缺少computed导入 - frontend/src/views/Tarot.vue第172行 - 建议添加import { ref, onMounted, computed } from 'vue'
+- [ ] [2026-03-16 12:30] 前端Bazi.vue缺少CircleClose图标导入 - frontend/src/views/Bazi.vue第880行 - 建议添加import { CircleClose } from '@element-plus/icons-vue'
+- [ ] [2026-03-16 12:30] 后端Auth.php微信登录使用模拟逻辑 - backend/app/controller/Auth.php第31行 - 使用$openid = 'wx_' . md5($data['code'])模拟微信登录，生产环境存在严重安全风险 - 建议实现真实微信API调用
+- [ ] [2026-03-16 12:30] 后端Auth.php邀请码暴力枚举防护不完整 - backend/app/controller/Auth.php第284-358行 - 尝试次数超过限制后仅记录日志但不阻止操作，用户无感知 - 建议超过限制直接返回错误并阻止继续尝试
+- [ ] [2026-03-16 12:30] 后端AiAnalysis.php cURL缺少SSL验证 - backend/app/controller/AiAnalysis.php第276-294行 - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置
+- [ ] [2026-03-16 12:30] 后端Content.php SQL注入风险 - backend/app/controller/Content.php第368-371行 - keyword参数使用字符串拼接，存在SQL注入风险 - 建议使用参数绑定
+- [ ] [2026-03-16 12:30] 后端AdminAuthService缺少无效adminId校验 - backend/app/service/AdminAuthService.php第31-42行 - 未验证$adminId是否大于0 - 建议添加if ($adminId <= 0) { return false; }
 - [x] [2026-03-16] 后端Vip.php返回格式不一致 - backend/app/controller/Vip.php - 已统一使用BaseController的success()和error()方法，所有返回格式保持一致（成功code=0，错误返回对应错误码），并添加了分页参数验证 - 修复时间: 2026-03-16
 - [x] [2026-03-16] 后端AdminAuthService异常处理不完整 - backend/app/service/AdminAuthService.php第177-220行 - 已添加Log::error()记录详细错误信息（包括admin_id、role_id、错误消息、文件和行号） - 修复时间: 2026-03-16
 - [ ] [UI] 主题方向决策 - 这是最核心的设计问题，影响整个网站的视觉一致性 - 建议：考虑到命理玄学的行业属性，建议统一为深色主题（神秘、专业感），或全面改为白色主题（清新、现代感）
@@ -177,7 +258,7 @@
 - [ ] [2026-03-16] 后端AiAnalysis.php类型检查缺失 - backend/app/controller/AiAnalysis.php第49行 - $request->param('bazi')期望数组但可能返回字符串，导致后续处理错误 - 建议添加类型检查：if (!is_array($baziData)) { return json(['code' => 400, 'message' => '八字数据格式错误']); }
 - [ ] [2026-03-16] Bazi.vue未使用变量和函数 - frontend/src/views/Bazi.vue第950行、1068-1084行 - yearlyTrendData变量声明后从未使用，getYearlyTrendData函数定义后从未调用 - 建议删除未使用的代码
 - [x] [2026-03-16] 后端Admin.php权限检查返回格式不一致 - backend/app/controller/Admin.php第89,147,201行 - 已统一使用$this->error('无权限', 403)方法替换json()返回 - 修复时间: 2026-03-16
-- [ ] [2026-03-16] 后端Content.php模型类未导入 - backend/app/controller/Content.php多处 - 使用\app\model\Page等全局命名空间，未导入模型类 - 建议添加相应的use语句导入模型类
+- [x] [2026-03-16] 后端Content.php模型类未导入 - backend/app/controller/Content.php多处 - 已添加use语句导入所有模型类（Page, PageVersion, PageDraft, PageRecycle, OperationLog），并替换所有\app\model\为直接使用导入的类 - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 后端Auth.php模型类导入不一致 - backend/app/controller/Auth.php第59,118行 - 使用\app\model\PointsRecord全局命名空间，但文件顶部已使用use导入其他模型 - 建议统一添加use app\model\PointsRecord;
 - [ ] [2026-03-16] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
 - [ ] [2026-03-16] 前端AlmanacManage.vue API调用缺失 - frontend/src/views/admin/AlmanacManage.vue第397-428行 - submitForm和generateMonth函数中只有模拟延迟，没有实际API调用 - 建议添加真实的API保存和生成调用
@@ -191,6 +272,19 @@
 
 ### 🟡 中优先级（体验问题）
 
+- [ ] [2026-03-16 12:30] 前端Tarot.vue selectedCardIndex变量未使用 - frontend/src/views/Tarot.vue第242行 - 变量定义后从未读取 - 建议删除该变量或在showCardDetail函数中使用
+- [ ] [2026-03-16 12:30] 前端Bazi.vue getYearlyTrend函数导入未使用 - frontend/src/views/Bazi.vue第911行 - getYearlyTrend as getYearlyTrendApi导入后从未使用 - 建议删除未使用的导入
+- [ ] [2026-03-16 12:30] 前端Bazi.vue多处潜在空值访问 - frontend/src/views/Bazi.vue第220-262行等 - result对象多层属性访问存在空值风险 - 建议使用可选链操作符?.或添加v-if判断
+- [ ] [2026-03-16 12:30] 前端Config.vue loading变量未使用 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有在页面加载时使用 - 建议在loadFeatures等函数中使用loading状态
+- [ ] [2026-03-16 12:30] 前端SEOManage.vue站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue第466-499行 - generateSitemap、saveRobots、搜索引擎提交均为模拟实现 - 建议替换为实际API调用
+- [ ] [2026-03-16 12:30] 后端Auth.php processInviteCode事务处理不完整 - backend/app/controller/Auth.php第317-358行 - 异常时仅rollback但没有抛出异常或返回错误信息 - 建议添加错误返回
+- [ ] [2026-03-16 12:30] 后端AiAnalysis.php返回码不一致 - backend/app/controller/AiAnalysis.php第54-55行、第93-95行 - 错误返回使用code=400/500，成功返回使用code=0 - 建议统一返回码格式
+- [ ] [2026-03-16 12:30] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - 定义了ENABLE_CACHE和CACHE_TTL但未使用 - 建议实现缓存逻辑或移除未使用的常量
+- [ ] [2026-03-16 12:30] 后端Admin.php返回码格式不统一 - backend/app/controller/Admin.php多处 - 部分方法使用$this->error()，部分使用json() - 建议统一使用$this->error()或$this->success()方法
+- [ ] [2026-03-16 12:30] 后端Admin.php分页参数未验证 - backend/app/controller/Admin.php第152-156行等 - 多个方法中分页参数没有验证是否为正整数 - 建议添加filter_var验证
+- [ ] [2026-03-16 12:30] 后端Vip.php分页参数验证不完整 - backend/app/controller/Vip.php第128-133行 - 虽然限制了范围但没有验证参数类型 - 建议添加FILTER_VALIDATE_INT验证
+- [ ] [2026-03-16 12:30] 后端Content.php分页参数未验证 - backend/app/controller/Content.php第362-363行 - page和pageSize参数没有验证是否为正整数 - 建议添加验证
+- [ ] [2026-03-16 12:30] 后端AdminAuthService异常处理不完整 - backend/app/service/AdminAuthService.php - getAdminPermissions等方法没有异常处理 - 建议添加try-catch块
 - [ ] [2026-03-16] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
 - [ ] [2026-03-16] 前端AlmanacManage.vue API调用缺失 - frontend/src/views/admin/AlmanacManage.vue第397-428行 - submitForm和generateMonth函数中只有模拟延迟，没有实际API调用 - 建议添加真实的API保存和生成调用
 - [ ] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实际调用API加载数据 - 建议实现真实的API调用和分页逻辑
@@ -299,7 +393,7 @@
 - [ ] [2026-03-16] 后端Vip.php返回格式不一致 - backend/app/controller/Vip.php第28-40行、96-100行 - 错误返回使用HTTP状态码，成功返回code为0，与其他控制器使用code=200不一致 - 建议统一返回码格式
 - [ ] [2026-03-16] 后端Auth.php邀请码尝试次数限制逻辑问题 - backend/app/controller/Auth.php第287-296行 - 达到10次后仅记录日志但不阻止操作，且Cache键未定义过期时间 - 建议超过限制直接返回错误并设置合理的过期时间
 - [ ] [2026-03-16] 后端AdminAuth中间件日志记录敏感信息 - backend/app/middleware/AdminAuth.php第63行 - 记录请求参数可能包含敏感信息（如密码） - 建议过滤敏感字段后再记录
-- [ ] [2026-03-16] 后端Content.php模型类未导入 - backend/app/controller/Content.php第29,78,80等行 - 使用\app\model\Page等全局命名空间调用，未使用use导入 - 建议统一添加use语句导入模型类
+- [x] [2026-03-16] 后端Content.php模型类未导入 - backend/app/controller/Content.php第29,78,80等行 - 已添加use语句导入所有模型类（Page, PageVersion, PageDraft, PageRecycle, OperationLog），并替换所有\app\model\为直接使用导入的类 - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 后端AiAnalysis.php返回码不一致 - backend/app/controller/AiAnalysis.php第89-97行 - 使用code=0表示成功，与其他控制器使用code=200不一致 - 建议统一返回码格式
 - [ ] [UI] 首页Hero区域背景渐变与白色主题不协调 - Home.vue的hero区域使用radial-gradient(ellipse at center, rgba(233, 69, 96, 0.15) 0%, transparent 70%)，在白色主题下效果不明显 - 建议使用更明显的浅色渐变或装饰性SVG背景
 - [ ] [UI] 功能卡片图标大小不统一 - 首页feature-card中的图标大小不一致（48px），与其他页面图标不协调 - 建议统一图标尺寸规范
@@ -333,7 +427,49 @@
 
 ---
 
-## 运营检查报告 - 2026-03-16
+## 运营检查报告 - 2026-03-16 第二轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 运营人员
+- **检查范围**: 太初命理网站后台管理系统
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（运营阻塞问题）
+
+- [ ] [运营] 后台缺少Dashboard首页组件 - /admin路由直接跳转到Config.vue系统配置页面，缺少数据概览Dashboard - 建议创建AdminDashboard.vue展示用户数、订单数、收入等关键指标
+- [ ] [运营] 用户管理页面缺失 - 后台没有UserManage.vue用户列表管理页面，无法查看、搜索、编辑用户信息 - 建议创建用户管理页面并对接后端/users接口
+- [ ] [运营] 订单管理页面缺失 - VIP订单、积分订单无法在后台查看和管理 - 建议创建OrderManage.vue对接后端订单接口
+- [ ] [运营] 反馈管理页面缺失 - 后端有feedbackList接口，但前端没有对应的FeedbackManage.vue页面 - 建议创建反馈管理页面
+- [ ] [运营] 后台管理页面API调用均为模拟实现 - AlmanacManage.vue、KnowledgeManage.vue、SEOManage.vue、ShenshaManage.vue等页面只有模拟数据，没有真实API调用 - 建议实现真实的API接口调用
+- [ ] [运营] 黄历管理页面submitForm和generateMonth函数只有模拟延迟 - frontend/src/views/admin/AlmanacManage.vue第397-428行 - 没有实际API调用，数据无法真正保存 - 建议添加真实的API保存和生成调用
+- [ ] [运营] 神煞管理页面分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实现分页切片 - 建议实现分页逻辑：list.slice((page.value - 1) * pageSize.value, page.value * pageSize.value)
+- [ ] [运营] 管理员登录功能缺失 - 当前只有普通用户手机号登录，没有管理员账号密码登录入口 - 建议添加/admin/login管理员登录页面
+- [ ] [运营] 后台缺少统一的AdminLayout布局组件 - 各管理页面独立存在，没有统一的左侧导航菜单和顶部栏 - 建议创建AdminLayout.vue包含侧边导航栏、面包屑、退出功能
+
+#### 🟡 中优先级（运营体验问题）
+
+- [ ] [运营] 知识库文章搜索缺少防抖处理 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
+- [ ] [运营] 知识库图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue第158-169行 - 上传组件只有on-success回调，没有on-error处理 - 建议添加:on-error="handleCoverError"和错误处理函数
+- [ ] [运营] SEO管理页面站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue - 站点地图生成和robots保存为模拟实现，无法真正生成sitemap.xml - 建议实现真实的站点地图生成功能
+- [ ] [运营] 系统配置页面loading变量未使用 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有在页面加载时使用 - 建议在onMounted中使用loading状态
+- [ ] [运营] SEO统计页面图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用，onMounted和onUnmounted为空 - 建议实现图表初始化逻辑或删除未使用的代码
+- [ ] [运营] 后台页面没有面包屑导航 - 虽然路由配置了breadcrumb元信息，但页面中没有显示面包屑组件 - 建议在AdminLayout中添加面包屑导航
+- [ ] [运营] 后台管理页面缺少退出登录功能 - 后台页面没有提供管理员退出登录的入口 - 建议在导航栏添加退出按钮
+- [ ] [运营] 后台缺少操作日志查看页面 - 后端有operationLogs接口和AdminLog模型，但前端没有对应的日志查看页面 - 建议添加操作日志查询页面
+
+#### 🟢 低优先级（运营优化建议）
+
+- [ ] [运营] 后台页面主题与前端不统一 - 后台页面使用深色主题（rgba(0,0,0,0.2)背景），但前端整体为白色主题 - 建议统一后台主题风格
+- [ ] [运营] 后台页面缺少响应式适配 - 管理页面在移动端显示可能存在问题 - 建议添加移动端适配
+- [ ] [运营] 黄历管理页面表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
+- [ ] [运营] 后台缺少数据统计报表导出功能 - 无法导出用户数据、订单数据等报表 - 建议添加导出Excel/CSV功能
+- [ ] [运营] 后台缺少积分调整功能页面 - 后端有adjustPoints接口，但前端没有对应的积分调整页面 - 建议添加积分调整功能
+
+---
+
+## 运营检查报告 - 2026-03-16 第一轮
 
 ### 检查概览
 - **检查时间**: 2026-03-16
