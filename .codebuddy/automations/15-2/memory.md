@@ -1,5 +1,52 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-16 20:45 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **Liuyao.vue空值检查缺失** (高优先级)
+   - 文件: frontend/src/views/Liuyao.vue
+   - 问题: loadHistoryDetail函数中使用item.yao_result.map没有空值检查
+   - 修复: 添加空值检查：`(item.yao_result || []).map(...)`
+   - 行号: 第257行
+
+2. **Tarot.vue API错误处理不完整** (高优先级)
+   - 文件: frontend/src/views/Tarot.vue
+   - 问题: drawCards函数中interpretResponse.code !== 0时没有处理错误情况
+   - 修复: 添加else分支处理解读失败，显示错误提示并刷新积分
+   - 行号: 第440-472行
+
+3. **Bazi.vue isCurrentDaYun函数硬编码年龄** (高优先级)
+   - 文件: frontend/src/views/Bazi.vue
+   - 问题: 函数中硬编码当前年龄为30岁，没有根据实际出生日期计算
+   - 修复: 根据用户birthDate动态计算当前年龄，判断是否已过生日
+   - 行号: 第1236-1250行
+
+4. **SEOStats.vue图表初始化代码缺失** (中优先级)
+   - 文件: frontend/src/views/admin/SEOStats.vue
+   - 问题: pieChart和trendChart ref被模板引用但从未定义
+   - 修复: 添加ref定义和onMounted钩子，添加TODO注释说明后续可添加ECharts
+   - 行号: 第131、147行
+
+5. **Hehun.vue未使用的图标导入** (中优先级)
+   - 文件: frontend/src/views/Hehun.vue
+   - 问题: 导入了MagicStick图标但未使用
+   - 修复: 删除未使用的MagicStick导入
+   - 行号: 第256行
+
+### Git提交信息
+- 提交时间: 2026-03-16 20:45
+- 提交哈希: f009d27
+- 提交信息: fix-frontend-multiple-issues-20260316-2045
+
+### 修复统计
+- 修复文件数: 4个
+- 修复问题数: 5个
+- 高优先级: 3个
+- 中优先级: 2个
+
+---
+
 ## 2026-03-16 15:45 执行摘要
 
 ### 本次修复的前端问题（共6个）
