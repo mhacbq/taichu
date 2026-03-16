@@ -40,6 +40,13 @@ class Liuyao extends BaseController
             
             // 计算六亲六神（需要日辰信息）
             $riGan = $data['ri_gan'] ?? '甲';
+            
+            // 验证日辰天干是否有效
+            $validGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+            if (!in_array($riGan, $validGan, true)) {
+                return $this->error('日辰天干参数无效，必须是甲-癸之一', 400);
+            }
+            
             $result['liu_shen'] = LiuyaoService::getLiuShen($riGan);
             
             // 判断用神
@@ -60,7 +67,7 @@ class Liuyao extends BaseController
             
             return $this->success($result);
         } catch (\Exception $e) {
-            return $this->error('起卦失败：' . $e->getMessage());
+            return $this->error('起卦失败：' . $e->getMessage(), 500);
         }
     }
     

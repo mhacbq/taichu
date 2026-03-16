@@ -5,6 +5,7 @@ namespace app\controller;
 
 use app\BaseController;
 use think\Request;
+use think\facade\Env;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
@@ -14,7 +15,18 @@ use Firebase\JWT\Key;
 class AdminAuth extends BaseController
 {
     // JWT密钥
-    protected $jwtKey = 'your-admin-jwt-secret-key-change-in-production';
+    protected $jwtKey;
+    
+    /**
+     * 构造函数 - 从环境变量读取JWT密钥
+     */
+    public function __construct()
+    {
+        $this->jwtKey = Env::get('ADMIN_JWT_SECRET');
+        if (empty($this->jwtKey)) {
+            throw new \Exception('JWT密钥未配置，请设置环境变量 ADMIN_JWT_SECRET');
+        }
+    }
     
     /**
      * 管理员登录
@@ -24,9 +36,14 @@ class AdminAuth extends BaseController
         $username = $request->post('username');
         $password = $request->post('password');
 
-        // 验证管理员账号（实际应从数据库验证）
-        if ($username !== 'admin' || $password !== 'admin123') {
-            return json(['code' => 401, 'message' => '用户名或密码错误']);
+        // 验证管理员账号（从数据库验证）
+        $admin = \think\facade\Db::name('admin')
+            ->where('username', $username)
+            ->where('status', 1)
+            ->find();
+        
+        if (!$admin || !password_verify($password, $admin['password'])) {
+            return $this->error('用户名或密码错误', 401);
         }
 
         // 生成JWT Token
