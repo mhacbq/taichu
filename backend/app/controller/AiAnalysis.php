@@ -5,7 +5,6 @@ namespace app\controller;
 
 use app\BaseController;
 use app\model\AiPrompt;
-use app\service\CacheService;
 use think\Request;
 use think\facade\Config;
 
@@ -15,11 +14,6 @@ use think\facade\Config;
  */
 class AiAnalysis extends BaseController
 {
-    // 是否启用AI分析缓存（相同八字结果可复用）
-    const ENABLE_CACHE = true;
-    
-    // 缓存有效期（7天）
-    const CACHE_TTL = 604800;
     
     /**
      * AI解盘配置缓存
@@ -357,6 +351,9 @@ class AiAnalysis extends BaseController
             'Content-Type: application/json'
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        // 启用SSL验证，防止中间人攻击
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) {
             echo $data;
             flush();
@@ -462,6 +459,9 @@ class AiAnalysis extends BaseController
                 'Content-Type: application/json'
             ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            // 启用SSL验证，防止中间人攻击
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

@@ -77,6 +77,11 @@ class AdminAuthService
      */
     public static function getAdminPermissions(int $adminId): array
     {
+        // 验证adminId有效性
+        if ($adminId <= 0) {
+            return [];
+        }
+        
         $cacheKey = self::$cachePrefix . $adminId;
         
         // 尝试从缓存获取
@@ -124,6 +129,11 @@ class AdminAuthService
      */
     public static function clearPermissionCache(int $adminId): void
     {
+        // 验证adminId有效性
+        if ($adminId <= 0) {
+            return;
+        }
+        
         $cacheKey = self::$cachePrefix . $adminId;
         Cache::delete($cacheKey);
     }

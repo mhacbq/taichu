@@ -4,7 +4,7 @@
       <!-- 页面标题 -->
       <div class="page-header">
         <h1 class="page-title">
-          <span class="title-icon">☯</span>
+          <el-icon class="title-icon"><YinYang /></el-icon>
           六爻占卜
         </h1>
         <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
@@ -57,7 +57,7 @@
           <!-- AI分析 -->
           <div v-if="result.ai_analysis" class="ai-section">
             <h4>
-              <span>🤖</span>
+              <el-icon><Magic /></el-icon>
               AI深度分析
             </h4>
             <div class="ai-content">{{ result.ai_analysis.content }}</div>
@@ -73,10 +73,10 @@
           <!-- 操作按钮 -->
           <div class="action-buttons">
             <button class="btn-secondary" @click="resetForm">
-              <span>🔄</span> 再次占卜
+              <el-icon><RefreshRight /></el-icon> 再次占卜
             </button>
             <button class="btn-primary" @click="saveResult">
-              <span>💾</span> 保存结果
+              <el-icon><Download /></el-icon> 保存结果
             </button>
           </div>
         </div>
@@ -145,7 +145,7 @@
                 <p class="history-question">{{ item.question }}</p>
                 <p class="history-gua">{{ item.gua_name }} · {{ formatDate(item.created_at) }}</p>
               </div>
-              <button class="delete-btn" @click.stop="deleteRecord(item.id)">🗑</button>
+              <button class="delete-btn" @click.stop="deleteRecord(item.id)"><el-icon><Delete /></el-icon></button>
             </div>
           </div>
         </div>
@@ -158,6 +158,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
+import { YinYang, RefreshRight, Download, Delete, Magic } from '@element-plus/icons-vue'
 
 // 表单数据
 const form = reactive({

@@ -363,6 +363,12 @@ class Content extends BaseController
             $pageSize = $request->get('pageSize', 20);
             $keyword = $request->get('keyword');
             
+            // 验证分页参数
+            $page = filter_var($page, FILTER_VALIDATE_INT) ?: 1;
+            $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT) ?: 20;
+            $page = max(1, $page);
+            $pageSize = max(1, min(100, $pageSize)); // 限制最大100条
+            
             $query = Page::order('updated_at', 'desc');
             
             if ($keyword) {

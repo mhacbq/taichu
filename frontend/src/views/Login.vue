@@ -4,7 +4,7 @@
       <div class="login-box">
         <div class="login-header">
           <div class="logo">
-            <span class="logo-icon">☯</span>
+            <el-icon class="logo-icon"><YinYang /></el-icon>
             <span>太初命理</span>
           </div>
           <h2>欢迎回来</h2>
@@ -78,7 +78,7 @@
 import { ref, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Phone, Lock, Lightbulb, Lock as LockIcon } from '@element-plus/icons-vue'
+import { Phone, Lock, Lightbulb, Lock as LockIcon, YinYang } from '@element-plus/icons-vue'
 import { phoneLogin, sendSmsCode } from '../api'
 import { validatePhone } from '../utils/validators'
 
@@ -225,6 +225,11 @@ onUnmounted(() => {
 .logo-icon {
   font-size: 36px;
   color: #e94560;
+}
+
+.logo-icon svg {
+  width: 36px;
+  height: 36px;
 }
 
 .login-header h2 {

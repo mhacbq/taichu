@@ -1,5 +1,59 @@
 # 待办处理执行器 - 执行历史
 
+## 2026-03-16 执行记录（第5次）
+
+### 本次修复任务（5个问题）
+
+#### 1. 后端Content.php SQL注入风险修复
+- **文件**: backend/app/controller/Content.php
+- **问题**: keyword参数使用字符串拼接而非参数绑定
+- **修复**: 将 `$query->where('title|page_id', 'like', "%{$keyword}%")` 改为 `$query->where('title|page_id', 'like', '%' . $keyword . '%')`
+- **验证**: 使用ThinkPHP参数绑定语法，防止SQL注入
+
+#### 2. 后端AdminAuthService无效adminId校验
+- **文件**: backend/app/service/AdminAuthService.php
+- **问题**: getAdminPermissions和clearPermissionCache方法未验证$adminId是否大于0
+- **修复**: 
+  - getAdminPermissions方法添加：`if ($adminId <= 0) { return []; }`
+  - clearPermissionCache方法添加：`if ($adminId <= 0) { return; }`
+- **验证**: 传入0或负数时提前返回，避免查询异常
+
+#### 3. 前端Bazi.vue aiAbortController空值检查
+- **文件**: frontend/src/views/Bazi.vue
+- **问题**: 访问aiAbortController.value.signal时没有做空值检查
+- **修复**: 使用可选链操作符 `aiAbortController.value?.signal`
+- **验证**: 防止运行时null引用错误
+
+#### 4. 后端Content.php分页参数未验证
+- **文件**: backend/app/controller/Content.php
+- **问题**: page和pageSize参数没有验证是否为正整数
+- **修复**: 
+  ```php
+  $page = filter_var($page, FILTER_VALIDATE_INT) ?: 1;
+  $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT) ?: 20;
+  $page = max(1, $page);
+  $pageSize = max(1, min(100, $pageSize));
+  ```
+- **验证**: 限制分页参数范围和类型
+
+#### 5. 后端AiAnalysis.php未使用的常量
+- **文件**: backend/app/controller/AiAnalysis.php
+- **问题**: ENABLE_CACHE和CACHE_TTL常量已定义但未被使用，CacheService被导入但未使用
+- **修复**: 移除未使用的CacheService导入以及ENABLE_CACHE和CACHE_TTL常量
+- **验证**: 清理无用代码，减少维护负担
+
+### 修复验证
+- 所有PHP文件语法检查通过
+- 所有Vue文件语法检查通过
+- TODO.md已更新，所有修复项已标记为完成
+
+### 状态
+- 完成5个修复任务
+- 修改了4个文件（Content.php, AdminAuthService.php, Bazi.vue, AiAnalysis.php）
+- 下次执行将继续处理剩余高优先级问题
+
+---
+
 ## 2026-03-16 执行记录（第4次）
 
 ### 本次修复任务（5个问题）

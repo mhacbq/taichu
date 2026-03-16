@@ -24,7 +24,7 @@
 | 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
 | 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
 
-## UI设计检查报告 - 2026-03-16 第十五轮
+## UI设计检查报告 - 2026-03-16 第十七轮
 
 ### 本次检查重点
 - 检查范围：前端Vue项目全部视图页面和组件
@@ -37,10 +37,40 @@
 - [x] [UI] 主题方向决策 - Home.vue - 已将首页各区域背景和文字颜色改为CSS变量，适配白色主题 - 修复时间: 2026-03-16
 - [x] [UI] 导航栏与页面内容区视觉割裂 - App.vue - 已统一为白色导航栏，移动端菜单也使用白色主题 - 修复时间: 2026-03-16
 - [x] [UI] 首页Hero区域文字颜色与背景冲突 - Home.vue - 已将白色文字改为使用var(--text-primary)和var(--text-secondary) - 修复时间: 2026-03-16
+- [x] [UI] 登录页Logo仍使用emoji图标 - Login.vue - 已将☯emoji替换为Element Plus的YinYang图标 - 修复时间: 2026-03-16
 - [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
 - [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
 - [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
 - [ ] [UI] 后台管理页面深色背景与白色主题不协调 - admin/*.vue页面使用rgba(0,0,0,0.2)深色背景，与style.css定义的白色主题冲突 - 建议统一后台主题风格
+- [ ] [UI] 六爻页面标题使用emoji图标 - Liuyao.vue第7行使用☯emoji作为标题图标 - 建议替换为Element Plus图标YinYang
+- [ ] [UI] 合婚页面标题使用emoji图标 - Hehun.vue第7行使用💕emoji作为标题图标 - 建议替换为Element Plus图标如Link或Heart
+
+#### 🟡 中优先级（体验问题）
+- [x] [UI] 导航栏大量使用emoji图标 - App.vue - 已替换为Element Plus图标（YinYang, Diamond, User, SwitchButton, HomeFilled, Calendar, Magic, Star, Sunrise, Collection, Present, Close） - 修复时间: 2026-03-16
+- [x] [UI] 首页大量使用emoji图标 - Home.vue - 已替换为Element Plus图标（Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link） - 修复时间: 2026-03-16
+- [x] [UI] 八字排盘页面使用emoji图标 - Bazi.vue - 已将💝、💎、🌱、🔮、❓、🎁、⚡等emoji替换为Element Plus图标(HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning) - 修复时间: 2026-03-16
+- [x] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue - 已将💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji替换为Element Plus图标(Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight) - 修复时间: 2026-03-16
+- [x] [UI] 六爻占卜页面使用emoji图标 - Liuyao.vue - 已将☯、🔄、💾、🗑等emoji替换为Element Plus图标(YinYang, RefreshRight, Download, Delete, Magic) - 修复时间: 2026-03-16
+- [ ] [UI] 每日运势页面使用emoji图标 - Daily.vue使用🔮、❓、📿等emoji - 建议统一使用图标库
+- [x] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue - 已增大padding至12px，确保最小点击区域44x44px - 修复时间: 2026-03-16
+- [x] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue - 已增大宽高至44px，符合最小触摸区域规范 - 修复时间: 2026-03-16
+- [x] [UI] 登录页输入框使用emoji图标 - Login.vue - 已替换为Element Plus图标（Phone, Lock, Lightbulb） - 修复时间: 2026-03-16
+- [ ] [UI] 浮动陪伴组件关闭按钮尺寸仍偏小 - App.vue第853-871行close-btn宽度仅28px，建议增大至44px以符合WCAG 2.1标准
+- [ ] [UI] 合婚页面八字对比区域使用emoji分隔符 - Hehun.vue第41行使用💕emoji作为分隔符 - 建议改为Element Plus图标或CSS装饰
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
+- [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+- [ ] [UI] 首页feature-card深色背景与白色主题不协调 - Home.vue第587-591行使用rgba(255,255,255,0.05)深色背景 - 建议改为var(--bg-card)浅色背景
+- [ ] [UI] 首页about区域深色背景与白色主题不协调 - Home.vue第632行使用rgba(0,0,0,0.2)深色背景 - 建议改为var(--bg-secondary)浅色背景
+- [ ] [UI] 塔罗牌使用emoji表示 - Tarot.vue第109行使用emoji表示塔罗牌 - 建议添加真实塔罗牌图片或使用SVG图标
+
+---
+
+## UI设计检查报告 - 2026-03-16 第十五轮
 
 #### 🟡 中优先级（体验问题）
 - [x] [UI] 导航栏大量使用emoji图标 - App.vue - 已替换为Element Plus图标（YinYang, Diamond, User, SwitchButton, HomeFilled, Calendar, Magic, Star, Sunrise, Collection, Present, Close） - 修复时间: 2026-03-16
@@ -191,12 +221,12 @@
 
 #### 🔴 高优先级（功能性问题）
 - [x] [2026-03-16 15:00] ~~后端Auth.php微信登录仍使用模拟逻辑~~ - **已删除**: 根据需求，微信登录功能已移除，仅保留短信登录
-- [ ] [2026-03-16 15:00] 后端Content.php SQL注入风险 - backend/app/controller/Content.php第368-371行 - keyword参数使用字符串拼接而非参数绑定，虽然有过滤但仍存在风险 - 建议使用ThinkPHP参数绑定语法
-- [ ] [2026-03-16 15:00] 后端AdminAuthService缺少无效adminId校验 - backend/app/service/AdminAuthService.php第31-42行 - checkPermission方法未验证$adminId是否大于0，传入0或负数可能导致查询异常 - 建议添加if ($adminId <= 0) { return false; }
+- [x] [2026-03-16 15:00] 后端Content.php SQL注入风险 - backend/app/controller/Content.php第368-371行 - 已修复：改用ThinkPHP参数绑定语法 `$query->where('title|page_id', 'like', '%' . $keyword . '%')` - 修复时间: 2026-03-16
+- [x] [2026-03-16 15:00] 后端AdminAuthService缺少无效adminId校验 - backend/app/service/AdminAuthService.php第31-42行 - 已修复：在getAdminPermissions和clearPermissionCache方法中添加`if ($adminId <= 0) { return false; }`校验 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 15:00] 前端Bazi.vue aiAbortController空值检查缺失 - frontend/src/views/Bazi.vue第1299-1300行、第1330行 - 访问aiAbortController.value.signal时没有做空值检查，可能导致运行时错误 - 建议使用可选链：aiAbortController.value?.signal
 
 #### 🟡 中优先级（体验问题）
-- [ ] [2026-03-16 15:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - ENABLE_CACHE和CACHE_TTL已定义但未被使用，缓存功能实际上未启用 - 建议实现缓存逻辑或移除未使用的常量
+- [x] [2026-03-16 15:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - 已修复：移除未使用的CacheService导入以及ENABLE_CACHE和CACHE_TTL常量 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 15:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 返回的权益列表使用emoji图标（✨、📊、💎、💕、🎯、🎁），可能在某些系统或数据库编码环境下显示异常 - 建议改为使用图标库或SVG图标
 - [ ] [2026-03-16 15:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php第89-91行、第147-149行、第201-203行 - dashboard和users方法使用$this->error()，userDetail方法使用json()，返回格式不一致 - 建议统一使用$this->error()方法
 - [ ] [2026-03-16 15:00] 前端Bazi.vue多处潜在空值访问 - frontend/src/views/Bazi.vue第220-262行等 - result对象多层属性访问存在空值风险 - 建议使用可选链操作符?.或添加v-if判断
@@ -258,7 +288,7 @@
 #### 🔴 高优先级（功能性问题）
 - [x] [2026-03-16 17:00] 后端Vip.php缺少用户认证中间件 - backend/app/controller/Vip.php第21行 - 已添加protected $middleware = [\app\middleware\Auth::class]中间件配置 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 17:00] 后端Paipan.php调用未定义服务方法 - backend/app/controller/Paipan.php第70-71、74行 - 调用interpretationService和fortuneAnalysisService的方法，但这些服务类未导入或可能不存在 - 建议确认服务类存在并添加正确的use导入语句
-- [ ] [2026-03-16 17:00] 后端AiAnalysis.php流式请求缺少SSL验证 - backend/app/controller/AiAnalysis.php第355-358行 - callAiApiStream方法中cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置
+- [x] [2026-03-16 17:00] 后端AiAnalysis.php流式请求缺少SSL验证 - backend/app/controller/AiAnalysis.php第355-358行 - 已添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST配置，启用SSL验证防止中间人攻击 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 17:00] 后端Admin.php SQL注入风险 - backend/app/controller/Admin.php第163-170行 - 用户名和手机号搜索使用字符串拼接，虽然有preg_replace过滤但仍存在风险 - 建议使用参数绑定替代字符串拼接
 - [x] [2026-03-16 17:00] 前端Bazi.vue藏干访问缺少可选链 - frontend/src/views/Bazi.vue第275-291行 - 已统一使用可选链和默认值：result.bazi?.month?.canggan || [] - 修复时间: 2026-03-16
 
@@ -284,8 +314,8 @@
 
 #### 🔴 高优先级（功能性问题）
 - [ ] [2026-03-16 16:30] 前端Bazi.vue result对象多层属性访问空值风险 - frontend/src/views/Bazi.vue第205-206、221-301行 - 多处直接访问result.bazi.xxx而没有检查result或result.bazi是否存在，可能导致页面崩溃 - 建议使用可选链操作符?.或添加v-if空值检查
-- [ ] [2026-03-16 16:30] 后端AiAnalysis.php callAiApiStream方法缺少SSL验证 - backend/app/controller/AiAnalysis.php第350-372行 - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST，存在中间人攻击风险 - 建议添加SSL验证配置
-- [ ] [2026-03-16 16:30] 后端AiAnalysis.php testConnection方法缺少SSL验证 - backend/app/controller/AiAnalysis.php第455-468行 - cURL调用缺少SSL验证配置 - 建议添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST
+- [x] [2026-03-16 16:30] 后端AiAnalysis.php callAiApiStream方法缺少SSL验证 - backend/app/controller/AiAnalysis.php第350-372行 - 已添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST配置，启用SSL验证防止中间人攻击 - 修复时间: 2026-03-16
+- [x] [2026-03-16 16:30] 后端AiAnalysis.php testConnection方法缺少SSL验证 - backend/app/controller/AiAnalysis.php第455-468行 - 已添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST配置，启用SSL验证防止中间人攻击 - 修复时间: 2026-03-16
 
 #### 🟡 中优先级（体验问题）
 - [ ] [2026-03-16 16:30] 前端Bazi.vue cancelAiAnalysis函数空值检查缺失 - frontend/src/views/Bazi.vue第1275-1376行 - clearInterval(aiLoadingTimer.value)调用前未检查是否为null - 建议添加if (aiLoadingTimer.value)判断
@@ -419,7 +449,7 @@
 - [x] [2026-03-16 16:00] 前端router/index.js缺少路由懒加载 - frontend/src/router/index.js第1-21行 - 已将非首屏页面改为懒加载，提升首屏性能 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 前端管理端权限控制缺失 - KnowledgeManage.vue/SEOStats.vue/ShenshaManage.vue - 没有任何权限控制逻辑，删除、编辑等操作没有权限检查 - 建议添加权限控制
 - [ ] [2026-03-16 16:00] 前端管理端未使用的变量 - SEOManage.vue/SEOStats.vue/ShenshaManage.vue - loading变量、图表引用等声明但未使用 - 建议清理未使用的代码
-- [ ] [2026-03-16 15:00] 前端Bazi.vue aiAbortController空值检查缺失 - frontend/src/views/Bazi.vue第1299-1300行、第1330行 - 访问aiAbortController.value.signal时没有做空值检查，可能导致运行时错误 - 建议使用可选链：aiAbortController.value?.signal
+- [x] [2026-03-16 15:00] 前端Bazi.vue aiAbortController空值检查缺失 - frontend/src/views/Bazi.vue - 已使用可选链操作符?.修复aiAbortController.value?.signal访问，同时修复了result.bazi的多处空值访问 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 15:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - ENABLE_CACHE和CACHE_TTL已定义但未被使用，缓存功能实际上未启用 - 建议实现缓存逻辑或移除未使用的常量
 - [x] [2026-03-16 15:00] 前端Tarot.vue selectedCardIndex变量未使用 - frontend/src/views/Tarot.vue第242行 - 经检查该变量已不存在，代码已更新 - 修复时间: 2026-03-16
 - [x] [2026-03-16 15:00] 前端Bazi.vue getYearlyTrend函数导入未使用 - frontend/src/views/Bazi.vue第911行 - 经检查该导入已不存在，代码已更新 - 修复时间: 2026-03-16

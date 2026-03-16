@@ -8,7 +8,7 @@
       
       <!-- 暖心提示 -->
       <div class="warm-tip card" v-if="!result">
-        <span class="tip-icon">💝</span>
+        <el-icon class="tip-icon"><HeartFilled /></el-icon>
         <div class="tip-content">
           <p class="tip-title">八字排盘能帮你了解什么？</p>
           <p class="tip-desc">你的性格优势 · 适合的发展方向 · 未来运势起伏 · 人际关系建议</p>
@@ -18,9 +18,9 @@
       <div class="bazi-form card" v-if="!result">
         <!-- 积分消耗提示 -->
         <div class="points-hint">
-          <span class="hint-icon">💎</span>
+          <el-icon class="hint-icon"><Diamond /></el-icon>
           <span>
-            <span v-if="isFirstBazi">🎁 首次排盘免费</span>
+            <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
             <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
           </span>
           <span class="current-points">当前积分: {{ currentPoints }}</span>
@@ -32,13 +32,13 @@
           <el-radio-group v-model="versionMode" size="small">
             <el-radio-button label="simple">
               <span class="mode-option">
-                <span class="mode-icon">🌱</span>
+                <el-icon class="mode-icon"><Magic /></el-icon>
                 简化版
               </span>
             </el-radio-button>
             <el-radio-button label="pro">
               <span class="mode-option">
-                <span class="mode-icon">🔮</span>
+                <el-icon class="mode-icon"><Diamond /></el-icon>
                 专业版
               </span>
             </el-radio-button>
@@ -71,7 +71,7 @@
           <label>
             出生地点
             <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
-              <span class="help-icon">❓</span>
+              <el-icon class="help-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
           </label>
           <el-select-v2
@@ -83,7 +83,7 @@
             clearable
             :height="200"
           />
-          <p class="form-hint">💡 不知道出生地可以跳过，默认使用北京时间</p>
+          <p class="form-hint"><el-icon><Magic /></el-icon> 不知道出生地可以跳过，默认使用北京时间</p>
         </div>
         
         <el-button 
@@ -93,7 +93,8 @@
           :loading="loading"
           :disabled="!isFirstBazi && currentPoints < 10"
         >
-          {{ isFirstBazi ? '🎁 首次免费排盘' : '开始排盘' }}
+          <el-icon v-if="isFirstBazi"><Present /></el-icon>
+          {{ isFirstBazi ? ' 首次免费排盘' : '开始排盘' }}
         </el-button>
 
         <!-- 积分不足提示 -->
@@ -193,8 +194,8 @@
         <div class="result-header">
           <h2>八字排盘结果</h2>
           <div class="result-meta">
-            <span class="meta-tag" v-if="result.is_first_bazi">🎁 首次免费</span>
-            <span class="meta-tag" v-if="result.from_cache">⚡ 智能缓存</span>
+            <span class="meta-tag" v-if="result.is_first_bazi"><el-icon><Present /></el-icon> 首次免费</span>
+            <span class="meta-tag" v-if="result.from_cache"><el-icon><Lightning /></el-icon> 智能缓存</span>
           </div>
         </div>
         
@@ -202,8 +203,8 @@
         <div class="day-master-info">
           <div class="day-master-card">
             <span class="label">日主</span>
-            <span class="value">{{ result.bazi.day_master }}</span>
-            <span class="wuxing">{{ result.bazi.day_master_wuxing }}</span>
+            <span class="value">{{ result.bazi?.day_master }}</span>
+            <span class="wuxing">{{ result.bazi?.day_master_wuxing }}</span>
           </div>
         </div>
         
@@ -294,10 +295,10 @@
           </div>
           <!-- 纳音行 -->
           <div class="paipan-row nayin-row">
-            <div class="paipan-cell nayin-cell">{{ result.bazi.year.nayin }}</div>
-            <div class="paipan-cell nayin-cell">{{ result.bazi.month.nayin }}</div>
-            <div class="paipan-cell nayin-cell highlight">{{ result.bazi.day.nayin }}</div>
-            <div class="paipan-cell nayin-cell">{{ result.bazi.hour.nayin }}</div>
+            <div class="paipan-cell nayin-cell">{{ result.bazi?.year?.nayin }}</div>
+            <div class="paipan-cell nayin-cell">{{ result.bazi?.month?.nayin }}</div>
+            <div class="paipan-cell nayin-cell highlight">{{ result.bazi?.day?.nayin }}</div>
+            <div class="paipan-cell nayin-cell">{{ result.bazi?.hour?.nayin }}</div>
           </div>
         </div>
         
@@ -305,7 +306,7 @@
         <div class="wuxing-stats">
           <h3>五行分布</h3>
           <div class="wuxing-bars">
-            <div v-for="(count, wx) in result.bazi.wuxing_stats" :key="wx" class="wuxing-bar-item">
+            <div v-for="(count, wx) in result.bazi?.wuxing_stats" :key="wx" class="wuxing-bar-item">
               <span class="wuxing-name">{{ wx }}</span>
               <div class="wuxing-bar">
                 <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%' }"></div>
@@ -904,7 +905,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { CircleClose } from '@element-plus/icons-vue'
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -1285,7 +1286,7 @@ const startAiAnalysis = async () => {
   
   try {
     // 尝试使用流式API
-    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value.signal)
+    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
     
     if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
       // 流式响应

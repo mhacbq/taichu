@@ -8,13 +8,13 @@
 
       <!-- 积分提示 -->
       <div class="points-hint card">
-        <span class="hint-icon">💎</span>
+        <el-icon class="hint-icon"><Diamond /></el-icon>
         <span>本次占卜将消耗 <strong>5 积分</strong></span>
         <span class="current-points">当前积分: {{ currentPoints }}</span>
       </div>
 
       <div v-if="currentPoints < 5" class="insufficient-points card">
-        <p>💡 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+        <p><el-icon><Magic /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
       </div>
 
       <div class="tarot-intro card">
@@ -27,7 +27,11 @@
             :class="{ active: selectedSpread === spread.id }"
             @click="selectedSpread = spread.id"
           >
-            <div class="spread-icon">{{ spread.icon }}</div>
+            <div class="spread-icon">
+              <el-icon v-if="spread.icon === 'card'"><Document /></el-icon>
+              <el-icon v-else-if="spread.icon === 'cards'"><ChatDotRound /></el-icon>
+              <el-icon v-else-if="spread.icon === 'magic'"><Magic /></el-icon>
+            </div>
             <h3>{{ spread.name }}</h3>
             <p>{{ spread.description }}</p>
           </div>
@@ -37,7 +41,7 @@
       <!-- 问题引导区域 -->
       <div class="question-guide card" v-if="!question && cards.length === 0">
         <h3>
-          <span class="guide-icon">💭</span>
+          <el-icon class="guide-icon"><ChatDotRound /></el-icon>
           不知道问什么？选择一个你关心的话题
         </h3>
         <div class="topic-tabs">
@@ -48,7 +52,13 @@
             :class="{ active: selectedTopic === topic.id }"
             @click="selectTopic(topic.id)"
           >
-            <span class="topic-icon">{{ topic.icon }}</span>
+            <span class="topic-icon">
+              <el-icon v-if="topic.icon === 'briefcase'"><Briefcase /></el-icon>
+              <el-icon v-else-if="topic.icon === 'heart'"><StarFilled /></el-icon>
+              <el-icon v-else-if="topic.icon === 'star'"><StarFilled /></el-icon>
+              <el-icon v-else-if="topic.icon === 'question'"><QuestionFilled /></el-icon>
+              <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
+            </span>
             <span class="topic-name">{{ topic.name }}</span>
           </div>
         </div>
@@ -77,7 +87,7 @@
           placeholder="描述你的困惑，越具体越好。比如：'我应该接受这份新工作吗？'"
         />
         <div class="question-hint" v-if="question">
-          <span class="hint-icon">💡</span>
+          <el-icon class="hint-icon"><Magic /></el-icon>
           <span>好的问题通常是开放性的，以"我应该..."或"我该如何..."开头</span>
         </div>
         <el-button
@@ -88,14 +98,14 @@
           :disabled="!question || currentPoints < 5"
           class="draw-btn"
         >
-          <span class="btn-icon">🎴</span>
+          <el-icon class="btn-icon"><Document /></el-icon>
           开始抽牌
         </el-button>
       </div>
 
       <div v-if="cards.length > 0" class="cards-result card">
         <h3>您的牌阵</h3>
-        <p class="cards-hint">💡 点击任意牌查看详细解读</p>
+        <p class="cards-hint"><el-icon><Magic /></el-icon> 点击任意牌查看详细解读</p>
         <div class="cards-display">
           <div 
             v-for="(card, index) in cards" 
@@ -123,13 +133,13 @@
         <!-- 操作按钮 -->
         <div class="result-actions">
           <el-button type="primary" @click="saveTarotResult">
-            <span class="btn-icon">💾</span> 保存记录
+            <el-icon class="btn-icon"><Download /></el-icon> 保存记录
           </el-button>
           <el-button @click="shareTarotResult">
-            <span class="btn-icon">📤</span> 分享
+            <el-icon class="btn-icon"><Document /></el-icon> 分享
           </el-button>
           <el-button @click="resetTarot">
-            <span class="btn-icon">🔄</span> 重新占卜
+            <el-icon class="btn-icon"><RefreshRight /></el-icon> 重新占卜
           </el-button>
         </div>
       </div>
@@ -173,20 +183,21 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
+import { Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight } from '@element-plus/icons-vue'
 
 const spreads = [
-  { id: 'single', name: '单张牌', icon: '🎴', description: '简单直接，适合快速解答' },
-  { id: 'three', name: '三张牌', icon: '🎴🎴🎴', description: '过去、现在、未来' },
-  { id: 'celtic', name: '凯尔特十字', icon: '🔮', description: '深度分析，全面解读' },
+  { id: 'single', name: '单张牌', icon: 'card', description: '简单直接，适合快速解答' },
+  { id: 'three', name: '三张牌', icon: 'cards', description: '过去、现在、未来' },
+  { id: 'celtic', name: '凯尔特十字', icon: 'magic', description: '深度分析，全面解读' },
 ]
 
 // 问题引导话题
 const questionTopics = [
-  { id: 'career', name: '工作事业', icon: '💼' },
-  { id: 'love', name: '感情关系', icon: '💕' },
-  { id: 'growth', name: '个人成长', icon: '🌱' },
-  { id: 'decision', name: '选择困难', icon: '🤔' },
-  { id: 'relation', name: '人际关系', icon: '👥' },
+  { id: 'career', name: '工作事业', icon: 'briefcase' },
+  { id: 'love', name: '感情关系', icon: 'heart' },
+  { id: 'growth', name: '个人成长', icon: 'star' },
+  { id: 'decision', name: '选择困难', icon: 'question' },
+  { id: 'relation', name: '人际关系', icon: 'users' },
 ]
 
 // 问题模板
