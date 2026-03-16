@@ -50,20 +50,30 @@ class Auth extends BaseController
         
         if (!$user) {
             $isNewUser = true;
-            $user = User::create([
-                'phone' => $phone,
-                'nickname' => '用户' . substr($phone, -4),
-                'avatar' => '',
-                'gender' => 0,
-            ]);
             
-            // 新用户赠送积分
-            $user->addPoints(100);
-            PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
-            
-            // 处理邀请码
-            if (!empty($data['invite_code'])) {
-                $this->processInviteCode($user->id, $data['invite_code']);
+            // 使用事务包裹新用户创建相关操作
+            Db::startTrans();
+            try {
+                $user = User::create([
+                    'phone' => $phone,
+                    'nickname' => '用户' . substr($phone, -4),
+                    'avatar' => '',
+                    'gender' => 0,
+                ]);
+                
+                // 新用户赠送积分
+                $user->addPoints(100);
+                PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+                
+                // 处理邀请码
+                if (!empty($data['invite_code'])) {
+                    $this->processInviteCode($user->id, $data['invite_code']);
+                }
+                
+                Db::commit();
+            } catch (\Exception $e) {
+                Db::rollback();
+                return $this->error('用户创建失败：' . $e->getMessage());
             }
         }
         

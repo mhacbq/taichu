@@ -16,6 +16,13 @@ use think\response\Json;
 class Vip extends BaseController
 {
     /**
+     * 中间件配置
+     */
+    protected array $middleware = [
+        \app\middleware\Auth::class,
+    ];
+    
+    /**
      * 获取VIP信息
      */
     public function info(): Json
@@ -51,32 +58,32 @@ class Vip extends BaseController
             ],
             'features' => [
                 [
-                    'icon' => '✨',
+                    'icon' => 'star',
                     'title' => '无限次排盘',
                     'desc' => '不受次数限制，随时想看就看',
                 ],
                 [
-                    'icon' => '📊',
+                    'icon' => 'document',
                     'title' => '解锁专业报告',
                     'desc' => '详细命盘解读、性格分析',
                 ],
                 [
-                    'icon' => '💎',
+                    'icon' => 'diamond',
                     'title' => '积分加倍',
                     'desc' => '签到积分x' . ConfigService::get('vip_daily_points_multiplier', 2) . '倍',
                 ],
                 [
-                    'icon' => '💕',
+                    'icon' => 'heart',
                     'title' => '八字合婚',
                     'desc' => '免费使用合婚功能',
                 ],
                 [
-                    'icon' => '🎯',
+                    'icon' => 'service',
                     'title' => '优先客服',
                     'desc' => '专属客服通道',
                 ],
                 [
-                    'icon' => '🎁',
+                    'icon' => 'gift',
                     'title' => '新功能抢先',
                     'desc' => '优先体验新功能',
                 ],

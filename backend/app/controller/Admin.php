@@ -207,12 +207,12 @@ class Admin extends BaseController
         try {
             $user = User::find($id);
             if (!$user) {
-                return json(['code' => 404, 'message' => '用户不存在']);
+                return $this->error('用户不存在', 404);
             }
 
             // 添加统计数据
             $user['bazi_count'] = BaziRecord::where('user_id', $id)->count();
-            $user['tarot_count'] = \app\model\DailyFortune::where('user_id', $id)->count();
+            $user['tarot_count'] = DailyFortune::where('user_id', $id)->count();
 
             // 记录查看日志
             $this->logOperation('view', 'user', [
@@ -221,10 +221,7 @@ class Admin extends BaseController
                 'detail' => '查看用户详情',
             ]);
 
-            return json([
-                'code' => 200,
-                'data' => $user
-            ]);
+            return $this->success($user);
         } catch (\Exception $e) {
             Log::error('获取用户详情失败: ' . $e->getMessage());
             return json(['code' => 500, 'message' => '获取用户详情失败，请稍后重试']);
@@ -243,6 +240,12 @@ class Admin extends BaseController
         
         try {
             $status = $request->put('status');
+            
+            // 验证状态参数有效性
+            if (!in_array($status, [0, 1, 2], true)) {
+                return $this->error('状态值无效，必须是0(禁用)、1(正常)或2(待验证)', 400);
+            }
+            
             $user = User::find($id);
             
             if (!$user) {
