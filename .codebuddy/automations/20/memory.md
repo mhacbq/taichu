@@ -24,3 +24,29 @@
 - frontend/src/views/admin/KnowledgeManage.vue
 - frontend/src/views/admin/SEOStats.vue
 - TODO.md
+
+### 2026-03-16 第二次执行
+- 任务：修复前端TODO.md中的前端相关问题
+- 状态：已完成
+- 修复数量：5个前端问题
+- Git提交：d1fb985 - fix-frontend-multiple-issues-2026-03-16
+
+#### 已修复问题：
+1. **Tarot.vue隐者牌英文描述** - 已翻译为中文：内省沉思/孤立自闭/花时间反思
+2. **Bazi.vue未使用的getYearlyTrendApi导入** - 已删除未使用的导入
+3. **App.vue移动端导航菜单emoji图标** - 已替换为Element Plus图标（Home, Calendar, Magic, YinYang, Link, Star）
+4. **SEOManage.vue图片上传缺少错误处理** - 已添加:on-error回调和handleImageError函数
+5. **ShenshaManage.vue分页逻辑不完整** - 已实现分页切片逻辑，根据page和pageSize返回对应数据
+
+#### 修改文件：
+- frontend/src/App.vue
+- frontend/src/views/Bazi.vue
+- frontend/src/views/Tarot.vue
+- frontend/src/views/admin/SEOManage.vue
+- frontend/src/views/admin/ShenshaManage.vue
+- TODO.md
+
+## 待修复问题跟踪
+- 主题方向决策（需要用户确认）
+- 页面背景色与主题冲突（需要用户确认主题方向）
+- 其他UI样式问题（等待主题确定后统一修复）
