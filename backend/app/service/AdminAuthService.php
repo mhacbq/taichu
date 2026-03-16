@@ -8,6 +8,7 @@ use app\model\AdminPermission;
 use app\model\AdminUserRole;
 use app\model\AdminRolePermission;
 use think\facade\Cache;
+use think\facade\Log;
 
 /**
  * 管理员权限服务
@@ -29,6 +30,11 @@ class AdminAuthService
      */
     public static function checkPermission(int $adminId, string $permissionCode): bool
     {
+        // 验证adminId有效性
+        if ($adminId <= 0) {
+            return false;
+        }
+        
         // 获取管理员的所有权限代码
         $permissions = self::getAdminPermissions($adminId);
         
@@ -196,6 +202,13 @@ class AdminAuthService
             
             return true;
         } catch (\Exception $e) {
+            Log::error('分配管理员角色失败', [
+                'admin_id' => $adminId,
+                'role_id' => $roleId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return false;
         }
     }
@@ -215,6 +228,13 @@ class AdminAuthService
             
             return true;
         } catch (\Exception $e) {
+            Log::error('移除管理员角色失败', [
+                'admin_id' => $adminId,
+                'role_id' => $roleId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return false;
         }
     }

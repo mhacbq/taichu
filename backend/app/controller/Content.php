@@ -5,6 +5,11 @@ namespace app\controller;
 
 use app\BaseController;
 use app\middleware\AdminAuth;
+use app\model\Page;
+use app\model\PageVersion;
+use app\model\PageDraft;
+use app\model\PageRecycle;
+use app\model\OperationLog;
 use think\Request;
 
 /**
@@ -26,7 +31,7 @@ class Content extends BaseController
     public function getPage(Request $request, string $pageId)
     {
         try {
-            $page = \app\model\Page::where('page_id', $pageId)->find();
+            $page = Page::where('page_id', $pageId)->find();
             
             if (!$page) {
                 // 返回默认页面结构
@@ -75,9 +80,9 @@ class Content extends BaseController
             }
             
             // 保存历史版本
-            $oldPage = \app\model\Page::where('page_id', $pageId)->find();
+            $oldPage = Page::where('page_id', $pageId)->find();
             if ($oldPage) {
-                \app\model\PageVersion::create([
+                PageVersion::create([
                     'page_id' => $pageId,
                     'content' => $oldPage->content,
                     'settings' => $oldPage->settings,
@@ -89,7 +94,7 @@ class Content extends BaseController
             }
             
             // 保存或更新页面
-            $page = \app\model\Page::updateOrCreate(
+            $page = Page::updateOrCreate(
                 ['page_id' => $pageId],
                 [
                     'title' => $data['title'] ?? $this->getDefaultTitle($pageId),
@@ -125,7 +130,7 @@ class Content extends BaseController
             $data = $request->post();
             
             // 保存到草稿表
-            \app\model\PageDraft::updateOrCreate(
+            PageDraft::updateOrCreate(
                 ['page_id' => $pageId, 'admin_id' => $request->adminId],
                 [
                     'content' => json_encode($data['blocks'] ?? []),
@@ -149,7 +154,7 @@ class Content extends BaseController
     public function getDraft(Request $request, string $pageId)
     {
         try {
-            $draft = \app\model\PageDraft::where('page_id', $pageId)
+            $draft = PageDraft::where('page_id', $pageId)
                 ->where('admin_id', $request->adminId)
                 ->order('updated_at', 'desc')
                 ->find();
@@ -180,12 +185,12 @@ class Content extends BaseController
             $page = $request->get('page', 1);
             $pageSize = $request->get('pageSize', 10);
             
-            $versions = \app\model\PageVersion::where('page_id', $pageId)
+            $versions = PageVersion::where('page_id', $pageId)
                 ->order('created_at', 'desc')
                 ->page($page, $pageSize)
                 ->select();
             
-            $total = \app\model\PageVersion::where('page_id', $pageId)->count();
+            $total = PageVersion::where('page_id', $pageId)->count();
             
             return json([
                 'code' => 200,
@@ -205,16 +210,16 @@ class Content extends BaseController
     public function restoreVersion(Request $request, int $versionId)
     {
         try {
-            $version = \app\model\PageVersion::find($versionId);
+            $version = PageVersion::find($versionId);
             
             if (!$version) {
                 return json(['code' => 404, 'message' => '版本不存在']);
             }
             
             // 保存当前版本到历史
-            $currentPage = \app\model\Page::where('page_id', $version->page_id)->find();
+            $currentPage = Page::where('page_id', $version->page_id)->find();
             if ($currentPage) {
-                \app\model\PageVersion::create([
+                PageVersion::create([
                     'page_id' => $currentPage->page_id,
                     'content' => $currentPage->content,
                     'settings' => $currentPage->settings,
@@ -226,7 +231,7 @@ class Content extends BaseController
             }
             
             // 恢复版本
-            \app\model\Page::updateOrCreate(
+            Page::updateOrCreate(
                 ['page_id' => $version->page_id],
                 [
                     'content' => $version->content,
@@ -253,7 +258,7 @@ class Content extends BaseController
     public function previewVersion(Request $request, int $versionId)
     {
         try {
-            $version = \app\model\PageVersion::find($versionId);
+            $version = PageVersion::find($versionId);
             
             if (!$version) {
                 return json(['code' => 404, 'message' => '版本不存在']);
@@ -281,7 +286,7 @@ class Content extends BaseController
     public function exportPage(Request $request, string $pageId)
     {
         try {
-            $page = \app\model\Page::where('page_id', $pageId)->find();
+            $page = Page::where('page_id', $pageId)->find();
             
             if (!$page) {
                 return json(['code' => 404, 'message' => '页面不存在']);
@@ -319,10 +324,10 @@ class Content extends BaseController
             }
             
             // 检查页面是否存在
-            $exists = \app\model\Page::where('page_id', $data['page_id'])->find();
+            $exists = Page::where('page_id', $data['page_id'])->find();
             
             // 保存页面
-            $page = \app\model\Page::updateOrCreate(
+            $page = Page::updateOrCreate(
                 ['page_id' => $data['page_id']],
                 [
                     'title' => $data['title'] ?? $this->getDefaultTitle($data['page_id']),
@@ -358,10 +363,12 @@ class Content extends BaseController
             $pageSize = $request->get('pageSize', 20);
             $keyword = $request->get('keyword');
             
-            $query = \app\model\Page::order('updated_at', 'desc');
+            $query = Page::order('updated_at', 'desc');
             
             if ($keyword) {
-                $query->where('title|page_id', 'like', "%{$keyword}%");
+                // 使用ThinkPHP参数绑定，防止SQL注入
+                $keyword = preg_replace('/[%_\\\\]/', '', $keyword);
+                $query->where('title|page_id', 'like', '%' . $keyword . '%');
             }
             
             $pages = $query->page($page, $pageSize)->select();
@@ -385,14 +392,14 @@ class Content extends BaseController
     public function deletePage(Request $request, string $pageId)
     {
         try {
-            $page = \app\model\Page::where('page_id', $pageId)->find();
+            $page = Page::where('page_id', $pageId)->find();
             
             if (!$page) {
                 return json(['code' => 404, 'message' => '页面不存在']);
             }
             
             // 保存到回收站
-            \app\model\PageRecycle::create([
+            PageRecycle::create([
                 'page_id' => $page->page_id,
                 'title' => $page->title,
                 'content' => $page->content,
@@ -522,7 +529,7 @@ class Content extends BaseController
     private function logOperation(string $action, string $description)
     {
         // 记录到操作日志表
-        \app\model\OperationLog::create([
+        OperationLog::create([
             'action' => $action,
             'description' => $description,
             'admin_id' => request()->adminId ?? 0,

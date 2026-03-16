@@ -9,6 +9,8 @@ use app\model\BaziRecord;
 use app\model\PointsRecord;
 use app\model\Feedback;
 use app\model\AdminLog;
+use app\model\DailyFortune;
+use app\model\TarotRecord;
 use app\service\AdminAuthService;
 use think\Request;
 use think\facade\Log;
@@ -87,7 +89,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('stats_view')) {
-            return json(['code' => 403, 'message' => '无权限访问统计数据']);
+            return $this->error('无权限访问统计数据', 403);
         }
         
         try {
@@ -96,8 +98,8 @@ class Admin extends BaseController
                 'today_users' => User::where('created_at', '>=', date('Y-m-d'))->count(),
                 'total_bazi' => BaziRecord::count(),
                 'today_bazi' => BaziRecord::where('created_at', '>=', date('Y-m-d'))->count(),
-                'total_tarot' => \app\model\DailyFortune::count(),
-                'today_tarot' => \app\model\DailyFortune::where('created_at', '>=', date('Y-m-d'))->count(),
+                'total_tarot' => DailyFortune::count(),
+                'today_tarot' => DailyFortune::where('created_at', '>=', date('Y-m-d'))->count(),
             ];
 
             // 用户增长趋势（最近7天）
@@ -145,7 +147,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('user_view')) {
-            return json(['code' => 403, 'message' => '无权限查看用户列表']);
+            return $this->error('无权限查看用户列表', 403);
         }
         
         try {
@@ -199,7 +201,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('user_view')) {
-            return json(['code' => 403, 'message' => '无权限查看用户信息']);
+            return $this->error('无权限查看用户信息', 403);
         }
         
         try {
@@ -392,15 +394,23 @@ class Admin extends BaseController
         }
         
         // 参数验证
-        $validated = $request->validate([
-            'user_id' => 'require|integer|gt:0',
-            'type' => 'require|in:add,sub',
-            'amount' => 'require|integer|gt:0|lt:100000',
-            'reason' => 'require|string|max:200',
-        ]);
-
-        if (!$validated) {
-            return json(['code' => 400, 'message' => '参数验证失败']);
+        $data = $request->post();
+        
+        // 手动验证参数
+        if (empty($data['user_id']) || !is_numeric($data['user_id']) || $data['user_id'] <= 0) {
+            return $this->error('用户ID必须是正整数', 400);
+        }
+        
+        if (empty($data['type']) || !in_array($data['type'], ['add', 'sub'])) {
+            return $this->error('调整类型必须是add或sub', 400);
+        }
+        
+        if (empty($data['amount']) || !is_numeric($data['amount']) || $data['amount'] <= 0 || $data['amount'] >= 100000) {
+            return $this->error('积分数量必须是1-99999之间的整数', 400);
+        }
+        
+        if (empty($data['reason']) || !is_string($data['reason']) || mb_strlen($data['reason']) > 200) {
+            return $this->error('调整原因不能为空且不能超过200字符', 400);
         }
         
         try {
@@ -471,6 +481,11 @@ class Admin extends BaseController
      */
     public function feedbackList(Request $request)
     {
+        // 检查权限
+        if (!$this->checkPermission('feedback_view')) {
+            return json(['code' => 403, 'message' => '无权限查看反馈列表']);
+        }
+
         try {
             $page = $request->get('page', 1);
             $pageSize = $request->get('pageSize', 20);
