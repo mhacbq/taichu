@@ -28,9 +28,9 @@ class Fortune extends BaseController
      */
     protected $dayunService;
     
-    public function __construct()
+    public function __construct(\think\App $app)
     {
-        parent::__construct();
+        parent::__construct($app);
         $this->yearlyService = new YearlyFortuneService();
         $this->dayunService = new DayunFortuneService();
     }
