@@ -43,14 +43,14 @@
 - [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
 
 #### 🟡 中优先级（体验问题）
-- [ ] [UI] 导航栏大量使用emoji图标 - App.vue使用☯、💎、👤、🚪、🏠、📅、🎴、💕、🌟、🌸、💝等emoji作为图标 - 建议引入@element-plus/icons-vue统一图标系统
+- [x] [UI] 导航栏大量使用emoji图标 - App.vue - 已替换为Element Plus图标（YinYang, Diamond, User, SwitchButton, HomeFilled, Calendar, Magic, Star, Sunrise, Collection, Present, Close） - 修复时间: 2026-03-16
 - [ ] [UI] 首页大量使用emoji图标 - Home.vue使用🌅、☀️、🌙、💎、🌸、🎁、✨、🔮、📅、🎴、💡、☯、💕、🌟、🎯、👩、👨、👦等emoji - 建议统一使用图标库
 - [ ] [UI] 八字排盘页面使用emoji图标 - Bazi.vue使用💝、💎、🌱、🔮、❓、🎁、⚡等emoji - 建议统一使用图标库
 - [ ] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue使用💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji - 建议统一使用图标库
 - [ ] [UI] 六爻占卜页面使用emoji图标 - Liuyao.vue使用☯、🔄、💾、🗑等emoji - 建议统一使用图标库
 - [ ] [UI] 合婚页面使用emoji图标 - Hehun.vue使用💕、👨、🔓、🤖、💝、🔄、📄等emoji - 建议统一使用图标库
-- [ ] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue第60行mobile-nav-close按钮padding仅5px，实际点击区域不足44px - 建议增大至44x44px
-- [ ] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue第138行close-btn宽度仅28px，不符合44px最小触摸区域规范 - 建议增大至44px
+- [x] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue - 已增大padding至12px，确保最小点击区域44x44px - 修复时间: 2026-03-16
+- [x] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue - 已增大宽高至44px，符合最小触摸区域规范 - 修复时间: 2026-03-16
 
 #### 🟢 低优先级（美观问题）
 - [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
@@ -193,7 +193,7 @@
 - [x] [2026-03-16 14:30] 后端AiAnalysis.php返回码格式不一致 - backend/app/controller/AiAnalysis.php第54-55行、第103-106行 - 已统一使用BaseController的success()和error()方法替换所有json()返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 14:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - ENABLE_CACHE和CACHE_TTL定义但未使用 - 建议实现缓存逻辑或移除未使用的常量
 - [ ] [2026-03-16 14:00] 前端router/index.js未使用的导入 - frontend/src/router/index.js第2行 - generateWebsiteSchema导入但未使用 - 建议删除未使用的导入
-- [ ] [2026-03-16 14:00] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue - 只有solarDate字段有验证规则，其他重要字段没有验证 - 建议添加完整的表单验证规则
+- [x] [2026-03-16 14:00] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue - 已添加宜、忌、干支、煞、值日等字段的验证规则 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 14:00] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue - pieChart和trendChart变量定义但未使用 - 建议实现图表初始化或删除未使用的代码
 
 #### 🟢 低优先级（优化问题）
@@ -323,9 +323,9 @@
 - [ ] [2026-03-16 16:00] 后端Content.php返回格式不一致 - backend/app/controller/Content.php多处 - 全部使用json(['code' => 200])，与BaseController的success()方法返回格式不一致 - 建议统一使用$this->success()和$this->error()
 - [ ] [2026-03-16 16:00] 后端InviteRecord.php whereWeek使用不一致 - backend/app/controller/InviteRecord.php第241行 - getUserRank方法使用whereWeek，而getLeaderboard中已改为使用whereBetween替代 - 建议统一使用whereBetween
 - [ ] [2026-03-16 16:00] 后端Auth.php邀请码查询逻辑不一致 - backend/app/controller/Auth.php第311行 - InviteRecord查询应该添加status=1条件以保持一致性 - 建议添加where('status', 1)条件
-- [ ] [2026-03-16 16:00] 前端Tarot.vue分享错误处理不完整 - frontend/src/views/Tarot.vue第536-538行 - navigator.clipboard.writeText的catch块为空，复制失败没有用户反馈 - 建议添加错误提示
-- [ ] [2026-03-16 16:00] 前端App.vue潜在空值访问 - frontend/src/views/App.vue第29、85行 - userNickname?.[0]可能返回undefined，当userNickname为空字符串时显示为空白 - 建议添加空字符串检查
-- [ ] [2026-03-16 16:00] 前端router/index.js缺少路由懒加载 - frontend/src/router/index.js第1-21行 - 所有页面组件都是同步导入 - 建议对非首屏页面使用() => import()懒加载
+- [x] [2026-03-16 16:00] 前端Tarot.vue分享错误处理不完整 - frontend/src/views/Tarot.vue第536-538行 - 已添加catch块处理复制失败情况，显示错误提示 - 修复时间: 2026-03-16
+- [x] [2026-03-16 16:00] 前端App.vue潜在空值访问 - frontend/src/views/App.vue第29、85行 - 已添加空字符串检查，为空时显示默认文本'用户' - 修复时间: 2026-03-16
+- [x] [2026-03-16 16:00] 前端router/index.js缺少路由懒加载 - frontend/src/router/index.js第1-21行 - 已将非首屏页面改为懒加载，提升首屏性能 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 前端管理端权限控制缺失 - KnowledgeManage.vue/SEOStats.vue/ShenshaManage.vue - 没有任何权限控制逻辑，删除、编辑等操作没有权限检查 - 建议添加权限控制
 - [ ] [2026-03-16 16:00] 前端管理端未使用的变量 - SEOManage.vue/SEOStats.vue/ShenshaManage.vue - loading变量、图表引用等声明但未使用 - 建议清理未使用的代码
 - [ ] [2026-03-16 15:00] 前端Bazi.vue aiAbortController空值检查缺失 - frontend/src/views/Bazi.vue第1299-1300行、第1330行 - 访问aiAbortController.value.signal时没有做空值检查，可能导致运行时错误 - 建议使用可选链：aiAbortController.value?.signal
@@ -714,6 +714,72 @@
 ## 已完成项目
 
 - [x] [2026-03-16] 前端Bazi.vue中AI解盘相关变量未定义 - frontend/src/views/Bazi.vue - 已添加aiLoadingTime、aiAbortController、aiLoadingTimer的ref定义 - 修复时间: 2026-03-16
+
+---
+
+## 占卜功能体验检查报告 - 2026-03-16 第三轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 占卜爱好者（专业命理/塔罗爱好者角度）
+- **检查范围**: 太初命理网站全部占卜功能深度体验
+- **测试数据**: 1990年5月15日 10:30 男 / 1992年8月20日 女
+
+### 功能体验结果
+
+#### 1. 八字排盘功能
+- **排盘计算**: 四柱计算逻辑正确，使用五虎遁月法和日上起时法
+- **节气问题**: 确认节气数据仅1990、1995、2000三年精确数据，其他年份使用通用数据(±1天误差)
+- **十神计算**: 天干十神计算正确，藏干十神已计算但前端展示不够突出
+- **真太阳时**: 前端有出生地选择，后端未实现经度转换
+- **大运流年**: 大运顺逆排法正确（阳男阴女顺排，阴男阳女逆排）
+
+#### 2. 六爻占卜功能
+- **起卦逻辑**: 钱币占卜模拟正确(老阴/少阴/少阳/老阳)
+- **变卦缺失**: 动爻产生变卦但未展示变卦卦象
+- **六亲六神**: 完全缺失，解卦不够专业
+- **手动起卦**: 仅支持自动起卦，无手动输入六次摇卦结果功能
+- **用神判断**: 未根据问题类型自动判断用神
+
+#### 3. 塔罗牌占卜功能
+- **牌阵设计**: 单张/三张/凯尔特十字牌阵合理
+- **隐者牌问题**: 确认第305-307行使用英文描述（upright/reversed/advice）
+- **AI解读**: 仅有基础解读，无AI深度分析功能
+- **牌阵关系**: 多张牌之间缺乏关联性解读
+- **元素分析**: 牌阵元素分布分析缺失
+
+#### 4. 合婚配对功能
+- **算法全面性**: 包含生肖/日主/五行/纳音/地支合冲配对
+- **分层付费**: 设计合理(免费预览+80积分详细报告)
+- **传统方法**: 缺少三元合婚、九宫合婚、紫微合婚等传统方法
+- **八字对比**: 双方八字并排展示清晰
+
+#### 5. 每日运势功能
+- **个性化**: 基于八字日主计算，使用十神关系（比劫/印绶/食伤/官杀/财星）
+- **黄历信息**: 宜忌展示完整
+- **运势关联**: 与日主五行关系判断准确
+- **幸运信息**: 提供幸运色和幸运方位
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（逻辑错误/准确性问题）
+- [ ] [占卜] 六爻变卦计算完全缺失 - backend/app/controller/Liuyao.php第262-326行 - 动爻产生变卦但未计算和展示变卦卦象，六爻解卦不完整 - 建议添加变卦计算逻辑：老阳变阴、老阴变阳
+- [ ] [占卜] 六爻六亲六神分析缺失 - backend/app/controller/Liuyao.php - 六爻解卦缺少六亲(父母/兄弟/子孙/妻财/官鬼)和六神(青龙/朱雀/勾陈/螣蛇/白虎/玄武)配属 - 建议添加专业六爻分析
+- [ ] [占卜] 六爻用神判断逻辑缺失 - backend/app/controller/Liuyao.php第331-360行 - 未根据问题类型自动判断用神，解读过于通用 - 建议添加关键词识别用神逻辑
+
+#### 🟡 中优先级（体验问题）
+- [ ] [占卜] 六爻缺少手动起卦模式 - frontend/src/views/Liuyao.vue - 仅支持自动随机起卦，无法手动输入六次摇卦结果 - 建议添加手动起卦界面，支持用户输入每次摇卦结果
+- [ ] [占卜] 塔罗牌阵关系分析缺失 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读，仅单张牌义堆砌 - 建议添加牌阵整体分析和牌与牌之间的关系解读
+- [ ] [占卜] 塔罗缺少元素分析 - frontend/src/views/Tarot.vue - 牌阵中元素(火/水/风/土)分布未分析 - 建议添加元素分布统计和解读
+- [ ] [占卜] 八字藏干十神展示不突出 - frontend/src/views/Bazi.vue - 虽有藏干十神计算，但前端展示不够突出，藏干信息难以辨认 - 建议优化藏干十神展示方式
+- [ ] [占卜] 合婚缺少传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚、紫微合婚等传统方法 - 建议丰富合婚算法
+
+#### 🟢 低优先级（专业性优化）
+- [ ] [占卜] 六爻可添加应期推断 - backend/app/controller/Liuyao.php - 解卦时可尝试推断事情发生时间 - 建议添加应期分析
+- [ ] [占卜] 六爻可添加伏神分析 - backend/app/controller/Liuyao.php - 可添加伏神、飞神分析 - 建议参考《增删卜易》完善
+- [ ] [占卜] 塔罗可添加牌面图案 - frontend/src/views/Tarot.vue - 当前仅使用emoji表示，可添加真实塔罗牌图片 - 建议引入韦特塔罗牌图片资源
+- [ ] [占卜] 八字可增加神煞分析 - backend/app/controller/Paipan.php - 可添加天乙贵人、文昌、桃花、驿马等常用神煞 - 建议参考《三命通会》
+- [ ] [占卜] 八字大运流年可添加更多细节 - backend/app/controller/Paipan.php - 缺少交运时间、流年神煞等信息 - 建议丰富大运流年展示
 
 ---
 
