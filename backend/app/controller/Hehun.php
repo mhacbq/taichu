@@ -1327,8 +1327,24 @@ PROMPT;
      */
     protected function generateReport(array $data, string $format): array
     {
-        $filename = 'hehun_' . md5(serialize($data)) . '_' . time();
-        $storagePath = public_path() . 'storage/hehun/';
+        // 生成安全的文件名：只允许字母数字和下划线
+        $hash = md5(serialize($data));
+        $timestamp = time();
+        $filename = 'hehun_' . preg_replace('/[^a-zA-Z0-9_]/', '', $hash) . '_' . (int)$timestamp;
+        
+        // 验证并规范化存储路径
+        $publicPath = realpath(public_path());
+        $storagePath = $publicPath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'hehun' . DIRECTORY_SEPARATOR;
+        
+        // 防止路径遍历：确保生成的路径在public目录内
+        $realStoragePath = realpath(dirname($storagePath)) ?: $publicPath;
+        if (strpos($realStoragePath, $publicPath) !== 0) {
+            return [
+                'success' => false,
+                'url' => '',
+                'message' => '存储路径无效'
+            ];
+        }
         
         // 确保目录存在
         if (!is_dir($storagePath)) {

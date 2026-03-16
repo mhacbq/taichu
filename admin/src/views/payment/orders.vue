@@ -119,7 +119,7 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="handleDetail(row)">详情</el-button>
             <el-button 
-              v-if="row.status === 'pending'" 
+              v-if="row.status === 'pending' && canModifyOrder" 
               link 
               type="success" 
               @click="handleComplete(row)"
@@ -127,7 +127,7 @@
               补单
             </el-button>
             <el-button 
-              v-if="row.status === 'paid'" 
+              v-if="row.status === 'paid' && canModifyOrder" 
               link 
               type="danger" 
               @click="handleRefund(row)"
@@ -202,10 +202,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getRechargeOrders, getRechargeStats, updateOrderStatus, refundOrder, manualCompleteOrder } from '@/api/payment'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+
+// 权限检查 - 只有admin可以执行补单和退款操作
+const canModifyOrder = computed(() => {
+  return userStore.userInfo?.role === 'admin'
+})
 
 const loading = ref(false)
 const orderList = ref([])

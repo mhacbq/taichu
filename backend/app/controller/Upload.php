@@ -6,6 +6,7 @@ namespace app\controller;
 use app\BaseController;
 use app\middleware\AdminAuth;
 use think\Request;
+use think\facade\Log;
 
 /**
  * 文件上传控制器
@@ -48,7 +49,7 @@ class Upload extends BaseController
             $file = $request->file('file');
             
             if (!$file) {
-                return json(['code' => 400, 'message' => '请选择要上传的图片']);
+                return $this->error('请选择要上传的图片', 400);
             }
             
             // 验证图片
@@ -248,16 +249,14 @@ class Upload extends BaseController
             $list = $query->page($page, $pageSize)->select();
             $total = $query->count();
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $list,
-                    'total' => $total
-                ]
+            return $this->success([
+                'list' => $list,
+                'total' => $total
             ]);
             
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            Log::error('获取上传列表失败: ' . $e->getMessage());
+            return $this->error('获取列表失败，请稍后重试', 500);
         }
     }
 

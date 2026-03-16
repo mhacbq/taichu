@@ -31,7 +31,11 @@ class AdminAuth
         $authHeader = $request->header('Authorization');
         
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-            return json(['code' => 401, 'message' => '未授权，请先登录']);
+            return json([
+                'code' => 401,
+                'message' => '未授权，请先登录',
+                'data' => null
+            ], 401);
         }
 
         $token = substr($authHeader, 7);
@@ -51,9 +55,17 @@ class AdminAuth
             
             return $next($request);
         } catch (\Firebase\JWT\ExpiredException $e) {
-            return json(['code' => 401, 'message' => '登录已过期，请重新登录']);
+            return json([
+                'code' => 401,
+                'message' => '登录已过期，请重新登录',
+                'data' => null
+            ], 401);
         } catch (\Exception $e) {
-            return json(['code' => 401, 'message' => '无效的Token']);
+            return json([
+                'code' => 401,
+                'message' => '无效的Token',
+                'data' => null
+            ], 401);
         }
     }
     

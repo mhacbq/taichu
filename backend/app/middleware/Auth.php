@@ -22,6 +22,15 @@ class Auth
             ], 401);
         }
         
+        // 验证Token格式
+        if (!is_string($token) || strlen($token) < 10) {
+            return json([
+                'code' => 401,
+                'message' => '登录信息格式无效',
+                'data' => null,
+            ], 401);
+        }
+        
         try {
             $secret = Config::get('jwt.secret');
             $decoded = JWT::decode($token, new Key($secret, 'HS256'));

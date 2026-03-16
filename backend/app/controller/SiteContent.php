@@ -198,9 +198,10 @@ class SiteContent extends BaseController
                 Testimonial::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            Log::error('保存评价失败: ' . $e->getMessage());
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -213,12 +214,12 @@ class SiteContent extends BaseController
         
         $item = Testimonial::find($id);
         if (!$item) {
-            return json(['code' => 404, 'message' => '评价不存在']);
+            return $this->error('评价不存在', 404);
         }
         
         $item->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     // ==================== FAQ管理 ====================
@@ -292,9 +293,10 @@ class SiteContent extends BaseController
                 Faq::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            Log::error('保存FAQ失败: ' . $e->getMessage());
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -368,9 +370,10 @@ class SiteContent extends BaseController
                 TarotCard::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            Log::error('保存塔罗牌失败: ' . $e->getMessage());
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -565,9 +568,10 @@ class SiteContent extends BaseController
                 DailyFortuneTemplate::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            Log::error('保存模板失败: ' . $e->getMessage());
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -576,17 +580,13 @@ class SiteContent extends BaseController
      */
     public function getEnums()
     {
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'faq_categories' => Faq::CATEGORIES,
-                'testimonial_service_types' => Testimonial::SERVICE_TYPES,
-                'spread_types' => TarotSpread::SPREAD_TYPES,
-                'question_categories' => QuestionTemplate::CATEGORIES,
-                'fortune_types' => DailyFortuneTemplate::TYPES,
-                'fortune_levels' => DailyFortuneTemplate::LEVEL_NAMES,
-            ],
+        return $this->success([
+            'faq_categories' => Faq::CATEGORIES,
+            'testimonial_service_types' => Testimonial::SERVICE_TYPES,
+            'spread_types' => TarotSpread::SPREAD_TYPES,
+            'question_categories' => QuestionTemplate::CATEGORIES,
+            'fortune_types' => DailyFortuneTemplate::TYPES,
+            'fortune_levels' => DailyFortuneTemplate::LEVEL_NAMES,
         ]);
     }
 }

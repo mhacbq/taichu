@@ -70,7 +70,7 @@ class AiPrompt extends BaseController
         
         // 验证
         if (empty($data['name']) || empty($data['key']) || empty($data['type'])) {
-            return json(['code' => 400, 'message' => '名称、标识和类型不能为空']);
+            return $this->error('名称、标识和类型不能为空', 400);
         }
         
         // 检查key是否重复
@@ -108,7 +108,8 @@ class AiPrompt extends BaseController
             
             return $this->success($prompt, '保存成功');
         } catch (\Exception $e) {
-            return $this->error('保存失败：' . $e->getMessage(), 500);
+            Log::error('保存AI提示词失败: ' . $e->getMessage());
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -231,7 +232,7 @@ class AiPrompt extends BaseController
         
         $prompt = AiPromptModel::find($id);
         if (!$prompt) {
-            return json(['code' => 404, 'message' => '提示词不存在']);
+            return $this->error('提示词不存在', 404);
         }
         
         $data = $prompt->toArray();
@@ -243,12 +244,12 @@ class AiPrompt extends BaseController
         $data['created_by'] = $request->userId ?? 0;
         $data['updated_by'] = $request->userId ?? 0;
         
-        $newPrompt = AiPromptModel::create($data);
-        
-        return json([
-            'code' => 0,
-            'message' => '复制成功',
-            'data' => $newPrompt,
-        ]);
+        try {
+            $newPrompt = AiPromptModel::create($data);
+            return $this->success($newPrompt, '复制成功');
+        } catch (\Exception $e) {
+            Log::error('复制AI提示词失败: ' . $e->getMessage());
+            return $this->error('复制失败，请稍后重试', 500);
+        }
     }
 }

@@ -204,7 +204,13 @@ class Liuyao extends BaseController
             
             return $this->success(['interpretation' => $interpretation]);
         } catch (\Exception $e) {
-            return $this->error('AI解读失败：' . $e->getMessage());
+            // 记录详细错误日志，但返回通用错误消息
+            \think\facade\Log::error('六爻AI解读失败: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->error('AI解读失败，请稍后重试', 500);
         }
     }
     
