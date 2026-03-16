@@ -254,3 +254,45 @@
 - 后端Liuyao.php aiInterpretation方法事务处理
 
 ---
+
+## 2026-03-17 15:45 执行记录（本次）
+
+### 本次修复的5个后端问题
+
+1. **中间件返回格式不一致** (API规范)
+   - 文件: `backend/app/middleware/Auth.php`, `backend/app/middleware/AdminAuth.php`
+   - 问题: 中间件返回格式与BaseController不一致，缺少`data`字段或HTTP状态码
+   - 修复: Auth.php添加Token格式验证；AdminAuth.php统一添加`data`字段和HTTP状态码401
+
+2. **Hehun.php路径遍历风险** (安全)
+   - 文件: `backend/app/controller/Hehun.php`
+   - 问题: 使用`public_path()`拼接路径但没有验证文件名，存在路径遍历风险
+   - 修复: 使用`preg_replace`净化文件名，使用`realpath`验证存储路径在public目录内
+
+3. **Liuyao.php缺少HTTP状态码** (API规范)
+   - 文件: `backend/app/controller/Liuyao.php`
+   - 问题: aiInterpretation方法错误返回缺少HTTP状态码，直接暴露异常信息
+   - 修复: 添加HTTP状态码500，使用Log::error记录详细错误，返回通用错误消息
+
+4. **Paipan.php敏感信息泄露** (安全)
+   - 文件: `backend/app/controller/Paipan.php`
+   - 问题: 使用`trace()`函数记录错误信息，可能泄露敏感信息，且返回格式不统一
+   - 修复: 使用`Log::error`替代`trace()`，添加HTTP状态码500
+
+5. **API返回格式不一致** (API规范)
+   - 文件: `backend/app/controller/SiteContent.php`, `backend/app/controller/AiPrompt.php`, `backend/app/controller/Upload.php`
+   - 问题: 混用`json()`和`$this->success()/$this->error()`，成功时code值不一致（0或200）
+   - 修复: 统一使用`$this->success()`和`$this->error()`方法，异常时使用Log记录而非暴露信息
+
+### Git提交
+- 提交ID: `c6e48c1`
+- 提交信息: `fix-backend-multiple-issues-20250317-1545`
+- 已推送到: origin/master
+
+### 待修复问题
+- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
+- 后端中间件Auth.php日志记录敏感信息过滤（已部分实现）
+- 后端Hehun.php buildReportHtml其他字段XSS防护
+- 后端Liuyao.php aiInterpretation方法事务处理
+
+---
