@@ -474,9 +474,15 @@ const generateSitemap = async () => {
 }
 
 const saveRobots = async () => {
-  // 模拟保存
+  // TODO: 实现真实的robots.txt保存API调用
+  // try {
+  //   await saveRobotsApi({ content: robotsContent.value })
+  //   ElMessage.success('robots.txt 已保存')
+  // } catch (error) {
+  //   ElMessage.error('保存失败：' + error.message)
+  // }
   await new Promise(resolve => setTimeout(resolve, 500))
-  ElMessage.success('robots.txt 已保存')
+  ElMessage.success('robots.txt 已保存（模拟）')
 }
 
 const handleImageSuccess = (response) => {

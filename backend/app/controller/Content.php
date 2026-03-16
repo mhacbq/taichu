@@ -35,34 +35,28 @@ class Content extends BaseController
             
             if (!$page) {
                 // 返回默认页面结构
-                return json([
-                    'code' => 200,
-                    'data' => [
-                        'page_id' => $pageId,
-                        'title' => $this->getDefaultTitle($pageId),
-                        'blocks' => [],
-                        'settings' => [
-                            'background' => '#f5f7fa',
-                            'padding' => '20px',
-                            'maxWidth' => '1200px'
-                        ]
+                return $this->success([
+                    'page_id' => $pageId,
+                    'title' => $this->getDefaultTitle($pageId),
+                    'blocks' => [],
+                    'settings' => [
+                        'background' => '#f5f7fa',
+                        'padding' => '20px',
+                        'maxWidth' => '1200px'
                     ]
-                ]);
+                ], '获取成功');
             }
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'page_id' => $page->page_id,
-                    'title' => $page->title,
-                    'blocks' => json_decode($page->content, true) ?: [],
-                    'settings' => json_decode($page->settings, true) ?: [],
-                    'version' => $page->version,
-                    'updated_at' => $page->updated_at
-                ]
-            ]);
+            return $this->success([
+                'page_id' => $page->page_id,
+                'title' => $page->title,
+                'blocks' => json_decode($page->content, true) ?: [],
+                'settings' => json_decode($page->settings, true) ?: [],
+                'version' => $page->version,
+                'updated_at' => $page->updated_at
+            ], '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -76,7 +70,7 @@ class Content extends BaseController
             
             // 验证数据
             if (empty($data['blocks'])) {
-                return json(['code' => 400, 'message' => '内容块不能为空']);
+                return $this->error('内容块不能为空', 400);
             }
             
             // 保存历史版本
@@ -108,16 +102,12 @@ class Content extends BaseController
             // 记录操作日志
             $this->logOperation('save_page', "保存页面: {$pageId}");
             
-            return json([
-                'code' => 200,
-                'message' => '保存成功',
-                'data' => [
-                    'version' => $page->version,
-                    'updated_at' => $page->updated_at
-                ]
-            ]);
+            return $this->success([
+                'version' => $page->version,
+                'updated_at' => $page->updated_at
+            ], '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -139,12 +129,9 @@ class Content extends BaseController
                 ]
             );
             
-            return json([
-                'code' => 200,
-                'message' => '自动保存成功'
-            ]);
+            return $this->success(null, '自动保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -160,19 +147,16 @@ class Content extends BaseController
                 ->find();
             
             if (!$draft) {
-                return json(['code' => 404, 'message' => '没有草稿']);
+                return $this->error('没有草稿', 404);
             }
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'blocks' => json_decode($draft->content, true),
-                    'settings' => json_decode($draft->settings, true),
-                    'updated_at' => $draft->updated_at
-                ]
-            ]);
+            return $this->success([
+                'blocks' => json_decode($draft->content, true),
+                'settings' => json_decode($draft->settings, true),
+                'updated_at' => $draft->updated_at
+            ], '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -192,15 +176,12 @@ class Content extends BaseController
             
             $total = PageVersion::where('page_id', $pageId)->count();
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $versions,
-                    'total' => $total
-                ]
-            ]);
+            return $this->success([
+                'list' => $versions,
+                'total' => $total
+            ], '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -213,7 +194,7 @@ class Content extends BaseController
             $version = PageVersion::find($versionId);
             
             if (!$version) {
-                return json(['code' => 404, 'message' => '版本不存在']);
+                return $this->error('版本不存在', 404);
             }
             
             // 保存当前版本到历史
@@ -243,12 +224,9 @@ class Content extends BaseController
             
             $this->logOperation('restore_version', "恢复页面 {$version->page_id} 到版本 {$version->version}");
             
-            return json([
-                'code' => 200,
-                'message' => '恢复成功'
-            ]);
+            return $this->success(null, '恢复成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -261,22 +239,19 @@ class Content extends BaseController
             $version = PageVersion::find($versionId);
             
             if (!$version) {
-                return json(['code' => 404, 'message' => '版本不存在']);
+                return $this->error('版本不存在', 404);
             }
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'blocks' => json_decode($version->content, true),
-                    'settings' => json_decode($version->settings, true),
-                    'version' => $version->version,
-                    'author' => $version->author_name,
-                    'created_at' => $version->created_at,
-                    'description' => $version->description
-                ]
-            ]);
+            return $this->success([
+                'blocks' => json_decode($version->content, true),
+                'settings' => json_decode($version->settings, true),
+                'version' => $version->version,
+                'author' => $version->author_name,
+                'created_at' => $version->created_at,
+                'description' => $version->description
+            ], '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -289,7 +264,7 @@ class Content extends BaseController
             $page = Page::where('page_id', $pageId)->find();
             
             if (!$page) {
-                return json(['code' => 404, 'message' => '页面不存在']);
+                return $this->error('页面不存在', 404);
             }
             
             $exportData = [
@@ -301,12 +276,9 @@ class Content extends BaseController
                 'exported_at' => date('Y-m-d H:i:s')
             ];
             
-            return json([
-                'code' => 200,
-                'data' => $exportData
-            ]);
+            return $this->success($exportData, '导出成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -320,7 +292,7 @@ class Content extends BaseController
             
             // 验证数据
             if (empty($data['page_id']) || empty($data['content'])) {
-                return json(['code' => 400, 'message' => '数据格式错误']);
+                return $this->error('数据格式错误', 400);
             }
             
             // 检查页面是否存在
@@ -340,16 +312,12 @@ class Content extends BaseController
             
             $this->logOperation('import_page', "导入页面: {$data['page_id']}");
             
-            return json([
-                'code' => 200,
-                'message' => '导入成功',
-                'data' => [
-                    'page_id' => $page->page_id,
-                    'version' => $page->version
-                ]
-            ]);
+            return $this->success([
+                'page_id' => $page->page_id,
+                'version' => $page->version
+            ], '导入成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -380,15 +348,12 @@ class Content extends BaseController
             $pages = $query->page($page, $pageSize)->select();
             $total = $query->count();
             
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $pages,
-                    'total' => $total
-                ]
-            ]);
+            return $this->success([
+                'list' => $pages,
+                'total' => $total
+            ], '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -401,7 +366,7 @@ class Content extends BaseController
             $page = Page::where('page_id', $pageId)->find();
             
             if (!$page) {
-                return json(['code' => 404, 'message' => '页面不存在']);
+                return $this->error('页面不存在', 404);
             }
             
             // 保存到回收站
@@ -420,12 +385,9 @@ class Content extends BaseController
             
             $this->logOperation('delete_page', "删除页面: {$pageId}");
             
-            return json([
-                'code' => 200,
-                'message' => '删除成功'
-            ]);
+            return $this->success(null, '删除成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -504,12 +466,9 @@ class Content extends BaseController
                 ]
             ];
             
-            return json([
-                'code' => 200,
-                'data' => $configs[$type] ?? null
-            ]);
+            return $this->success($configs[$type] ?? null, '获取成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 500);
         }
     }
 

@@ -126,17 +126,14 @@ class Admin extends BaseController
                 'detail' => '查看仪表盘统计数据',
             ]);
 
-            return json([
-                'code' => 200,
-                'data' => [
-                    'statistics' => $statistics,
-                    'user_trend' => $userTrend,
-                    'feature_stats' => $featureStats
-                ]
-            ]);
+            return $this->success([
+                'statistics' => $statistics,
+                'user_trend' => $userTrend,
+                'feature_stats' => $featureStats
+            ], '获取成功');
         } catch (\Exception $e) {
             Log::error('仪表盘数据获取失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取统计数据失败，请稍后重试']);
+            return $this->error('获取统计数据失败，请稍后重试', 500);
         }
     }
 
@@ -181,16 +178,13 @@ class Admin extends BaseController
                 'detail' => '查看用户列表',
             ]);
 
-            return json([
-                'code' => 200,
-                'data' => [
-                    'list' => $list,
-                    'total' => $total
-                ]
-            ]);
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
         } catch (\Exception $e) {
             Log::error('获取用户列表失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取用户列表失败，请稍后重试']);
+            return $this->error('获取用户列表失败，请稍后重试', 500);
         }
     }
 
@@ -221,10 +215,10 @@ class Admin extends BaseController
                 'detail' => '查看用户详情',
             ]);
 
-            return $this->success($user);
+            return $this->success($user, '获取成功');
         } catch (\Exception $e) {
             Log::error('获取用户详情失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '获取用户详情失败，请稍后重试']);
+            return $this->error('获取用户详情失败，请稍后重试', 500);
         }
     }
 
@@ -249,7 +243,7 @@ class Admin extends BaseController
             $user = User::find($id);
             
             if (!$user) {
-                return json(['code' => 404, 'message' => '用户不存在']);
+                return $this->error('用户不存在', 404);
             }
 
             $oldStatus = $user->status;
@@ -265,10 +259,10 @@ class Admin extends BaseController
                 'after_data' => ['status' => $status],
             ]);
 
-            return json(['code' => 200, 'message' => '操作成功']);
+            return $this->success(null, '操作成功');
         } catch (\Exception $e) {
             Log::error('更新用户状态失败: ' . $e->getMessage());
-            return json(['code' => 500, 'message' => '操作失败，请稍后重试']);
+            return $this->error('操作失败，请稍后重试', 500);
         }
     }
 

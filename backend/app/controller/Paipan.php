@@ -55,8 +55,6 @@ class Paipan extends BaseController
             return $this->error('请提供性别');
         }
         
-        $mode = $data['mode'] ?? 'pro';
-        
         // 解析出生日期
         $birthDate = $data['birthDate'];
         $gender = $data['gender'];

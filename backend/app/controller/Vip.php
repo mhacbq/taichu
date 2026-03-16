@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
-use app\model\UserVip;
 use app\model\VipOrder;
 use app\service\ConfigService;
 use app\service\VipService;

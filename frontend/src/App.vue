@@ -165,7 +165,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
 import { 
-  HomeFilled, 
   Calendar, 
   Magic, 
   YinYang, 

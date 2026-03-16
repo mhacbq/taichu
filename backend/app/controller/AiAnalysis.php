@@ -45,18 +45,18 @@ class AiAnalysis extends BaseController
         $customPrompt = $request->param('prompt', '');
         
         if (empty($baziData)) {
-            return json(['code' => 400, 'message' => '八字数据不能为空']);
+            return $this->error('八字数据不能为空', 400);
         }
         
         if (!is_array($baziData)) {
-            return json(['code' => 400, 'message' => '八字数据格式错误，应为数组类型']);
+            return $this->error('八字数据格式错误，应为数组类型', 400);
         }
 
         $config = $this->getAiConfig();
         
         // 检查配置
         if (empty($config['api_key']) || empty($config['api_url'])) {
-            return json(['code' => 500, 'message' => 'AI解盘服务未配置']);
+            return $this->error('AI解盘服务未配置', 500);
         }
 
         // 获取提示词配置
@@ -105,7 +105,7 @@ class AiAnalysis extends BaseController
         $customPrompt = $request->param('prompt', '');
         
         if (empty($baziData)) {
-            return json(['code' => 400, 'message' => '八字数据不能为空']);
+            return $this->error('八字数据不能为空', 400);
         }
         
         if (!is_array($baziData)) {
@@ -381,11 +381,7 @@ class AiAnalysis extends BaseController
             $config['api_key'] = substr($config['api_key'], 0, 10) . '****' . substr($config['api_key'], -4);
         }
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $config
-        ]);
+        return $this->success($config, '获取成功');
     }
 
     /**
@@ -397,7 +393,7 @@ class AiAnalysis extends BaseController
         
         // 验证必要字段
         if (empty($config['api_url']) || empty($config['model'])) {
-            return json(['code' => 400, 'message' => 'API地址和模型名称不能为空']);
+            return $this->error('API地址和模型名称不能为空', 400);
         }
         
         // 如果API Key是掩码格式，不更新
@@ -409,11 +405,7 @@ class AiAnalysis extends BaseController
         // 保存到配置文件（实际项目中应该保存到数据库或安全存储）
         // 这里简化处理，实际应该使用数据库表来存储
         
-        return json([
-            'code' => 0,
-            'message' => '保存成功',
-            'data' => $config
-        ]);
+        return $this->success($config, '保存成功');
     }
 
     /**

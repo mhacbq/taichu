@@ -383,8 +383,18 @@ const updateStatus = (row) => {
   ElMessage.success(row.status === 1 ? '已启用' : '已禁用')
 }
 
-const loadData = () => {
-  // 实际项目中调用API
+const loadData = async () => {
+  loading.value = true
+  try {
+    // TODO: 调用API获取神煞列表
+    // const res = await getShenshaList({ page: page.value, pageSize: pageSize.value })
+    // shenshaList.value = res.data.list
+    // total.value = res.data.total
+  } catch (error) {
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {

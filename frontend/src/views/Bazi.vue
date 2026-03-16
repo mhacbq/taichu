@@ -1241,9 +1241,14 @@ const isCurrentDaYun = (yun) => {
 
 // 分享结果
 const shareResult = () => {
+  if (!result.value?.bazi) {
+    ElMessage.warning('暂无排盘结果可分享')
+    return
+  }
+  
   const shareText = `我在太初命理进行了八字排盘\n` +
-    `日主：${result.value.bazi.day_master}（${result.value.bazi.day_master_wuxing}）\n` +
-    `八字：${result.value.bazi.year.gan}${result.value.bazi.year.zhi} ${result.value.bazi.month.gan}${result.value.bazi.month.zhi} ${result.value.bazi.day.gan}${result.value.bazi.day.zhi} ${result.value.bazi.hour.gan}${result.value.bazi.hour.zhi}\n` +
+    `日主：${result.value.bazi.day_master || ''}（${result.value.bazi.day_master_wuxing || ''}）\n` +
+    `八字：${result.value.bazi.year?.gan || ''}${result.value.bazi.year?.zhi || ''} ${result.value.bazi.month?.gan || ''}${result.value.bazi.month?.zhi || ''} ${result.value.bazi.day?.gan || ''}${result.value.bazi.day?.zhi || ''} ${result.value.bazi.hour?.gan || ''}${result.value.bazi.hour?.zhi || ''}\n` +
     `快来测测你的八字吧！`
   
   if (navigator.share) {

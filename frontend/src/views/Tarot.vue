@@ -562,7 +562,7 @@ const resetTarot = () => {
 }
 
 // 显示卡片详情
-const showCardDetail = (card, index) => {
+const showCardDetail = (card, _index) => {
   selectedCard.value = card
   cardDetailVisible.value = true
 }
