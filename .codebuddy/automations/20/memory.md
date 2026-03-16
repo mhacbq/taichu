@@ -2,6 +2,33 @@
 
 ## 执行历史
 
+### 2026-03-17 第七次执行
+- **任务**: 修复前端TODO.md中的前端相关问题
+- **状态**: 已完成
+- **修复数量**: 6个前端UI问题
+- **Git提交**: 01eb098 - fix-frontend-pink-theme-colors-2026-03-17
+
+#### 已修复问题：
+1. **Tarot.vue粉色系配色** - 话题标签hover/active状态、模板项hover效果、项目符号颜色
+2. **Recharge.vue粉色系配色** - 充值选项active状态边框和背景
+3. **Profile.vue粉色系配色和深色背景** - 方法图标背景、邀请码框渐变、邀请规则背景
+4. **Help.vue粉色系配色** - 热门标签背景、边框、文字颜色
+5. **HomeNew.vue粉色系配色** - 功能区块背景、卡片hover边框、CTA区块渐变
+6. **BackButton.vue粉色系配色** - 按钮hover背景和边框
+
+#### 修改文件：
+- frontend/src/views/Tarot.vue
+- frontend/src/views/Recharge.vue
+- frontend/src/views/Profile.vue
+- frontend/src/views/Help.vue
+- frontend/src/views/HomeNew.vue
+- frontend/src/components/BackButton.vue
+
+### 主题一致性改进
+本次修复将多个页面中残留的粉色系配色（rgba(233, 69, 96)）统一替换为金色系（rgba(184, 134, 11)），并将深色背景硬编码改为CSS变量，与整体白色主题保持一致。
+
+---
+
 ### 2026-03-17 第六次执行
 - **任务**: 修复前端TODO.md中的前端相关问题
 - **状态**: 已完成
