@@ -7,6 +7,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use think\Request;
 use think\Response;
+use think\facade\Env;
 
 /**
  * 后台管理认证中间件
@@ -14,7 +15,16 @@ use think\Response;
 class AdminAuth
 {
     // JWT密钥
-    protected $jwtKey = 'your-admin-jwt-secret-key-change-in-production';
+    protected $jwtKey;
+    
+    public function __construct()
+    {
+        $this->jwtKey = Env::get('ADMIN_JWT_SECRET');
+        
+        if (empty($this->jwtKey)) {
+            throw new \Exception('ADMIN_JWT_SECRET environment variable is not set');
+        }
+    }
     
     public function handle(Request $request, \Closure $next): Response
     {
@@ -52,6 +62,15 @@ class AdminAuth
      */
     protected function logOperation(Request $request)
     {
+        // 过滤敏感字段
+        $params = $request->param();
+        $sensitiveFields = ['password', 'pwd', 'token', 'secret', 'key', 'authorization'];
+        foreach ($sensitiveFields as $field) {
+            if (isset($params[$field])) {
+                $params[$field] = '***';
+            }
+        }
+        
         $data = [
             'admin_id' => $request->adminUser['id'] ?? 0,
             'admin_name' => $request->adminUser['username'] ?? '',
@@ -60,11 +79,15 @@ class AdminAuth
             'method' => $request->method(),
             'url' => $request->url(),
             'ip' => $request->ip(),
-            'params' => json_encode($request->param()),
+            'params' => json_encode($params),
             'created_at' => date('Y-m-d H:i:s')
         ];
         
-        // 异步记录日志（可以使用队列）
-        // \think\facade\Queue::push('app\job\OperationLog', $data);
+        // 写入数据库
+        try {
+            \think\facade\Db::name('admin_log')->insert($data);
+        } catch (\Exception $e) {
+            trace('Admin operation log failed: ' . $e->getMessage(), 'error');
+        }
     }
 }

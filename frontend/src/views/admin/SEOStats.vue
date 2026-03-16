@@ -253,7 +253,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, h } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
@@ -381,17 +381,7 @@ const RankBadge = {
   }
 }
 
-// 图表引用
-const pieChart = ref(null)
-const trendChart = ref(null)
-
-onMounted(() => {
-  // 初始化图表
-})
-
-onUnmounted(() => {
-  // 销毁图表
-})
+// 图表功能待实现 - 需要时添加图表引用和初始化代码
 </script>
 
 <style scoped>

@@ -160,6 +160,7 @@
             action="/api/upload"
             :show-file-list="false"
             :on-success="handleCoverSuccess"
+            :on-error="handleCoverError"
           >
             <img v-if="form.cover" :src="form.cover" class="cover-image" />
             <div v-else class="cover-placeholder">
@@ -213,10 +214,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, View } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+
+// 防抖函数
+const debounce = (fn, delay) => {
+  let timer = null
+  return function(...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -285,14 +295,20 @@ const rules = {
 }
 
 const previewContent = ref('')
+const debouncedSearchKeyword = ref('')
+
+// 搜索防抖处理
+watch(searchKeyword, debounce((val) => {
+  debouncedSearchKeyword.value = val
+}, 300))
 
 const filteredList = computed(() => {
   let list = articleList.value
   
-  if (searchKeyword.value) {
+  if (debouncedSearchKeyword.value) {
     list = list.filter(item => 
-      item.title.includes(searchKeyword.value) ||
-      item.summary?.includes(searchKeyword.value)
+      item.title.includes(debouncedSearchKeyword.value) ||
+      item.summary?.includes(debouncedSearchKeyword.value)
     )
   }
   
@@ -379,6 +395,11 @@ const openDialog = (row = null) => {
 
 const handleCoverSuccess = (res) => {
   form.value.cover = res.url
+}
+
+const handleCoverError = (err) => {
+  console.error('封面上传失败:', err)
+  ElMessage.error('封面上传失败，请重试')
 }
 
 const insertTag = (tag) => {

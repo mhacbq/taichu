@@ -8,6 +8,7 @@ use app\model\User;
 use app\model\InviteRecord;
 use app\service\SmsService;
 use Firebase\JWT\JWT;
+use think\facade\Cache;
 use think\facade\Config;
 use think\facade\Db;
 
@@ -288,8 +289,9 @@ class Auth extends BaseController
         $attempts = Cache::get($attemptKey, 0);
         
         if ($attempts >= 10) {
-            // 记录但不阻止，只是标记为可疑
+            // 超过限制，阻止操作
             trace("邀请码尝试次数过多: IP={$ip}, UserId={$newUserId}", 'warning');
+            return;
         }
         
         // 更新尝试次数

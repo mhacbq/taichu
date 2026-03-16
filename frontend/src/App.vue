@@ -12,61 +12,105 @@
           <router-link to="/" class="nav-link">首页</router-link>
           <router-link to="/bazi" class="nav-link">八字排盘</router-link>
           <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
+          <router-link to="/liuyao" class="nav-link">六爻占卜</router-link>
+          <router-link to="/hehun" class="nav-link">八字合婚</router-link>
           <router-link to="/daily" class="nav-link">每日运势</router-link>
-          <router-link to="/profile" class="nav-link">个人中心</router-link>
-          <router-link to="/help" class="nav-link">帮助</router-link>
         </div>
 
         <!-- 用户操作区 -->
         <div class="user-actions">
           <template v-if="isLoggedIn">
-            <span class="points-badge">💎 {{ userPoints }}</span>
-            <el-dropdown @command="handleCommand">
+            <span class="points-badge">
+              <span class="points-icon">💎</span>
+              <span class="points-value">{{ userPoints }}</span>
+            </span>
+            <el-dropdown @command="handleCommand" trigger="click">
               <span class="user-info">
                 <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
                 <span class="nickname">{{ userNickname }}</span>
+                <span class="dropdown-arrow">▼</span>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                  <el-dropdown-item command="profile">
+                    <span class="dropdown-icon">👤</span> 个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>
+                    <span class="dropdown-icon">🚪</span> 退出登录
+                  </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
           </template>
-          <router-link v-else to="/login" class="login-btn">登录</router-link>
+          <router-link v-else to="/login" class="login-btn">登录 / 注册</router-link>
         </div>
 
         <!-- 移动端汉堡菜单按钮 -->
-        <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
-          <span class="menu-icon">☰</span>
+        <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu" :class="{ active: showMobileMenu }">
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
       </div>
 
       <!-- 移动端导航菜单 -->
       <div class="mobile-nav" :class="{ active: showMobileMenu }">
-        <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">首页</router-link>
-        <router-link to="/bazi" class="mobile-nav-link" @click="showMobileMenu = false">八字排盘</router-link>
-        <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">塔罗占卜</router-link>
-        <router-link to="/daily" class="mobile-nav-link" @click="showMobileMenu = false">每日运势</router-link>
-        <router-link to="/profile" class="mobile-nav-link" @click="showMobileMenu = false">个人中心</router-link>
-        <router-link to="/help" class="mobile-nav-link" @click="showMobileMenu = false">帮助中心</router-link>
-        <div class="mobile-nav-divider"></div>
-        <template v-if="isLoggedIn">
-          <div class="mobile-user-info">
-            <span class="mobile-points">💎 积分: {{ userPoints }}</span>
-          </div>
-          <a href="#" class="mobile-nav-link logout" @click.prevent="handleLogout">退出登录</a>
-        </template>
-        <router-link v-else to="/login" class="mobile-nav-link login" @click="showMobileMenu = false">登录</router-link>
+        <div class="mobile-nav-header">
+          <span class="mobile-nav-title">菜单</span>
+          <button class="mobile-nav-close" @click="showMobileMenu = false">✕</button>
+        </div>
+        <div class="mobile-nav-links">
+          <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">
+            <span class="nav-icon">🏠</span> 首页
+          </router-link>
+          <router-link to="/bazi" class="mobile-nav-link" @click="showMobileMenu = false">
+            <span class="nav-icon">📅</span> 八字排盘
+          </router-link>
+          <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">
+            <span class="nav-icon">🎴</span> 塔罗占卜
+          </router-link>
+          <router-link to="/liuyao" class="mobile-nav-link" @click="showMobileMenu = false">
+            <span class="nav-icon">☯</span> 六爻占卜
+          </router-link>
+          <router-link to="/hehun" class="mobile-nav-link" @click="showMobileMenu = false">
+            <span class="nav-icon">💕</span> 八字合婚
+          </router-link>
+          <router-link to="/daily" class="mobile-nav-link" @click="showMobileMenu = false">
+            <span class="nav-icon">🌟</span> 每日运势
+          </router-link>
+        </div>
+        <div class="mobile-nav-footer">
+          <template v-if="isLoggedIn">
+            <div class="mobile-user-info">
+              <span class="mobile-avatar">{{ userNickname?.[0] || '用' }}</span>
+              <span class="mobile-nickname">{{ userNickname }}</span>
+              <span class="mobile-points">💎 {{ userPoints }}</span>
+            </div>
+            <a href="#" class="mobile-logout-btn" @click.prevent="handleLogout">
+              <span>🚪</span> 退出登录
+            </a>
+          </template>
+          <router-link v-else to="/login" class="mobile-login-btn" @click="showMobileMenu = false">
+            登录 / 注册
+          </router-link>
+        </div>
       </div>
+      
+      <!-- 遮罩层 -->
+      <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="showMobileMenu = false"></div>
     </nav>
+    
     <main class="main-content">
       <router-view />
     </main>
+    
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
+          <div class="footer-brand">
+            <span class="footer-logo">☯ 太初命理</span>
+            <p class="footer-tagline">传承千年智慧，指引人生方向</p>
+          </div>
           <div class="footer-quote">
             <p>{{ randomQuote }}</p>
           </div>
@@ -74,22 +118,24 @@
             <router-link to="/help">帮助中心</router-link>
             <router-link to="/profile">个人中心</router-link>
             <a href="#" @click.prevent="showFeedback">意见反馈</a>
+            <a href="#" @click.prevent="showAbout">关于我们</a>
           </div>
-          <p>&copy; 2025 太初命理 - 愿你在迷茫中找到方向 ✨</p>
+          <div class="footer-divider"></div>
+          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向 ✨</p>
         </div>
       </div>
     </footer>
     
     <!-- 浮动心情陪伴组件 -->
-    <div v-if="isLoggedIn" class="floating-companion" :class="{ expanded: showCompanion }">
-      <div class="companion-avatar" @click="toggleCompanion">
+    <div v-if="isLoggedIn" class="floating-companion" :class="{ expanded: showCompanion }" @click="toggleCompanion">
+      <div class="companion-avatar">
         <span class="companion-icon">🌸</span>
         <span v-if="!showCompanion" class="companion-pulse"></span>
       </div>
-      <div v-if="showCompanion" class="companion-content">
+      <div v-if="showCompanion" class="companion-content" @click.stop>
         <div class="companion-header">
-          <span>💝 今日陪伴</span>
-          <button class="close-btn" @click="toggleCompanion">✕</button>
+          <span class="companion-title">💝 今日陪伴</span>
+          <button class="close-btn" @click="showCompanion = false">✕</button>
         </div>
         <div class="companion-message">
           <p>{{ companionMessage }}</p>
@@ -170,12 +216,21 @@ const checkLoginStatus = () => {
   const userInfo = localStorage.getItem('userInfo')
   
   if (token && userInfo) {
-    isLoggedIn.value = true
-    const user = JSON.parse(userInfo)
-    userNickname.value = user.nickname || '用户'
-    userPoints.value = user.points || 0
-    // 刷新积分
-    refreshPoints()
+    try {
+      isLoggedIn.value = true
+      const user = JSON.parse(userInfo)
+      userNickname.value = user?.nickname || '用户'
+      userPoints.value = user?.points || 0
+      refreshPoints()
+    } catch (e) {
+      console.error('解析用户信息失败:', e)
+      // 清除无效的登录状态
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      isLoggedIn.value = false
+      userNickname.value = ''
+      userPoints.value = 0
+    }
   } else {
     isLoggedIn.value = false
     userNickname.value = ''
@@ -189,7 +244,6 @@ const refreshPoints = async () => {
     const response = await getPointsBalance()
     if (response.code === 0) {
       userPoints.value = response.data.balance
-      // 更新本地存储
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
       userInfo.points = response.data.balance
       localStorage.setItem('userInfo', JSON.stringify(userInfo))
@@ -223,7 +277,12 @@ const showFeedback = () => {
   router.push('/profile')
 }
 
-// 监听路由变化，检查登录状态
+// 显示关于我们
+const showAbout = () => {
+  ElMessage.info('关于我们页面开发中')
+}
+
+// 监听路由变化
 watch(() => route.path, () => {
   checkLoginStatus()
   showMobileMenu.value = false
@@ -241,116 +300,158 @@ onMounted(() => {
   flex-direction: column;
 }
 
+/* 导航栏 - 白色风格 */
 .navbar {
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  padding: 15px 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 70px;
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: bold;
-  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  color: var(--primary-color);
 }
 
 .logo-icon {
-  font-size: 28px;
-  color: #e94560;
+  font-size: 26px;
+  color: var(--primary-color);
 }
 
+/* 桌面导航 */
 .nav-links {
   display: flex;
-  gap: 30px;
+  gap: 8px;
 }
 
 .nav-link {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
   transition: all 0.3s ease;
-  position: relative;
 }
 
-.nav-link:hover,
+.nav-link:hover {
+  color: var(--primary-color);
+  background: rgba(233, 69, 96, 0.05);
+}
+
 .nav-link.router-link-active {
-  color: #fff;
-}
-
-.nav-link.router-link-active::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
-  border-radius: 1px;
+  color: var(--primary-color);
+  background: rgba(233, 69, 96, 0.1);
 }
 
 /* 用户操作区 */
 .user-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .points-badge {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  padding: 5px 12px;
-  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
+  padding: 6px 14px;
+  border-radius: 20px;
   font-size: 14px;
-  color: #fff;
+  font-weight: 600;
+  color: var(--primary-color);
+  border: 1px solid rgba(233, 69, 96, 0.2);
+}
+
+.points-icon {
+  font-size: 16px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  color: #fff;
+  padding: 6px 12px 6px 6px;
+  border-radius: 25px;
+  background: var(--bg-tertiary);
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  background: var(--border-color);
 }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
+  color: white;
+  font-weight: 500;
 }
 
 .nickname {
   font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dropdown-icon {
+  margin-right: 8px;
 }
 
 .login-btn {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   color: #fff;
-  padding: 8px 20px;
-  border-radius: 20px;
+  padding: 10px 24px;
+  border-radius: 25px;
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.35);
 }
 
 /* 移动端菜单按钮 */
@@ -358,143 +459,306 @@ onMounted(() => {
   display: none;
   background: none;
   border: none;
-  color: #fff;
-  font-size: 24px;
   cursor: pointer;
-  padding: 5px;
+  padding: 10px;
+  width: 44px;
+  height: 44px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-btn span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-btn.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
 }
 
 /* 移动端导航 */
 .mobile-nav {
   display: none;
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 80%;
+  max-width: 320px;
+  height: 100vh;
+  background: white;
+  z-index: 1001;
   flex-direction: column;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  transition: right 0.3s ease;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-nav.active {
+  right: 0;
+}
+
+.mobile-nav-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.mobile-nav-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mobile-nav-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+}
+
+.mobile-nav-links {
+  flex: 1;
+  padding: 10px 0;
+  overflow-y: auto;
 }
 
 .mobile-nav-link {
-  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
   text-decoration: none;
-  padding: 15px 0;
-  font-size: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
 }
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
-  color: #fff;
+  color: var(--primary-color);
+  background: rgba(233, 69, 96, 0.05);
+  border-left-color: var(--primary-color);
 }
 
-.mobile-nav-link.login {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+.nav-icon {
+  font-size: 20px;
+  width: 28px;
   text-align: center;
-  border-radius: 10px;
-  margin-top: 10px;
-  border: none;
 }
 
-.mobile-nav-link.logout {
-  color: #f56c6c;
-}
-
-.mobile-nav-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 10px 0;
+.mobile-nav-footer {
+  padding: 20px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-secondary);
 }
 
 .mobile-user-info {
-  padding: 15px 0;
-  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mobile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+}
+
+.mobile-nickname {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .mobile-points {
-  font-size: 14px;
+  background: rgba(233, 69, 96, 0.1);
+  padding: 6px 12px;
+  border-radius: 15px;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 13px;
 }
 
+.mobile-login-btn,
+.mobile-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.mobile-login-btn {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
+}
+
+.mobile-logout-btn {
+  background: white;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* 主要内容区 */
 .main-content {
   flex: 1;
 }
 
+/* 页脚 - 白色风格 */
 .footer {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 40px 0;
-  color: rgba(255, 255, 255, 0.6);
+  background: white;
+  padding: 60px 0 30px;
+  border-top: 1px solid var(--border-light);
 }
 
 .footer-content {
   text-align: center;
 }
 
+.footer-brand {
+  margin-bottom: 24px;
+}
+
+.footer-logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.footer-tagline {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+}
+
 .footer-quote {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.05), rgba(255, 107, 107, 0.05));
+  border-radius: 12px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .footer-quote p {
-  color: rgba(233, 69, 96, 0.9);
+  color: var(--primary-color);
   font-size: 16px;
-  font-style: italic;
-  animation: fadeIn 2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  font-weight: 500;
 }
 
 .footer-links {
   display: flex;
   justify-content: center;
   gap: 30px;
-  margin-bottom: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .footer-links a {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
   transition: color 0.3s ease;
 }
 
 .footer-links a:hover {
-  color: #e94560;
+  color: var(--primary-color);
 }
 
-.footer p {
+.footer-divider {
+  height: 1px;
+  background: var(--border-color);
+  max-width: 400px;
+  margin: 0 auto 20px;
+}
+
+.footer-copyright {
   font-size: 13px;
+  color: var(--text-muted);
 }
 
-/* 浮动陪伴组件 */
+/* 浮动陪伴组件 - 优化版 */
 .floating-companion {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  z-index: 999;
+  z-index: 998;
 }
 
 .companion-avatar {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
   transition: all 0.3s ease;
   position: relative;
 }
 
 .companion-avatar:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 6px 25px rgba(233, 69, 96, 0.4);
 }
 
 .companion-icon {
@@ -525,14 +789,13 @@ onMounted(() => {
   position: absolute;
   bottom: 70px;
   right: 0;
-  width: 280px;
-  background: rgba(30, 30, 50, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(233, 69, 96, 0.3);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  width: 300px;
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
+  border: 1px solid var(--border-light);
 }
 
 @keyframes slideUp {
@@ -550,66 +813,73 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  color: #fff;
-  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.companion-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .close-btn {
-  background: none;
+  background: var(--bg-tertiary);
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: 16px;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .close-btn:hover {
-  color: #fff;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 .companion-message {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.05), rgba(255, 107, 107, 0.05));
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(233, 69, 96, 0.1);
 }
 
 .companion-message p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.8;
   margin: 0;
 }
 
 .companion-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .companion-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 
 .companion-btn:hover {
-  background: rgba(233, 69, 96, 0.2);
-  color: #fff;
+  background: rgba(233, 69, 96, 0.1);
+  color: var(--primary-color);
   transform: translateX(5px);
 }
 
@@ -624,7 +894,19 @@ onMounted(() => {
   }
   
   .mobile-menu-btn {
-    display: block;
+    display: flex;
+  }
+  
+  .mobile-nav {
+    display: flex;
+  }
+  
+  .nav-container {
+    height: 60px;
+  }
+  
+  .logo {
+    font-size: 20px;
   }
   
   .floating-companion {
@@ -633,13 +915,29 @@ onMounted(() => {
   }
   
   .companion-content {
-    width: 260px;
-    right: -10px;
+    width: 280px;
+    right: 0;
+  }
+  
+  .footer {
+    padding: 40px 0 20px;
+  }
+  
+  .footer-links {
+    gap: 20px;
+  }
+  
+  .footer-quote {
+    margin: 0 16px 24px;
   }
 }
 
 @media (min-width: 769px) {
   .mobile-nav {
+    display: none !important;
+  }
+  
+  .mobile-overlay {
     display: none !important;
   }
 }
