@@ -314,7 +314,7 @@ class Admin extends BaseController
 
             // 添加统计数据
             $user['bazi_count'] = BaziRecord::where('user_id', $id)->count();
-            $user['tarot_count'] = DailyFortune::where('user_id', $id)->count();
+            $user['tarot_count'] = TarotRecord::where('user_id', $id)->count();
 
             // 记录查看日志
             $this->logOperation('view', 'user', [

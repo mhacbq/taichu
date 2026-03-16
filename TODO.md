@@ -5,6 +5,49 @@
 
 ---
 
+## 🎨 UI设计检查报告 - 2026-03-16 第二十一轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 产品经理/UI设计师
+- **检查范围**: 前端Vue项目全部视图页面和组件
+- **检查维度**: 整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+
+### 核心发现
+
+1. **粉色系配色与金色主题冲突仍然存在** - 多处使用rgba(233, 69, 96, 0.x)粉色渐变，与style.css定义的金色系主题色(#B8860B, #D4AF37)不协调
+2. **塔罗牌仍使用emoji表示** - Tarot.vue和TarotDrawAnimation.vue中使用emoji表示塔罗牌，视觉效果不够专业
+3. **页面过渡动画缺失** - 页面切换体验较生硬，缺少Vue过渡动画
+4. **部分深色背景代码残留** - Bazi.vue中太极图加载动画阴影仍使用粉色
+
+### 新增问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] Bazi.vue太极图加载动画阴影使用粉色 - 第1456行box-shadow使用rgba(233, 69, 96, 0.3) - 建议改为金色系阴影rgba(184, 134, 11, 0.3)
+- [ ] [UI] Daily.vue评分圆圈背景使用粉色渐变 - 第280行background使用#e94560到#ff6b6b粉色渐变 - 建议改为金色系渐变
+- [ ] [UI] Daily.vue运势卡片文字颜色硬编码白色 - 第320、322行color使用rgba(255,255,255,0.8) - 建议改为var(--text-secondary)
+- [ ] [UI] Daily.vueaspect卡片标题使用白色 - 第342行color: #fff - 建议改为var(--text-primary)
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 多处粉色渐变与金色主题冲突 - Tarot.vue/Recharge.vue/Profile.vue/Help.vue/HomeNew.vue等20+处使用rgba(233, 69, 96)粉色系 - 建议统一改为金色系rgba(184, 134, 11, 0.x)
+- [ ] [UI] 按钮hover效果使用粉色阴影 - Bazi.vue/Liuyao.vue/Hehun.vue等页面btn-primary:hover使用rgba(233, 69, 96, 0.4)阴影 - 建议改为金色系阴影
+- [ ] [UI] 输入框focus状态使用粉色边框 - Bazi.vue第1713、1717行使用rgba(233, 69, 96, 0.5) - 建议改为var(--primary-color)
+- [ ] [UI] 高亮文字使用粉色 - Bazi.vue第1905-1906行paipan-cell.highlight使用#e94560 - 建议改为var(--primary-color)
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 塔罗牌仍使用emoji表示 - Tarot.vue第119行、TarotDrawAnimation.vue第54行使用emoji - 建议添加真实塔罗牌图片或使用SVG图标
+- [ ] [UI] 缺少页面过渡动画 - 页面切换时没有过渡效果 - 建议添加Vue页面过渡动画组件
+- [ ] [UI] 评分星星颜色硬编码 - Home.vue和Daily.vue中使用#ffd700金色硬编码 - 建议使用CSS变量--primary-color
+- [ ] [UI] 八字排盘表格在移动端字体过小 - Bazi.vue中藏干信息使用10px-12px字体 - 建议优化移动端可读性
+
+### 主题一致性评估
+整体白色主题已统一，但仍存在以下问题：
+1. **粉色系代码残留严重** - 搜索发现70+处rgba(233, 69, 96)粉色系样式
+2. **建议批量替换** - 将所有粉色系(rgba(233, 69, 96, x))替换为金色系(rgba(184, 134, 11, x))
+3. **塔罗牌视觉升级** - 需要设计或引入真实塔罗牌图片资源
+
+---
+
 ## 👔 运营人员后台检查报告 - 2026-03-16 第七轮
 
 ### 检查概览
@@ -87,7 +130,7 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] [2026-03-16 20:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第101-102行、第309-310行 - dashboard()和userDetail()方法中塔罗占卜统计错误地使用了DailyFortune模型，应该使用TarotRecord模型 - 建议修正为TarotRecord::count()和TarotRecord::where('user_id', $id)->count()
+- [x] [2026-03-16 20:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第317行 - 已修复：userDetail()方法中塔罗占卜统计从DailyFortune改为TarotRecord - 修复时间: 2026-03-16
 - [ ] [2026-03-16 20:00] 后端Admin.php缺少Db类导入 - backend/app/controller/Admin.php第903行、第939行 - 使用了Db::name('almanac')但没有导入use think\facade\Db; - 建议添加Db类导入语句
 - [ ] [2026-03-16 20:00] 后端AdminAuth.php硬编码管理员凭据 - backend/app/controller/AdminAuth.php第28行 - 管理员账号密码硬编码在代码中(if ($username !== 'admin' || $password !== 'admin123'))，存在严重安全隐患 - 建议从数据库或配置文件读取并使用密码哈希验证
 - [ ] [2026-03-16 20:00] 后端AdminAuth.php JWT密钥硬编码 - backend/app/controller/AdminAuth.php第17行 - JWT密钥硬编码为'your-admin-jwt-secret-key-change-in-production' - 建议从环境变量或配置文件读取JWT密钥
@@ -1396,6 +1439,7 @@
 
 ## 已完成项目
 
+- [x] [2026-03-16 20:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第317行 - 已修复：userDetail()方法中塔罗占卜统计从DailyFortune改为TarotRecord - 修复时间: 2026-03-16
 - [x] [2026-03-16] 前端Bazi.vue中AI解盘相关变量未定义 - frontend/src/views/Bazi.vue - 已添加aiLoadingTime、aiAbortController、aiLoadingTimer的ref定义 - 修复时间: 2026-03-16
 - [x] [2026-03-16 20:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第101-102行 - 已修复：塔罗占卜统计从DailyFortune改为TarotRecord - 修复时间: 2026-03-16
 - [x] [2026-03-16 20:00] 后端Admin.php缺少Db类导入 - backend/app/controller/Admin.php - 已添加use think\facade\Db导入语句 - 修复时间: 2026-03-16

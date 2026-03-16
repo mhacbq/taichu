@@ -277,7 +277,7 @@ onMounted(() => {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -288,7 +288,7 @@ onMounted(() => {
 .score-number {
   font-size: 48px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {
@@ -299,7 +299,7 @@ onMounted(() => {
 
 .score-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
 }
 
 .score-stars {
@@ -317,7 +317,7 @@ onMounted(() => {
 }
 
 .fortune-summary {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 16px;
   line-height: 1.6;
 }
@@ -339,7 +339,7 @@ onMounted(() => {
 }
 
 .aspect-card h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 15px;
   font-size: 18px;
 }
@@ -349,7 +349,7 @@ onMounted(() => {
 }
 
 .aspect-desc {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }

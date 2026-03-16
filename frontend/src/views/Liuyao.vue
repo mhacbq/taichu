@@ -474,7 +474,7 @@ onMounted(() => {
 
 .btn-submit:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
 }
 
 .btn-icon {

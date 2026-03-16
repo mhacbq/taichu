@@ -317,7 +317,7 @@ const goToFeedback = () => {
 }
 
 .hot-tag:hover {
-  background: rgba(233, 69, 96, 0.4);
+  background: rgba(184, 134, 11, 0.4);
 }
 
 /* FAQ区域 */

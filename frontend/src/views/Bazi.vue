@@ -1453,7 +1453,7 @@ const formatAiContent = (content) => {
   background: linear-gradient(to bottom, #fff 50%, #000 50%);
   position: relative;
   animation: yinYangRotate 2s linear infinite;
-  box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 0 30px rgba(184, 134, 11, 0.3);
 }
 
 .yin-yang::before,
