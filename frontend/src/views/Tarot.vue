@@ -302,9 +302,9 @@ const cardDetailedMeanings = {
     advice: '相信自己的力量，温柔而坚定地面对挑战'
   },
   '隐者': {
-    upright: ' introspection, seeking inner wisdom, solitude',
-    reversed: 'isolation, loneliness, rejecting guidance',
-    advice: 'Take time to reflect and find your inner light'
+    upright: '内省沉思，寻求内在智慧，独处静修',
+    reversed: '孤立自闭，孤独寂寞，拒绝指引',
+    advice: '花时间反思，找到内心的光芒'
   },
   '命运之轮': {
     upright: '命运的转折，周期的变化，把握机会',

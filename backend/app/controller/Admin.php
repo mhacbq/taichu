@@ -116,8 +116,8 @@ class Admin extends BaseController
             // 功能使用分布
             $featureStats = [
                 ['name' => '八字排盘', 'value' => BaziRecord::count()],
-                ['name' => '塔罗占卜', 'value' => \app\model\DailyFortune::count()],
-                ['name' => '每日运势', 'value' => \app\model\DailyFortune::count()],
+                ['name' => '塔罗占卜', 'value' => TarotRecord::count()],
+                ['name' => '每日运势', 'value' => DailyFortune::count()],
                 ['name' => '积分兑换', 'value' => PointsRecord::where('type', 'reduce')->count()]
             ];
 
@@ -238,7 +238,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('user_edit')) {
-            return json(['code' => 403, 'message' => '无权限编辑用户']);
+            return $this->error('无权限编辑用户', 403);
         }
         
         try {
@@ -276,7 +276,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('content_manage')) {
-            return json(['code' => 403, 'message' => '无权限查看内容']);
+            return $this->error('无权限查看内容', 403);
         }
         
         try {
@@ -313,7 +313,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('content_manage')) {
-            return json(['code' => 403, 'message' => '无权限删除内容']);
+            return $this->error('无权限删除内容', 403);
         }
         
         try {
@@ -349,7 +349,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('points_view')) {
-            return json(['code' => 403, 'message' => '无权限查看积分记录']);
+            return $this->error('无权限查看积分记录', 403);
         }
         
         try {
@@ -390,7 +390,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('points_adjust')) {
-            return json(['code' => 403, 'message' => '无权限调整积分']);
+            return $this->error('无权限调整积分', 403);
         }
         
         // 参数验证
@@ -633,7 +633,7 @@ class Admin extends BaseController
     {
         // 检查权限
         if (!$this->checkPermission('log_view')) {
-            return json(['code' => 403, 'message' => '无权限查看操作日志']);
+            return $this->error('无权限查看操作日志', 403);
         }
         
         try {

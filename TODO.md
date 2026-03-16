@@ -24,12 +24,12 @@
 | 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
 | 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
 
-## UI设计检查报告 - 2026-03-16 第十三轮
+## UI设计检查报告 - 2026-03-16 第十五轮
 
 ### 本次检查重点
 - 检查范围：前端Vue项目全部视图页面和组件
 - 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
-- 发现问题：核心主题不一致问题仍然存在，需要决策
+- 发现问题：核心主题不一致问题仍然是最高优先级，需要尽快决策
 
 ### 本次检查发现的新问题
 
@@ -39,7 +39,46 @@
 - [ ] [UI] 首页Hero区域文字颜色与背景冲突 - Home.vue多处使用白色文字（color: #fff, rgba(255,255,255,0.7)等），在浅色背景下不可见 - 建议改为使用var(--text-primary)和var(--text-secondary)
 - [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
 - [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
-- [ ] [UI] 八字排盘加载状态深色背景与白色主题冲突 - Bazi.vue第1420行loading-state使用深色背景（rgba(0,0,0,0.3)），与白色主题不协调 - 建议改为浅色背景或使用主题CSS变量
+- [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 后台管理页面深色背景与白色主题不协调 - admin/*.vue页面使用rgba(0,0,0,0.2)深色背景，与style.css定义的白色主题冲突 - 建议统一后台主题风格
+
+#### 🟡 中优先级（体验问题）
+- [x] [UI] 导航栏大量使用emoji图标 - App.vue - 已替换为Element Plus图标（YinYang, Diamond, User, SwitchButton, HomeFilled, Calendar, Magic, Star, Sunrise, Collection, Present, Close） - 修复时间: 2026-03-16
+- [ ] [UI] 首页大量使用emoji图标 - Home.vue使用🌅、☀️、🌙、💎、🌸、🎁、✨、🔮、📅、🎴、💡、☯、💕、🌟、🎯、👩、👨、👦等emoji - 建议统一使用图标库
+- [ ] [UI] 八字排盘页面使用emoji图标 - Bazi.vue使用💝、💎、🌱、🔮、❓、🎁、⚡等emoji - 建议统一使用图标库
+- [ ] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue使用💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji - 建议统一使用图标库
+- [ ] [UI] 六爻占卜页面使用emoji图标 - Liuyao.vue使用☯、🔄、💾、🗑等emoji - 建议统一使用图标库
+- [ ] [UI] 合婚页面使用emoji图标 - Hehun.vue使用💕、👨、🔓、🤖、💝、🔄、📄等emoji - 建议统一使用图标库
+- [x] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue - 已增大padding至12px，确保最小点击区域44x44px - 修复时间: 2026-03-16
+- [x] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue - 已增大宽高至44px，符合最小触摸区域规范 - 修复时间: 2026-03-16
+- [ ] [UI] 登录页输入框使用emoji图标 - Login.vue使用📱、🔐等emoji作为输入框前缀 - 建议替换为Element Plus图标
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
+- [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+- [ ] [UI] 首页feature-card深色背景与白色主题不协调 - Home.vue第587-591行使用rgba(255,255,255,0.05)深色背景 - 建议改为var(--bg-card)浅色背景
+- [ ] [UI] 首页about区域深色背景与白色主题不协调 - Home.vue第632行使用rgba(0,0,0,0.2)深色背景 - 建议改为var(--bg-secondary)浅色背景
+
+---
+
+## UI设计检查报告 - 2026-03-16 第十四轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目全部视图页面和组件
+- 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+- 发现问题：核心主题不一致问题仍然是最高优先级，需要尽快决策
+
+### 历史检查发现的问题（已归档）
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 主题方向决策 - 这是最核心的设计问题，影响整个网站的视觉一致性 - 建议：考虑到命理玄学的行业属性，建议统一为深色主题（神秘、专业感），或全面改为白色主题（清新、现代感）
+- [ ] [UI] 导航栏与页面内容区视觉割裂 - App.vue使用白色导航栏，但各页面内容区使用深色背景（rgba(0,0,0,0.2)等） - 建议统一全站背景色风格
+- [ ] [UI] 首页Hero区域文字颜色与背景冲突 - Home.vue多处使用白色文字（color: #fff, rgba(255,255,255,0.7)等），在浅色背景下不可见 - 建议改为使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
+- [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
 - [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
 
 #### 🟡 中优先级（体验问题）
@@ -51,6 +90,7 @@
 - [ ] [UI] 合婚页面使用emoji图标 - Hehun.vue使用💕、👨、🔓、🤖、💝、🔄、📄等emoji - 建议统一使用图标库
 - [x] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue - 已增大padding至12px，确保最小点击区域44x44px - 修复时间: 2026-03-16
 - [x] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue - 已增大宽高至44px，符合最小触摸区域规范 - 修复时间: 2026-03-16
+- [ ] [UI] 移动端导航菜单仍使用emoji图标 - App.vue第64-79行mobile-nav-link使用🏠、📅、🎴、☯、💕、🌟等emoji - 建议替换为Element Plus图标
 
 #### 🟢 低优先级（美观问题）
 - [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
@@ -58,6 +98,8 @@
 - [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
 - [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
 - [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+- [ ] [UI] 首页feature-card深色背景与白色主题不协调 - Home.vue第587-591行使用rgba(255,255,255,0.05)深色背景 - 建议改为var(--bg-card)浅色背景
+- [ ] [UI] 首页about区域深色背景与白色主题不协调 - Home.vue第632行使用rgba(0,0,0,0.2)深色背景 - 建议改为var(--bg-secondary)浅色背景
 
 ---
 
@@ -208,14 +250,14 @@
 
 ### 🔴 高优先级（功能性问题）
 
-- [ ] [2026-03-16 16:00] 后端依赖文件缺失 - backend/app/controller/Vip.php引用UserVip、VipOrder模型和VipService服务，但这些文件不存在 - 建议创建backend/app/model/UserVip.php、VipOrder.php和backend/app/service/VipService.php
-- [ ] [2026-03-16 16:00] 后端Content.php依赖模型缺失 - backend/app/controller/Content.php引用PageRecycle和OperationLog模型，但这些文件不存在 - 建议创建backend/app/model/PageRecycle.php和OperationLog.php
-- [ ] [2026-03-16 16:00] 后端Admin.php依赖模型缺失 - backend/app/controller/Admin.php引用Feedback模型，但该文件不存在 - 建议创建backend/app/model/Feedback.php
+- [x] [2026-03-16 16:00] 后端依赖文件缺失 - backend/app/controller/Vip.php引用UserVip、VipOrder模型和VipService服务，但这些文件不存在 - 已创建backend/app/model/UserVip.php、VipOrder.php和backend/app/service/VipService.php - 修复时间: 2026-03-16
+- [x] [2026-03-16 16:00] 后端Content.php依赖模型缺失 - backend/app/controller/Content.php引用PageRecycle和OperationLog模型，但这些文件不存在 - 已创建backend/app/model/PageRecycle.php和OperationLog.php - 修复时间: 2026-03-16
+- [x] [2026-03-16 16:00] 后端Admin.php依赖模型缺失 - backend/app/controller/Admin.php引用Feedback模型，但该文件不存在 - 已创建backend/app/model/Feedback.php - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 后端Auth.php微信登录仍使用模拟逻辑 - backend/app/controller/Auth.php第30-32行 - 使用$openid = 'wx_' . md5($data['code'])模拟微信登录，生产环境存在严重安全风险，同一用户每次登录会被视为新用户 - 建议实现真实微信API调用
 - [ ] [2026-03-16 16:00] 后端Auth.php事务处理不完整 - backend/app/controller/Auth.php第35-67行、第106-126行 - login()和phoneLogin()方法中创建用户、添加积分、处理邀请码等操作没有使用事务 - 建议使用Db::transaction包裹数据库操作
-- [ ] [2026-03-16 16:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php第203-204行、第240-241行 - 使用json(['code' => 403])，但其他方法使用$this->error() - 建议统一使用$this->error('无权限', 403)
+- [x] [2026-03-16 16:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php - 已统一使用$this->error()方法替换所有json(['code' => 403])返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 后端Admin.php adjustPoints验证逻辑问题 - backend/app/controller/Admin.php第396-405行 - 使用$request->validate()但ThinkPHP的validate方法返回验证器实例，不是布尔值 - 建议修复验证逻辑
-- [ ] [2026-03-16 16:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第118-120行 - featureStats中塔罗占卜和每日运势都使用DailyFortune::count()，可能是复制错误 - 建议塔罗占卜使用TarotRecord::count()
+- [x] [2026-03-16 16:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第118-120行 - featureStats中塔罗占卜已修复为使用TarotRecord::count() - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 前端Bazi.vue未使用的导入 - frontend/src/views/Bazi.vue第912行 - getYearlyTrendApi被导入但未使用 - 建议删除未使用的导入
 - [ ] [2026-03-16 16:00] 前端Bazi.vue定时器清理不完整 - frontend/src/views/Bazi.vue第1164-1168行、第1197行 - stepInterval在错误情况下可能未被清理 - 建议在try-catch-finally中确保定时器被清理
 - [ ] [2026-03-16 16:00] 前端Tarot.vue未使用变量 - frontend/src/views/Tarot.vue第242行 - selectedCardIndex变量声明后从未读取 - 建议删除未使用的变量

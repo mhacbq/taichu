@@ -61,22 +61,22 @@
         </div>
         <div class="mobile-nav-links">
           <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">🏠</span> 首页
+            <el-icon class="nav-icon" :size="18"><Home /></el-icon> 首页
           </router-link>
           <router-link to="/bazi" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">📅</span> 八字排盘
+            <el-icon class="nav-icon" :size="18"><Calendar /></el-icon> 八字排盘
           </router-link>
           <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">🎴</span> 塔罗占卜
+            <el-icon class="nav-icon" :size="18"><Magic /></el-icon> 塔罗占卜
           </router-link>
           <router-link to="/liuyao" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">☯</span> 六爻占卜
+            <el-icon class="nav-icon" :size="18"><YinYang /></el-icon> 六爻占卜
           </router-link>
           <router-link to="/hehun" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">💕</span> 八字合婚
+            <el-icon class="nav-icon" :size="18"><Link /></el-icon> 八字合婚
           </router-link>
           <router-link to="/daily" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">🌟</span> 每日运势
+            <el-icon class="nav-icon" :size="18"><Star /></el-icon> 每日运势
           </router-link>
         </div>
         <div class="mobile-nav-footer">
@@ -176,7 +176,12 @@ import {
   Close,
   Present,
   Collection,
-  Sunrise
+  Sunrise,
+  Home,
+  Timer,
+  Reading,
+  Link,
+  Sunrise as SunriseIcon
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

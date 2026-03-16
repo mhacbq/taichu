@@ -480,7 +480,17 @@ const saveRobots = async () => {
 }
 
 const handleImageSuccess = (response) => {
-  form.value.image = response.url
+  if (response.code === 0 && response.data?.url) {
+    form.value.image = response.data.url
+    ElMessage.success('图片上传成功')
+  } else {
+    ElMessage.error(response.message || '图片上传失败')
+  }
+}
+
+const handleImageError = (error) => {
+  console.error('图片上传失败:', error)
+  ElMessage.error('图片上传失败，请检查网络或文件格式')
 }
 
 const submitToBaidu = () => {

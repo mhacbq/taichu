@@ -909,7 +909,6 @@ import {
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
   getYearlyFortune, 
-  getYearlyTrend as getYearlyTrendApi, 
   getDayunAnalysis, 
   getDayunChart as getDayunChartApi,
   getFortunePointsCost 

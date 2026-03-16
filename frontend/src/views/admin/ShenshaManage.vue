@@ -275,7 +275,13 @@ const filteredList = computed(() => {
     list = list.filter(item => item.category === filterCategory.value)
   }
   
-  return list
+  // 更新总数
+  total.value = list.length
+  
+  // 分页切片
+  const start = (page.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return list.slice(start, end)
 })
 
 const getTypeTag = (type) => {
