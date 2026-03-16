@@ -255,7 +255,7 @@
 
 ---
 
-## 2026-03-17 15:45 执行记录（本次）
+## 2026-03-17 15:45 执行记录
 
 ### 本次修复的5个后端问题
 
@@ -294,5 +294,48 @@
 - 后端中间件Auth.php日志记录敏感信息过滤（已部分实现）
 - 后端Hehun.php buildReportHtml其他字段XSS防护
 - 后端Liuyao.php aiInterpretation方法事务处理
+
+---
+
+## 2026-03-17 15:45 执行记录（本次）
+
+### 本次修复的5个后端问题
+
+1. **SiteContent.php返回格式不统一** (API规范)
+   - 文件: `backend/app/controller/SiteContent.php`
+   - 问题: getSpreadList、getSpreads、getQuestionList、getQuestions、getFortuneTemplateList等方法混用`json()`和`$this->success()`，返回code不一致（0或200）
+   - 修复: 将所有`json(['code' => 0])`改为`$this->success()`，统一返回code=200
+
+2. **Auth.php魔法数字问题** (代码规范)
+   - 文件: `backend/app/controller/Auth.php`
+   - 问题: 密码长度、昵称长度、注册积分等使用硬编码数字（6、50、100）
+   - 修复: 添加类常量`MIN_PASSWORD_LENGTH = 6`、`MAX_NICKNAME_LENGTH = 50`、`REGISTER_POINTS = 100`，替换所有硬编码值
+
+3. **Liuyao.php缺少HTTP状态码** (API规范)
+   - 文件: `backend/app/controller/Liuyao.php`
+   - 问题: aiInterpretation方法中参数错误返回`$this->error('参数错误')`缺少HTTP状态码
+   - 修复: 添加HTTP状态码400，改为`$this->error('参数错误', 400)`
+
+4. **SiteContent.php saveFortuneTemplate返回格式不统一** (API规范)
+   - 文件: `backend/app/controller/SiteContent.php`
+   - 问题: 模板不存在时返回`json(['code' => 404, 'message' => '模板不存在'])`，与其他方法不一致
+   - 修复: 改为`$this->error('模板不存在', 404)`，统一使用BaseController方法
+
+5. **Auth.php多处硬编码积分值** (代码规范)
+   - 文件: `backend/app/controller/Auth.php`
+   - 问题: phoneLogin和phoneRegister方法中多处使用硬编码100作为新用户注册积分
+   - 修复: 使用常量`self::REGISTER_POINTS`替代硬编码值
+
+### Git提交
+- 提交ID: `f633393`
+- 提交信息: `fix-backend-multiple-issues-20250317-1545`
+- 已推送到: origin/master
+
+### 待修复问题
+- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
+- 后端中间件Auth.php日志记录敏感信息过滤（已部分实现）
+- 后端Hehun.php buildReportHtml其他字段XSS防护
+- 后端Liuyao.php aiInterpretation方法事务处理
+- 后端Admin.php分页大小硬编码问题
 
 ---

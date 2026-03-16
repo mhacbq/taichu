@@ -240,8 +240,8 @@
 - [ ] [2026-03-17 23:50] **管理端字典管理使用模拟数据** - admin/src/views/system/dict.vue第112-118行、第167-186行使用硬编码模拟数据 - 建议实现真实API对接
 
 #### 🟡 中优先级（体验/代码质量问题）
-- [ ] [2026-03-17 23:50] **后端SiteContent.php缺少page参数验证** - backend/app/controller/SiteContent.php第55-70行updatePageContent方法未验证page参数格式 - 建议添加参数验证`preg_match('/^[a-zA-Z0-9_-]+$/', $page)`
-- [ ] [2026-03-17 23:50] **后端中间件返回格式与BaseController不一致** - backend/app/middleware/Auth.php第18-23行返回格式为`{code: 401, message: '...'}`，与BaseController的`{code: 200, message: '...'}`不一致 - 建议统一返回格式
+- [x] [2026-03-17 23:50] **后端SiteContent.php缺少page参数验证** - backend/app/controller/SiteContent.php第55-70行、第80-98行 - **已修复**：为updatePageContent和getContentList方法添加page参数验证，防止路径遍历和非法字符 - 修复时间: 2026-03-17
+- [x] [2026-03-17 23:50] **后端中间件返回格式与BaseController不一致** - backend/app/middleware/Auth.php第18-23行 - **已修复**：将错误时的code从200改为401，与HTTP状态码保持一致，符合BaseController规范 - 修复时间: 2026-03-17
 - [ ] [2026-03-17 23:50] **管理端API路径前缀不一致** - admin/src/api/ai.js使用`/api/admin/`，payment.js使用`/admin/`，content.js使用`/content/` - 建议统一API路径格式
 - [ ] [2026-03-17 23:50] **管理端角色管理权限保存未调用API** - admin/src/views/system/role.vue第46行保存权限按钮调用handleSavePermission，但方法内只是打印日志 - 建议实现真实API调用保存权限
 
