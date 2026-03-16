@@ -46,6 +46,26 @@
 - frontend/src/views/admin/ShenshaManage.vue
 - TODO.md
 
+### 2026-03-16 第三次执行
+- 任务：修复前端TODO.md中的前端相关问题
+- 状态：已完成
+- 修复数量：5个前端问题
+- Git提交：43d945d - fix-frontend-emoji-icons-2026-03-16
+
+#### 已修复问题：
+1. **Login.vue登录页Logo emoji图标** - 已将☯emoji替换为Element Plus的YinYang图标
+2. **Bazi.vue emoji图标替换** - 已将💝、💎、🌱、🔮、❓、🎁、⚡等emoji替换为Element Plus图标(HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning)
+3. **Tarot.vue emoji图标替换** - 已将💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji替换为Element Plus图标(Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight)
+4. **Liuyao.vue emoji图标替换** - 已将☯、🔄、💾、🗑等emoji替换为Element Plus图标(YinYang, RefreshRight, Download, Delete, Magic)
+5. **Bazi.vue空值访问修复** - 已为aiAbortController和result.bazi的多处访问添加可选链操作符?.防止运行时错误
+
+#### 修改文件：
+- frontend/src/views/Login.vue
+- frontend/src/views/Bazi.vue
+- frontend/src/views/Tarot.vue
+- frontend/src/views/Liuyao.vue
+- TODO.md
+
 ## 待修复问题跟踪
 - 主题方向决策（需要用户确认）
 - 页面背景色与主题冲突（需要用户确认主题方向）

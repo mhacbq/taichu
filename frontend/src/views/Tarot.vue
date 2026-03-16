@@ -844,9 +844,9 @@ const getCardAdvice = (card) => {
 .card-inner {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #FAFBFC 0%, #F5F7FA 100%);
   border-radius: 15px;
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  border: 2px solid rgba(184, 134, 11, 0.3);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -862,42 +862,43 @@ const getCardAdvice = (card) => {
 
 .card-number {
   font-size: 24px;
-  color: #e94560;
+  color: #B8860B;
   font-weight: bold;
   margin-bottom: 20px;
 }
 
 .card-name {
   font-size: 18px;
-  color: #fff;
+  color: #1A1A2E;
   font-weight: 500;
 }
 
 .card-position {
   margin-top: 15px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(26, 26, 46, 0.6);
 }
 
 .interpretation {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(184, 134, 11, 0.08);
   border-radius: 15px;
   padding: 30px;
+  border: 1px solid rgba(184, 134, 11, 0.15);
 }
 
 .interpretation-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(26, 26, 46, 0.8);
   line-height: 1.8;
   white-space: pre-line;
 }
 
 /* 塔罗牌样式 */
-.card-inner {
+.card-inner-alt {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAFBFC 100%);
   border-radius: 15px;
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  border: 2px solid rgba(184, 134, 11, 0.25);
   display: flex;
   flex-direction: column;
   justify-content: center;

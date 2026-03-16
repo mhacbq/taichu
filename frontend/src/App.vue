@@ -373,12 +373,12 @@ onMounted(() => {
 
 .nav-link:hover {
   color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.05);
+  background: rgba(184, 134, 11, 0.08);
 }
 
 .nav-link.router-link-active {
   color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.12);
 }
 
 /* 用户操作区 */
@@ -392,13 +392,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(184, 134, 11, 0.08));
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   color: var(--primary-color);
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  border: 1px solid rgba(184, 134, 11, 0.25);
 }
 
 .points-icon {
@@ -461,12 +461,12 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
+  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.35);
+  box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4);
 }
 
 /* 移动端菜单按钮 */
@@ -584,7 +584,7 @@ onMounted(() => {
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
   color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.05);
+  background: rgba(184, 134, 11, 0.08);
   border-left-color: var(--primary-color);
 }
 
@@ -778,14 +778,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 4px 20px rgba(184, 134, 11, 0.35);
   transition: all 0.3s ease;
   position: relative;
 }
 
 .companion-avatar:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 25px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 6px 25px rgba(184, 134, 11, 0.45);
 }
 
 .companion-icon {
@@ -798,7 +798,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(233, 69, 96, 0.4);
+  background: rgba(184, 134, 11, 0.4);
   animation: pulse-ring 2s ease-out infinite;
 }
 

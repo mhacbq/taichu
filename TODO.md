@@ -24,6 +24,38 @@
 | 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
 | 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
 
+## 代码逻辑检查报告 - 2026-03-16 第十八轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目关键文件、后端PHP控制器
+- 检查维度：语法错误、类型错误、API调用、返回格式统一性、未使用代码
+- 发现问题：发现8个新问题，需要添加到待处理列表
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [2026-03-16 17:30] 后端Admin.php返回格式不统一 - backend/app/controller/Admin.php第129、268行 - 混用json()和$this->success()/$this->error()两种返回方式 - 建议统一使用BaseController的方法
+- [ ] [2026-03-16 17:30] 后端Content.php返回格式不统一 - backend/app/controller/Content.php全部返回 - 只使用json()返回，没有使用继承的$this->success()/$this->error()方法 - 建议统一返回格式
+- [ ] [2026-03-16 17:30] 后端AiAnalysis.php返回格式不统一 - backend/app/controller/AiAnalysis.php第48、384行 - 混用json()和$this->success()/$this->error()两种返回方式 - 建议统一使用BaseController的方法
+
+#### 🟡 中优先级（体验问题）
+- [ ] [2026-03-16 17:30] 后端Vip.php未使用的导入 - backend/app/controller/Vip.php第7行 - UserVip模型已导入但未使用 - 建议删除未使用的导入
+- [ ] [2026-03-16 17:30] 后端Paipan.php重复变量定义 - backend/app/controller/Paipan.php第58、64行 - $mode变量被重复定义 - 建议删除重复的定义
+- [ ] [2026-03-16 17:30] 后端Paipan.php未使用的本地方法 - backend/app/controller/Paipan.php第214-238行 - generateSimpleInterpretation方法定义了但未使用 - 建议删除未使用的本地方法
+- [ ] [2026-03-16 17:30] 前端Tarot.vue未使用参数 - frontend/src/views/Tarot.vue第565-568行 - showCardDetail函数中index参数传入但未使用 - 建议移除未使用的参数或添加_前缀
+- [ ] [2026-03-16 17:30] 前端App.vue未使用的导入 - frontend/src/App.vue第167行 - HomeFilled图标导入但未使用 - 建议移除未使用的导入
+
+### 已修复/已不存在的问题
+1. **前端Bazi.vue result对象空值检查** - 已使用可选链操作符?.进行保护
+2. **前端Bazi.vue aiAbortController空值检查** - 已使用可选链操作符?.进行保护
+3. **前端Bazi.vue 定时器清理** - 已在finally块中统一清理
+4. **后端AdminAuth中间件JWT密钥** - 已从环境变量读取，未硬编码
+5. **后端AdminAuth中间件日志敏感信息** - 已正确过滤敏感字段
+6. **后端AdminAuthService无效adminId校验** - 已添加多处校验
+7. **后端AiAnalysis.php cURL SSL验证** - 已正确启用SSL验证
+
+---
+
 ## UI设计检查报告 - 2026-03-16 第十七轮
 
 ### 本次检查重点

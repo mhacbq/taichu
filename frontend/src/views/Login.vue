@@ -189,7 +189,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #FAFBFC 0%, #F5F7FA 50%, #FFFFFF 100%);
   padding: 20px;
 }
 

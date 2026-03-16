@@ -781,12 +781,14 @@ onMounted(() => {
 }
 
 .modal-content {
-  background: #1a1a2e;
+  background: #FFFFFF;
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow: hidden;
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
@@ -794,7 +796,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(184, 134, 11, 0.15);
 }
 
 .modal-header h3 {

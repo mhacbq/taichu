@@ -5,14 +5,14 @@
 }
 
 :root {
-  /* 白色主题配色 */
-  --primary-color: #e94560;
-  --primary-light: #ff6b6b;
-  --primary-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  /* 白色高级主题 - 金色系 */
+  --primary-color: #B8860B;
+  --primary-light: #D4AF37;
+  --primary-gradient: linear-gradient(135deg, #D4AF37 0%, #B8860B 50%, #8B6914 100%);
   
   --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #f0f2f5;
+  --bg-secondary: #FAFBFC;
+  --bg-tertiary: #F5F7FA;
   --bg-card: #ffffff;
   
   --text-primary: #1a1a2e;
@@ -59,12 +59,12 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
+  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.35);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
 }
 
 /* 次要按钮 */
@@ -151,7 +151,7 @@ body {
 .input-field:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
+  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.12);
 }
 
 .input-field::placeholder {
@@ -171,7 +171,7 @@ body {
 }
 
 .tag-primary {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.1);
   color: var(--primary-color);
 }
 
