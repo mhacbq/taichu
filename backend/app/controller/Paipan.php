@@ -1347,7 +1347,7 @@ class Paipan extends BaseController
         if ($longitudeDiff > 0) {
             return "出生地位于东经{$longitude}度，比北京偏{$direction}{$absDiff}度，当地时间比北京时间早{$timeDesc}";
         } else {
-            return "出生地位于东经{$longitude}度，比北京偏{$direction}{absDiff}度，当地时间比北京时间晚{$timeDesc}";
+            return "出生地位于东经{$longitude}度，比北京偏{$direction}{$absDiff}度，当地时间比北京时间晚{$timeDesc}";
         }
     }
 }

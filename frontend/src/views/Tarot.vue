@@ -181,7 +181,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
+import { drawTarot, interpretTarot, getPointsBalance } from '../api'
 import BackButton from '../components/BackButton.vue'
 import { Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight } from '@element-plus/icons-vue'
 

@@ -156,6 +156,13 @@
         </div>
       </div>
 
+      <!-- 错误状态 -->
+      <div v-else-if="error" class="error-state card">
+        <el-icon class="error-icon" :size="48"><WarningFilled /></el-icon>
+        <p class="error-message">{{ errorMessage }}</p>
+        <el-button type="primary" @click="loadDailyFortune">重新加载</el-button>
+      </div>
+
       <div v-else class="loading-state card">
         <el-skeleton :rows="10" animated />
       </div>
@@ -166,7 +173,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
@@ -175,6 +182,8 @@ const solarDate = ref('')
 const lunarDate = ref('')
 const fortune = ref(null)
 const activeNames = ref(['career', 'wealth'])
+const error = ref(false)
+const errorMessage = ref('')
 
 const getScoreColor = (score) => {
   if (score >= 80) return '#67C23A'
@@ -189,18 +198,25 @@ const getScoreClass = (score) => {
 }
 
 const loadDailyFortune = async () => {
+  error.value = false
+  errorMessage.value = ''
   try {
     const response = await getDailyFortune()
     if (response.code === 0) {
       fortune.value = response.data.fortune
       solarDate.value = response.data.solarDate
       lunarDate.value = response.data.lunarDate
+      error.value = false
     } else {
-      ElMessage.error(response.message || '获取运势失败')
+      error.value = true
+      errorMessage.value = response.message || '获取运势失败'
+      ElMessage.error(errorMessage.value)
     }
-  } catch (error) {
-    ElMessage.error('网络错误，请稍后重试')
-    console.error(error)
+  } catch (err) {
+    error.value = true
+    errorMessage.value = '网络错误，请稍后重试'
+    ElMessage.error(errorMessage.value)
+    console.error(err)
   }
 }
 
@@ -417,6 +433,25 @@ onMounted(() => {
 .loading-state {
   max-width: 800px;
   margin: 0 auto;
+}
+
+/* 错误状态样式 */
+.error-state {
+  max-width: 600px;
+  margin: 50px auto;
+  text-align: center;
+  padding: 50px 30px;
+}
+
+.error-icon {
+  color: #F56C6C;
+  margin-bottom: 20px;
+}
+
+.error-message {
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin-bottom: 25px;
 }
 
 /* 个性化运势样式 */

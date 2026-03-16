@@ -192,7 +192,30 @@ const filterCategory = ref('')
 // 分页
 const page = ref(1)
 const pageSize = ref(20)
-const total = ref(0)
+// 筛选后的完整列表（不分页）
+const filteredTotalList = computed(() => {
+  let list = shenshaList.value
+  
+  if (searchKeyword.value) {
+    list = list.filter(item => 
+      item.name.includes(searchKeyword.value) ||
+      item.description.includes(searchKeyword.value)
+    )
+  }
+  
+  if (filterType.value) {
+    list = list.filter(item => item.type === filterType.value)
+  }
+  
+  if (filterCategory.value) {
+    list = list.filter(item => item.category === filterCategory.value)
+  }
+  
+  return list
+})
+
+// 总条数计算属性
+const total = computed(() => filteredTotalList.value.length)
 
 // 表单
 const form = ref({
@@ -256,32 +279,12 @@ const shenshaList = ref([
   }
 ])
 
-// 筛选后的列表
+// 筛选后的列表（分页）
 const filteredList = computed(() => {
-  let list = shenshaList.value
-  
-  if (searchKeyword.value) {
-    list = list.filter(item => 
-      item.name.includes(searchKeyword.value) ||
-      item.description.includes(searchKeyword.value)
-    )
-  }
-  
-  if (filterType.value) {
-    list = list.filter(item => item.type === filterType.value)
-  }
-  
-  if (filterCategory.value) {
-    list = list.filter(item => item.category === filterCategory.value)
-  }
-  
-  // 更新总数
-  total.value = list.length
-  
-  // 分页切片
+  // 使用已筛选的完整列表进行分页切片
   const start = (page.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return list.slice(start, end)
+  return filteredTotalList.value.slice(start, end)
 })
 
 const getTypeTag = (type) => {

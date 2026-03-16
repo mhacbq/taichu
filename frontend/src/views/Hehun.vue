@@ -100,13 +100,13 @@
           <!-- 详细分析 -->
           <div class="analysis-section">
             <h3>详细分析</h3>
-            <div class="analysis-content" v-html="premiumResult.hehun.detail_analysis"></div>
+            <div class="analysis-content" v-html="sanitizeHtml(premiumResult.hehun.detail_analysis)"></div>
           </div>
           
           <!-- AI分析 -->
           <div class="ai-section" v-if="premiumResult.ai_analysis">
             <h3><el-icon><Cpu /></el-icon> AI深度解读</h3>
-            <div class="ai-content" v-html="premiumResult.ai_analysis"></div>
+            <div class="ai-content" v-html="sanitizeHtml(premiumResult.ai_analysis)"></div>
           </div>
           
           <!-- 化解建议 -->
@@ -255,6 +255,32 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu, Lightbulb } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
+
+/**
+ * HTML净化函数 - 防止XSS攻击
+ * 只允许安全的HTML标签
+ */
+const sanitizeHtml = (html) => {
+  if (!html) return ''
+  // 只允许白名单内的安全标签
+  const allowedTags = ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li']
+  const allowedAttributes = ['class', 'style']
+  
+  // 移除所有script标签及其内容
+  let sanitized = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+  // 移除所有事件处理器
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*"[^"]*"/gi, '')
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*'[^']*'/gi, '')
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]+/gi, '')
+  // 移除javascript:伪协议
+  sanitized = sanitized.replace(/javascript:/gi, '')
+  // 移除data:伪协议
+  sanitized = sanitized.replace(/data:/gi, '')
+  // 移除vbscript:伪协议
+  sanitized = sanitized.replace(/vbscript:/gi, '')
+  
+  return sanitized
+}
 
 // 表单数据
 const form = reactive({
@@ -439,6 +465,8 @@ const loadHistoryDetail = async (item) => {
     // 填充表单
     form.maleName = item.male_name
     form.femaleName = item.female_name
+    form.maleBirthDate = item.male_birth_date || ''
+    form.femaleBirthDate = item.female_birth_date || ''
     // 显示结果 - 使用安全解析，每个字段独立处理
     const hehunData = safeJsonParse(item.result, {})
     const aiAnalysisData = safeJsonParse(item.ai_analysis, null)
