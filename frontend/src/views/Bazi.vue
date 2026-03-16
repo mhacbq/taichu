@@ -1846,7 +1846,7 @@ const formatAiContent = (content) => {
 .form-group label {
   display: block;
   margin-bottom: 10px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -1916,7 +1916,7 @@ const formatAiContent = (content) => {
 }
 
 .bazi-analysis {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 15px;
   padding: 30px;
 }
@@ -1941,8 +1941,8 @@ const formatAiContent = (content) => {
   align-items: center;
   gap: 15px;
   padding: 20px 25px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.2);
 }
 
 .tip-icon {
@@ -2311,8 +2311,8 @@ const formatAiContent = (content) => {
 }
 
 .day-master-card {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
-  border: 2px solid rgba(233, 69, 96, 0.5);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.2), rgba(212, 175, 55, 0.2));
+  border: 2px solid rgba(184, 134, 11, 0.5);
   border-radius: 15px;
   padding: 20px 40px;
   display: flex;
