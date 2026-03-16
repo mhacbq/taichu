@@ -482,26 +482,16 @@ class AiAnalysis extends BaseController
             if ($httpCode === 200) {
                 $data = json_decode($response, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    return json([
-                        'code' => 0,
-                        'message' => '连接成功',
-                        'data' => [
-                            'model' => $data['model'] ?? $config['model'],
-                            'status' => 'ok'
-                        ]
-                    ]);
+                    return $this->success([
+                        'model' => $data['model'] ?? $config['model'],
+                        'status' => 'ok'
+                    ], '连接成功');
                 }
             }
 
-            return json([
-                'code' => 500,
-                'message' => '连接失败，请检查配置'
-            ]);
+            return $this->error('连接失败，请检查配置', 500);
         } catch (\Exception $e) {
-            return json([
-                'code' => 500,
-                'message' => '连接失败：' . $e->getMessage()
-            ]);
+            return $this->error('连接失败：' . $e->getMessage(), 500);
         }
     }
 }

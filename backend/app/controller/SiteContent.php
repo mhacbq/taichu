@@ -29,14 +29,10 @@ class SiteContent extends BaseController
         // 获取启用的用户评价
         $testimonials = Testimonial::getEnabledList(6);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'content' => $content,
-                'testimonials' => $testimonials,
-            ],
-        ]);
+        return $this->success([
+            'content' => $content,
+            'testimonials' => $testimonials,
+        ], '获取成功');
     }
     
     /**
@@ -48,11 +44,7 @@ class SiteContent extends BaseController
         
         $content = SiteContentModel::getPageContent($page);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $content,
-        ]);
+        return $this->success($content, '获取成功');
     }
     
     /**
@@ -65,18 +57,15 @@ class SiteContent extends BaseController
         $contents = $request->param('contents', []);
         
         if (empty($contents)) {
-            return json(['code' => 400, 'message' => '内容不能为空']);
+            return $this->error('内容不能为空', 400);
         }
         
         try {
             SiteContentModel::batchUpdate($contents, $page, $userId);
             
-            return json([
-                'code' => 0,
-                'message' => '更新成功',
-            ]);
+            return $this->success(null, '更新成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '更新失败：' . $e->getMessage()]);
+            return $this->error('更新失败：' . $e->getMessage(), 500);
         }
     }
     
@@ -91,18 +80,16 @@ class SiteContent extends BaseController
         $query = SiteContentModel::where('page', $page);
         
         if ($key) {
-            $query->where('key', 'like', "%{$key}%");
+            // 使用参数绑定防止SQL注入
+            $key = preg_replace('/[%_\\\\]/', '', $key);
+            $query->whereLike('key', '%' . $key . '%');
         }
         
         $list = $query->order('sort_order', 'asc')
             ->order('created_at', 'desc')
             ->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -118,7 +105,7 @@ class SiteContent extends BaseController
             if ($id) {
                 $content = SiteContentModel::find($id);
                 if (!$content) {
-                    return json(['code' => 404, 'message' => '内容不存在']);
+                    return $this->error('内容不存在', 404);
                 }
                 $content->save($data);
             } else {
@@ -126,9 +113,9 @@ class SiteContent extends BaseController
                 SiteContentModel::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            return $this->error('保存失败：' . $e->getMessage(), 500);
         }
     }
     
@@ -141,12 +128,12 @@ class SiteContent extends BaseController
         
         $content = SiteContentModel::find($id);
         if (!$content) {
-            return json(['code' => 404, 'message' => '内容不存在']);
+            return $this->error('内容不存在', 404);
         }
         
         $content->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     // ==================== 用户评价管理 ====================

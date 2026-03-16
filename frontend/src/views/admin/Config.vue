@@ -573,7 +573,7 @@ onMounted(() => {
 
 .header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .feature-switches,
@@ -587,12 +587,12 @@ onMounted(() => {
 .vip-config h3,
 .points-config h3,
 .marketing-config h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 10px;
 }
 
 .desc {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
@@ -608,9 +608,9 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
   transition: all 0.3s;
 }
 
@@ -626,7 +626,7 @@ onMounted(() => {
 }
 
 .feature-name {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -634,7 +634,7 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-light);
 }
 
 .config-form {
@@ -643,21 +643,21 @@ onMounted(() => {
 
 .unit {
   margin-left: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .hint {
   margin-left: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 :deep(.el-divider__text) {
-  background: #1a1a2e;
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--bg-card);
+  color: var(--text-secondary);
 }
 </style>

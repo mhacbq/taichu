@@ -1,52 +1,112 @@
 # 网站逻辑检查任务 - 执行记录
 
 ## 执行时间
-2026-03-16 19:00（第二十轮检查）
+2026-03-16 21:00（第二十三轮检查）
 
 ## 执行摘要
-本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查，共发现**8个新问题**并记录到TODO.md文件中。
+本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查。经检查，第22轮发现的问题仍然存在，暂无新的重大问题发现。
 
 ---
 
-## 第二十轮检查 - 2026-03-16
+## 第二十三轮检查 - 2026-03-16
+
+### 检查范围
+- 前端Vue组件：8个关键文件（Bazi.vue, Tarot.vue, Liuyao.vue, Daily.vue, Hehun.vue, Login.vue, App.vue, router/index.js）
+- 后端PHP控制器：11个文件（Admin.php, AdminAuth.php, AiAnalysis.php, Paipan.php, Tarot.php, Liuyao.php, Hehun.php等）
+- 管理端页面：6个文件（Config.vue, AlmanacManage.vue, KnowledgeManage.vue, SEOManage.vue, SEOStats.vue, ShenshaManage.vue）
+
+### 检查结果
+- 第22轮发现的**8个高优先级问题**仍然存在，需要尽快修复
+- 第22轮发现的**10个中优先级问题**仍然存在
+- 第22轮发现的**3个低优先级问题**仍然存在
+
+### 重点问题回顾
+
+#### 🔴 高优先级（需立即修复）
+1. **后端Admin.php统计逻辑错误** - dashboard()和userDetail()方法中塔罗占卜统计错误地使用了DailyFortune模型
+2. **后端Admin.php缺少Db类导入** - 使用了Db::name('almanac')但没有导入use think\facade\Db
+3. **后端AdminAuth.php硬编码管理员凭据** - 管理员账号密码硬编码在代码中，存在严重安全隐患
+4. **后端AdminAuth.php JWT密钥硬编码** - JWT密钥硬编码为'your-admin-jwt-secret-key-change-in-production'
+5. **前端Bazi.vue isCurrentDaYun函数硬编码年龄** - 函数中硬编码当前年龄为30岁
+6. **前端Tarot.vue API错误处理不完整** - drawCards函数中当interpretResponse.code !== 0时没有处理错误情况
+7. **前端Liuyao.vue空值检查缺失** - loadHistoryDetail函数中使用item.yao_result.map没有空值检查
+8. **前端SEOStats.vue图表初始化代码缺失** - pieChart和trendChart ref被模板引用但从未初始化
+
+### 修复建议
+1. 优先修复安全相关问题（硬编码凭据、JWT密钥）
+2. 修复统计逻辑错误和数据导入问题
+3. 完善前端错误处理和空值检查
+4. 实现管理端真实API接口
+
+---
+
+## 第二十二轮检查 - 2026-03-16
+
+## 执行摘要
+本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查，共发现**18个新问题**并记录到TODO.md文件中。
+
+---
+
+## 第二十二轮检查 - 2026-03-16
 
 ### 本次检查发现的新问题
 
-### 🔴 高优先级（4个）
-1. **前端Hehun.vue JSON解析缺少错误处理** - loadHistoryDetail函数中多处JSON.parse没有try-catch包裹
-2. **后端Hehun.php buildReportHtml方法XSS安全风险** - 直接拼接用户输入到HTML，没有进行HTML转义
-3. **后端Liuyao.php qiGua方法缺少事务处理** - saveRecord调用在异常时无法回滚
-4. **后端Admin.php users方法SQL注入风险** - 虽然使用了preg_replace过滤，但仍使用字符串拼接方式
+### 🔴 高优先级（8个）
+1. **后端Admin.php统计逻辑错误** - dashboard()和userDetail()方法中塔罗占卜统计错误地使用了DailyFortune模型，应该使用TarotRecord模型
+2. **后端Admin.php缺少Db类导入** - 使用了Db::name('almanac')但没有导入use think\facade\Db;
+3. **后端AdminAuth.php硬编码管理员凭据** - 管理员账号密码硬编码在代码中，存在严重安全隐患
+4. **后端AdminAuth.php JWT密钥硬编码** - JWT密钥硬编码为'your-admin-jwt-secret-key-change-in-production'
+5. **前端Bazi.vue isCurrentDaYun函数硬编码年龄** - 函数中硬编码当前年龄为30岁，没有根据实际出生日期计算
+6. **前端Tarot.vue API错误处理不完整** - drawCards函数中当interpretResponse.code !== 0时没有处理错误情况
+7. **前端Liuyao.vue空值检查缺失** - loadHistoryDetail函数中使用item.yao_result.map没有空值检查
+8. **前端SEOStats.vue图表初始化代码缺失** - pieChart和trendChart ref被模板引用但从未初始化
 
-### 🟡 中优先级（4个）
-5. 前端AlmanacManage.vue API调用缺失 - submitForm和generateMonth函数只有模拟延迟
-6. 后端Hehun.php calculatePointsCost数组键名错误 - 调用返回的数组键名与实际不符
-7. 前端管理端页面缺少错误边界处理 - 多个管理页面没有错误边界处理
-8. 后端Content.php返回格式不统一 - 只使用json()返回，没有使用继承方法
+### 🟡 中优先级（10个）
+9. 后端返回格式不统一问题 - SiteContent.php/AiPrompt.php/Upload.php/AdminAuth.php直接使用json()返回
+10. 后端Liuyao.php日辰参数验证缺失 - 没有验证是否为有效的天干(甲-癸)
+11. 后端Liuyao.php异常处理不完整 - 异常返回没有HTTP状态码参数
+12. 前端管理端页面API调用均为模拟实现 - KnowledgeManage.vue/SEOManage.vue/SEOStats.vue/ShenshaManage.vue
+13. 前端管理端分页逻辑不完整 - 分页组件存在但数据未按分页切片
+14. 前端管理端表单验证不完整 - Config.vue/SEOManage.vue多个表单缺少验证
+15. 前端Tarot.vue未使用的导入 - saveTarotRecord导入但未使用
+16. 前端Liuyao.vue未使用的导入 - ElMessageBox导入但未使用
+17. 前端Hehun.vue未使用的导入 - MagicStick导入但未使用
+18. 前端ShenshaManage.vue分页逻辑副作用问题 - filteredList computed中直接修改total.value
+
+### 🟢 低优先级（3个）
+19. 前端路由缺少错误边界处理
+20. 前端Hehun.vue loadHistoryDetail函数逻辑不完善
+21. 前端Daily.vue缺少错误边界处理
 
 ## 检查范围
-- 前端Vue组件：4个关键文件（Bazi.vue, Tarot.vue, Liuyao.vue, Hehun.vue）
-- 后端PHP控制器：5个文件（Hehun.php, Liuyao.php, Admin.php, Content.php, ConfigService.php）
-- 管理端页面：1个文件（AlmanacManage.vue）
+- 前端Vue组件：6个关键文件（Bazi.vue, Tarot.vue, Liuyao.vue, Hehun.vue, Daily.vue, router/index.js）
+- 后端PHP控制器：8个文件（Admin.php, Content.php, AiAnalysis.php, Liuyao.php, Hehun.php, SiteContent.php, AiPrompt.php, Upload.php, AdminAuth.php）
+- 管理端页面：5个文件（Config.vue, KnowledgeManage.vue, SEOManage.vue, SEOStats.vue, ShenshaManage.vue）
+- 服务类：1个文件（AdminAuthService.php）
 
 ## 修复建议优先级
 
 **尽快修复（P1）**:
-1. 修复Hehun.vue JSON解析错误处理（添加try-catch）
-2. 修复Hehun.php XSS安全风险（添加htmlspecialchars转义）
-3. 修复Liuyao.php事务处理（添加Db::startTrans）
-4. 修复Admin.php SQL注入风险（改用参数绑定）
+1. 修复Admin.php统计逻辑错误（使用正确的TarotRecord模型）
+2. 修复Admin.php缺少Db类导入
+3. 修复AdminAuth.php硬编码凭据问题（使用数据库+密码哈希）
+4. 修复AdminAuth.php JWT密钥硬编码问题
+5. 修复Bazi.vue硬编码年龄问题
+6. 修复Tarot.vue API错误处理
+7. 修复Liuyao.vue空值检查
+8. 修复SEOStats.vue图表初始化
 
 **后续优化（P2）**:
-5. 实现AlmanacManage.vue真实API调用
-6. 核对Hehun.php数组键名
-7. 添加管理端错误边界处理
-8. 统一Content.php返回格式
+9. 统一后端返回格式
+10. 完善Liuyao.php参数验证和异常处理
+11. 实现管理端真实API接口
+12. 完善分页逻辑
+13. 清理未使用的导入
 
 ## 累计问题统计
-- 🔴 高优先级：累计61个（含历史）
-- 🟡 中优先级：累计91个（含历史）
-- 🟢 低优先级：累计45个（含历史）
+- 🔴 高优先级：累计69个（含历史）
+- 🟡 中优先级：累计101个（含历史）
+- 🟢 低优先级：累计48个（含历史）
 
 ## 下次检查建议
 1. 优先修复P1级别问题（特别是安全相关问题）
@@ -56,7 +116,7 @@
 
 ---
 
-*最后更新: 2026-03-16 - 第二十轮检查*
+*最后更新: 2026-03-16 - 第二十二轮检查*
 
 ## 本次检查发现的新问题
 

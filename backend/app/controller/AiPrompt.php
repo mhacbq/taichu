@@ -35,15 +35,11 @@ class AiPrompt extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-                'types' => AiPromptModel::TYPES,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+            'types' => AiPromptModel::TYPES,
+        ], '获取成功');
     }
     
     /**
@@ -55,14 +51,10 @@ class AiPrompt extends BaseController
         
         $prompt = AiPromptModel::find($id);
         if (!$prompt) {
-            return json(['code' => 404, 'message' => '提示词不存在']);
+            return $this->error('提示词不存在', 404);
         }
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $prompt,
-        ]);
+        return $this->success($prompt, '获取成功');
     }
     
     /**
@@ -87,7 +79,7 @@ class AiPrompt extends BaseController
             $exists->where('id', '<>', $id);
         }
         if ($exists->find()) {
-            return json(['code' => 400, 'message' => '提示词标识已存在']);
+            return $this->error('提示词标识已存在', 400);
         }
         
         // 处理变量
@@ -106,7 +98,7 @@ class AiPrompt extends BaseController
             if ($id) {
                 $prompt = AiPromptModel::find($id);
                 if (!$prompt) {
-                    return json(['code' => 404, 'message' => '提示词不存在']);
+                    return $this->error('提示词不存在', 404);
                 }
                 $prompt->save($data);
             } else {
@@ -114,13 +106,9 @@ class AiPrompt extends BaseController
                 $prompt = AiPromptModel::create($data);
             }
             
-            return json([
-                'code' => 0,
-                'message' => '保存成功',
-                'data' => $prompt,
-            ]);
+            return $this->success($prompt, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            return $this->error('保存失败：' . $e->getMessage(), 500);
         }
     }
     
@@ -133,17 +121,17 @@ class AiPrompt extends BaseController
         
         $prompt = AiPromptModel::find($id);
         if (!$prompt) {
-            return json(['code' => 404, 'message' => '提示词不存在']);
+            return $this->error('提示词不存在', 404);
         }
         
         // 如果是默认提示词，不允许删除
         if ($prompt->is_default) {
-            return json(['code' => 400, 'message' => '默认提示词不能删除，请先设置其他提示词为默认']);
+            return $this->error('默认提示词不能删除，请先设置其他提示词为默认', 400);
         }
         
         $prompt->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     /**
@@ -155,12 +143,12 @@ class AiPrompt extends BaseController
         
         $prompt = AiPromptModel::find($id);
         if (!$prompt) {
-            return json(['code' => 404, 'message' => '提示词不存在']);
+            return $this->error('提示词不存在', 404);
         }
         
         AiPromptModel::setDefault($id, $prompt->type);
         
-        return json(['code' => 0, 'message' => '设置成功']);
+        return $this->success(null, '设置成功');
     }
     
     /**
@@ -173,7 +161,7 @@ class AiPrompt extends BaseController
         
         $prompt = AiPromptModel::find($id);
         if (!$prompt) {
-            return json(['code' => 404, 'message' => '提示词不存在']);
+            return $this->error('提示词不存在', 404);
         }
         
         // 使用测试变量或默认值
@@ -181,16 +169,12 @@ class AiPrompt extends BaseController
         
         $rendered = $prompt->renderUserPrompt($variables);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'system_prompt' => $prompt->system_prompt,
-                'user_prompt_template' => $prompt->user_prompt_template,
-                'rendered_prompt' => $rendered,
-                'variables' => $variables,
-            ],
-        ]);
+        return $this->success([
+            'system_prompt' => $prompt->system_prompt,
+            'user_prompt_template' => $prompt->user_prompt_template,
+            'rendered_prompt' => $rendered,
+            'variables' => $variables,
+        ], '获取成功');
     }
     
     /**

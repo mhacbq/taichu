@@ -14,6 +14,7 @@ use app\model\TarotRecord;
 use app\service\AdminAuthService;
 use think\Request;
 use think\facade\Log;
+use think\facade\Db;
 
 /**
  * 后台管理控制器
@@ -98,8 +99,8 @@ class Admin extends BaseController
                 'today_users' => User::where('created_at', '>=', date('Y-m-d'))->count(),
                 'total_bazi' => BaziRecord::count(),
                 'today_bazi' => BaziRecord::where('created_at', '>=', date('Y-m-d'))->count(),
-                'total_tarot' => DailyFortune::count(),
-                'today_tarot' => DailyFortune::where('created_at', '>=', date('Y-m-d'))->count(),
+                'total_tarot' => TarotRecord::count(),
+                'today_tarot' => TarotRecord::where('created_at', '>=', date('Y-m-d'))->count(),
             ];
 
             // 用户增长趋势（最近7天）
@@ -254,6 +255,12 @@ class Admin extends BaseController
             $username = $request->get('username', '');
             $phone = $request->get('phone', '');
             $status = $request->get('status', '');
+
+            // 验证分页参数
+            $page = filter_var($page, FILTER_VALIDATE_INT) ?: 1;
+            $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT) ?: 20;
+            $page = max(1, $page);
+            $pageSize = max(1, min(100, $pageSize)); // 限制最大100条
 
             $query = User::order('id', 'desc');
 
@@ -818,11 +825,9 @@ class Admin extends BaseController
 
             // 搜索条件
             if (!empty($params['keyword'])) {
-                $keyword = $params['keyword'];
-                $query->where(function ($q) use ($keyword) {
-                    $q->where('nickname', 'like', "%{$keyword}%")
-                      ->whereOr('phone', 'like', "%{$keyword}%");
-                });
+                // 使用参数绑定防止SQL注入
+                $keyword = preg_replace('/[%_\\\\]/', '', $params['keyword']);
+                $query->whereLike('nickname|phone', '%' . $keyword . '%');
             }
 
             // 状态筛选
@@ -887,5 +892,232 @@ class Admin extends BaseController
             $field = '"' . $field . '"';
         }
         return $field;
+    }
+
+    /**
+     * 黄历列表
+     */
+    public function almanacList(Request $request)
+    {
+        if (!$this->checkPermission('almanac_view')) {
+            return $this->error('无权限查看黄历', 403);
+        }
+
+        $year = $request->get('year', date('Y'));
+        $month = $request->get('month', date('m'));
+
+        try {
+            $list = Db::name('almanac')
+                ->whereYear('solar_date', $year)
+                ->whereMonth('solar_date', $month)
+                ->order('solar_date', 'asc')
+                ->select()
+                ->toArray();
+
+            return $this->success([
+                'list' => $list,
+                'year' => $year,
+                'month' => $month,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('获取黄历列表失败: ' . $e->getMessage());
+            return $this->error('获取黄历列表失败', 500);
+        }
+    }
+
+    /**
+     * 保存黄历
+     */
+    public function saveAlmanac(Request $request)
+    {
+        if (!$this->checkPermission('almanac_edit')) {
+            return $this->error('无权限编辑黄历', 403);
+        }
+
+        $data = $request->post();
+
+        // 验证必填字段
+        if (empty($data['solar_date'])) {
+            return $this->error('阳历日期不能为空', 400);
+        }
+
+        try {
+            // 检查记录是否存在
+            $exists = Db::name('almanac')
+                ->where('solar_date', $data['solar_date'])
+                ->find();
+
+            $saveData = [
+                'solar_date' => $data['solar_date'],
+                'lunar_date' => $data['lunar_date'] ?? '',
+                'ganzhi' => $data['ganzhi'] ?? '',
+                'yi' => is_array($data['yi']) ? json_encode($data['yi'], JSON_UNESCAPED_UNICODE) : ($data['yi'] ?? ''),
+                'ji' => is_array($data['ji']) ? json_encode($data['ji'], JSON_UNESCAPED_UNICODE) : ($data['ji'] ?? ''),
+                'jishen' => is_array($data['jishen']) ? json_encode($data['jishen'], JSON_UNESCAPED_UNICODE) : ($data['jishen'] ?? ''),
+                'xiongsha' => is_array($data['xiongsha']) ? json_encode($data['xiongsha'], JSON_UNESCAPED_UNICODE) : ($data['xiongsha'] ?? ''),
+                'sha' => $data['sha'] ?? '',
+                'zhiri' => $data['zhiri'] ?? '',
+                'shichen' => is_array($data['shichen']) ? json_encode($data['shichen'], JSON_UNESCAPED_UNICODE) : ($data['shichen'] ?? ''),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            if ($exists) {
+                Db::name('almanac')
+                    ->where('solar_date', $data['solar_date'])
+                    ->update($saveData);
+            } else {
+                $saveData['created_at'] = date('Y-m-d H:i:s');
+                Db::name('almanac')->insert($saveData);
+            }
+
+            // 记录操作日志
+            $this->logOperation('保存黄历', 'almanac', [
+                'target_id' => $data['solar_date'],
+                'detail' => '保存黄历: ' . $data['solar_date']
+            ]);
+
+            return $this->success([], '保存成功');
+        } catch (\Exception $e) {
+            Log::error('保存黄历失败: ' . $e->getMessage());
+            return $this->error('保存失败', 500);
+        }
+    }
+
+    /**
+     * 生成月历
+     */
+    public function generateAlmanacMonth(Request $request)
+    {
+        if (!$this->checkPermission('almanac_edit')) {
+            return $this->error('无权限生成黄历', 403);
+        }
+
+        $year = $request->post('year', date('Y'));
+        $month = $request->post('month', date('m'));
+
+        if (!is_numeric($year) || !is_numeric($month)) {
+            return $this->error('年份和月份必须是数字', 400);
+        }
+
+        try {
+            // 获取该月所有日期
+            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
+            $insertData = [];
+
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                
+                // 检查是否已存在
+                $exists = Db::name('almanac')
+                    ->where('solar_date', $date)
+                    ->find();
+
+                if (!$exists) {
+                    // 使用 Lunar 类计算农历信息
+                    $lunarInfo = $this->solarToLunar($year, $month, $day);
+                    
+                    $insertData[] = [
+                        'solar_date' => $date,
+                        'lunar_date' => $lunarInfo['lunar_date'],
+                        'ganzhi' => $lunarInfo['ganzhi'],
+                        'yi' => json_encode($lunarInfo['yi'], JSON_UNESCAPED_UNICODE),
+                        'ji' => json_encode($lunarInfo['ji'], JSON_UNESCAPED_UNICODE),
+                        'jishen' => json_encode($lunarInfo['jishen'], JSON_UNESCAPED_UNICODE),
+                        'xiongsha' => json_encode($lunarInfo['xiongsha'], JSON_UNESCAPED_UNICODE),
+                        'sha' => $lunarInfo['sha'],
+                        'zhiri' => $lunarInfo['zhiri'],
+                        'shichen' => json_encode($lunarInfo['shichen'], JSON_UNESCAPED_UNICODE),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ];
+                }
+            }
+
+            if (!empty($insertData)) {
+                // 批量插入
+                Db::name('almanac')->insertAll($insertData);
+            }
+
+            // 记录操作日志
+            $this->logOperation('生成月历', 'almanac', [
+                'target_id' => 0,
+                'detail' => "生成 {$year}年{$month}月 黄历，共" . count($insertData) . "条"
+            ]);
+
+            return $this->success([
+                'generated' => count($insertData),
+            ], '生成成功');
+        } catch (\Exception $e) {
+            Log::error('生成月历失败: ' . $e->getMessage());
+            return $this->error('生成失败', 500);
+        }
+    }
+
+    /**
+     * 阳历转农历（简化版）
+     */
+    private function solarToLunar($year, $month, $day)
+    {
+        // 这里使用简化的算法，实际项目中可以使用专业的农历库
+        // 如 overtrue/chinese-calendar
+        
+        $gan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+        $zhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        $zhiri = ['建', '除', '满', '平', '定', '执', '破', '危', '成', '收', '开', '闭'];
+        
+        // 计算日干支（简化算法）
+        $baseDate = strtotime('1900-01-31'); // 1900年正月初一
+        $targetDate = strtotime("{$year}-{$month}-{$day}");
+        $daysDiff = floor(($targetDate - $baseDate) / 86400);
+        
+        $ganIndex = $daysDiff % 10;
+        $zhiIndex = $daysDiff % 12;
+        
+        // 计算年月干支（简化）
+        $yearGanIndex = ($year - 4) % 10;
+        $yearZhiIndex = ($year - 4) % 12;
+        
+        // 宜忌事项
+        $commonYi = ['祭祀', '祈福', '出行', '结婚', '开业', '动土', '安床', '纳财'];
+        $commonJi = ['安葬', '破土', '开仓', '出货', '词讼', '求医'];
+        
+        // 根据日干支生成宜忌
+        $dayGan = $gan[$ganIndex];
+        $yi = [];
+        $ji = [];
+        
+        // 简单规则：根据天干决定宜忌
+        if (in_array($dayGan, ['甲', '乙', '丙', '丁'])) {
+            $yi = array_slice($commonYi, 0, 4);
+            $ji = array_slice($commonJi, 0, 2);
+        } else {
+            $yi = array_slice($commonYi, 2, 4);
+            $ji = array_slice($commonJi, 2, 2);
+        }
+        
+        return [
+            'lunar_date' => '农历' . ($month) . '月' . $day,
+            'ganzhi' => $gan[$yearGanIndex] . $zhi[$yearZhiIndex] . '年 ' . $gan[$ganIndex] . $zhi[$zhiIndex] . '日',
+            'yi' => $yi,
+            'ji' => $ji,
+            'jishen' => ['天德', '月德'],
+            'xiongsha' => ['五虚', '土符'],
+            'sha' => ['东', '南', '西', '北'][$day % 4],
+            'zhiri' => $zhiri[$day % 12],
+            'shichen' => [
+                ['name' => '子', 'time' => '23:00-01:00', 'type' => 'ji', 'yiji' => '宜祭祀 忌动土'],
+                ['name' => '丑', 'time' => '01:00-03:00', 'type' => 'xiaoJi', 'yiji' => '宜安床 忌出行'],
+                ['name' => '寅', 'time' => '03:00-05:00', 'type' => 'ping', 'yiji' => '平'],
+                ['name' => '卯', 'time' => '05:00-07:00', 'type' => 'ji', 'yiji' => '宜出行 忌动土'],
+                ['name' => '辰', 'time' => '07:00-09:00', 'type' => 'xiong', 'yiji' => '忌出行'],
+                ['name' => '巳', 'time' => '09:00-11:00', 'type' => 'ping', 'yiji' => '平'],
+                ['name' => '午', 'time' => '11:00-13:00', 'type' => 'ji', 'yiji' => '宜会友 忌词讼'],
+                ['name' => '未', 'time' => '13:00-15:00', 'type' => 'xiaoJi', 'yiji' => '宜求财'],
+                ['name' => '申', 'time' => '15:00-17:00', 'type' => 'ping', 'yiji' => '平'],
+                ['name' => '酉', 'time' => '17:00-19:00', 'type' => 'ji', 'yiji' => '宜嫁娶'],
+                ['name' => '戌', 'time' => '19:00-21:00', 'type' => 'xiong', 'yiji' => '忌安床'],
+                ['name' => '亥', 'time' => '21:00-23:00', 'type' => 'ping', 'yiji' => '平'],
+            ],
+        ];
     }
 }

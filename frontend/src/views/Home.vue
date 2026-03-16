@@ -305,7 +305,7 @@ onMounted(() => {
 .hero {
   padding: 60px 0 100px;
   text-align: center;
-  background: radial-gradient(ellipse at center, rgba(233, 69, 96, 0.15) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
 }
 
 /* 暖心问候 */
@@ -368,8 +368,8 @@ onMounted(() => {
 .user-points-card {
   max-width: 400px;
   margin: 0 auto 40px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(184, 134, 11, 0.15));
+  border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 20px;
   padding: 25px;
   display: flex;
@@ -421,7 +421,7 @@ onMounted(() => {
 }
 
 .points-btn.checkin {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #D4AF37, #B8860B);
   color: #fff;
 }
 
@@ -440,8 +440,8 @@ onMounted(() => {
 .guest-welcome-card {
   max-width: 600px;
   margin: 0 auto 40px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.15), rgba(255, 107, 107, 0.15));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(184, 134, 11, 0.12));
+  border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: 20px;
   padding: 30px;
   backdrop-filter: blur(10px);
@@ -490,7 +490,7 @@ onMounted(() => {
 }
 
 .welcome-btn.primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #D4AF37, #B8860B);
   color: #fff;
 }
 
@@ -502,7 +502,7 @@ onMounted(() => {
 
 .welcome-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
 }
 
 .welcome-features {
@@ -527,7 +527,7 @@ onMounted(() => {
   font-size: 56px;
   font-weight: bold;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, var(--text-primary) 0%, #e94560 50%, #ff6b6b 100%);
+  background: linear-gradient(135deg, var(--text-primary) 0%, #B8860B 50%, #D4AF37 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -565,7 +565,7 @@ onMounted(() => {
 
 .btn-secondary:hover {
   border-color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.05);
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .btn-icon {
@@ -614,7 +614,7 @@ onMounted(() => {
 .feature-card:hover {
   transform: translateY(-10px);
   background: var(--bg-card);
-  border-color: rgba(233, 69, 96, 0.3);
+  border-color: rgba(212, 175, 55, 0.4);
   box-shadow: var(--shadow-lg);
 }
 
@@ -636,14 +636,14 @@ onMounted(() => {
 }
 
 .feature-link {
-  color: #e94560;
+  color: var(--primary-color);
   text-decoration: none;
   font-weight: 500;
   transition: all 0.3s ease;
 }
 
 .feature-link:hover {
-  color: #ff6b6b;
+  color: #B8860B;
 }
 
 .about {
@@ -679,7 +679,7 @@ onMounted(() => {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #e94560;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
@@ -702,7 +702,7 @@ onMounted(() => {
   display: block;
   font-size: 36px;
   font-weight: bold;
-  background: linear-gradient(135deg, #e94560, #ffd700);
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -743,7 +743,7 @@ onMounted(() => {
 .testimonial-card:hover {
   transform: translateY(-5px);
   background: var(--bg-card);
-  border-color: rgba(233, 69, 96, 0.3);
+  border-color: rgba(212, 175, 55, 0.4);
   box-shadow: var(--shadow-lg);
 }
 
@@ -799,7 +799,7 @@ onMounted(() => {
 }
 
 .service-tag {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(212, 175, 55, 0.12);
   color: var(--primary-color);
   padding: 4px 12px;
   border-radius: 15px;

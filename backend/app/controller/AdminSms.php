@@ -163,7 +163,9 @@ class AdminSms extends BaseController
         $query = \app\model\SmsCode::order('id', 'desc');
         
         if ($phone) {
-            $query->where('phone', 'like', "%{$phone}%");
+            // 使用参数绑定防止SQL注入
+            $phone = preg_replace('/[%_\\\\]/', '', $phone);
+            $query->whereLike('phone', '%' . $phone . '%');
         }
         
         if ($type) {

@@ -4,514 +4,348 @@ declare(strict_types=1);
 namespace app\service;
 
 /**
- * 命理分析服务
+ * 运势分析服务
  * 
- * 提供大运与流年的综合分析功能
+ * 提供大运流年运势分析
  */
 class FortuneAnalysisService
 {
     /**
-     * 天干五行
-     */
-    protected $ganWuXing = [
-        '甲' => '木', '乙' => '木',
-        '丙' => '火', '丁' => '火',
-        '戊' => '土', '己' => '土',
-        '庚' => '金', '辛' => '金',
-        '壬' => '水', '癸' => '水'
-    ];
-    
-    /**
-     * 地支五行
-     */
-    protected $zhiWuXing = [
-        '子' => '水', '丑' => '土', '寅' => '木', '卯' => '木',
-        '辰' => '土', '巳' => '火', '午' => '火', '未' => '土',
-        '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'
-    ];
-    
-    /**
-     * 天干十神关系
-     */
-    protected function calculateShiShen(string $dayMaster, string $targetGan): string
-    {
-        $ganYinYang = [
-            '甲' => '阳', '乙' => '阴', '丙' => '阳', '丁' => '阴', '戊' => '阳',
-            '己' => '阴', '庚' => '阳', '辛' => '阴', '壬' => '阳', '癸' => '阴'
-        ];
-        
-        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
-        $keRelation = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
-        
-        $dayWuxing = $this->ganWuXing[$dayMaster];
-        $targetWuxing = $this->ganWuXing[$targetGan];
-        $dayYinyang = $ganYinYang[$dayMaster];
-        $targetYinyang = $ganYinYang[$targetGan];
-        
-        $isSameYinyang = ($dayYinyang === $targetYinyang);
-        
-        if ($shengRelation[$targetWuxing] === $dayWuxing) {
-            return $isSameYinyang ? '偏印' : '正印';
-        }
-        if ($shengRelation[$dayWuxing] === $targetWuxing) {
-            return $isSameYinyang ? '食神' : '伤官';
-        }
-        if ($keRelation[$targetWuxing] === $dayWuxing) {
-            return $isSameYinyang ? '七杀' : '正官';
-        }
-        if ($keRelation[$dayWuxing] === $targetWuxing) {
-            return $isSameYinyang ? '偏财' : '正财';
-        }
-        return $isSameYinyang ? '比肩' : '劫财';
-    }
-    
-    /**
-     * 综合分析大运与流年
+     * 分析大运流年运势
      * 
-     * @param array $bazi 八字信息
-     * @param array $daYun 大运信息
-     * @param array $liuNian 流年信息
-     * @return array 综合分析结果
+     * @param array $bazi 八字数据
+     * @param array $daYun 大运数据
+     * @param array $liuNian 流年数据
+     * @return array 运势分析结果
      */
     public function analyzeDaYunLiuNian(array $bazi, array $daYun, array $liuNian): array
     {
-        $dayMaster = $bazi['day']['gan'];
-        $dayMasterWuxing = $bazi['day_master_wuxing'];
+        $dayGan = $bazi['day']['gan'] ?? '';
+        $dayZhi = $bazi['day']['zhi'] ?? '';
         
         $analysis = [];
         
-        // 找出当前所在的大运
-        $currentAge = $this->calculateCurrentAge($bazi['birth_date'] ?? date('Y-m-d'));
-        $currentDaYun = $this->findCurrentDaYun($daYun, $currentAge);
-        
-        foreach ($liuNian as $yearData) {
-            $year = $yearData['year'];
-            $yearGan = $yearData['gan'];
-            $yearZhi = $yearData['zhi'];
+        // 分析每个流年
+        foreach ($liuNian as $year => $yearData) {
+            $yearGan = $yearData['gan'] ?? '';
+            $yearZhi = $yearData['zhi'] ?? '';
             
-            // 计算流年与日主的关系
-            $yearShiShen = $this->calculateShiShen($dayMaster, $yearGan);
-            
-            // 分析流年与大运的关系
-            $liuNianDaYunRelation = $this->analyzeLiuNianDaYunRelation(
-                $yearData, 
-                $currentDaYun, 
-                $dayMasterWuxing
-            );
-            
-            // 综合分析该年运势
-            $yearAnalysis = $this->generateYearAnalysis(
-                $year,
-                $yearShiShen,
-                $liuNianDaYunRelation,
-                $dayMasterWuxing,
-                $currentDaYun
-            );
-            
-            $analysis[] = array_merge($yearData, [
-                'shishen' => $yearShiShen,
-                'dayun_relation' => $liuNianDaYunRelation,
-                'analysis' => $yearAnalysis
-            ]);
+            $analysis[$year] = [
+                'year' => $year,
+                'ganzhi' => $yearGan . $yearZhi,
+                'overall' => $this->calculateYearFortune($dayGan, $dayZhi, $yearGan, $yearZhi),
+                'career' => $this->analyzeCareerFortune($dayGan, $yearGan, $yearZhi),
+                'wealth' => $this->analyzeWealthFortune($dayGan, $yearGan, $yearZhi),
+                'relationship' => $this->analyzeRelationshipFortune($dayGan, $yearGan, $yearZhi),
+                'health' => $this->analyzeHealthFortune($dayZhi, $yearZhi),
+            ];
         }
         
         return [
-            'current_dayun' => $currentDaYun,
-            'current_age' => $currentAge,
-            'yearly_analysis' => $analysis
+            'years' => $analysis,
+            'summary' => $this->generateSummary($analysis),
         ];
     }
     
     /**
-     * 计算当前年龄
+     * 计算流年总体运势
      */
-    protected function calculateCurrentAge(string $birthDate): int
+    protected function calculateYearFortune(string $dayGan, string $dayZhi, string $yearGan, string $yearZhi): string
     {
-        $birth = new \DateTime($birthDate);
-        $now = new \DateTime();
-        return $birth->diff($now)->y;
-    }
-    
-    /**
-     * 找出当前所在的大运
-     */
-    protected function findCurrentDaYun(array $daYun, int $currentAge): ?array
-    {
-        foreach ($daYun as $yun) {
-            if ($currentAge >= $yun['age_start'] && $currentAge <= $yun['age_end']) {
-                return $yun;
-            }
-        }
-        return $daYun[0] ?? null;
-    }
-    
-    /**
-     * 分析流年与大运的关系
-     */
-    protected function analyzeLiuNianDaYunRelation(
-        array $liuNian, 
-        ?array $daYun, 
-        string $dayMasterWuxing
-    ): array {
-        if (!$daYun) {
-            return ['level' => 'neutral', 'desc' => '运势平稳'];
-        }
+        $score = 50; // 基础分
         
-        $yearGan = $liuNian['gan'];
-        $yearZhi = $liuNian['zhi'];
-        $yunGan = $daYun['gan'];
-        $yunZhi = $daYun['zhi'];
+        // 天干十神关系
+        $ganRelation = $this->getShiShenRelation($dayGan, $yearGan);
+        $score += $this->getShiShenScore($ganRelation);
         
-        // 检查天干关系
-        $ganRelation = $this->getGanRelation($yearGan, $yunGan);
+        // 地支刑冲合害
+        $zhiRelation = $this->getZhiRelation($dayZhi, $yearZhi);
+        $score += $this->getZhiRelationScore($zhiRelation);
         
-        // 检查地支关系
-        $zhiRelation = $this->getZhiRelation($yearZhi, $yunZhi);
+        // 限制分数范围
+        $score = max(20, min(95, $score));
         
-        // 综合分析
-        $score = 5; // 基础分
-        
-        if ($ganRelation === '相合') $score += 2;
-        if ($ganRelation === '相冲') $score -= 2;
-        if ($zhiRelation === '六合' || $zhiRelation === '三合') $score += 2;
-        if ($zhiRelation === '六冲') $score -= 2;
-        
-        // 五行关系分析
-        $yearWuxing = $this->ganWuXing[$yearGan];
-        $yunWuxing = $this->ganWuXing[$yunGan];
-        
-        $wuxingAnalysis = $this->analyzeWuxingRelation($yearWuxing, $yunWuxing, $dayMasterWuxing);
-        
-        $level = $score >= 6 ? 'positive' : ($score <= 4 ? 'cautious' : 'neutral');
-        
-        return [
-            'level' => $level,
-            'score' => $score,
-            'gan_relation' => $ganRelation,
-            'zhi_relation' => $zhiRelation,
-            'wuxing_analysis' => $wuxingAnalysis,
-            'desc' => $this->getRelationDescription($ganRelation, $zhiRelation, $wuxingAnalysis)
-        ];
-    }
-    
-    /**
-     * 获取天干关系
-     */
-    protected function getGanRelation(string $gan1, string $gan2): string
-    {
-        $ganHe = [
-            '甲' => '己', '己' => '甲',
-            '乙' => '庚', '庚' => '乙',
-            '丙' => '辛', '辛' => '丙',
-            '丁' => '壬', '壬' => '丁',
-            '戊' => '癸', '癸' => '戊'
-        ];
-        
-        $ganChong = [
-            '甲' => '庚', '庚' => '甲',
-            '乙' => '辛', '辛' => '乙',
-            '丙' => '壬', '壬' => '丙',
-            '丁' => '癸', '癸' => '丁',
-            '戊' => '己', '己' => '戊'
-        ];
-        
-        if (isset($ganHe[$gan1]) && $ganHe[$gan1] === $gan2) {
-            return '相合';
-        }
-        if (isset($ganChong[$gan1]) && $ganChong[$gan1] === $gan2) {
-            return '相冲';
-        }
-        return '中性';
-    }
-    
-    /**
-     * 获取地支关系
-     */
-    protected function getZhiRelation(string $zhi1, string $zhi2): string
-    {
-        $liuHe = [
-            '子' => '丑', '丑' => '子',
-            '寅' => '亥', '亥' => '寅',
-            '卯' => '戌', '戌' => '卯',
-            '辰' => '酉', '酉' => '辰',
-            '巳' => '申', '申' => '巳',
-            '午' => '未', '未' => '午'
-        ];
-        
-        $liuChong = [
-            '子' => '午', '午' => '子',
-            '丑' => '未', '未' => '丑',
-            '寅' => '申', '申' => '寅',
-            '卯' => '酉', '酉' => '卯',
-            '辰' => '戌', '戌' => '辰',
-            '巳' => '亥', '亥' => '巳'
-        ];
-        
-        if (isset($liuHe[$zhi1]) && $liuHe[$zhi1] === $zhi2) {
-            return '六合';
-        }
-        if (isset($liuChong[$zhi1]) && $liuChong[$zhi1] === $zhi2) {
-            return '六冲';
-        }
-        
-        // 检查三合
-        $sanHe = [
-            ['申', '子', '辰'],
-            ['亥', '卯', '未'],
-            ['寅', '午', '戌'],
-            ['巳', '酉', '丑']
-        ];
-        
-        foreach ($sanHe as $group) {
-            if (in_array($zhi1, $group) && in_array($zhi2, $group)) {
-                return '三合';
-            }
-        }
-        
-        return '中性';
-    }
-    
-    /**
-     * 分析五行关系
-     */
-    protected function analyzeWuxingRelation(string $yearWuxing, string $yunWuxing, string $dayMasterWuxing): array
-    {
-        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
-        $keRelation = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
-        
-        // 流年与大运的五行关系
-        $yearToYun = '中性';
-        if ($shengRelation[$yearWuxing] === $yunWuxing) {
-            $yearToYun = '生';
-        } elseif ($keRelation[$yearWuxing] === $yunWuxing) {
-            $yearToYun = '克';
-        }
-        
-        // 流年对日主的影响
-        $yearToDay = '中性';
-        if ($yearWuxing === $dayMasterWuxing) {
-            $yearToDay = '比劫';
-        } elseif ($shengRelation[$dayMasterWuxing] === $yearWuxing) {
-            $yearToDay = '食伤';
-        } elseif ($shengRelation[$yearWuxing] === $dayMasterWuxing) {
-            $yearToDay = '印绶';
-        } elseif ($keRelation[$dayMasterWuxing] === $yearWuxing) {
-            $yearToDay = '官杀';
-        } elseif ($keRelation[$yearWuxing] === $dayMasterWuxing) {
-            $yearToDay = '财星';
-        }
-        
-        return [
-            'year_to_yun' => $yearToYun,
-            'year_to_day' => $yearToDay,
-            'year_wuxing' => $yearWuxing,
-            'yun_wuxing' => $yunWuxing
-        ];
-    }
-    
-    /**
-     * 获取关系描述
-     */
-    protected function getRelationDescription(string $ganRelation, string $zhiRelation, array $wuxingAnalysis): string
-    {
-        $desc = '';
-        
-        if ($ganRelation === '相合' || $zhiRelation === '六合') {
-            $desc = '流年与大运相合，运势顺畅，易得助力。';
-        } elseif ($ganRelation === '相冲' || $zhiRelation === '六冲') {
-            $desc = '流年与大运相冲，变动较多，需谨慎行事。';
-        } elseif ($zhiRelation === '三合') {
-            $desc = '流年与大运形成三合，贵人运佳，合作顺利。';
+        if ($score >= 80) {
+            return '大吉';
+        } elseif ($score >= 65) {
+            return '吉';
+        } elseif ($score >= 45) {
+            return '平';
+        } elseif ($score >= 30) {
+            return '凶';
         } else {
-            $desc = '流年与大运关系平和，稳中有进。';
+            return '大凶';
         }
-        
-        // 根据五行影响调整
-        switch ($wuxingAnalysis['year_to_day']) {
-            case '印绶':
-                $desc .= '利于学习进修，易得长辈提携。';
-                break;
-            case '财星':
-                $desc .= '财运活跃，宜把握机会。';
-                break;
-            case '官杀':
-                $desc .= '事业有压力，但利于晋升。';
-                break;
-            case '食伤':
-                $desc .= '创意丰富，宜表达展现。';
-                break;
-        }
-        
-        return $desc;
-    }
-    
-    /**
-     * 生成年度分析
-     */
-    protected function generateYearAnalysis(
-        int $year,
-        string $yearShiShen,
-        array $liuNianDaYunRelation,
-        string $dayMasterWuxing,
-        ?array $currentDaYun
-    ): array {
-        
-        // 事业分析
-        $career = $this->analyzeCareer($yearShiShen, $liuNianDaYunRelation['wuxing_analysis']);
-        
-        // 财运分析
-        $wealth = $this->analyzeWealth($yearShiShen, $liuNianDaYunRelation['wuxing_analysis']);
-        
-        // 感情分析
-        $relationship = $this->analyzeRelationship($yearShiShen, $liuNianDaYunRelation['wuxing_analysis']);
-        
-        // 健康提示
-        $health = $this->analyzeHealth($yearShiShen, $dayMasterWuxing);
-        
-        return [
-            'year' => $year,
-            'overall_level' => $liuNianDaYunRelation['level'],
-            'overall_desc' => $liuNianDaYunRelation['desc'],
-            'career' => $career,
-            'wealth' => $wealth,
-            'relationship' => $relationship,
-            'health' => $health,
-            'shishen' => $yearShiShen,
-            'key_months' => $this->suggestKeyMonths($year, $liuNianDaYunRelation['level'])
-        ];
     }
     
     /**
      * 分析事业运势
      */
-    protected function analyzeCareer(string $shishen, array $wuxingAnalysis): array
+    protected function analyzeCareerFortune(string $dayGan, string $yearGan, string $yearZhi): array
     {
-        $careerMap = [
-            '正官' => ['level' => 'positive', 'desc' => '事业发展稳定，有晋升机会，宜表现责任心'],
-            '七杀' => ['level' => 'cautious', 'desc' => '事业压力较大，竞争激烈，需谨慎决策'],
-            '正印' => ['level' => 'positive', 'desc' => '学习进修的好时机，易得贵人提携'],
-            '偏印' => ['level' => 'neutral', 'desc' => '适合专业技能提升，可能有意外收获'],
-            '正财' => ['level' => 'positive', 'desc' => '工作收入稳定，踏实努力有回报'],
-            '偏财' => ['level' => 'neutral', 'desc' => '可能有副业机会，但不宜冒进'],
-            '食神' => ['level' => 'positive', 'desc' => '创意表达能力强，适合展现才华'],
-            '伤官' => ['level' => 'cautious', 'desc' => '想法较多，注意言行分寸，避免冲突'],
-            '比肩' => ['level' => 'neutral', 'desc' => '适合团队合作，但需注意竞争关系'],
-            '劫财' => ['level' => 'cautious', 'desc' => '竞争压力大，注意人际关系处理']
+        $ganRelation = $this->getShiShenRelation($dayGan, $yearGan);
+        
+        $careerFortunes = [
+            '正官' => ['trend' => '上升', 'advice' => '适合升职、谋求管理职位'],
+            '七杀' => ['trend' => '波动', 'advice' => '有压力但也有机会，需谨慎行事'],
+            '正印' => ['trend' => '稳定', 'advice' => '适合学习进修、考取证书'],
+            '偏印' => ['trend' => '变化', 'advice' => '思维活跃，适合创新工作'],
+            '比肩' => ['trend' => '平稳', 'advice' => '有合作机会，但竞争激烈'],
+            '劫财' => ['trend' => '下降', 'advice' => '注意职场竞争，避免冲动决策'],
+            '食神' => ['trend' => '上升', 'advice' => '创意丰富，适合展示才华'],
+            '伤官' => ['trend' => '波动', 'advice' => '有表现机会，但注意言行'],
+            '正财' => ['trend' => '稳定', 'advice' => '踏实工作会有回报'],
+            '偏财' => ['trend' => '上升', 'advice' => '有意外机会，适合拓展业务'],
         ];
         
-        return $careerMap[$shishen] ?? ['level' => 'neutral', 'desc' => '事业平稳发展，按部就班即可'];
+        return $careerFortunes[$ganRelation] ?? ['trend' => '平稳', 'advice' => '保持现状，稳步发展'];
     }
     
     /**
-     * 分析财运
+     * 分析财富运势
      */
-    protected function analyzeWealth(string $shishen, array $wuxingAnalysis): array
+    protected function analyzeWealthFortune(string $dayGan, string $yearGan, string $yearZhi): array
     {
-        $wealthMap = [
-            '正财' => ['level' => 'positive', 'desc' => '正财收入稳定，理财规划有利'],
-            '偏财' => ['level' => 'neutral', 'desc' => '偏财有机会，但风险并存，需谨慎'],
-            '食神' => ['level' => 'positive', 'desc' => '财源广进，可通过技能变现'],
-            '伤官' => ['level' => 'cautious', 'desc' => '财运起伏，避免冲动消费'],
-            '正印' => ['level' => 'neutral', 'desc' => '财运平稳，宜稳健理财'],
-            '正官' => ['level' => 'positive', 'desc' => '正财运佳，工作收入有增长'],
+        $ganRelation = $this->getShiShenRelation($dayGan, $yearGan);
+        
+        $wealthFortunes = [
+            '正财' => ['trend' => '稳定', 'advice' => '正财运佳，适合稳健理财'],
+            '偏财' => ['trend' => '上升', 'advice' => '偏财运旺，可适当投资'],
+            '食神' => ['trend' => '上升', 'advice' => '财源广进，有意外之喜'],
+            '伤官' => ['trend' => '波动', 'advice' => '财来财去，需谨慎理财'],
+            '劫财' => ['trend' => '下降', 'advice' => '注意破财，避免借贷'],
+            '比肩' => ['trend' => '平稳', 'advice' => '财运一般，量入为出'],
+            '正官' => ['trend' => '稳定', 'advice' => '财从正道来，避免投机'],
+            '七杀' => ['trend' => '波动', 'advice' => '财有波折，见好就收'],
+            '正印' => ['trend' => '平稳', 'advice' => '稳定收入，不宜冒险'],
+            '偏印' => ['trend' => '变化', 'advice' => '财运多变，保持警惕'],
         ];
         
-        return $wealthMap[$shishen] ?? ['level' => 'neutral', 'desc' => '财运平稳，量入为出即可'];
+        return $wealthFortunes[$ganRelation] ?? ['trend' => '平稳', 'advice' => '理财稳健，保守为宜'];
     }
     
     /**
-     * 分析感情
+     * 分析感情运势
      */
-    protected function analyzeRelationship(string $shishen, array $wuxingAnalysis): array
+    protected function analyzeRelationshipFortune(string $dayGan, string $yearGan, string $yearZhi): array
     {
-        $relationshipMap = [
-            '正财' => ['level' => 'positive', 'desc' => '感情稳定，适合谈婚论嫁'],
-            '偏财' => ['level' => 'neutral', 'desc' => '异性缘佳，但需专一对待'],
-            '正官' => ['level' => 'positive', 'desc' => '感情和谐，互相尊重'],
-            '七杀' => ['level' => 'cautious', 'desc' => '感情有波折，需多沟通'],
-            '食神' => ['level' => 'positive', 'desc' => '感情甜蜜，相处融洽'],
-            '伤官' => ['level' => 'cautious', 'desc' => '情绪波动大，注意表达方式'],
-            '正印' => ['level' => 'neutral', 'desc' => '感情平稳，互相包容'],
+        $ganRelation = $this->getShiShenRelation($dayGan, $yearGan);
+        
+        $relationshipFortunes = [
+            '正财' => ['status' => '桃花旺', 'advice' => '异性缘佳，把握机会'],
+            '偏财' => ['status' => '机会多', 'advice' => '社交活跃，注意选择'],
+            '正官' => ['status' => '稳定', 'advice' => '感情稳定，适合谈婚论嫁'],
+            '七杀' => ['status' => '波动', 'advice' => '感情多变，需谨慎处理'],
+            '食神' => ['status' => '和谐', 'advice' => '感情甜蜜，享受生活'],
+            '伤官' => ['status' => '口舌', 'advice' => '易有口角，多沟通理解'],
+            '正印' => ['status' => '平淡', 'advice' => '感情平稳，细水长流'],
+            '偏印' => ['status' => '冷淡', 'advice' => '感情冷淡，需主动维护'],
+            '比肩' => ['status' => '竞争', 'advice' => '有竞争者出现，需用心经营'],
+            '劫财' => ['status' => '波折', 'advice' => '感情受阻，需耐心等待'],
         ];
         
-        return $relationshipMap[$shishen] ?? ['level' => 'neutral', 'desc' => '感情发展平稳，顺其自然'];
+        return $relationshipFortunes[$ganRelation] ?? ['status' => '平稳', 'advice' => '感情平顺，顺其自然'];
     }
     
     /**
-     * 分析健康
+     * 分析健康运势
      */
-    protected function analyzeHealth(string $shishen, string $dayMasterWuxing): array
+    protected function analyzeHealthFortune(string $dayZhi, string $yearZhi): array
     {
-        $healthMap = [
-            '金' => '注意呼吸系统、皮肤健康',
-            '木' => '注意肝胆、神经系统',
-            '水' => '注意肾脏、泌尿系统',
-            '火' => '注意心脏、血压',
-            '土' => '注意脾胃、消化系统'
+        $relation = $this->getZhiRelation($dayZhi, $yearZhi);
+        
+        $healthFortunes = [
+            '相合' => ['status' => '良好', 'advice' => '身体状况良好，保持锻炼'],
+            '相冲' => ['status' => '注意', 'advice' => '注意交通安全，避免剧烈运动'],
+            '相刑' => ['status' => '小恙', 'advice' => '易有小病，注意饮食卫生'],
+            '相害' => ['status' => '疲劳', 'advice' => '注意休息，避免过度劳累'],
+            '无特殊' => ['status' => '平稳', 'advice' => '健康状况平稳'],
         ];
         
-        $shishenHealth = [
-            '官杀' => '注意工作压力带来的健康问题',
-            '食伤' => '注意饮食规律，避免过劳',
-            '印绶' => '整体健康良好，保持现状',
-            '财星' => '注意劳逸结合',
-            '比劫' => '注意运动安全，避免外伤'
-        ];
-        
-        $baseHealth = $healthMap[$dayMasterWuxing] ?? '保持规律作息';
-        $shishenEffect = $shishenHealth[$this->categorizeShiShen($shishen)] ?? '';
-        
-        return [
-            'attention' => $baseHealth . ($shishenEffect ? '；' . $shishenEffect : ''),
-            'suggestion' => '建议定期体检，保持适度运动，注意饮食均衡。'
-        ];
+        return $healthFortunes[$relation] ?? ['status' => '平稳', 'advice' => '保持健康作息'];
     }
     
     /**
-     * 分类十神
+     * 获取十神关系
      */
-    protected function categorizeShiShen(string $shishen): string
+    protected function getShiShenRelation(string $dayGan, string $targetGan): string
     {
-        $categoryMap = [
-            '正官' => '官杀', '七杀' => '官杀',
-            '正印' => '印绶', '偏印' => '印绶',
-            '正财' => '财星', '偏财' => '财星',
-            '食神' => '食伤', '伤官' => '食伤',
-            '比肩' => '比劫', '劫财' => '比劫'
+        // 天干五行
+        $ganWuxing = [
+            '甲' => '木', '乙' => '木',
+            '丙' => '火', '丁' => '火',
+            '戊' => '土', '己' => '土',
+            '庚' => '金', '辛' => '金',
+            '壬' => '水', '癸' => '水',
         ];
         
-        return $categoryMap[$shishen] ?? '';
-    }
-    
-    /**
-     * 建议关键月份
-     */
-    protected function suggestKeyMonths(int $year, string $level): array
-    {
-        $keyMonths = [];
+        // 天干阴阳
+        $ganYinyang = [
+            '甲' => '阳', '乙' => '阴',
+            '丙' => '阳', '丁' => '阴',
+            '戊' => '阳', '己' => '阴',
+            '庚' => '阳', '辛' => '阴',
+            '壬' => '阳', '癸' => '阴',
+        ];
         
-        if ($level === 'positive') {
-            $keyMonths = [
-                ['month' => 2, 'desc' => '开局良好，把握机会'],
-                ['month' => 5, 'desc' => '事业有突破'],
-                ['month' => 8, 'desc' => '财运亨通'],
-                ['month' => 11, 'desc' => '年终收获']
-            ];
-        } elseif ($level === 'cautious') {
-            $keyMonths = [
-                ['month' => 3, 'desc' => '注意变动，谨慎行事'],
-                ['month' => 6, 'desc' => '压力较大，注意调节'],
-                ['month' => 9, 'desc' => '避免冲动决策'],
-                ['month' => 12, 'desc' => '总结反思，规划来年']
-            ];
-        } else {
-            $keyMonths = [
-                ['month' => 4, 'desc' => '稳步推进'],
-                ['month' => 7, 'desc' => '适合学习进修'],
-                ['month' => 10, 'desc' => '注意人际关系']
-            ];
+        $dayWuxing = $ganWuxing[$dayGan] ?? '';
+        $targetWuxing = $ganWuxing[$targetGan] ?? '';
+        $dayYinYang = $ganYinyang[$dayGan] ?? '';
+        $targetYinYang = $ganYinyang[$targetGan] ?? '';
+        
+        // 五行生克关系
+        $shengke = [
+            '金' => ['生' => '水', '克' => '木', '被生' => '土', '被克' => '火'],
+            '木' => ['生' => '火', '克' => '土', '被生' => '水', '被克' => '金'],
+            '水' => ['生' => '木', '克' => '火', '被生' => '金', '被克' => '土'],
+            '火' => ['生' => '土', '克' => '金', '被生' => '木', '被克' => '水'],
+            '土' => ['生' => '金', '克' => '水', '被生' => '火', '被克' => '木'],
+        ];
+        
+        if ($dayWuxing === $targetWuxing) {
+            return $dayYinYang === $targetYinYang ? '比肩' : '劫财';
         }
         
-        return $keyMonths;
+        if ($shengke[$dayWuxing]['生'] === $targetWuxing) {
+            return $dayYinYang === $targetYinYang ? '食神' : '伤官';
+        }
+        
+        if ($shengke[$dayWuxing]['克'] === $targetWuxing) {
+            return $dayYinYang === $targetYinYang ? '偏财' : '正财';
+        }
+        
+        if ($shengke[$dayWuxing]['被生'] === $targetWuxing) {
+            return $dayYinYang === $targetYinYang ? '偏印' : '正印';
+        }
+        
+        if ($shengke[$dayWuxing]['被克'] === $targetWuxing) {
+            return $dayYinYang === $targetYinYang ? '七杀' : '正官';
+        }
+        
+        return '比肩';
+    }
+    
+    /**
+     * 获取十神评分
+     */
+    protected function getShiShenScore(string $shiShen): int
+    {
+        $scores = [
+            '正官' => 15,
+            '七杀' => 5,
+            '正印' => 12,
+            '偏印' => 8,
+            '比肩' => 5,
+            '劫财' => -5,
+            '食神' => 18,
+            '伤官' => 8,
+            '正财' => 15,
+            '偏财' => 10,
+        ];
+        
+        return $scores[$shiShen] ?? 0;
+    }
+    
+    /**
+     * 获取地支关系
+     */
+    protected function getZhiRelation(string $dayZhi, string $yearZhi): string
+    {
+        if ($dayZhi === $yearZhi) {
+            return '相合';
+        }
+        
+        // 六冲
+        $chong = [
+            '子' => '午', '午' => '子',
+            '丑' => '未', '未' => '丑',
+            '寅' => '申', '申' => '寅',
+            '卯' => '酉', '酉' => '卯',
+            '辰' => '戌', '戌' => '辰',
+            '巳' => '亥', '亥' => '巳',
+        ];
+        
+        if (isset($chong[$dayZhi]) && $chong[$dayZhi] === $yearZhi) {
+            return '相冲';
+        }
+        
+        // 六合
+        $liuhe = [
+            '子' => '丑', '丑' => '子',
+            '寅' => '亥', '亥' => '寅',
+            '卯' => '戌', '戌' => '卯',
+            '辰' => '酉', '酉' => '辰',
+            '巳' => '申', '申' => '巳',
+            '午' => '未', '未' => '午',
+        ];
+        
+        if (isset($liuhe[$dayZhi]) && $liuhe[$dayZhi] === $yearZhi) {
+            return '相合';
+        }
+        
+        return '无特殊';
+    }
+    
+    /**
+     * 获取地支关系评分
+     */
+    protected function getZhiRelationScore(string $relation): int
+    {
+        $scores = [
+            '相合' => 10,
+            '相冲' => -15,
+            '相刑' => -10,
+            '相害' => -8,
+            '无特殊' => 0,
+        ];
+        
+        return $scores[$relation] ?? 0;
+    }
+    
+    /**
+     * 生成运势总结
+     */
+    protected function generateSummary(array $analysis): array
+    {
+        $bestYear = '';
+        $worstYear = '';
+        $bestScore = -999;
+        $worstScore = 999;
+        
+        foreach ($analysis as $year => $data) {
+            $score = $this->fortuneToScore($data['overall']);
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestYear = $year;
+            }
+            if ($score < $worstScore) {
+                $worstScore = $score;
+                $worstYear = $year;
+            }
+        }
+        
+        return [
+            'best_year' => $bestYear,
+            'best_fortune' => $analysis[$bestYear]['overall'] ?? '',
+            'worst_year' => $worstYear,
+            'worst_fortune' => $analysis[$worstYear]['overall'] ?? '',
+            'overall_trend' => $bestScore > $worstScore + 20 ? '先苦后甜' : ($bestScore < $worstScore - 20 ? '需谨慎' : '相对平稳'),
+        ];
+    }
+    
+    /**
+     * 运势转分数
+     */
+    protected function fortuneToScore(string $fortune): int
+    {
+        $scores = [
+            '大吉' => 90,
+            '吉' => 75,
+            '平' => 50,
+            '凶' => 30,
+            '大凶' => 15,
+        ];
+        
+        return $scores[$fortune] ?? 50;
     }
 }

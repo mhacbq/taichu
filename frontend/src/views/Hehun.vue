@@ -4,7 +4,7 @@
       <!-- 页面标题 -->
       <div class="page-header">
         <h1 class="page-title">
-          <span class="title-icon">💕</span>
+          <el-icon class="title-icon" :size="36"><Link /></el-icon>
           八字合婚
         </h1>
         <p class="page-subtitle">通过双方八字，分析婚姻匹配度与缘分</p>
@@ -38,7 +38,7 @@
               </div>
               <p class="day-master">日主：{{ freeResult.male_bazi.day_master }}</p>
             </div>
-            <div class="bazi-divider">💕</div>
+            <div class="bazi-divider"><el-icon :size="24"><Link /></el-icon></div>
             <div class="bazi-side">
               <h4>女方八字</h4>
               <div class="bazi-pillars">
@@ -105,7 +105,7 @@
           
           <!-- AI分析 -->
           <div class="ai-section" v-if="premiumResult.ai_analysis">
-            <h3>🤖 AI深度解读</h3>
+            <h3><el-icon><Cpu /></el-icon> AI深度解读</h3>
             <div class="ai-content" v-html="premiumResult.ai_analysis"></div>
           </div>
           
@@ -122,10 +122,10 @@
           <!-- 操作按钮 -->
           <div class="action-buttons">
             <button class="btn-secondary" @click="resetForm">
-              <span>🔄</span> 重新测算
+              <el-icon><RefreshRight /></el-icon> 重新测算
             </button>
             <button class="btn-primary" @click="exportReport" :disabled="exporting">
-              <span>📄</span> {{ exporting ? '导出中...' : '导出报告' }}
+              <el-icon><Document /></el-icon> {{ exporting ? '导出中...' : '导出报告' }}
             </button>
           </div>
         </div>
@@ -253,7 +253,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, MagicStick } from '@element-plus/icons-vue'
+import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 
 // 表单数据
@@ -495,7 +495,7 @@ onMounted(() => {
 
 .page-title {
   font-size: 36px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -522,7 +522,7 @@ onMounted(() => {
 }
 
 .form-card h2 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 30px;
 }
@@ -562,10 +562,10 @@ onMounted(() => {
 .form-group input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   transition: all 0.3s;
 }
@@ -675,7 +675,7 @@ onMounted(() => {
 
 .form-hint {
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 13px;
   margin-top: 16px;
 }
@@ -779,7 +779,7 @@ onMounted(() => {
   justify-content: center;
   gap: 30px;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 16px;
   margin-bottom: 24px;
 }
@@ -847,7 +847,7 @@ onMounted(() => {
 }
 
 .upgrade-prompt p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -975,11 +975,11 @@ onMounted(() => {
 }
 
 .solution-list li {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   padding: 12px 0;
   padding-left: 24px;
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .solution-list li:before {
@@ -1076,7 +1076,7 @@ onMounted(() => {
 }
 
 .history-names {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 

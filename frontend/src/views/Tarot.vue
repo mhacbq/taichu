@@ -457,6 +457,11 @@ const drawCards = async () => {
       if (interpretResponse.code === 0) {
         interpretation.value = interpretResponse.data.interpretation
         ElMessage.success('抽牌成功')
+      } else {
+        ElMessage.error(interpretResponse.message || '解读失败')
+        if (interpretResponse.code === 403) {
+          loadPoints()
+        }
       }
     } else {
       ElMessage.error(drawResponse.message || '抽牌失败')

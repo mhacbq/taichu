@@ -3,6 +3,58 @@
 > 自动生成时间: 2026-03-16
 > 本文件由自动化检查任务维护
 
+---
+
+## 👔 运营人员后台检查报告 - 2026-03-16 第七轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 运营人员
+- **检查范围**: 后台管理系统全部功能模块
+- **检查维度**: 功能完整性、API对接、运营体验
+
+### 检查结果
+
+后台管理系统(admin项目)整体架构已经完善，主要功能模块均已实现。但发现API响应码不一致和部分接口响应格式不匹配的问题需要修复。
+
+#### ✅ 已完成功能
+
+| 模块 | 功能 | 状态 |
+|------|------|------|
+| 管理员登录 | JWT认证登录/登出 | ✅ 正常 |
+| Dashboard首页 | 统计卡片、趋势图表、实时数据 | ✅ 正常 |
+| 用户管理 | 列表、搜索、状态管理、积分调整 | ✅ 正常 |
+| 订单管理 | 充值订单、状态管理、补单/退款 | ✅ 正常 |
+| 反馈管理 | 列表、查看、回复 | ✅ 正常 |
+| 系统配置 | 网站配置、积分规则 | ✅ 正常 |
+
+#### 🔴 高优先级（运营阻塞问题）
+
+- [ ] **[运营] API响应码判断不一致** - 后台各页面 - 部分页面使用`res.code === 0`，部分使用`res.code === 200`，与request.js拦截器期望的code=200不一致
+- [ ] **[运营] Dashboard图表数据格式不匹配** - Dashboard首页 - 前端期望`dates/newUsers/activeUsers`格式，后端`dashboardTrend`返回`user_trend/bazi_trend/tarot_trend`格式
+- [ ] **[运营] Admin.php统计逻辑错误** - 后端Admin.php第101-102行、第309-310行 - dashboard()和userDetail()方法中塔罗占卜统计错误地使用了DailyFortune模型，应该使用TarotRecord模型
+- [ ] **[运营] Admin.php缺少Db类导入** - 后端Admin.php第903行、第939行 - 使用了Db::name('almanac')但没有导入`use think\facade\Db`
+
+#### 🟡 中优先级（运营体验问题）
+
+- [ ] **[运营] 后台管理页面响应码判断混乱** - admin/src/views/各页面 - 部分页面使用res.code === 0，部分使用res.code === 200，建议统一
+- [ ] **[运营] 前端旧版admin页面仍存在** - frontend/src/views/admin/目录 - 旧版管理页面与新版admin项目并存，需要清理或整合
+- [ ] **[运营] 内容管理API待验证** - 黄历管理、知识库管理等页面 - API调用真实性和数据格式待验证
+
+#### 🟢 低优先级（运营优化建议）
+
+- [ ] **[运营] Dashboard图表数据格式统一** - 建议统一前后端数据格式，便于维护
+- [ ] **[运营] API响应码统一** - 建议统一使用code=200表示成功，与request.js拦截器保持一致
+
+### 建议下一步行动
+1. 统一前后端API响应码判断逻辑
+2. 统一Dashboard图表数据格式
+3. 修复Admin.php中的统计逻辑错误
+4. 添加Admin.php缺少的Db类导入
+5. 清理或整合frontend/src/views/admin/旧版页面
+
+---
+
 ## 自动化任务说明
 
 已设置9个自动化任务（**分工优化版**）：
@@ -23,6 +75,89 @@
 | **UI修复专家** | 每15分钟 | **5个UI问题** | 主题统一/样式/响应式/图标 | ✅ 自动提交 |
 | 待办处理执行器 | 每30分钟 | 5个问题（综合） | 跨领域问题 | - |
 | 前端开发修复任务 | 每20分钟 | 3-5个前端问题 | 前端专项 | ✅ 自动提交 |
+
+## 代码逻辑检查报告 - 2026-03-16 第22轮
+
+### 检查概览
+- **检查时间**: 2026-03-16 20:00
+- **检查人员**: 代码审查专家
+- **检查范围**: 前端Vue项目、后端PHP控制器、管理端页面
+- **检查维度**: 语法错误、类型错误、API调用、返回格式统一性、安全问题
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [2026-03-16 20:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第101-102行、第309-310行 - dashboard()和userDetail()方法中塔罗占卜统计错误地使用了DailyFortune模型，应该使用TarotRecord模型 - 建议修正为TarotRecord::count()和TarotRecord::where('user_id', $id)->count()
+- [ ] [2026-03-16 20:00] 后端Admin.php缺少Db类导入 - backend/app/controller/Admin.php第903行、第939行 - 使用了Db::name('almanac')但没有导入use think\facade\Db; - 建议添加Db类导入语句
+- [ ] [2026-03-16 20:00] 后端AdminAuth.php硬编码管理员凭据 - backend/app/controller/AdminAuth.php第28行 - 管理员账号密码硬编码在代码中(if ($username !== 'admin' || $password !== 'admin123'))，存在严重安全隐患 - 建议从数据库或配置文件读取并使用密码哈希验证
+- [ ] [2026-03-16 20:00] 后端AdminAuth.php JWT密钥硬编码 - backend/app/controller/AdminAuth.php第17行 - JWT密钥硬编码为'your-admin-jwt-secret-key-change-in-production' - 建议从环境变量或配置文件读取JWT密钥
+- [ ] [2026-03-16 20:00] 前端Bazi.vue isCurrentDaYun函数硬编码年龄 - frontend/src/views/Bazi.vue第1236-1240行 - 函数中硬编码当前年龄为30岁，没有根据实际出生日期计算 - 建议根据用户出生日期动态计算当前年龄
+- [ ] [2026-03-16 20:00] 前端Tarot.vue API错误处理不完整 - frontend/src/views/Tarot.vue第440-472行 - drawCards函数中当interpretResponse.code !== 0时没有处理错误情况，只处理了drawResponse的错误 - 建议添加else分支处理interpret失败的情况
+- [ ] [2026-03-16 20:00] 前端Liuyao.vue空值检查缺失 - frontend/src/views/Liuyao.vue第257行 - loadHistoryDetail函数中使用item.yao_result.map没有空值检查，如果yao_result为null会报错 - 建议添加空值检查：item.yao_result?.map(...) || []
+- [ ] [2026-03-16 20:00] 前端SEOStats.vue图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第131行、第147行 - pieChart和trendChart ref被模板引用但从未初始化，图表库未引入和使用 - 建议引入ECharts并在onMounted中初始化图表
+
+#### 🟡 中优先级（体验问题）
+- [ ] [2026-03-16 20:00] 后端返回格式不统一问题 - SiteContent.php/AiPrompt.php/Upload.php/AdminAuth.php - 多个控制器直接使用json()返回，与其他使用success()/error()的控制器不一致 - 建议统一使用BaseController方法
+- [ ] [2026-03-16 20:00] 后端Liuyao.php日辰参数验证缺失 - backend/app/controller/Liuyao.php第42行 - $data['ri_gan']没有验证是否为有效的天干(甲-癸) - 建议添加参数验证确保输入合法
+- [ ] [2026-03-16 20:00] 后端Liuyao.php异常处理不完整 - backend/app/controller/Liuyao.php第62-64行 - 异常返回没有HTTP状态码参数 - 建议添加状态码如return $this->error('起卦失败：' . $e->getMessage(), 500)
+- [ ] [2026-03-16 20:00] 前端管理端页面API调用均为模拟实现 - KnowledgeManage.vue/SEOManage.vue/SEOStats.vue/ShenshaManage.vue - 所有数据操作都是操作本地数组或硬编码数据，没有真实API调用 - 建议实现真实的API接口调用
+- [ ] [2026-03-16 20:00] 前端管理端分页逻辑不完整 - KnowledgeManage.vue/SEOStats.vue/ShenshaManage.vue - 分页组件存在但数据未按分页切片，filteredList只是简单筛选 - 建议实现完整的分页切片逻辑
+- [ ] [2026-03-16 20:00] 前端管理端表单验证不完整 - Config.vue/SEOManage.vue - 多个表单缺少必填验证或验证规则不完整 - 建议完善表单验证规则
+- [ ] [2026-03-16 20:00] 前端Tarot.vue未使用的导入 - frontend/src/views/Tarot.vue第184行 - 导入了saveTarotRecord但在代码中没有使用 - 建议删除未使用的导入或实现保存功能
+- [ ] [2026-03-16 20:00] 前端Liuyao.vue未使用的导入 - frontend/src/views/Liuyao.vue第160行 - 导入了ElMessageBox但没有使用 - 建议删除未使用的导入
+- [ ] [2026-03-16 20:00] 前端Hehun.vue未使用的导入 - frontend/src/views/Hehun.vue第256行 - 导入了MagicStick但没有使用 - 建议删除未使用的导入
+- [ ] [2026-03-16 20:00] 前端ShenshaManage.vue分页逻辑副作用问题 - frontend/src/views/admin/ShenshaManage.vue第260-285行 - filteredList computed属性中直接修改total.value，违反Vue响应式原则 - 建议将total改为计算属性或在loadData中更新
+
+#### 🟢 低优先级（优化问题）
+- [ ] [2026-03-16 20:00] 前端路由缺少错误边界处理 - frontend/src/router/index.js - 路由懒加载组件没有错误边界处理，加载失败时用户体验差 - 建议添加错误处理
+- [ ] [2026-03-16 20:00] 前端Hehun.vue loadHistoryDetail函数逻辑不完善 - frontend/src/views/Hehun.vue第437-465行 - 函数填充了姓名但没有填充日期字段(maleBirthDate/femaleBirthDate) - 建议添加日期字段的填充
+- [ ] [2026-03-16 20:00] 前端Daily.vue缺少错误边界处理 - frontend/src/views/Daily.vue - 组件没有错误边界处理，API调用失败时页面会显示加载状态但没有错误提示UI - 建议添加错误状态变量和错误提示UI
+
+---
+
+## 代码逻辑检查报告 - 2026-03-16 第21轮
+
+### 检查概览
+- **检查时间**: 2026-03-16 18:00
+- **检查人员**: 代码审查专家
+- **检查范围**: 前端Vue项目、后端PHP控制器、管理端页面
+- **检查维度**: 语法错误、类型错误、API调用、返回格式统一性、安全问题
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [2026-03-16 18:00] 后端SiteContent.php返回格式不统一 - backend/app/controller/SiteContent.php多处 - 混用json(['code' => 0])和json(['code' => 200])，与BaseController的success()/error()方法不一致 - 建议统一使用$this->success()/$this->error()
+- [ ] [2026-03-16 18:00] 后端AiPrompt.php返回格式不统一 - backend/app/controller/AiPrompt.php多处 - 使用json()返回而非继承的BaseController方法，成功时code=0与其他控制器code=200不一致 - 建议统一返回格式
+- [ ] [2026-03-16 18:00] 后端Upload.php返回格式不统一 - backend/app/controller/Upload.php多处 - 直接使用json()返回，没有使用$this->success()/$this->error() - 建议统一使用BaseController方法
+- [ ] [2026-03-16 18:00] 后端AdminAuth.php返回格式不统一 - backend/app/controller/AdminAuth.php多处 - 混用json(['code' => 200])和json(['code' => 401])，与BaseController返回格式不一致 - 建议统一使用$this->success()/$this->error()
+
+#### 🟡 中优先级（体验问题）
+- [ ] [2026-03-16 18:00] 后端Liuyao.php日辰参数未验证 - backend/app/controller/Liuyao.php第42行 - $data['ri_gan']直接传入getLiuShen方法，没有验证是否为有效的天干 - 建议添加参数验证
+- [ ] [2026-03-16 18:00] 后端Hehun.php缓存键可能冲突 - backend/app/controller/Hehun.php - 使用简单缓存键如'hehun:{$hash}'，可能与其他模块冲突 - 建议添加应用前缀如'taichu:hehun:{$hash}'
+- [ ] [2026-03-16 18:00] 前端Daily.vue aspect.icon使用emoji - frontend/src/views/Daily.vue第113行 - aspect.icon使用emoji而非Element Plus图标 - 建议统一使用图标库
+- [ ] [2026-03-16 18:00] 后端Paipan.php真太阳时未实现 - backend/app/controller/Paipan.php第61行 - 前端传入location参数但后端未实现真太阳时计算 - 建议根据经度计算真太阳时或移除该参数
+
+#### 🟢 低优先级（优化问题）
+- [ ] [2026-03-16 18:00] 前端路由缺少错误边界处理 - frontend/src/router/index.js - 路由懒加载组件没有错误边界处理，加载失败时用户体验差 - 建议添加错误处理
+- [ ] [2026-03-16 18:00] 后端Liuyao.php saveRecord方法异常处理不完整 - backend/app/controller/Liuyao.php第132-160行 - saveRecord抛出异常但没有详细错误日志 - 建议添加Log::error记录
+
+### 已修复/已不存在的问题
+1. **前端Tarot.vue缺少computed导入** - 已修复：computed已正确从vue导入
+2. **后端Auth.php邀请码暴力枚举防护** - 已修复：防护逻辑完整
+3. **后端AiAnalysis.php cURL缺少SSL验证** - 已修复：已添加SSL验证配置
+4. **前端Bazi.vue getYearlyTrend函数导入未使用** - 已不存在：代码已更新
+5. **前端Config.vue loading变量未使用** - 已不存在：代码使用saving对象
+6. **后端Admin.php feedbackList缺少权限检查** - 已修复：已添加权限检查
+7. **后端AiAnalysis.php返回码不一致** - 已修复：已统一使用BaseController方法
+8. **后端Admin.php返回码格式不统一** - 已修复：已统一使用$this->error()
+9. **后端AdminAuthService异常处理不完整** - 已修复：已添加日志记录
+
+### 待处理统计
+- 高优先级: 4个新问题
+- 中优先级: 4个新问题
+- 低优先级: 2个新问题
+
+---
 
 ## 🔮 占卜爱好者体验检查报告 - 2026-03-16 第六轮
 
@@ -77,20 +212,52 @@
 - [x] 塔罗隐者牌英文描述 - 已统一为中文
 
 #### 🔴 待修复问题（高优先级）
-- [ ] 八字节气数据覆盖年份不足 - 需补充1900-2050年完整节气表
+- [x] 八字节气数据覆盖年份不足 - **已修复**: Paipan.php已补充1900-2050年完整节气表 - 修复时间: 2026-03-16
 - [ ] 八字真太阳时未实现 - 需根据经度计算真太阳时
 
 #### 🟡 待优化问题（中优先级）
-- [ ] 塔罗牌阵关系分析缺失
-- [ ] 塔罗元素分析缺失
-- [ ] 八字藏干十神展示不突出
-- [ ] 合婚缺少传统合婚法
+- [x] 塔罗牌阵关系分析缺失 - **已修复**: Tarot.php已实现analyzeCardRelationships方法，提供首尾呼应、牌位流转、元素互动、正逆位分布分析 - 修复时间: 2026-03-16
+- [x] 塔罗元素分析缺失 - **已修复**: Tarot.php已实现analyzeElements方法，统计风/水/火/土元素分布并给出解读 - 修复时间: 2026-03-16
+- [ ] 八字藏干十神展示不突出 - 前端展示可优化
+- [ ] 合婚缺少传统合婚法 - 可添加三元合婚、九宫合婚
 
 #### 🟢 待增强功能（低优先级）
-- [ ] 六爻应期推断
-- [ ] 六爻伏神分析
-- [ ] 八字神煞分析
-- [ ] 塔罗牌面图案
+- [ ] 六爻应期推断 - 解卦时推断事情发生时间
+- [ ] 六爻伏神分析 - 参考《增删卜易》添加伏神飞神
+- [ ] 八字神煞分析 - 天乙贵人、文昌、桃花等
+- [ ] 塔罗牌面图案 - 使用真实塔罗牌图片替代emoji
+
+## UI设计检查报告 - 2026-03-16 第二十一轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 产品经理/UI设计师
+- **检查范围**: 前端Vue项目全部视图页面和组件
+- **检查维度**: 整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [x] [UI] Liuyao.vue定价信息仍使用emoji - 第111、114行使用🎁、👑emoji - 已替换为Element Plus图标Present、Trophy - 修复时间: 2026-03-16
+- [x] [UI] Daily.vue多处使用emoji - 第61行使用💡emoji - 已替换为Element Plus图标Lightbulb - 修复时间: 2026-03-16
+- [x] [UI] Bazi.vue积分不足提示使用emoji - 第102行使用💡emoji - 已替换为Element Plus图标Lightbulb - 修复时间: 2026-03-16
+- [x] [UI] 各页面仍存在color: #fff白色文字 - Hehun.vue多处白色文字已改为var(--text-primary)和var(--text-secondary) - 修复时间: 2026-03-16
+- [x] [UI] 各页面仍存在深色背景 - Hehun.vue多处深色背景已改为var(--bg-card)或var(--bg-secondary) - 修复时间: 2026-03-16
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] Home.vue用户积分卡片hover阴影使用黑色 - 第436行box-shadow使用rgba(0,0,0,0.2) - 建议改为金色系阴影
+- [ ] [UI] Home.vue未登录欢迎卡片使用粉色渐变 - 第443行使用rgba(233, 69, 96)粉色系 - 建议改为金色系渐变与主题统一
+- [ ] [UI] Home.vue欢迎卡片按钮使用粉色渐变 - 第493行使用#e94560粉色 - 建议改为var(--primary-gradient)
+- [ ] [UI] Tarot.vue牌面仍使用emoji表示 - 第119行使用emoji表示塔罗牌 - 建议添加真实塔罗牌图片或使用SVG图标
+- [ ] [UI] 页面按钮圆角不统一 - 有的页面使用12px/16px/20px/25px不同圆角 - 建议统一使用style.css中定义的25px圆角
+- [ ] [UI] 卡片hover效果在各页面不一致 - 有的使用translateY(-2px)有的使用(-10px) - 建议统一hover动画效果
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] Home.vue首页Hero区域渐变背景效果微弱 - 第308行使用radial-gradient，在白色主题下效果不明显 - 建议增强渐变对比度或添加装饰性SVG背景
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 八字排盘表格在移动端字体过小 - Bazi.vue中藏干信息使用10px-12px字体 - 建议优化移动端可读性
+- [ ] [UI] 缺少页面过渡动画 - 页面切换时没有过渡效果 - 建议添加Vue页面过渡动画
+- [ ] [UI] 评分星星颜色硬编码 - Home.vue和Daily.vue中使用#ffd700金色硬编码 - 建议使用CSS变量--primary-color
 
 ---
 
@@ -124,6 +291,30 @@
 4. **Liuyao.vue** - 修复页面标题、表单卡片、结果卡片、卦象展示、卦辞、解读、AI分析、积分信息、历史记录等所有深色背景和白色文字
 5. **Login.vue** - 修复登录框背景、标题、输入框样式
 6. **admin/Config.vue** - 修复管理页面标题、配置项、表单项等样式
+
+---
+
+## 🔧 功能修复报告 - 2026-03-16 (第二轮)
+
+### 后端修复
+- [x] **backend/app/controller/Hehun.php** - XSS安全风险已修复，buildReportHtml方法已使用htmlspecialchars转义
+- [x] **backend/app/controller/Hehun.php** - calculatePointsCost数组键名已核对正确
+- [x] **backend/app/service/FortuneAnalysisService.php** - 新建服务类，实现analyzeDaYunLiuNian方法提供大运流年分析
+- [x] **backend/app/controller/Admin.php** - 新增黄历管理接口：almanacList、saveAlmanac、generateAlmanacMonth
+- [x] **backend/route/admin.php** - 添加黄历管理路由
+
+### 前端修复
+- [x] **frontend/src/views/Hehun.vue** - JSON解析已使用safeJsonParse函数处理错误
+- [x] **frontend/src/views/admin/AlmanacManage.vue** - API调用已改为真实API：submitForm使用saveAlmanac，generateMonth使用generateAlmanacMonth
+- [x] **frontend/src/api/admin.js** - 新增黄历管理API：getAlmanacList、saveAlmanac、generateAlmanacMonth等
+- [x] **frontend/src/views/Bazi.vue** - aiAbortController空值检查已使用可选链操作符修复
+
+### UI修复
+- [x] **frontend/src/views/Hehun.vue** - 替换emoji：💕→Link图标、🤖→Cpu图标、🔄→RefreshRight、📄→Document
+- [x] **frontend/src/views/Daily.vue** - 替换emoji：🔮→MagicStick、❓→QuestionFilled、📿→Collection
+- [x] **frontend/src/views/Bazi.vue** - 替换emoji：💎→Diamond图标
+- [x] **frontend/src/views/Home.vue** - 修复粉色渐变为主题金色（16处）
+- [x] **frontend/src/App.vue** - 修复粉色渐变为主题金色（5处）
 
 ---
 
@@ -1178,7 +1369,7 @@
 
 ### 🔴 高优先级（准确性/功能性问题）
 
-- [ ] [占卜] 八字排盘节气数据不完整 - backend/app/controller/Paipan.php第563-573行 - 仅包含1990、1995、2000年节气数据，其他年份排盘可能不准确 - 建议补充完整节气表或使用天文算法计算
+- [x] [占卜] 八字排盘节气数据不完整 - **已修复**: backend/app/controller/Paipan.php已补充1900-2050年完整节气表，覆盖范围满足绝大多数用户需求 - 修复时间: 2026-03-16
 - [x] [占卜] 六爻占卜缺少手动摇卦功能 - **已修复**: backend/app/service/LiuyaoService::qiGuaByManual实现手动摇卦，支持输入6次摇卦结果(6/7/8/9) - 修复时间: 2026-03-16
 - [x] [占卜] 六爻结果缺少变卦展示 - **已修复**: backend/app/service/LiuyaoService::getBianGua实现变卦计算(老阴变阳/老阳变阴)，并在控制器中调用 - 修复时间: 2026-03-16
 - [x] [占卜] 塔罗隐者牌含义使用英文 - **已修复**: 已将隐者牌描述统一为中文"内省，孤独，指引"，与其他牌保持一致 - 修复时间: 2026-03-16
@@ -1197,7 +1388,7 @@
 
 - [ ] [占卜] 八字排盘可增加神煞分析 - backend/app/controller/Paipan.php - 可添加天乙贵人、文昌、桃花等常用神煞 - 建议参考《三命通会》添加常见神煞
 - [ ] [占卜] 八字大运流年可添加更多细节 - backend/app/controller/Paipan.php - 可添加交运时间、流年神煞等信息 - 建议丰富大运流年展示
-- [ ] [占卜] 塔罗牌可添加牌阵关系分析 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读 - 建议添加牌阵整体分析
+- [x] [占卜] 塔罗牌可添加牌阵关系分析 - **已修复**: backend/app/controller/Tarot.php已实现analyzeCardRelationships方法，提供首尾呼应、牌位流转、元素互动、正逆位分布等专业分析 - 修复时间: 2026-03-16
 - [ ] [占卜] 合婚可添加更多传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚等传统方法 - 建议丰富合婚算法
 - [ ] [占卜] 六爻可添加应期推断 - backend/app/controller/Liuyao.php - 解卦时可尝试推断事情发生时间 - 建议添加应期分析
 
@@ -1206,6 +1397,11 @@
 ## 已完成项目
 
 - [x] [2026-03-16] 前端Bazi.vue中AI解盘相关变量未定义 - frontend/src/views/Bazi.vue - 已添加aiLoadingTime、aiAbortController、aiLoadingTimer的ref定义 - 修复时间: 2026-03-16
+- [x] [2026-03-16 20:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第101-102行 - 已修复：塔罗占卜统计从DailyFortune改为TarotRecord - 修复时间: 2026-03-16
+- [x] [2026-03-16 20:00] 后端Admin.php缺少Db类导入 - backend/app/controller/Admin.php - 已添加use think\facade\Db导入语句 - 修复时间: 2026-03-16
+- [x] [2026-03-16 20:00] 后端SiteContent.php返回格式不统一 - backend/app/controller/SiteContent.php - 已统一使用$this->success()/$this->error()替换所有json()返回 - 修复时间: 2026-03-16
+- [x] [2026-03-16 20:00] 后端AiPrompt.php返回格式不统一 - backend/app/controller/AiPrompt.php - 已统一使用$this->success()/$this->error()替换所有json()返回 - 修复时间: 2026-03-16
+- [x] [2026-03-16 20:00] 后端Admin.php分页参数未验证 - backend/app/controller/Admin.php - 已添加filter_var验证和范围限制 - 修复时间: 2026-03-16
 
 ---
 
@@ -1268,8 +1464,8 @@
 
 #### 🟡 中优先级（体验问题）
 - [x] [占卜] 六爻缺少手动起卦模式 - **已修复**: backend/app/service/LiuyaoService::qiGuaByManual实现手动摇卦，支持6次摇卦结果输入(6老阴/7少阳/8少阴/9老阳) - 修复时间: 2026-03-16
-- [ ] [占卜] 塔罗牌阵关系分析缺失 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读，仅单张牌义堆砌 - 建议添加牌阵整体分析和牌与牌之间的关系解读
-- [ ] [占卜] 塔罗缺少元素分析 - frontend/src/views/Tarot.vue - 牌阵中元素(火/水/风/土)分布未分析 - 建议添加元素分布统计和解读
+- [x] [占卜] 塔罗牌阵关系分析缺失 - **已修复**: backend/app/controller/Tarot.php已实现analyzeCardRelationships方法，提供首尾呼应、牌位流转、元素互动、正逆位分布等专业分析 - 修复时间: 2026-03-16
+- [x] [占卜] 塔罗缺少元素分析 - **已修复**: backend/app/controller/Tarot.php已实现analyzeElements方法，统计风/水/火/土四元素分布并给出主导元素指导和缺失元素提醒 - 修复时间: 2026-03-16
 - [ ] [占卜] 八字藏干十神展示不突出 - frontend/src/views/Bazi.vue - 虽有藏干十神计算，但前端展示不够突出，藏干信息难以辨认 - 建议优化藏干十神展示方式
 - [ ] [占卜] 合婚缺少传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚、紫微合婚等传统方法 - 建议丰富合婚算法
 - [ ] [占卜] 塔罗缺少AI深度解读 - backend/app/controller/Tarot.php - 仅有基础牌义，无AI解牌功能 - 建议添加AI解牌接口
@@ -1340,7 +1536,7 @@
 #### 🟢 低优先级（专业性优化）
 - [ ] [占卜] 八字可增加神煞分析 - backend/app/controller/Paipan.php - 可添加天乙贵人、文昌、桃花、驿马等常用神煞 - 建议参考《三命通会》
 - [ ] [占卜] 八字大运流年细节不足 - backend/app/controller/Paipan.php - 缺少交运时间、流年神煞等信息 - 建议丰富大运流年展示
-- [ ] [占卜] 塔罗牌阵关系分析缺失 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读 - 建议添加牌阵整体分析
+- [x] [占卜] 塔罗牌阵关系分析缺失 - **已修复**: backend/app/controller/Tarot.php已实现analyzeCardRelationships方法，提供首尾呼应、牌位流转、元素互动、正逆位分布等专业分析 - 修复时间: 2026-03-16
 - [ ] [占卜] 合婚可增加传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚、紫微合婚等 - 建议丰富合婚算法
 - [ ] [占卜] 六爻应期推断缺失 - backend/app/controller/Liuyao.php - 解卦时可尝试推断事情发生时间 - 建议添加应期分析
 

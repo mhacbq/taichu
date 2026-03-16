@@ -108,10 +108,10 @@
           <!-- 定价信息 -->
           <div class="pricing-info" v-if="pricing">
             <div v-if="pricing.is_first_free" class="pricing-free">
-              <span>🎁 首次占卜免费</span>
+              <span><el-icon><Present /></el-icon> 首次占卜免费</span>
             </div>
             <div v-else-if="pricing.is_vip_free" class="pricing-vip">
-              <span>👑 VIP免费</span>
+              <span><el-icon><Trophy /></el-icon> VIP免费</span>
             </div>
             <div v-else class="pricing-normal">
               <span>本次消耗 {{ pricing.cost }} 积分</span>
@@ -158,7 +158,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { YinYang, RefreshRight, Download, Delete, Magic } from '@element-plus/icons-vue'
+import { YinYang, RefreshRight, Download, Delete, Magic, Present, Trophy } from '@element-plus/icons-vue'
 
 // 表单数据
 const form = reactive({
@@ -254,7 +254,7 @@ const loadHistoryDetail = (item) => {
     id: item.id,
     question: item.question,
     yao_result: item.yao_result,
-    yao_names: item.yao_result.map(yao => {
+    yao_names: (item.yao_result || []).map(yao => {
       const names = ['老阴', '少阴', '少阳', '老阳']
       return names[yao]
     }),
@@ -325,7 +325,7 @@ onMounted(() => {
 
 .page-title {
   font-size: 36px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -338,27 +338,28 @@ onMounted(() => {
 }
 
 .page-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
 /* 表单样式 */
 .form-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .form-card h2 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 8px;
 }
 
 .form-tip {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   text-align: center;
   font-size: 14px;
   margin-bottom: 30px;
@@ -370,22 +371,22 @@ onMounted(() => {
 
 .form-group label {
   display: block;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 10px;
   font-size: 14px;
 }
 
 .form-group label .required {
-  color: #e94560;
+  color: var(--accent-color, #e94560);
 }
 
 .form-group textarea {
   width: 100%;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   line-height: 1.6;
   resize: vertical;
@@ -395,17 +396,17 @@ onMounted(() => {
 
 .form-group textarea:focus {
   outline: none;
-  border-color: #e94560;
+  border-color: var(--primary-color);
 }
 
 .form-group textarea::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .char-count {
   display: block;
   text-align: right;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   font-size: 12px;
   margin-top: 6px;
 }
@@ -418,22 +419,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .option-item input {
   width: 18px;
   height: 18px;
-  accent-color: #e94560;
+  accent-color: var(--primary-color);
 }
 
 .pricing-info {
   text-align: center;
   padding: 16px;
-  background: rgba(233, 69, 96, 0.1);
+  background: var(--bg-secondary);
   border-radius: 12px;
   margin: 20px 0;
+  border: 1px solid var(--border-light);
 }
 
 .pricing-free,
@@ -444,7 +446,7 @@ onMounted(() => {
 }
 
 .pricing-normal {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -482,8 +484,8 @@ onMounted(() => {
 .loading {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -500,14 +502,14 @@ onMounted(() => {
 }
 
 .history-link a {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   cursor: pointer;
   text-decoration: underline;
   font-size: 14px;
 }
 
 .history-link a:hover {
-  color: #e94560;
+  color: var(--primary-color);
 }
 
 /* 结果卡片 */
@@ -516,11 +518,12 @@ onMounted(() => {
 }
 
 .result-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .result-header {
@@ -531,7 +534,7 @@ onMounted(() => {
 }
 
 .result-header h2 {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -545,18 +548,19 @@ onMounted(() => {
 
 .question-box {
   padding: 16px 20px;
-  background: rgba(233, 69, 96, 0.1);
+  background: var(--bg-secondary);
   border-radius: 12px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .question-box .label {
-  color: #e94560;
+  color: var(--primary-color);
   font-weight: 600;
 }
 
 .question-box .question-text {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -566,9 +570,10 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 16px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .gua-info {
@@ -576,13 +581,13 @@ onMounted(() => {
 }
 
 .gua-name {
-  color: #ffd700;
+  color: var(--primary-color);
   font-size: 28px;
   margin-bottom: 8px;
 }
 
 .gua-code {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -603,14 +608,14 @@ onMounted(() => {
 }
 
 .yao-line.moving {
-  background: rgba(233, 69, 96, 0.2);
+  background: var(--bg-secondary);
 }
 
 .yao-mark {
   width: 24px;
   text-align: center;
   font-size: 18px;
-  color: #e94560;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
@@ -622,7 +627,7 @@ onMounted(() => {
 }
 
 .yao-line.yang .yao-bar {
-  background: #fff;
+  background: var(--text-primary);
 }
 
 .yao-line.yin .yao-bar::before,
@@ -631,7 +636,7 @@ onMounted(() => {
   position: absolute;
   width: 45%;
   height: 100%;
-  background: #fff;
+  background: var(--text-primary);
   border-radius: 3px;
 }
 
@@ -640,7 +645,7 @@ onMounted(() => {
 }
 
 .yao-name {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 13px;
   min-width: 50px;
 }
@@ -648,19 +653,20 @@ onMounted(() => {
 /* 卦辞 */
 .gua-ci-section {
   padding: 20px;
-  background: rgba(255, 215, 0, 0.1);
+  background: var(--bg-secondary);
   border-radius: 12px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .gua-ci-section h4 {
-  color: #ffd700;
+  color: var(--primary-color);
   margin-bottom: 10px;
   font-size: 16px;
 }
 
 .gua-ci {
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.8;
   font-size: 15px;
   margin: 0;
@@ -672,13 +678,13 @@ onMounted(() => {
 }
 
 .interpretation-section h4 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
   font-size: 16px;
 }
 
 .interpretation-text {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 14px;
   white-space: pre-wrap;
@@ -690,7 +696,7 @@ onMounted(() => {
 .ai-section {
   margin-bottom: 24px;
   padding: 20px;
-  background: rgba(103, 194, 58, 0.1);
+  background: var(--bg-secondary);
   border-radius: 12px;
   border-left: 4px solid #67c23a;
 }
@@ -705,7 +711,7 @@ onMounted(() => {
 }
 
 .ai-content {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 14px;
   white-space: pre-wrap;
@@ -716,11 +722,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 /* 操作按钮 */
@@ -756,13 +763,13 @@ onMounted(() => {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--border-light);
 }
 
 /* 弹窗 */
@@ -800,20 +807,20 @@ onMounted(() => {
 }
 
 .modal-header h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 24px;
   cursor: pointer;
 }
 
 .close-btn:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .history-list {
@@ -833,7 +840,7 @@ onMounted(() => {
 }
 
 .history-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
 }
 
 .history-main {
@@ -842,7 +849,7 @@ onMounted(() => {
 }
 
 .history-question {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 6px 0;
   font-size: 14px;
   white-space: nowrap;
@@ -851,7 +858,7 @@ onMounted(() => {
 }
 
 .history-gua {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
   font-size: 12px;
 }
@@ -859,7 +866,7 @@ onMounted(() => {
 .delete-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 8px;
   font-size: 16px;

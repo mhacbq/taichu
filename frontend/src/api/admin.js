@@ -19,3 +19,11 @@ export const updateMarketingConfig = (data) => request.post('/admin/config/updat
 
 // 刷新缓存
 export const refreshConfigCache = () => request.post('/admin/config/refresh-cache')
+
+// 黄历管理
+export const getAlmanacList = (params) => request.get('/admin/almanac/list', { params })
+export const getAlmanacDetail = (date) => request.get('/admin/almanac/detail', { params: { date } })
+export const saveAlmanac = (data) => request.post('/admin/almanac/save', data)
+export const deleteAlmanac = (date) => request.post('/admin/almanac/delete', { date })
+export const generateAlmanacMonth = (year, month) => request.post('/admin/almanac/generate-month', { year, month })
+export const getAlmanacMonths = () => request.get('/admin/almanac/months')

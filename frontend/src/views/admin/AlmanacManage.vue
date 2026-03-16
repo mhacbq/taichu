@@ -230,6 +230,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Calendar, StarFilled } from '@element-plus/icons-vue'
+import { getAlmanacList, saveAlmanac, generateAlmanacMonth } from '@/api/admin'
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -406,10 +407,17 @@ const submitForm = async () => {
   submitLoading.value = true
   try {
     // 调用API保存
-    await new Promise(resolve => setTimeout(resolve, 500))
-    ElMessage.success('保存成功')
-    dialogVisible.value = false
-    loadMonthData()
+    const res = await saveAlmanac(form.value)
+    if (res.code === 200 || res.code === 0) {
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      loadMonthData()
+    } else {
+      ElMessage.error(res.message || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存黄历失败:', error)
+    ElMessage.error('保存失败，请检查网络连接')
   } finally {
     submitLoading.value = false
   }
@@ -424,9 +432,17 @@ const generateMonth = async () => {
   try {
     loading.value = true
     // 调用API自动生成黄历数据
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    ElMessage.success('月历生成成功')
-    loadMonthData()
+    const [year, month] = selectedMonth.value.split('-')
+    const res = await generateAlmanacMonth(parseInt(year), parseInt(month))
+    if (res.code === 200 || res.code === 0) {
+      ElMessage.success(`已成功生成 ${year}年${month}月 的黄历数据`)
+      loadMonthData()
+    } else {
+      ElMessage.error(res.message || '生成失败')
+    }
+  } catch (error) {
+    console.error('生成月历失败:', error)
+    ElMessage.error('生成失败，请检查网络连接')
   } finally {
     loading.value = false
   }

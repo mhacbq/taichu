@@ -497,6 +497,12 @@ class Hehun extends BaseController
         $scores['nayin'] = $nayinScore;
         $details['nayin'] = $this->getNayinDescription($nayinScore);
         
+        // 6. 三元合婚分析（传统合婚法）
+        $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi);
+        
+        // 7. 九宫合婚分析（传统合婚法）
+        $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi);
+        
         // 计算总分
         $totalScore = array_sum($scores);
         
@@ -519,6 +525,10 @@ class Hehun extends BaseController
             'suggestions' => $suggestions,
             'comment' => $comment,
             'highlights' => $this->getHighlights($scores),
+            'traditional_methods' => [
+                'sanyuan' => $sanyuanAnalysis,
+                'jiugong' => $jiugongAnalysis,
+            ],
         ];
     }
     
@@ -1661,5 +1671,393 @@ PROMPT;
 </body>
 </html>
 HTML;
+    }
+    
+    /**
+     * 三元合婚分析（传统合婚法）
+     * 根据双方年命纳音五行判断婚姻吉凶
+     * 
+     * 三元：上元、中元、下元
+     * 根据出生年份判断所属元运，再看纳音五行生克
+     */
+    protected function analyzeSanYuanHehun(array $maleBazi, array $femaleBazi): array
+    {
+        $maleYear = (int)$maleBazi['year']['year'];
+        $femaleYear = (int)$femaleBazi['year']['year'];
+        
+        // 获取纳音五行
+        $maleNayin = $this->getNayinWuxing($maleBazi['year']['gan'], $maleBazi['year']['zhi']);
+        $femaleNayin = $this->getNayinWuxing($femaleBazi['year']['gan'], $femaleBazi['year']['zhi']);
+        
+        // 判断所属元运
+        $maleYuan = $this->getYuanYun($maleYear);
+        $femaleYuan = $this->getYuanYun($femaleYear);
+        
+        // 分析纳音五行关系
+        $wuxingRelation = $this->getWuxingRelation($maleNayin, $femaleNayin);
+        
+        // 判断是否为"命相生"
+        $isXiangSheng = $wuxingRelation === '生';
+        $isXiangKe = $wuxingRelation === '克';
+        $isBiHe = $wuxingRelation === '比和';
+        
+        // 生成结果
+        $result = [
+            'method' => '三元合婚法',
+            'male' => [
+                'year' => $maleYear,
+                'yuan' => $maleYuan,
+                'nayin' => $maleNayin,
+            ],
+            'female' => [
+                'year' => $femaleYear,
+                'yuan' => $femaleYuan,
+                'nayin' => $femaleNayin,
+            ],
+            'relation' => $wuxingRelation,
+            'grade' => '',
+            'description' => '',
+            'suggestion' => '',
+        ];
+        
+        // 判断三元合婚等级
+        if ($isXiangSheng) {
+            $result['grade'] = '上等婚';
+            $result['description'] = "男方{$maleNayin}生女方{$femaleNayin}，为命相生之配。";
+            $result['suggestion'] = '此为上等婚配，夫妻恩爱，家道昌隆，子孙兴旺。';
+        } elseif ($isBiHe) {
+            $result['grade'] = '中等婚';
+            $result['description'] = "双方均为{$maleNayin}命，为比和之配。";
+            $result['suggestion'] = '此为中等婚配，夫妻同心，但需注意相互包容。';
+        } elseif ($isXiangKe) {
+            $result['grade'] = '下等婚';
+            $result['description'] = "男方{$maleNayin}克女方{$femaleNayin}，为命相克之配。";
+            $result['suggestion'] = '此为下等婚配，建议慎重考虑，可通过择吉日、风水调理化解。';
+        } else {
+            $result['grade'] = '中等婚';
+            $result['description'] = "男方{$maleNayin}与女方{$femaleNayin}，五行关系平平。";
+            $result['suggestion'] = '此为中等婚配，婚姻需双方共同经营。';
+        }
+        
+        // 元运分析
+        if ($maleYuan === $femaleYuan) {
+            $result['yuan_analysis'] = "双方同属{$maleYuan}，元运相同，气场相合，有利于婚姻稳定。";
+        } else {
+            $result['yuan_analysis'] = "男方属{$maleYuan}，女方属{$femaleYuan}，元运不同但无明显冲突。";
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 九宫合婚分析（传统合婚法）
+     * 根据双方出生年柱推算九宫命卦，判断婚姻吉凶
+     * 
+     * 男命：(11 - 年干支数) % 9 = 命卦
+     * 女命：(4 + 年干支数) % 9 = 命卦
+     * 
+     * 九宫：坎1、坤2、震3、巽4、中5（男坤女艮）、乾6、兑7、艮8、离9
+     */
+    protected function analyzeJiuGongHehun(array $maleBazi, array $femaleBazi): array
+    {
+        $maleYearGan = $maleBazi['year']['gan'];
+        $maleYearZhi = $maleBazi['year']['zhi'];
+        $femaleYearGan = $femaleBazi['year']['gan'];
+        $femaleYearZhi = $femaleBazi['year']['zhi'];
+        
+        // 计算年干支数
+        $maleGanNum = $this->getGanNumber($maleYearGan);
+        $maleZhiNum = $this->getZhiNumber($maleYearZhi);
+        $femaleGanNum = $this->getGanNumber($femaleYearGan);
+        $femaleZhiNum = $this->getZhiNumber($femaleYearZhi);
+        
+        // 计算命卦（简化算法）
+        $maleGua = $this->calculateMingGua($maleGanNum + $maleZhiNum, 'male');
+        $femaleGua = $this->calculateMingGua($femaleGanNum + $femaleZhiNum, 'female');
+        
+        // 九宫八卦名称
+        $guaNames = [
+            1 => '坎水',
+            2 => '坤土', 
+            3 => '震木',
+            4 => '巽木',
+            5 => '中土',
+            6 => '乾金',
+            7 => '兑金',
+            8 => '艮土',
+            9 => '离火',
+        ];
+        
+        // 八卦五行
+        $guaWuxing = [
+            1 => '水',
+            2 => '土',
+            3 => '木',
+            4 => '木',
+            5 => '土',
+            6 => '金',
+            7 => '金',
+            8 => '土',
+            9 => '火',
+        ];
+        
+        // 分析命卦关系
+        $relation = $this->analyzeGuaRelation($maleGua, $femaleGua);
+        
+        $result = [
+            'method' => '九宫合婚法（命卦合婚）',
+            'male' => [
+                'minggua' => $maleGua,
+                'gua_name' => $guaNames[$maleGua] ?? '未知',
+                'wuxing' => $guaWuxing[$maleGua] ?? '未知',
+            ],
+            'female' => [
+                'minggua' => $femaleGua,
+                'gua_name' => $guaNames[$femaleGua] ?? '未知',
+                'wuxing' => $guaWuxing[$femaleGua] ?? '未知',
+            ],
+            'relation' => $relation,
+        ];
+        
+        // 根据命卦关系判断婚姻等级
+        switch ($relation['type']) {
+            case '生气':
+                $result['grade'] = '上等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '上上大吉，夫妻恩爱，子孙昌盛，家运兴隆。';
+                break;
+            case '天医':
+                $result['grade'] = '上等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '上吉，夫妻和睦，无病无灾，家庭平安。';
+                break;
+            case '延年':
+                $result['grade'] = '上等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '大吉，夫妻长寿，家业兴旺，福禄双全。';
+                break;
+            case '伏位':
+                $result['grade'] = '中等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '中平，夫妻平稳，但需相互理解包容。';
+                break;
+            case '六煞':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '不吉，易生口舌是非，建议化解。';
+                break;
+            case '祸害':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '凶，易有灾病，需谨慎考虑或化解。';
+                break;
+            case '五鬼':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '大凶，易有意外灾祸，强烈建议化解或慎重考虑。';
+                break;
+            case '绝命':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '最凶，易有重大灾祸，建议慎重考虑。';
+                break;
+            default:
+                $result['grade'] = '中等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}。";
+                $result['suggestion'] = '中平，婚姻需双方共同努力经营。';
+        }
+        
+        // 方位建议
+        $result['direction'] = $this->getJiuGongDirection($maleGua, $femaleGua);
+        
+        return $result;
+    }
+    
+    /**
+     * 获取所属元运（上元、中元、下元）
+     */
+    protected function getYuanYun(int $year): string
+    {
+        // 三元九运划分
+        // 上元：1864-1923，中元：1924-1983，下元：1984-2043
+        // 每元60年，分三个运，每运20年
+        
+        $baseYear = 1864;
+        $cycle = 180; // 三元共180年
+        $relativeYear = ($year - $baseYear) % $cycle;
+        
+        if ($relativeYear < 60) {
+            return '上元';
+        } elseif ($relativeYear < 120) {
+            return '中元';
+        } else {
+            return '下元';
+        }
+    }
+    
+    /**
+     * 获取纳音五行
+     */
+    protected function getNayinWuxing(string $gan, string $zhi): string
+    {
+        // 纳音五行表（简化版）
+        $nayinTable = [
+            '甲子' => '金', '乙丑' => '金',
+            '丙寅' => '火', '丁卯' => '火',
+            '戊辰' => '木', '己巳' => '木',
+            '庚午' => '土', '辛未' => '土',
+            '壬申' => '金', '癸酉' => '金',
+            '甲戌' => '火', '乙亥' => '火',
+            '丙子' => '水', '丁丑' => '水',
+            '戊寅' => '土', '己卯' => '土',
+            '庚辰' => '金', '辛巳' => '金',
+            '壬午' => '木', '癸未' => '木',
+            '甲申' => '水', '乙酉' => '水',
+            '丙戌' => '土', '丁亥' => '土',
+            '戊子' => '火', '己丑' => '火',
+            '庚寅' => '木', '辛卯' => '木',
+            '壬辰' => '水', '癸巳' => '水',
+            '甲午' => '金', '乙未' => '金',
+            '丙申' => '火', '丁酉' => '火',
+            '戊戌' => '木', '己亥' => '木',
+            '庚子' => '土', '辛丑' => '土',
+            '壬寅' => '金', '癸卯' => '金',
+            '甲辰' => '火', '乙巳' => '火',
+            '丙午' => '水', '丁未' => '水',
+            '戊申' => '土', '己酉' => '土',
+            '庚戌' => '金', '辛亥' => '金',
+            '壬子' => '木', '癸丑' => '木',
+            '甲寅' => '水', '乙卯' => '水',
+            '丙辰' => '土', '丁巳' => '土',
+            '戊午' => '火', '己未' => '火',
+            '庚申' => '木', '辛酉' => '木',
+            '壬戌' => '水', '癸亥' => '水',
+        ];
+        
+        $key = $gan . $zhi;
+        return $nayinTable[$key] ?? '未知';
+    }
+    
+    /**
+     * 获取五行关系
+     */
+    protected function getWuxingRelation(string $wuxing1, string $wuxing2): string
+    {
+        $sheng = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
+        $ke = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
+        
+        if ($wuxing1 === $wuxing2) {
+            return '比和';
+        } elseif ($sheng[$wuxing1] === $wuxing2) {
+            return '生';
+        } elseif ($ke[$wuxing1] === $wuxing2) {
+            return '克';
+        } elseif ($sheng[$wuxing2] === $wuxing1) {
+            return '被生';
+        } elseif ($ke[$wuxing2] === $wuxing1) {
+            return '被克';
+        }
+        
+        return '无';
+    }
+    
+    /**
+     * 获取天干数字
+     */
+    protected function getGanNumber(string $gan): int
+    {
+        $numbers = ['甲' => 1, '乙' => 2, '丙' => 3, '丁' => 4, '戊' => 5, 
+                    '己' => 6, '庚' => 7, '辛' => 8, '壬' => 9, '癸' => 10];
+        return $numbers[$gan] ?? 1;
+    }
+    
+    /**
+     * 获取地支数字
+     */
+    protected function getZhiNumber(string $zhi): int
+    {
+        $numbers = ['子' => 1, '丑' => 2, '寅' => 3, '卯' => 4, '辰' => 5, '巳' => 6,
+                    '午' => 7, '未' => 8, '申' => 9, '酉' => 10, '戌' => 11, '亥' => 12];
+        return $numbers[$zhi] ?? 1;
+    }
+    
+    /**
+     * 计算命卦
+     */
+    protected function calculateMingGua(int $number, string $gender): int
+    {
+        if ($gender === 'male') {
+            $gua = (11 - ($number % 9)) % 9;
+        } else {
+            $gua = (4 + ($number % 9)) % 9;
+        }
+        
+        // 处理0值
+        if ($gua === 0) {
+            $gua = 9;
+        }
+        
+        return $gua;
+    }
+    
+    /**
+     * 分析命卦关系（八宅明镜法）
+     */
+    protected function analyzeGuaRelation(int $maleGua, int $femaleGua): array
+    {
+        // 八宅命卦关系表
+        // 生气、天医、延年为上吉，伏位为中平，六煞、祸害、五鬼、绝命为凶
+        $relations = [
+            1 => [1 => '伏位', 2 => '绝命', 3 => '天医', 4 => '生气', 5 => '祸害', 6 => '六煞', 7 => '五鬼', 8 => '延年', 9 => '伏位'],
+            2 => [1 => '绝命', 2 => '伏位', 3 => '生气', 4 => '天医', 5 => '延年', 6 => '五鬼', 7 => '六煞', 8 => '祸害', 9 => '伏位'],
+            3 => [1 => '天医', 2 => '生气', 3 => '伏位', 4 => '延年', 5 => '六煞', 6 => '祸害', 7 => '绝命', 8 => '五鬼', 9 => '伏位'],
+            4 => [1 => '生气', 2 => '天医', 3 => '延年', 4 => '伏位', 5 => '五鬼', 6 => '绝命', 7 => '祸害', 8 => '六煞', 9 => '伏位'],
+            5 => [1 => '祸害', 2 => '延年', 3 => '六煞', 4 => '五鬼', 5 => '伏位', 6 => '天医', 7 => '生气', 8 => '绝命', 9 => '伏位'],
+            6 => [1 => '六煞', 2 => '五鬼', 3 => '祸害', 4 => '绝命', 5 => '天医', 6 => '伏位', 7 => '延年', 8 => '生气', 9 => '伏位'],
+            7 => [1 => '五鬼', 2 => '六煞', 3 => '绝命', 4 => '祸害', 5 => '生气', 6 => '延年', 7 => '伏位', 8 => '天医', 9 => '伏位'],
+            8 => [1 => '延年', 2 => '祸害', 3 => '五鬼', 4 => '六煞', 5 => '绝命', 6 => '生气', 7 => '天医', 8 => '伏位', 9 => '伏位'],
+            9 => [1 => '伏位', 2 => '伏位', 3 => '伏位', 4 => '伏位', 5 => '伏位', 6 => '伏位', 7 => '伏位', 8 => '伏位', 9 => '伏位'],
+        ];
+        
+        $type = $relations[$maleGua][$femaleGua] ?? '未知';
+        
+        $meanings = [
+            '生气' => '朝气蓬勃，积极向上，主家运昌隆',
+            '天医' => '身体健康，无病无灾，主平安顺遂',
+            '延年' => '长寿康宁，夫妻恩爱，主福禄双全',
+            '伏位' => '平稳安定，细水长流，主平淡是真',
+            '六煞' => '口舌是非，感情波折，需谨慎处理',
+            '祸害' => '疾病灾祸，困难重重，需化解',
+            '五鬼' => '意外灾祸，破财损身，大凶之象',
+            '绝命' => '生死离别，家破人亡，最凶之象',
+        ];
+        
+        return [
+            'type' => $type,
+            'meaning' => $meanings[$type] ?? '关系不明',
+        ];
+    }
+    
+    /**
+     * 获取九宫方位建议
+     */
+    protected function getJiuGongDirection(int $maleGua, int $femaleGua): array
+    {
+        $directions = [
+            1 => ['吉方' => '东南、南方', '凶方' => '西方、西北', '建议' => '卧室宜设在东南方'],
+            2 => ['吉方' => '东北、西南', '凶方' => '东方、南方', '建议' => '卧室宜设在东北方'],
+            3 => ['吉方' => '南方、东方', '凶方' => '西方、西北', '建议' => '卧室宜设在南方'],
+            4 => ['吉方' => '北方、东南', '凶方' => '东北、西南', '建议' => '卧室宜设在北方'],
+            5 => ['吉方' => '中央、四方', '凶方' => '无明显凶方', '建议' => '卧室方位无特殊要求'],
+            6 => ['吉方' => '西方、西北', '凶方' => '南方、东方', '建议' => '卧室宜设在西方'],
+            7 => ['吉方' => '西北、西方', '凶方' => '南方、东方', '建议' => '卧室宜设在西北方'],
+            8 => ['吉方' => '西南、东北', '凶方' => '北方、东南', '建议' => '卧室宜设在西南方'],
+            9 => ['吉方' => '东方、南方', '凶方' => '北方、西方', '建议' => '卧室宜设在东方'],
+        ];
+        
+        return [
+            'male' => $directions[$maleGua] ?? $directions[5],
+            'female' => $directions[$femaleGua] ?? $directions[5],
+        ];
     }
 }

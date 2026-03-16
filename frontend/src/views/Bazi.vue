@@ -99,7 +99,7 @@
 
         <!-- 积分不足提示 -->
         <div v-if="!isFirstBazi && currentPoints < 10" class="insufficient-points">
-          <p>💡 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+          <p><el-icon><Lightbulb /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
         </div>
       </div>
 
@@ -128,7 +128,7 @@
         class="points-confirm-dialog"
       >
         <div class="points-confirm-content">
-          <div class="points-icon">💎</div>
+          <div class="points-icon"><el-icon :size="48"><Diamond /></el-icon></div>
           <p class="points-title">
             {{ 
               pointsConfirmType === 'yearly' ? '流年运势分析' : 
@@ -1232,11 +1232,22 @@ const saveResult = async () => {
   }
 }
 
-// 判断是否当前大运（简化：根据当前年龄判断）
+// 判断是否当前大运（根据出生日期计算当前年龄）
 const isCurrentDaYun = (yun) => {
-  // 简化计算：假设用户当前30岁，实际应根据出生日期计算
-  const currentAge = 30
-  return currentAge >= yun.age_start && currentAge <= yun.age_end
+  if (!birthDate.value) return false
+  
+  // 计算当前年龄
+  const birth = new Date(birthDate.value)
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  
+  // 判断是否已过生日
+  const monthDiff = now.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age--
+  }
+  
+  return age >= yun.age_start && age <= yun.age_end
 }
 
 // 分享结果

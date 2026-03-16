@@ -117,5 +117,10 @@ Route::group('api/admin', function () {
         Route::get('tasks/scripts', 'Admin/getTaskScripts');
         Route::post('tasks/scripts', 'Admin/saveTaskScript');
         Route::delete('tasks/scripts/:id', 'Admin/deleteTaskScript');
+        
+        // 黄历管理
+        Route::get('almanac/list', 'Admin/almanacList');
+        Route::post('almanac/save', 'Admin/saveAlmanac');
+        Route::post('almanac/generate-month', 'Admin/generateAlmanacMonth');
     })->middleware(\app\middleware\AdminAuth::class);
 });

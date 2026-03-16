@@ -625,7 +625,7 @@ onMounted(() => {
 }
 
 .mobile-points {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(212, 175, 55, 0.12);
   padding: 6px 12px;
   border-radius: 15px;
   color: var(--primary-color);
@@ -649,7 +649,7 @@ onMounted(() => {
 .mobile-login-btn {
   background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
 }
 
 .mobile-logout-btn {
@@ -715,7 +715,7 @@ onMounted(() => {
 .footer-quote {
   margin-bottom: 30px;
   padding: 20px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.05), rgba(255, 107, 107, 0.05));
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(184, 134, 11, 0.05));
   border-radius: 12px;
   max-width: 600px;
   margin-left: auto;
@@ -870,11 +870,11 @@ onMounted(() => {
 }
 
 .companion-message {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.05), rgba(255, 107, 107, 0.05));
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(184, 134, 11, 0.05));
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid rgba(233, 69, 96, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.1);
 }
 
 .companion-message p {
@@ -905,7 +905,7 @@ onMounted(() => {
 }
 
 .companion-btn:hover {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(212, 175, 55, 0.1);
   color: var(--primary-color);
   transform: translateX(5px);
 }

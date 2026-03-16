@@ -24,9 +24,9 @@
         <!-- 个性化运势卡片 -->
         <div v-if="fortune.personalized && fortune.personalized.hasBazi" class="personalized-fortune card">
           <h2>
-            🔮 您的专属运势
+            <el-icon><MagicStick /></el-icon> 您的专属运势
             <el-tooltip content="基于您的八字日主计算的个性化运势分析" placement="top">
-              <span class="help-icon">❓</span>
+              <el-icon class="help-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
           </h2>
           <div class="personal-content">
@@ -58,7 +58,7 @@
             </div>
             
             <div class="personal-advice">
-              <h4>💡 今日建议</h4>
+              <h4><el-icon><Lightbulb /></el-icon> 今日建议</h4>
               <p>{{ fortune.personalized.advice }}</p>
             </div>
             
@@ -86,7 +86,7 @@
         <!-- 无八字时的提示 -->
         <div v-else class="no-bazi-hint card">
           <div class="hint-content">
-            <span class="hint-icon">📿</span>
+            <el-icon class="hint-icon" :size="48"><Collection /></el-icon>
             <p>进行八字排盘即可获取您的个性化每日运势</p>
             <router-link to="/bazi">
               <el-button type="primary" size="small">去排盘</el-button>

@@ -199,11 +199,12 @@ onUnmounted(() => {
 }
 
 .login-box {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .login-header {
@@ -214,7 +215,7 @@ onUnmounted(() => {
 .logo {
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -224,7 +225,7 @@ onUnmounted(() => {
 
 .logo-icon {
   font-size: 36px;
-  color: #e94560;
+  color: var(--primary-color);
 }
 
 .logo-icon svg {
@@ -233,13 +234,13 @@ onUnmounted(() => {
 }
 
 .login-header h2 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 24px;
   margin-bottom: 10px;
 }
 
 .login-header p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -252,7 +253,7 @@ onUnmounted(() => {
 }
 
 .login-tips p {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 8px 0;
 }
@@ -270,13 +271,13 @@ onUnmounted(() => {
 }
 
 .login-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .login-input :deep(.el-input__inner) {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .code-input-row {

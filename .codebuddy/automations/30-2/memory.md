@@ -1,5 +1,56 @@
 # 待办处理执行器 - 执行历史
 
+## 2026-03-16 执行记录（第6次）
+
+### 本次修复任务（5个问题）
+
+#### 1. 后端Admin.php统计逻辑错误修复
+- **文件**: backend/app/controller/Admin.php第101-102行
+- **问题**: dashboard()方法中塔罗占卜统计错误地使用了DailyFortune模型
+- **修复**: 将`DailyFortune::count()`改为`TarotRecord::count()`
+- **验证**: 统计逻辑现在使用正确的模型
+
+#### 2. 后端Admin.php缺少Db类导入
+- **文件**: backend/app/controller/Admin.php
+- **问题**: 第903行、第939行使用了Db::name('almanac')但没有导入use think\facade\Db
+- **修复**: 添加`use think\facade\Db;`导入语句
+- **验证**: Db类现在可以正常使用
+
+#### 3. 后端SiteContent.php返回格式不统一
+- **文件**: backend/app/controller/SiteContent.php
+- **问题**: 多处使用json(['code' => 0])返回，与BaseController的success()/error()方法不一致
+- **修复**: 统一替换所有json()返回为$this->success()/$this->error()
+- **验证**: 所有返回现在使用统一的格式
+
+#### 4. 后端AiPrompt.php返回格式不统一
+- **文件**: backend/app/controller/AiPrompt.php
+- **问题**: 使用json()返回而非继承的BaseController方法
+- **修复**: 统一替换所有json()返回为$this->success()/$this->error()
+- **验证**: 所有返回现在使用统一的格式
+
+#### 5. 后端Admin.php分页参数未验证
+- **文件**: backend/app/controller/Admin.php第152-156行
+- **问题**: users方法中分页参数没有验证是否为正整数
+- **修复**: 添加filter_var验证和范围限制
+  ```php
+  $page = filter_var($page, FILTER_VALIDATE_INT) ?: 1;
+  $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT) ?: 20;
+  $page = max(1, $page);
+  $pageSize = max(1, min(100, $pageSize));
+  ```
+- **验证**: 分页参数现在经过验证和限制
+
+### 修复验证
+- 所有PHP文件语法检查通过
+- TODO.md已更新，所有修复项已标记为完成
+
+### 状态
+- 完成5个修复任务
+- 修改了3个文件（Admin.php, SiteContent.php, AiPrompt.php）
+- 下次执行将继续处理剩余高优先级问题
+
+---
+
 ## 2026-03-16 执行记录（第5次）
 
 ### 本次修复任务（5个问题）

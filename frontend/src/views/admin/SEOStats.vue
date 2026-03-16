@@ -253,12 +253,16 @@
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue'
+import { ref, computed, h, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
   Warning, InfoFilled, CircleCheck
 } from '@element-plus/icons-vue'
+
+// 图表DOM引用
+const pieChart = ref(null)
+const trendChart = ref(null)
 
 // 统计数据
 const stats = ref({
@@ -381,7 +385,11 @@ const RankBadge = {
   }
 }
 
-// 图表功能待实现 - 需要时添加图表引用和初始化代码
+// 初始化图表（使用Element Plus的el-statistic或简单占位）
+onMounted(() => {
+  // TODO: 如需完整图表功能，可引入ECharts进行初始化
+  // 当前使用占位符显示，后续可添加真实图表
+})
 </script>
 
 <style scoped>
