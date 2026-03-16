@@ -325,7 +325,7 @@ onMounted(() => {
 
 .star {
   font-size: 24px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-tertiary);
 }
 
 .star.filled {
@@ -497,7 +497,7 @@ onMounted(() => {
 .master-card .label, .today-card .label {
   display: block;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
@@ -505,7 +505,7 @@ onMounted(() => {
   display: block;
   font-size: 32px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -524,12 +524,12 @@ onMounted(() => {
 
 .wuxing-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .relation-arrow {
   font-size: 24px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
 }
 
 .luck-indicator {
@@ -563,8 +563,8 @@ onMounted(() => {
 }
 
 .luck-badge.平 {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(128, 128, 128, 0.1), rgba(128, 128, 128, 0.05));
+  border: 1px solid rgba(128, 128, 128, 0.2);
 }
 
 .luck-level {
@@ -581,7 +581,7 @@ onMounted(() => {
 .score-label {
   display: block;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 5px;
 }
 
@@ -595,19 +595,19 @@ onMounted(() => {
 .score-value.normal { color: #f56c6c; }
 
 .personal-advice {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 25px;
 }
 
 .personal-advice h4 {
-  color: #ffd700;
+  color: var(--primary-color);
   margin-bottom: 10px;
 }
 
 .personal-advice p {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 15px;
 }
@@ -619,7 +619,7 @@ onMounted(() => {
 }
 
 .lucky-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
   border-radius: 10px;
   padding: 15px;
   display: flex;
@@ -629,7 +629,7 @@ onMounted(() => {
 
 .lucky-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -673,7 +673,7 @@ onMounted(() => {
 }
 
 .no-bazi-hint p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   margin-bottom: 15px;
 }
 

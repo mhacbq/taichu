@@ -169,17 +169,17 @@
         <p class="loading-text">计算天干地支 · 分析五行配置 · 生成命理解读</p>
         <div class="loading-steps">
           <div class="step" :class="{ active: loadingStep >= 1, done: loadingStep > 1 }">
-            <span class="step-icon">{{ loadingStep > 1 ? '✓' : '1' }}</span>
+            <span class="step-icon"><el-icon v-if="loadingStep > 1"><Check /></el-icon><template v-else>1</template></span>
             <span class="step-text">排八字</span>
           </div>
           <div class="step-line" :class="{ active: loadingStep >= 2 }"></div>
           <div class="step" :class="{ active: loadingStep >= 2, done: loadingStep > 2 }">
-            <span class="step-icon">{{ loadingStep > 2 ? '✓' : '2' }}</span>
+            <span class="step-icon"><el-icon v-if="loadingStep > 2"><Check /></el-icon><template v-else>2</template></span>
             <span class="step-text">算五行</span>
           </div>
           <div class="step-line" :class="{ active: loadingStep >= 3 }"></div>
           <div class="step" :class="{ active: loadingStep >= 3, done: loadingStep > 3 }">
-            <span class="step-icon">{{ loadingStep > 3 ? '✓' : '3' }}</span>
+            <span class="step-icon"><el-icon v-if="loadingStep > 3"><Check /></el-icon><template v-else>3</template></span>
             <span class="step-text">析命理</span>
           </div>
           <div class="step-line" :class="{ active: loadingStep >= 4 }"></div>
@@ -460,7 +460,7 @@
           <h3>
             大运走势
             <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
-              <span class="help-icon">❓</span>
+              <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
             </el-tooltip>
           </h3>
           <div class="dayun-timeline">
@@ -488,7 +488,7 @@
           <h3>
             流年运势
             <el-tooltip content="流年是每年的运势参考，结合大运提供年度生活建议" placement="top">
-              <span class="help-icon">❓</span>
+              <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
             </el-tooltip>
           </h3>
           <div class="liunian-grid">
@@ -515,7 +515,7 @@
         <!-- 流年运势分析 -->
         <div class="yearly-fortune-section" v-if="result.bazi">
           <h3>
-            <span class="section-icon">📅</span>
+            <span class="section-icon"><el-icon><Calendar /></el-icon></span>
             流年运势深度分析
             <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.yearly_fortune }}积分</el-tag>
           </h3>
@@ -731,7 +731,7 @@
             </div>
             
             <div class="key-suggestions">
-              <h4>💡 关键建议</h4>
+              <h4><el-icon><Lightbulb /></el-icon> 关键建议</h4>
               <ul>
                 <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
                   {{ suggestion }}
@@ -759,7 +759,7 @@
         <!-- 运势K线图 -->
         <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
           <h3>
-            <span class="section-icon">📈</span>
+            <span class="section-icon"><el-icon><TrendCharts /></el-icon></span>
             运势K线图
             <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_chart }}积分</el-tag>
           </h3>
@@ -818,7 +818,7 @@
               :disabled="currentPoints < fortunePointsCost.dayun_chart"
               @click="showPointsConfirm('chart')"
             >
-              <span class="btn-icon">📈</span>
+              <el-icon><TrendCharts /></el-icon>
               {{ currentPoints < fortunePointsCost.dayun_chart ? '积分不足' : '生成运势K线图' }}
             </el-button>
           </div>
@@ -827,7 +827,7 @@
         <!-- AI智能解盘 -->
         <div class="ai-analysis-section" v-if="result.bazi">
           <h3>
-            <span class="section-icon">🤖</span>
+            <span class="section-icon"><el-icon><Cpu /></el-icon></span>
             AI智能解盘
             <el-tag type="warning" size="small" class="ml-2">消耗30积分</el-tag>
           </h3>
@@ -859,7 +859,7 @@
               :disabled="currentPoints < 30"
               @click="startAiAnalysis"
             >
-              <span class="btn-icon">✨</span>
+              <el-icon><Magic /></el-icon>
               {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
             </el-button>
           </div>
@@ -888,13 +888,13 @@
         <!-- 操作按钮 -->
         <div class="result-actions">
           <el-button type="primary" @click="saveResult" :loading="saving">
-            <span class="btn-icon">💾</span> 保存结果
+            <el-icon><Download /></el-icon> 保存结果
           </el-button>
           <el-button @click="shareResult">
-            <span class="btn-icon">📤</span> 分享
+            <el-icon><Share /></el-icon> 分享
           </el-button>
           <el-button @click="result = null">
-            <span class="btn-icon">🔄</span> 重新排盘
+            <el-icon><RefreshRight /></el-icon> 重新排盘
           </el-button>
         </div>
       </div>
@@ -905,7 +905,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Medallion, Collection, Money, Briefcase, UserFilled, Warning } from '@element-plus/icons-vue'
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Medallion, Collection, Money, Briefcase, UserFilled, Warning, Check, Calendar, DataLine, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 

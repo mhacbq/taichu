@@ -37,9 +37,14 @@
           <el-collapse-item 
             v-for="(category, idx) in filteredCategories" 
             :key="idx"
-            :title="category.title" 
             :name="idx"
           >
+            <template #title>
+              <span class="category-title">
+                <el-icon v-if="category.icon"><component :is="category.icon" /></el-icon>
+                {{ category.title }}
+              </span>
+            </template>
             <div class="faq-list">
               <div 
                 v-for="(item, itemIdx) in category.items" 
@@ -117,7 +122,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BackButton from '../components/BackButton.vue'
-import { Search, Phone, ChatDotRound, Message, YinYang, Magic, StarFilled, UserFilled, CollectionTag, Coin } from '@element-plus/icons-vue'
+import { Search, Phone, ChatDotRound, Message, YinYang, Magic, StarFilled, UserFilled, CollectionTag, Coin, Lock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -206,7 +211,8 @@ const categories = ref([
     ]
   },
   {
-    title: '🔐 账号安全',
+    title: '账号安全',
+    icon: 'Lock',
     items: [
       {
         question: '如何修改个人信息？',
