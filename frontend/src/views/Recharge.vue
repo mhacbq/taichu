@@ -546,8 +546,8 @@ const getStatusText = (status) => {
 }
 
 .option-item.active {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: #b8860b;
+  background: rgba(184, 134, 11, 0.1);
 }
 
 .option-item.hot {

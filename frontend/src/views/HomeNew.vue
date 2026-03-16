@@ -522,8 +522,8 @@ onMounted(() => {
 
 .feature-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(233, 69, 96, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border-color: rgba(184, 134, 11, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 .feature-icon {

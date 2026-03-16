@@ -760,12 +760,12 @@ const getCardAdvice = (card) => {
 
 .topic-tab:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(233, 69, 96, 0.3);
+  border-color: rgba(184, 134, 11, 0.3);
 }
 
 .topic-tab.active {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.3));
-  border-color: #e94560;
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.3), rgba(218, 165, 32, 0.3));
+  border-color: #b8860b;
 }
 
 .topic-icon {

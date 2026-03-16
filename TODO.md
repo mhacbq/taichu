@@ -5,6 +5,51 @@
 
 ---
 
+## 代码逻辑检查报告 - 2026-03-17 第29轮
+
+### 检查概览
+- **检查时间**: 2026-03-17
+- **检查人员**: 代码审查专家
+- **检查范围**: 前端Vue项目(frontend/src)、后端PHP控制器(backend/app/controller)、管理端页面(admin/src/views)
+- **检查维度**: 语法错误、类型错误、API调用、安全问题、返回格式统一性、权限控制
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性/安全问题）
+- [ ] [2026-03-17 23:30] **后端API响应格式不统一** - backend/app/controller/Config.php(第22-26行,第36-40行)/SiteContent.php多处混用`json(['code' => 0])`和`$this->success()` - 建议统一使用BaseController的success/error方法，统一返回code=200
+- [ ] [2026-03-17 23:30] **后端Admin.php获取用户信息方式错误** - backend/app/controller/Admin.php第42-44行使用`$this->request->user`获取用户信息，但后台应使用`$this->request->adminUser` - 建议修改为`$adminUser = $this->request->adminUser ?? []`
+- [ ] [2026-03-17 23:30] **后端Upload.php文件扩展名验证不一致** - backend/app/controller/Upload.php第413行使用`getOriginalExtension()`而非`getExtension()` - 建议统一使用`getExtension()`防止客户端伪造扩展名
+- [ ] [2026-03-17 23:30] **后端异常信息泄露风险** - backend/app/controller/Auth.php第76、167行/SiteContent.php多处直接返回`$e->getMessage()` - 建议记录日志后返回通用错误消息
+- [ ] [2026-03-17 23:30] **管理端响应码判断不统一** - admin/src/views/site-content/question-templates.vue(第183、256行)/ai/prompts.vue(第341、424、441、457行)/content-manager.vue(第178、227行)使用`res.code === 0` - 建议统一修改为`res.code === 200`
+- [ ] [2026-03-17 23:30] **管理端路由权限控制不完整** - admin/src/router/index.js第197-216行，/sms/feedback/anticheat/ai/log/task等模块未配置roles权限 - 建议为敏感路由添加roles配置
+- [ ] [2026-03-17 23:30] **管理端存在大量模拟数据** - admin/src/views/system/role.vue(第100-148行)/dict.vue(第112-118行,第167-186行)/user/detail.vue(第83-87行)使用硬编码模拟数据 - 建议实现真实API对接
+
+#### 🟡 中优先级（体验/代码质量问题）
+- [ ] [2026-03-17 23:30] **后端AiAnalysis.php直接输出流式响应** - backend/app/controller/AiAnalysis.php第168、171、378行使用`echo`和`exit`直接输出 - 建议确保在流式输出前关闭所有中间件处理
+- [ ] [2026-03-17 23:30] **后端SiteContent.php缺少输入验证** - backend/app/controller/SiteContent.php第55-70行updatePageContent方法未验证page参数格式 - 建议添加参数验证`preg_match('/^[a-zA-Z0-9_-]+$/', $page)`
+- [ ] [2026-03-17 23:30] **管理端API路径前缀不一致** - admin/src/api/ai.js使用`/api/admin/`，payment.js使用`/admin/`，content.js使用`/content/` - 建议统一API路径格式
+- [ ] [2026-03-17 23:30] **管理端页面状态管理问题** - admin/src/views/content/pages.vue第473-481行updatePageStatus函数注释掉了API调用 - 建议取消注释并确保API正常工作
+- [ ] [2026-03-17 23:30] **管理端敏感操作缺少权限验证** - admin/src/views/user/list.vue(第81-94行)/system/sensitive.vue(第41-44行)/task/list.vue(第36-38行)敏感操作没有权限控制 - 建议使用v-permission指令控制按钮显示
+
+#### 🟢 低优先级（优化问题）
+- [ ] [2026-03-17 23:30] **后端代码重复** - 多个控制器中重复实现分页参数验证逻辑和权限检查逻辑 - 建议提取公共方法到BaseController或创建Trait
+- [ ] [2026-03-17 23:30] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度/Admin.php第263行分页大小使用硬编码 - 建议使用常量定义
+- [ ] [2026-03-17 23:30] **管理端权限指令依赖问题** - admin/src/directives/permission.js第17行依赖userStore.roles，但user.js中roles初始值为空数组 - 建议确保用户登录后正确加载角色信息
+
+### 已修复/已不存在的问题
+1. 前端Tarot.vue缺少导入 - 已修复
+2. 前端Liuyao.vue缺少组件导入 - 已修复
+3. 后端Hehun.php变量未定义错误 - 已修复
+4. 后端Hehun.php XSS安全风险 - 已修复
+5. 后端Cors中间件允许任意来源 - 已修复
+
+### 累计问题统计
+- 🔴 高优先级: 7个新问题
+- 🟡 中优先级: 5个新问题
+- 🟢 低优先级: 3个新问题
+
+---
+
 ## 🎨 UI设计检查报告 - 2026-03-17 第二十六轮
 
 ### 检查概览

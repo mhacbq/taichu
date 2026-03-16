@@ -787,8 +787,8 @@ onMounted(() => {
 }
 
 .invite-code-box {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 2px dashed rgba(233, 69, 96, 0.5);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(218, 165, 32, 0.1));
+  border: 2px dashed rgba(184, 134, 11, 0.5);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -867,7 +867,7 @@ onMounted(() => {
 }
 
 .invite-rules {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 10px;
   padding: 15px;
   text-align: left;

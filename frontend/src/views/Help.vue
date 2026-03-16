@@ -318,9 +318,9 @@ const goToFeedback = () => {
 
 .hot-tag {
   cursor: pointer;
-  background: rgba(233, 69, 96, 0.2);
-  border-color: rgba(233, 69, 96, 0.3);
-  color: #fff;
+  background: rgba(184, 134, 11, 0.2);
+  border-color: rgba(184, 134, 11, 0.3);
+  color: var(--text-primary);
 }
 
 .hot-tag:hover {
