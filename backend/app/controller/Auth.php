@@ -16,64 +16,6 @@ use think\facade\Db;
 class Auth extends BaseController
 {
     /**
-     * 微信登录
-     */
-    public function login()
-    {
-        $data = $this->request->post();
-        
-        // 验证参数
-        if (empty($data['code'])) {
-            return $this->error('缺少code参数');
-        }
-        
-        // 实际项目中应该调用微信API换取openid
-        // 这里模拟登录过程
-        $openid = 'wx_' . md5($data['code']);
-        
-        // 查找或创建用户
-        $user = User::findByOpenid($openid);
-        $isNewUser = false;
-        
-        if (!$user) {
-            $isNewUser = true;
-            
-            // 过滤昵称，防止XSS攻击
-            $nickname = $data['nickname'] ?? '';
-            $nickname = $this->filterXss($nickname);
-            if (empty($nickname)) {
-                $nickname = '微信用户' . random_int(1000, 9999);
-            }
-            
-            // 过滤头像URL
-            $avatar = $data['avatar'] ?? '';
-            $avatar = $this->filterUrl($avatar);
-            
-            $user = User::create([
-                'openid' => $openid,
-                'nickname' => $nickname,
-                'avatar' => $avatar,
-                'gender' => in_array($data['gender'] ?? 0, [0, 1, 2]) ? $data['gender'] : 0,
-            ]);
-            
-            // 新用户赠送积分
-            $user->addPoints(100);
-            PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
-            
-            // 处理邀请码
-            if (!empty($data['invite_code'])) {
-                $this->processInviteCode($user->id, $data['invite_code']);
-            }
-        }
-        
-        // 更新登录时间
-        $user->last_login_at = date('Y-m-d H:i:s');
-        $user->save();
-        
-        return $this->generateTokenResponse($user, $isNewUser);
-    }
-    
-    /**
      * 手机号登录/注册
      */
     public function phoneLogin()
