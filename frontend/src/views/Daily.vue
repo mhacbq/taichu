@@ -166,6 +166,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { MagicStick, QuestionFilled, Collection } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
@@ -627,6 +628,7 @@ onMounted(() => {
   font-size: 48px;
   display: block;
   margin-bottom: 15px;
+  color: var(--primary-color);
 }
 
 .no-bazi-hint p {

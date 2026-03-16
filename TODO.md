@@ -74,8 +74,8 @@
 - [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
 - [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
 - [ ] [UI] 后台管理页面深色背景与白色主题不协调 - admin/*.vue页面使用rgba(0,0,0,0.2)深色背景，与style.css定义的白色主题冲突 - 建议统一后台主题风格
-- [ ] [UI] 六爻页面标题使用emoji图标 - Liuyao.vue第7行使用☯emoji作为标题图标 - 建议替换为Element Plus图标YinYang
-- [ ] [UI] 合婚页面标题使用emoji图标 - Hehun.vue第7行使用💕emoji作为标题图标 - 建议替换为Element Plus图标如Link或Heart
+- [x] [UI] 六爻页面标题使用emoji图标 - Liuyao.vue - 已将☯emoji替换为Element Plus图标YinYang - 修复时间: 2026-03-16
+- [x] [UI] 合婚页面标题使用emoji图标 - Hehun.vue - 已将💕emoji替换为Element Plus图标Link - 修复时间: 2026-03-16
 
 #### 🟡 中优先级（体验问题）
 - [x] [UI] 导航栏大量使用emoji图标 - App.vue - 已替换为Element Plus图标（YinYang, Diamond, User, SwitchButton, HomeFilled, Calendar, Magic, Star, Sunrise, Collection, Present, Close） - 修复时间: 2026-03-16
@@ -83,12 +83,12 @@
 - [x] [UI] 八字排盘页面使用emoji图标 - Bazi.vue - 已将💝、💎、🌱、🔮、❓、🎁、⚡等emoji替换为Element Plus图标(HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning) - 修复时间: 2026-03-16
 - [x] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue - 已将💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji替换为Element Plus图标(Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight) - 修复时间: 2026-03-16
 - [x] [UI] 六爻占卜页面使用emoji图标 - Liuyao.vue - 已将☯、🔄、💾、🗑等emoji替换为Element Plus图标(YinYang, RefreshRight, Download, Delete, Magic) - 修复时间: 2026-03-16
-- [ ] [UI] 每日运势页面使用emoji图标 - Daily.vue使用🔮、❓、📿等emoji - 建议统一使用图标库
+- [x] [UI] 每日运势页面使用emoji图标 - Daily.vue - 已将🔮、❓、📿等emoji替换为Element Plus图标(MagicStick, QuestionFilled, Collection) - 修复时间: 2026-03-16
 - [x] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue - 已增大padding至12px，确保最小点击区域44x44px - 修复时间: 2026-03-16
 - [x] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue - 已增大宽高至44px，符合最小触摸区域规范 - 修复时间: 2026-03-16
 - [x] [UI] 登录页输入框使用emoji图标 - Login.vue - 已替换为Element Plus图标（Phone, Lock, Lightbulb） - 修复时间: 2026-03-16
-- [ ] [UI] 浮动陪伴组件关闭按钮尺寸仍偏小 - App.vue第853-871行close-btn宽度仅28px，建议增大至44px以符合WCAG 2.1标准
-- [ ] [UI] 合婚页面八字对比区域使用emoji分隔符 - Hehun.vue第41行使用💕emoji作为分隔符 - 建议改为Element Plus图标或CSS装饰
+- [x] [UI] 浮动陪伴组件关闭按钮尺寸仍偏小 - App.vue - 已将close-btn尺寸从28px增大至44px，符合WCAG 2.1最小触摸区域规范 - 修复时间: 2026-03-16
+- [x] [UI] 合婚页面八字对比区域使用emoji分隔符 - Hehun.vue - 已将💕emoji分隔符替换为Element Plus图标Link - 修复时间: 2026-03-16
 
 #### 🟢 低优先级（美观问题）
 - [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景

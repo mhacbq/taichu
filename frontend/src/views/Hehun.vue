@@ -59,7 +59,7 @@
           <div class="upgrade-prompt" v-if="!isLoading">
             <p>{{ freeResult.preview_hint }}</p>
             <button class="btn-upgrade" @click="unlockPremium">
-              <span>🔓</span>
+              <el-icon><Unlock /></el-icon>
               解锁详细报告
               <span class="points-tag">{{ pricing.final }}积分</span>
             </button>
@@ -139,7 +139,7 @@
           <!-- 男方信息 -->
           <div class="person-section">
             <h3 class="person-title">
-              <span class="gender-icon">👨</span>
+              <el-icon class="gender-icon"><Male /></el-icon>
               男方信息
             </h3>
             <div class="form-row">
@@ -517,6 +517,7 @@ onMounted(() => {
 
 .gender-icon {
   font-size: 24px;
+  color: var(--primary-color);
 }
 
 .form-row {
@@ -954,9 +955,11 @@ onMounted(() => {
 }
 
 .solution-list li:before {
-  content: '💝';
+  content: '•';
   position: absolute;
   left: 0;
+  color: var(--primary-color);
+  font-weight: bold;
 }
 
 /* 操作按钮 */

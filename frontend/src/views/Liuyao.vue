@@ -121,7 +121,7 @@
           <button class="btn-submit" @click="submitDivination" :disabled="isLoading || !form.question.trim()">
             <span v-if="isLoading" class="loading"></span>
             <span v-else>
-              <span class="btn-icon">☯</span>
+              <el-icon class="btn-icon"><YinYang /></el-icon>
               开始占卜
             </span>
           </button>

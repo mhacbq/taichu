@@ -855,8 +855,8 @@ onMounted(() => {
   color: var(--text-muted);
   cursor: pointer;
   font-size: 14px;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
