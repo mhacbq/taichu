@@ -190,7 +190,7 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] [2026-03-16 15:00] 后端Auth.php微信登录仍使用模拟逻辑 - backend/app/controller/Auth.php第30-32行 - 使用$openid = 'wx_' . md5($data['code'])模拟微信登录，生产环境存在严重安全风险，同一用户每次登录会被视为新用户 - 建议实现真实微信API调用
+- [x] [2026-03-16 15:00] ~~后端Auth.php微信登录仍使用模拟逻辑~~ - **已删除**: 根据需求，微信登录功能已移除，仅保留短信登录
 - [ ] [2026-03-16 15:00] 后端Content.php SQL注入风险 - backend/app/controller/Content.php第368-371行 - keyword参数使用字符串拼接而非参数绑定，虽然有过滤但仍存在风险 - 建议使用ThinkPHP参数绑定语法
 - [ ] [2026-03-16 15:00] 后端AdminAuthService缺少无效adminId校验 - backend/app/service/AdminAuthService.php第31-42行 - checkPermission方法未验证$adminId是否大于0，传入0或负数可能导致查询异常 - 建议添加if ($adminId <= 0) { return false; }
 - [ ] [2026-03-16 15:00] 前端Bazi.vue aiAbortController空值检查缺失 - frontend/src/views/Bazi.vue第1299-1300行、第1330行 - 访问aiAbortController.value.signal时没有做空值检查，可能导致运行时错误 - 建议使用可选链：aiAbortController.value?.signal
@@ -246,6 +246,28 @@
 
 ---
 
+## 代码逻辑检查报告 - 2026-03-16 第16轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目关键文件、后端PHP控制器、中间件
+- 检查维度：语法错误、类型错误、API调用、权限控制、安全问题
+- 发现问题：发现7个新问题，其中3个高优先级问题需要尽快修复
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [2026-03-16 16:30] 前端Bazi.vue result对象多层属性访问空值风险 - frontend/src/views/Bazi.vue第205-206、221-301行 - 多处直接访问result.bazi.xxx而没有检查result或result.bazi是否存在，可能导致页面崩溃 - 建议使用可选链操作符?.或添加v-if空值检查
+- [ ] [2026-03-16 16:30] 后端AiAnalysis.php callAiApiStream方法缺少SSL验证 - backend/app/controller/AiAnalysis.php第350-372行 - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST，存在中间人攻击风险 - 建议添加SSL验证配置
+- [ ] [2026-03-16 16:30] 后端AiAnalysis.php testConnection方法缺少SSL验证 - backend/app/controller/AiAnalysis.php第455-468行 - cURL调用缺少SSL验证配置 - 建议添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST
+
+#### 🟡 中优先级（体验问题）
+- [ ] [2026-03-16 16:30] 前端Bazi.vue cancelAiAnalysis函数空值检查缺失 - frontend/src/views/Bazi.vue第1275-1376行 - clearInterval(aiLoadingTimer.value)调用前未检查是否为null - 建议添加if (aiLoadingTimer.value)判断
+- [ ] [2026-03-16 16:30] 前端Bazi.vue shareResult函数空值风险 - frontend/src/views/Bazi.vue第1242-1261行 - 直接访问result.value.bazi.xxx没有空值检查 - 建议添加空值检查后再访问嵌套属性
+- [ ] [2026-03-16 16:30] 前端ShenshaManage.vue分页逻辑副作用问题 - frontend/src/views/admin/ShenshaManage.vue第259-285行 - filteredList computed属性中直接修改total.value，违反Vue响应式原则 - 建议将total计算移到单独computed或使用watch
+- [ ] [2026-03-16 16:30] 前端KnowledgeManage.vue图片上传错误处理未绑定 - frontend/src/views/admin/KnowledgeManage.vue第163行 - el-upload组件缺少:on-error="handleCoverError"绑定 - 建议添加错误处理事件绑定
+
+---
+
 ## 待处理项目
 
 ### 🔴 高优先级（功能性问题）
@@ -253,7 +275,7 @@
 - [x] [2026-03-16 16:00] 后端依赖文件缺失 - backend/app/controller/Vip.php引用UserVip、VipOrder模型和VipService服务，但这些文件不存在 - 已创建backend/app/model/UserVip.php、VipOrder.php和backend/app/service/VipService.php - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] 后端Content.php依赖模型缺失 - backend/app/controller/Content.php引用PageRecycle和OperationLog模型，但这些文件不存在 - 已创建backend/app/model/PageRecycle.php和OperationLog.php - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] 后端Admin.php依赖模型缺失 - backend/app/controller/Admin.php引用Feedback模型，但该文件不存在 - 已创建backend/app/model/Feedback.php - 修复时间: 2026-03-16
-- [ ] [2026-03-16 16:00] 后端Auth.php微信登录仍使用模拟逻辑 - backend/app/controller/Auth.php第30-32行 - 使用$openid = 'wx_' . md5($data['code'])模拟微信登录，生产环境存在严重安全风险，同一用户每次登录会被视为新用户 - 建议实现真实微信API调用
+- [x] [2026-03-16 16:00] ~~后端Auth.php微信登录仍使用模拟逻辑~~ - **已删除**: 微信登录功能已移除，仅保留短信登录
 - [ ] [2026-03-16 16:00] 后端Auth.php事务处理不完整 - backend/app/controller/Auth.php第35-67行、第106-126行 - login()和phoneLogin()方法中创建用户、添加积分、处理邀请码等操作没有使用事务 - 建议使用Db::transaction包裹数据库操作
 - [x] [2026-03-16 16:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php - 已统一使用$this->error()方法替换所有json(['code' => 403])返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 后端Admin.php adjustPoints验证逻辑问题 - backend/app/controller/Admin.php第396-405行 - 使用$request->validate()但ThinkPHP的validate方法返回验证器实例，不是布尔值 - 建议修复验证逻辑
@@ -687,7 +709,7 @@
 - [ ] [2026-03-16] 前端ShenshaManage.vue分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实际调用API加载数据 - 建议实现真实的API调用和分页逻辑
 - [ ] [2026-03-16] 前端KnowledgeManage.vue搜索缺少防抖 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖处理，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
 - [ ] [2026-03-16] 前端KnowledgeManage.vue图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue第158-169行 - 上传组件只有on-success回调，没有on-error处理 - 建议添加:on-error="handleCoverError"和错误处理函数
-- [ ] [2026-03-16] 后端Auth.php微信登录模拟逻辑 - backend/app/controller/Auth.php第30-31行 - 微信登录使用模拟逻辑，生产环境不安全 - 建议实现真实的微信API调用
+- [x] [2026-03-16] ~~后端Auth.php微信登录模拟逻辑~~ - **已删除**: 微信登录功能已移除，仅保留短信登录
 - [ ] [2026-03-16] 后端Auth.php事务处理不完整 - backend/app/controller/Auth.php第178-215行 - phoneRegister方法中事务处理，但login和phoneLogin方法中创建用户和赠送积分没有使用事务 - 建议统一使用事务处理
 - [ ] [2026-03-16] 后端AiAnalysis.php未使用常量 - backend/app/controller/AiAnalysis.php第19,22行 - 定义了ENABLE_CACHE和CACHE_TTL常量但未使用 - 建议实现缓存逻辑或移除未使用的常量
 - [ ] [2026-03-16] 后端AiAnalysis.php cURL缺少SSL验证 - backend/app/controller/AiAnalysis.php第272-290行 - cURL调用没有设置SSL验证选项 - 建议添加CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST配置
@@ -695,7 +717,7 @@
 - [ ] [2026-03-16] 前端多处localStorage操作缺少异常处理 - frontend/src/views/Bazi.vue/App.vue等 - JSON.parse和localStorage操作未做try-catch包裹 - 建议添加异常处理防止页面崩溃
 - [ ] [2026-03-16] 前端Bazi.vue AI流式响应可能无限循环 - frontend/src/views/Bazi.vue第1317-1347行 - while(true)循环如果reader不返回done可能死循环 - 建议添加超时机制或最大迭代次数限制
 - [ ] [2026-03-16] 后端Content.php模型类未正确导入 - backend/app/controller/Content.php多处 - 使用\app\model\XXX动态调用，没有使用use语句导入 - 建议添加use语句导入模型类
-- [ ] [2026-03-16] 后端Auth.php邀请码暴力枚举防护不完整 - backend/app/controller/Auth.php第284-359行 - 微信登录和手机号登录处理邀请码时，如果无效只是静默返回 - 建议添加邀请码有效性反馈
+- [ ] [2026-03-16] 后端Auth.php邀请码暴力枚举防护不完整 - backend/app/controller/Auth.php - 手机号登录处理邀请码时，如果无效只是静默返回 - 建议添加邀请码有效性反馈
 - [ ] [2026-03-16] 后端Auth.php事务处理错误日志缺失 - backend/app/controller/Auth.php第356-358行 - 异常捕获后只执行rollback，没有记录错误日志 - 建议添加Log::error记录错误信息
 
 ### 🟢 低优先级（优化问题）
