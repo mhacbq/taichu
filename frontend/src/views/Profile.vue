@@ -262,7 +262,7 @@ const loadUserData = async () => {
       getPointsHistory(),
     ])
     
-    if (userRes.code === 0) {
+    if (userRes.code === 200) {
       userInfo.value = userRes.data
       // 使用后端返回的邀请码和统计
       inviteCode.value = userRes.data.invite_code || ''
@@ -272,13 +272,13 @@ const loadUserData = async () => {
       inviteLink.value = `${window.location.origin}/login?invite_code=${inviteCode.value}`
     }
     
-    if (pointsRes.code === 0) {
+    if (pointsRes.code === 200) {
       pointsBalance.value = pointsRes.data.balance
       baziCount.value = pointsRes.data.baziCount || 0
       tarotCount.value = pointsRes.data.tarotCount || 0
     }
     
-    if (historyRes.code === 0) {
+    if (historyRes.code === 200) {
       pointsHistory.value = historyRes.data || []
     }
     

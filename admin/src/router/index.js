@@ -152,25 +152,25 @@ export const asyncRoutes = [
     path: '/points',
     component: () => import('@/layout/index.vue'),
     redirect: '/points/records',
-    meta: { title: '积分管理', icon: 'Coin' },
+    meta: { title: '积分管理', icon: 'Coin', roles: ['admin', 'operator'] },
     children: [
       {
         path: 'records',
         name: 'PointsRecords',
         component: () => import('@/views/points/records.vue'),
-        meta: { title: '积分记录' }
+        meta: { title: '积分记录', roles: ['admin', 'operator'] }
       },
       {
         path: 'rules',
         name: 'PointsRules',
         component: () => import('@/views/points/rules.vue'),
-        meta: { title: '积分规则' }
+        meta: { title: '积分规则', roles: ['admin'] }
       },
       {
         path: 'adjust',
         name: 'PointsAdjust',
         component: () => import('@/views/points/adjust.vue'),
-        meta: { title: '积分调整' }
+        meta: { title: '积分调整', roles: ['admin'] }
       }
     ]
   },
@@ -178,19 +178,19 @@ export const asyncRoutes = [
     path: '/payment',
     component: () => import('@/layout/index.vue'),
     redirect: '/payment/orders',
-    meta: { title: '支付管理', icon: 'Wallet' },
+    meta: { title: '支付管理', icon: 'Wallet', roles: ['admin', 'operator'] },
     children: [
       {
         path: 'orders',
         name: 'PaymentOrders',
         component: () => import('@/views/payment/orders.vue'),
-        meta: { title: '充值订单' }
+        meta: { title: '充值订单', roles: ['admin', 'operator'] }
       },
       {
         path: 'config',
         name: 'PaymentConfig',
         component: () => import('@/views/payment/config.vue'),
-        meta: { title: '支付配置' }
+        meta: { title: '支付配置', roles: ['admin'] }
       }
     ]
   },
@@ -284,31 +284,31 @@ export const asyncRoutes = [
     path: '/system',
     component: () => import('@/layout/index.vue'),
     redirect: '/system/settings',
-    meta: { title: '系统设置', icon: 'Setting' },
+    meta: { title: '系统设置', icon: 'Setting', roles: ['admin'] },
     children: [
       {
         path: 'settings',
         name: 'SystemSettings',
         component: () => import('@/views/system/settings.vue'),
-        meta: { title: '基础配置' }
+        meta: { title: '基础配置', roles: ['admin'] }
       },
       {
         path: 'sensitive',
         name: 'SensitiveWords',
         component: () => import('@/views/system/sensitive.vue'),
-        meta: { title: '敏感词管理' }
+        meta: { title: '敏感词管理', roles: ['admin'] }
       },
       {
         path: 'notice',
         name: 'SystemNotice',
         component: () => import('@/views/system/notice.vue'),
-        meta: { title: '系统公告' }
+        meta: { title: '系统公告', roles: ['admin', 'operator'] }
       },
       {
         path: 'admin',
         name: 'AdminUsers',
         component: () => import('@/views/system/admin.vue'),
-        meta: { title: '管理员管理' }
+        meta: { title: '管理员管理', roles: ['admin'] }
       }
     ]
   },
@@ -376,6 +376,16 @@ router.beforeEach((to, from, next) => {
   } else if (!userStore.token) {
     next('/login')
   } else {
+    // 检查角色权限
+    const requiredRoles = to.meta?.roles
+    if (requiredRoles && requiredRoles.length > 0) {
+      const userRole = userStore.userInfo?.role || 'operator'
+      if (!requiredRoles.includes(userRole)) {
+        // 无权限访问，重定向到403页面或首页
+        next('/')
+        return
+      }
+    }
     next()
   }
 })

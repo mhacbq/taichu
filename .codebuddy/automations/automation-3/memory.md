@@ -1,9 +1,102 @@
 # 网站逻辑检查任务 - 执行记录
 
 ## 执行时间
-2026-03-17 20:00（第二十六轮检查）
+2026-03-17 23:00（第二十八轮检查）
 
 ## 执行摘要
+本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查。经检查，**第27轮发现的部分问题已修复**，发现若干新问题需要关注，包括变量未定义错误、XSS安全风险、权限控制缺失和API调用问题。
+
+---
+
+## 第二十八轮检查 - 2026-03-17
+
+### 检查范围
+- 前端Vue组件：8个关键文件（Bazi.vue, Tarot.vue, Liuyao.vue, Daily.vue, Hehun.vue, Login.vue, Recharge.vue, Profile.vue）
+- 后端PHP控制器：10个文件（Paipan.php, Tarot.php, Liuyao.php, Hehun.php, Daily.php, Auth.php, Vip.php, Content.php, Admin.php, AdminAuth.php）
+- 后端中间件：5个文件（Auth.php, AdminAuth.php, RateLimit.php, Cors.php, SecurityHeaders.php）
+- 管理端页面：12个文件（dashboard/index.vue, user/list.vue, user/detail.vue, payment/orders.vue, payment/config.vue, content/pages.vue, system/settings.vue, system/role.vue, system/dict.vue, system/sensitive.vue, feedback/list.vue）
+- 管理端API：8个文件（user.js, payment.js, dashboard.js, system.js, content.js, feedback.js, request.js, ai.js）
+
+### 检查结果
+
+#### ✅ 已修复问题（第28轮验证）
+1. **后端Hehun.php XSS安全风险** - 已修复：已添加`htmlspecialchars`转义
+2. **后端Hehun.php数组键名错误** - 已修复：修改`analyzeSanYuanHehun`方法签名
+3. **后端Liuyao.php SQL注入风险** - 已修复：添加卦名格式验证
+4. **前端Tarot.vue缺少导入** - 已修复：添加`import { saveTarotRecord } from '../api'`
+5. **前端Liuyao.vue缺少组件导入** - 已修复：添加`import { ElMessageBox } from 'element-plus'`
+
+#### 🔴 待修复问题（高优先级）
+1. **后端Hehun.php变量未定义错误** - `analyzeHehun`方法中使用了未定义的`$data`变量
+2. **后端Hehun.php XSS安全风险** - `buildReportHtml`方法中部分输出字段未正确转义
+3. **后端Cors中间件允许任意来源** - CORS配置允许任意来源，存在安全风险
+4. **管理端路由缺少角色权限控制** - 所有路由配置中都没有设置`meta.roles`属性
+5. **管理端敏感操作缺少权限控制** - 补单和退款按钮没有权限控制
+6. **管理端API密钥明文显示风险** - AI配置的API密钥从API获取并显示在输入框中
+7. **管理端角色管理权限保存未调用API** - 保存权限只是打印日志，没有调用后端API
+
+#### 🟡 中优先级问题
+1. 后端中间件返回格式不一致 - 与BaseController不一致
+2. 后端Hehun.php路径遍历风险 - 使用`public_path()`拼接路径但没有验证
+3. 管理端Dashboard响应码判断混乱 - 同一文件中判断标准不一致
+4. 管理端API路径前缀不一致 - 不同API文件使用不同前缀
+5. 管理端敏感词编辑功能API调用错误 - 编辑和添加都调用`addSensitiveWord` API
+6. 管理端字典管理数据操作未调用API - 都是模拟数据
+7. 管理端支付配置测试连接功能虚假 - 只是模拟延迟
+
+#### 🟢 低优先级问题
+1. 后端Liuyao.php缺少HTTP状态码 - 部分错误返回缺少HTTP状态码
+2. 后端Paipan.php敏感信息泄露 - 使用`trace()`函数记录错误信息
+3. 管理端用户详情页面活动记录是静态数据 - 没有从API获取真实数据
+4. 管理端页面管理状态更新功能被注释 - API调用被注释
+5. 管理端批量操作功能未实现 - 批量启用和批量禁用函数只有空实现
+
+### 累计问题统计
+- 🔴 高优先级：累计7个（新增7个）
+- 🟡 中优先级：累计7个（新增7个）
+- 🟢 低优先级：累计5个（新增5个）
+
+### 修复建议
+1. **立即修复**（P0）：
+   - 修复Hehun.php的`$data`变量未定义问题
+   - 修复Cors中间件允许任意来源的安全风险
+   - 添加管理端路由和按钮的权限控制
+   - 修复API密钥明文显示风险
+
+2. **优先修复**（P1）：
+   - 统一中间件返回格式
+   - 修复Hehun.php路径遍历风险
+   - 统一Dashboard响应码判断
+   - 实现权限保存功能
+
+3. **后续优化**（P2）：
+   - 完善HTTP状态码
+   - 实现批量操作功能
+   - 添加真实API对接
+
+---
+
+## 第二十七轮检查 - 2026-03-17
+
+### 执行时间
+2026-03-17 22:00（第二十七轮检查）
+
+### 执行摘要
+本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查。经检查，**第26轮发现的部分问题已修复**，发现若干新问题需要关注。
+
+### 检查范围
+- 前端Vue组件：7个关键文件
+- 后端PHP控制器：10个文件
+- 管理端页面：6个文件
+
+### 检查结果
+发现5个高优先级问题、5个中优先级问题和3个低优先级问题，已记录到TODO.md文件中。
+
+---
+
+## 第二十六轮检查 - 2026-03-17
+
+### 执行摘要
 本次代码审查任务完成了对太初命理网站前端、管理端和后端的深度逻辑检查。经检查，**第25轮发现的部分问题已修复**，发现若干新问题需要关注，包括语法错误、安全风险和代码质量问题。
 
 ---
@@ -231,4 +324,4 @@
 
 ---
 
-*最后更新: 2026-03-17 - 第二十六轮检查*
+*最后更新: 2026-03-17 - 第二十八轮检查*

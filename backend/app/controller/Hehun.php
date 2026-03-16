@@ -284,7 +284,7 @@ class Hehun extends BaseController
         $femaleBazi = $this->baziCalculationService->calculateBazi($data['femaleBirthDate']);
         
         // 执行完整合婚分析
-        $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName);
+        $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);
         
         // 如果是免费层，只返回基础信息
         if ($tier === self::TIER_FREE) {
@@ -478,7 +478,7 @@ class Hehun extends BaseController
     /**
      * 合婚核心分析逻辑
      */
-    protected function analyzeHehun(array $maleBazi, array $femaleBazi, string $maleName, string $femaleName): array
+    protected function analyzeHehun(array $maleBazi, array $femaleBazi, string $maleName, string $femaleName, string $maleBirthDate = '', string $femaleBirthDate = ''): array
     {
         $scores = [];
         $details = [];
@@ -510,7 +510,7 @@ class Hehun extends BaseController
         $details['nayin'] = $this->getNayinDescription($nayinScore);
         
         // 6. 三元合婚分析（传统合婚法）
-        $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $data['maleBirthDate'], $data['femaleBirthDate']);
+        $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
         
         // 7. 九宫合婚分析（传统合婚法）
         $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi);
@@ -1401,11 +1401,14 @@ PROMPT;
         
         // 五维度评分
         $dimensions = $result['dimensions'] ?? [];
-        $wuxingScore = $dimensions['wuxing'] ?? 0;
-        $shengxiaoScore = $dimensions['shengxiao'] ?? 0;
-        $riyuanScore = $dimensions['riyuan'] ?? 0;
-        $tianmingScore = $dimensions['tianming'] ?? 0;
-        $dayunScore = $dimensions['dayun'] ?? 0;
+        $wuxingScore = (int)($dimensions['wuxing'] ?? 0);
+        $shengxiaoScore = (int)($dimensions['shengxiao'] ?? 0);
+        $riyuanScore = (int)($dimensions['riyuan'] ?? 0);
+        $tianmingScore = (int)($dimensions['tianming'] ?? 0);
+        $dayunScore = (int)($dimensions['dayun'] ?? 0);
+        
+        // 转义分数防止XSS
+        $safeScore = (int)$score;
         
         // 建议
         $suggestions = $result['suggestions'] ?? [];
@@ -1631,7 +1634,7 @@ PROMPT;
             </div>
             
             <div class="score-section">
-                <div class="score-value">{$score}</div>
+                <div class="score-value">{$safeScore}</div>
                 <div class="score-label">综合匹配分数</div>
                 <div class="grade-badge">{$safeGrade}</div>
             </div>

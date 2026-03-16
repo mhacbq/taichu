@@ -243,7 +243,7 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     const res = await saveContent(form)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
       loadData()

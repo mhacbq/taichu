@@ -198,7 +198,7 @@ onMounted(() => {
 const loadPointsBalance = async () => {
   try {
     const res = await getPointsBalance()
-    if (res.code === 0) {
+    if (res.code === 200) {
       pointsBalance.value = res.data.balance
     }
   } catch (error) {

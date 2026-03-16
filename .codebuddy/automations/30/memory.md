@@ -1,5 +1,42 @@
 # 网站逻辑检查任务 - 执行历史
 
+## 2026-03-17 22:00 执行记录 (第27轮)
+
+### 检查范围
+1. 前端逻辑检查 (frontend/src目录)
+2. 管理端逻辑检查 (admin/src/views目录)
+3. 后台逻辑检查 (backend/app/controller目录)
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性/安全问题）
+1. **前端API响应码判断不一致** - Recharge.vue/Profile.vue/Bazi.vue/useSiteContent.js多处使用`res.code === 0`，但后端大部分接口返回`code=200`
+2. **后端返回格式不统一** - Config.php/Upload.php/AiPrompt.php/SiteContent.php混用`json()`和`$this->success()/$this->error()`，code值不一致（0或200）
+3. **后端异常信息泄露风险** - Upload.php/SiteContent.php多处使用`json(['code' => 500, 'message' => $e->getMessage()])`直接返回异常消息
+4. **前端管理端页面API调用均为模拟实现** - SEOManage.vue/SEOStats.vue/ShenshaManage.vue/KnowledgeManage.vue使用硬编码数据
+5. **前端SEOStats.vue图表初始化代码缺失** - pieChart和trendChart ref被引用但未初始化，ECharts未引入
+
+#### 🟡 中优先级（体验/代码质量问题）
+1. **后台管理页面响应码判断混乱** - dashboard/index.vue/site-content/ai/prompts.vue使用`res.code === 0`，与request.js期望的`code=200`不一致
+2. **后端Upload.php部分返回使用json()** - 第51、251、260行使用`json()`返回
+3. **后端AiPrompt.php部分返回使用json()** - 第73行使用`json()`返回
+
+#### 🟢 低优先级（优化问题）
+1. **前端AlmanacManage.vue响应码判断使用双条件** - 使用`res.code === 200 || res.code === 0`
+2. **前端路由缺少错误边界处理** - 路由懒加载组件没有错误边界处理
+3. **前端管理端页面缺少真实API对接** - 需要实现后端API接口
+
+### 已修复/已不存在的问题
+1. 后端AdminAuth.php硬编码用户ID - 已使用`$admin['id']`
+2. 后端Paipan.php/Tarot.php异常处理 - 已正确记录日志并返回通用错误消息
+
+### 待处理统计
+- 高优先级: 5个新问题
+- 中优先级: 5个新问题
+- 低优先级: 3个新问题
+
+---
+
 ## 2026-03-17 16:30 执行记录 (第25轮)
 
 ### 检查范围

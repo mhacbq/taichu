@@ -182,7 +182,7 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getQuestionList(queryForm)
-    if (res.code === 0) {
+    if (res.code === 200) {
       tableData.value = res.data.list
       total.value = res.data.total
     }

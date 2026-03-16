@@ -31,6 +31,14 @@ export function addSensitiveWord(data) {
   })
 }
 
+export function updateSensitiveWord(id, data) {
+  return request({
+    url: `/system/sensitive/${id}`,
+    method: 'put',
+    data
+  })
+}
+
 export function deleteSensitiveWord(id) {
   return request({
     url: `/system/sensitive/${id}`,

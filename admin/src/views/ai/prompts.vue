@@ -404,7 +404,7 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
     const res = await deletePrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('删除成功')
       loadData()
     } else {

@@ -148,7 +148,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSensitiveWords, addSensitiveWord, deleteSensitiveWord, importSensitiveWords } from '@/api/system'
+import { getSensitiveWords, addSensitiveWord, updateSensitiveWord, deleteSensitiveWord, importSensitiveWords } from '@/api/system'
 
 const loading = ref(false)
 const wordList = ref([])
@@ -229,7 +229,11 @@ async function submitForm() {
   if (!valid) return
 
   try {
-    await addSensitiveWord(dialog.form)
+    if (dialog.isEdit) {
+      await updateSensitiveWord(dialog.form.id, dialog.form)
+    } else {
+      await addSensitiveWord(dialog.form)
+    }
     ElMessage.success(dialog.isEdit ? '修改成功' : '添加成功')
     dialog.visible = false
     loadWordList()
