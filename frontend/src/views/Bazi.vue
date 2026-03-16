@@ -1423,7 +1423,10 @@ const formatAiContent = (content) => {
   margin: 0 auto;
   text-align: center;
   padding: 60px 40px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2));
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .loading-animation {
@@ -1466,13 +1469,13 @@ const formatAiContent = (content) => {
 }
 
 .loading-state h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 24px;
   margin-bottom: 10px;
 }
 
 .loading-text {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 40px;
 }
@@ -1506,21 +1509,21 @@ const formatAiContent = (content) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .step.active .step-icon {
-  background: rgba(233, 69, 96, 0.3);
-  border-color: #e94560;
-  color: #fff;
-  box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
 }
 
 .step.done .step-icon {
@@ -1536,13 +1539,14 @@ const formatAiContent = (content) => {
 }
 
 .step.active .step-text {
-  color: #fff;
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .step-line {
   width: 40px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-color);
   transition: all 0.3s ease;
 }
 
@@ -1851,7 +1855,7 @@ const formatAiContent = (content) => {
 .bazi-result h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .bazi-paipan {
@@ -1877,7 +1881,7 @@ const formatAiContent = (content) => {
   padding: 20px;
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .paipan-cell.header {
@@ -1900,7 +1904,7 @@ const formatAiContent = (content) => {
 
 .bazi-analysis h3 {
   margin-bottom: 20px;
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -1931,7 +1935,7 @@ const formatAiContent = (content) => {
 }
 
 .tip-title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 5px;
@@ -1983,7 +1987,7 @@ const formatAiContent = (content) => {
 }
 
 .professional-reading h3 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 25px;
   display: flex;
@@ -1993,7 +1997,7 @@ const formatAiContent = (content) => {
 }
 
 .section-badge {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #D4AF37, #B8860B);
   color: #fff;
   padding: 4px 12px;
   border-radius: 12px;
@@ -2003,11 +2007,11 @@ const formatAiContent = (content) => {
 
 /* 日主详情卡片 */
 .day-master-detail {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--bg-secondary);
   border-radius: 16px;
   padding: 25px;
   margin-bottom: 25px;
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  border: 1px solid var(--border-light);
 }
 
 .dm-header {
@@ -2016,7 +2020,7 @@ const formatAiContent = (content) => {
   gap: 20px;
   margin-bottom: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dm-symbol {
@@ -2032,7 +2036,7 @@ const formatAiContent = (content) => {
 }
 
 .dm-title h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 20px;
   margin-bottom: 10px;
 }
@@ -2154,7 +2158,7 @@ const formatAiContent = (content) => {
 }
 
 .rc-header h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -2198,7 +2202,7 @@ const formatAiContent = (content) => {
 }
 
 .simple-interpretation h3 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 25px;
   display: flex;
@@ -2248,7 +2252,7 @@ const formatAiContent = (content) => {
 }
 
 .interp-header h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -2509,7 +2513,7 @@ const formatAiContent = (content) => {
 }
 
 .dayun-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   text-align: center;
   display: flex;
@@ -2614,7 +2618,7 @@ const formatAiContent = (content) => {
 }
 
 .liunian-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   text-align: center;
   display: flex;
@@ -2730,7 +2734,7 @@ const formatAiContent = (content) => {
 }
 
 .yearly-fortune-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -2858,13 +2862,14 @@ const formatAiContent = (content) => {
 }
 
 .analysis-card {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 20px;
+  border: 1px solid var(--border-light);
 }
 
 .analysis-card h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   margin-bottom: 12px;
   display: flex;
@@ -2873,14 +2878,14 @@ const formatAiContent = (content) => {
 }
 
 .analysis-card p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 14px;
 }
 
 .analysis-card.overall {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 .analysis-grid {
@@ -2890,8 +2895,8 @@ const formatAiContent = (content) => {
 }
 
 .analysis-card.advice {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.15), rgba(133, 206, 97, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.3);
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.08), rgba(60, 179, 113, 0.05));
+  border: 1px solid rgba(34, 139, 34, 0.3);
 }
 
 /* 幸运信息 */
@@ -2950,7 +2955,7 @@ const formatAiContent = (content) => {
 }
 
 .dayun-fortune-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -3123,7 +3128,7 @@ const formatAiContent = (content) => {
 }
 
 .fortune-chart-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -3290,7 +3295,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-analysis-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   display: flex;
   align-items: center;

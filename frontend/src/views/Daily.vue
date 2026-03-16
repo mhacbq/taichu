@@ -241,13 +241,13 @@ onMounted(() => {
 .label {
   display: block;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   margin-bottom: 5px;
 }
 
 .value {
   font-size: 20px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -262,7 +262,7 @@ onMounted(() => {
 }
 
 .overall-score h2 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 30px;
 }
 
@@ -291,9 +291,15 @@ onMounted(() => {
   color: #fff;
 }
 
+@media (max-width: 768px) {
+  .score-number {
+    font-size: 32px;
+  }
+}
+
 .score-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .score-stars {
@@ -404,7 +410,7 @@ onMounted(() => {
 }
 
 .details-section p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 

@@ -128,3 +128,45 @@
 - 后端AdminAuth中间件日志记录敏感信息过滤
 
 ---
+
+## 2026-03-16 16:30 执行记录
+
+### 本次修复的5个后端问题
+
+1. **Hehun.php buildReportHtml方法XSS安全风险** (安全)
+   - 文件: `backend/app/controller/Hehun.php`
+   - 问题: 直接拼接用户输入(maleName/femaleName)到HTML，没有进行HTML转义
+   - 修复: 使用 `htmlspecialchars()` 对姓名进行转义，防止XSS攻击
+
+2. **Liuyao.php qiGua方法缺少事务处理** (逻辑错误)
+   - 文件: `backend/app/controller/Liuyao.php`
+   - 问题: saveRecord调用在异常时无法回滚，数据可能不一致
+   - 修复: 使用 `Db::startTrans()`、`Db::commit()`、`Db::rollback()` 包裹保存记录操作
+
+3. **Admin.php users方法SQL注入风险** (安全)
+   - 文件: `backend/app/controller/Admin.php`
+   - 问题: 用户名和手机号搜索使用字符串拼接，虽然有preg_replace过滤但仍存在风险
+   - 修复: 使用ThinkPHP参数绑定语法 `whereLike('username|nickname', '%' . $username . '%')`
+
+4. **AiAnalysis.php缺少输入长度限制** (安全)
+   - 文件: `backend/app/controller/AiAnalysis.php`
+   - 问题: baziData和customPrompt没有长度限制，可能导致服务器资源耗尽
+   - 修复: 添加长度验证，限制八字数据大小(count>100或json长度>10000)和提示词长度(>2000字符)
+
+5. **Admin.php adjustPoints验证逻辑问题** (逻辑错误)
+   - 文件: `backend/app/controller/Admin.php`
+   - 问题: 之前使用ThinkPHP的validate方法返回验证器实例而非布尔值
+   - 修复: 已改为手动验证参数，验证逻辑正确
+
+### Git提交
+- 提交ID: `b116501`
+- 提交信息: `fix-backend-multiple-issues-20260316-1615`
+- 已推送到: origin/master
+
+### 待修复问题
+- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
+- 后端AdminAuth中间件日志记录敏感信息过滤
+- 后端Hehun.php buildReportHtml其他字段XSS防护
+- 后端Liuyao.php aiInterpretation方法事务处理
+
+---

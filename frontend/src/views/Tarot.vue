@@ -638,7 +638,7 @@ const getCardAdvice = (card) => {
 .tarot-intro h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .spread-options {
@@ -648,19 +648,21 @@ const getCardAdvice = (card) => {
 }
 
 .spread-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 15px;
   padding: 25px;
   text-align: center;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 2px solid var(--border-light);
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .spread-card:hover,
 .spread-card.active {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
 }
 
 .spread-icon {
@@ -669,12 +671,12 @@ const getCardAdvice = (card) => {
 }
 
 .spread-card h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 10px;
 }
 
 .spread-card p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 

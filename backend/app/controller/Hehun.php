@@ -1595,20 +1595,20 @@ PROMPT;
                 <div class="person-card">
                     <div class="gender">👨</div>
                     <div class="name">{$maleName}</div>
-                    <div class="bazi">{$male['year']} {$male['month']} {$male['day']} {$male['hour']}</div>
+                    <div class="bazi">{$maleYear} {$maleMonth} {$maleDay} {$maleHour}</div>
                 </div>
                 <div style="display:flex;align-items:center;font-size:24px;color:#667eea;">💕</div>
                 <div class="person-card">
                     <div class="gender">👩</div>
                     <div class="name">{$femaleName}</div>
-                    <div class="bazi">{$female['year']} {$female['month']} {$female['day']} {$female['hour']}</div>
+                    <div class="bazi">{$femaleYear} {$femaleMonth} {$femaleDay} {$femaleHour}</div>
                 </div>
             </div>
             
             <div class="score-section">
                 <div class="score-value">{$score}</div>
                 <div class="score-label">综合匹配分数</div>
-                <div class="grade-badge">{$grade}</div>
+                <div class="grade-badge">{$safeGrade}</div>
             </div>
             
             <div class="section">

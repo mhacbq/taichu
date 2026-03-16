@@ -111,7 +111,7 @@
           
           <!-- 化解建议 -->
           <div class="solution-section" v-if="premiumResult.hehun.solutions">
-            <h3>💝 化解建议</h3>
+            <h3><el-icon><Present /></el-icon> 化解建议</h3>
             <ul class="solution-list">
               <li v-for="(solution, idx) in premiumResult.hehun.solutions" :key="idx">
                 {{ solution }}
@@ -168,7 +168,7 @@
           <!-- 女方信息 -->
           <div class="person-section">
             <h3 class="person-title">
-              <span class="gender-icon">👩</span>
+              <el-icon class="gender-icon"><Female /></el-icon>
               女方信息
             </h3>
             <div class="form-row">
@@ -219,11 +219,11 @@
             :disabled="isLoading || !isFormValid"
           >
             <span v-if="isLoading" class="loading"></span>
-            <span v-else>💕 开始合婚分析</span>
+            <span v-else><el-icon><Link /></el-icon> 开始合婚分析</span>
           </button>
           
           <p class="form-hint">
-            💡 首次查看基础分析免费，详细报告需消耗积分或开通VIP
+            <el-icon><Collection /></el-icon> 首次查看基础分析免费，详细报告需消耗积分或开通VIP
           </p>
         </div>
       </div>
@@ -253,6 +253,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, MagicStick } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 
 // 表单数据
@@ -553,7 +554,7 @@ onMounted(() => {
 
 .form-group label {
   display: block;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 8px;
   font-size: 14px;
 }
