@@ -106,10 +106,16 @@
 
         <!-- 积分获取攻略 -->
         <div class="points-guide-section card">
-          <h3>💎 积分获取攻略</h3>
+          <h3><el-icon><Coin /></el-icon> 积分获取攻略</h3>
           <div class="points-methods">
             <div class="method-item" v-for="method in pointsMethods" :key="method.id">
-              <div class="method-icon">{{ method.icon }}</div>
+              <div class="method-icon">
+                <el-icon v-if="method.icon === 'calendar'"><Calendar /></el-icon>
+                <el-icon v-else-if="method.icon === 'present'"><Present /></el-icon>
+                <el-icon v-else-if="method.icon === 'user'"><UserFilled /></el-icon>
+                <el-icon v-else-if="method.icon === 'share'"><Share /></el-icon>
+                <el-icon v-else-if="method.icon === 'chat'"><ChatDotRound /></el-icon>
+              </div>
               <div class="method-info">
                 <h4>{{ method.name }}</h4>
                 <p>{{ method.desc }}</p>
@@ -130,7 +136,7 @@
 
         <!-- 邀请好友 -->
         <div class="invite-section card">
-          <h3>🎁 邀请好友赚积分</h3>
+          <h3><el-icon><Present /></el-icon> 邀请好友赚积分</h3>
           <div class="invite-content">
             <p class="invite-desc">每邀请一位好友注册，您和好友各获得 <strong>20积分</strong></p>
             
@@ -140,7 +146,7 @@
               <div class="code-display">
                 <span class="code-value">{{ inviteCode || '加载中...' }}</span>
                 <el-button type="primary" size="small" @click="copyInviteCode">
-                  <span class="btn-icon">📋</span> 复制
+                  <el-icon><DocumentCopy /></el-icon> 复制
                 </el-button>
               </div>
             </div>
@@ -150,10 +156,10 @@
               <p class="share-label">快速分享：</p>
               <div class="share-btns">
                 <el-button type="success" size="small" @click="shareToWechat">
-                  <span class="btn-icon">💬</span> 微信
+                  <el-icon><ChatDotRound /></el-icon> 微信
                 </el-button>
                 <el-button type="primary" size="small" @click="copyInviteLink">
-                  <span class="btn-icon">🔗</span> 复制链接
+                  <el-icon><Link /></el-icon> 复制链接
                 </el-button>
               </div>
             </div>
@@ -172,7 +178,7 @@
             
             <!-- 邀请规则 -->
             <div class="invite-rules">
-              <h4>📋 邀请规则</h4>
+              <h4><el-icon><List /></el-icon> 邀请规则</h4>
               <ul>
                 <li>好友通过您的邀请码注册，双方各得20积分</li>
                 <li>每位好友仅限奖励一次</li>
@@ -215,6 +221,7 @@ import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, submit
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
+import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar } from '@element-plus/icons-vue'
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
@@ -234,11 +241,11 @@ const baziTotal = ref(0)
 
 // 积分获取方式
 const pointsMethods = ref([
-  { id: 1, icon: '📅', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
-  { id: 2, icon: '🎁', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
-  { id: 3, icon: '👥', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
-  { id: 4, icon: '📤', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
-  { id: 5, icon: '💬', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
+  { id: 1, icon: 'calendar', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
+  { id: 2, icon: 'present', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
+  { id: 3, icon: 'user', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
+  { id: 4, icon: 'share', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
+  { id: 5, icon: 'chat', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
 ])
 
 // 邀请相关

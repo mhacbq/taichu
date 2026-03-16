@@ -52,7 +52,7 @@
           </div>
           
           <div class="suggestion-box">
-            <h4>💡 建议</h4>
+            <h4><el-icon><Lightbulb /></el-icon> 建议</h4>
             <p>{{ freeResult.hehun.suggestions[0] }}</p>
           </div>
           
@@ -253,7 +253,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu } from '@element-plus/icons-vue'
+import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu, Lightbulb } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 
 // 表单数据

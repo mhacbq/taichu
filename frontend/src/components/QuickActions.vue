@@ -1,7 +1,7 @@
 <template>
   <div class="quick-actions">
     <h3 class="section-title">
-      <span class="title-icon">⚡</span>
+      <el-icon class="title-icon"><Lightning /></el-icon>
       快捷入口
     </h3>
     <div class="actions-grid">
@@ -13,7 +13,14 @@
         :style="{ '--card-color': action.color }"
       >
         <div class="action-icon-wrapper">
-          <span class="action-icon">{{ action.icon }}</span>
+          <span class="action-icon">
+            <el-icon v-if="action.icon === 'calendar'"><Calendar /></el-icon>
+            <el-icon v-else-if="action.icon === 'magic'"><Magic /></el-icon>
+            <el-icon v-else-if="action.icon === 'yinyang'"><YinYangIcon /></el-icon>
+            <el-icon v-else-if="action.icon === 'heart'"><HeartFilled /></el-icon>
+            <el-icon v-else-if="action.icon === 'star'"><Star /></el-icon>
+            <el-icon v-else-if="action.icon === 'user'"><UserFilled /></el-icon>
+          </span>
           <div class="icon-glow"></div>
         </div>
         <div class="action-content">
@@ -21,7 +28,7 @@
           <p class="action-desc">{{ action.description }}</p>
         </div>
         <div class="action-arrow">
-          <span>→</span>
+          <el-icon><ArrowRight /></el-icon>
         </div>
         <div class="card-shine"></div>
       </router-link>
@@ -30,45 +37,70 @@
 </template>
 
 <script setup>
+import { Calendar, Magic, Star, UserFilled, ArrowRight, Lightning } from '@element-plus/icons-vue'
+
+// 自定义太极图标组件
+const YinYangIcon = {
+  render() {
+    return h('svg', { viewBox: '0 0 24 24', width: '1em', height: '1em' }, [
+      h('circle', { cx: '12', cy: '12', r: '10', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5' }),
+      h('path', { d: 'M12 2a10 10 0 0 1 0 20 5 5 0 0 1 0-10 5 5 0 0 0 0-10z', fill: 'currentColor' }),
+      h('circle', { cx: '12', cy: '7', r: '1.5', fill: 'currentColor' }),
+      h('circle', { cx: '12', cy: '17', r: '1.5', fill: 'none', stroke: 'currentColor', 'stroke-width': '1' })
+    ])
+  }
+}
+
+// 自定义心形图标组件
+const HeartFilled = {
+  render() {
+    return h('svg', { viewBox: '0 0 24 24', width: '1em', height: '1em' }, [
+      h('path', { d: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z', fill: 'currentColor' })
+    ])
+  }
+}
+
+import { h } from 'vue'
+
 const quickActions = [
   {
     path: '/bazi',
-    icon: '📅',
+    icon: 'calendar',
     title: '八字排盘',
     description: '探索你的命理密码',
     color: '#e94560',
   },
   {
     path: '/tarot',
-    icon: '🎴',
+    icon: 'magic',
     title: '塔罗占卜',
     description: '揭晓未知的答案',
     color: '#9f7aea',
   },
   {
     path: '/liuyao',
-    icon: '☯',
+    icon: 'yinyang',
     title: '六爻占卜',
     description: '周易问事解疑惑',
     color: '#38b2ac',
   },
   {
     path: '/hehun',
-    icon: '💕',
+    icon: 'heart',
     title: '八字合婚',
     description: '分析婚姻匹配度',
     color: '#ed64a6',
   },
   {
     path: '/daily',
-    icon: '🌟',
+    icon: 'star',
     title: '每日运势',
     description: '掌握今日运程',
     color: '#f6ad55',
   },
   {
     path: '/profile',
-    icon: '👤',
+    icon: 'user',
     title: '个人中心',
     description: '查看积分与成就',
     color: '#4fd1c5',

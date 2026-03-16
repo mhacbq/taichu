@@ -16,7 +16,7 @@
           </p>
           <div class="hero-actions">
             <router-link to="/bazi" class="btn-primary">
-              <span>✨</span>
+              <el-icon><StarFilled /></el-icon>
               开始探索
             </router-link>
             <router-link to="/daily" class="btn-secondary">
@@ -60,12 +60,12 @@
         <ScrollReveal animation="fade-up" :delay="200">
           <div class="fortune-overview">
             <h2 class="section-title">
-              <span>📊</span>
+              <el-icon><DataLine /></el-icon>
               今日运势概览
             </h2>
             <div class="overview-cards">
               <div class="overview-card">
-                <div class="card-icon">🎯</div>
+                <div class="card-icon"><el-icon><Aim /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">综合运势</span>
                   <div class="card-score">
@@ -77,7 +77,7 @@
                 </div>
               </div>
               <div class="overview-card">
-                <div class="card-icon">💼</div>
+                <div class="card-icon"><el-icon><Briefcase /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">事业运</span>
                   <div class="card-score">
@@ -89,7 +89,7 @@
                 </div>
               </div>
               <div class="overview-card">
-                <div class="card-icon">💰</div>
+                <div class="card-icon"><el-icon><Money /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">财运</span>
                   <div class="card-score">
@@ -101,7 +101,7 @@
                 </div>
               </div>
               <div class="overview-card">
-                <div class="card-icon">💕</div>
+                <div class="card-icon"><el-icon><Star /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">感情运</span>
                   <div class="card-score">
@@ -138,7 +138,7 @@
         <ScrollReveal animation="fade-up">
           <div class="calendar-section">
             <h2 class="section-title">
-              <span>📅</span>
+              <el-icon><Calendar /></el-icon>
               运势日历
             </h2>
             <FortuneCalendar />
@@ -152,7 +152,7 @@
       <div class="container">
         <ScrollReveal animation="fade-up">
           <h2 class="section-title center">
-            <span>✨</span>
+            <el-icon><StarFilled /></el-icon>
             为什么选择太初命理
           </h2>
         </ScrollReveal>
@@ -165,7 +165,14 @@
             :delay="100 + index * 100"
           >
             <div class="feature-card">
-              <div class="feature-icon">{{ feature.icon }}</div>
+              <div class="feature-icon">
+                <el-icon v-if="feature.icon === 'aim'"><Aim /></el-icon>
+                <el-icon v-else-if="feature.icon === 'magic'"><Magic /></el-icon>
+                <el-icon v-else-if="feature.icon === 'cpu'"><Cpu /></el-icon>
+                <el-icon v-else-if="feature.icon === 'cellphone'"><Cellphone /></el-icon>
+                <el-icon v-else-if="feature.icon === 'lock'"><Lock /></el-icon>
+                <el-icon v-else-if="feature.icon === 'present'"><Present /></el-icon>
+              </div>
               <h3 class="feature-title">{{ feature.title }}</h3>
               <p class="feature-desc">{{ feature.description }}</p>
             </div>
@@ -186,9 +193,9 @@
             </router-link>
           </div>
           <div class="trust-badges">
-            <span class="badge">🔒 数据安全</span>
-            <span class="badge">✓ 专业准确</span>
-            <span class="badge">💝 贴心服务</span>
+            <span class="badge"><el-icon><Lock /></el-icon> 数据安全</span>
+            <span class="badge"><el-icon><CircleCheck /></el-icon> 专业准确</span>
+            <span class="badge"><el-icon><StarFilled /></el-icon> 贴心服务</span>
           </div>
         </div>
       </ScrollReveal>
@@ -204,37 +211,38 @@ import QuickActions from '../components/QuickActions.vue'
 import MoodTracker from '../components/MoodTracker.vue'
 import AchievementSystem from '../components/AchievementSystem.vue'
 import FortuneCalendar from '../components/FortuneCalendar.vue'
+import { StarFilled, DataLine, Aim, Magic, Cpu, Cellphone, Lock, Present, Calendar, Briefcase, Money, Star, CircleCheck } from '@element-plus/icons-vue'
 
 const isLoggedIn = ref(false)
 
 const features = [
   {
-    icon: '🎯',
+    icon: 'aim',
     title: '精准分析',
     description: '基于传统命理学，结合现代算法，为你提供精准的运势分析',
   },
   {
-    icon: '🔮',
+    icon: 'magic',
     title: '多元服务',
     description: '八字排盘、塔罗占卜、每日运势，满足你的各种需求',
   },
   {
-    icon: '🤖',
+    icon: 'cpu',
     title: 'AI 解读',
     description: '智能AI深度解读，让复杂的命理变得通俗易懂',
   },
   {
-    icon: '📱',
+    icon: 'cellphone',
     title: '随时查看',
     description: '多端同步，随时随地查看你的运势和历史记录',
   },
   {
-    icon: '🔒',
+    icon: 'lock',
     title: '隐私保护',
     description: '严格的数据加密，保护你的个人信息安全',
   },
   {
-    icon: '🎁',
+    icon: 'present',
     title: '免费体验',
     description: '新用户注册即送积分，免费体验多项功能',
   },

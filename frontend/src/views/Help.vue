@@ -8,7 +8,7 @@
 
       <!-- 搜索区域 -->
       <div class="search-section card">
-        <h2>🔍 有问题？我们来帮您</h2>
+        <h2><el-icon><Search /></el-icon> 有问题？我们来帮您</h2>
         <el-input
           v-model="searchQuery"
           placeholder="搜索问题关键词..."
@@ -16,7 +16,7 @@
           clearable
           class="search-input"
         >
-          <template #prefix>🔍</template>
+          <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <div class="hot-tags">
           <span class="tag-label">热门搜索：</span>
@@ -63,21 +63,21 @@
 
       <!-- 联系客服 -->
       <div class="contact-section card">
-        <h3>📞 还有其他问题？</h3>
+        <h3><el-icon><Phone /></el-icon> 还有其他问题？</h3>
         <p>如果以上问题没有解答您的疑问，欢迎联系我们</p>
         <div class="contact-methods">
           <div class="contact-item">
-            <span class="contact-icon">💬</span>
+            <span class="contact-icon"><el-icon><ChatDotRound /></el-icon></span>
             <span class="contact-label">在线客服</span>
             <span class="contact-value">工作日 9:00-18:00</span>
           </div>
           <div class="contact-item">
-            <span class="contact-icon">📧</span>
+            <span class="contact-icon"><el-icon><Message /></el-icon></span>
             <span class="contact-label">邮箱</span>
             <span class="contact-value">support@taichu.com</span>
           </div>
           <div class="contact-item">
-            <span class="contact-icon">💬</span>
+            <span class="contact-icon"><el-icon><ChatDotRound /></el-icon></span>
             <span class="contact-label">微信公众号</span>
             <span class="contact-value">太初命理</span>
           </div>
@@ -92,19 +92,19 @@
         <h3>快速入口</h3>
         <div class="links-grid">
           <router-link to="/bazi" class="quick-link">
-            <span class="link-icon">☯</span>
+            <span class="link-icon"><el-icon><YinYang /></el-icon></span>
             <span>八字排盘</span>
           </router-link>
           <router-link to="/tarot" class="quick-link">
-            <span class="link-icon">🎴</span>
+            <span class="link-icon"><el-icon><Magic /></el-icon></span>
             <span>塔罗占卜</span>
           </router-link>
           <router-link to="/daily" class="quick-link">
-            <span class="link-icon">🌟</span>
+            <span class="link-icon"><el-icon><StarFilled /></el-icon></span>
             <span>每日运势</span>
           </router-link>
           <router-link to="/profile" class="quick-link">
-            <span class="link-icon">👤</span>
+            <span class="link-icon"><el-icon><UserFilled /></el-icon></span>
             <span>个人中心</span>
           </router-link>
         </div>
@@ -117,6 +117,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BackButton from '../components/BackButton.vue'
+import { Search, Phone, ChatDotRound, Message, YinYang, Magic, StarFilled, UserFilled, CollectionTag, Coin } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -126,7 +127,7 @@ const hotTags = ['积分', '八字', '登录', '塔罗', '充值']
 
 const categories = ref([
   {
-    title: '📌 新手指南',
+    title: '新手指南',
     items: [
       {
         question: '太初命理是什么？',
@@ -146,7 +147,7 @@ const categories = ref([
     ]
   },
   {
-    title: '💎 积分相关',
+    title: '积分相关',
     items: [
       {
         question: '如何获得积分？',
@@ -166,7 +167,7 @@ const categories = ref([
     ]
   },
   {
-    title: '☯ 八字排盘',
+    title: '八字排盘',
     items: [
       {
         question: '什么是真太阳时？',
@@ -185,7 +186,7 @@ const categories = ref([
     ]
   },
   {
-    title: '🎴 塔罗占卜',
+    title: '塔罗占卜',
     items: [
       {
         question: '塔罗占卜有什么用？',
