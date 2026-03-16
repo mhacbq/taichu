@@ -103,10 +103,12 @@
             v-model="aiForm.api_key" 
             type="password"
             show-password
-            placeholder="Bearer Token"
+            :placeholder="apiKeyPlaceholder"
             style="width: 400px;"
           />
-          <el-text type="info" size="small" class="ml-2">密钥将以加密形式存储</el-text>
+          <el-text type="info" size="small" class="ml-2">
+            {{ isApiKeyMasked ? '密钥已配置，输入新值可修改，留空则保持不变' : '密钥将以加密形式存储' }}
+          </el-text>
         </el-form-item>
         
         <el-form-item label="模型名称">
@@ -182,6 +184,10 @@ const originalAiForm = ref({})
 const savingAi = ref(false)
 const testingAi = ref(false)
 
+// 计算属性：判断API密钥是否为脱敏格式
+const isApiKeyMasked = ref(false)
+const apiKeyPlaceholder = ref('Bearer Token')
+
 onMounted(async () => {
   try {
     const { data } = await getSettings()
@@ -197,6 +203,16 @@ onMounted(async () => {
   try {
     const res = await getAiConfig()
     if (res.code === 200 && res.data) {
+      // 检查API密钥是否为脱敏格式（包含****）
+      if (res.data.api_key && res.data.api_key.includes('****')) {
+        isApiKeyMasked.value = true
+        apiKeyPlaceholder.value = res.data.api_key
+        // 清空表单中的api_key，避免提交脱敏值
+        res.data.api_key = ''
+      } else {
+        isApiKeyMasked.value = false
+        apiKeyPlaceholder.value = 'Bearer Token'
+      }
       aiForm.value = { ...aiForm.value, ...res.data }
       originalAiForm.value = { ...aiForm.value }
     }
@@ -227,9 +243,32 @@ function handleReset() {
 async function handleSaveAiConfig() {
   savingAi.value = true
   try {
-    await saveAiConfig(aiForm.value)
+    // 准备提交的数据
+    const submitData = { ...aiForm.value }
+    
+    // 如果api_key为空且之前是脱敏状态，说明用户没有修改密钥
+    // 此时不传递api_key字段，让后端保持原值
+    if (!submitData.api_key && isApiKeyMasked.value) {
+      delete submitData.api_key
+    }
+    
+    await saveAiConfig(submitData)
     ElMessage.success('AI配置保存成功')
-    originalAiForm.value = { ...aiForm.value }
+    
+    // 保存成功后，重新加载配置以获取最新状态
+    const res = await getAiConfig()
+    if (res.code === 200 && res.data) {
+      if (res.data.api_key && res.data.api_key.includes('****')) {
+        isApiKeyMasked.value = true
+        apiKeyPlaceholder.value = res.data.api_key
+        res.data.api_key = ''
+      } else {
+        isApiKeyMasked.value = false
+        apiKeyPlaceholder.value = 'Bearer Token'
+      }
+      aiForm.value = { ...aiForm.value, ...res.data }
+      originalAiForm.value = { ...aiForm.value }
+    }
   } catch (error) {
     ElMessage.error('保存失败')
   } finally {

@@ -51,12 +51,12 @@
 
 .error-content h1 {
   font-size: 32px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 15px;
 }
 
 .error-content p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 16px;
   margin-bottom: 30px;
 }

@@ -377,7 +377,7 @@ onMounted(() => {
 }
 
 .form-group label .required {
-  color: var(--accent-color, #e94560);
+  color: var(--primary-color, #B8860B);
 }
 
 .form-group textarea {

@@ -416,9 +416,15 @@ class AiAnalysis extends BaseController
             return $this->error('API地址和模型名称不能为空', 400);
         }
         
+        // 获取旧配置
+        $oldConfig = $this->getAiConfig();
+        
+        // 如果API Key未提供或为空，保留原值
+        if (!isset($config['api_key']) || empty($config['api_key'])) {
+            $config['api_key'] = $oldConfig['api_key'] ?? '';
+        }
         // 如果API Key是掩码格式，不更新
-        if (strpos($config['api_key'], '****') !== false) {
-            $oldConfig = $this->getAiConfig();
+        elseif (strpos($config['api_key'], '****') !== false) {
             $config['api_key'] = $oldConfig['api_key'] ?? '';
         }
         

@@ -1570,7 +1570,7 @@ const formatAiContent = (content) => {
 }
 
 .step-line.active {
-  background: linear-gradient(90deg, #67c23a, #e94560);
+  background: linear-gradient(90deg, #67c23a, #D4AF37);
 }
 
 /* 结果头部 */
@@ -1705,7 +1705,7 @@ const formatAiContent = (content) => {
 
 .el-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.3);
 }
 
 .el-button:active {
@@ -1804,15 +1804,15 @@ const formatAiContent = (content) => {
 }
 
 .points-hint {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.3);
   border-radius: 10px;
   padding: 15px 20px;
   margin-bottom: 25px;
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .hint-icon {
@@ -1835,7 +1835,7 @@ const formatAiContent = (content) => {
 }
 
 .insufficient-points a {
-  color: #e94560;
+  color: var(--primary-color, #B8860B);
   text-decoration: underline;
 }
 
@@ -1928,7 +1928,7 @@ const formatAiContent = (content) => {
 }
 
 .analysis-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-line;
 }
@@ -2045,13 +2045,13 @@ const formatAiContent = (content) => {
 .dm-symbol {
   width: 70px;
   height: 70px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.2));
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.3), rgba(212, 175, 55, 0.2));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  border: 2px solid rgba(233, 69, 96, 0.5);
+  border: 2px solid rgba(184, 134, 11, 0.5);
 }
 
 .dm-title h4 {
@@ -2282,7 +2282,7 @@ const formatAiContent = (content) => {
 }
 
 .interp-card.personality {
-  border-left: 3px solid #e94560;
+  border-left: 3px solid var(--primary-color, #B8860B);
 }
 
 .interp-card.career {
@@ -2362,7 +2362,7 @@ const formatAiContent = (content) => {
 }
 
 .paipan-cell.highlight {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.1);
   border-radius: 10px;
 }
 
@@ -2481,7 +2481,7 @@ const formatAiContent = (content) => {
 .wuxing-name {
   width: 30px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .wuxing-bar {
@@ -2526,9 +2526,10 @@ const formatAiContent = (content) => {
 /* 大运区域样式 */
 .dayun-section {
   margin-top: 30px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-card);
   border-radius: 15px;
   padding: 25px;
+  border: 1px solid var(--border-color);
 }
 
 .dayun-section h3 {
@@ -2562,8 +2563,8 @@ const formatAiContent = (content) => {
 }
 
 .dayun-item.current {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color, #B8860B);
+  background: rgba(184, 134, 11, 0.1);
 }
 
 .dayun-age {
@@ -2746,8 +2747,8 @@ const formatAiContent = (content) => {
 /* 流年运势分析 */
 .yearly-fortune-section {
   margin-top: 30px;
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(233, 69, 96, 0.05));
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(184, 134, 11, 0.3);
   border-radius: 20px;
   padding: 30px;
 }
@@ -2768,7 +2769,7 @@ const formatAiContent = (content) => {
   gap: 15px;
   margin-bottom: 25px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 12px;
 }
 
