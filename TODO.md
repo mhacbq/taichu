@@ -5,7 +5,7 @@
 
 ## 自动化任务说明
 
-已设置5个自动化任务（每30分钟执行一次）：
+已设置6个自动化任务：
 
 | 任务名称 | 频率 | 说明 | 角色 |
 |---------|------|------|------|
@@ -14,6 +14,47 @@
 | UI设计检查官 | 每30分钟 | 检查UI设计问题 | 产品经理/UI设计师 |
 | 运营人员后台检查 | 每30分钟 | 使用后台管理系统并记录问题 | 运营人员 |
 | 占卜爱好者体验检查 | 每30分钟 | 体验占卜功能并记录准确性问题 | 占卜爱好者 |
+| 前端开发修复任务 | 每20分钟 | **每次修复3-5个前端问题，自动提交git** | 前端开发人员 |
+
+## UI设计检查报告 - 2026-03-16 第十一轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目全部视图页面和组件
+- 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+- 发现问题：核心主题不一致问题仍然存在，需要决策
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 主题方向决策 - 这是最核心的设计问题，影响整个网站的视觉一致性 - 建议：考虑到命理玄学的行业属性，建议统一为深色主题（神秘、专业感），或全面改为白色主题（清新、现代感）
+- [ ] [UI] 导航栏与页面内容区视觉割裂 - App.vue使用白色导航栏，但各页面内容区使用深色背景（rgba(0,0,0,0.2)等） - 建议统一全站背景色风格
+- [ ] [UI] 首页Hero区域文字颜色与背景冲突 - Home.vue多处使用白色文字（color: #fff, rgba(255,255,255,0.7)等），在浅色背景下不可见 - 建议改为使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 功能页面背景与主题冲突 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue等页面使用rgba(0,0,0,0.2)深色背景，与style.css中--bg-primary: #ffffff定义不符 - 建议统一页面背景配色
+- [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
+- [ ] [UI] 八字排盘加载状态深色背景与白色主题冲突 - Bazi.vue第1440行loading-state使用深色背景（rgba(0,0,0,0.3)），与白色主题不协调 - 建议改为浅色背景或使用主题CSS变量
+- [ ] [UI] 各功能页面大量使用白色文字 - Bazi.vue/Tarot.vue/Liuyao.vue/Hehun.vue/Daily.vue/Help.vue/Recharge.vue等页面多处使用color: #fff，与白色主题冲突 - 建议统一使用var(--text-primary)和var(--text-secondary)
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 导航栏大量使用emoji图标 - App.vue使用☯、💎、👤、🚪、🏠、📅、🎴、💕、🌟、🌸、💝等emoji作为图标 - 建议引入@element-plus/icons-vue统一图标系统
+- [ ] [UI] 首页大量使用emoji图标 - Home.vue使用🌅、☀️、🌙、💎、🌸、🎁、✨、🔮、📅、🎴、💡、☯、💕、🌟、🎯、👩、👨、👦等emoji - 建议统一使用图标库
+- [ ] [UI] 八字排盘页面使用emoji图标 - Bazi.vue使用💝、💎、🌱、🔮、❓、🎁、⚡等emoji - 建议统一使用图标库
+- [ ] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue使用💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji - 建议统一使用图标库
+- [ ] [UI] 六爻占卜页面使用emoji图标 - Liuyao.vue使用☯、🔄、💾、🗑等emoji - 建议统一使用图标库
+- [ ] [UI] 合婚页面使用emoji图标 - Hehun.vue使用💕、👨、🔓、🤖、💝、🔄、📄等emoji - 建议统一使用图标库
+- [ ] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue第60行mobile-nav-close按钮padding仅5px，实际点击区域不足44px - 建议增大至44x44px
+- [ ] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue第138行close-btn宽度仅28px，不符合44px最小触摸区域规范 - 建议增大至44px
+- [ ] [UI] 按钮圆角不统一 - 各页面按钮圆角不一致（12px/20px/25px/30px混用） - 建议统一使用style.css中定义的25px圆角
+- [ ] [UI] 卡片hover效果不一致 - Home.vue中feature-card使用transform: translateY(-10px)，而其他页面卡片使用不同的hover效果 - 建议统一hover动画效果
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行使用radial-gradient，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
+- [ ] [UI] 每日运势页面评分圆圈在移动端过大 - Daily.vue中score-circle在移动端120x120px可能占用过多空间 - 建议响应式缩小至80x80px
+- [ ] [UI] 六爻卦象线条样式单调 - Liuyao.vue中的yao-line使用简单线条，视觉效果较单调 - 建议增加更精致的卦象图形设计
+- [ ] [UI] 合婚页面八字对比区域分隔符突兀 - Hehun.vue中bazi-divider使用💕emoji，在移动端旋转90度显得突兀 - 建议优化移动端布局
+- [ ] [UI] 功能卡片图标大小不统一 - 首页feature-card中的图标大小不一致（48px），与其他页面图标不协调 - 建议统一图标尺寸规范
+
+---
 
 ## UI设计检查报告 - 2026-03-16 第十轮
 
@@ -22,7 +63,7 @@
 - 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
 - 发现问题：核心主题不一致问题仍然存在，需要决策
 
-### 本次检查发现的新问题
+### 历史检查发现的问题（已归档）
 
 #### 🔴 高优先级（功能性问题）
 - [ ] [UI] 主题方向决策 - 这是最核心的设计问题，影响整个网站的视觉一致性 - 建议：考虑到命理玄学的行业属性，建议统一为深色主题（神秘、专业感），或全面改为白色主题（清新、现代感）
@@ -68,7 +109,7 @@
 - [x] [2026-03-16] 后端AdminAuth中间件日志记录敏感信息 - backend/app/middleware/AdminAuth.php - 已添加敏感字段脱敏处理（password、pwd、token、secret、key、authorization等字段会被替换为***） - 修复时间: 2026-03-16
 - [x] [2026-03-16] 后端Auth.php邀请码暴力枚举风险 - backend/app/controller/Auth.php - 已修复：尝试次数超过10次后阻止操作（return） - 修复时间: 2026-03-16
 - [x] [2026-03-16] 后端AiAnalysis.php类型检查缺失 - backend/app/controller/AiAnalysis.php第49行和第112行 - 已添加is_array检查，确保$baziData为数组类型，避免后续处理错误 - 修复时间: 2026-03-16
-- [ ] [2026-03-16] 后端Admin.php feedbackList缺少权限检查 - backend/app/controller/Admin.php第472行 - feedbackList方法未调用checkPermission进行权限验证 - 建议添加权限检查
+- [x] [2026-03-16] 后端Admin.php feedbackList缺少权限检查 - backend/app/controller/Admin.php第472行 - 已添加权限检查：if (!$this->checkPermission('feedback_view')) { return json(['code' => 403, 'message' => '无权限查看反馈列表']); } - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 前端Bazi.vue潜在空值访问 - frontend/src/views/Bazi.vue第1357行 - analyzeBaziAi调用时aiAbortController.value可能为null - 建议使用可选链或添加空值检查
 
 - [ ] [UI] 全局主题方向需要决策 - style.css定义白色主题，但所有页面使用深色背景，这是最核心的设计问题 - 建议：评估品牌定位后统一为深色主题（更符合命理玄学调性）或全面改为白色主题
@@ -78,7 +119,7 @@
 - [ ] [UI] 登录页深色背景与白色主题不协调 - Login.vue使用深色渐变背景（#1a1a2e到#16213e），与整体白色主题定义冲突 - 建议统一登录页主题风格
 - [x] [2026-03-16] 后端AdminAuth中间件硬编码JWT密钥 - backend/app/middleware/AdminAuth.php第17行 - 已添加构造函数从环境变量读取JWT密钥：Env::get('ADMIN_JWT_SECRET')，并添加默认回退值 - 修复时间: 2026-03-16
 - [x] [2026-03-16] 前端SEOStats.vue缺少h函数导入 - frontend/src/views/admin/SEOStats.vue第380行 - 已添加import { h } from 'vue'导入语句 - 修复时间: 2026-03-16
-- [ ] [2026-03-16] 后端Content.php缺少SQL注入防护 - backend/app/controller/Content.php第363-365行 - keyword参数直接拼接到SQL中，缺少preg_replace净化 - 建议添加$keyword = preg_replace('/[%_]/', '', $keyword);
+- [x] [2026-03-16] 后端Content.php缺少SQL注入防护 - backend/app/controller/Content.php第363-365行 - 已添加preg_replace过滤特殊字符：$keyword = preg_replace('/[%_\\\\]/', '', $keyword); - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 后端AiAnalysis.php类型检查缺失 - backend/app/controller/AiAnalysis.php第49行 - $request->param('bazi')期望数组但可能返回字符串，导致后续处理错误 - 建议添加类型检查：if (!is_array($baziData)) { return json(['code' => 400, 'message' => '八字数据格式错误']); }
 - [ ] [2026-03-16] Bazi.vue未使用变量和函数 - frontend/src/views/Bazi.vue第950行、1068-1084行 - yearlyTrendData变量声明后从未使用，getYearlyTrendData函数定义后从未调用 - 建议删除未使用的代码
 - [ ] [UI] 主题系统严重不一致 - style.css定义白色主题（--bg-primary: #ffffff），但所有页面使用深色背景（rgba(0,0,0,0.2)、rgba(255,255,255,0.05)）和白色文字（color: #fff） - 建议统一主题方向：要么改为深色主题，要么将所有页面改为白色主题
@@ -135,7 +176,7 @@
 - [ ] [2026-03-16] Bazi.vue潜在空值访问 - frontend/src/views/Bazi.vue第1357行 - analyzeBaziAi调用时aiAbortController.value可能为null - 建议使用可选链：aiAbortController.value?.signal
 - [ ] [2026-03-16] 后端AiAnalysis.php类型检查缺失 - backend/app/controller/AiAnalysis.php第49行 - $request->param('bazi')期望数组但可能返回字符串，导致后续处理错误 - 建议添加类型检查：if (!is_array($baziData)) { return json(['code' => 400, 'message' => '八字数据格式错误']); }
 - [ ] [2026-03-16] Bazi.vue未使用变量和函数 - frontend/src/views/Bazi.vue第950行、1068-1084行 - yearlyTrendData变量声明后从未使用，getYearlyTrendData函数定义后从未调用 - 建议删除未使用的代码
-- [ ] [2026-03-16] 后端Admin.php权限检查返回格式不一致 - backend/app/controller/Admin.php第89,147,201行 - 权限检查使用json()而非$this->error()，与其他方法不一致 - 建议统一使用$this->error('无权限', 403)保持一致性
+- [x] [2026-03-16] 后端Admin.php权限检查返回格式不一致 - backend/app/controller/Admin.php第89,147,201行 - 已统一使用$this->error('无权限', 403)方法替换json()返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 后端Content.php模型类未导入 - backend/app/controller/Content.php多处 - 使用\app\model\Page等全局命名空间，未导入模型类 - 建议添加相应的use语句导入模型类
 - [ ] [2026-03-16] 后端Auth.php模型类导入不一致 - backend/app/controller/Auth.php第59,118行 - 使用\app\model\PointsRecord全局命名空间，但文件顶部已使用use导入其他模型 - 建议统一添加use app\model\PointsRecord;
 - [ ] [2026-03-16] 前端AlmanacManage.vue表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
@@ -292,6 +333,45 @@
 
 ---
 
+## 运营检查报告 - 2026-03-16
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 运营人员
+- **检查范围**: 太初命理网站后台管理系统
+
+### 检查发现的问题
+
+#### 🔴 高优先级（运营阻塞问题）
+
+- [ ] [运营] 后台管理页面缺少Dashboard首页 - 路由配置了/admin但没有对应的Dashboard组件，访问/admin会直接进入系统配置页面，缺少数据概览 - 建议创建AdminDashboard.vue作为后台首页，展示用户数、订单数、收入等关键指标
+- [ ] [运营] 用户管理页面缺失 - 后台没有用户列表管理页面，无法查看、搜索、编辑用户信息 - 建议创建UserManage.vue实现用户管理功能
+- [ ] [运营] 订单管理页面缺失 - VIP订单、积分订单无法在后台查看和管理 - 建议创建OrderManage.vue实现订单管理
+- [ ] [运营] 后台管理页面API调用均为模拟实现 - AlmanacManage.vue、KnowledgeManage.vue、SEOManage.vue、ShenshaManage.vue等页面只有模拟数据，没有真实API调用 - 建议实现真实的API接口调用
+- [ ] [运营] 黄历管理页面submitForm和generateMonth函数只有模拟延迟 - frontend/src/views/admin/AlmanacManage.vue第397-428行 - 没有实际API调用，数据无法真正保存 - 建议添加真实的API保存和生成调用
+- [ ] [运营] 神煞管理页面分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第380-382行 - loadData函数为空，没有实现分页切片 - 建议实现分页逻辑：list.slice((page.value - 1) * pageSize.value, page.value * pageSize.value)
+
+#### 🟡 中优先级（运营体验问题）
+
+- [ ] [运营] 知识库文章搜索缺少防抖处理 - frontend/src/views/admin/KnowledgeManage.vue第35-40行 - 搜索框输入没有防抖，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
+- [ ] [运营] 知识库图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue第158-169行 - 上传组件只有on-success回调，没有on-error处理 - 建议添加:on-error="handleCoverError"和错误处理函数
+- [ ] [运营] SEO管理页面站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue - 站点地图生成和robots保存为模拟实现，无法真正生成sitemap.xml - 建议实现真实的站点地图生成功能
+- [ ] [运营] 后台管理页面缺少导航菜单组件 - 各管理页面独立存在，没有统一的左侧导航菜单 - 建议创建AdminLayout.vue包含侧边导航栏
+- [ ] [运营] 后台页面没有面包屑导航 - 虽然路由配置了breadcrumb元信息，但页面中没有显示面包屑组件 - 建议在AdminLayout中添加面包屑导航
+- [ ] [运营] 后台管理页面缺少退出登录功能 - 后台页面没有提供管理员退出登录的入口 - 建议在导航栏添加退出按钮
+- [ ] [运营] 系统配置页面loading变量未使用 - frontend/src/views/admin/Config.vue第319行 - loading变量定义了但没有在页面加载时使用 - 建议在onMounted中使用loading状态
+- [ ] [运营] SEO统计页面图表初始化代码缺失 - frontend/src/views/admin/SEOStats.vue第385-394行 - pieChart和trendChart变量定义但未使用，onMounted和onUnmounted为空 - 建议实现图表初始化逻辑或删除未使用的代码
+
+#### 🟢 低优先级（运营优化建议）
+
+- [ ] [运营] 后台页面主题与前端不统一 - 后台页面使用深色主题（rgba(0,0,0,0.2)背景），但前端整体为白色主题 - 建议统一后台主题风格
+- [ ] [运营] 后台页面缺少响应式适配 - 管理页面在移动端显示可能存在问题 - 建议添加移动端适配
+- [ ] [运营] 黄历管理页面表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue第302-304行 - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
+- [ ] [运营] 后台缺少操作日志查看页面 - 后端有AdminLog模型记录操作日志，但前端没有查看页面 - 建议添加操作日志查询页面
+- [ ] [运营] 后台缺少数据统计报表导出功能 - 无法导出用户数据、订单数据等报表 - 建议添加导出Excel/CSV功能
+
+---
+
 ## 代码逻辑问题（本次检查新增）
 
 ### 🔴 高优先级（功能性问题）
@@ -356,9 +436,43 @@
 - [ ] [2026-03-16] 后端AdminAuthService.php无效adminId校验缺失 - backend/app/service/AdminAuthService.php第31-42行、第73-115行 - 没有对$adminId进行有效性校验 - 建议添加if ($adminId <= 0)校验
 - [ ] [2026-03-16] 后端AdminAuthService.php异常处理返回信息不足 - backend/app/service/AdminAuthService.php第178-235行 - 返回布尔值false，调用者无法得知具体失败原因 - 建议返回包含错误信息的结果数组
 
+## 占卜功能体验检查报告 - 2026-03-16
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 占卜爱好者（专业命理/塔罗爱好者角度）
+- **检查范围**: 太初命理网站全部占卜功能
+
+### 🔴 高优先级（准确性/功能性问题）
+
+- [ ] [占卜] 八字排盘节气数据不完整 - backend/app/controller/Paipan.php第563-573行 - 仅包含1990、1995、2000年节气数据，其他年份排盘可能不准确 - 建议补充完整节气表或使用天文算法计算
+- [ ] [占卜] 六爻占卜缺少手动摇卦功能 - frontend/src/views/Liuyao.vue - 只有自动起卦，没有手动输入六次摇卦结果的功能 - 建议添加手动起卦模式
+- [ ] [占卜] 六爻结果缺少变卦展示 - backend/app/controller/Liuyao.php - 动爻产生变卦，但结果中只展示主卦，没有变卦分析 - 建议添加变卦计算和展示
+- [ ] [占卜] 塔罗隐者牌含义使用英文 - frontend/src/views/Tarot.vue第305-307行 - 与其他牌的中文描述不一致 - 建议统一为中文描述
+- [ ] [占卜] 八字日主强弱判断过于简化 - backend/app/controller/Paipan.php - 日主强弱判断仅基于简单规则，未考虑月令、通根、透干等因素 - 建议参考《滴天髓》完善判断逻辑
+
+### 🟡 中优先级（体验/专业性优化）
+
+- [ ] [占卜] 六爻缺少六亲分析 - backend/app/controller/Liuyao.php - 六爻解卦需要六亲（父母、兄弟、子孙、妻财、官鬼）分析，当前缺失 - 建议添加六亲配属和解读
+- [ ] [占卜] 六爻缺少六神分析 - backend/app/controller/Liuyao.php - 六神（青龙、朱雀、勾陈、螣蛇、白虎、玄武）是六爻重要组成部分 - 建议添加六神配属
+- [ ] [占卜] 六爻缺少用神判断逻辑 - backend/app/controller/Liuyao.php - 解卦需要根据问题类型确定用神，当前解读较为通用 - 建议根据问题关键词智能判断用神
+- [ ] [占卜] 塔罗牌缺少AI深度解读 - backend/app/controller/Tarot.php - 抽牌后只有基础解读，没有AI分析功能 - 建议添加AI解牌功能
+- [ ] [占卜] 八字排盘缺少真太阳时计算 - backend/app/controller/Paipan.php - 虽然前端有出生地选择，但后端未实现真太阳时转换 - 建议根据经度计算真太阳时
+- [ ] [占卜] 八字十神计算未考虑藏干 - backend/app/controller/Paipan.php第519-557行 - 十神只计算了天干，地支藏干的十神未完整展示 - 建议完善藏干十神分析
+
+### 🟢 低优先级（专业性增强）
+
+- [ ] [占卜] 八字排盘可增加神煞分析 - backend/app/controller/Paipan.php - 可添加天乙贵人、文昌、桃花等常用神煞 - 建议参考《三命通会》添加常见神煞
+- [ ] [占卜] 八字大运流年可添加更多细节 - backend/app/controller/Paipan.php - 可添加交运时间、流年神煞等信息 - 建议丰富大运流年展示
+- [ ] [占卜] 塔罗牌可添加牌阵关系分析 - frontend/src/views/Tarot.vue - 多张牌之间缺乏关联性解读 - 建议添加牌阵整体分析
+- [ ] [占卜] 合婚可添加更多传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚等传统方法 - 建议丰富合婚算法
+- [ ] [占卜] 六爻可添加应期推断 - backend/app/controller/Liuyao.php - 解卦时可尝试推断事情发生时间 - 建议添加应期分析
+
+---
+
 ## 已完成项目
 
 - [x] [2026-03-16] 前端Bazi.vue中AI解盘相关变量未定义 - frontend/src/views/Bazi.vue - 已添加aiLoadingTime、aiAbortController、aiLoadingTimer的ref定义 - 修复时间: 2026-03-16
 
 ---
-*最后更新: 2026-03-16 - 待办处理执行器*
+*最后更新: 2026-03-16 - 占卜爱好者体验检查*
