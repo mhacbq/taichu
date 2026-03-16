@@ -239,7 +239,6 @@ const interpretation = ref('')
 const currentPoints = ref(0)
 const cardDetailVisible = ref(false)
 const selectedCard = ref(null)
-const selectedCardIndex = ref(0)
 const selectedTopic = ref('')
 
 const currentTemplates = computed(() => {
@@ -554,7 +553,6 @@ const resetTarot = () => {
 // 显示卡片详情
 const showCardDetail = (card, index) => {
   selectedCard.value = card
-  selectedCardIndex.value = index
   cardDetailVisible.value = true
 }
 

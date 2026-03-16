@@ -39,3 +39,45 @@
 - 微信登录模拟逻辑需要替换为真实API
 - 事务处理不完整
 - 返回格式统一问题
+
+---
+
+## 2026-03-16 16:00 执行记录
+
+### 本次修复的5个后端问题
+
+1. **Vip.php缺少用户认证中间件** (安全)
+   - 文件: `backend/app/controller/Vip.php`
+   - 问题: 控制器没有声明中间件，依赖$this->request->user但可能为空，存在未授权访问风险
+   - 修复: 添加 `protected array $middleware = [\app\middleware\Auth::class]`
+
+2. **Admin.php updateUserStatus缺少输入验证** (API规范)
+   - 文件: `backend/app/controller/Admin.php`
+   - 问题: 没有验证status参数的有效性(应为0/1/2)
+   - 修复: 添加 `if (!in_array($status, [0, 1, 2], true))` 验证
+
+3. **Admin.php API返回格式不一致** (API规范)
+   - 文件: `backend/app/controller/Admin.php`
+   - 问题: userDetail方法中使用了json()而不是$this->error()/$this->success()
+   - 修复: 统一使用 `$this->error()` 和 `$this->success()` 方法
+
+4. **Vip.php使用emoji作为图标** (代码规范)
+   - 文件: `backend/app/controller/Vip.php`
+   - 问题: 返回的权益列表使用emoji图标（✨、📊、💎、💕、🎯、🎁），可能在某些系统或数据库编码环境下显示异常
+   - 修复: 将emoji替换为图标库名称（star、document、diamond、heart、service、gift）
+
+5. **Auth.php事务处理不完整** (逻辑错误)
+   - 文件: `backend/app/controller/Auth.php`
+   - 问题: phoneLogin()方法中创建用户、添加积分、处理邀请码等操作没有使用事务
+   - 修复: 使用 `Db::startTrans()`、`Db::commit()`、`Db::rollback()` 包裹相关操作
+
+### Git提交
+- 提交ID: `0fdb8ab`
+- 提交信息: `fix-backend-multiple-issues-20260316-1545`
+- 已推送到: origin/master
+
+### 待修复问题
+- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
+- 后端AiAnalysis.php缺少输入长度限制 - baziData和customPrompt需要长度验证
+- 后端Admin.php SQL注入风险 - 用户名和手机号搜索需要参数绑定
+- 后端AiAnalysis.php流式请求缺少SSL验证

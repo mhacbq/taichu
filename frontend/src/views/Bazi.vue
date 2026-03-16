@@ -272,22 +272,22 @@
             </div>
             <div class="paipan-cell canggan-cell">
               <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.month.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.month.canggan_shishen[idx] }})</small>
+                <span v-for="(cg, idx) in result.bazi?.month?.canggan || []" :key="idx" class="canggan-item">
+                  {{ cg }}<small>({{ result.bazi?.month?.canggan_shishen?.[idx] }})</small>
                 </span>
               </div>
             </div>
             <div class="paipan-cell canggan-cell highlight">
               <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.day.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.day.canggan_shishen[idx] }})</small>
+                <span v-for="(cg, idx) in result.bazi?.day?.canggan || []" :key="idx" class="canggan-item">
+                  {{ cg }}<small>({{ result.bazi?.day?.canggan_shishen?.[idx] }})</small>
                 </span>
               </div>
             </div>
             <div class="paipan-cell canggan-cell">
               <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.hour.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.hour.canggan_shishen[idx] }})</small>
+                <span v-for="(cg, idx) in result.bazi?.hour?.canggan || []" :key="idx" class="canggan-item">
+                  {{ cg }}<small>({{ result.bazi?.hour?.canggan_shishen?.[idx] }})</small>
                 </span>
               </div>
             </div>
@@ -1193,10 +1193,10 @@ const calculateBazi = async () => {
       }
     }
   } catch (error) {
-    clearInterval(stepInterval)
     ElMessage.error('网络错误，请稍后重试')
     console.error(error)
   } finally {
+    clearInterval(stepInterval)
     loading.value = false
     loadingStep.value = 1
   }

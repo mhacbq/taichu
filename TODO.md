@@ -246,6 +246,33 @@
 
 ---
 
+## 代码逻辑检查报告 - 2026-03-16 第17轮
+
+### 本次检查重点
+- 检查范围：前端Vue项目关键文件、后端PHP控制器、中间件
+- 检查维度：语法错误、类型错误、API调用、权限控制、安全问题
+- 发现问题：发现12个新问题，其中5个高优先级问题需要尽快修复
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [x] [2026-03-16 17:00] 后端Vip.php缺少用户认证中间件 - backend/app/controller/Vip.php第21行 - 已添加protected $middleware = [\app\middleware\Auth::class]中间件配置 - 修复时间: 2026-03-16
+- [ ] [2026-03-16 17:00] 后端Paipan.php调用未定义服务方法 - backend/app/controller/Paipan.php第70-71、74行 - 调用interpretationService和fortuneAnalysisService的方法，但这些服务类未导入或可能不存在 - 建议确认服务类存在并添加正确的use导入语句
+- [ ] [2026-03-16 17:00] 后端AiAnalysis.php流式请求缺少SSL验证 - backend/app/controller/AiAnalysis.php第355-358行 - callAiApiStream方法中cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST - 建议添加SSL验证配置
+- [ ] [2026-03-16 17:00] 后端Admin.php SQL注入风险 - backend/app/controller/Admin.php第163-170行 - 用户名和手机号搜索使用字符串拼接，虽然有preg_replace过滤但仍存在风险 - 建议使用参数绑定替代字符串拼接
+- [ ] [2026-03-16 17:00] 前端Bazi.vue藏干访问缺少可选链 - frontend/src/views/Bazi.vue第275-291行 - 月柱、日柱、时柱藏干访问没有使用可选链，而年柱已使用result.bazi?.year?.canggan - 建议统一使用可选链和默认值
+
+#### 🟡 中优先级（体验问题）
+- [x] [2026-03-16 17:00] 后端Admin.php API返回格式不一致 - backend/app/controller/Admin.php第129、184、224行等 - 已统一使用$this->error()和$this->success()替代json()返回 - 修复时间: 2026-03-16
+- [x] [2026-03-16 17:00] 后端Admin.php updateUserStatus缺少输入验证 - backend/app/controller/Admin.php第245行 - 已添加in_array验证确保status只能是0/1/2 - 修复时间: 2026-03-16
+- [x] [2026-03-16 17:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 已将emoji图标替换为图标库名称(star/document/diamond/heart/service/gift) - 修复时间: 2026-03-16
+- [ ] [2026-03-16 17:00] 后端AiAnalysis.php缺少输入长度限制 - backend/app/controller/AiAnalysis.php第49-51、109-111行 - baziData和customPrompt没有长度限制 - 建议添加长度验证
+- [ ] [2026-03-16 17:00] 前端App.vue未使用的图标导入 - frontend/src/App.vue第167-185行 - 导入了多个未使用的图标组件(HomeFilled、Timer、Reading等) - 建议删除未使用的导入
+- [ ] [2026-03-16 17:00] 前端Tarot.vue selectedCardIndex变量未使用 - frontend/src/views/Tarot.vue第242行 - 变量被赋值但从未使用 - 建议删除该变量
+- [ ] [2026-03-16 17:00] 前端管理端页面API调用缺失 - admin/AlmanacManage.vue/KnowledgeManage.vue/SEOManage.vue - submitForm、generateMonth等函数只有模拟延迟没有实际API调用 - 建议实现真实的API接口
+
+---
+
 ## 代码逻辑检查报告 - 2026-03-16 第16轮
 
 ### 本次检查重点
@@ -276,7 +303,7 @@
 - [x] [2026-03-16 16:00] 后端Content.php依赖模型缺失 - backend/app/controller/Content.php引用PageRecycle和OperationLog模型，但这些文件不存在 - 已创建backend/app/model/PageRecycle.php和OperationLog.php - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] 后端Admin.php依赖模型缺失 - backend/app/controller/Admin.php引用Feedback模型，但该文件不存在 - 已创建backend/app/model/Feedback.php - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] ~~后端Auth.php微信登录仍使用模拟逻辑~~ - **已删除**: 微信登录功能已移除，仅保留短信登录
-- [ ] [2026-03-16 16:00] 后端Auth.php事务处理不完整 - backend/app/controller/Auth.php第35-67行、第106-126行 - login()和phoneLogin()方法中创建用户、添加积分、处理邀请码等操作没有使用事务 - 建议使用Db::transaction包裹数据库操作
+- [x] [2026-03-16 16:00] 后端Auth.php事务处理不完整 - backend/app/controller/Auth.php第35-67行、第106-126行 - 已使用Db::startTrans()/commit()/rollback()包裹新用户创建、积分赠送和邀请码处理操作 - 修复时间: 2026-03-16
 - [x] [2026-03-16 16:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php - 已统一使用$this->error()方法替换所有json(['code' => 403])返回 - 修复时间: 2026-03-16
 - [ ] [2026-03-16 16:00] 后端Admin.php adjustPoints验证逻辑问题 - backend/app/controller/Admin.php第396-405行 - 使用$request->validate()但ThinkPHP的validate方法返回验证器实例，不是布尔值 - 建议修复验证逻辑
 - [x] [2026-03-16 16:00] 后端Admin.php统计逻辑错误 - backend/app/controller/Admin.php第118-120行 - featureStats中塔罗占卜已修复为使用TarotRecord::count() - 修复时间: 2026-03-16
@@ -552,6 +579,50 @@
 
 ---
 
+## 运营检查报告 - 2026-03-16 第四轮
+
+### 检查概览
+- **检查时间**: 2026-03-16
+- **检查人员**: 运营人员
+- **检查范围**: 太初命理网站后台管理系统
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（运营阻塞问题）
+
+- [ ] [运营] 后台缺少Dashboard首页组件 - /admin路由直接跳转到Config.vue系统配置页面，缺少数据概览Dashboard - 建议创建AdminDashboard.vue展示用户数、订单数、收入等关键指标
+- [ ] [运营] 用户管理页面缺失 - 后台没有UserManage.vue用户列表管理页面，无法查看、搜索、编辑用户信息 - 建议创建用户管理页面并对接后端/users接口
+- [ ] [运营] 订单管理页面缺失 - VIP订单、积分订单无法在后台查看和管理 - 建议创建OrderManage.vue对接后端订单接口
+- [ ] [运营] 反馈管理页面缺失 - 后端有feedbackList接口，但前端没有对应的FeedbackManage.vue页面 - 建议创建反馈管理页面
+- [ ] [运营] 后台管理页面API调用均为模拟实现 - AlmanacManage.vue、KnowledgeManage.vue、SEOManage.vue、ShenshaManage.vue等页面只有模拟数据，没有真实API调用 - 建议实现真实的API接口调用
+- [ ] [运营] 黄历管理页面submitForm和generateMonth函数只有模拟延迟 - frontend/src/views/admin/AlmanacManage.vue第409-432行 - 没有实际API调用，数据无法真正保存 - 建议添加真实的API保存和生成调用
+- [ ] [运营] 神煞管理页面分页逻辑不完整 - frontend/src/views/admin/ShenshaManage.vue第386-388行 - loadData函数为空，没有实现分页切片 - 建议实现分页逻辑：list.slice((page.value - 1) * pageSize.value, page.value * pageSize.value)
+- [ ] [运营] 管理员登录功能缺失 - 当前只有普通用户手机号登录，没有管理员账号密码登录入口 - 建议添加/admin/login管理员登录页面
+- [ ] [运营] 后台缺少统一的AdminLayout布局组件 - 各管理页面独立存在，没有统一的左侧导航菜单和顶部栏 - 建议创建AdminLayout.vue包含侧边导航栏、面包屑、退出功能
+- [ ] [运营] 后台API接口与前端不匹配 - admin.js中定义的API（如getFeatureSwitches、updateFeature等）在后端Admin.php中没有对应实现，只有admin/Config.php中有部分实现 - 建议后端实现对应接口或前端调整API调用
+
+#### 🟡 中优先级（运营体验问题）
+
+- [ ] [运营] 知识库文章搜索缺少防抖处理 - frontend/src/views/admin/KnowledgeManage.vue - 搜索框输入没有防抖，频繁输入会触发多次过滤 - 建议使用lodash.debounce或自定义防抖函数
+- [ ] [运营] 知识库图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue - 上传组件只有on-success回调，没有on-error处理 - 建议添加:on-error="handleCoverError"和错误处理函数
+- [ ] [运营] SEO管理页面站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue - 站点地图生成和robots保存为模拟实现，无法真正生成sitemap.xml - 建议实现真实的站点地图生成功能
+- [ ] [运营] 后台页面没有面包屑导航 - 虽然路由配置了breadcrumb元信息，但页面中没有显示面包屑组件 - 建议在AdminLayout中添加面包屑导航
+- [ ] [运营] 后台管理页面缺少退出登录功能 - 后台页面没有提供管理员退出登录的入口 - 建议在导航栏添加退出按钮
+- [ ] [运营] 后台缺少操作日志查看页面 - 后端有operationLogs接口和AdminLog模型，但前端没有对应的日志查看页面 - 建议添加操作日志查询页面
+- [ ] [运营] SEO统计页面图表功能未实现 - frontend/src/views/admin/SEOStats.vue - 图表功能未实现，只有模拟数据展示 - 建议集成ECharts实现数据可视化
+- [ ] [运营] 后台管理页面缺少权限控制UI - 各管理页面没有根据管理员权限动态显示/隐藏操作按钮 - 建议添加权限控制
+
+#### 🟢 低优先级（运营优化建议）
+
+- [ ] [运营] 后台页面主题与前端不统一 - 后台页面使用深色主题（rgba(0,0,0,0.2)背景），但前端整体为白色主题 - 建议统一后台主题风格
+- [ ] [运营] 后台页面缺少响应式适配 - 管理页面在移动端显示可能存在问题 - 建议添加移动端适配
+- [ ] [运营] 黄历管理页面表单验证不完整 - frontend/src/views/admin/AlmanacManage.vue - 只有solarDate字段有验证规则，其他重要字段如yi、ji、ganzhi等没有验证 - 建议添加完整的表单验证规则
+- [ ] [运营] 后台缺少数据统计报表导出功能 - 无法导出用户数据、订单数据等报表 - 建议添加导出Excel/CSV功能
+- [ ] [运营] 后台缺少积分调整功能页面 - 后端有adjustPoints接口，但前端没有对应的积分调整页面 - 建议添加积分调整功能
+- [ ] [运营] 后台缺少VIP会员管理页面 - 后端有VIP相关接口，但前端没有对应的会员管理页面 - 建议添加VIP会员管理功能
+
+---
+
 ## 运营检查报告 - 2026-03-16 第三轮
 
 ### 检查概览
@@ -781,7 +852,7 @@
 
 ---
 
-## 占卜功能体验检查报告 - 2026-03-16 第三轮
+## 占卜功能体验检查报告 - 2026-03-16 第四轮
 
 ### 检查概览
 - **检查时间**: 2026-03-16
@@ -830,6 +901,8 @@
 - [ ] [占卜] 六爻变卦计算完全缺失 - backend/app/controller/Liuyao.php第262-326行 - 动爻产生变卦但未计算和展示变卦卦象，六爻解卦不完整 - 建议添加变卦计算逻辑：老阳变阴、老阴变阳
 - [ ] [占卜] 六爻六亲六神分析缺失 - backend/app/controller/Liuyao.php - 六爻解卦缺少六亲(父母/兄弟/子孙/妻财/官鬼)和六神(青龙/朱雀/勾陈/螣蛇/白虎/玄武)配属 - 建议添加专业六爻分析
 - [ ] [占卜] 六爻用神判断逻辑缺失 - backend/app/controller/Liuyao.php第331-360行 - 未根据问题类型自动判断用神，解读过于通用 - 建议添加关键词识别用神逻辑
+- [ ] [占卜] 八字节气数据覆盖年份不足 - backend/app/controller/Paipan.php第563-573行 - 仅1990/1995/2000三年精确数据，其他年份使用通用数据可能导致月柱计算错误(±1天误差) - 建议补充1900-2050年完整节气表
+- [ ] [占卜] 八字真太阳时未实现 - backend/app/controller/Paipan.php - 前端选择出生地后，后端未根据经度计算真太阳时 - 建议添加真太阳时转换算法
 
 #### 🟡 中优先级（体验问题）
 - [ ] [占卜] 六爻缺少手动起卦模式 - frontend/src/views/Liuyao.vue - 仅支持自动随机起卦，无法手动输入六次摇卦结果 - 建议添加手动起卦界面，支持用户输入每次摇卦结果
@@ -837,6 +910,7 @@
 - [ ] [占卜] 塔罗缺少元素分析 - frontend/src/views/Tarot.vue - 牌阵中元素(火/水/风/土)分布未分析 - 建议添加元素分布统计和解读
 - [ ] [占卜] 八字藏干十神展示不突出 - frontend/src/views/Bazi.vue - 虽有藏干十神计算，但前端展示不够突出，藏干信息难以辨认 - 建议优化藏干十神展示方式
 - [ ] [占卜] 合婚缺少传统合婚法 - backend/app/controller/Hehun.php - 可添加三元合婚、九宫合婚、紫微合婚等传统方法 - 建议丰富合婚算法
+- [ ] [占卜] 塔罗缺少AI深度解读 - backend/app/controller/Tarot.php - 仅有基础牌义，无AI解牌功能 - 建议添加AI解牌接口
 
 #### 🟢 低优先级（专业性优化）
 - [ ] [占卜] 六爻可添加应期推断 - backend/app/controller/Liuyao.php - 解卦时可尝试推断事情发生时间 - 建议添加应期分析
@@ -844,6 +918,7 @@
 - [ ] [占卜] 塔罗可添加牌面图案 - frontend/src/views/Tarot.vue - 当前仅使用emoji表示，可添加真实塔罗牌图片 - 建议引入韦特塔罗牌图片资源
 - [ ] [占卜] 八字可增加神煞分析 - backend/app/controller/Paipan.php - 可添加天乙贵人、文昌、桃花、驿马等常用神煞 - 建议参考《三命通会》
 - [ ] [占卜] 八字大运流年可添加更多细节 - backend/app/controller/Paipan.php - 缺少交运时间、流年神煞等信息 - 建议丰富大运流年展示
+- [ ] [占卜] 八字日主强弱判断过于简化 - backend/app/controller/Paipan.php - 日主强弱判断仅基于简单规则，未考虑月令、通根、透干等因素 - 建议参考《滴天髓》完善判断逻辑
 
 ---
 

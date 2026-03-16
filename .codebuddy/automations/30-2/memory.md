@@ -1,5 +1,67 @@
 # 待办处理执行器 - 执行历史
 
+## 2026-03-16 执行记录（第4次）
+
+### 本次修复任务（5个问题）
+
+#### 1. 后端Content.php依赖模型缺失 - PageRecycle.php
+- **文件**: backend/app/model/PageRecycle.php（新建）
+- **问题**: Content.php引用PageRecycle模型但该文件不存在
+- **修复**: 创建PageRecycle模型，包含回收站页面管理功能
+  - 支持页面软删除和恢复
+  - 提供getList、findByPageId、restore等方法
+
+#### 2. 后端Content.php依赖模型缺失 - OperationLog.php
+- **文件**: backend/app/model/OperationLog.php（新建）
+- **问题**: Content.php引用OperationLog模型但该文件不存在
+- **修复**: 创建OperationLog模型，用于记录管理员操作日志
+  - 支持按action、admin_id、keyword等条件查询
+  - 提供record方法快速记录操作
+
+#### 3. 后端Admin.php依赖模型缺失 - Feedback.php
+- **文件**: backend/app/model/Feedback.php（新建）
+- **问题**: Admin.php引用Feedback模型但该文件不存在
+- **修复**: 创建Feedback模型，用于用户反馈管理
+  - 支持反馈列表查询、用户反馈查询
+  - 提供createFeedback和reply方法
+
+#### 4. 后端Admin.php权限检查返回格式不统一
+- **文件**: backend/app/controller/Admin.php
+- **问题**: 10处权限检查使用json(['code' => 403])，与其他方法使用$this->error()不一致
+- **修复**: 统一替换所有权限检查的返回格式
+  - updateUserStatus: json() → $this->error()
+  - contentList: json() → $this->error()
+  - deleteContent: json() → $this->error()
+  - pointsList: json() → $this->error()
+  - adjustPoints: json() → $this->error()
+  - feedbackList: json() → $this->error()
+  - replyFeedback: json() → $this->error()
+  - getConfig: json() → $this->error()
+  - saveConfig: json() → $this->error()
+  - operationLogs: json() → $this->error()
+
+#### 5. 后端Admin.php统计逻辑错误
+- **文件**: backend/app/controller/Admin.php第118-120行
+- **问题**: featureStats中塔罗占卜和每日运势都使用DailyFortune::count()，塔罗占卜应使用TarotRecord::count()
+- **修复**: 
+  - 塔罗占卜: \app\model\DailyFortune::count() → TarotRecord::count()
+  - 每日运势: \app\model\DailyFortune::count() → DailyFortune::count()
+  - 同时移除全局命名空间调用，使用已导入的类
+
+### 修复验证
+- 所有新建模型文件语法检查通过
+- Admin.php所有权限检查返回格式统一
+- 统计逻辑已修正，塔罗占卜和每日运势分别使用正确的模型
+- TODO.md已更新，所有修复项已从"待处理项目"移到"已完成项目"
+
+### 状态
+- 完成5个修复任务
+- 创建了3个新的模型文件
+- 修改了1个控制器文件
+- 下次执行将继续处理剩余高优先级问题
+
+---
+
 ## 2026-03-16 执行记录（第3次）
 
 ### 本次修复任务（5个问题）

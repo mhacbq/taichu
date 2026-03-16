@@ -176,12 +176,7 @@ import {
   Close,
   Present,
   Collection,
-  Sunrise,
-  Home,
-  Timer,
-  Reading,
-  Link,
-  Sunrise as SunriseIcon
+  Sunrise
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

@@ -1,5 +1,40 @@
 # 网站逻辑检查任务 - 执行历史
 
+## 2026-03-16 16:30 执行记录
+
+### 检查范围
+1. 前端逻辑检查 (frontend/src目录)
+2. 管理端逻辑检查 (frontend/src/views/admin目录)
+3. 后台逻辑检查 (backend/app目录)
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+1. **前端Bazi.vue result对象多层属性访问空值风险** - 多处直接访问result.bazi.xxx而没有检查result或result.bazi是否存在，可能导致页面崩溃
+2. **后端AiAnalysis.php callAiApiStream方法缺少SSL验证** - cURL调用未设置CURLOPT_SSL_VERIFYPEER和CURLOPT_SSL_VERIFYHOST，存在中间人攻击风险
+3. **后端AiAnalysis.php testConnection方法缺少SSL验证** - cURL调用缺少SSL验证配置
+
+#### 🟡 中优先级（体验问题）
+1. **前端Bazi.vue cancelAiAnalysis函数空值检查缺失** - clearInterval(aiLoadingTimer.value)调用前未检查是否为null
+2. **前端Bazi.vue shareResult函数空值风险** - 直接访问result.value.bazi.xxx没有空值检查
+3. **前端ShenshaManage.vue分页逻辑副作用问题** - filteredList computed属性中直接修改total.value，违反Vue响应式原则
+4. **前端KnowledgeManage.vue图片上传错误处理未绑定** - el-upload组件缺少:on-error="handleCoverError"绑定
+
+### 已修复/已不存在的問題
+1. **后端AdminAuth中间件JWT密钥硬编码** - 已修复：从环境变量读取
+2. **后端AdminAuth中间件日志记录敏感信息** - 已修复：添加敏感字段脱敏处理
+3. **后端Auth.php邀请码暴力枚举防护** - 已修复：尝试次数超过10次后阻止操作
+4. **后端AiAnalysis.php类型检查缺失** - 已修复：已添加is_array检查
+5. **后端Admin.php feedbackList缺少权限检查** - 已修复：已添加权限检查
+6. **后端AdminAuthService缺少无效adminId校验** - 已修复：已添加if ($adminId <= 0)校验
+7. **后端Content.php SQL注入防护** - 已修复：已添加preg_replace过滤特殊字符
+
+### 待处理统计
+- 高优先级: 3个新问题
+- 中优先级: 4个新问题
+
+---
+
 ## 2026-03-16 15:00 执行记录
 
 ### 检查范围
