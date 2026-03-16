@@ -5,20 +5,46 @@
 
 ## 自动化任务说明
 
-已设置3个自动化任务：
+已设置4个自动化任务（每30分钟执行一次）：
 
-| 任务名称 | 频率 | 说明 |
-|---------|------|------|
-| 网站逻辑检查任务 | 每小时 | 检查前端/后端逻辑问题 |
-| 待办处理执行器 | 每小时 | 自动处理待办列表中的任务 |
-| UI设计检查官 | 每小时 | 检查UI设计问题 |
+| 任务名称 | 频率 | 说明 | 角色 |
+|---------|------|------|------|
+| 网站逻辑检查任务 | 每30分钟 | 检查前端/后端逻辑问题 | 代码审查专家 |
+| 待办处理执行器 | 每30分钟 | 自动处理TODO.md中的任务 | 代码修复专家 |
+| UI设计检查官 | 每30分钟 | 检查UI设计问题 | 产品经理/UI设计师 |
+| 运营人员后台检查 | 每30分钟 | 使用后台管理系统并记录问题 | 运营人员 |
 
-## UI设计检查报告 - 2026-03-16 第八轮
+## UI设计检查报告 - 2026-03-16 第九轮
 
 ### 本次检查重点
 - 检查范围：前端Vue项目全部视图页面和组件
 - 检查维度：整体视觉风格、首页设计、功能页面、交互体验、移动端适配
 - 发现问题：核心主题不一致问题仍然存在，需要决策
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] [UI] 首页Hero区域问候卡片文字颜色问题 - Home.vue第343-344、350-351、455-456、460-461行 - 问候语h3和daily-quote使用白色文字（color: #fff, rgba(255,255,255,0.7)），与白色主题冲突 - 建议改为使用var(--text-primary)和var(--text-secondary)
+- [ ] [UI] 首页Hero区域主标题渐变包含白色 - Home.vue第516行 - hero-title使用渐变包含白色（#fff 0%），在白色背景下不可见 - 建议改为使用深色到主题色的渐变
+- [ ] [UI] 首页Hero区域副标题和提示文字颜色问题 - Home.vue第523-524、570-571行 - hero-subtitle和hero-hint使用白色文字，与白色主题冲突 - 建议改为使用var(--text-secondary)
+- [ ] [UI] 功能卡片背景与主题冲突 - Home.vue第587-591行 - feature-card使用深色背景（rgba(255,255,255,0.05)）和白色文字（color: #fff），与白色主题定义不符 - 建议改为使用var(--bg-card)和var(--text-primary)
+- [ ] [UI] 关于区域背景色与主题冲突 - Home.vue第632、699行 - about和testimonials使用深色背景（rgba(0,0,0,0.2)），与白色主题冲突 - 建议改为使用var(--bg-secondary)
+- [ ] [UI] 统计数据文字颜色问题 - Home.vue第643、646、653、692-693行 - about-text、about-list、stat-label使用白色文字，与白色主题冲突 - 建议改为使用var(--text-secondary)
+- [ ] [UI] 用户评价卡片配色与主题冲突 - Home.vue第714-783行 - testimonial-card使用深色背景和白色文字，与白色主题冲突 - 建议改为使用浅色配色方案
+
+#### 🟡 中优先级（体验问题）
+- [ ] [UI] 导航栏大量使用emoji图标 - App.vue第6、24、36、39、64、67、70、73、76、79、87、90、111、132、137、145、148、151行 - 使用☯、💎、👤、🚪、🏠、📅、🎴、💕、🌟、🌸、💝等emoji作为图标 - 建议引入@element-plus/icons-vue统一图标系统
+- [ ] [UI] 首页大量使用emoji图标 - Home.vue第10、21、36、47-49、57-58、62-63、67、78、84、90、96、102、108、185、214等行 - 使用🌅、☀️、🌙、💎、🌸、🎁、✨、🔮、📅、🎴、💡、☯、💕、🌟、🎯、👩、👨、👦、👩‍💼、👨‍💻、👩‍🎨等emoji - 建议统一使用图标库
+- [ ] [UI] 八字排盘页面使用emoji图标 - Bazi.vue第11、21、35、41、74、96、196等行 - 使用💝、💎、🌱、🔮、❓、🎁、⚡等emoji - 建议统一使用图标库
+- [ ] [UI] 塔罗占卜页面使用emoji图标 - Tarot.vue第11、30、40、51、91、126、129、132等行 - 使用💎、🎴、🔮、💭、💼、💕、🌱、🤔、👥、💾、📤、🔄等emoji - 建议统一使用图标库
+- [ ] [UI] 移动端导航关闭按钮触摸区域过小 - App.vue第519-525行 - mobile-nav-close按钮padding仅5px，实际点击区域不足44px - 建议增大至44x44px
+- [ ] [UI] 浮动陪伴组件关闭按钮触摸区域过小 - App.vue第815-827行 - close-btn宽度仅28px，不符合44px最小触摸区域规范 - 建议增大至44px
+
+#### 🟢 低优先级（美观问题）
+- [ ] [UI] 登录页面深色背景与白色主题不协调 - Login.vue第187行 - 使用深色渐变背景（#1a1a2e到#16213e），与style.css中白色主题定义冲突 - 建议改为白色/浅色主题配色
+- [ ] [UI] 首页Hero区域背景渐变在白色主题下效果不明显 - Home.vue第297行 - 使用radial-gradient(ellipse at center, rgba(233, 69, 96, 0.15) 0%, transparent 70%)，在白色背景下效果微弱 - 建议使用更明显的浅色渐变或装饰性SVG背景
+- [ ] [UI] 功能卡片hover效果不一致 - Home.vue第596-600行 - feature-card使用transform: translateY(-10px)，而其他页面卡片使用不同的hover效果 - 建议统一hover动画效果
+- [ ] [UI] 页面内容区缺少统一背景色 - 各页面内容区背景色不一致，有的透明有的深色，与白色主题不协调 - 建议统一添加浅色背景
 
 ---
 
@@ -269,6 +295,9 @@
 - [x] [2026-03-16] 管理端Config.vue中updateFeature函数名冲突 - frontend/src/views/admin/Config.vue - 已重命名本地函数为handleUpdateFeature - 修复时间: 2026-03-16
 - [ ] [2026-03-16] 后端AdminAuth中间件硬编码JWT密钥 - backend/app/middleware/AdminAuth.php - 第17行JWT密钥硬编码，应从配置文件读取
 - [ ] [2026-03-16] 后端Auth控制器缺少Cache类导入 - backend/app/controller/Auth.php - 第288行使用Cache但未导入think\facade\Cache
+- [ ] [2026-03-16] 后端Vip.php缺失VipService依赖 - backend/app/controller/Vip.php第10行 - VipService类被引用但未找到定义文件，会导致运行时错误 - 建议创建backend/app/service/VipService.php文件
+- [ ] [2026-03-16] 后端Vip.php缺失模型文件 - backend/app/controller/Vip.php第7-8行 - UserVip和VipOrder模型被引用但未找到定义文件 - 建议创建backend/app/model/UserVip.php和VipOrder.php
+- [ ] [2026-03-16] 后端Admin.php feedbackList缺少权限检查 - backend/app/controller/Admin.php第472行 - feedbackList方法没有进行权限检查，其他管理功能都有权限检查 - 建议添加if (!$this->checkPermission('feedback_view'))检查
 
 ### 🟡 中优先级（体验问题）
 
@@ -276,12 +305,21 @@
 - [ ] [2026-03-16] 前端SEOManage.vue站点地图功能模拟实现 - frontend/src/views/admin/SEOManage.vue - 站点地图生成和robots保存为模拟实现
 - [ ] [2026-03-16] 后端Admin控制器返回码格式不统一 - backend/app/controller/Admin.php - 部分接口返回code=200，部分返回code=0，应统一
 - [ ] [2026-03-16] 后端缺少AdminAuthService实现检查 - backend/app/service/AdminAuthService.php - 需要确认权限检查逻辑是否完整
+- [ ] [2026-03-16] 后端API返回格式不一致 - backend/app/controller/AiAnalysis.php第54,89-97行 - 错误时使用code=400/500，与其他控制器不一致 - 建议统一使用BaseController的success()和error()方法
+- [ ] [2026-03-16] 后端Content.php输入验证不完整 - backend/app/controller/Content.php第67-76行 - savePage和importPage方法对blocks数组的验证不够完整 - 建议添加更严格的输入验证
+- [ ] [2026-03-16] 后端Content.php潜在SQL注入风险 - backend/app/controller/Content.php第363-365行 - keyword参数直接拼接到like查询中 - 建议添加preg_replace过滤特殊字符
+- [ ] [2026-03-16] 前端Bazi.vue未使用变量和函数 - frontend/src/views/Bazi.vue第950行、1068-1084行 - yearlyTrendData变量和getYearlyTrendData函数定义后从未使用 - 建议删除未使用的代码
+- [ ] [2026-03-16] 前端Tarot.vue未使用变量 - frontend/src/views/Tarot.vue第242行 - selectedCardIndex变量定义后从未读取 - 建议删除或使用该变量
+- [ ] [2026-03-16] 前端App.vue潜在空值访问 - frontend/src/views/App.vue第221行 - 从localStorage获取userInfo后直接访问nickname属性，可能为null - 建议使用可选链user?.nickname
 
 ### 🟢 低优先级（优化问题）
 
 - [ ] [2026-03-16] 前端Login.vue用户协议和隐私政策功能未实现 - frontend/src/views/Login.vue - showAgreement和showPrivacy方法仅显示提示
 - [ ] [2026-03-16] 前端Bazi.vue中isCurrentDaYun方法使用固定年龄 - frontend/src/views/Bazi.vue - 第1254行currentAge固定为30，应根据出生日期计算
 - [ ] [2026-03-16] 后端AdminAuth中间件logOperation方法未完整实现 - backend/app/middleware/AdminAuth.php - 第53-68行日志记录为注释状态
+- [ ] [2026-03-16] 后端AiAnalysis.php未使用的类引用 - backend/app/controller/AiAnalysis.php第8行 - CacheService被引用但未使用 - 建议移除或实现缓存功能
+- [ ] [2026-03-16] 后端AiAnalysis.php未实现的缓存功能 - backend/app/controller/AiAnalysis.php第18-22行 - 定义了ENABLE_CACHE和CACHE_TTL常量但未使用 - 建议实现AI分析结果缓存逻辑
+- [ ] [2026-03-16] 后端Content.php潜在空指针风险 - backend/app/controller/Content.php第85-86行 - 使用$request->adminId和$request->adminName可能不存在 - 建议添加空值检查或使用默认值
 
 ## 已完成项目
 
