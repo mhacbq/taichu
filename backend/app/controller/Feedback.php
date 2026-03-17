@@ -44,9 +44,20 @@ class Feedback extends BaseController
             return $this->success([
                 'id' => $feedbackId,
             ], '反馈提交成功，感谢您的建议！');
-        } catch (\Exception $e) {
-            return $this->error('提交失败: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return $this->respondSystemException(
+                'feedback.submit',
+                $e,
+                '提交失败，请稍后重试',
+                [
+                    'user_id' => (int) ($user['sub'] ?? 0),
+                    'type' => $type,
+                    'has_contact' => !empty($data['contact']),
+                    'content_length' => mb_strlen((string) $data['content']),
+                ]
+            );
         }
+
     }
     
     /**

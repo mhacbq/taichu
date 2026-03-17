@@ -6,7 +6,7 @@ namespace app\controller;
 use app\BaseController;
 use app\middleware\AdminAuth;
 use think\Request;
-use think\facade\Log;
+
 
 /**
  * 文件上传控制器
@@ -94,12 +94,17 @@ class Upload extends BaseController
                 'path' => $savePath . $fileName
             ], '上传成功');
             
-        } catch (\Exception $e) {
-            Log::error('上传图片失败: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return $this->error('上传失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondUploadException(
+                'upload.image',
+                $e,
+                '上传失败，请稍后重试',
+                array_merge([
+                    'category' => 'image',
+                ], $this->describeUploadedFile($file ?? null))
+            );
         }
+
 
     }
 
@@ -173,12 +178,21 @@ class Upload extends BaseController
                 'error_count' => count($errors)
             ], '上传完成');
             
-        } catch (\Exception $e) {
-            Log::error('批量上传图片失败: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return $this->error('上传失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondUploadException(
+                'upload.images',
+                $e,
+                '上传失败，请稍后重试',
+                [
+                    'category' => 'image',
+                    'batch' => true,
+                    'file_count' => isset($files) ? (is_array($files) ? count($files) : 1) : 0,
+                    'success_count' => count($results ?? []),
+                    'error_count' => count($errors ?? []),
+                ]
+            );
         }
+
 
     }
 
@@ -233,12 +247,17 @@ class Upload extends BaseController
                 'size' => $file->getSize()
             ], '上传成功');
             
-        } catch (\Exception $e) {
-            Log::error('上传文件失败: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return $this->error('上传失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondUploadException(
+                'upload.file',
+                $e,
+                '上传失败，请稍后重试',
+                array_merge([
+                    'category' => 'file',
+                ], $this->describeUploadedFile($file ?? null))
+            );
         }
+
 
     }
 
@@ -271,10 +290,20 @@ class Upload extends BaseController
                 'total' => $total
             ]);
             
-        } catch (\Exception $e) {
-            Log::error('获取上传列表失败: ' . $e->getMessage());
-            return $this->error('获取列表失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondUploadException(
+                'upload.gallery',
+                $e,
+                '获取列表失败，请稍后重试',
+                [
+                    'category' => 'image',
+                    'page' => $page ?? null,
+                    'page_size' => $pageSize ?? null,
+                    'keyword_length' => isset($keyword) ? mb_strlen((string) $keyword) : 0,
+                ]
+            );
         }
+
     }
 
     /**
@@ -308,20 +337,65 @@ class Upload extends BaseController
             
             return $this->success(null, '删除成功');
             
-        } catch (\Exception $e) {
-            Log::error('删除上传文件失败: ' . $e->getMessage(), [
-                'id' => $id,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return $this->error('删除失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondUploadException(
+                'upload.delete',
+                $e,
+                '删除失败，请稍后重试',
+                [
+                    'file_id' => (int) $id,
+                    'stored_path' => $file->file_path ?? '',
+                    'category' => $file->type ?? '',
+                    'extension' => $file->extension ?? '',
+                ]
+            );
         }
 
+
+    }
+
+    protected function respondUploadException(
+        string $action,
+        \Throwable $e,
+        string $userMessage,
+        array $context = []
+    ): \think\response\Json {
+        return $this->respondSystemException($action, $e, $userMessage, $this->buildUploadLogContext($context));
+    }
+
+    protected function logUploadException(string $action, \Throwable $e, array $context = []): void
+    {
+        $this->logControllerException($action, $e, $this->buildUploadLogContext($context), 'error');
+    }
+
+    protected function buildUploadLogContext(array $context = []): array
+    {
+        return array_filter($context, static fn ($value) => $value !== null && $value !== '');
+    }
+
+    protected function describeUploadedFile($file): array
+    {
+        if (!$file) {
+            return ['file_present' => false];
+        }
+
+        $originalName = method_exists($file, 'getOriginalName') ? (string) $file->getOriginalName() : '';
+
+        return [
+            'file_present' => true,
+            'original_name_hash' => $originalName === '' ? '' : sha1($originalName),
+            'original_name_length' => mb_strlen($originalName),
+            'extension' => method_exists($file, 'getExtension') ? strtolower((string) $file->getExtension()) : '',
+            'mime_type' => method_exists($file, 'getMime') ? (string) $file->getMime() : '',
+            'size' => method_exists($file, 'getSize') ? (int) $file->getSize() : 0,
+        ];
     }
 
     /**
      * 验证图片
      */
     protected function validateImage($file)
+
     {
         $config = $this->config['image'];
         
@@ -481,12 +555,19 @@ class Upload extends BaseController
     {
         try {
             \app\model\UploadFile::create($data);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // 记录日志但不影响上传流程
-            Log::error('保存文件记录失败: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+            $this->logUploadException('upload.save_record', $e, [
+                'category' => $data['type'] ?? '',
+                'stored_path' => $data['file_path'] ?? '',
+                'extension' => $data['extension'] ?? '',
+                'mime_type' => $data['mime_type'] ?? '',
+                'size' => isset($data['file_size']) ? (int) $data['file_size'] : 0,
+                'original_name_hash' => empty($data['original_name']) ? '' : sha1((string) $data['original_name']),
+                'original_name_length' => empty($data['original_name']) ? 0 : mb_strlen((string) $data['original_name']),
             ]);
         }
+
 
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
-use think\facade\Cache;
 use think\facade\Db;
+
 
 /**
  * 任务系统控制器
@@ -13,10 +13,86 @@ use think\facade\Db;
 class Task extends BaseController
 {
     protected $middleware = [\app\middleware\Auth::class];
+
+    protected const TASK_CONFIGS = [
+        'daily_login' => [
+            'id' => 'daily_login',
+            'type' => 'daily',
+            'title' => '每日登录',
+            'desc' => '每天登录APP即可获得积分',
+            'icon' => 'login',
+            'points' => 5,
+            'max_times' => 1,
+        ],
+        'daily_paipan' => [
+            'id' => 'daily_paipan',
+            'type' => 'daily',
+            'title' => '每日排盘',
+            'desc' => '完成一次八字排盘',
+            'icon' => 'calendar',
+            'points' => 10,
+            'max_times' => 1,
+        ],
+        'daily_share' => [
+            'id' => 'daily_share',
+            'type' => 'daily',
+            'title' => '每日分享',
+            'desc' => '分享APP给好友',
+            'icon' => 'share',
+            'points' => 2,
+            'max_times' => 5,
+        ],
+        'complete_profile' => [
+            'id' => 'complete_profile',
+            'type' => 'once',
+            'title' => '完善资料',
+            'desc' => '完善个人资料信息',
+            'icon' => 'user',
+            'points' => 20,
+            'max_times' => 1,
+        ],
+        'first_paipan' => [
+            'id' => 'first_paipan',
+            'type' => 'once',
+            'title' => '首次排盘',
+            'desc' => '完成第一次八字排盘',
+            'icon' => 'star',
+            'points' => 30,
+            'max_times' => 1,
+        ],
+        'first_recharge' => [
+            'id' => 'first_recharge',
+            'type' => 'once',
+            'title' => '首次充值',
+            'desc' => '完成第一次积分充值',
+            'icon' => 'wallet',
+            'points' => 50,
+            'max_times' => 1,
+        ],
+        'invite_friend' => [
+            'id' => 'invite_friend',
+            'type' => 'unlimited',
+            'title' => '邀请好友',
+            'desc' => '邀请好友注册并使用',
+            'icon' => 'team',
+            'points' => 50,
+            'max_times' => -1,
+        ],
+        'daily_checkin' => [
+            'id' => 'daily_checkin',
+            'type' => 'daily',
+            'title' => '每日签到',
+            'desc' => '连续签到可获得更多奖励',
+            'icon' => 'check',
+            'points' => 5,
+            'max_times' => 1,
+        ],
+    ];
     
     /**
      * 获取任务列表
      */
+
     public function getTasks()
     {
         $user = $this->request->user;
@@ -24,81 +100,8 @@ class Task extends BaseController
         
         $today = date('Y-m-d');
         
-        // 任务配置
-        $tasks = [
-            [
-                'id' => 'daily_login',
-                'type' => 'daily',
-                'title' => '每日登录',
-                'desc' => '每天登录APP即可获得积分',
-                'icon' => 'login',
-                'points' => 5,
-                'max_times' => 1,
-            ],
-            [
-                'id' => 'daily_paipan',
-                'type' => 'daily',
-                'title' => '每日排盘',
-                'desc' => '完成一次八字排盘',
-                'icon' => 'calendar',
-                'points' => 10,
-                'max_times' => 1,
-            ],
-            [
-                'id' => 'daily_share',
-                'type' => 'daily',
-                'title' => '每日分享',
-                'desc' => '分享APP给好友',
-                'icon' => 'share',
-                'points' => 2,
-                'max_times' => 5,
-            ],
-            [
-                'id' => 'complete_profile',
-                'type' => 'once',
-                'title' => '完善资料',
-                'desc' => '完善个人资料信息',
-                'icon' => 'user',
-                'points' => 20,
-                'max_times' => 1,
-            ],
-            [
-                'id' => 'first_paipan',
-                'type' => 'once',
-                'title' => '首次排盘',
-                'desc' => '完成第一次八字排盘',
-                'icon' => 'star',
-                'points' => 30,
-                'max_times' => 1,
-            ],
-            [
-                'id' => 'first_recharge',
-                'type' => 'once',
-                'title' => '首次充值',
-                'desc' => '完成第一次积分充值',
-                'icon' => 'wallet',
-                'points' => 50,
-                'max_times' => 1,
-            ],
-            [
-                'id' => 'invite_friend',
-                'type' => 'unlimited',
-                'title' => '邀请好友',
-                'desc' => '邀请好友注册并使用',
-                'icon' => 'team',
-                'points' => 50,
-                'max_times' => -1,
-            ],
-            [
-                'id' => 'daily_checkin',
-                'type' => 'daily',
-                'title' => '每日签到',
-                'desc' => '连续签到可获得更多奖励',
-                'icon' => 'check',
-                'points' => 5,
-                'max_times' => 1,
-            ],
-        ];
+        $tasks = array_values(self::TASK_CONFIGS);
+
         
         // 获取用户任务进度
         foreach ($tasks as &$task) {
@@ -149,17 +152,17 @@ class Task extends BaseController
             return $this->error('任务奖励已领取完毕');
         }
         
+        $userModel = \app\model\User::find($userId);
+        if (!$userModel) {
+            return $this->error('用户不存在');
+        }
+
         // 开始事务
         Db::startTrans();
         try {
             // 增加用户积分
-            $userModel = \app\model\User::find($userId);
-            if (!$userModel) {
-                Db::rollback();
-                return $this->error('用户不存在');
-            }
-            
             $userModel->addPoints($taskConfig['points']);
+
             
             // 记录积分变动
             \app\model\PointsRecord::record(
@@ -187,10 +190,21 @@ class Task extends BaseController
                 'total_points' => $userModel->points,
             ], '领取成功');
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
-            return $this->error('领取失败：' . $e->getMessage());
+            return $this->respondSystemException(
+                'task.claim_reward',
+                $e,
+                '领取失败，请稍后重试',
+                [
+                    'user_id' => $userId,
+                    'task_id' => $taskId,
+                    'task_type' => $taskConfig['type'] ?? '',
+                    'points' => $taskConfig['points'] ?? 0,
+                ]
+            );
         }
+
     }
     
     /**
@@ -262,6 +276,11 @@ class Task extends BaseController
         $bonusPoints = min($newConsecutiveDays * 2, 20); // 最多20额外积分
         $totalPoints = $basePoints + $bonusPoints;
         
+        $userModel = \app\model\User::find($userId);
+        if (!$userModel) {
+            return $this->error('用户不存在');
+        }
+
         // 开始事务
         Db::startTrans();
         try {
@@ -274,8 +293,8 @@ class Task extends BaseController
             ]);
             
             // 增加用户积分
-            $userModel = \app\model\User::find($userId);
             $userModel->addPoints($totalPoints);
+
             
             // 记录积分变动
             \app\model\PointsRecord::record(
@@ -297,10 +316,22 @@ class Task extends BaseController
                 'total_points' => $userModel->points,
             ], '签到成功');
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
-            return $this->error('签到失败：' . $e->getMessage());
+            return $this->respondSystemException(
+                'task.checkin',
+                $e,
+                '签到失败，请稍后重试',
+                [
+                    'user_id' => $userId,
+                    'consecutive_days' => $newConsecutiveDays,
+                    'base_points' => $basePoints,
+                    'bonus_points' => $bonusPoints,
+                    'total_points' => $totalPoints,
+                ]
+            );
         }
+
     }
     
     /**
@@ -338,66 +369,7 @@ class Task extends BaseController
      */
     protected function getTaskConfig(string $taskId): ?array
     {
-        $configs = [
-            'daily_login' => [
-                'id' => 'daily_login',
-                'type' => 'daily',
-                'title' => '每日登录',
-                'points' => 5,
-                'max_times' => 1,
-            ],
-            'daily_paipan' => [
-                'id' => 'daily_paipan',
-                'type' => 'daily',
-                'title' => '每日排盘',
-                'points' => 10,
-                'max_times' => 1,
-            ],
-            'daily_share' => [
-                'id' => 'daily_share',
-                'type' => 'daily',
-                'title' => '每日分享',
-                'points' => 2,
-                'max_times' => 5,
-            ],
-            'complete_profile' => [
-                'id' => 'complete_profile',
-                'type' => 'once',
-                'title' => '完善资料',
-                'points' => 20,
-                'max_times' => 1,
-            ],
-            'first_paipan' => [
-                'id' => 'first_paipan',
-                'type' => 'once',
-                'title' => '首次排盘',
-                'points' => 30,
-                'max_times' => 1,
-            ],
-            'first_recharge' => [
-                'id' => 'first_recharge',
-                'type' => 'once',
-                'title' => '首次充值',
-                'points' => 50,
-                'max_times' => 1,
-            ],
-            'invite_friend' => [
-                'id' => 'invite_friend',
-                'type' => 'unlimited',
-                'title' => '邀请好友',
-                'points' => 50,
-                'max_times' => -1,
-            ],
-            'daily_checkin' => [
-                'id' => 'daily_checkin',
-                'type' => 'daily',
-                'title' => '每日签到',
-                'points' => 5,
-                'max_times' => 1,
-            ],
-        ];
-        
-        return $configs[$taskId] ?? null;
+        return self::TASK_CONFIGS[$taskId] ?? null;
     }
     
     /**
@@ -405,67 +377,9 @@ class Task extends BaseController
      */
     protected static function getTaskConfigStatic(string $taskId): ?array
     {
-        $configs = [
-            'daily_login' => [
-                'id' => 'daily_login',
-                'type' => 'daily',
-                'title' => '每日登录',
-                'points' => 5,
-                'max_times' => 1,
-            ],
-            'daily_paipan' => [
-                'id' => 'daily_paipan',
-                'type' => 'daily',
-                'title' => '每日排盘',
-                'points' => 10,
-                'max_times' => 1,
-            ],
-            'daily_share' => [
-                'id' => 'daily_share',
-                'type' => 'daily',
-                'title' => '每日分享',
-                'points' => 2,
-                'max_times' => 5,
-            ],
-            'complete_profile' => [
-                'id' => 'complete_profile',
-                'type' => 'once',
-                'title' => '完善资料',
-                'points' => 20,
-                'max_times' => 1,
-            ],
-            'first_paipan' => [
-                'id' => 'first_paipan',
-                'type' => 'once',
-                'title' => '首次排盘',
-                'points' => 30,
-                'max_times' => 1,
-            ],
-            'first_recharge' => [
-                'id' => 'first_recharge',
-                'type' => 'once',
-                'title' => '首次充值',
-                'points' => 50,
-                'max_times' => 1,
-            ],
-            'invite_friend' => [
-                'id' => 'invite_friend',
-                'type' => 'unlimited',
-                'title' => '邀请好友',
-                'points' => 50,
-                'max_times' => -1,
-            ],
-            'daily_checkin' => [
-                'id' => 'daily_checkin',
-                'type' => 'daily',
-                'title' => '每日签到',
-                'points' => 5,
-                'max_times' => 1,
-            ],
-        ];
-        
-        return $configs[$taskId] ?? null;
+        return self::TASK_CONFIGS[$taskId] ?? null;
     }
+
     
     /**
      * 获取任务进度

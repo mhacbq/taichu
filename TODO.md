@@ -1,13 +1,18 @@
 ## 待处理项目
 
 ### 🔴 高优先级
+- [x] [2026-03-18] [代码] 前端 `Bazi.vue` 存在未使用的 Vue `h` 导入，`SEOStats.vue` 复核后确认 `RankBadge` 仍实际依赖 `h`，原 TODO 描述过宽 - `frontend/src/views/{Bazi.vue,admin/SEOStats.vue}` - 已移除 `Bazi.vue` 的无效导入，并核销 `SEOStats.vue` 的历史误报，避免继续把正常渲染逻辑当成 lint 问题处理。
+
+
 - [x] [2026-03-18] [代码] 后端部分控制器直接返回 `$e->getMessage()` 给前端，可能泄露敏感异常信息 - backend/app/controller/{Admin,AiPrompt,AiAnalysis}.php - 已将反作弊规则新增/更新、AI 提示词 JSON 校验、AI 配置保存与连接测试等入口统一切换到 `respondBusinessException()` / `respondSystemException()`，避免原始异常信息直接暴露给前端。
-- [x] [运营] 重建到当前仓库代码后，管理员已能成功登录，但 Dashboard 的 `/api/admin/dashboard/statistics` 与 `/api/admin/dashboard/trend` 仍持续返回 500，首页只能停留在“运营看板加载失败”错误态，日常查看用户数、订单数、收入趋势与快捷决策被直接阻断 - 后台首页 / Dashboard - 已在 `backend/app/service/AdminStatsService.php` 改为统一走 schema 探测与运行态降级：趋势统计不再依赖 `column('*')` 的隐式行为，`site_daily_stats` 缺失时自动回退实时业务表；`refresh-stats` 也改为复用实时快照落库，避免旧表名/旧字段继续导致 Dashboard 统计与趋势接口 500。
-- [x] [运营] 管理员成功登录后，用户列表 `/user/list` 与用户详情 `/user/detail/:id` 仍会直接进入“加载失败”只读态；浏览器网络显示列表/详情请求都已命中 `GET /api/admin/users*`，但页面无法消费真实数据，导致用户搜索、详情查看和列表内调积分链路全部不可用 - 用户管理 / 用户列表 / 用户详情 - 已在 `backend/app/service/AdminStatsService.php` 将用户列表改为基于运行态表探测的子查询方案，兼容 `tc_user_vip/user_vip` 与缺失命理记录表；同时在 `backend/app/controller/admin/User.php` 为积分记录、八字、塔罗、六爻、订单信息补齐缺表降级，恢复列表/详情链路。
+- [x] [运营] 重建到当前仓库代码后，管理员已能成功登录，但 Dashboard 的 `/api/admin/dashboard/statistics`、`/api/admin/dashboard/trend` 与并行加载的 `/api/admin/dashboard/realtime` 仍会把首页拖进“运营看板加载失败”错误态，用户数、订单数、收入趋势与实时动态都无法稳定查看 - 后台首页 / Dashboard - 已在 `backend/app/controller/Admin.php` 把实时动态用户字段改为基于 schema 探测的自适应读取，不再硬查运行库里不存在的 `tc_user.username`；同时显式兼容反馈 `pending` 状态写法，现已实测 `statistics / trend / realtime / chart / pending-feedback` 五条接口全部返回 200。
+- [x] [运营] 管理员成功登录后，用户列表 `/user/list` 与用户详情 `/user/detail/:id` 仍会直接进入“加载失败”只读态；浏览器网络显示列表/详情请求都已命中 `GET /api/admin/users*`，但页面无法消费真实数据，导致用户搜索、详情查看和列表内调积分链路全部不可用 - 用户管理 / 用户列表 / 用户详情 - 已在 `backend/app/service/AdminStatsService.php` 将用户列表重写为“基础分页 + 批量回填八字/塔罗/VIP”模式，避开脆弱子查询；并修正 `backend/route/admin.php` 的用户路由顺序，避免 `/api/admin/users/:id` 被列表路由提前截走；同时为 `admin/src/api/user.js` 补齐可选参数透传，列表/详情现已实测恢复。
+
 
 
 ### 🟡 中优先级
-- [x] [运营] 充值订单页 `GET /api/admin/payment/orders` 已能返回列表，但统计接口 `/api/admin/payment/stats` 仍返回 500，页面顶部“支付订单 / 累计实收 / 累计发放积分 / 待支付订单”继续显示默认 0 值，运营容易把异常误判成真实订单表现 - 订单管理 / 充值订单 - 已在 `backend/app/controller/admin/Payment.php` 修正去重用户统计写法，并把统计/趋势查询改为兼容 `status` / `pay_status` 两套状态字段；旧 schema 下也能正确计算支付、待支付与趋势数据，不再因状态列漂移直接 500。
+- [x] [运营] 充值订单页 `GET /api/admin/payment/orders` 已能返回列表，但统计接口 `/api/admin/payment/stats` 仍返回 500，页面顶部“支付订单 / 累计实收 / 累计发放积分 / 待支付订单”继续显示默认 0 值，运营容易把异常误判成真实订单表现 - 订单管理 / 充值订单 - 已在 `backend/app/controller/admin/Payment.php` 去掉会触发 ThinkORM `distinct(): Argument #1 ($distinct) must be of type bool, string given` 的用户去重写法，改为兼容旧表结构的 `user_id` 去重统计；同时在 `admin/src/views/payment/orders.vue` 改成列表成功、统计失败时页内告警降级，不再让单个统计接口把整页一起拖进错误态。
+
 
 
 ### 🟢 低优先级
@@ -15,7 +20,25 @@
 
 ---
 
+## 🔍 代码逻辑检查报告 - 第二十七轮 (2026-03-18)
+
+作为代码重构与质量维护负责人，我继续聚焦 `TODO.md` 中的 `[代码]` 维护方向，完成以下 5 个不重复的日常优化点：
+
+### 🔴 高优先级
+- [x] [代码] 用户反馈提交接口仍会直接把底层异常原文拼回前端，数据库或字段异常会被终端用户直接看到 - `backend/app/controller/Feedback.php` - 已改为统一走 `respondSystemException()`，前端只接收安全失败文案，日志保留 `user_id/type/has_contact/content_length` 等脱敏上下文。
+- [x] [代码] 支付宝 PC / H5 下单入口重复维护充值档位和订单创建逻辑，且一旦生成支付参数失败会把原始异常回给前端 - `backend/app/controller/Alipay.php` - 已收敛为统一下单 helper，补齐订单取消回滚与 `scene/channel/order_no/amount/points` 结构化日志，前端不再接收原始异常文本。
+
+### 🟡 中优先级
+- [x] [代码] 任务系统控制器同时保留 3 份任务配置，签到/领奖失败又直接回传 `$e->getMessage()`，后续维护容易一处改了三处漏 - `backend/app/controller/Task.php` - 已将任务配置提升为单一常量来源，并把领奖/签到异常改为统一安全返回；顺手前置用户检查，去掉事务内多余回滚分支。
+- [x] [代码] 上传控制器多处把 `trace` 原文整段写入日志，日志噪音大且会泄露运行细节，图片/文件/删除/落库失败的记录格式也彼此不一致 - `backend/app/controller/Upload.php` - 已新增统一上传异常 helper，改记 `category/file_count/original_name_hash/extension/mime_type/size` 等结构化字段，去掉原始堆栈落盘。
+
+### 🟢 低优先级
+- [x] [代码] 前端 `Bazi.vue` 存在未使用的 Vue `h` 导入，`SEOStats.vue` 则被误记为同类问题，影响 lint 清理判断 - `frontend/src/views/{Bazi.vue,admin/SEOStats.vue}` - 已移除 `Bazi.vue` 的无效导入，并复核确认 `SEOStats.vue` 的 `RankBadge` 仍依赖 `h`，同步核销该历史误报。
+
+---
+
 ## 🔍 代码逻辑检查报告 - 第二十六轮 (2026-03-18)
+
 
 作为代码重构与质量维护负责人，我继续聚焦 `TODO.md` 中的 `[代码]` 维护方向，完成以下 5 个不重复的日常优化点：
 
@@ -565,29 +588,37 @@
 作为精通东西方命理占卜的资深爱好者，我继续结合真实页面体验、接口审计结果与代码交叉核验，确认以下问题尚未在当前 `TODO.md` 与自动化执行记录中重复登记后，新增如下：
 
 ### 🔴 高优先级（逻辑错误/准确性问题）
-- [ ] [占卜] 六爻当前运行环境的 `pricing` 和 `divination` 接口都返回“方法不存在”，时间起卦、手动摇卦都无法真正落盘解卦 - 六爻占卜 - `/api/liuyao/pricing` 命中 `app\controller\Liuyao->getPricing()` 不存在，`/api/liuyao/divination` 命中 `app\controller\Liuyao->divination()` 不存在，导致主卦、变卦、动爻、六亲、六神与解卦链路整体失效。
 
 ### 🟡 中优先级（体验问题）
+
 
 ### 🟢 低优先级（专业性优化）
 - [ ] [占卜] 塔罗解读仍有明显模板拼接痕迹，重复句号、固定“元素互动”段和牌位套话会削弱韦特体系的专业感 - 塔罗牌占卜 - 建议按单张、三张、凯尔特十字分别重写牌位关系逻辑，减少机械复述牌义，补足逆位心理阻抗与牌阵位置之间的因果衔接。
 
 ---
 
-## 🔮 占卜爱好者深度体验检查报告 - 第二十五轮 (2026-03-18)
 
-作为精通东西方命理占卜的资深爱好者，我继续结合真实页面操作、运行态接口复测、容器日志与传统命理规则交叉核验，确认以下问题尚未在当前 `TODO.md` 与自动化执行记录中重复登记后，新增如下：
 
-### 🔴 高优先级（逻辑错误/准确性问题）
-- [ ] [占卜] 排盘后的流年分析、大运分析和运势图接口会整体 500，深度命盘链路在真实环境不可用 - 八字排盘 - `/api/fortune/yearly` 与 `/api/fortune/dayun-analysis` 在 `Fortune.php` 里直接实例化 `Paipan` 时缺少构造参数，`/api/fortune/yearly` 还额外触发 `YearlyFortuneService.php` 误写 `app\service\Db`，导致大运流年、走势评分与年份图全部无法验证。
-- [ ] [占卜] 六爻当前不再是“方法不存在”，而是控制器硬编码 `tc_liuyao_record` 与库中真实表 `liuyao_records` / `liuyao_gua` 不一致，定价、时间起卦、手动摇卦都会直接 500 - 六爻占卜 - `getPricing()` / `divination()` / `history()` 都依赖不存在的表名，结果是主卦、变卦、动爻、六亲、六神和解卦分析整条链路仍然无法体验。
-- [ ] [占卜] 每日运势前端路由声明为公开可浏览，但后端 `Daily` 控制器全局挂了鉴权中间件，匿名访问 `/daily` 会因为 `/api/daily/fortune` 返回 401 被前端拦截器直接踢回首页 - 每日运势 - 页面承诺“可直接浏览”与接口权限设计相互冲突，游客实际上根本看不到今日运势、黄历宜忌和时辰吉凶。
-- [ ] [占卜] 本地测试模式下“获取验证码”仍返回“短信服务未配置”，不知道隐藏测试码的用户无法从真实页面入口进入八字、塔罗、六爻和合婚 - 登录入口 / 受限占卜功能访问 - `SmsService::sendVerifyCode()` 在 `SMS_TEST_MODE=true` 时仍先强依赖腾讯云短信配置，没有像验证码校验那样走本地测试短路。
+---
+
+## 🎨 第四十三次UI设计检查报告 (2026-03-18)
+
+作为资深产品经理和UI设计师，我继续从首页、八字、塔罗、六爻、合婚与每日运势的交互一致性、消费承诺可信度、加载状态与历史回放体验几个角度复核太初命理网站，确认以下问题尚未在当前 `TODO.md` 与自动化执行记录中重复登记后，新增如下：
+
+### 🔴 高优先级（功能性问题）
+- [ ] [UI] 塔罗抽牌后仍可切换牌阵，导致牌位标签、保存记录与分享内容可能错位 - `frontend/src/views/Tarot.vue` 结果区 / `saveTarotResult()` / `showCardDetail()` - 抽牌成功时固化 `drawnSpread` 快照，并在切换牌阵前提示会清空当前结果，避免用户看到与实际抽牌不一致的牌阵语义。
+- [ ] [UI] 八字 AI 智能解盘价格写死为 30 积分，和其余动态定价机制脱节，后续改价时极易出现界面承诺与实际扣费不一致 - `frontend/src/views/Bazi.vue` AI 解盘区 / `AI_ANALYSIS_COST` - 改为统一读取后端定价，并优先以后端返回的 `remaining_points` 刷新余额，避免本地硬编码继续透支信任感。
+- [ ] [UI] 六爻定价加载失败时页面会直接隐藏消费说明，但“开始占卜”按钮仍可点击，用户会在未知价格下被迫决策 - `frontend/src/views/Liuyao.vue` 定价区 / `loadPricing()` / `canSubmit` - 补齐 loading、error、retry 的页内状态，定价未就绪时禁用 CTA 或改成“先刷新价格信息”。
+- [ ] [UI] 每日运势页首屏加载态缺少 `isLoading` 状态声明，骨架屏与内容切换存在直接报错或白屏风险 - `frontend/src/views/Daily.vue` 首屏加载逻辑 / `loadDailyFortune()` - 补齐显式 loading 状态，让 loading、error、content 三态切换稳定，避免页面一上来就“算命算到前端先倒下”。
 
 ### 🟡 中优先级（体验问题）
+- [ ] [UI] 合婚历史记录缺少“免费预览 / 完整版”类型标识，点击任意历史都会被包装成“详细合婚报告”，容易误判自己是否已经解锁完整版 - `frontend/src/views/Hehun.vue` 历史列表 / `loadHistoryDetail()` - 在列表上增加类型与 AI 状态标签，并按 `tier` / `is_premium` 分流回放到 `freeResult` 或 `premiumResult`。
+- [ ] [UI] 六爻“当前北京时间”提示会冻结，用户停留几分钟后再提交时，界面展示时刻与真实起卦时刻脱节 - `frontend/src/views/Liuyao.vue` 时间起卦提示 / `currentBeijingTime` - 改为实时更新时间，或直接说明“提交时按服务器当前北京时间起卦”，把时间信任链补完整。
 
-### 🟢 低优先级（专业性优化）
-- [ ] [占卜] 八字基础解读里“喜用神”文案与接口返回字段前后不一致，专业用户会被用神判断绕晕 - 八字排盘 - 同一命盘的 `favorite_wuxing` 返回为“火、木、水”，正文却只写“宜取木与水来疏泄制衡”而漏掉火，喜用神说明缺少统一口径。
+### 🟢 低优先级（美观问题）
+- [ ] [UI] 塔罗“重新占卜”不会清空已选话题，回到首屏后仍停留在上一轮问题语境里，新一轮探索不够干净利落 - `frontend/src/views/Tarot.vue` `resetTarot()` / 问题引导区 - 重置时同步清空 `selectedTopic`，让用户重新进入更纯净的提问状态。
+
+
 
 
 
