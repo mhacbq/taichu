@@ -1,43 +1,58 @@
-# Automation Memory - UI Fixes (2026-03-17)
+# Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
-- **Task**: Fourth round of UI consistency, accessibility, and mobile usability fixes.
-- **Status**: Completed (5 UI issues resolved).
-- **Date**: 2026-03-17
+- Task: Tenth round of UI consistency fixes focused on the homepage Hero value expression, card hierarchy, responsive touch targets, and preview blocking issue.
+- Status: Completed (5 UI issues resolved).
+- Date: 2026-03-18
 
-## Major Changes
-1. **首页统计图标稳定渲染（Home.vue）**
-   - 将统计卡片图标从字符串动态组件改为稳定的图标组件引用。
-   - 新增 `statIconMap` 与 `resolveStatIcon()`，兼容接口返回的字符串图标名，避免统计区整组图标丢失。
-2. **返回按钮白色主题对比度修复（BackButton.vue）**
-   - 按钮改为使用 Element Plus `ArrowLeft` 图标。
-   - 统一为浅色容器、深色文字、hover/focus/active 状态，并补齐 44px 触控尺寸。
-3. **塔罗问题引导区移动端降密（Tarot.vue）**
-   - 小屏下将 `.topic-tabs` 调整为 2 列、`.template-list` 调整为单列。
-   - 补齐话题/模板项最小触控高度，并将牌面详情弹窗宽度改为 `min(92vw, 500px)`。
-4. **六爻历史删除入口可发现性提升（Liuyao.vue）**
-   - 删除按钮从 hover 才可见改为默认可见的次级危险操作按钮。
-   - 新增“删除”文案，触屏端无需悬停即可识别操作入口。
-5. **减少动态效果支持（Home.vue / Liuyao.vue / TarotCard.vue）**
-   - 为首页欢迎区、统计卡片、六爻卦象动效、塔罗牌持续旋转/脉冲补充 `prefers-reduced-motion: reduce` 降级分支。
-   - 在用户系统偏好减少动态效果时关闭非必要持续动画与位移变换。
-
-## TODO Maintenance
-- 已从 `TODO.md` 删除以下 5 个已完成 UI 问题：
-  - 首页统计卡片图标依赖字符串动态组件
-  - 共享返回按钮白色主题对比度偏弱
-  - 塔罗问题引导区移动端过密
-  - 六爻历史删除按钮仅 hover 可见
-  - 持续动画未响应 reduced-motion
+## Summary
+- `frontend/src/views/Home.vue`: 将首页 Hero 主文案统一改成面向用户价值的表达，移除“首屏信息更聚焦”“头重脚轻”等内部改版措辞。
+- `frontend/src/views/Home.vue`: 新增 Hero 亮点卡、权限说明卡和信任标签，统一卡片圆角、阴影、图标与按钮层级，让权益、入口和说明拆开展示。
+- `frontend/src/views/Home.vue`: 将游客权益区改成双行说明卡，并把主按钮触达高度提升到 48px，补齐 992/768 断点下的响应式收拢。
+- `frontend/src/App.vue`: 补回 `shouldShowCompanion` / `shouldReserveCompanionSpace` 运行态计算，解决首页预览白屏，恢复本地视觉核验。
+- `TODO.md`: 已移除首页 Hero 内部措辞这条 `[UI]` 待办。
 
 ## Validation
-- `read_lints`：`frontend/src/views/Home.vue`、`frontend/src/components/BackButton.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/components/TarotCard.vue`、`frontend/src/views/Liuyao.vue` 均为 **0 diagnostics**。
-- `npm run build`：**通过**。
-- 当前仍有构建体积告警：`element-plus` 与 `SEOStats` chunk 超过 500 kB，但不阻塞本轮 UI 修复提交。
+- `read_lints`: `frontend/src/views/Home.vue`、`frontend/src/App.vue` 0 diagnostics。
+- `npm run build --prefix frontend`: 通过（仅剩 chunk size warning）。
+- 本地预览 `http://127.0.0.1:4173/?v=20260318-hero-fix` 已完成桌面 / 移动端截图留档；统计接口因预览环境指向占位域名而触发 fallback 文案，但不影响本轮 Hero UI 结构核验。
 
-## Git Commit
-- Planned: `fix-ui-accessibility-mobile-20260317`
+---
 
 ## Previous Run
-- Previous commit: `fix-ui-multiple-issues-20260317-1700`
-- Focus: Global CSS variables, Bazi result visualization, Tarot interaction feedback, Liuyao hexagram refinement, page transition polish.
+- Task: Ninth round of UI consistency fixes focused on backend error-state visibility and read-only protection.
+- Status: Completed (5 UI issues resolved and pushed).
+- Date: 2026-03-18
+- Commit: `2373f41` (`"fix-ui-multiple-issues-20260318-0210"`)
+
+### Summary
+- `admin/src/views/dashboard/index.vue`: 为运营看板补齐整页错误态、重试入口、导出禁用与失败后的只读保护，避免继续展示默认 0 值与“尚未加载”。
+- `admin/src/views/user/list.vue`: 为用户列表加入显式错误态、批量/积分写操作禁用和重试入口，失败时不再保留空表或旧列表。
+- `admin/src/views/content/almanac.vue`、`admin/src/views/content/shensha.vue`: 统一接入页内错误态、表单只读保护和重试入口，失败时自动关闭编辑弹窗并清空旧数据。
+- `admin/src/views/payment/orders.vue`: 充值订单页改为整页错误态，统计卡与列表加载失败时同步切换只读保护，不再继续展示旧统计。
+- `TODO.md`: 已移除本轮完成的 Dashboard / 用户列表 / 黄历 / 神煞 / 充值订单待办，仅保留 VIP 订单页未完成项。
+
+### Validation
+- `read_lints`: 本轮修改文件 0 diagnostics。
+- `npm run build --prefix admin`: 通过（仅剩 Sass legacy API deprecation 与 chunk size warning）。
+- `git push origin master`: 已推送到 `origin/master`。
+
+---
+
+## Earlier Run
+- Task: Eighth round of UI consistency fixes focused on Home hero hierarchy and testimonial trust expression.
+- Status: Completed (5 UI issues resolved and pushed).
+- Date: 2026-03-18
+- Commit: `c26c7c5` (`"fix-ui-multiple-issues-20260318-0049"`)
+
+### Summary
+- `frontend/src/views/Home.vue`: 将首页首屏从多张堆叠卡片改成主内容 + 单一状态面板布局，并按登录态收敛入口、积分展示与提示文案。
+- `frontend/src/views/Home.vue`: 重构“用户心声”为“体验故事 / 示例反馈”结构，新增说明卡、人物阶段、评分标签与结果摘要，提升社会证明区可信度。
+- `frontend/src/views/Home.vue`: 统一首页关键卡片和按钮的圆角、阴影、主题边框与 992/768 断点下的移动端触达尺寸。
+- `TODO.md`: 已移除上轮完成的 2 条首页 UI 待办。
+
+### Validation
+- `read_lints`: `Home.vue` 0 diagnostics。
+- `npm run build --prefix frontend`: 通过。
+- `git push origin master`: 已推送到 `origin/master`。
+

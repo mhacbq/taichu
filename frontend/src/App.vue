@@ -163,7 +163,7 @@
     </footer>
     
     <!-- 浮动心情陪伴组件 -->
-    <div v-if="isLoggedIn" class="floating-companion" :class="{ expanded: showCompanion }" @click="toggleCompanion">
+    <div v-if="shouldShowCompanion" class="floating-companion" :class="{ expanded: showCompanion }" @click="toggleCompanion">
       <div class="companion-avatar">
         <el-icon class="companion-icon" :size="28"><Collection /></el-icon>
         <span v-if="!showCompanion" class="companion-pulse"></span>
@@ -270,9 +270,18 @@ const randomQuote = computed(() => {
   return footerQuotes[dayOfYear % footerQuotes.length]
 })
 
+const shouldShowCompanion = computed(() => isLoggedIn.value && !showMobileMenu.value && route.path !== '/login')
+const shouldReserveCompanionSpace = computed(() => shouldShowCompanion.value)
+
 const toggleCompanion = () => {
+  if (!shouldShowCompanion.value) {
+    showCompanion.value = false
+    return
+  }
+
   showCompanion.value = !showCompanion.value
 }
+
 
 const lockPageScroll = () => {
   if (typeof document === 'undefined') return

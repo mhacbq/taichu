@@ -7,7 +7,7 @@
         <div class="hero-main">
           <span class="hero-kicker">传统文化探索 · 年轻人的人生参考</span>
           <h1 class="hero-title">在迷茫中找到方向</h1>
-          <p class="hero-subtitle">不是预测命运，而是帮你更懂自己<br>八字、塔罗、运势，为你的困惑寻找答案</p>
+          <p class="hero-subtitle">不是替你决定命运，而是帮你看清自己。<br>从八字、塔罗到每日运势，把困惑拆成更容易行动的下一步。</p>
           <div class="hero-actions">
             <router-link to="/bazi" class="btn-primary">
               <el-icon class="btn-icon"><Calendar /></el-icon>
@@ -22,11 +22,36 @@
             </router-link>
           </div>
           <p class="hero-hint" :class="{ 'hero-hint--muted': statsLoading || statsError }"><el-icon><Star /></el-icon> {{ heroHintText }}</p>
-          <p class="hero-gate-note">{{ isLoggedIn ? '你已登录，可直接体验八字、塔罗、六爻与合婚；每日运势可随时浏览。' : '八字、塔罗、六爻、合婚需登录后使用；每日运势可直接浏览。' }}</p>
+
+          <div class="hero-highlights" :class="{ 'hero-highlights--muted': statsLoading || statsError }">
+            <article class="hero-highlight" v-for="item in heroProofItems" :key="item.key">
+              <span class="hero-highlight-icon">
+                <el-icon><component :is="item.icon" /></el-icon>
+              </span>
+              <div class="hero-highlight-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.description }}</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="hero-access-list">
+            <article class="hero-access-item" v-for="item in heroAccessItems" :key="item.key">
+              <span class="hero-access-icon">
+                <el-icon><component :is="item.icon" /></el-icon>
+              </span>
+              <div class="hero-access-copy">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.detail }}</span>
+              </div>
+            </article>
+          </div>
+
           <div class="hero-trust-list">
-            <span class="hero-trust-pill"><el-icon><Check /></el-icon> 首屏信息更聚焦</span>
-            <span class="hero-trust-pill"><el-icon><Present /></el-icon> 新用户登录即可领积分</span>
-            <span class="hero-trust-pill"><el-icon><Star /></el-icon> 服务入口与权益说明分层展示</span>
+            <span class="hero-trust-pill" v-for="item in heroTrustItems" :key="item.key">
+              <el-icon><component :is="item.icon" /></el-icon>
+              {{ item.text }}
+            </span>
           </div>
         </div>
 
@@ -53,7 +78,7 @@
                   <strong class="hero-points-value">{{ formattedUserPoints }}</strong>
                 </div>
               </div>
-              <p class="hero-points-note">先签到补充积分，再去排盘或占卜，首页不会再被多张卡片挤压得头重脚轻。</p>
+              <p class="hero-points-note">当前积分已为你准备好，想继续深入时可以直接排盘或占卜；若想先补充额度，去签到页领取今日积分即可。</p>
             </div>
             <div class="hero-panel-actions">
               <router-link to="/profile" class="hero-panel-btn hero-panel-btn--primary">签到领积分</router-link>
@@ -72,11 +97,15 @@
               </div>
               <span class="hero-status-badge hero-status-badge--soft">未登录</span>
             </div>
-            <p class="hero-status-quote hero-status-quote--guest">登录后可领取新用户积分，并按你的节奏体验八字、塔罗与每日运势。</p>
+            <p class="hero-status-quote hero-status-quote--guest">先登录领取体验积分，再从八字、塔罗或每日运势里挑一个最想解决的问题开始。</p>
             <div class="hero-benefits">
-              <span class="hero-benefit"><el-icon><Present /></el-icon> 新用户送 100 积分</span>
-              <span class="hero-benefit"><el-icon><Star /></el-icon> 八字首测免费</span>
-              <span class="hero-benefit"><el-icon><MagicStick /></el-icon> 支持八字 / 塔罗 / 每日运势</span>
+              <article class="hero-benefit" v-for="item in guestBenefits" :key="item.key">
+                <el-icon><component :is="item.icon" /></el-icon>
+                <div class="hero-benefit-copy">
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.description }}</span>
+                </div>
+              </article>
             </div>
             <div class="hero-panel-actions">
               <router-link to="/login" class="hero-panel-btn hero-panel-btn--primary">立即登录</router-link>
@@ -324,6 +353,99 @@ const heroHintText = computed(() => {
 
 const formattedUserPoints = computed(() => formatDisplayValue(userPoints.value))
 const registerIntentRoute = { path: '/login', query: { intent: 'register' } }
+
+const heroPointsDetail = computed(() => {
+  if (!isLoggedIn.value) {
+    return '登录后可领取 100 积分，用更轻量的方式开始第一次体验。'
+  }
+
+  if (!hasDisplayValue(userPoints.value)) {
+    return '积分正在同步中，也可以先去个人中心确认今日签到状态。'
+  }
+
+  return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
+})
+
+const heroProofItems = computed(() => [
+  {
+    key: 'users',
+    icon: UserFilled,
+    label: hasDisplayValue(userCount.value) ? `${formatDisplayValue(userCount.value)}+ 用户正在体验` : '持续为用户提供参考',
+    description: '把人生阶段、当下困惑和下一步行动拆开来看，先理解自己再做决定。'
+  },
+  {
+    key: 'services',
+    icon: MagicStick,
+    label: '5 类核心服务一站体验',
+    description: '八字、塔罗、六爻、合婚与每日运势统一从首页进入，路径更清楚。'
+  },
+  {
+    key: 'clarity',
+    icon: ChatLineRound,
+    label: statsError.value ? '体验说明已单独呈现' : '权益与说明更透明',
+    description: '登录门槛、示例反馈和积分权益分开展示，避免把提示误读成结果承诺。'
+  }
+])
+
+const heroAccessItems = computed(() => [
+  {
+    key: 'entry',
+    icon: isLoggedIn.value ? Check : Present,
+    title: isLoggedIn.value ? '完整入口已为你解锁' : '登录后开启完整体验',
+    detail: isLoggedIn.value ? '八字、塔罗、六爻与合婚现在都能直接进入。' : '八字、塔罗、六爻与合婚会在登录后保存记录与体验进度。'
+  },
+  {
+    key: 'daily',
+    icon: Star,
+    title: '每日运势可随时浏览',
+    detail: '今日宜忌、节奏提醒和轻量建议无需登录即可查看。'
+  },
+  {
+    key: 'points',
+    icon: Coin,
+    title: isLoggedIn.value ? '账户积分状态' : '新用户积分权益',
+    detail: heroPointsDetail.value
+  }
+])
+
+const heroTrustItems = computed(() => [
+  {
+    key: 'clarity',
+    icon: Check,
+    text: '先用一句话说清每项服务能帮你解决什么问题'
+  },
+  {
+    key: 'benefits',
+    icon: Present,
+    text: isLoggedIn.value ? '积分、入口与下一步操作收在同一张状态卡里' : '新用户福利、登录门槛和入口路径一次说明白'
+  },
+  {
+    key: 'rhythm',
+    icon: Star,
+    text: '先告诉你能做什么，再决定要不要深入探索'
+  }
+])
+
+const guestBenefits = [
+  {
+    key: 'points',
+    icon: Present,
+    title: '登录即领 100 积分',
+    description: '先拿到体验额度，再决定最想优先探索哪一项服务。'
+  },
+  {
+    key: 'free',
+    icon: Star,
+    title: '八字首测免费',
+    description: '第一次排盘零门槛，适合先看看自己的整体节奏。'
+  },
+  {
+    key: 'services',
+    icon: MagicStick,
+    title: '多种方式探索自己',
+    description: '八字、塔罗与每日运势等入口现在都从首页顺着往下走。'
+  }
+]
 
 // 问候语数据
 const hour = new Date().getHours()
@@ -615,42 +737,115 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-.hero-gate-note {
-  margin-top: 12px;
-  max-width: 620px;
+.hero-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.hero-highlight {
+  min-height: 108px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), var(--white-03));
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.hero-highlights--muted .hero-highlight {
+  border-color: var(--border-light);
+}
+
+.hero-highlight-icon,
+.hero-access-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(var(--primary-rgb), 0.14);
+  color: var(--primary-light);
+}
+
+.hero-highlight-copy,
+.hero-access-copy,
+.hero-benefit-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.hero-highlight-copy strong,
+.hero-access-copy strong,
+.hero-benefit-copy strong {
+  color: var(--text-primary);
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+}
+
+.hero-highlight-copy span,
+.hero-access-copy span,
+.hero-benefit-copy span {
   color: var(--text-tertiary);
   font-size: var(--font-caption);
   line-height: 1.7;
 }
 
+.hero-access-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hero-access-item {
+  min-height: 96px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--white-05);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
 .hero-trust-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .hero-trust-pill {
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 10px 16px;
   border-radius: 999px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), var(--white-05));
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
   color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: var(--font-caption);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
 .hero-trust-pill .el-icon {
   color: var(--primary-light);
+  flex-shrink: 0;
 }
 
 .hero-side {
   display: flex;
   justify-content: flex-end;
 }
+
 
 .hero-status-card {
   width: 100%;
@@ -660,7 +855,10 @@ onMounted(() => {
   border: 1px solid rgba(var(--primary-rgb), 0.18);
   box-shadow: var(--shadow-hover);
   backdrop-filter: blur(16px);
+  display: grid;
+  gap: 18px;
 }
+
 
 .hero-status-head {
   display: flex;
@@ -723,7 +921,7 @@ onMounted(() => {
 }
 
 .hero-status-quote {
-  margin: 18px 0 0;
+  margin: 0;
   padding: 14px 16px;
   border-radius: var(--radius-lg);
   background: var(--white-05);
@@ -734,16 +932,17 @@ onMounted(() => {
 }
 
 .hero-status-quote--guest {
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .hero-points-panel {
-  margin-top: 18px;
+  margin-top: 0;
   padding: 18px;
   border-radius: var(--radius-lg);
   background: var(--white-05);
   border: 1px solid var(--border-light);
 }
+
 
 .hero-points-display {
   display: flex;
@@ -789,35 +988,35 @@ onMounted(() => {
 .hero-benefits {
   display: grid;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .hero-benefit {
-  min-height: 44px;
-  padding: 10px 14px;
+  min-height: 64px;
+  padding: 14px 16px;
   border-radius: var(--radius-lg);
   background: var(--white-05);
   border: 1px solid var(--border-light);
   display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-secondary);
-  font-size: var(--font-small);
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .hero-benefit .el-icon {
   color: var(--primary-light);
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .hero-panel-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .hero-panel-btn {
-  min-height: 44px;
+  min-height: 48px;
   padding: 0 18px;
   border-radius: var(--radius-btn);
   text-decoration: none;
@@ -828,6 +1027,7 @@ onMounted(() => {
   justify-content: center;
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease, background-color 0.28s ease;
 }
+
 
 .hero-panel-btn--primary {
   background: var(--primary-gradient);
@@ -846,8 +1046,15 @@ onMounted(() => {
   box-shadow: var(--shadow-hover);
 }
 
+.hero-panel-btn:focus-visible,
+.hero-access-item:focus-within,
+.hero-highlight:focus-within {
+  outline: none;
+  box-shadow: var(--focus-ring), var(--shadow-hover);
+}
 
 .features {
+
 
   padding: 80px 0;
 }
@@ -1344,10 +1551,14 @@ onMounted(() => {
     margin-right: auto;
   }
 
-  .hero-subtitle,
-  .hero-gate-note {
+  .hero-subtitle {
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .hero-highlights,
+  .hero-access-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero-actions,
@@ -1400,6 +1611,34 @@ onMounted(() => {
     justify-content: center;
   }
 
+  .hero-highlights,
+  .hero-access-list,
+  .hero-trust-list {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-trust-list {
+    display: grid;
+  }
+
+  .hero-highlight,
+  .hero-access-item {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .hero-highlight-icon,
+  .hero-access-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .hero-trust-pill {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .hero-status-card {
     padding: 22px;
   }
@@ -1420,8 +1659,12 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .hero-panel-btn {
+    width: 100%;
+  }
+
   .hero-benefit {
-    align-items: flex-start;
+    min-height: 0;
   }
 
   .about-stats {
@@ -1445,6 +1688,7 @@ onMounted(() => {
     padding: 24px;
   }
 }
+
 
 
 
