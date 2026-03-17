@@ -5,9 +5,9 @@ import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import NotFound from '../views/NotFound.vue'
+import Bazi from '../views/Bazi.vue'
 
 // 非首屏页面 - 懒加载
-const Bazi = () => import('../views/Bazi.vue')
 const Tarot = () => import('../views/Tarot.vue')
 const TarotShare = () => import('../views/TarotShare.vue')
 const Daily = () => import('../views/Daily.vue')
@@ -262,6 +262,23 @@ const router = createRouter({
       return { top: 0 }
     }
   }
+})
+
+const dynamicImportErrorPattern = /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk [\d]+ failed/i
+
+router.onError((error, to) => {
+  if (!dynamicImportErrorPattern.test(String(error?.message || ''))) {
+    console.error('路由加载失败:', error)
+    return
+  }
+
+  const targetPath = typeof to?.fullPath === 'string' && to.fullPath ? to.fullPath : window.location.pathname
+  if (window.location.pathname !== targetPath) {
+    window.location.assign(targetPath)
+    return
+  }
+
+  window.location.reload()
 })
 
 // 检查用户是否为管理员

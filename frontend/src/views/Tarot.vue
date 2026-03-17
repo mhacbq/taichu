@@ -21,12 +21,14 @@
       <div class="tarot-intro card card-hover">
         <h2>选择您的牌阵</h2>
         <div class="spread-options">
-          <div 
-            v-for="spread in spreads" 
+          <button
+            v-for="spread in spreads"
             :key="spread.id"
+            type="button"
             class="spread-card card-hover"
             :class="{ active: selectedSpread === spread.id }"
-            @click="selectedSpread = spread.id"
+            :aria-pressed="selectedSpread === spread.id"
+            @click="selectSpread(spread.id)"
           >
             <div class="spread-icon">
               <el-icon v-if="spread.icon === 'card'"><Document /></el-icon>
@@ -38,7 +40,7 @@
             </span>
             <h3>{{ spread.name }}</h3>
             <p>{{ spread.description }}</p>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -49,11 +51,13 @@
           不知道问什么？选择一个你关心的话题
         </h3>
         <div class="topic-tabs">
-          <div 
-            v-for="topic in questionTopics" 
+          <button
+            v-for="topic in questionTopics"
             :key="topic.id"
+            type="button"
             class="topic-tab card-hover"
             :class="{ active: selectedTopic === topic.id }"
+            :aria-pressed="selectedTopic === topic.id"
             @click="selectTopic(topic.id)"
           >
             <span class="topic-icon">
@@ -64,20 +68,21 @@
               <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
             </span>
             <span class="topic-name">{{ topic.name }}</span>
-          </div>
+          </button>
         </div>
         <div class="question-templates" v-if="selectedTopic">
           <p class="template-hint">点击选择一个问题，或以此为灵感输入你自己的问题：</p>
           <div class="template-list">
-            <div 
-              v-for="(template, index) in currentTemplates" 
+            <button
+              v-for="(template, index) in currentTemplates"
               :key="index"
+              type="button"
               class="template-item card-hover"
               @click="selectQuestion(template)"
             >
               <span class="template-bullet">•</span>
               <span class="template-text">{{ template }}</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -378,6 +383,10 @@ const refreshPoints = async ({ silent = false } = {}) => {
 const currentTemplates = computed(() => {
   return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
 })
+
+const selectSpread = (spreadId) => {
+  selectedSpread.value = spreadId
+}
 
 const flowErrorTitle = computed(() => {
   if (!flowError.value) return ''
@@ -884,6 +893,8 @@ const getCardAdvice = (card) => {
 }
 
 .spread-card {
+  appearance: none;
+  width: 100%;
   background: var(--surface-raised);
   border-radius: var(--radius-lg);
   padding: 30px 20px;
@@ -897,6 +908,8 @@ const getCardAdvice = (card) => {
   flex-direction: column;
   align-items: center;
   gap: 15px;
+  color: inherit;
+  font: inherit;
 }
 
 .spread-card:hover {
@@ -926,6 +939,12 @@ const getCardAdvice = (card) => {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+
+.spread-card:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  border-color: var(--primary-color);
 }
 
 .spread-status-badge {
@@ -999,6 +1018,8 @@ const getCardAdvice = (card) => {
 }
 
 .topic-tab {
+  appearance: none;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1011,8 +1032,9 @@ const getCardAdvice = (card) => {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: inherit;
+  font: inherit;
 }
-
 
 .topic-tab:hover {
   background: var(--white-10);
@@ -1025,6 +1047,12 @@ const getCardAdvice = (card) => {
   border-color: var(--primary-color);
   transform: translateY(-5px);
   box-shadow: 0 8px 20px var(--primary-light-30);
+}
+
+.topic-tab:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  border-color: var(--primary-color);
 }
 
 .topic-tab .topic-icon {
@@ -1046,19 +1074,29 @@ const getCardAdvice = (card) => {
 }
 
 .template-item {
+  appearance: none;
+  width: 100%;
   background: var(--surface-raised);
   border: 1px solid var(--border-light);
   min-height: 44px;
   padding: 14px 18px;
   border-radius: 12px;
   transition: all 0.3s ease;
+  text-align: left;
+  color: inherit;
+  font: inherit;
 }
-
 
 .template-item:hover {
   background: var(--surface-hover);
   border-color: var(--primary-color);
   transform: scale(1.01) translateX(4px);
+}
+
+.template-item:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  border-color: var(--primary-color);
 }
 
 .template-bullet {

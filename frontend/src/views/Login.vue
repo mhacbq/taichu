@@ -7,8 +7,9 @@
             <el-icon class="logo-icon"><Star /></el-icon>
             <span>太初命理</span>
           </div>
-          <h2>欢迎回来</h2>
-          <p>登录后即可体验八字排盘、塔罗占卜等服务</p>
+          <h2>{{ loginTitle }}</h2>
+          <p>{{ loginSubtitle }}</p>
+          <p v-if="isRegisterIntent" class="intent-tip">当前入口会在验证成功后直接发放新手积分，无需再额外找注册按钮。</p>
         </div>
 
         <!-- 登录表单 -->
@@ -54,13 +55,13 @@
               :disabled="!isValidPhone || !isValidCode"
               @click="handlePhoneLogin"
             >
-              登录
+              {{ submitButtonText }}
             </el-button>
           </div>
         </div>
 
         <div class="login-tips">
-          <p><el-icon><Star /></el-icon> 登录后可获得 100 积分新手礼包</p>
+          <p><el-icon><Star /></el-icon> {{ primaryTipText }}</p>
           <p><el-icon><LockIcon /></el-icon> 我们严格保护您的隐私信息</p>
           <p class="agreement-tip">
             登录即表示同意
@@ -93,6 +94,14 @@ const phoneForm = ref({
   phone: '',
   code: ''
 })
+
+const isRegisterIntent = computed(() => route.query.intent === 'register')
+const loginTitle = computed(() => isRegisterIntent.value ? '注册领取新手积分' : '欢迎回来')
+const loginSubtitle = computed(() => isRegisterIntent.value
+  ? '验证手机号后会直接创建账号并登录，八字排盘、塔罗占卜等入口都能立即使用。'
+  : '登录后即可体验八字排盘、塔罗占卜等服务')
+const submitButtonText = computed(() => isRegisterIntent.value ? '领取积分并登录' : '登录')
+const primaryTipText = computed(() => isRegisterIntent.value ? '验证成功后即可领取 100 积分新手礼包' : '登录后可获得 100 积分新手礼包')
 
 // 表单验证
 const isValidPhone = computed(() => validatePhone(phoneForm.value.phone))
@@ -161,7 +170,7 @@ const handlePhoneLogin = async () => {
     if (response.code === 200) {
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('userInfo', JSON.stringify(response.data.user))
-      ElMessage.success('登录成功！')
+      ElMessage.success(isRegisterIntent.value ? '注册成功，欢迎来到太初命理！' : '登录成功！')
       const redirect = route.query.redirect || '/'
       router.push(redirect)
     } else {
@@ -242,6 +251,16 @@ onUnmounted(() => {
 .login-header p {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.intent-tip {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--text-primary) !important;
+  line-height: 1.6;
 }
 
 .login-methods {

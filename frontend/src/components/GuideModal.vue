@@ -3,9 +3,11 @@
     v-model="visible"
     :title="currentStep === 1 ? '欢迎来到太初命理' : '新手指引'"
     width="520px"
-    :show-close="false"
-    :close-on-click-modal="false"
+    :show-close="true"
+    :close-on-click-modal="true"
+    :close-on-press-escape="true"
     class="guide-dialog"
+    @close="handleDialogClose"
   >
     <div class="guide-content">
       <!-- 步骤指示器 -->
@@ -143,25 +145,30 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button v-if="currentStep > 1" @click="prevStep" class="footer-btn">
-          上一步
+        <el-button text @click="snoozeGuide" class="footer-btn footer-btn--text">
+          {{ currentStep < totalSteps ? '稍后再看' : '先自己逛逛' }}
         </el-button>
-        <el-button 
-          v-if="currentStep < totalSteps" 
-          type="primary" 
-          @click="nextStep"
-          class="footer-btn primary"
-        >
-          {{ currentStep === 1 ? '告诉我更多' : '下一步' }}
-        </el-button>
-        <el-button 
-          v-else 
-          type="primary" 
-          @click="finish"
-          class="footer-btn primary"
-        >
-          开始探索
-        </el-button>
+        <div class="footer-actions">
+          <el-button v-if="currentStep > 1" @click="prevStep" class="footer-btn">
+            上一步
+          </el-button>
+          <el-button
+            v-if="currentStep < totalSteps"
+            type="primary"
+            @click="nextStep"
+            class="footer-btn primary"
+          >
+            {{ currentStep === 1 ? '告诉我更多' : '下一步' }}
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            @click="finish"
+            class="footer-btn primary"
+          >
+            开始探索
+          </el-button>
+        </div>
       </div>
     </template>
   </el-dialog>
@@ -169,7 +176,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   Sunrise,
   User,
@@ -187,7 +193,10 @@ import {
 } from '@element-plus/icons-vue'
 import YinYangIcon from './YinYangIcon.vue'
 
-const router = useRouter()
+const GUIDE_SHOWN_KEY = 'guideShown'
+const GUIDE_DEFERRED_AT_KEY = 'guideDeferredAt'
+const GUIDE_DEFER_HOURS = 12
+
 const visible = ref(false)
 const currentStep = ref(1)
 const totalSteps = 4
@@ -204,27 +213,52 @@ const prevStep = () => {
   }
 }
 
-const finish = () => {
-  localStorage.setItem('guideShown', 'true')
+const closeGuide = () => {
   visible.value = false
-  // 引导用户去登录
-  const token = localStorage.getItem('token')
-  if (!token) {
-    router.push('/login')
+  currentStep.value = 1
+}
+
+const snoozeGuide = () => {
+  localStorage.setItem(GUIDE_DEFERRED_AT_KEY, String(Date.now()))
+  closeGuide()
+}
+
+const handleDialogClose = () => {
+  if (localStorage.getItem(GUIDE_SHOWN_KEY) === 'true') {
+    currentStep.value = 1
+    return
   }
+
+  localStorage.setItem(GUIDE_DEFERRED_AT_KEY, String(Date.now()))
+  currentStep.value = 1
+}
+
+const finish = () => {
+  localStorage.setItem(GUIDE_SHOWN_KEY, 'true')
+  localStorage.removeItem(GUIDE_DEFERRED_AT_KEY)
+  closeGuide()
+}
+
+const shouldDelayGuide = () => {
+  const deferredAt = Number(localStorage.getItem(GUIDE_DEFERRED_AT_KEY) || 0)
+  if (!Number.isFinite(deferredAt) || deferredAt <= 0) {
+    return false
+  }
+
+  return Date.now() - deferredAt < GUIDE_DEFER_HOURS * 60 * 60 * 1000
 }
 
 onMounted(() => {
-  // 检查是否已显示过引导
-  const guideShown = localStorage.getItem('guideShown')
+  const guideShown = localStorage.getItem(GUIDE_SHOWN_KEY)
   const token = localStorage.getItem('token')
-  
-  // 首次访问或未登录用户显示引导
-  if (!guideShown && !token) {
-    setTimeout(() => {
-      visible.value = true
-    }, 800)
+
+  if (guideShown === 'true' || token || shouldDelayGuide()) {
+    return
   }
+
+  setTimeout(() => {
+    visible.value = true
+  }, 800)
 })
 </script>
 
@@ -575,8 +609,18 @@ onMounted(() => {
 /* 底部按钮 */
 .dialog-footer {
   display: flex;
-  justify-content: center;
-  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .footer-btn {
@@ -584,6 +628,11 @@ onMounted(() => {
   height: 44px;
   font-size: 15px;
   border-radius: 22px;
+}
+
+.footer-btn--text {
+  min-width: auto;
+  padding-inline: 0;
 }
 
 .footer-btn.primary {

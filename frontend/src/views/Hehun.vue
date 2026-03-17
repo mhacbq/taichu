@@ -72,7 +72,10 @@
           <div class="upgrade-prompt" v-if="!isLoading">
             <p>{{ freeResult.preview_hint }}</p>
             <p class="upgrade-note">当前基础分析未启用 AI；若需 AI 深度解读，请保持当前勾选并解锁完整版。</p>
-            <button class="btn-upgrade" @click="unlockPremium">
+            <p v-if="pricingStatusText" class="pricing-status" :class="{ 'pricing-status--error': Boolean(pricingError), 'pricing-status--loading': pricingLoading }">
+              {{ pricingStatusText }}
+            </p>
+            <button class="btn-upgrade" :disabled="!canUnlockPremium" @click="unlockPremium">
               <el-icon><Unlock /></el-icon>
               解锁详细报告
               <span class="points-tag">{{ pricingDisplayText }}</span>
@@ -316,13 +319,14 @@
           </div>
           
           <!-- 定价信息 -->
-          <div class="pricing-info" v-if="normalizedPricing">
+          <div class="pricing-info" v-if="pricingLoading || normalizedPricing || pricingError">
             <div class="pricing-row">
               <span>本次消耗：</span>
               <span class="points">{{ pricingDisplayText }}</span>
-              <span v-if="normalizedPricing.discount > 0" class="discount">-{{ normalizedPricing.discount }}%</span>
+              <span v-if="normalizedPricing?.discount > 0" class="discount">-{{ normalizedPricing.discount }}%</span>
             </div>
-            <p v-if="normalizedPricing.reason" class="pricing-reason">{{ normalizedPricing.reason }}</p>
+            <p v-if="pricingStatusText" class="pricing-reason">{{ pricingStatusText }}</p>
+            <p v-else-if="normalizedPricing?.reason" class="pricing-reason">{{ normalizedPricing.reason }}</p>
           </div>
 
           <div v-if="hasReducedPrecision" class="precision-summary-card">
@@ -459,12 +463,12 @@ const exporting = ref(false)
 const freeResult = ref(null)
 const premiumResult = ref(null)
 const pricing = ref(null)
+const pricingLoading = ref(true)
+const pricingError = ref('')
 const history = ref([])
 const historyLoading = ref(false)
 const historyLoaded = ref(false)
 const historyError = ref('')
-
-
 
 // 维度名称映射
 const dimensionNames = {
@@ -660,17 +664,38 @@ const normalizePricingData = (rawPricing) => {
 }
 
 const normalizedPricing = computed(() => normalizePricingData(freeResult.value?.pricing || pricing.value))
-const pricingDisplayText = computed(() => {
-  if (!normalizedPricing.value) {
-    return '--'
+const pricingStatusText = computed(() => {
+  if (normalizedPricing.value) {
+    return ''
   }
 
-  return normalizedPricing.value.final > 0 ? `${normalizedPricing.value.final} 积分` : 'VIP 免费'
+  if (pricingLoading.value) {
+    return '完整版价格加载中，请稍候后再解锁。'
+  }
+
+  return pricingError.value || '完整版价格暂时不可用，请稍后重试。'
+})
+
+const pricingDisplayText = computed(() => {
+  if (normalizedPricing.value) {
+    return normalizedPricing.value.final > 0 ? `${normalizedPricing.value.final} 积分` : 'VIP 免费'
+  }
+
+  if (pricingLoading.value) {
+    return '加载中...'
+  }
+
+  return '价格待确认'
 })
 
 const canExportReport = computed(() => Boolean(premiumResult.value?.id))
+const canUnlockPremium = computed(() => Boolean(freeResult.value) && Boolean(normalizedPricing.value) && !isLoading.value)
 const premiumUnlockMessage = computed(() => {
-  const points = normalizedPricing.value?.final ?? 80
+  const points = normalizedPricing.value?.final
+  if (!Number.isFinite(points)) {
+    return '完整版价格暂未确认，请稍后再试。'
+  }
+
   if (points <= 0) {
     return form.useAi
       ? '您当前可免费解锁详细报告，并启用 AI 深度分析，是否继续？'
@@ -682,16 +707,26 @@ const premiumUnlockMessage = computed(() => {
     : `解锁详细报告将消耗 ${points} 积分，是否继续？`
 })
 
-
 // 获取定价信息
 const loadPricing = async () => {
+  pricingLoading.value = true
+  pricingError.value = ''
+
   try {
     const response = await getHehunPricing()
     if (response.code === 200) {
       pricing.value = response.data
+      return
     }
+
+    pricing.value = null
+    pricingError.value = response.message || '完整版价格加载失败，请稍后重试。'
   } catch (error) {
+    pricing.value = null
+    pricingError.value = '完整版价格加载失败，请稍后重试。'
     console.error('获取定价失败:', error)
+  } finally {
+    pricingLoading.value = false
   }
 }
 
@@ -724,6 +759,11 @@ const submitForm = async () => {
 
 // 解锁付费报告
 const unlockPremium = async () => {
+  if (!canUnlockPremium.value) {
+    ElMessage.warning(pricingStatusText.value || '完整版价格暂未就绪，请稍后再试')
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       premiumUnlockMessage.value,
@@ -1643,6 +1683,21 @@ onMounted(() => {
   line-height: 1.6;
 }
 
+.pricing-status {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.pricing-status--loading {
+  color: var(--text-secondary);
+}
+
+.pricing-status--error {
+  color: var(--danger-color);
+}
+
 .btn-upgrade {
   padding: 14px 32px;
   min-height: 48px;
@@ -1660,8 +1715,13 @@ onMounted(() => {
   box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
 }
 
+.btn-upgrade:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
-.btn-upgrade:hover {
+.btn-upgrade:not(:disabled):hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px var(--primary-light-40);
 }

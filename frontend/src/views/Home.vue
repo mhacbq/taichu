@@ -80,7 +80,7 @@
             </div>
             <div class="hero-panel-actions">
               <router-link to="/login" class="hero-panel-btn hero-panel-btn--primary">立即登录</router-link>
-              <router-link to="/login" class="hero-panel-btn hero-panel-btn--secondary">注册领积分</router-link>
+              <router-link :to="registerIntentRoute" class="hero-panel-btn hero-panel-btn--secondary">注册领积分</router-link>
             </div>
           </div>
         </aside>
@@ -94,8 +94,8 @@
         <div class="features-grid">
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
-            <h3>八字分析</h3>
-            <p>基于传统文化的性格分析，了解您的个性特点、发展方向、人际关系</p>
+            <h3>八字排盘</h3>
+            <p>基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考</p>
             <div class="feature-access">
               <span class="feature-note">需登录</span>
               <span class="feature-note feature-note--free">首测免费</span>
@@ -106,8 +106,8 @@
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
-            <h3>塔罗测试</h3>
-            <p>趣味塔罗牌阵探索，为您的困惑提供思考角度，发现内心可能</p>
+            <h3>塔罗占卜</h3>
+            <p>通过牌阵与问题模板梳理关系、工作与决策困惑，获得更聚焦的思路</p>
             <div class="feature-access">
               <span class="feature-note">需登录</span>
             </div>
@@ -139,8 +139,8 @@
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Star /></el-icon></div>
-            <h3>每日指南</h3>
-            <p>基于出生日期的每日幸运指数，生活参考，娱乐消遣</p>
+            <h3>每日运势</h3>
+            <p>查看今日宜忌、幸运提示与节奏建议，作为轻量的日常状态参考</p>
             <router-link to="/daily" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -323,8 +323,7 @@ const heroHintText = computed(() => {
 })
 
 const formattedUserPoints = computed(() => formatDisplayValue(userPoints.value))
-
-
+const registerIntentRoute = { path: '/login', query: { intent: 'register' } }
 
 // 问候语数据
 const hour = new Date().getHours()
