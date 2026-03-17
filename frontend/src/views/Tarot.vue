@@ -106,6 +106,22 @@
         </el-button>
       </div>
 
+      <div v-if="flowError && cards.length === 0" class="flow-error card card-hover">
+        <EmptyState
+          type="error"
+          size="small"
+          :title="flowErrorTitle"
+          :description="flowErrorDescription"
+        >
+          <template #extra>
+            <div class="flow-error-actions">
+              <el-button type="primary" @click="retryLastAction" :loading="loading">{{ flowErrorActionText }}</el-button>
+              <el-button @click="resetTarot">重新整理问题</el-button>
+            </div>
+          </template>
+        </EmptyState>
+      </div>
+
       <div v-if="cards.length > 0" class="cards-result card card-hover">
         <h3>您的牌阵</h3>
         <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击任意牌查看详细解读</p>
@@ -122,24 +138,42 @@
               :element="card.element"
               :color="card.color"
               :index="index"
-              @click="showCardDetail(card)"
+              @click="showCardDetail(card, index)"
             />
+
             <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(selectedSpread, index) }}</span>
           </div>
         </div>
 
-        
-        <div class="interpretation">
+        <div v-if="flowError && cards.length > 0" class="flow-error flow-error--inline card card-hover">
+          <EmptyState
+            type="error"
+            size="small"
+            inline
+            :title="flowErrorTitle"
+            :description="flowErrorDescription"
+          >
+            <template #extra>
+              <div class="flow-error-actions">
+                <el-button type="primary" @click="retryLastAction" :loading="loading">{{ flowErrorActionText }}</el-button>
+                <el-button @click="resetTarot">重新占卜</el-button>
+              </div>
+            </template>
+          </EmptyState>
+        </div>
+
+        <div class="interpretation" :class="{ 'interpretation--pending': !interpretation }">
           <h3>牌面解读</h3>
-          <div class="interpretation-content">{{ interpretation }}</div>
+          <div v-if="interpretation" class="interpretation-content">{{ interpretation }}</div>
+          <p v-else class="interpretation-placeholder">解读结果暂未生成，请先重试当前步骤。</p>
         </div>
         
         <!-- 操作按钮 -->
         <div class="result-actions">
-          <el-button type="primary" @click="saveTarotResult">
+          <el-button type="primary" @click="saveTarotResult" :disabled="!interpretation">
             <el-icon class="btn-icon"><Download /></el-icon> 保存记录
           </el-button>
-          <el-button @click="shareTarotResult">
+          <el-button @click="shareTarotResult" :disabled="!interpretation">
             <el-icon class="btn-icon"><Document /></el-icon> 分享
           </el-button>
           <el-button @click="resetTarot">
@@ -168,9 +202,15 @@
               class="detail-card"
             />
           </div>
+          <div v-if="selectedCard.positionLabel" class="detail-context">
+            <span class="card-position card-position--detail">{{ selectedCard.positionLabel }}</span>
+            <span v-if="cards.length > 1" class="card-position card-position--detail">第{{ selectedCard.positionIndex + 1 }}张</span>
+            <span class="card-position card-position--detail">{{ selectedCard.spreadName }}</span>
+          </div>
           <div class="detail-content">
             <h4>牌面含义</h4>
             <p class="detail-meaning">{{ selectedCard.meaning }}</p>
+
             
             <h4>详细解读</h4>
             <div class="detail-interpretation">
@@ -266,7 +306,12 @@ const cardDetailVisible = ref(false)
 const selectedCard = ref(null)
 const selectedTopic = ref('')
 
+const getSpreadName = (spreadType) => {
+  return spreads.find((spread) => spread.id === spreadType)?.name || '当前牌阵'
+}
+
 const reportUiError = (action, error, userMessage = '') => {
+
   console.error(`[Tarot] ${action}`, error)
   if (userMessage) {
     ElMessage.error(userMessage)
@@ -293,6 +338,24 @@ const refreshPoints = async ({ silent = false } = {}) => {
 
 const currentTemplates = computed(() => {
   return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
+})
+
+const flowErrorTitle = computed(() => {
+  if (!flowError.value) return ''
+  return flowError.value.stage === 'interpret' ? '牌面已抽出，但解读未完成' : '抽牌流程暂时中断'
+})
+
+const flowErrorDescription = computed(() => {
+  if (!flowError.value) return ''
+
+  return flowError.value.stage === 'interpret'
+    ? `最近失败原因：${flowError.value.message}。您可以直接重试解读，无需重新抽牌。`
+    : `最近失败原因：${flowError.value.message}。请稍后重试，系统会重新发起抽牌流程。`
+})
+
+const flowErrorActionText = computed(() => {
+  if (!flowError.value) return '重试'
+  return flowError.value.stage === 'interpret' ? '重试解读' : '重试抽牌'
 })
 
 const spreadPositionLabels = {
@@ -629,10 +692,17 @@ const resetTarot = () => {
 }
 
 // 显示卡片详情
-const showCardDetail = (card) => {
-  selectedCard.value = card
+const showCardDetail = (card, index = 0) => {
+  selectedCard.value = {
+    ...card,
+    positionIndex: index,
+    positionLabel: getPositionLabel(selectedSpread.value, index),
+    spreadType: selectedSpread.value,
+    spreadName: getSpreadName(selectedSpread.value),
+  }
   cardDetailVisible.value = true
 }
+
 
 // 获取卡片详细含义
 const getCardDetailedMeaning = (card) => {
@@ -1108,12 +1178,27 @@ const getCardAdvice = (card) => {
 .detail-header-new {
   display: flex;
   justify-content: center;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
+}
+
+.detail-context {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.card-position--detail {
+  min-height: 30px;
+  font-size: 12px;
+  padding: 6px 12px;
 }
 
 .detail-card {
   transform: scale(1.1);
 }
+
 
 .detail-card:hover {
   transform: scale(1.1) translateY(-5px);
@@ -1193,9 +1278,30 @@ const getCardAdvice = (card) => {
   .template-text {
     flex: 1;
   }
+
+  .flow-error {
+    padding: 8px;
+  }
+
+  .flow-error-actions {
+    justify-content: stretch;
+  }
+
+  .flow-error-actions :deep(.el-button) {
+    flex: 1;
+  }
   
   .cards-display {
     gap: 15px;
+  }
+
+  .detail-context {
+    justify-content: flex-start;
+  }
+
+  .card-position--detail {
+    min-height: 28px;
+    font-size: 11px;
   }
   
   .tarot-card {
@@ -1211,6 +1317,7 @@ const getCardAdvice = (card) => {
     font-size: 14px;
   }
 }
+
 
 @media (max-width: 480px) {
   .topic-tabs {

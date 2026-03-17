@@ -187,6 +187,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
 import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Close } from '@element-plus/icons-vue'
+import BackButton from '../components/BackButton.vue'
 
 
 // 表单数据
@@ -377,8 +378,14 @@ onMounted(() => {
 }
 
 .page-header {
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
   margin-bottom: 40px;
+}
+
+.page-header-content {
+  flex: 1;
 }
 
 .page-title {
@@ -387,7 +394,7 @@ onMounted(() => {
   margin-bottom: 12px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
 }
 
@@ -398,6 +405,7 @@ onMounted(() => {
 .page-subtitle {
   color: var(--text-secondary);
   font-size: 16px;
+  margin: 0;
 }
 
 /* 表单样式 */
@@ -726,6 +734,7 @@ onMounted(() => {
 }
 
 .yao-line {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 25px;
@@ -734,6 +743,7 @@ onMounted(() => {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: 1px solid transparent;
 }
+
 
 .yao-line:hover {
   background: var(--primary-light-10);
@@ -1139,10 +1149,70 @@ onMounted(() => {
   .gua-display {
     flex-direction: column;
     gap: 20px;
+    overflow: visible;
+  }
+
+  .yao-container {
+    width: 100%;
+    padding: 18px 16px;
+    gap: 14px;
+  }
+
+  .yao-line {
+    gap: 12px;
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .yao-line:hover {
+    transform: none;
+  }
+
+  .yao-line.moving::before {
+    left: auto;
+    right: 12px;
+    top: 10px;
+  }
+
+  .fushen-box {
+    position: static;
+    flex-direction: row;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+    padding: 6px 10px;
+    margin-bottom: 2px;
+  }
+
+  .fushen-label,
+  .fushen-name,
+  .fushen-ganzhi {
+    font-size: 12px;
+  }
+
+  .yao-mark {
+    width: 24px;
+    font-size: 22px;
+  }
+
+  .yao-bar {
+    flex: 1;
+    min-width: 96px;
+    width: auto;
+  }
+
+  .yao-name {
+    min-width: auto;
+    margin-left: auto;
+    text-align: right;
+    font-size: 13px;
   }
 
   .action-buttons {
     flex-direction: column;
   }
 }
+
 </style>

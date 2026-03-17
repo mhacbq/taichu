@@ -1558,14 +1558,26 @@ const formatAiContent = (content) => {
 }
 
 @media (max-width: 768px) {
+  .collapse-title-wrapper {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 6px;
+  }
+
   .title-text {
     font-size: 16px;
   }
   
   .title-desc {
-    display: none; /* 移动端隐藏描述以节省空间 */
+    display: block;
+    flex-basis: 100%;
+    margin-left: 0;
+    padding-left: 44px;
+    font-size: 12px;
+    line-height: 1.6;
   }
 }
+
 
 /* 页面级动画 */
 @keyframes fadeInUp {
@@ -3803,22 +3815,24 @@ const formatAiContent = (content) => {
   }
 
   .dayun-item {
-    flex: 0 0 160px;
+    flex: 0 0 220px;
     scroll-snap-align: start;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 8px;
-    padding: 15px;
+    align-items: flex-start;
+    text-align: left;
+    gap: 10px;
+    padding: 16px;
   }
 
   .dayun-age {
-    margin-bottom: 5px;
+    width: 100%;
+    margin-bottom: 0;
   }
 
   .dayun-pillar {
-    margin-bottom: 5px;
+    justify-content: flex-start;
+    margin-bottom: 0;
     gap: 5px;
   }
 
@@ -3826,13 +3840,30 @@ const formatAiContent = (content) => {
     font-size: 20px;
   }
 
-  .dayun-shishen, .dayun-luck, .dayun-nayin {
-    margin-bottom: 2px;
+  .dayun-shishen,
+  .dayun-luck,
+  .dayun-nayin {
+    margin-bottom: 0;
+  }
+
+  .dayun-luck,
+  .dayun-nayin {
+    align-self: flex-start;
   }
 
   .dayun-desc {
-    display: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+    min-height: calc(1.6em * 3);
+    padding: 0;
+    margin-bottom: 0;
+    color: var(--white-80);
+    line-height: 1.6;
   }
+
   
   .liunian-grid {
     display: flex;

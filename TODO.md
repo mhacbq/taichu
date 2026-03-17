@@ -59,16 +59,12 @@
 作为资深产品经理和UI设计师，我继续从首页数据可信度、结果页移动端信息承载、塔罗多牌阵上下文、个性化运势模块样式完整性与合婚长报告可读性几个角度复核太初命理网站，新增以下不重复问题：
 
 ### 🔴 高优先级（功能性问题）
-- [ ] [UI] 六爻结果页伏神信息在移动端容易被裁切，关键卦象语义可能直接看不全 - `frontend/src/views/Liuyao.vue` - `.fushen-box` 绝对定位到 `left: -80px`，而 `.gua-display` 又设置了 `overflow: hidden`，移动端仅把整体改为纵向排布，没有为伏神预留空间，建议在移动端改为内联标签/顶部说明区，或给卦象区域增加左侧安全区并取消裁切。
 
 ### 🟡 中优先级（体验问题）
-- [ ] [UI] 首页统计区失败态会长期停留在“加载中...”和默认 `12000+` 话术，削弱首屏可信度 - `frontend/src/views/Home.vue` - `defaultStats` 使用“加载中...”作为默认数值，`loadStats()` 异常时直接回退该默认值且 `userCount` 保持 12000，建议改成明确的空态/占位骨架和“数据更新中”文案，并避免展示硬编码用户量。
-- [ ] [UI] 八字大运模块在移动端直接隐藏运势说明，用户只剩干支与分段标签可看 - `frontend/src/views/Bazi.vue` - `dayun-desc` 在结果卡片中承载 `yun.luck_desc`，但 `@media (max-width: 768px)` 下被直接 `display: none`，建议改为可展开摘要、底部说明行或卡片抽屉，保留移动端的关键解释。
-- [ ] [UI] 塔罗多牌阵详情弹窗缺少当前牌位上下文，点开后容易忘记这张牌代表“过去/现在/挑战”哪一位 - `frontend/src/views/Tarot.vue` - 结果区点击只传 `showCardDetail(card)`，弹窗标题仅显示牌名与正逆位，没有带入 `getPositionLabel` 的结果，建议传入索引/牌位并在弹窗标题或首屏说明中展示。
 - [ ] [UI] 每日运势“幸运色/幸运方位”个性化区块使用了未落地的结构类名，视觉呈现容易像未完成态 - `frontend/src/views/Daily.vue` - 模板使用 `.personal-lucky-grid / .personal-lucky-item / .personal-lucky-label / .personal-lucky-values`，但样式表只在移动端零散覆写了前两个类，缺少基础栅格、卡片和文本层级定义，建议补齐完整样式并与“今日宜忌”做清晰视觉区分。
 
 ### 🟢 低优先级（美观问题）
-- [ ] [UI] 合婚详细报告的富文本层级样式不足，长篇 AI/详细分析容易显示成一大段连续正文 - `frontend/src/views/Hehun.vue` - `detail_analysis` 与 `ai_analysis` 通过 `v-html` 注入，但 `.analysis-content` / `.ai-content` 只定义了基础文字颜色和行高，没有为标题、段落、列表做节奏样式，建议补齐 rich text typographic 规则，提升长报告的扫描效率。
+
 
 ---
 

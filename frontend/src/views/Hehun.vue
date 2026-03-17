@@ -105,14 +105,15 @@
           <!-- 详细分析 -->
           <div class="analysis-section">
             <h3>详细分析</h3>
-            <div class="analysis-content" v-html="sanitizeHtml(premiumResult.hehun.detail_analysis)"></div>
+            <div class="analysis-content rich-content" v-html="sanitizeHtml(premiumResult.hehun.detail_analysis)"></div>
           </div>
           
           <!-- AI分析 -->
           <div class="ai-section" v-if="premiumResult.ai_analysis">
             <h3><el-icon><Cpu /></el-icon> AI深度解读</h3>
-            <div class="ai-content" v-html="sanitizeHtml(premiumResult.ai_analysis)"></div>
+            <div class="ai-content rich-content" v-html="sanitizeHtml(premiumResult.ai_analysis)"></div>
           </div>
+
           
           <!-- 化解建议 -->
           <div class="solution-section" v-if="premiumResult.hehun.solutions">
@@ -1170,6 +1171,75 @@ onMounted(() => {
   line-height: 1.8;
 }
 
+.rich-content {
+  padding: 22px 24px;
+  border-radius: 18px;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(184, 134, 11, 0.06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.rich-content :deep(h1),
+.rich-content :deep(h2),
+.rich-content :deep(h3),
+.rich-content :deep(h4),
+.rich-content :deep(h5),
+.rich-content :deep(h6) {
+  margin: 1.6em 0 0.7em;
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rich-content :deep(h1),
+.rich-content :deep(h2) {
+  font-size: 20px;
+}
+
+.rich-content :deep(h3),
+.rich-content :deep(h4) {
+  font-size: 17px;
+}
+
+.rich-content :deep(h1:first-child),
+.rich-content :deep(h2:first-child),
+.rich-content :deep(h3:first-child),
+.rich-content :deep(h4:first-child),
+.rich-content :deep(h5:first-child),
+.rich-content :deep(h6:first-child),
+.rich-content :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.rich-content :deep(p) {
+  margin: 0 0 1em;
+  color: var(--text-secondary);
+  line-height: 1.9;
+}
+
+.rich-content :deep(strong) {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.rich-content :deep(ul),
+.rich-content :deep(ol) {
+  margin: 0 0 1.1em;
+  padding-left: 1.4em;
+}
+
+.rich-content :deep(li) {
+  margin-bottom: 0.7em;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.rich-content :deep(li:last-child),
+.rich-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+
 .solution-list {
   list-style: none;
   padding: 0;
@@ -1341,9 +1411,29 @@ onMounted(() => {
     border-bottom: 1px solid var(--white-10);
     padding-bottom: 24px;
   }
+
+  .rich-content {
+    padding: 18px 18px 20px;
+  }
+
+  .rich-content :deep(h1),
+  .rich-content :deep(h2) {
+    font-size: 18px;
+  }
+
+  .rich-content :deep(h3),
+  .rich-content :deep(h4) {
+    font-size: 16px;
+  }
+
+  .rich-content :deep(ul),
+  .rich-content :deep(ol) {
+    padding-left: 1.2em;
+  }
   
   .action-buttons {
     flex-direction: column;
   }
 }
+
 </style>

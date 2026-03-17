@@ -68,7 +68,8 @@
               塔罗占卜
             </router-link>
           </div>
-          <p class="hero-hint"><el-icon><Star /></el-icon> 已有 {{ userCount }}+ 用户在这里找到答案</p>
+          <p class="hero-hint" :class="{ 'hero-hint--muted': statsLoading || statsError }"><el-icon><Star /></el-icon> {{ heroHintText }}</p>
+
         </div>
       </div>
     </section>
@@ -170,15 +171,21 @@
               <li><el-icon class="about-icon"><Check /></el-icon> 让传统文化探索更加有趣、便捷</li>
             </ul>
           </div>
-          <div class="about-stats">
+          <div class="about-stats" :class="{ 'about-stats--loading': statsLoading, 'about-stats--error': statsError }">
             <div class="stat-item card-hover" v-for="stat in stats" :key="stat.label">
               <div class="stat-icon-wrapper">
                 <el-icon class="stat-icon"><component :is="stat.icon" /></el-icon>
               </div>
-              <span class="stat-number">{{ stat.number }}</span>
+              <span class="stat-number" :class="{ 'stat-number--placeholder': !stat.isLive }">{{ stat.number }}</span>
               <span class="stat-label">{{ stat.label }}</span>
+              <span v-if="stat.caption" class="stat-caption">{{ stat.caption }}</span>
             </div>
           </div>
+          <div v-if="statsError" class="stats-feedback">
+            <p>统计数据暂时不可用，先体验核心功能也不耽误。</p>
+            <button class="stats-retry" type="button" @click="loadStats">刷新统计</button>
+          </div>
+
         </div>
       </div>
     </section>
@@ -197,11 +204,26 @@ const statIconMap = {
   ChatLineRound,
 }
 
-const defaultStats = [
-  { number: '加载中...', label: '服务用户', icon: UserFilled },
-  { number: '加载中...', label: '分析次数', icon: DataLine },
-  { number: '98%', label: '好评率', icon: ChatLineRound },
+const createFallbackStats = (caption = '数据更新中') => [
+  { number: '--', label: '服务用户', icon: UserFilled, caption, isLive: false },
+  { number: '--', label: '分析次数', icon: DataLine, caption, isLive: false },
+  { number: '--', label: '好评率', icon: ChatLineRound, caption, isLive: false },
 ]
+
+const hasDisplayValue = (value) => value !== undefined && value !== null && `${value}`.trim() !== ''
+
+const formatDisplayValue = (value) => {
+  if (!hasDisplayValue(value)) {
+    return '--'
+  }
+
+  if (typeof value === 'number') {
+    return value.toLocaleString('zh-CN')
+  }
+
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue.toLocaleString('zh-CN') : value
+}
 
 const resolveStatIcon = (icon, fallbackIcon = UserFilled) => {
   if (typeof icon === 'object' || typeof icon === 'function') {
@@ -211,12 +233,52 @@ const resolveStatIcon = (icon, fallbackIcon = UserFilled) => {
   return statIconMap[icon] || fallbackIcon
 }
 
-const stats = ref(defaultStats)
+const buildStats = (incomingStats = []) => {
+  const fallbackStats = createFallbackStats()
 
+  return fallbackStats.map((fallback, index) => {
+    const item = incomingStats[index]
+
+    if (!item) {
+      return fallback
+    }
+
+    return {
+      ...fallback,
+      ...item,
+      number: hasDisplayValue(item.number) ? formatDisplayValue(item.number) : '--',
+      label: item.label || fallback.label,
+      icon: resolveStatIcon(item.icon, fallback.icon),
+      caption: hasDisplayValue(item.number) ? '' : fallback.caption,
+      isLive: hasDisplayValue(item.number),
+    }
+  })
+}
+
+const stats = ref(createFallbackStats('统计同步中'))
+const statsLoading = ref(true)
+const statsError = ref(false)
 
 const isLoggedIn = ref(false)
 const userPoints = ref(0)
-const userCount = ref(12000)
+const userCount = ref(null)
+
+const heroHintText = computed(() => {
+  if (statsLoading.value) {
+    return '站内数据正在同步中，请稍候'
+  }
+
+  if (statsError.value) {
+    return '统计数据暂时不可用，先体验核心功能也不耽误'
+  }
+
+  if (hasDisplayValue(userCount.value)) {
+    return `已有 ${formatDisplayValue(userCount.value)} 位用户在这里找到答案`
+  }
+
+  return '站内数据每日更新，欢迎先体验核心功能'
+})
+
 
 // 问候语数据
 const hour = new Date().getHours()
@@ -300,23 +362,34 @@ const testimonials = ref([
 ])
 
 const loadStats = async () => {
+  statsLoading.value = true
+  statsError.value = false
+
   try {
     const response = await getHomeStats()
-    if (response.code === 200) {
-      const incomingStats = response.data.stats || []
-      stats.value = incomingStats.length
-        ? incomingStats.map((item, index) => ({
-            ...item,
-            icon: resolveStatIcon(item.icon, defaultStats[index]?.icon || UserFilled),
-          }))
-        : defaultStats
-      userCount.value = response.data.userCount || 12000
+
+    if (response.code !== 200) {
+      throw new Error(response.message || '加载统计数据失败')
+    }
+
+    const incomingStats = Array.isArray(response.data?.stats) ? response.data.stats : []
+    stats.value = buildStats(incomingStats)
+    userCount.value = hasDisplayValue(response.data?.userCount) ? response.data.userCount : null
+
+    if (!incomingStats.length && !hasDisplayValue(userCount.value)) {
+      statsError.value = true
+      stats.value = createFallbackStats('数据更新中')
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
-    stats.value = defaultStats
+    stats.value = createFallbackStats('数据更新中')
+    userCount.value = null
+    statsError.value = true
+  } finally {
+    statsLoading.value = false
   }
 }
+
 
 
 const loadUserPoints = async () => {
@@ -629,6 +702,11 @@ onMounted(() => {
   line-height: var(--line-height-base);
 }
 
+.hero-hint--muted {
+  color: var(--text-secondary);
+}
+
+
 .features {
   padding: 80px 0;
 }
@@ -728,6 +806,11 @@ onMounted(() => {
   gap: 30px;
 }
 
+.about-stats--loading .stat-item,
+.about-stats--error .stat-item {
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), var(--bg-card));
+}
+
 .stat-item {
   text-align: center;
   padding: 30px 20px;
@@ -777,11 +860,69 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 
+.stat-number--placeholder {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-secondary);
+}
+
 .stat-label {
   color: var(--text-secondary);
   font-size: var(--font-small);
   line-height: var(--line-height-base);
 }
+
+.stat-caption {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.stats-feedback {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  background: rgba(var(--primary-rgb), 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.stats-feedback p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.stats-retry {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.stats-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.22);
+}
+
+.stats-retry:focus-visible {
+  outline: 2px solid rgba(var(--primary-rgb), 0.28);
+  outline-offset: 2px;
+}
+
 
 /* 用户评价区域 */
 .testimonials {
@@ -926,6 +1067,15 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
   
+  .stats-feedback {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stats-retry {
+    width: 100%;
+  }
+
   .testimonials-grid {
     grid-template-columns: 1fr;
   }
@@ -944,4 +1094,5 @@ onMounted(() => {
     text-align: center;
   }
 }
+
 </style>
