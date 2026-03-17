@@ -9,18 +9,29 @@
       <!-- 签到卡片 -->
       <CheckinCard />
 
-      <div class="date-display card card-hover">
-        <div class="lunar-date">
-          <span class="label">农历</span>
-          <span class="value">{{ lunarDate }}</span>
+      <div v-if="isLoading" class="date-display date-display--loading card card-hover">
+        <div class="date-skeleton-block">
+          <el-skeleton-item variant="text" class="date-skeleton-label" />
+          <el-skeleton-item variant="text" class="date-skeleton-value" />
         </div>
-        <div class="solar-date">
-          <span class="label">公历</span>
-          <span class="value">{{ solarDate }}</span>
+        <div class="date-skeleton-block">
+          <el-skeleton-item variant="text" class="date-skeleton-label" />
+          <el-skeleton-item variant="text" class="date-skeleton-value" />
         </div>
       </div>
 
-      <div v-if="fortune" class="fortune-content">
+      <div v-else-if="fortune" class="fortune-content">
+        <div class="date-display card card-hover">
+          <div class="lunar-date">
+            <span class="label">农历</span>
+            <span class="value">{{ lunarDate }}</span>
+          </div>
+          <div class="solar-date">
+            <span class="label">公历</span>
+            <span class="value">{{ solarDate }}</span>
+          </div>
+        </div>
+
         <!-- 个性化运势卡片 -->
         <div v-if="fortune.personalized && fortune.personalized.hasBazi" class="personalized-fortune card card-hover">
           <h2>
@@ -252,9 +263,12 @@ const detailSections = computed(() => {
 })
 
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
-
+  isLoading.value = true
   error.value = false
   errorMessage.value = ''
+  solarDate.value = ''
+  lunarDate.value = ''
+
   try {
     const response = await getDailyFortune()
     if (response.code === 200) {
@@ -272,6 +286,8 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
       error.value = false
     } else {
       fortune.value = null
+      solarDate.value = ''
+      lunarDate.value = ''
       error.value = true
       errorMessage.value = response.message || '获取运势失败'
       if (userInitiated) {
@@ -280,14 +296,19 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
     }
   } catch (err) {
     fortune.value = null
+    solarDate.value = ''
+    lunarDate.value = ''
     error.value = true
     errorMessage.value = '网络错误，请稍后重试'
     if (userInitiated) {
       ElMessage.error(errorMessage.value)
     }
     console.error(err)
+  } finally {
+    isLoading.value = false
   }
 }
+
 
 
 onMounted(() => {
@@ -321,6 +342,32 @@ onMounted(() => {
   background: var(--bg-card);
   border-radius: var(--radius-card);
 }
+
+.date-display--loading {
+  gap: 24px;
+}
+
+.date-skeleton-block {
+  flex: 1;
+}
+
+.date-skeleton-label,
+.date-skeleton-value {
+  display: block;
+  width: 100%;
+}
+
+.date-skeleton-label {
+  max-width: 72px;
+  margin: 0 auto 12px;
+}
+
+.date-skeleton-value {
+  max-width: 180px;
+  height: 28px;
+  margin: 0 auto;
+}
+
 
 .lunar-date,
 .solar-date {

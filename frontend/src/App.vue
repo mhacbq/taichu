@@ -131,13 +131,14 @@
       <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
     </nav>
     
-    <main class="main-content">
+    <main class="main-content" :class="{ 'main-content--companion-safe': shouldReserveCompanionSpace }">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
     </main>
+
     
     <footer class="footer">
       <div class="container">
@@ -409,11 +410,19 @@ watch(showMobileMenu, (visible) => {
   }
 })
 
+watch(shouldShowCompanion, (visible) => {
+  if (!visible) {
+    showCompanion.value = false
+  }
+})
+
 // 监听路由变化
 watch(() => route.path, () => {
   checkLoginStatus()
   closeMobileMenu()
+  showCompanion.value = false
 })
+
 
 onMounted(() => {
   checkLoginStatus()

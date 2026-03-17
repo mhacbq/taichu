@@ -314,8 +314,15 @@ const form = reactive(createDefaultForm())
 const isLoading = ref(false)
 const result = ref(null)
 const pricing = ref(null)
+const pricingLoading = ref(true)
+const pricingError = ref('')
 const history = ref([])
+const historyLoading = ref(false)
+const historyLoaded = ref(false)
+const historyError = ref('')
+const submitError = ref('')
 const showHistory = ref(false)
+
 
 const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
   timeZone: 'Asia/Shanghai',
@@ -1405,7 +1412,26 @@ onMounted(() => {
   padding: 10px;
 }
 
+.history-state {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.history-state p {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.history-state--error {
+  border-radius: 14px;
+  border: 1px solid rgba(245, 108, 108, 0.18);
+  background: rgba(245, 108, 108, 0.06);
+}
+
 .history-item {
+
   display: flex;
   justify-content: space-between;
   align-items: center;

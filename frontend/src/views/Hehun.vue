@@ -465,10 +465,13 @@ const premiumResult = ref(null)
 const pricing = ref(null)
 const pricingLoading = ref(true)
 const pricingError = ref('')
+const unlockLoading = ref(false)
+const unlockError = ref(null)
 const history = ref([])
 const historyLoading = ref(false)
 const historyLoaded = ref(false)
 const historyError = ref('')
+
 
 // 维度名称映射
 const dimensionNames = {
@@ -745,11 +748,14 @@ const submitForm = async () => {
     }))
     
     if (response.code === 200) {
+      premiumResult.value = null
       freeResult.value = response.data
+      clearUnlockFeedback()
       loadHistory() // 刷新历史记录
     } else {
       ElMessage.error(response.message)
     }
+
   } catch (error) {
     ElMessage.error('合婚分析失败，请重试')
   } finally {

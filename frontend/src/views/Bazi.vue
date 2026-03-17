@@ -1178,19 +1178,19 @@ const getFortuneToolActionText = (type, readyText) => {
 }
 
 const aiPricingTagText = computed(() => {
-  if (fortunePricingStatus.value === 'loading') {
-    return '价格查询中'
+  if (accountStatus.value === 'loading') {
+    return '账户查询中'
   }
 
-  if (fortunePricingStatus.value === 'error') {
-    return '价格稍后确认'
+  if (accountStatus.value === 'error') {
+    return '账户稍后确认'
   }
 
   return `消耗${AI_ANALYSIS_COST}积分`
 })
 
 const canStartAiAnalysis = computed(() => {
-  if (!isAccountReady.value || !isFortunePricingReady.value) {
+  if (!isAccountReady.value) {
     return false
   }
 
@@ -1198,16 +1198,40 @@ const canStartAiAnalysis = computed(() => {
 })
 
 const aiActionText = computed(() => {
-  if (accountStatus.value === 'loading' || fortunePricingStatus.value === 'loading') {
-    return '价格查询中'
+  if (accountStatus.value === 'loading') {
+    return '账户查询中'
   }
 
-  if (accountStatus.value === 'error' || fortunePricingStatus.value === 'error') {
-    return '请先刷新价格信息'
+  if (accountStatus.value === 'error') {
+    return '请先刷新账户信息'
   }
 
   return currentPoints.value < AI_ANALYSIS_COST ? `积分不足（需${AI_ANALYSIS_COST}积分）` : '开始AI解盘'
 })
+
+const needsFortunePriceRecovery = computed(() => accountStatus.value === 'error' || fortunePricingStatus.value === 'error')
+const fortunePriceRecoveryText = computed(() => {
+  if (accountStatus.value === 'error') {
+    return '当前账户与积分状态暂未同步成功，请先重新获取，避免误判剩余积分或消费承诺。'
+  }
+
+  if (fortunePricingStatus.value === 'error') {
+    return '深度工具价格暂未同步成功，刷新后即可继续流年分析、大运评分和运势 K 线。'
+  }
+
+  return ''
+})
+const aiNeedsAccountRecovery = computed(() => accountStatus.value === 'error')
+const aiRecoveryText = computed(() => {
+  return aiNeedsAccountRecovery.value
+    ? 'AI 解盘依赖当前账户积分，刷新账户信息后即可继续使用。'
+    : ''
+})
+
+const refreshFortunePricing = () => {
+  loadPoints()
+}
+
 
 // 获取当前积分和首次排盘状态
 const loadPoints = async ({ silent = false } = {}) => {
@@ -3958,6 +3982,12 @@ const formatAiContent = (content) => {
   .bazi-page {
     padding: 30px 0;
   }
+
+  .fortune-recovery-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
 
   .paipan-cell {
     font-size: 16px;

@@ -1,5 +1,28 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-18 03:13 执行摘要（本轮）
+
+- 本轮完成并清理 5 个前端待办：六爻页定价/历史/提交失败页内承接、合婚完整版解锁失败恢复链路、八字结果页价格恢复入口与 AI 账户兜底、全局“今日陪伴”显示范围与安全区、每日运势日期卡加载骨架。
+- 关键文件：`frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/App.vue`、`frontend/src/views/Daily.vue`、`TODO.md`。
+- 验证结果：`npm run build --prefix frontend` 通过；上述 5 个 Vue 文件 `read_lints` 均为 0 条新增诊断；`git diff --check` 针对前端代码文件通过。
+
+## 2026-03-18 追加执行摘要（本轮）
+
+
+- 本轮完成并清理 6 个前端待办：八字页 `/bazi` 路由稳定性、合婚页价格未就绪解锁拦截、首页 GuideModal 非阻断关闭、首页“注册领积分”意图承接、塔罗页选择控件可访问性、首页服务卡片命名统一；另复核确认后台用户详情失败态待办已在现有代码落地并从 `TODO.md` 移除。
+- 关键文件：`frontend/src/router/index.js`、`frontend/src/components/GuideModal.vue`、`frontend/src/views/Home.vue`、`frontend/src/views/Login.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/views/Hehun.vue`、`TODO.md`。
+- 验证结果：`npm run build --prefix frontend` 通过，`git diff --check -- frontend/src/router/index.js frontend/src/components/GuideModal.vue frontend/src/views/Home.vue frontend/src/views/Login.vue frontend/src/views/Tarot.vue frontend/src/views/Hehun.vue TODO.md` 通过，相关编辑文件 `read_lints` 均为 0 条新增诊断。
+- Git：提交并推送 `7c0240d "fix-frontend-multiple-issues-20260318-1015"` 到 `origin/master`。
+
+## 2026-03-18 本轮执行摘要
+
+- 完成 5 个前端待办：全局导航/首页登录门槛提示、八字页价格加载占位、六爻结果区自动保存状态、合婚历史空态与姓名兜底、每日运势空数据分块承接。
+- 关键文件：`frontend/src/App.vue`、`frontend/src/views/Home.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Daily.vue`、`TODO.md`。
+- 验证结果：`npm run build --prefix frontend` 通过，`git diff --check -- frontend/src/App.vue frontend/src/views/Home.vue frontend/src/views/Bazi.vue frontend/src/views/Liuyao.vue frontend/src/views/Hehun.vue frontend/src/views/Daily.vue TODO.md` 通过。
+- Git：提交并推送 `cb3154e fix-frontend-multiple-issues-20260318-0900` 到 `origin/master`。
+
+
+
 ## 2026-03-17 22:46 收尾补记
 
 - 复核 `TODO.md` 时发现第二十轮报告里的两条六爻待办未被上一轮清理命中，已补删 `六爻接口路由与控制器方法完全失配` 与 `六爻前端缺少手动起卦与时间起卦入口`。
