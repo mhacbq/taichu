@@ -1,6 +1,12 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 22:46 收尾补记
+
+- 复核 `TODO.md` 时发现第二十轮报告里的两条六爻待办未被上一轮清理命中，已补删 `六爻接口路由与控制器方法完全失配` 与 `六爻前端缺少手动起卦与时间起卦入口`。
+- 本次仅做待办核销收尾，不涉及新增业务代码；将随 `fix-frontend-todo-cleanup-20260317-2246` 一并推送。
+
 ## 2026-03-17 22:40 执行摘要
+
 
 - 本轮围绕六爻主链路与前端体验问题完成一组连续修复，覆盖 `frontend/src/views/Liuyao.vue`、`backend/app/controller/Liuyao.php`、`frontend/src/views/Home.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/views/Daily.vue`、`frontend/src/views/admin/ShenshaManage.vue`。
 - 六爻部分：补齐前端实际依赖的 `getPricing/divination/history/detail/delete` 兼容接口，前端新增多起卦方式与专业参数后继续收尾结果归一化，补回历史记录 `created_at` 字段，避免历史详情与列表时间显示丢失。
