@@ -753,7 +753,7 @@ onMounted(() => {
 
 .stat-item:hover .stat-icon-wrapper {
   background: var(--primary-color);
-  color: #fff;
+  color: var(--text-primary);
   transform: rotateY(360deg) scale(1.1);
   -webkit-transform: rotateY(360deg) scale(1.1);
   /* 针对不支持 rotateY 的旧版浏览器的降级方案 */

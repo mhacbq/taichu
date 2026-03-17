@@ -467,7 +467,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   font-size: 36px;
-  color: #fff;
+  color: var(--text-primary);
   overflow: hidden;
   box-shadow: var(--shadow-md);
 }
@@ -706,7 +706,7 @@ onMounted(() => {
 
 :deep(.el-pagination .number.active) {
   background: var(--primary-color);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* 积分获取攻略 */

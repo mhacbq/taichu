@@ -496,7 +496,7 @@ const getStatusText = (status) => {
 
 .points-label {
   display: block;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 10px;
 }

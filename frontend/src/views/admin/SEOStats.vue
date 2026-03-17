@@ -530,12 +530,12 @@ onUnmounted(() => {
 
 .stat-icon.keywords {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  color: var(--text-primary);
 }
 
 .stat-icon.traffic {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  color: var(--text-primary);
 }
 
 .stat-icon img {

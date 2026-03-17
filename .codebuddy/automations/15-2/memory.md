@@ -1,5 +1,81 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 19:45 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **[UI] 白色文字硬编码残留修复** (高优先级)
+   - 文件: `Profile.vue`, `Liuyao.vue`, `Bazi.vue`, `Home.vue`, `admin/SEOStats.vue`
+   - 修复: 将硬编码的 `color: #fff` 和 `color: white` 统一替换为 CSS 变量 `var(--text-primary)`。
+
+2. **[UI] 移动端触摸区域标准化** (高优先级)
+   - 文件: `Bazi.vue`, `Tarot.vue`, `Liuyao.vue`
+   - 修复: 将小标签、元数据标签的 `padding` 增加，并确保 `min-height: 44px`，符合移动端交互规范。
+
+3. **[UI] 塔罗牌五行元素颜色统一** (高优先级)
+   - 文件: `Tarot.vue`
+   - 修复: 统一使用 `var(--wuxing-*)` 变量替换硬编码色值，并优化背景透明度系统。
+
+4. **[UI] 分页器激活状态颜色修复** (高优先级)
+   - 文件: `Bazi.vue`, `Profile.vue`
+   - 修复: 修正 Element Plus 分页器在选中状态下的文字颜色，解决深色模式下的对比度问题。
+
+5. **[UI] 半透明背景 CSS 变量化** (中优先级)
+   - 文件: `Recharge.vue`, `Bazi.vue`
+   - 修复: 将部分 `rgba(255, 255, 255, 0.x)` 替换为全局定义的透明度变量。
+
+### Git提交信息
+- 提交时间: 2026-03-17 19:45
+- 提交信息: fix-frontend-ui-optimization-20260317-1945
+- 状态: 已推送至 origin master
+
+### 修复统计
+- 修复文件数: 7个
+- 修复问题数: 5个
+- 清理 TODO 数: 3个
+
+---
+
+## 2026-03-17 19:30 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **[运营] 系统设置获取硬编码 Bug 修复** (高优先级)
+   - 文件: `backend/app/controller/Admin.php`
+   - 修复: 重构 `getSettings` 方法，从 `system_config` 表动态读取配置，彻底解决管理员修改设置后前端不更新的问题。
+
+2. **[运营] SEO管理前端界面实现** (高优先级)
+   - 文件: `admin/src/views/site-content/seo.vue`, `admin/src/api/siteContent.js`, `admin/src/router/index.js`
+   - 修复: 新建 SEO 管理页面，整合了页面 TDK 配置、Robots.txt 实时编辑及 Sitemap 自动生成功能。
+
+3. **[运营] VIP订单与套餐管理功能实现** (高优先级)
+   - 文件: `admin/src/views/payment/vip-orders.vue`, `admin/src/views/payment/vip-packages.vue`, `admin/src/api/payment.js`
+   - 修复: 新建 VIP 专项管理模块，填补了 VIP 业务数据黑盒的空缺，支持订单追踪、退款及套餐灵活配置。
+
+4. **[运营] 用户列表批量处理能力增强** (中优先级)
+   - 文件: `admin/src/views/user/list.vue`, `admin/src/api/user.js`
+   - 修复: 实现了基于复选框的多选逻辑，并上线了批量“启用/禁用”状态修改功能，大幅提升运营效率。
+
+5. **[占卜] 六爻AI解读时空背景注入** (中优先级)
+   - 文件: `frontend/src/views/Liuyao.vue`
+   - 修复: 在 AI 提示词中注入当前服务器时间及全球时区信息，使 AI 能够结合“月建日辰”进行深度占卜分析。
+
+### 其他修复与优化
+- **Element Plus 图标 Bug 修复**: 修正了 `dict.vue` 中 `prefix-icon` 的错误绑定方式，恢复了搜索图标显示。
+- **路由权限补齐**: 为新增的 SEO 和 VIP 管理页面配置了 `roles: ['admin']` 访问权限。
+
+### Git提交信息
+- 提交时间: 2026-03-17 19:30
+- 提交信息: fix-frontend-integrated-features-20260317-1930
+- 状态: 已推送至 origin master
+
+### 修复统计
+- 修复文件数: 11个
+- 修复问题数: 5个
+- 清理 TODO 数: 5个
+
+---
+
 ## 2026-03-17 19:15 执行摘要
 
 ### 本次修复的前端问题（共5个）
@@ -95,7 +171,7 @@
 
 4. **用户行为日志页面对接真实API** (中优先级)
    - 文件: `admin/src/views/user/behavior.vue`
-   - 修复: 移除空函数逻辑，接入 `getOperationLogs` API，实现带分页和筛选条件的日志查询展示。
+   - 修复: 移除空函数逻辑，接入 `getOperationLogs` API，实现带分页 and 筛选条件的日志查询展示。
 
 5. **SEO管理页面功能补全与API对接** (高优先级)
    - 文件: `frontend/src/views/admin/SEOManage.vue`, `frontend/src/api/admin.js`
@@ -155,46 +231,46 @@
 ---
 
 ## 2026-03-17 16:30 执行摘要
-6:
-7:### 本次修复的前端问题（共5个）
-8:
-9:1. **统一全局按钮和卡片圆角** (高优先级)
-10:   - 文件: frontend/src/style.css, frontend/src/styles/theme-white.scss
-11:   - 问题: 按钮和卡片圆角不统一
-12:   - 修复: 在 CSS 变量中定义 `--radius-btn: 25px` 和 `--radius-card: 16px`，并更新相关类
-13:
-14:2. **清理 Bazi.vue CSS 中的 Emoji 遗留** (中优先级)
-15:   - 文件: frontend/src/views/Bazi.vue
-16:   - 问题: 第 3148 行使用 `content: '💡'` 装饰列表
-17:   - 修复: 移除 Emoji，改用金色圆点 (background: var(--primary-color)) 装饰
-18:
-19:3. **App.vue 导航栏硬编码颜色清理** (中优先级)
-20:   - 文件: frontend/src/App.vue
-21:   - 问题: 导航栏背景使用了硬编码的 `rgba(10, 10, 26, 0.95)`
-22:   - 修复: 替换为全局变量 `var(--bg-primary)`，增强主题一致性
-23:
-24:4. **管理端路由角色权限配置** (高优先级)
-25:   - 文件: admin/src/router/index.js
-26:   - 问题: 首页、用户管理、内容管理等多个路由缺少 `roles` 权限配置
-27:   - 修复: 为所有相关路由添加 `meta: { roles: ['admin', 'operator'] }`
-28:
-29:5. **黄历管理页面功能补全** (高优先级)
-30:   - 文件: admin/src/api/content.js, admin/src/views/content/almanac.vue
-31:   - 问题: almanac.vue 仅有模板骨架，缺少 API 调用和逻辑实现
-32:   - 修复: 在 content.js 中添加黄历 CRUD 接口，在 almanac.vue 中实现完整的列表加载、搜索、新增、编辑及删除逻辑
-33:
-34:### Git提交信息
-35:- 提交时间: 2026-03-17 16:30
-36:- 提交信息: fix-frontend-multiple-issues-20260317-1630
-37:
-38:### 修复统计
-39:- 修复文件数: 6个
-40:- 修复问题数: 5个
-41:- 高优先级: 3个
-42:
-43:---
-44:
-45:## 2026-03-17 16:15 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **统一全局按钮和卡片圆角** (高优先级)
+   - 文件: frontend/src/style.css, frontend/src/styles/theme-white.scss
+   - 问题: 按钮和卡片圆角不统一
+   - 修复: 在 CSS 变量中定义 `--radius-btn: 25px` 和 `--radius-card: 16px`，并更新相关类
+
+2. **清理 Bazi.vue CSS 中的 Emoji 遗留** (中优先级)
+   - 文件: frontend/src/views/Bazi.vue
+   - 问题: 第 3148 行使用 `content: '💡'` 装饰列表
+   - 修复: 移除 Emoji，改用金色圆点 (background: var(--primary-color)) 装饰
+
+3. **App.vue 导航栏硬编码颜色清理** (中优先级)
+   - 文件: frontend/src/App.vue
+   - 问题: 导航栏背景使用了硬编码的 `rgba(10, 10, 26, 0.95)`
+   - 修复: 替换为全局变量 `var(--bg-primary)`，增强主题一致性
+
+4. **管理端路由角色权限配置** (高优先级)
+   - 文件: admin/src/router/index.js
+   - 问题: 首页、用户管理、内容管理等多个路由缺少 `roles` 权限配置
+   - 修复: 为所有相关路由添加 `meta: { roles: ['admin', 'operator'] }`
+
+5. **黄历管理页面功能补全** (高优先级)
+   - 文件: admin/src/api/content.js, admin/src/views/content/almanac.vue
+   - 问题: almanac.vue 仅有模板骨架，缺少 API 调用和逻辑实现
+   - 修复: 在 content.js 中添加黄历 CRUD 接口，在 almanac.vue 中实现完整的列表加载、搜索、新增、编辑及删除逻辑
+
+### Git提交信息
+- 提交时间: 2026-03-17 16:30
+- 提交信息: fix-frontend-multiple-issues-20260317-1630
+
+### 修复统计
+- 修复文件数: 6个
+- 修复问题数: 5个
+- 高优先级: 3个
+
+---
+
+## 2026-03-17 16:15 执行摘要
 
 ### 本次修复的前端问题（共5个）
 
@@ -342,5 +418,3 @@
 - 修复文件数: 5个
 - 修复问题数: 5个
 - 中优先级: 5个
-
----
