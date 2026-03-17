@@ -5,7 +5,6 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\model\Shensha as ShenshaModel;
-use think\facade\Log;
 
 /**
  * 神煞管理控制器
@@ -46,15 +45,13 @@ class Shensha extends BaseController
                 'list' => $list,
             ]);
         } catch (\Throwable $e) {
-            $this->logFailure('获取神煞列表', $e, [
+            return $this->respondSystemException('shensha_index', $e, '获取神煞列表失败，请稍后重试', [
                 'page' => $this->request->param('page', 1),
                 'page_size' => $this->request->param('pageSize', 20),
                 'keyword' => trim((string) $this->request->param('keyword', '')),
                 'type' => trim((string) $this->request->param('type', '')),
                 'category' => trim((string) $this->request->param('category', '')),
             ]);
-
-            return $this->error('获取神煞列表失败，请稍后重试');
         }
     }
 
@@ -82,9 +79,7 @@ class Shensha extends BaseController
                 ],
             ]);
         } catch (\Throwable $e) {
-            $this->logFailure('获取神煞选项', $e);
-
-            return $this->error('获取神煞筛选项失败，请稍后重试');
+            return $this->respondSystemException('shensha_options', $e, '获取神煞筛选项失败，请稍后重试');
         }
     }
 
@@ -133,16 +128,19 @@ class Shensha extends BaseController
 
             return $this->success($model, '保存成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
-        } catch (\Throwable $e) {
-            $this->logFailure('保存神煞', $e, [
+            return $this->respondBusinessException($e, 'shensha_save_validation', '神煞数据格式无效', 400, [
                 'id' => (int) $this->request->param('id', $this->request->post('id', 0)),
                 'name' => trim((string) $this->request->post('name', '')),
                 'type' => trim((string) $this->request->post('type', '')),
                 'category' => trim((string) $this->request->post('category', '')),
             ]);
-
-            return $this->error('保存神煞失败，请稍后重试');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('shensha_save', $e, '保存神煞失败，请稍后重试', [
+                'id' => (int) $this->request->param('id', $this->request->post('id', 0)),
+                'name' => trim((string) $this->request->post('name', '')),
+                'type' => trim((string) $this->request->post('type', '')),
+                'category' => trim((string) $this->request->post('category', '')),
+            ]);
         }
     }
 
@@ -161,9 +159,9 @@ class Shensha extends BaseController
 
             return $this->success([], '删除成功');
         } catch (\Throwable $e) {
-            $this->logFailure('删除神煞', $e, ['id' => $id]);
-
-            return $this->error('删除神煞失败，请稍后重试');
+            return $this->respondSystemException('shensha_delete', $e, '删除神煞失败，请稍后重试', [
+                'id' => $id,
+            ]);
         }
     }
 
@@ -190,12 +188,10 @@ class Shensha extends BaseController
 
             return $this->success([], '状态更新成功');
         } catch (\Throwable $e) {
-            $this->logFailure('更新神煞状态', $e, [
+            return $this->respondSystemException('shensha_toggle_status', $e, '更新神煞状态失败，请稍后重试', [
                 'id' => (int) $this->request->post('id'),
                 'status' => (int) $this->request->post('status'),
             ]);
-
-            return $this->error('更新神煞状态失败，请稍后重试');
         }
     }
 
@@ -229,17 +225,5 @@ class Shensha extends BaseController
         $normalized = array_filter($normalized, static fn(string $value) => $value !== '');
 
         return array_values(array_unique($normalized));
-    }
-
-    /**
-     * 统一记录异常日志
-     */
-    protected function logFailure(string $action, \Throwable $e, array $context = []): void
-    {
-        Log::error($action . '失败', [
-            'admin_id' => method_exists($this, 'getAdminId') ? $this->getAdminId() : null,
-            'message' => $e->getMessage(),
-            'context' => $context,
-        ]);
     }
 }

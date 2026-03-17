@@ -237,8 +237,9 @@
 作为代码审查专家，我对太初命理网站的代码进行了全面检查，发现以下问题：
 
 ### 🔴 高优先级
-- [ ] [2026-03-17] 前端管理后台路由未配置 - frontend/src/router/index.js - 第20-25行定义了管理后台组件(AdminConfig等)，但未添加到routes数组中，导致管理后台页面无法访问，需补齐路由映射。
-- [ ] [2026-03-17] 管理端响应码判断不一致 - frontend/src/views/admin/Config.vue - 使用 `res.code === 0` 判断成功，而其他管理页面(SEOManage.vue等)使用 `res.code === 200`，需统一为200。
+- [x] [2026-03-17] 前端管理后台路由未配置 - `frontend/src/router/index.js` - 本轮复核确认管理后台路由已注册到 `routes`，`/admin/config`、`/admin/almanac`、`/admin/knowledge`、`/admin/seo`、`/admin/shensha` 等页面均已有实际映射。
+- [x] [2026-03-17] 管理端响应码判断不一致 - `frontend/src/views/admin/Config.vue` - 本轮复核确认配置页已统一按 `res.code === 200` 处理成功响应，历史误报已核销。
+
 
 ### 🟡 中优先级
 - [ ] [2026-03-17] 后端异常信息泄露风险 - backend/app/controller/Admin.php 第678行等 - 部分接口直接返回 `$e->getMessage()` 给客户端，可能泄露敏感信息，建议统一封装异常返回。

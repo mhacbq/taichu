@@ -2,7 +2,102 @@
 
 ## 最近更新
 
+### 代码维护批次（自动化重构任务，2026-03-17）
+- 本轮按 `TODO.md` 的代码维护方向处理了 **5 个优化点**：1) 基础控制器统一异常/脱敏日志；2) `admin/System.php` 角色与字典接口异常收口；3) `admin/Shensha.php` 冗余日志逻辑清理；4) `admin/src/views/system/notice.vue` 接入真实公告管理；5) 核销 3 条已被代码修复的历史误报待办。
+- 关键改动文件：`backend/app/BaseController.php`、`backend/app/controller/admin/System.php`、`backend/app/controller/admin/Shensha.php`、`admin/src/views/system/notice.vue`、`TODO.md`。
+
+#### 本轮完成项
+1. **统一后端异常出口与脱敏日志**
+   - 在 `BaseController` 新增业务异常/系统异常响应 helper，并递归脱敏手机号、邮箱、密钥类字段日志。
+   - `System.php` 与 `Shensha.php` 不再直接把原始异常信息回传给前端，重复的 catch + log 模板已收敛到基础控制器。
+2. **清理神煞控制器冗余逻辑**
+   - 删除 `Shensha.php` 本地 `logFailure()`，改由统一 helper 记录结构化日志。
+   - 保存、列表、筛选、删除、状态更新链路全部改为一致的错误处理策略。
+3. **补齐后台公告管理页面**
+   - `admin/src/views/system/notice.vue` 已接入 `getNotices / saveNotice / deleteNotice`，支持列表加载、发布/编辑、删除和提交态反馈。
+4. **维护 TODO 清单准确性**
+   - 已将“系统公告页静态壳子”“后端控制器异常处理不统一”标记为完成。
+   - 已核销“前端管理后台路由未配置”“管理端响应码判断不一致”两条历史误报。
+
+#### 验证情况
+- `npm run build --prefix admin`：通过。
+- `git diff --check -- backend/app/BaseController.php backend/app/controller/admin/System.php backend/app/controller/admin/Shensha.php admin/src/views/system/notice.vue TODO.md`：通过。
+- IDE/LSP 诊断：本轮编辑文件未发现新增错误。
+- 环境限制：当前机器未安装 `php` CLI，无法执行 `php -l`；同时 `admin` 子项目缺少 ESLint 配置文件，无法做定点 eslint 校验，因此以前端构建 + IDE/LSP + diff 检查作为本轮主要验证手段。
+- 截图/录屏：本轮为代码维护和后台表单接线，未额外生成新的界面截图。
+
+### 后台运营巡检（第二十轮自动化巡检，2026-03-17）
+
+- 本轮按运营日常路径继续实测独立后台：先用浏览器自动化打开 `http://localhost:3001/login`，再用默认文档账号 `admin / admin123` 发起真实登录，同时结合 `curl` 与前后端代码交叉核验 Dashboard、用户管理、通知配置等链路。
+- 已将 **2 个高优先级问题、2 个中优先级问题、1 个低优先级建议** 写入 `TODO.md` 的 **《第二十轮后台运营检查报告》**，未重复登记前一轮已记录的登录/鉴权/黄历路由阻塞项。
+- 本轮未修改业务代码，仅更新 `TODO.md`、自动化记忆与本概览。
+
+#### 关键发现
+- **登录页仍可访问，但账号密码登录依旧失败**：浏览器实际请求 `POST http://localhost:3001/api/admin/auth/login`，代理目标 `8000` 端口仍未提供服务；直连 `8080` 登录接口则继续返回 `500`。
+- **Dashboard 首页数据契约错位**：前端按 `res.data.statistics.*` 取数，但后端实际返回 `overview / user_stats / order_stats / divination_stats`，导致首页核心经营指标无法可靠展示。
+- **用户运营主链路仍有隐藏断点**：用户详情页把后端 `{ user, stats, actions }` 当作平铺对象使用，且积分调整请求字段与后端要求不一致；用户列表搜索/分页参数也未和接口对齐。
+- **通知配置页仍是空壳**：`system/notice` 页面未接入加载、保存、删除逻辑，运营无法通过后台发布或维护公告通知。
+
+#### 运行态证据
+- 登录页截图：
+  ![后台登录页实测](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-check.png)
+- `curl http://localhost:3001/login` 返回 `HTTP 200`。
+- `curl http://localhost:8080/api/health` 返回 `{"code":200,"message":"success"...}`，确认本地后端在线。
+- 登录请求证据：浏览器网络日志捕获 `POST http://localhost:3001/api/admin/auth/login`；直连 `POST http://localhost:8080/api/admin/auth/login` 返回 `HTTP 500`。
+
+#### 验证说明
+- 已实际验证：登录页可访问、登录请求已真实发出、本地后端 8080 健康正常。
+- 已代码交叉核验：`admin/src/views/dashboard/index.vue`、`admin/src/views/user/list.vue`、`admin/src/views/user/detail.vue`、`admin/src/views/system/notice.vue`、`backend/app/controller/admin/User.php`、`backend/app/service/AdminStatsService.php`。
+- 环境限制：受前一轮已存在的登录表/鉴权问题影响，本轮无法进入真实后台会话，因此对受保护模块采用“真实登录尝试 + 接口探针 + 前后端契约核对”的组合方式完成巡检。
+
+### UI 设计巡检（本轮自动化执行，2026-03-17）
+- 本轮以代码级 UI/UX 审查方式，继续复核了首页与核心命理功能页，重点关注首单转化文案、合婚交互预期、塔罗失败承接、全局返回一致性和移动端菜单体验。
+- 已将 **1 个高优先级 UI 问题、4 个中优先级 UI 问题** 写入 `TODO.md` 的 **《第三十七轮UI设计检查报告》**，并按现有待办做了去重，未重复登记此前已记录的图标、样式串扰、触摸区域、reduced-motion 等问题。
+- 本轮未修改业务代码，主要产出为新的 UI 问题清单与优化建议。
+
+#### 关键发现
+- **八字首免转化文案自相矛盾**：表单与按钮承诺“首次免费排盘”，但确认弹窗仍固定提示要扣 10 积分，存在明显的首单流失风险。
+- **合婚 AI 选项存在误导性预期**：表单默认勾选 AI 深度分析，但免费预览请求实际上不会启用 AI，用户容易误判结果层级。
+- **塔罗异常反馈承接不足**：抽牌/解读/保存/分享失败时主要依赖 toast，页面主区域缺少错误卡片与重试承接。
+- **移动端导航体验仍不完整**：六爻/合婚页未统一接入站内返回按钮，侧滑菜单展开时也未锁定底层滚动。
+
+#### 验证说明
+- 已复核 `TODO.md` 与自动化记忆，确认本轮新增项未与已登记 UI 问题重复。
+- 已基于代码交叉核验关键实现点：`frontend/src/views/Bazi.vue`、`Hehun.vue`、`Tarot.vue`、`Liuyao.vue`、`App.vue`。
+- 本轮未做浏览器截图或视觉回归，后续如需确认真实表现，建议补一轮页面实测。
+
+### 管理后台运营修复（本轮自动化执行，2026-03-17）
+- 本轮集中处理了后台 `admin/` 中 3 条高优先级运营链路：**SEO 管理界面、VIP/充值订单专项管理、系统设置同步**。
+- 关键改动覆盖：
+  - 前端：`admin/src/views/site-content/seo.vue`、`admin/src/views/payment/orders.vue`、`admin/src/views/payment/vip-orders.vue`、`admin/src/views/payment/config.vue`、`admin/src/views/system/settings.vue`
+  - API：`admin/src/api/payment.js`、`admin/src/api/siteContent.js`
+  - 后端：`backend/route/admin.php`、`backend/app/controller/Admin.php`
+  - 任务记录：`TODO.md`
+
+#### 本轮完成项
+1. **SEO 管理页面补齐并联调现有接口**
+   - 重新实现 SEO 列表、筛选、分页、编辑弹窗、Robots 保存、搜索引擎收录提交 UI。
+   - 前端改为消费后端 `seoConfigList()` 返回的 `list / sitemap / submitStatus` 结构，删除操作也改为传递真实 `id`。
+2. **充值订单与 VIP 订单管理链路打通**
+   - 修正 `admin/src/api/payment.js` 的错误请求路径，去掉重复的 `/admin` 前缀。
+   - 补齐 `backend/route/admin.php` 中 `/api/admin/order`、`/refund`、`/packages`、`/save-package` 路由，使现有 `admin/Order.php` 可被后台直接访问。
+   - 重构充值订单与 VIP 订单页面，对齐后端字段（如 `payment_type`、`pay_time`、`user_nickname`、数值型状态），补齐详情、退款、补单和统计展示。
+   - 同步重构支付配置页面，使其与后端 `admin/Payment.php` 的真实字段完全一致。
+3. **系统设置硬编码与同步问题修复**
+   - 移除 `admin/src/views/system/settings.vue` 中的硬编码默认值，改为以接口返回结果作为唯一配置源。
+   - 修复 Logo 上传地址为 `/api/upload/image`，并按后端返回结构读取 `response.data.url`。
+   - 修复 `Admin::saveSettings()` 仅读取 POST 导致 PUT 保存失败的问题，并在保存后调用 `ConfigService::clearCache()`，确保前台新请求立即命中最新配置。
+
+#### 验证情况
+- 已对本轮改动文件执行 IDE/LSP 诊断：**未发现新增语法错误**。
+- 已完成代码级联调复核：
+  - SEO 页面与 `system/seo/*` 路由的入参与出参结构已对齐；
+  - 订单管理页与 `payment/*`、`order/*` 路由的路径及字段命名已对齐；
+  - 系统设置页保存请求与后端 PUT 解析、配置缓存刷新逻辑已打通。
+- 补充验证说明：命令行构建检查已发起，但当前命令执行器未返回可用的构建日志，因此本轮以静态诊断和代码级接口对齐为主。
+
 ### 命理算法修复（本轮自动化执行，2026-03-17）
+
 - 本轮集中修复了 **5 个 `[占卜]` 逻辑/算法问题**，覆盖 **节气定月、起运顺逆、旬空展示、五行权重底盘、合婚生肖索引、每日运势黄历** 六条关键链路。
 - 核心改动集中在：`backend/app/service/BaziCalculationService.php`、`backend/app/service/BaziInterpretationService.php`、`backend/app/controller/Paipan.php`、`backend/app/controller/Hehun.php`、`backend/app/model/DailyFortune.php`、`TODO.md`。
 

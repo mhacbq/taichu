@@ -6,7 +6,7 @@ namespace app\controller\admin;
 use app\BaseController;
 use app\service\AdminAuthService;
 use think\facade\Db;
-use think\facade\Log;
+
 
 class System extends BaseController
 {
@@ -52,10 +52,15 @@ class System extends BaseController
 
             return $this->success(['id' => $id], '创建成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_create_role', '创建角色参数无效', 400, [
+                'name' => $this->request->post('name', ''),
+                'code' => $this->request->post('code', ''),
+            ]);
         } catch (\Throwable $e) {
-            Log::error('创建角色失败: ' . $e->getMessage());
-            return $this->error('创建失败，请稍后重试', 500);
+            return $this->respondSystemException('system_create_role', $e, '创建失败，请稍后重试', [
+                'name' => $this->request->post('name', ''),
+                'code' => $this->request->post('code', ''),
+            ]);
         }
     }
 
@@ -85,10 +90,17 @@ class System extends BaseController
 
             return $this->success([], '更新成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_update_role', '更新角色参数无效', 400, [
+                'id' => $this->request->param('id'),
+                'name' => $this->request->put('name', ''),
+                'code' => $this->request->put('code', ''),
+            ]);
         } catch (\Throwable $e) {
-            Log::error('更新角色失败: ' . $e->getMessage());
-            return $this->error('更新失败，请稍后重试', 500);
+            return $this->respondSystemException('system_update_role', $e, '更新失败，请稍后重试', [
+                'id' => $this->request->param('id'),
+                'name' => $this->request->put('name', ''),
+                'code' => $this->request->put('code', ''),
+            ]);
         }
     }
 
@@ -119,11 +131,14 @@ class System extends BaseController
 
             return $this->success([], '删除成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_delete_role', '删除角色参数无效', 400, [
+                'id' => $this->request->param('id'),
+            ]);
         } catch (\Throwable $e) {
             Db::rollback();
-            Log::error('删除角色失败: ' . $e->getMessage());
-            return $this->error('删除失败，请稍后重试', 500);
+            return $this->respondSystemException('system_delete_role', $e, '删除失败，请稍后重试', [
+                'id' => $this->request->param('id'),
+            ]);
         }
     }
 
@@ -193,7 +208,9 @@ class System extends BaseController
 
             return $this->success(array_map('intval', $permissions));
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_get_role_permissions', '角色权限参数无效', 400, [
+                'role_id' => $this->request->param('id'),
+            ]);
         }
     }
 
@@ -240,13 +257,19 @@ class System extends BaseController
             return $this->success([], '权限保存成功');
         } catch (\InvalidArgumentException $e) {
             Db::rollback();
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_update_role_permissions', '权限参数无效', 400, [
+                'role_id' => $this->request->param('id'),
+                'permission_ids' => $this->request->post('permission_ids/a', []),
+            ]);
         } catch (\Throwable $e) {
             Db::rollback();
-            Log::error('保存角色权限失败: ' . $e->getMessage());
-            return $this->error('权限保存失败，请稍后重试', 500);
+            return $this->respondSystemException('system_update_role_permissions', $e, '权限保存失败，请稍后重试', [
+                'role_id' => $this->request->param('id'),
+                'permission_ids' => $this->request->post('permission_ids/a', []),
+            ]);
         }
     }
+
 
     /**
      * 获取字典类型列表
@@ -280,10 +303,15 @@ class System extends BaseController
 
             return $this->success(['id' => $id], '创建成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_create_dict_type', '创建字典类型参数无效', 400, [
+                'name' => $this->request->post('name', ''),
+                'type' => $this->request->post('type', ''),
+            ]);
         } catch (\Throwable $e) {
-            Log::error('创建字典类型失败: ' . $e->getMessage());
-            return $this->error('创建失败，请稍后重试', 500);
+            return $this->respondSystemException('system_create_dict_type', $e, '创建失败，请稍后重试', [
+                'name' => $this->request->post('name', ''),
+                'type' => $this->request->post('type', ''),
+            ]);
         }
     }
 
@@ -322,11 +350,18 @@ class System extends BaseController
             return $this->success([], '更新成功');
         } catch (\InvalidArgumentException $e) {
             Db::rollback();
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_update_dict_type', '更新字典类型参数无效', 400, [
+                'id' => $this->request->param('id'),
+                'name' => $this->request->put('name', ''),
+                'type' => $this->request->put('type', ''),
+            ]);
         } catch (\Throwable $e) {
             Db::rollback();
-            Log::error('更新字典类型失败: ' . $e->getMessage());
-            return $this->error('更新失败，请稍后重试', 500);
+            return $this->respondSystemException('system_update_dict_type', $e, '更新失败，请稍后重试', [
+                'id' => $this->request->param('id'),
+                'name' => $this->request->put('name', ''),
+                'type' => $this->request->put('type', ''),
+            ]);
         }
     }
 
@@ -350,11 +385,14 @@ class System extends BaseController
             return $this->success([], '删除成功');
         } catch (\InvalidArgumentException $e) {
             Db::rollback();
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_delete_dict_type', '删除字典类型参数无效', 400, [
+                'id' => $this->request->param('id'),
+            ]);
         } catch (\Throwable $e) {
             Db::rollback();
-            Log::error('删除字典类型失败: ' . $e->getMessage());
-            return $this->error('删除失败，请稍后重试', 500);
+            return $this->respondSystemException('system_delete_dict_type', $e, '删除失败，请稍后重试', [
+                'id' => $this->request->param('id'),
+            ]);
         }
     }
 
@@ -429,10 +467,17 @@ class System extends BaseController
 
             return $this->success([], '保存成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_save_dict_data', '保存字典数据参数无效', 400, [
+                'id' => $this->request->post('id', null),
+                'dict_type' => $this->request->post('dict_type', ''),
+                'value' => $this->request->post('value', ''),
+            ]);
         } catch (\Throwable $e) {
-            Log::error('保存字典数据失败: ' . $e->getMessage());
-            return $this->error('保存失败，请稍后重试', 500);
+            return $this->respondSystemException('system_save_dict_data', $e, '保存失败，请稍后重试', [
+                'id' => $this->request->post('id', null),
+                'dict_type' => $this->request->post('dict_type', ''),
+                'value' => $this->request->post('value', ''),
+            ]);
         }
     }
 
@@ -451,12 +496,16 @@ class System extends BaseController
             Db::table(self::TABLE_ADMIN_DICT_DATA)->where('id', $id)->delete();
             return $this->success([], '删除成功');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage());
+            return $this->respondBusinessException($e, 'system_delete_dict_data', '删除字典数据参数无效', 400, [
+                'id' => $this->request->param('id'),
+            ]);
         } catch (\Throwable $e) {
-            Log::error('删除字典数据失败: ' . $e->getMessage());
-            return $this->error('删除失败，请稍后重试', 500);
+            return $this->respondSystemException('system_delete_dict_data', $e, '删除失败，请稍后重试', [
+                'id' => $this->request->param('id'),
+            ]);
         }
     }
+
 
     /**
      * 校验角色入参
