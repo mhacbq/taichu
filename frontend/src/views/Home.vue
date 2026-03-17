@@ -500,7 +500,7 @@ onMounted(() => {
 
 .welcome-btn {
   padding: 10px 30px;
-  min-height: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -510,6 +510,7 @@ onMounted(() => {
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
+
 
 .welcome-btn.primary {
   background: var(--primary-gradient);
@@ -572,7 +573,10 @@ onMounted(() => {
 
 .btn-primary {
   padding: 12px 32px;
-  min-height: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-btn);
   font-weight: 600;
 }
@@ -581,7 +585,7 @@ onMounted(() => {
   background: transparent;
   border: 2px solid var(--border-color);
   padding: 12px 32px;
-  min-height: 44px;
+  height: 44px;
   border-radius: var(--radius-btn);
   color: var(--text-primary);
   font-size: 16px;
@@ -593,6 +597,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
 }
+
 
 .btn-secondary:hover {
   border-color: var(--primary-color);
@@ -740,13 +745,19 @@ onMounted(() => {
   margin: 0 auto 20px;
   color: var(--primary-color);
   font-size: 28px;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
 }
 
 .stat-item:hover .stat-icon-wrapper {
   background: var(--primary-color);
   color: #fff;
-  transform: rotateY(360deg);
+  transform: rotateY(360deg) scale(1.1);
+  -webkit-transform: rotateY(360deg) scale(1.1);
+  /* 针对不支持 rotateY 的旧版浏览器的降级方案 */
+  box-shadow: 0 0 15px var(--primary-color);
 }
 
 .stat-number {

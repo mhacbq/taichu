@@ -3455,111 +3455,168 @@ const formatAiContent = (content) => {
 }
 
 @media (max-width: 768px) {
+  .bazi-page {
+    padding: 30px 0;
+  }
+
   .paipan-cell {
-    font-size: 18px;
-    padding: 10px 5px;
+    font-size: 16px;
+    padding: 12px 4px;
+    min-height: 80px;
   }
   
   .gan-text, .zhi-text {
-    font-size: 22px;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .wuxing-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+    transform: scale(0.9);
   }
   
   .shishen-cell {
-    font-size: 12px;
+    font-size: 11px;
+    padding: 6px 2px;
   }
   
   .canggan-cell {
-    font-size: 10px;
-    min-height: 50px;
+    font-size: 9px;
+    padding: 8px 2px;
+    min-height: 45px;
+  }
+
+  .canggan-list {
+    gap: 1px;
   }
   
   .nayin-cell {
-    font-size: 10px;
+    font-size: 9px;
+    padding: 6px 2px;
   }
   
+  .day-master-info {
+    margin-bottom: 20px;
+  }
+
+  .day-master-card {
+    padding: 16px 24px;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
   .day-master-card .value {
-    font-size: 28px;
+    font-size: 32px;
+  }
+
+  .day-master-card .label {
+    font-size: 13px;
   }
   
   .dayun-timeline {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dayun-item {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .dayun-age {
+    margin-bottom: 0;
+    min-width: 65px;
+  }
+
+  .dayun-pillar {
+    margin-bottom: 0;
+    gap: 3px;
+  }
+
+  .dayun-pillar .gan, .dayun-pillar .zhi {
+    font-size: 18px;
+  }
+
+  .dayun-shishen, .dayun-luck, .dayun-nayin {
+    margin-bottom: 0;
+  }
+
+  .dayun-desc {
+    display: none; /* 移动端隐藏详细描述以节省空间 */
   }
   
   .liunian-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .liunian-item {
+    padding: 10px;
+  }
+
+  .liunian-year {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .liunian-pillar .gan, .liunian-pillar .zhi {
+    font-size: 18px;
   }
   
-  .ai-analysis-section {
-    padding: 15px;
+  .professional-reading {
+    padding: 20px 15px;
   }
-  
-  .ai-content {
-    font-size: 14px;
-  }
-  
-  /* 流年运势响应式 */
-  .yearly-header {
+
+  .dm-header {
     flex-direction: column;
-    gap: 20px;
-  }
-  
-  .year-info {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .year-number {
-    font-size: 28px;
-  }
-  
-  .analysis-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .lucky-info {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  /* 大运分析响应式 */
-  .dayun-header {
-    flex-direction: column;
+    text-align: center;
     gap: 15px;
   }
+
+  .dm-symbol {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+
+  .dm-title h4 {
+    font-size: 18px;
+  }
+
+  .dm-traits {
+    justify-content: center;
+  }
+
+  .reading-card {
+    padding: 15px;
+  }
+
+  .rc-header {
+    margin-bottom: 8px;
+  }
+
+  .rc-icon {
+    font-size: 20px;
+  }
   
-  .dayun-info {
+  .rc-content {
+    font-size: 13px;
+  }
+
+  .result-actions {
     flex-direction: column;
-    align-items: center;
+    width: 100%;
   }
-  
-  .dayun-name {
-    font-size: 24px;
-  }
-  
-  .score-item {
-    flex-wrap: wrap;
-  }
-  
-  .score-name {
-    width: 40px;
-  }
-  
-  /* K线图响应式 */
-  .chart-years {
-    height: 120px;
-  }
-  
-  .chart-year-bar {
-    min-width: 15px;
-  }
-  
-  .year-label {
-    font-size: 8px;
-    transform: rotate(-45deg);
-    bottom: -15px;
-  }
-  
-  .year-score {
-    font-size: 8px;
+
+  .result-actions .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-bottom: 10px;
   }
 }
 </style>
