@@ -41,7 +41,10 @@ function Invoke-Compose {
 
     Push-Location $WorkingDir
     try {
-        & $Compose.File @($Compose.ArgsPrefix + $Args)
+        $allArgs = @()
+        $allArgs += $Compose.ArgsPrefix
+        $allArgs += $Args
+        & $Compose.File @allArgs
     } finally {
         Pop-Location
     }
