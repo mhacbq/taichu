@@ -112,7 +112,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTable } from '@/hooks'
-import { getUserList, updateUserStatus, exportUsers } from '@/api/user'
+import { getUserList, updateUserStatus, exportUsers, batchUpdateUserStatus } from '@/api/user'
+
 import StatCard from '@/components/StatCard/index.vue'
 import SearchForm from '@/components/SearchForm/index.vue'
 import CommonTable from '@/components/CommonTable/index.vue'
@@ -206,15 +207,41 @@ async function handleStatusChange({ row, value }) {
   }
 }
 
+async function handleBatchStatus(status) {
+  const ids = selectedRows.value.map(row => row.id)
+  if (!ids.length) {
+    return
+  }
+
+  const actionText = status === 1 ? '启用' : '禁用'
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要批量${actionText}选中的 ${ids.length} 个用户吗？`,
+      '批量操作',
+      { type: 'warning' }
+    )
+    await batchUpdateUserStatus(ids, status)
+    ElMessage.success(`已批量${actionText}${ids.length}个用户`)
+    selectedRows.value = []
+    refresh()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(`批量${actionText}失败`)
+    }
+  }
+}
+
 // 批量启用
 async function handleBatchEnable() {
-  // 批量启用逻辑
+  await handleBatchStatus(1)
 }
 
 // 批量禁用
 async function handleBatchDisable() {
-  // 批量禁用逻辑
+  await handleBatchStatus(0)
 }
+
 
 // 导出
 async function handleExport() {

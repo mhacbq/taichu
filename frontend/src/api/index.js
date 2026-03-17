@@ -8,7 +8,8 @@ export const getHomeStats = () => request.get('/stats/home')
 export const login = (data) => request.post('/auth/login', data)
 export const wechatLogin = (data) => request.post('/auth/wechat-login', data)
 export const phoneLogin = (data) => request.post('/auth/phone-login', data)
-export const sendSmsCode = (data) => request.post('/auth/send-sms', data)
+export const sendSmsCode = (data) => request.post('/sms/send-code', data)
+
 export const getUserInfo = () => request.get('/auth/userinfo')
 
 // 八字排盘

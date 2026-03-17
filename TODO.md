@@ -5,7 +5,8 @@
 ### 🔴 高优先级（运营阻塞问题）
 - [ ] [运营] 管理后台账号密码登录直接 500 - 管理员登录 - 独立后台登录页可打开，但 `admin/src/views/login/index.vue` 提交后会走 `admin/vite.config.js` 指向的 `http://localhost:8000` 代理；而直连 `http://localhost:8080/api/admin/auth/login` 又会在 `backend/app/controller/admin/Auth.php` 查询不存在的 `admin` 表，实测报错 `Table 'taichu.admin' doesn't exist`，后台无法完成账号密码登录。
 - [ ] [运营] 后台鉴权中间件缺少 `ADMIN_JWT_SECRET` 导致受保护接口全量 500 - 登录后跳转和权限验证 - 实测请求 `/api/admin/auth/info` 返回 `ADMIN_JWT_SECRET environment variable is not set`，`backend/app/middleware/AdminAuth.php` 在构造阶段直接抛异常，意味着即使补齐登录入口，Dashboard 和各管理接口也无法正常进入。
-- [ ] [运营] 独立管理后台业务路由未真正注册 - 后台首页 Dashboard - `admin/src/router/index.js` 只把 `constantRoutes` 注入 router，`asyncRoutes` 中声明的 `/dashboard`、`/user/*`、`/content/*` 等页面并未注册，登录成功后 `router.push('/')` 也无法稳定落到实际后台首页，侧栏与快捷入口存在整体失效风险。
+- [x] [运营] 独立管理后台业务路由未真正注册 - 后台首页 Dashboard - 已改为在 `admin/src/router/index.js` 中注册 `constantRoutes + asyncRoutes`，并清理 `admin/src/stores/user.js` 中未落地的伪动态路由逻辑，登录后可正常进入后台业务页。
+
 - [ ] [运营] 黄历管理 CRUD 请求路径与后端路由不一致 - 内容管理/黄历数据 - `admin/src/api/content.js` 把黄历接口写成 `/content/almanac*`，但后端 `backend/route/admin.php` 实际只注册了 `/api/admin/almanac/list`、`/save`、`/generate-month`，运营无法正常新增、编辑、删除黄历信息。
 - [ ] [运营] 支付配置、充值订单、VIP订单接口路径错误且 VIP 路由缺失 - 订单/积分管理 - `admin/src/api/payment.js` 使用 `/admin/payment/*`、`/admin/order/*`，叠加 `admin/src/api/request.js` 的 `baseURL=/api/admin` 后会请求错误地址；同时 `backend/route/admin.php` 并未注册 `/order/*` 路由，导致支付配置、订单列表、VIP 订单处理无法正常使用。
 - [ ] [运营] 站点内容、FAQ、评价与 SEO 管理接口重复拼接 `/api/admin` - 内容管理/SEO内容 - `admin/src/api/siteContent.js` 已写死 `/api/admin/site/*`，再叠加 `baseURL=/api/admin` 会命中错误路径，内容运营和 SEO 配置页面会整体加载失败。
@@ -84,12 +85,10 @@
 
 
 ### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] 用户详情页积分手动调整功能缺失 - 用户管理 - 后台目前只能查看积分，无法应对用户投诉或补单时需要手动调账的需求。
-- [ ] [运营] 用户管理列表批量启用/禁用功能失效 - 用户管理 - `list-improved.vue` 中的批量操作函数为空实现，在大规模封禁违规账号时效率极低。
 
 ### 🟡 中优先级（运营体验问题）
 - [ ] [运营] 独立知识库/文章管理系统缺失 - 内容管理 - 当前 FAQ 和页面管理难以承载深度命理文章的发布与维护。
-- [ ] [运营] 站点内容管理模块缺失分页功能 - 内容管理 - `content-manager.vue` 未实现分页，随着配置项增多将导致接口返回过慢。
+
 
 ### 🟢 低优先级（运营优化建议）
 - [ ] [运营] Dashboard 增加手动刷新与统计数据导出 - 运营概览 - 方便运营人员随时获取最新动态并导出日报数据。
@@ -181,6 +180,24 @@
 
 ---
 
+## 🔍 第三十七轮代码逻辑检查报告 (2026-03-17)
+
+作为代码审查专家，我对太初命理网站的代码进行了全面检查，发现以下问题：
+
+### 🔴 高优先级
+
+### 🟡 中优先级
+- [ ] [2026-03-17] 后端控制器异常处理不统一 - backend/app/controller - 多个控制器（如admin/System.php、admin/Shensha.php等）在catch块中直接返回 `$e->getMessage()` 给客户端，违反了安全最佳实践。建议在BaseController中统一异常处理，或在catch块中使用通用错误消息。
+
+### 🟢 低优先级
+- [x] [2026-03-17] 独立后台 API 前缀重复拼接清理 - `admin/src/api/{siteContent,sms,ai,aiPrompt}.js` - 已统一改为相对 `/api/admin` 的实际后端路径，并对齐 SEO/Robots/Sitemap 提交接口。
+- [x] [2026-03-17] 短信测试模式日志明文暴露 - `backend/app/service/SmsService.php` - 已改为结构化脱敏日志，不再输出手机号与测试验证码明文。
+- [x] [2026-03-17] 后端局部异常回传未脱敏 - `backend/app/controller/admin/Dashboard.php`、`backend/app/controller/SiteContent.php` - 已补结构化日志并改为通用错误文案回前端。
+- [ ] [2026-03-17] 后端Auth控制器表名硬编码 - backend/app/controller/admin/Auth.php 第41行 - 控制器直接使用 `Db::name('admin')` 查询，但数据库中实际表名可能为 `tc_admin` 或其他前缀，需确认数据库表名或使用配置。
+
+
+---
+
 ## 🔍 第三十六轮代码逻辑检查报告 (2026-03-17)
 
 作为代码审查专家，我对太初命理网站的代码进行了全面检查，发现以下问题：
@@ -203,24 +220,32 @@
 
 ### 🔴 高优先级（逻辑错误/准确性问题）
 - [ ] [占卜] 六爻接口路由与控制器方法完全失配 - 六爻占卜 - 前端调用 `/api/liuyao/pricing`、`/api/liuyao/divination`，后端实际只有 `qiGua/records/recordDetail` 等方法，实测返回“方法不存在: app\controller\Liuyao->getPricing()/divination()”，核心起卦链路不可用。
-- [ ] [占卜] 每日运势前端取数字段与后端响应结构不一致 - 每日运势 - `Daily.vue` 读取 `response.data.fortune`、`response.data.solarDate`，而后端返回的是 `data.date`、`data.overallScore`、`data.aspects` 等平铺结构，导致接口 200 仍无法正确渲染主运势内容。
+
 
 ### 🟡 中优先级（体验问题）
 - [ ] [占卜] 六爻前端缺少手动起卦与时间起卦入口 - 六爻占卜 - 页面只有问题输入框与 AI 勾选，未暴露手动摇卦、时间起卦、日辰信息等专业参数，无法满足六爻爱好者的标准问卦流程。
-- [ ] [占卜] 登录验证码仍走错误接口导致占卜前置流程受阻 - 占卜登录入口 - `Login.vue` 通过 `../api` 调用 `/api/auth/send-sms`，实测发送验证码请求命中错误路由，用户在进入八字、塔罗、六爻、合婚前就会卡住。
 - [ ] [占卜] 每日运势缺少吉神凶煞与时辰吉凶信息 - 每日运势 - 当前只展示综合分、分项分数与宜忌标签，未提供黄历常用的吉神凶煞、值日神、时辰吉凶，专业参考价值偏弱。
+
 
 ### 🟢 低优先级（专业性优化）
 - [ ] [占卜] 凯尔特十字关系分析仍按线性串牌输出 - 塔罗占卜 - 当前解读以“第1张到第2张”顺推为主，未充分体现覆盖牌、环境牌、希望/恐惧与结果牌之间的交叉关系，专业度弱于标准韦特体系读法。
 - [ ] [占卜] 单张牌结论模板感过强 - 塔罗占卜 - 结果末尾常回落到“保持开放心态、接受命运指引”这类泛化建议，与具体问卜主题和牌义结合不够紧密，指导性偏弱。
 
+---
 
+## 🔮 占卜爱好者深度体验检查报告 - 第二十一轮 (2026-03-17)
 
+作为精通东西方命理占卜的资深爱好者，我继续结合真实页面操作、接口探针与传统理论交叉核验，新增以下不重复问题：
 
+### 🔴 高优先级（逻辑错误/准确性问题）
+- [ ] [占卜] 专业版八字排盘对测试生辰直接 500 - 八字排盘 - 以 `1990-05-15 10:30 男` 调用 `/api/paipan/bazi` 实测返回 `Undefined array key "gan_index"`，四柱、十神、纳音、大运流年整页均无法生成，核心排盘链路被阻断。
+- [ ] [占卜] 合婚定价接口空配置直传导致页面一打开就 500 - 合婚配对 - `/api/hehun/pricing` 在 `Hehun.php` 调 `ConfigService::calculatePointsCost()` 时把 `null` 传给 `int $basePoints`，页面首屏即连续弹出“服务器错误”，用户无法得知积分消耗与解锁条件。
+- [ ] [占卜] 合婚基础版与完整版提交仍会读取不存在的 `zhi_index` - 合婚配对 - 按测试样例男 `1990-05-15 10:30`、女 `1992-08-20 09:00` 提交 `free` / `premium` 都返回 `Undefined array key "zhi_index"`，生肖配对、婚姻指数和详细建议全链路报废。
+- [ ] [占卜] 每日运势黄历年号仍与真实农历不符 - 每日运势 - `/api/daily/fortune` 在 `2026-03-17` 返回 `甲子年 1月16日`，与当日真实农历不一致，会直接误导宜忌、吉时与日运参考判断。
 
+### 🟡 中优先级（体验问题）
+- [ ] [占卜] 合婚前端定价字段与后端结构错位 - 合婚配对 - `Hehun.vue` 读取 `pricing.final / discount / reason`，后端 `getPricing` 实际返回 `tier / export / user_status` 结构；即使后端恢复 200，价格徽标、折扣说明和解锁弹窗仍会显示异常或退回默认值。
 
-
-
-
-
+### 🟢 低优先级（专业性优化）
+- [ ] [占卜] 塔罗元素平票时仍强行指定“主导元素” - 塔罗占卜 - 三张牌出现 1 水 1 火 1 土等平票组合时，系统仍按遍历顺序硬判主导元素并给出偏向性建议，元素分析不符合韦特体系下应以并列/均衡处理的做法。
 

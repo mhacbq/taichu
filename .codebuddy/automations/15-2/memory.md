@@ -1,8 +1,23 @@
 # 前端修复专家 - 执行记录
 
-## 2026-03-17 20:00 执行摘要
+## 2026-03-17 18:44 执行摘要
+
+- 完成 5 个前端待办：塔罗多牌阵牌位标签、塔罗分享承接页、合婚历史导出记录ID、前端后台路由映射、后台配置页成功码判断。
+- 同步补齐塔罗分享后端路由 `backend/route/app.php`，并新增 SEO 页缺失图标与 `marked` 依赖，确保前端构建可通过。
+- 更新 `TODO.md`，移除本轮已修复项，并顺手清理 1 条已在代码中完成但未同步删除的六爻历史积分待办。
+- 验证结果：`npm run build --prefix frontend` 通过；本机未提供 `php` 命令，未能额外执行 PHP 语法检查。
+- Git：提交 `12f467f fix-frontend-multiple-issues-20260317-1844`，已同步到 `origin/master`。
+
+## 2026-03-17 21:10 执行摘要
+
+- 完成 5 个前端待办：登录验证码接口、每日运势响应映射、用户详情手动调积分、用户列表批量启停、站点内容分页。
+- 为完成后台构建验证，额外补装 `admin` 端 `vuedraggable` 依赖，并在 `admin/src/utils/format.js` 补齐 `formatDateTime` 导出。
+- 已同步清理 `TODO.md` 中对应 5 条待办。
+- 验证结果：`npm run build --prefix frontend` 通过，`npm run build --prefix admin` 通过；后台构建仍有 Sass 旧 API 与大包体告警，但不影响编译成功。
+- Git：待本轮提交推送。
 
 ### 本次修复的前端问题（共5个）
+
 
 1. **[UI] 全局设计系统优化** (高优先级)
    - 文件: `style.css`

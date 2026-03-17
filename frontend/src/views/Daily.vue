@@ -208,9 +208,17 @@ const loadDailyFortune = async () => {
   try {
     const response = await getDailyFortune()
     if (response.code === 200) {
-      fortune.value = response.data.fortune
-      solarDate.value = response.data.solarDate
-      lunarDate.value = response.data.lunarDate
+      const data = response.data || {}
+      fortune.value = {
+        ...data,
+        yi: data.yi || [],
+        ji: data.ji || [],
+        aspects: data.aspects || [],
+        details: data.details || {},
+        personalized: data.personalized || null
+      }
+      solarDate.value = data.date || ''
+      lunarDate.value = data.lunarDate || ''
       error.value = false
     } else {
       error.value = true
@@ -224,6 +232,7 @@ const loadDailyFortune = async () => {
     console.error(err)
   }
 }
+
 
 onMounted(() => {
   loadDailyFortune()

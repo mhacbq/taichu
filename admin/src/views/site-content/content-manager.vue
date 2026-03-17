@@ -70,7 +70,21 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
     </el-card>
+
 
     <!-- 编辑对话框 -->
     <el-dialog
@@ -145,6 +159,11 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('添加内容')
 const formRef = ref(null)
 const tableData = ref([])
+const pagination = reactive({
+  current: 1,
+  pageSize: 20,
+  total: 0
+})
 
 const queryForm = reactive({
   page: 'home',
@@ -173,10 +192,15 @@ const loadData = async () => {
   try {
     const res = await getContentList({
       page: queryForm.page,
-      key: queryForm.key
+      key: queryForm.key,
+      current: pagination.current,
+      pageSize: pagination.pageSize
     })
     if (res.code === 200) {
-      tableData.value = res.data
+      tableData.value = res.data?.list || []
+      pagination.total = res.data?.total || 0
+      pagination.current = res.data?.page || pagination.current
+      pagination.pageSize = res.data?.pageSize || pagination.pageSize
     }
   } catch (error) {
     ElMessage.error('加载数据失败')
@@ -187,11 +211,24 @@ const loadData = async () => {
 
 // 页面切换
 const handlePageChange = () => {
+  pagination.current = 1
   loadData()
 }
 
 // 搜索
 const handleSearch = () => {
+  pagination.current = 1
+  loadData()
+}
+
+const handleCurrentChange = (current) => {
+  pagination.current = current
+  loadData()
+}
+
+const handleSizeChange = (pageSize) => {
+  pagination.pageSize = pageSize
+  pagination.current = 1
   loadData()
 }
 
@@ -226,6 +263,9 @@ const handleDelete = async (row) => {
     const res = await deleteContent(row.id)
     if (res.code === 200) {
       ElMessage.success('删除成功')
+      if (tableData.value.length === 1 && pagination.current > 1) {
+        pagination.current -= 1
+      }
       loadData()
     }
   } catch (error) {
@@ -260,6 +300,7 @@ onMounted(() => {
 })
 </script>
 
+
 <style scoped>
 .content-manager {
   padding: 20px;
@@ -276,4 +317,11 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
 </style>
