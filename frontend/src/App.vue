@@ -21,7 +21,7 @@
         <div class="user-actions">
           <template v-if="isLoggedIn">
             <span class="points-badge">
-              <el-icon class="points-icon" :size="16"><Diamond /></el-icon>
+              <el-icon class="points-icon" :size="16"><Star /></el-icon>
               <span class="points-value">{{ userPoints }}</span>
             </span>
             <el-dropdown @command="handleCommand" trigger="click">
@@ -84,7 +84,7 @@
             <div class="mobile-user-info">
               <span class="mobile-avatar">{{ userNickname?.[0] || '用' }}</span>
               <span class="mobile-nickname">{{ userNickname || '用户' }}</span>
-              <span class="mobile-points"><el-icon :size="14"><Diamond /></el-icon> {{ userPoints }}</span>
+              <span class="mobile-points"><el-icon :size="14"><Star /></el-icon> {{ userPoints }}</span>
             </div>
             <a href="#" class="mobile-logout-btn" @click.prevent="handleLogout">
               <el-icon :size="16"><SwitchButton /></el-icon> 退出登录
@@ -175,7 +175,6 @@ import {
   Star, 
   User, 
   SwitchButton, 
-  Diamond, 
   Close,
   Present,
   Collection,
@@ -590,7 +589,7 @@ onMounted(() => {
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
-  color: var(--text-primary);
+  color: var(--primary-color);
   background: linear-gradient(90deg, rgba(184, 134, 11, 0.2), transparent);
   border-left-color: var(--primary-color);
   padding-left: 36px;
