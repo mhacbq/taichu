@@ -276,3 +276,68 @@ export function saveFortuneTemplate(data) {
     data
   })
 }
+
+// ============ SEO 管理接口 ============
+
+/**
+ * 获取SEO配置列表
+ */
+export function getSeoConfigs() {
+  return request({
+    url: '/api/admin/site/seo/list',
+    method: 'get'
+  })
+}
+
+/**
+ * 保存SEO配置
+ */
+export function saveSeoConfig(data) {
+  return request({
+    url: '/api/admin/site/seo/save',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 删除SEO配置
+ */
+export function deleteSeoConfig(route) {
+  return request({
+    url: '/api/admin/site/seo/delete',
+    method: 'post',
+    data: { route }
+  })
+}
+
+/**
+ * 获取Robots配置
+ */
+export function getRobotsConfig() {
+  return request({
+    url: '/api/admin/site/seo/robots',
+    method: 'get'
+  })
+}
+
+/**
+ * 保存Robots配置
+ */
+export function saveRobotsConfig(content) {
+  return request({
+    url: '/api/admin/site/seo/robots',
+    method: 'post',
+    data: { content }
+  })
+}
+
+/**
+ * 生成站点地图
+ */
+export function generateSitemap() {
+  return request({
+    url: '/api/admin/site/seo/sitemap',
+    method: 'post'
+  })
+}

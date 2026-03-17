@@ -227,9 +227,15 @@ const submitDivination = async () => {
     const response = await liuyaoDivination({
       question: form.question.trim(),
       useAi: form.useAi,
+      context: {
+        current_time: new Date().toISOString(),
+        location: 'China', // 默认时区参考
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }
     })
 
     if (response.code === 200) {
+
       result.value = response.data
       loadHistory() // 刷新历史
     } else {

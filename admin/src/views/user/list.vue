@@ -35,16 +35,39 @@
     </el-card>
 
     <!-- 操作栏 -->
-    <div class="table-operations">
-      <el-button type="primary" @click="handleExport">
-        <el-icon><Download /></el-icon>导出
-      </el-button>
+    <div class="table-operations mb-4">
+      <el-space>
+        <el-button type="primary" @click="handleExport">
+          <el-icon><Download /></el-icon>导出
+        </el-button>
+        <el-button 
+          type="success" 
+          :disabled="!selectedUsers.length" 
+          @click="handleBatchStatus(1)"
+        >
+          批量启用
+        </el-button>
+        <el-button 
+          type="danger" 
+          :disabled="!selectedUsers.length" 
+          @click="handleBatchStatus(0)"
+        >
+          批量禁用
+        </el-button>
+      </el-space>
     </div>
 
     <!-- 用户列表 -->
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="userList" stripe>
+      <el-table 
+        v-loading="loading" 
+        :data="userList" 
+        stripe
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
         <el-table-column type="index" label="#" width="50" />
+
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="用户信息" min-width="200">
           <template #default="{ row }">
@@ -145,7 +168,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, updateUserStatus, exportUsers } from '@/api/user'
+import { getUserList, updateUserStatus, exportUsers, batchUpdateUserStatus } from '@/api/user'
 import { adjustPoints } from '@/api/points'
 
 const router = useRouter()
@@ -153,8 +176,10 @@ const router = useRouter()
 const loading = ref(false)
 const total = ref(0)
 const userList = ref([])
+const selectedUsers = ref([])
 
 const queryForm = reactive({
+
   username: '',
   phone: '',
   status: '',
@@ -265,7 +290,35 @@ function handleCurrentChange(val) {
   loadUserList()
 }
 
+function handleSelectionChange(selection) {
+  selectedUsers.value = selection
+}
+
+async function handleBatchStatus(status) {
+  const ids = selectedUsers.value.map(u => u.id)
+  const actionText = status === 1 ? '启用' : '禁用'
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要批量${actionText}选中的 ${ids.length} 个用户吗？`,
+      '批量操作',
+      { type: 'warning' }
+    )
+    loading.value = true
+    await batchUpdateUserStatus(ids, status)
+    ElMessage.success('批量操作成功')
+    loadUserList()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('操作失败')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
 async function handleExport() {
+
   try {
     const blob = await exportUsers(queryForm)
     const url = window.URL.createObjectURL(blob)

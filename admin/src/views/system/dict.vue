@@ -16,10 +16,11 @@
           <el-input
             v-model="typeSearch"
             placeholder="搜索字典类型"
-            prefix-icon="Search"
+            :prefix-icon="Search"
             clearable
             style="margin-bottom: 15px;"
           />
+
           
           <el-table
             :data="filteredTypes"

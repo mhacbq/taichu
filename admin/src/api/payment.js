@@ -61,8 +61,52 @@ export function getRechargeStats(params) {
   })
 }
 
+// 获取VIP订单列表
+export function getVipOrders(params) {
+  return request({
+    url: '/admin/order',
+    method: 'get',
+    params
+  })
+}
+
+// 获取VIP订单详情
+export function getVipOrderDetail(id) {
+  return request({
+    url: `/admin/order/${id}`,
+    method: 'get'
+  })
+}
+
+// VIP订单退款
+export function refundVipOrder(data) {
+  return request({
+    url: '/admin/order/refund',
+    method: 'post',
+    data
+  })
+}
+
+// 获取VIP套餐列表
+export function getVipPackages() {
+  return request({
+    url: '/admin/order/packages',
+    method: 'get'
+  })
+}
+
+// 保存VIP套餐
+export function saveVipPackage(data) {
+  return request({
+    url: '/admin/order/save-package',
+    method: 'post',
+    data
+  })
+}
+
 // 手动补单
 export function manualCompleteOrder(orderNo) {
+
   return request({
     url: `/admin/payment/orders/${orderNo}/complete`,
     method: 'post'

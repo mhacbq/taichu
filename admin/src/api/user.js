@@ -45,6 +45,15 @@ export function updateUserStatus(id, status) {
   })
 }
 
+export function batchUpdateUserStatus(ids, status) {
+  return request({
+    url: '/users/batch-status',
+    method: 'put',
+    data: { ids, status }
+  })
+}
+
+
 export function getUserBehavior(params) {
   return request({
     url: '/users/behavior',

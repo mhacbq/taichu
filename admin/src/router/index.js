@@ -123,7 +123,14 @@ export const asyncRoutes = [
         meta: { title: '内容管理', roles: ['admin', 'operator'] }
       },
       {
+        path: 'seo',
+        name: 'SeoManager',
+        component: () => import('@/views/site-content/seo.vue'),
+        meta: { title: 'SEO管理', roles: ['admin'] }
+      },
+      {
         path: 'testimonials',
+
         name: 'TestimonialsManager',
         component: () => import('@/views/site-content/testimonials.vue'),
         meta: { title: '用户评价', roles: ['admin', 'operator'] }
@@ -200,12 +207,25 @@ export const asyncRoutes = [
         meta: { title: '充值订单', roles: ['admin', 'operator'] }
       },
       {
+        path: 'vip-orders',
+        name: 'VipOrders',
+        component: () => import('@/views/payment/vip-orders.vue'),
+        meta: { title: 'VIP订单', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'vip-packages',
+        name: 'VipPackages',
+        component: () => import('@/views/payment/vip-packages.vue'),
+        meta: { title: 'VIP套餐', roles: ['admin'] }
+      },
+      {
         path: 'config',
         name: 'PaymentConfig',
         component: () => import('@/views/payment/config.vue'),
         meta: { title: '支付配置', roles: ['admin'] }
       }
     ]
+
   },
   {
     path: '/sms',

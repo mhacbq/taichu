@@ -1069,8 +1069,12 @@ class Admin extends BaseController
         }
         
         try {
-            // 从数据库或缓存读取设置
-            $settings = [
+            // 从数据库读取所有配置项
+            $configList = Db::name('system_config')
+                ->column('config_value', 'config_key');
+            
+            // 如果数据库为空，提供基础默认值
+            $settings = array_merge([
                 'site_name' => '太初命理',
                 'logo' => '',
                 'site_description' => '专业的命理分析平台',
@@ -1081,7 +1085,14 @@ class Admin extends BaseController
                 'enable_register' => true,
                 'enable_daily' => true,
                 'enable_feedback' => true
-            ];
+            ], $configList);
+
+            // 处理布尔类型和数字类型转换
+            foreach ($settings as $key => &$value) {
+                if ($value === 'true' || $value === '1') $value = true;
+                if ($value === 'false' || $value === '0') $value = false;
+                if (is_numeric($value) && !str_contains((string)$value, '.')) $value = (int)$value;
+            }
 
             // 记录查看日志
             $this->logOperation('view', 'config', [
@@ -1090,6 +1101,7 @@ class Admin extends BaseController
 
             return $this->success($settings, '获取成功');
         } catch (\Exception $e) {
+
             Log::error('获取系统设置失败: ' . $e->getMessage());
             return $this->error('获取设置失败，请稍后重试', 500);
         }
