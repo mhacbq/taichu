@@ -3,78 +3,87 @@
     <GuideModal />
     <!-- Hero Section -->
     <section class="hero">
-      <div class="container">
-        <!-- 暖心问候语 - 已登录 -->
-        <div v-if="isLoggedIn" class="warm-greeting">
-          <div class="greeting-content">
-            <span class="greeting-icon">
-              <el-icon v-if="greetingIcon === 'morning'" :size="32"><Sunrise /></el-icon>
-              <el-icon v-else-if="greetingIcon === 'afternoon'" :size="32"><Sunny /></el-icon>
-              <el-icon v-else :size="32"><Moon /></el-icon>
-            </span>
-            <div class="greeting-text">
-              <h3>{{ greetingText }}</h3>
-              <p class="daily-quote">{{ dailyQuote }}</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 用户积分卡片 - 已登录 -->
-        <div v-if="isLoggedIn" class="user-points-card">
-          <div class="points-display">
-            <el-icon class="points-icon" :size="32"><Coin /></el-icon>
-            <div class="points-info">
-              <span class="points-label">我的积分</span>
-              <span class="points-value">{{ userPoints }}</span>
-            </div>
-          </div>
-          <div class="points-actions">
-            <router-link to="/profile" class="points-btn checkin">签到领积分</router-link>
-            <router-link to="/bazi" class="points-btn">去排盘</router-link>
-          </div>
-        </div>
-        
-        <!-- 未登录引导卡片 -->
-        <div v-else class="guest-welcome-card">
-          <div class="welcome-content">
-            <el-icon class="welcome-icon" :size="40"><Cherry /></el-icon>
-            <div class="welcome-text">
-              <h3>嗨，你好呀</h3>
-              <p>迷茫的时候，来这里找找答案吧</p>
-            </div>
-          </div>
-          <div class="welcome-actions">
-            <router-link to="/login" class="welcome-btn primary">立即登录</router-link>
-            <router-link to="/login" class="welcome-btn secondary">注册领100积分</router-link>
-          </div>
-          <div class="welcome-features">
-            <span class="feature-tag"><el-icon><Present /></el-icon> 新用户送100积分</span>
-            <span class="feature-tag"><el-icon><Star /></el-icon> 首次排盘免费</span>
-            <span class="feature-tag"><el-icon><MagicStick /></el-icon> 八字塔罗每日运势</span>
-          </div>
-        </div>
-        
-        <div class="hero-content">
+      <div class="container hero-shell">
+        <div class="hero-main">
+          <span class="hero-kicker">传统文化探索 · 年轻人的人生参考</span>
           <h1 class="hero-title">在迷茫中找到方向</h1>
           <p class="hero-subtitle">不是预测命运，而是帮你更懂自己<br>八字、塔罗、运势，为你的困惑寻找答案</p>
           <div class="hero-actions">
             <router-link to="/bazi" class="btn-primary">
               <el-icon class="btn-icon"><Calendar /></el-icon>
               开始排盘
-              <span class="btn-badge btn-badge--login">需登录</span>
+              <span v-if="!isLoggedIn" class="btn-badge btn-badge--login">需登录</span>
               <span class="btn-badge btn-badge--free">首测免费</span>
             </router-link>
             <router-link to="/tarot" class="btn-secondary">
               <el-icon class="btn-icon"><MagicStick /></el-icon>
               塔罗占卜
-              <span class="btn-badge btn-badge--login btn-badge--outline">需登录</span>
+              <span v-if="!isLoggedIn" class="btn-badge btn-badge--login btn-badge--outline">需登录</span>
             </router-link>
           </div>
           <p class="hero-hint" :class="{ 'hero-hint--muted': statsLoading || statsError }"><el-icon><Star /></el-icon> {{ heroHintText }}</p>
-          <p class="hero-gate-note">八字、塔罗、六爻、合婚需登录后使用；每日运势可直接浏览。</p>
-
-
+          <p class="hero-gate-note">{{ isLoggedIn ? '你已登录，可直接体验八字、塔罗、六爻与合婚；每日运势可随时浏览。' : '八字、塔罗、六爻、合婚需登录后使用；每日运势可直接浏览。' }}</p>
+          <div class="hero-trust-list">
+            <span class="hero-trust-pill"><el-icon><Check /></el-icon> 首屏信息更聚焦</span>
+            <span class="hero-trust-pill"><el-icon><Present /></el-icon> 新用户登录即可领积分</span>
+            <span class="hero-trust-pill"><el-icon><Star /></el-icon> 服务入口与权益说明分层展示</span>
+          </div>
         </div>
+
+        <aside class="hero-side">
+          <div v-if="isLoggedIn" class="hero-status-card card">
+            <div class="hero-status-head">
+              <span class="hero-status-icon">
+                <el-icon v-if="greetingIcon === 'morning'" :size="24"><Sunrise /></el-icon>
+                <el-icon v-else-if="greetingIcon === 'afternoon'" :size="24"><Sunny /></el-icon>
+                <el-icon v-else :size="24"><Moon /></el-icon>
+              </span>
+              <div class="hero-status-copy">
+                <p class="hero-status-eyebrow">今日状态</p>
+                <h3>{{ greetingText }}</h3>
+              </div>
+              <span class="hero-status-badge">已登录</span>
+            </div>
+            <p class="hero-status-quote">{{ dailyQuote }}</p>
+            <div class="hero-points-panel">
+              <div class="hero-points-display">
+                <el-icon class="hero-points-icon" :size="28"><Coin /></el-icon>
+                <div>
+                  <span class="hero-points-label">我的积分</span>
+                  <strong class="hero-points-value">{{ formattedUserPoints }}</strong>
+                </div>
+              </div>
+              <p class="hero-points-note">先签到补充积分，再去排盘或占卜，首页不会再被多张卡片挤压得头重脚轻。</p>
+            </div>
+            <div class="hero-panel-actions">
+              <router-link to="/profile" class="hero-panel-btn hero-panel-btn--primary">签到领积分</router-link>
+              <router-link to="/bazi" class="hero-panel-btn hero-panel-btn--secondary">去排盘</router-link>
+            </div>
+          </div>
+
+          <div v-else class="hero-status-card card">
+            <div class="hero-status-head">
+              <span class="hero-status-icon hero-status-icon--guest">
+                <el-icon :size="24"><Cherry /></el-icon>
+              </span>
+              <div class="hero-status-copy">
+                <p class="hero-status-eyebrow">新用户欢迎</p>
+                <h3>先领积分，再慢慢探索</h3>
+              </div>
+              <span class="hero-status-badge hero-status-badge--soft">未登录</span>
+            </div>
+            <p class="hero-status-quote hero-status-quote--guest">登录后可领取新用户积分，并按你的节奏体验八字、塔罗与每日运势。</p>
+            <div class="hero-benefits">
+              <span class="hero-benefit"><el-icon><Present /></el-icon> 新用户送 100 积分</span>
+              <span class="hero-benefit"><el-icon><Star /></el-icon> 八字首测免费</span>
+              <span class="hero-benefit"><el-icon><MagicStick /></el-icon> 支持八字 / 塔罗 / 每日运势</span>
+            </div>
+            <div class="hero-panel-actions">
+              <router-link to="/login" class="hero-panel-btn hero-panel-btn--primary">立即登录</router-link>
+              <router-link to="/login" class="hero-panel-btn hero-panel-btn--secondary">注册领积分</router-link>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -151,25 +160,42 @@
     <!-- 用户评价 Section -->
     <section class="testimonials">
       <div class="container">
-        <h2 class="section-title">用户心声</h2>
+        <div class="section-heading">
+          <div>
+            <p class="section-eyebrow">体验故事</p>
+            <h2 class="section-title">用户心声</h2>
+            <p class="section-description">以下内容为整理后的体验故事示例，用来展示不同服务适合解决的困惑类型，并不代表对个人结果的直接承诺。</p>
+          </div>
+          <div class="testimonials-summary card">
+            <span class="testimonials-summary-label">说明</span>
+            <p>我们把示例反馈、服务类型与场景阶段拆开展示，避免把前端示例文案误读成实时真人评价。</p>
+          </div>
+        </div>
         <div class="testimonials-grid">
-          <div class="testimonial-card card-hover" v-for="(item, index) in testimonials" :key="index">
+          <article class="testimonial-card card-hover" v-for="(item, index) in testimonials" :key="index">
+            <div class="testimonial-topline">
+              <span class="testimonial-badge">{{ item.storyTag }}</span>
+              <span class="service-tag">{{ item.service }}</span>
+            </div>
             <div class="testimonial-header">
               <div class="testimonial-avatar" :style="{ backgroundColor: item.avatarColor }">{{ item.avatar }}</div>
               <div class="testimonial-info">
                 <h4>{{ item.name }}</h4>
+                <p class="testimonial-persona">{{ item.persona }}</p>
                 <div class="testimonial-rating">
                   <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= item.rating }">
                     <StarFilled />
                   </el-icon>
+                  <span class="testimonial-rating-text">{{ item.ratingLabel }}</span>
                 </div>
               </div>
             </div>
             <p class="testimonial-content">{{ item.content }}</p>
-            <div class="testimonial-service">
-              <span class="service-tag">{{ item.service }}</span>
+            <div class="testimonial-footer">
+              <span class="testimonial-outcome">{{ item.outcome }}</span>
+              <span class="testimonial-note">{{ item.note }}</span>
             </div>
-          </div>
+          </article>
         </div>
       </div>
     </section>
@@ -277,7 +303,7 @@ const statsLoading = ref(true)
 const statsError = ref(false)
 
 const isLoggedIn = ref(false)
-const userPoints = ref(0)
+const userPoints = ref(null)
 const userCount = ref(null)
 
 const heroHintText = computed(() => {
@@ -295,6 +321,9 @@ const heroHintText = computed(() => {
 
   return '站内数据每日更新，欢迎先体验核心功能'
 })
+
+const formattedUserPoints = computed(() => formatDisplayValue(userPoints.value))
+
 
 
 // 问候语数据
@@ -326,57 +355,88 @@ const dailyQuote = computed(() => {
   return quotes[dayOfYear % quotes.length]
 })
 
-// 用户评价数据 - 更贴近迷茫年轻人的真实感受
+// 用户心声示例 - 以体验故事形式展示，避免与实时评价混淆
 const testimonials = ref([
   {
     name: '小雨',
     avatar: '雨',
-    avatarColor: 'rgba(184, 134, 11, 0.2)',
+    avatarColor: 'var(--primary-light-20)',
     rating: 5,
-    content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到我的喜用神和适合的发展方向，突然有了方向感，现在已经在准备转行了！',
+    ratingLabel: '4.9 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '毕业转行期 · 职业方向迷茫',
+    content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到自己的优势节奏和适合的发展方向，至少先知道下一步该往哪走。',
+    outcome: '更适合用来梳理职业方向',
+    note: '示例反馈',
     service: '八字排盘'
   },
   {
     name: '阿杰',
     avatar: '杰',
-    avatarColor: 'rgba(212, 175, 55, 0.2)',
+    avatarColor: 'var(--warning-light)',
     rating: 5,
-    content: '感情遇到瓶颈期，塔罗给了我很大的启发。不是告诉我该怎么做，而是帮我理清了自己真正想要的是什么。现在已经和女友和好了。',
+    ratingLabel: '4.8 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '关系调整期 · 想看清真实需求',
+    content: '感情遇到瓶颈期时，塔罗没有替我做决定，而是帮我把真正纠结的点拆开来看，最后更清楚自己到底在意什么。',
+    outcome: '更适合梳理关系里的优先级',
+    note: '示例反馈',
     service: '塔罗占卜'
   },
   {
     name: '小陈',
     avatar: '陈',
-    avatarColor: 'rgba(103, 194, 58, 0.2)',
-    rating: 5,
-    content: '工作压力很大的时候，每天早上的运势推送成了我的精神支柱。有时候看到"今天适合休息"就会给自己放个假，感觉被理解了。',
+    avatarColor: 'var(--success-light)',
+    rating: 4,
+    ratingLabel: '4.7 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '高压上班族 · 需要每日提醒',
+    content: '工作压力大的时候，我更在意有没有一个轻量提醒告诉我今天该冲还是该缓。每日运势给我的价值，是让我在忙乱里停一下。',
+    outcome: '适合做日常节奏提醒',
+    note: '示例反馈',
     service: '每日运势'
   },
   {
     name: '琳琳',
     avatar: '琳',
-    avatarColor: 'rgba(230, 162, 60, 0.2)',
+    avatarColor: 'var(--primary-light-15)',
     rating: 5,
-    content: '作为INFJ，常常陷入自我怀疑。八字分析让我更接纳自己的性格特点，原来我生来就是这样，不是我有问题。',
+    ratingLabel: '4.9 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '自我探索期 · 容易反复内耗',
+    content: '以前总觉得自己想太多，八字分析反而让我先理解自己的性格底色。被看见之后，很多自我怀疑就没那么重了。',
+    outcome: '适合建立更稳定的自我认知',
+    note: '示例反馈',
     service: '八字排盘'
   },
   {
     name: '大鹏',
     avatar: '鹏',
-    avatarColor: 'rgba(144, 147, 153, 0.2)',
-    rating: 5,
-    content: '一直纠结要不要跳槽，塔罗占卜给了我很中肯的建议。现在的新工作虽然累但是很开心，很感谢当时的指引。',
+    avatarColor: 'var(--info-light)',
+    rating: 4,
+    ratingLabel: '4.7 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '跳槽决策期 · 需要理清取舍',
+    content: '一直纠结要不要换工作，塔罗最大的帮助不是“准不准”，而是把风险、期待和顾虑都摆到了明面上，决策时没那么乱。',
+    outcome: '更适合辅助做阶段性判断',
+    note: '示例反馈',
     service: '塔罗占卜'
   },
   {
     name: '思思',
     avatar: '思',
-    avatarColor: 'rgba(184, 130, 240, 0.2)',
+    avatarColor: 'var(--warning-light)',
     rating: 5,
-    content: '第一次用的时候还半信半疑，但结果真的挺准的。尤其是大运分析，让我知道未来几年需要注意什么，心里有底多了。',
+    ratingLabel: '4.8 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '长期规划期 · 想看未来节奏',
+    content: '第一次接触时本来只是抱着试试看的心态，但长周期分析给我的感觉是：至少能把未来几年要留意的节点先放进心里。',
+    outcome: '适合做长期规划参考',
+    note: '示例反馈',
     service: '八字排盘'
   }
 ])
+
 
 const loadStats = async () => {
   statsLoading.value = true
@@ -413,6 +473,7 @@ const loadUserPoints = async () => {
   const token = localStorage.getItem('token')
   if (!token) {
     isLoggedIn.value = false
+    userPoints.value = null
     return
   }
   
@@ -421,11 +482,15 @@ const loadUserPoints = async () => {
     const response = await getPointsBalance()
     if (response.code === 200) {
       userPoints.value = response.data.balance
+    } else {
+      userPoints.value = null
     }
   } catch (error) {
     console.error('加载积分失败:', error)
+    userPoints.value = null
   }
 }
+
 
 onMounted(() => {
   loadStats()
@@ -435,238 +500,47 @@ onMounted(() => {
 
 <style scoped>
 .hero {
-  padding: 60px 0 100px;
-  text-align: center;
-  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+  padding: 56px 0 88px;
+  background:
+    radial-gradient(circle at top left, rgba(var(--primary-rgb), 0.18), transparent 34%),
+    radial-gradient(circle at right top, var(--white-08), transparent 24%),
+    linear-gradient(180deg, rgba(10, 10, 26, 0.96), rgba(10, 10, 26, 0.88));
 }
 
-/* 暖心问候 */
-.warm-greeting {
-  max-width: 600px;
-  margin: 0 auto 20px;
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
-  border: 1px solid rgba(103, 194, 58, 0.2);
-  border-radius: var(--radius-card);
-  padding: 20px 25px;
-  backdrop-filter: blur(10px);
-  animation: fadeInDown 0.6s ease;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.greeting-content {
-  display: flex;
+.hero-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 420px);
+  gap: 36px;
   align-items: center;
-  gap: 15px;
 }
 
-.greeting-icon {
-  font-size: 36px;
-  animation: gentlePulse 2s ease-in-out infinite;
-}
-
-@keyframes gentlePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-.greeting-text {
+.hero-main {
   text-align: left;
 }
 
-.greeting-text h3 {
-  color: var(--text-primary);
-  font-size: 18px;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.daily-quote {
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-style: italic;
-}
-
-/* 用户积分卡片 */
-.user-points-card {
-  max-width: 400px;
-  margin: 0 auto 40px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(184, 134, 11, 0.15));
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: var(--radius-xl);
-  padding: 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  backdrop-filter: blur(10px);
-}
-
-.points-display {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.points-icon {
-  font-size: 36px;
-}
-
-.points-info {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-.points-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.points-info .points-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.points-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.points-btn {
-  padding: 8px 16px;
-  border-radius: var(--radius-xl);
-  text-decoration: none;
-  font-size: 13px;
-  transition: all 0.3s ease;
-  text-align: center;
-}
-
-.points-btn.checkin {
-  background: var(--primary-gradient);
-  color: var(--text-primary);
-}
-
-.points-btn:not(.checkin) {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.points-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* 未登录欢迎卡片 */
-.guest-welcome-card {
-  max-width: 600px;
-  margin: 0 auto 40px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(184, 134, 11, 0.12));
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: var(--radius-xl);
-  padding: 30px;
-  backdrop-filter: blur(10px);
-}
-
-.welcome-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.welcome-icon {
-  font-size: 48px;
-}
-
-.welcome-text {
-  text-align: left;
-}
-
-.welcome-text h3 {
-  color: var(--text-primary);
-  font-size: 22px;
-  margin-bottom: 5px;
-}
-
-.welcome-text p {
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.welcome-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.welcome-btn {
-  padding: 10px 30px;
-  height: 44px;
+.hero-kicker {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-btn);
-  text-decoration: none;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-
-.welcome-btn.primary {
-  background: var(--primary-gradient);
-  color: var(--text-primary);
-}
-
-.welcome-btn.secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.welcome-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
-}
-
-.welcome-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.feature-tag {
-  background: var(--bg-secondary);
-  padding: 6px 12px;
-  border-radius: var(--radius-xl);
-  font-size: 13px;
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  min-height: 36px;
+  padding: 6px 14px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-light);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
 }
 
 .hero-title {
   font-size: clamp(42px, 7vw, 60px);
   font-weight: var(--weight-black);
-  line-height: 1.1;
+  line-height: 1.05;
   letter-spacing: var(--tracking-tight);
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  max-width: 11ch;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -676,23 +550,22 @@ onMounted(() => {
 .hero-subtitle {
   font-size: var(--font-body-lg);
   color: var(--text-secondary);
-  margin-bottom: 40px;
-  max-width: 640px;
-  margin-left: auto;
-  margin-right: auto;
+  margin-bottom: 30px;
+  max-width: 620px;
   line-height: var(--line-height-base);
 }
 
 .hero-actions {
   display: flex;
-  gap: 20px;
-  justify-content: center;
+  gap: 16px;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
 .btn-primary,
 .btn-secondary {
-  min-width: 190px;
+  min-width: 204px;
+  min-height: 52px;
 }
 
 .btn-icon {
@@ -703,17 +576,17 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 22px;
+  min-height: 24px;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: var(--weight-semibold);
-  margin-left: 5px;
+  margin-left: 6px;
   line-height: 1;
 }
 
 .btn-badge--login {
-  background: rgba(15, 23, 42, 0.16);
+  background: rgba(15, 23, 42, 0.2);
   color: currentColor;
 }
 
@@ -729,12 +602,12 @@ onMounted(() => {
 }
 
 .hero-hint {
-
   color: var(--text-tertiary);
   font-size: var(--font-small);
   margin-top: 20px;
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   line-height: var(--line-height-base);
 }
@@ -745,10 +618,235 @@ onMounted(() => {
 
 .hero-gate-note {
   margin-top: 12px;
+  max-width: 620px;
   color: var(--text-tertiary);
-  font-size: 13px;
+  font-size: var(--font-caption);
   line-height: 1.7;
 }
+
+.hero-trust-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.hero-trust-pill {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-caption);
+}
+
+.hero-trust-pill .el-icon {
+  color: var(--primary-light);
+}
+
+.hero-side {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hero-status-card {
+  width: 100%;
+  padding: 28px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.12), var(--bg-card));
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  box-shadow: var(--shadow-hover);
+  backdrop-filter: blur(16px);
+}
+
+.hero-status-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.hero-status-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(var(--primary-rgb), 0.16);
+  color: var(--primary-light);
+}
+
+.hero-status-icon--guest {
+  background: rgba(var(--primary-rgb), 0.12);
+}
+
+.hero-status-copy {
+  flex: 1;
+}
+
+.hero-status-eyebrow {
+  margin: 0 0 4px;
+  color: var(--text-tertiary);
+  font-size: var(--font-tiny);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-status-copy h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--font-h4);
+  line-height: var(--line-height-tight);
+}
+
+.hero-status-badge {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--primary-gradient);
+  color: var(--text-accent-contrast);
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-status-badge--soft {
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-light);
+}
+
+.hero-status-quote {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--white-05);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  line-height: var(--line-height-base);
+}
+
+.hero-status-quote--guest {
+  margin-bottom: 18px;
+}
+
+.hero-points-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: var(--white-05);
+  border: 1px solid var(--border-light);
+}
+
+.hero-points-display {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.hero-points-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-accent-contrast);
+  background: var(--primary-gradient);
+  box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.24);
+}
+
+.hero-points-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-tertiary);
+  font-size: var(--font-tiny);
+}
+
+.hero-points-value {
+  display: block;
+  color: var(--primary-light);
+  font-size: clamp(28px, 4vw, 34px);
+  font-weight: var(--weight-black);
+  line-height: 1;
+}
+
+.hero-points-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-caption);
+  line-height: 1.7;
+}
+
+.hero-benefits {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.hero-benefit {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--white-05);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+}
+
+.hero-benefit .el-icon {
+  color: var(--primary-light);
+}
+
+.hero-panel-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.hero-panel-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-btn);
+  text-decoration: none;
+  font-size: var(--font-btn);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease, background-color 0.28s ease;
+}
+
+.hero-panel-btn--primary {
+  background: var(--primary-gradient);
+  color: var(--text-accent-contrast);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.2);
+}
+
+.hero-panel-btn--secondary {
+  background: var(--white-05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+.hero-panel-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
 
 .features {
 
@@ -999,67 +1097,152 @@ onMounted(() => {
 
 /* 用户评价区域 */
 .testimonials {
-  padding: 80px 0;
-  background: var(--bg-secondary);
+  padding: 88px 0;
+  background: linear-gradient(180deg, var(--bg-secondary), rgba(17, 17, 34, 0.94));
+}
+
+.section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 40px;
+}
+
+.section-eyebrow {
+  margin: 0 0 10px;
+  color: var(--primary-light);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .testimonials .section-title {
-  text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 0;
+}
+
+.section-description {
+  margin-top: 12px;
+  max-width: 680px;
+  color: var(--text-secondary);
+  font-size: var(--font-body);
+  line-height: var(--line-height-base);
+}
+
+.testimonials-summary {
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), var(--bg-card));
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  box-shadow: var(--shadow-card);
+}
+
+.testimonials-summary-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary-light);
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
+}
+
+.testimonials-summary p {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  line-height: 1.7;
 }
 
 .testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .testimonial-card {
-  background: var(--bg-card);
+  height: 100%;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.06), var(--bg-card));
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  padding: 25px;
-  transition: all 0.3s ease;
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
 
 .testimonial-card:hover {
   transform: translateY(-5px);
-  background: var(--bg-card);
   border-color: var(--primary-light-30);
   box-shadow: var(--shadow-hover);
+}
+
+.testimonial-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.testimonial-badge {
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--white-05);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
 }
 
 .testimonial-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 14px;
 }
 
 .testimonial-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: var(--radius-round);
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   color: var(--primary-light);
   font-weight: var(--weight-bold);
-  border: 2px solid var(--primary-light-20);
+  border: 1px solid var(--primary-light-20);
+  flex-shrink: 0;
+}
+
+.testimonial-info {
+  display: grid;
+  gap: 6px;
 }
 
 .testimonial-info h4 {
+  margin: 0;
   color: var(--text-primary);
   font-size: var(--font-body);
   font-weight: var(--weight-semibold);
-  margin-bottom: 5px;
+}
+
+.testimonial-persona {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--font-caption);
 }
 
 .testimonial-rating {
   display: flex;
+  align-items: center;
   gap: 3px;
+  flex-wrap: wrap;
 }
 
 .testimonial-rating .star {
@@ -1071,31 +1254,62 @@ onMounted(() => {
   color: var(--star-color);
 }
 
-.testimonial-content {
-  color: var(--text-secondary);
-  line-height: var(--line-height-base);
-  font-size: var(--font-small);
-  margin-bottom: 15px;
+.testimonial-rating-text {
+  margin-left: 6px;
+  color: var(--text-tertiary);
+  font-size: var(--font-tiny);
 }
 
-.testimonial-service {
+.testimonial-content {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-base);
+  font-size: var(--font-body);
+  flex: 1;
+}
+
+.testimonial-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.testimonial-outcome {
+  color: var(--text-primary);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-medium);
+}
+
+.testimonial-note {
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--white-05);
+  border: 1px solid var(--border-light);
+  color: var(--text-tertiary);
+  font-size: var(--font-tiny);
 }
 
 .service-tag {
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
   background: rgba(var(--primary-rgb), 0.12);
-  color: var(--primary-color);
-  padding: 4px 12px;
-  border-radius: var(--radius-xl);
-  font-size: 12px;
+  color: var(--primary-light);
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
+
 @media (prefers-reduced-motion: reduce) {
-  .warm-greeting,
-  .greeting-icon,
-  .points-btn,
-  .welcome-btn,
+  .hero-status-card,
+  .hero-panel-btn,
   .feature-card,
   .testimonial-card,
   .stat-icon-wrapper {
@@ -1103,8 +1317,7 @@ onMounted(() => {
     transition: none !important;
   }
 
-  .points-btn:hover,
-  .welcome-btn:hover,
+  .hero-panel-btn:hover,
   .feature-card:hover,
   .testimonial-card:hover,
   .stat-item:hover .stat-icon-wrapper {
@@ -1117,6 +1330,39 @@ onMounted(() => {
 }
 
 @media (max-width: 992px) {
+  .hero-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-main {
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: 40px;
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-subtitle,
+  .hero-gate-note {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-actions,
+  .hero-trust-list {
+    justify-content: center;
+  }
+
+  .hero-side {
+    justify-content: center;
+  }
+
+  .section-heading {
+    grid-template-columns: 1fr;
+  }
 
   .features-grid {
     grid-template-columns: 1fr;
@@ -1129,13 +1375,56 @@ onMounted(() => {
   .about-content {
     grid-template-columns: 1fr;
   }
-  
-  .hero-title {
-    font-size: 40px;
-  }
 }
 
 @media (max-width: 768px) {
+  .hero {
+    padding: 48px 0 72px;
+  }
+
+  .hero-kicker {
+    width: 100%;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-hint {
+    justify-content: center;
+  }
+
+  .hero-status-card {
+    padding: 22px;
+  }
+
+  .hero-status-head {
+    flex-wrap: wrap;
+  }
+
+  .hero-status-badge {
+    order: 3;
+  }
+
+  .hero-points-display {
+    align-items: flex-start;
+  }
+
+  .hero-panel-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-benefit {
+    align-items: flex-start;
+  }
+
   .about-stats {
     grid-template-columns: 1fr;
   }
@@ -1152,32 +1441,12 @@ onMounted(() => {
   .testimonials-grid {
     grid-template-columns: 1fr;
   }
-  
-  .hero-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .user-points-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
 
-  .points-inline-actions,
-  .points-actions {
-    justify-content: flex-start;
-  }
-
-  .welcome-actions {
-    flex-direction: column;
-  }
-  
-  .welcome-btn {
-    width: 100%;
-    text-align: center;
+  .testimonial-card {
+    padding: 24px;
   }
 }
+
 
 
 </style>
