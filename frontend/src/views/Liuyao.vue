@@ -572,42 +572,49 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 40px;
+  padding: 45px;
   background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
-  border-radius: 20px;
-  margin-bottom: 30px;
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  border-radius: 24px;
+  margin-bottom: 35px;
+  border: 1px solid rgba(184, 134, 11, 0.3);
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .gua-display::before {
   content: '';
   position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  border: 1px solid rgba(184, 134, 11, 0.1);
-  border-radius: 15px;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  border-radius: 18px;
   pointer-events: none;
 }
 
-/* 装饰角 */
+/* 装饰角 - 动态太极 */
 .gua-display::after {
   content: '☯';
   position: absolute;
-  bottom: -20px;
-  right: -20px;
-  font-size: 100px;
-  color: rgba(184, 134, 11, 0.03);
+  bottom: -30px;
+  right: -30px;
+  font-size: 150px;
+  color: rgba(184, 134, 11, 0.05);
   transform: rotate(-15deg);
+  animation: yinYangRotate 20s linear infinite;
+  pointer-events: none;
 }
 
 .gua-info {
   text-align: center;
-  z-index: 1;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .gua-name {

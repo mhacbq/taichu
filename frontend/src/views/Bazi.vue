@@ -2333,32 +2333,40 @@ const formatAiContent = (content) => {
 }
 
 .day-master-card {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
-  border: 2px solid rgba(184, 134, 11, 0.3);
-  border-radius: 15px;
-  padding: 20px 40px;
+  background: linear-gradient(135deg, rgba(10, 10, 26, 0.8), rgba(22, 22, 46, 0.8));
+  border: 2px solid var(--primary-color);
+  border-radius: 20px;
+  padding: 24px 50px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 134, 11, 0.3);
+  backdrop-filter: blur(10px);
+  animation: float 4s ease-in-out infinite;
 }
 
 .day-master-card .label {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 2px;
 }
 
 .day-master-card .value {
-  font-size: 36px;
-  font-weight: bold;
+  font-size: 42px;
+  font-weight: 800;
   color: var(--primary-color);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .day-master-card .wuxing {
-  background: rgba(184, 134, 11, 0.2);
-  padding: 5px 12px;
+  background: var(--primary-gradient);
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 14px;
   color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(184, 134, 11, 0.4);
 }
 
 /* 排盘表格样式 */
