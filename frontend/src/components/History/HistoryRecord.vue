@@ -129,7 +129,7 @@ import {
   Clock,
   RefreshRight,
   Calendar,
-  Magic,
+  MagicStick,
   Star,
   User
 } from '@element-plus/icons-vue'
@@ -179,7 +179,7 @@ const mockRecords = ref([
   {
     id: '2',
     type: 'tarot',
-    typeIcon: 'Magic',
+    typeIcon: 'MagicStick',
     typeColor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     title: '塔罗占卜 - 事业发展',
     description: '抽牌结果：太阳正位、星星正位、命运之轮',

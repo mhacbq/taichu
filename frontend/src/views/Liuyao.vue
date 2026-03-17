@@ -180,7 +180,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { RefreshRight, Download, Delete, MagicStick, Present, Trophy } from '@element-plus/icons-vue'
+import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Magic, Close } from '@element-plus/icons-vue'
+
 
 // 表单数据
 const form = reactive({
@@ -791,6 +792,37 @@ onMounted(() => {
   min-width: 60px;
   font-weight: 500;
 }
+
+/* 伏神样式 */
+.fushen-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  left: -80px;
+  background: rgba(184, 134, 11, 0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--primary-light-40);
+  min-width: 60px;
+}
+
+.fushen-label {
+  font-size: 10px;
+  color: var(--primary-light);
+  font-weight: bold;
+}
+
+.fushen-name {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.fushen-ganzhi {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 
 
 /* 卦辞 */

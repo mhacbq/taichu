@@ -150,10 +150,9 @@ import {
   Clock,
   Share,
   Calendar,
-  Magic,
+  MagicStick,
   Star,
-  Document,
-  Heart
+  Document
 } from '@element-plus/icons-vue'
 import { useAnalytics } from '@/utils/analytics'
 
@@ -170,7 +169,7 @@ const folderForm = ref({ name: '', description: '' })
 const categories = [
   { key: 'all', label: '全部', icon: 'Collection', count: 0 },
   { key: 'bazi', label: '八字', icon: 'Calendar', count: 0 },
-  { key: 'tarot', label: '塔罗', icon: 'Magic', count: 0 },
+  { key: 'tarot', label: '塔罗', icon: 'MagicStick', count: 0 },
   { key: 'fortune', label: '运势', icon: 'Star', count: 0 },
   { key: 'article', label: '文章', icon: 'Document', count: 0 }
 ]

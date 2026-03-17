@@ -109,11 +109,11 @@ Route::group('api/admin', function () {
         Route::get('system/notices', 'Admin/getNotices');
         Route::post('system/notices', 'Admin/saveNotice');
         Route::delete('system/notices/:id', 'Admin/deleteNotice');
-        Route::get('system/shensha', 'Admin/shenshaList');
-        Route::get('system/shensha/options', 'Admin/shenshaOptions');
-        Route::post('system/shensha', 'Admin/saveShensha');
-        Route::put('system/shensha/:id', 'Admin/saveShensha');
-        Route::delete('system/shensha/:id', 'Admin/deleteShensha');
+        Route::get('system/shensha', 'admin.Shensha/index');
+        Route::get('system/shensha/options', 'admin.Shensha/options');
+        Route::post('system/shensha', 'admin.Shensha/save');
+        Route::put('system/shensha/:id', 'admin.Shensha/save');
+        Route::delete('system/shensha/:id', 'admin.Shensha/delete');
         Route::get('system/seo/configs', 'Admin/seoConfigList');
         Route::post('system/seo/configs', 'Admin/saveSeoConfig');
         Route::put('system/seo/configs/:id', 'Admin/saveSeoConfig');

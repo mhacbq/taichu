@@ -8,7 +8,7 @@
       
       <!-- 暖心提示 -->
       <div class="warm-tip card" v-if="!result">
-        <el-icon class="tip-icon"><HeartFilled /></el-icon>
+        <el-icon class="tip-icon"><StarFilled /></el-icon>
         <div class="tip-content">
           <p class="tip-title">八字排盘能帮你了解什么？</p>
           <p class="tip-desc">你的性格优势 · 适合的发展方向 · 未来运势起伏 · 人际关系建议</p>
@@ -967,8 +967,8 @@
 <script setup>
 import { h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { HeartFilled, Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled } from '@element-plus/icons-vue'
-import { 
+import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled } from '@element-plus/icons-vue'
+import {
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
   getYearlyFortune, 

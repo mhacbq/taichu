@@ -60,7 +60,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ArrowRight, Calendar, Magic, Star, Present } from '@element-plus/icons-vue'
+import { ArrowRight, Calendar, MagicStick, Star, Present } from '@element-plus/icons-vue'
 
 const props = defineProps({
   steps: {
