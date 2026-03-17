@@ -93,7 +93,59 @@ abstract class BaseController
     }
 
     /**
+     * 统一处理分页参数
+     */
+    protected function normalizePagination(
+        mixed $page,
+        mixed $pageSize,
+        int $defaultPageSize = 20,
+        int $maxPageSize = 100
+    ): array {
+        $page = filter_var($page, FILTER_VALIDATE_INT, ['options' => ['default' => 1]]);
+        $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT, ['options' => ['default' => $defaultPageSize]]);
+
+        $page = max(1, (int) $page);
+        $pageSize = max(1, min($maxPageSize, (int) $pageSize));
+
+        return [
+            'page' => $page,
+            'pageSize' => $pageSize,
+        ];
+    }
+
+    /**
+     * 从当前请求中读取分页参数
+     */
+    protected function getPaginationParams(
+        string $pageParam = 'page',
+        string $pageSizeParam = 'pageSize',
+        int $defaultPageSize = 20,
+        int $maxPageSize = 100
+    ): array {
+        return $this->normalizePagination(
+            $this->request->param($pageParam, 1),
+            $this->request->param($pageSizeParam, $defaultPageSize),
+            $defaultPageSize,
+            $maxPageSize
+        );
+    }
+
+    /**
+     * 获取当前操作者ID，优先读取后台管理员信息
+     */
+    protected function getOperatorId(): int
+    {
+        $adminUser = $this->request->adminUser ?? [];
+        if (isset($adminUser['id'])) {
+            return (int) $adminUser['id'];
+        }
+
+        return (int) ($this->request->userId ?? 0);
+    }
+
+    /**
      * 成功响应
+
      * @param mixed $data
      * @param string $message
      * @return \think\response\Json

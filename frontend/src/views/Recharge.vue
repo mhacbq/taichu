@@ -736,19 +736,19 @@ const getStatusText = (status) => {
 }
 
 .history-status.pending {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
+  background: var(--warning-light);
+  color: var(--warning-color);
 }
 
 .history-status.paid {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
+  background: var(--success-light);
+  color: var(--success-color);
 }
 
 .history-status.cancelled,
 .history-status.refunded {
-  background: rgba(158, 158, 158, 0.2);
-  color: #9e9e9e;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
 }
 
 /* 支付弹窗样式 */
@@ -760,7 +760,7 @@ const getStatusText = (status) => {
 .pay-amount {
   font-size: 36px;
   font-weight: bold;
-  color: #B8860B;
+  color: var(--primary-color);
   margin-bottom: 20px;
 }
 
@@ -769,7 +769,7 @@ const getStatusText = (status) => {
   height: 200px;
   margin: 0 auto 20px;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;

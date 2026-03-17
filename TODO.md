@@ -131,7 +131,7 @@
 
 ## ✅ 最近已完成项目 (Recently Completed)
 
-
+- [x] **UI 样式标准化 (Batch #1)**: 统一了 `Tarot.vue`, `TarotCard.vue`, `Profile.vue`, `Recharge.vue`, `Login.vue` 的卡片圆角（16px）、背景色及硬编码颜色变量化。
 - [x] **前端主题色初步统一**：已分批处理 `Home.vue`、`Bazi.vue`、`Tarot.vue` 等核心页面的粉色系清理。
 - [x] **CSS 变量标准化**：在 `LimitedTimeOffer.vue`、`Daily.vue` 等组件中引入全局变量替代硬编码。
 - [x] **节气数据补充**：已初步扩充节气查询表。

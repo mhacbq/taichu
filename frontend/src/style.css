@@ -236,7 +236,49 @@ body {
   opacity: 0.5;
 }
 
-/* 加载动画 */
+/* 太极加载动画 */
+.loading-taiji {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  position: relative;
+  background: linear-gradient(to bottom, #fff 0%, #fff 50%, #000 50%, #000 100%);
+  animation: taiji-spin 1.5s linear infinite;
+  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
+  border: 1px solid var(--primary-color);
+}
+
+.loading-taiji::before,
+.loading-taiji::after {
+  content: '';
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  left: 0;
+}
+
+.loading-taiji::before {
+  top: 12.5px;
+  background: #fff;
+  z-index: 1;
+  box-shadow: inset 0 0 0 6px #000;
+}
+
+.loading-taiji::after {
+  top: 12.5px;
+  left: 25px;
+  background: #000;
+  z-index: 1;
+  box-shadow: inset 0 0 0 6px #fff;
+}
+
+@keyframes taiji-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 兼容旧的 loading-spinner 样式 */
 .loading-spinner {
   width: 40px;
   height: 40px;

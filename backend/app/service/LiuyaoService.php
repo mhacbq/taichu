@@ -251,49 +251,68 @@ class LiuyaoService
 
     /**
      * 动态计算卦宫和世应 (寻宫认世法)
+     * 算法逻辑：
+     * XOR = 上卦 ^ 下卦
+     * 0(000): 八纯, Shi 6, Palace U
+     * 1(001): 一世, Shi 1, Palace U
+     * 3(011): 二世, Shi 2, Palace U
+     * 7(111): 三世, Shi 3, Palace U
+     * 6(110): 四世, Shi 4, Palace U ^ 1
+     * 4(100): 五世, Shi 5, Palace U ^ 3
+     * 5(101): 游魂, Shi 4, Palace U ^ 2
+     * 2(010): 归魂, Shi 3, Palace L
      */
     public static function getGuaInfo(string $yaoCode): array
     {
-        $xiaCode = substr($yaoCode, 0, 3);
-        $shangCode = substr($yaoCode, 3, 3);
+        // 转换 yaoCode 为 0/1 形式进行计算 (忽略老阴老阳)
+        $cleanCode = str_replace(['2', '3'], ['0', '1'], $yaoCode);
+        $xiaCode = substr($cleanCode, 0, 3);
+        $shangCode = substr($cleanCode, 3, 3);
         
-        $xia = bindec($xiaCode);
-        $shang = bindec($shangCode);
-        $xor = $xia ^ $shang;
+        $xia = bindec(strrev($xiaCode)); // 反转因为代码是初爻到三爻，bindec需要高位在前
+        $shang = bindec(strrev($shangCode));
         
-        $shi = 1;
-        $type = '一世';
+        // 重新定义位权：初/四位1，二/五位2，三/六位4
+        // 所以 bindec(strrev('001')) = 4 是错的。
+        // 应该是：初位bit0, 二位bit1, 三位bit2
+        // 如果 $xiaCode 是 '100' (震)，表示初爻是阳，二三是阴。
+        // 那么 $xia 应该是 1.
+        $getXor = function($code) {
+            $val = 0;
+            if ($code[0] == '1') $val += 1;
+            if ($code[1] == '1') $val += 2;
+            if ($code[2] == '1') $val += 4;
+            return $val;
+        };
+        
+        $xVal = $getXor($xiaCode);
+        $sVal = $getXor($shangCode);
+        $xor = $xVal ^ $sVal;
+        
+        $shi = 6;
+        $type = '八纯';
+        $pVal = $sVal; // 默认宫位是上卦
         
         switch ($xor) {
-            case 0: $shi = 6; $type = '八纯'; break;
-            case 1: $shi = 1; $type = '一世'; break;
-            case 3: $shi = 2; $type = '二世'; break;
-            case 7: $shi = 3; $type = '三世'; break;
-            case 6: $shi = 4; $type = '四世'; break;
-            case 4: $shi = 5; $type = '五世'; break;
-            case 2: $shi = 4; $type = '游魂'; break;
-        }
-        
-        // 特殊处理归魂卦：下卦变回原来的样子，即 XOR 为 0 但不是纯卦
-        // 实际上归魂卦的特征是前五爻变完后，下卦变回来
-        // 这里简化：如果 XOR 为 0 且不是纯卦（即上下卦代码一致），其实就是纯卦
-        // 真正的归魂卦逻辑是：上下卦的前两爻一致，第三爻不一致
-        if (($xia & 3) == ($shang & 3) && ($xia & 4) != ($shang & 4)) {
-            $shi = 3;
-            $type = '归魂';
+            case 0: $shi = 6; $type = '八纯'; $pVal = $sVal; break;
+            case 1: $shi = 1; $type = '一世'; $pVal = $sVal; break;
+            case 3: $shi = 2; $type = '二世'; $pVal = $sVal; break;
+            case 7: $shi = 3; $type = '三世'; $pVal = $sVal; break;
+            case 6: $shi = 4; $type = '四世'; $pVal = $sVal ^ 1; break;
+            case 4: $shi = 5; $type = '五世'; $pVal = $sVal ^ 3; break;
+            case 5: $shi = 4; $type = '游魂'; $pVal = $sVal ^ 2; break;
+            case 2: $shi = 3; $type = '归魂'; $pVal = $xVal; break;
         }
 
         $ying = ($shi > 3) ? ($shi - 3) : ($shi + 3);
         
-        // 确定卦宫
-        $gong = self::BA_GUA[$shangCode];
-        if ($type == '游魂' || $type == '归魂' || $shi == 4 || $shi == 5) {
-             // 复杂的寻宫逻辑，此处返回上卦所属宫
-             $gong = self::BA_GUA[$shangCode];
-        }
+        // 将 pVal 转回 3位二进制字符串
+        $pCode = sprintf('%d%d%d', ($pVal & 1), ($pVal & 2) >> 1, ($pVal & 4) >> 2);
+        $gong = self::BA_GUA[$pCode] ?? '乾';
         
         return [
             'gong' => $gong,
+            'gong_wuxing' => self::BA_GUA_WUXING[$gong] ?? '金',
             'shi' => $shi,
             'ying' => $ying,
             'type' => $type

@@ -436,7 +436,7 @@ onMounted(() => {
 
 .points-btn.checkin {
   background: linear-gradient(135deg, #D4AF37, #B8860B);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .points-btn:not(.checkin) {
@@ -505,7 +505,7 @@ onMounted(() => {
 
 .welcome-btn.primary {
   background: linear-gradient(135deg, #D4AF37, #B8860B);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .welcome-btn.secondary {
@@ -588,7 +588,7 @@ onMounted(() => {
 
 .btn-badge {
   background: linear-gradient(135deg, #67c23a, #85ce61);
-  color: #fff;
+  color: var(--text-primary);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;

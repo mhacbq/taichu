@@ -189,7 +189,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FAFBFC 0%, #F5F7FA 50%, #FFFFFF 100%);
+  background: var(--bg-primary);
   padding: 20px;
 }
 
@@ -201,7 +201,7 @@ onUnmounted(() => {
 .login-box {
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 40px;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-lg);

@@ -14,4 +14,5 @@ Route::group('api/admin/ai', function () {
     Route::get('config', 'AiAnalysis/getConfig');
     Route::post('config', 'AiAnalysis/saveConfig');
     Route::post('test', 'AiAnalysis/testConnection');
-})->middleware(\app\middleware\Auth::class);
+})->middleware(\app\middleware\AdminAuth::class);
+

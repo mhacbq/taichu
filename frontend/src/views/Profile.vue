@@ -873,7 +873,7 @@ onMounted(() => {
 
 .invite-rules {
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: 16px;
   padding: 15px;
   text-align: left;
   border: 1px solid var(--border-light);
