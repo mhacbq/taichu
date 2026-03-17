@@ -85,8 +85,8 @@ class Daily extends BaseController
             return null;
         }
         
-        // 计算今日干支（使用公历转干支算法）
-        $today = date('Y-m-d');
+        // 计算今日干支（统一以运势记录日期 + 东八区历日为准）
+        $today = $fortune->date ?: (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai')))->format('Y-m-d');
         $todayGanZhi = $this->getDayGanZhi($today);
         $todayGan = mb_substr($todayGanZhi, 0, 1);
         $todayZhi = mb_substr($todayGanZhi, 1, 1);
@@ -214,16 +214,16 @@ class Daily extends BaseController
      */
     protected function getDayGanZhi(string $date): string
     {
-        $timestamp = strtotime($date);
-        $year = (int)date('Y', $timestamp);
-        $month = (int)date('m', $timestamp);
-        $day = (int)date('d', $timestamp);
-        
+        $moment = new \DateTimeImmutable($date . ' 12:00:00', new \DateTimeZone('Asia/Shanghai'));
+        $year = (int)$moment->format('Y');
+        $month = (int)$moment->format('n');
+        $day = (int)$moment->format('j');
+
         $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
         $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
-        
+
         $dayPillar = $this->baziCalculationService->calculateDayPillar($year, $month, $day);
-        
+
         return $tianGan[$dayPillar['gan_index']] . $diZhi[$dayPillar['zhi_index']];
     }
     

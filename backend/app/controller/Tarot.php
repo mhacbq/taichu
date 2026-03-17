@@ -230,13 +230,17 @@ class Tarot extends BaseController
     {
         $cards = [];
         $keys = array_rand($this->tarotCards, $num);
-        
+        $positions = $this->getSpreadPositions($num);
+
         if (!is_array($keys)) {
             $keys = [$keys];
         }
-        
-        foreach ($keys as $key) {
+
+        foreach ($keys as $index => $key) {
             $card = $this->tarotCards[$key];
+            $reversed = mt_rand(0, 1) === 1;
+            $orientation = $reversed ? '逆位' : '正位';
+            $orientationMeaning = $reversed ? ($card['reversed_meaning'] ?? '') : $card['meaning'];
             $cards[] = [
                 'name' => $card['name'],
                 'meaning' => $card['meaning'],
@@ -244,10 +248,14 @@ class Tarot extends BaseController
                 'emoji' => $card['emoji'],
                 'color' => $card['color'],
                 'element' => $card['element'],
-                'reversed' => mt_rand(0, 1) === 1, // 随机正逆位
+                'position' => $positions[$index] ?? ('第' . ($index + 1) . '张'),
+                'keywords' => str_replace('，', '、', $orientationMeaning),
+                'orientation' => $orientation,
+                'orientation_meaning' => $orientationMeaning,
+                'reversed' => $reversed,
             ];
         }
-        
+
         return $cards;
     }
     
@@ -257,56 +265,182 @@ class Tarot extends BaseController
     protected function generateInterpretation(array $cards, string $question): string
     {
         $count = count($cards);
-        
+        $profiles = $this->getSpreadPositionProfiles($count);
+        $spreadLabel = $this->getSpreadLabel($count);
         $interpretation = "针对您的问题：「{$question}」\n\n";
-        
+
         if ($count === 1) {
             $card = $cards[0];
-            $position = $card['reversed'] ? '逆位' : '正位';
-            $meaning = $card['reversed'] ? ($card['reversed_meaning'] ?: '（逆位含义待补充）') : $card['meaning'];
-            $interpretation .= "抽到的牌是【{$card['name']}】{$position}。\n";
-            $interpretation .= "牌意：{$meaning}。\n";
-            $interpretation .= "元素属性：{$card['element']}\n\n";
-            $interpretation .= "这张牌指示您当前的状况与上述牌意相关，建议您仔细思考其中的启示。";
-        } else {
-            // 根据不同牌阵定义牌位
-            $positions = match($count) {
-                3 => ['过去', '现在', '未来'],
-                10 => [
-                    '当前状态', '障碍/挑战', '潜意识/基础', '过去', 
-                    '目标/理想', '不久的将来', '自我表现', '环境影响', 
-                    '希望与恐惧', '最终结果'
-                ],
-                default => ['过去', '现在', '未来', '原因', '环境', '建议', '结果']
-            };
-            
-            $interpretation .= "您的【" . ($count == 10 ? "凯尔特十字" : ($count == 3 ? "三牌阵" : "通用")) . "】牌阵解读如下：\n\n";
-            
-            foreach ($cards as $index => $card) {
-                $position = $card['reversed'] ? '逆位' : '正位';
-                $posName = $positions[$index] ?? "位置" . ($index + 1);
-                $meaning = $card['reversed'] ? ($card['reversed_meaning'] ?: '（逆位含义待补充）') : $card['meaning'];
-                
-                $interpretation .= "【{$posName}】{$card['name']} {$position}\n";
-                $interpretation .= "代表：{$meaning} | 元素：{$card['element']}\n\n";
-            }
-            
-            // 添加元素分析
-            $elementAnalysis = $this->analyzeElements($cards);
-            $interpretation .= "【元素分析】\n{$elementAnalysis}\n\n";
-            
-            // 添加关系分析
-            if ($count >= 2) {
-                $relationshipAnalysis = $this->analyzeCardRelationships($cards);
-                $interpretation .= "【牌阵关系分析】\n{$relationshipAnalysis}\n\n";
-            }
-            
-            $interpretation .= "综合来看，您的问题已经有了答案。建议您保持开放的心态，接受命运的指引。无论结果如何，都是您成长的机会。";
+            $profile = $profiles[0] ?? ['name' => '今日指引', 'focus' => '当下最核心的课题', 'advice' => '先抓住眼前最需要回应的一步'];
+            $orientation = $card['reversed'] ? '逆位' : '正位';
+            $interpretation .= "抽到的牌是【{$card['name']}】{$orientation}，落在【{$profile['name']}】。\n";
+            $interpretation .= $this->buildPositionInterpretation($card, $profile, $question) . "\n\n";
+            $interpretation .= "【核心提醒】\n" . $this->buildSpreadConclusion($cards, $question, $profiles);
+            return $interpretation;
         }
-        
+
+        $interpretation .= "您的【{$spreadLabel}】牌阵解读如下：\n\n";
+        foreach ($cards as $index => $card) {
+            $profile = $profiles[$index] ?? ['name' => '第' . ($index + 1) . '张', 'focus' => '当前情势的一个侧面', 'advice' => '顺着问题脉络继续观察'];
+            $orientation = $card['reversed'] ? '逆位' : '正位';
+            $interpretation .= "【{$profile['name']}】{$card['name']} {$orientation}\n";
+            $interpretation .= $this->buildPositionInterpretation($card, $profile, $question) . "\n\n";
+        }
+
+        $elementAnalysis = $this->analyzeElements($cards);
+        $interpretation .= "【元素分析】\n{$elementAnalysis}\n\n";
+
+        if ($count >= 2) {
+            $relationshipAnalysis = $this->analyzeCardRelationships($cards);
+            $interpretation .= "【牌阵关系分析】\n{$relationshipAnalysis}\n\n";
+        }
+
+        $interpretation .= "【综合结论】\n" . $this->buildSpreadConclusion($cards, $question, $profiles);
+
         return $interpretation;
     }
     
+    /**
+     * 获取牌阵名称。
+     */
+    protected function getSpreadLabel(int $count): string
+    {
+        return match($count) {
+            1 => '单张牌',
+            3 => '三牌阵',
+            10 => '凯尔特十字',
+            default => '通用牌阵',
+        };
+    }
+
+    /**
+     * 获取牌位画像，统一前后端对凯尔特十字的中文语义。
+     */
+    protected function getSpreadPositionProfiles(int $count): array
+    {
+        return match($count) {
+            1 => [
+                ['name' => '今日指引', 'focus' => '当下最核心的课题', 'advice' => '先抓住眼前最需要回应的一步'],
+            ],
+            3 => [
+                ['name' => '过去', 'focus' => '已经形成的背景与惯性', 'advice' => '先看清旧模式如何影响现在'],
+                ['name' => '现在', 'focus' => '此刻最真实的局面', 'advice' => '别绕开眼前最重要的问题'],
+                ['name' => '未来', 'focus' => '若维持当前轨迹将出现的走向', 'advice' => '提前为即将到来的变化留出余地'],
+            ],
+            10 => [
+                ['name' => '当前状态', 'focus' => '问题最直观的表层表现', 'advice' => '先承认局势目前真正站在哪个阶段'],
+                ['name' => '障碍/挑战', 'focus' => '真正卡住推进的阻力点', 'advice' => '不要只看表面冲突，要找出核心卡点'],
+                ['name' => '潜意识/基础', 'focus' => '问题背后的深层动机与根基', 'advice' => '回到根源，才能解释反复出现的模式'],
+                ['name' => '过去影响', 'focus' => '已经发生且仍在起作用的旧因素', 'advice' => '分清哪些经验该保留，哪些执念该放下'],
+                ['name' => '目标可能', 'focus' => '你想抵达的方向或显意识目标', 'advice' => '确认目标是否真的契合内心而非只为止损'],
+                ['name' => '近期发展', 'focus' => '短期内最容易先浮现的变化', 'advice' => '留意第一个转折点，它会决定后续节奏'],
+                ['name' => '你的态度', 'focus' => '你此刻的立场、姿态与处理方式', 'advice' => '先调整自己的应对姿态，再谈外部变化'],
+                ['name' => '外部环境', 'focus' => '环境、人际与现实条件带来的推动或牵制', 'advice' => '把可控与不可控因素分开处理'],
+                ['name' => '希望/恐惧', 'focus' => '你最想抓住也最怕失去的心理张力', 'advice' => '识别愿望与担忧是不是在拉扯同一件事'],
+                ['name' => '最终走向', 'focus' => '若沿当前路径推进，事情收束的方向', 'advice' => '把现在的每一步都当成通往结果的铺垫'],
+            ],
+            default => [
+                ['name' => '过去', 'focus' => '旧经验与背景', 'advice' => '先理解来时路'],
+                ['name' => '现在', 'focus' => '当前局势', 'advice' => '聚焦正在发生的事'],
+                ['name' => '未来', 'focus' => '后续发展', 'advice' => '提前布局下一步'],
+            ],
+        };
+    }
+
+    /**
+     * 将牌义放到具体牌位中做位序化解读。
+     */
+    protected function buildPositionInterpretation(array $card, array $profile, string $question): string
+    {
+        $meaning = $this->expandCardMeaning($card);
+        $elementAspect = $this->getElementAspect($card['element'] ?? '');
+        $positionName = $profile['name'] ?? '当前牌位';
+        $focus = $profile['focus'] ?? '这个议题的关键侧面';
+        $advice = $profile['advice'] ?? '顺着牌阵脉络继续观察';
+
+        return "牌意核心：{$meaning}。落在「{$positionName}」时，重点落在{$focus}；就你提出的“{$question}”而言，建议{$advice}。这张牌带有{$card['element']}元素，更适合从{$elementAspect}这一层切入。";
+    }
+
+    /**
+     * 扩充正逆位牌义，尤其补足权杖/宝剑逆位的深层说明。
+     */
+    protected function expandCardMeaning(array $card): string
+    {
+        $baseMeaning = $card['reversed']
+            ? ($card['reversed_meaning'] ?: $card['meaning'])
+            : $card['meaning'];
+
+        if (!$card['reversed']) {
+            return $baseMeaning;
+        }
+
+        $name = $card['name'] ?? '';
+        if (str_starts_with($name, '权杖')) {
+            return $baseMeaning . '；逆位的权杖往往提示行动节奏失衡，可能是热情被压住，也可能是冲得太急，先校准动力再发力更稳。';
+        }
+
+        if (str_starts_with($name, '宝剑')) {
+            return $baseMeaning . '；逆位的宝剑多指认知压力、沟通偏差或判断失焦，先澄清事实与边界，比立刻下结论更重要。';
+        }
+
+        if (str_starts_with($name, '圣杯')) {
+            return $baseMeaning . '；逆位的圣杯常见于情绪回流、期待失衡或关系感受堵塞，先安顿内在，再谈下一步回应。';
+        }
+
+        if (str_starts_with($name, '星币')) {
+            return $baseMeaning . '；逆位的星币通常落在资源调配、现实执行或安全感议题上，先把基础盘稳住，再谈扩张与收获。';
+        }
+
+        return $baseMeaning . '；逆位也意味着这张大牌的课题尚未真正整合，外在阻力往往对应内在盲点，需要回头校正。';
+    }
+
+    /**
+     * 生成更贴题的总结，避免结果总是落回固定模板。
+     */
+    protected function buildSpreadConclusion(array $cards, string $question, array $profiles): string
+    {
+        if (empty($cards)) {
+            return '当前没有可供解读的牌。';
+        }
+
+        $theme = $this->inferQuestionTheme($question);
+        $firstCard = $cards[0];
+        $lastCard = $cards[count($cards) - 1];
+        $firstProfile = $profiles[0]['name'] ?? '起点';
+        $lastProfile = $profiles[count($cards) - 1]['name'] ?? '落点';
+        $reversedCount = count(array_filter($cards, static fn($card) => !empty($card['reversed'])));
+        $energyDesc = $reversedCount > 0
+            ? "牌阵中有{$reversedCount}张逆位，说明这个{$theme}课题并非单靠向前冲就能解决，先梳理卡点反而更关键。"
+            : "整组牌以顺势推进为主，这个{$theme}课题更适合在保持节奏的前提下稳步落实。";
+
+        return "就{$theme}而言，眼下最需要处理的是「{$firstProfile}」里的{$firstCard['name']}：{$this->expandCardMeaning($firstCard)}。而后续走向会逐渐收束到「{$lastProfile}」的{$lastCard['name']}：{$this->expandCardMeaning($lastCard)}。{$energyDesc}";
+    }
+
+    /**
+     * 推断问题主题，让总结更贴近用户实际提问。
+     */
+    protected function inferQuestionTheme(string $question): string
+    {
+        $question = trim($question);
+        $map = [
+            '感情' => ['感情', '爱情', '关系', '复合', '暧昧', '伴侣', '婚姻'],
+            '事业' => ['工作', '事业', '职场', '跳槽', '创业', '升职'],
+            '财务' => ['钱', '财', '投资', '收入', '合作'],
+            '学业' => ['学习', '考试', '学校', '专业'],
+            '健康' => ['健康', '身体', '状态', '睡眠'],
+        ];
+
+        foreach ($map as $theme => $keywords) {
+            foreach ($keywords as $keyword) {
+                if ($keyword !== '' && mb_strpos($question, $keyword) !== false) {
+                    return $theme;
+                }
+            }
+        }
+
+        return '当前议题';
+    }
+
     /**
      * 分析牌阵中的元素分布
      * 风(思想/沟通)、水(情感/直觉)、火(行动/能量)、土(物质/现实)
@@ -434,11 +568,10 @@ class Tarot extends BaseController
      */
     protected function getSpreadPositions(int $count): array
     {
-        return match($count) {
-            3 => ['过去', '现在', '未来'],
-            10 => ['当前状态', '障碍/挑战', '潜意识/基础', '过去', '目标/理想', '不久的将来', '自我表现', '环境影响', '希望与恐惧', '最终结果'],
-            default => ['过去', '现在', '未来', '原因', '环境', '建议', '结果'],
-        };
+        return array_map(
+            static fn(array $profile) => $profile['name'],
+            $this->getSpreadPositionProfiles($count)
+        );
     }
 
     /**
@@ -552,43 +685,40 @@ class Tarot extends BaseController
     protected function getElementRelation(string $element1, string $element2): string
     {
         if ($element1 === $element2) {
-            return '同元素（Mutual Dignity）：主题被持续放大，牌阵焦点十分明确。';
+            return '同元素共鸣：主题被持续放大，牌阵焦点十分明确。';
         }
-        
+
         $pair = [$element1, $element2];
         sort($pair);
         $pairStr = implode('-', $pair);
 
-        // 友方元素 (Friendly Dignity)
         $friendly = [
-            '火-风' => '火与风形成 Friendly Dignity，意志得到思想鼓动，行动更容易迅速展开。',
-            '水-土' => '水与土形成 Friendly Dignity，情绪获得承载，现实层面更容易稳步落地。',
+            '火-风' => '风助火势，意志得到思想鼓动，行动更容易迅速展开。',
+            '水-土' => '土承水意，情绪获得承载，现实层面更容易稳步落地。',
         ];
 
-        // 敌对元素 (Enemy Dignity)
         $hostile = [
-            '水-火' => '水与火形成 Enemy Dignity，感受与行动互相牵制，局势容易出现内耗。',
-            '土-风' => '土与风形成 Enemy Dignity，理念表达受现实框架压制，推进阻力较大。',
+            '水-火' => '水火相激，感受与行动彼此牵制，局势容易出现内耗。',
+            '土-风' => '风土相逆，理念表达受现实框架压制，推进阻力较大。',
         ];
 
-        // 中性元素 (Neutral Dignity)
         $neutral = [
-            '火-土' => '火与土属于 Neutral Dignity，行动有落点，但速度会被现实节奏放缓。',
-            '水-风' => '水与风属于 Neutral Dignity，理性与感受并行，需要额外整合后才能形成结论。',
+            '火-土' => '火土相接，行动有落点，但速度会被现实节奏放缓。',
+            '水-风' => '水风并行，理性与感受同时发声，需要整合后才能形成结论。',
         ];
 
         if (isset($friendly[$pairStr])) {
-            return '友方元素：' . $friendly[$pairStr];
+            return '友元素协同：' . $friendly[$pairStr];
         }
 
         if (isset($hostile[$pairStr])) {
-            return '敌对元素：' . $hostile[$pairStr];
+            return '元素张力：' . $hostile[$pairStr];
         }
 
         if (isset($neutral[$pairStr])) {
-            return '中性元素：' . $neutral[$pairStr];
+            return '元素调和：' . $neutral[$pairStr];
         }
-        
+
         return '';
     }
     

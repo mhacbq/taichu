@@ -104,6 +104,37 @@ class BaziCalculationService
     }
 
     /**
+     * 解析出生时间字符串，统一按东八区处理；仅有日期时默认取中午，避免交节日误判。
+     */
+    protected function parseBirthDateTime(string $birthDate): \DateTimeImmutable
+    {
+        $birthDate = trim($birthDate);
+        $timezone = $this->getMingliTimezone();
+        $formats = ['Y-m-d H:i:s', 'Y-m-d H:i', 'Y-m-d'];
+
+        foreach ($formats as $format) {
+            $parsed = \DateTimeImmutable::createFromFormat($format, $birthDate, $timezone);
+            if ($parsed !== false) {
+                return $format === 'Y-m-d'
+                    ? $parsed->setTime(12, 0, 0)
+                    : $parsed;
+            }
+        }
+
+        try {
+            $parsed = new \DateTimeImmutable($birthDate, $timezone);
+        } catch (\Exception $e) {
+            throw new \InvalidArgumentException('出生日期格式不正确');
+        }
+
+        if (!preg_match('/\d{1,2}:\d{1,2}/', $birthDate)) {
+            return $parsed->setTime(12, 0, 0);
+        }
+
+        return $parsed;
+    }
+
+    /**
      * 节气时刻计算（支持20世纪和21世纪寿星公式的日级修正，并保留小数部分换算成交节时刻）
      */
     protected function getJieQiMoment(int $year, string $name): array
@@ -219,12 +250,12 @@ class BaziCalculationService
      */
     public function calculateBazi(string $birthDate, string $gender = '男'): array
     {
-        $timestamp = strtotime($birthDate);
-        $year = (int)date('Y', $timestamp);
-        $month = (int)date('n', $timestamp);
-        $day = (int)date('j', $timestamp);
-        $hour = (int)date('G', $timestamp);
-        $minute = (int)date('i', $timestamp);
+        $birthMoment = $this->parseBirthDateTime($birthDate);
+        $year = (int)$birthMoment->format('Y');
+        $month = (int)$birthMoment->format('n');
+        $day = (int)$birthMoment->format('j');
+        $hour = (int)$birthMoment->format('G');
+        $minute = (int)$birthMoment->format('i');
         $genderLabel = $this->normalizeGenderLabel($gender);
         
         // ===== 核心修复：晚子时(23:00-00:00)日柱切换 =====
@@ -233,10 +264,10 @@ class BaziCalculationService
         $calcDayDay = $day;
         
         if ($hour >= 23) {
-            $nextDayTs = $timestamp + 3600; // 跨入次日
-            $calcDayYear = (int)date('Y', $nextDayTs);
-            $calcDayMonth = (int)date('n', $nextDayTs);
-            $calcDayDay = (int)date('j', $nextDayTs);
+            $nextDayMoment = $birthMoment->modify('+1 day');
+            $calcDayYear = (int)$nextDayMoment->format('Y');
+            $calcDayMonth = (int)$nextDayMoment->format('n');
+            $calcDayDay = (int)$nextDayMoment->format('j');
         }
 
         $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
@@ -715,6 +746,9 @@ class BaziCalculationService
             ->modify("+{$qiyunMonth} months")
             ->modify("+{$qiyunDay} days");
 
+        $targetMoment = (new \DateTimeImmutable('@' . $targetJieTs))
+            ->setTimezone($this->getMingliTimezone());
+
         return [
             'is_forward' => $isForward,
             'years' => $qiyunYear,
@@ -722,7 +756,7 @@ class BaziCalculationService
             'days' => $qiyunDay,
             'display' => "{$qiyunYear}岁{$qiyunMonth}个月{$qiyunDay}天",
             'start_date' => $startMoment->format('Y-m-d'),
-            'target_jieqi_at' => date('Y-m-d H:i:s', $targetJieTs),
+            'target_jieqi_at' => $targetMoment->format('Y-m-d H:i:s'),
         ];
     }
 }

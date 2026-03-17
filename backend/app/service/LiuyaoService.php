@@ -695,25 +695,21 @@ class LiuyaoService
     {
         // 八卦对应的爻码（从下到上：初爻、二爻、三爻）
         $baGuaCode = array_flip(self::BA_GUA);
-        
+
         $xiaCode = $baGuaCode[$xiaGua] ?? '111';
         $shangCode = $baGuaCode[$shangGua] ?? '111';
-        
-        // 组合成六爻（下卦+上卦）
-        $code = $xiaCode . $shangCode;
-        
-        // 设置动爻（从下到上，1-6）
-        $yaoArray = str_split($code);
-        $position = $dongYao - 1;
-        
-        // 动爻：阴爻(0)动则为老阴(0)，阳爻(1)动则为老阳(3)
-        // 注意：此处 0/1/2/3 对应老阴/少阳/少阴/老阳
-        if ($yaoArray[$position] == '0') {
-            $yaoArray[$position] = '0';  // 老阴
-        } else {
-            $yaoArray[$position] = '3';  // 老阳
+        $binaryCode = $xiaCode . $shangCode;
+
+        // 先把静爻编码成：阳=1（少阳），阴=2（少阴）
+        // 再将指定动爻转成：老阴=0，老阳=3
+        $yaoArray = [];
+        foreach (str_split($binaryCode) as $yao) {
+            $yaoArray[] = $yao === '1' ? '1' : '2';
         }
-        
+
+        $position = max(0, min(5, $dongYao - 1));
+        $yaoArray[$position] = $binaryCode[$position] === '0' ? '0' : '3';
+
         return implode('', $yaoArray);
     }
 }

@@ -287,17 +287,19 @@ PROMPT;
      */
     private static function buildTarotPrompt(array $data): string
     {
+        $cards = is_array($data['cards'] ?? null) ? $data['cards'] : [];
+        $spreadName = $data['spread_name'] ?? self::guessTarotSpreadName(count($cards));
         $cardsInfo = '';
-        foreach ($data['cards'] as $index => $card) {
+
+        foreach ($cards as $index => $card) {
+            $normalized = self::normalizeTarotPromptCard((array)$card, $index, count($cards));
             $position = $index + 1;
-            $element = $card['element'] ?? '未知';
-            $orientationMeaning = $card['orientation_meaning'] ?? ($card['reversed_meaning'] ?? '');
-            $cardsInfo .= "【第{$position}张】{$card['name']}（{$card['position']}）\n";
-            $cardsInfo .= "正逆位：{$card['orientation']}\n";
-            $cardsInfo .= "元素：{$element}\n";
-            $cardsInfo .= "关键词：{$card['keywords']}\n";
-            if ($orientationMeaning !== '') {
-                $cardsInfo .= "位态释义：{$orientationMeaning}\n";
+            $cardsInfo .= "【第{$position}张】{$normalized['name']}（{$normalized['position']}）\n";
+            $cardsInfo .= "正逆位：{$normalized['orientation']}\n";
+            $cardsInfo .= "元素：{$normalized['element']}\n";
+            $cardsInfo .= "关键词：{$normalized['keywords']}\n";
+            if ($normalized['orientation_meaning'] !== '') {
+                $cardsInfo .= "位态释义：{$normalized['orientation_meaning']}\n";
             }
             $cardsInfo .= "\n";
         }
@@ -306,12 +308,61 @@ PROMPT;
 【所问事项】
 {$data['question']}
 
-【牌阵】{$data['spread_name']}
+【牌阵】{$spreadName}
 
 {$cardsInfo}
 
 请结合牌位、元素互动与正逆位差异进行详细解读。
 PROMPT;
+    }
+
+    /**
+     * 规范塔罗提示词所需字段，兼容当前控制器直接返回的抽牌结构。
+     */
+    private static function normalizeTarotPromptCard(array $card, int $index, int $totalCards): array
+    {
+        $isReversed = (bool)($card['reversed'] ?? false);
+        $orientation = $card['orientation'] ?? ($isReversed ? '逆位' : '正位');
+        $orientationMeaning = $card['orientation_meaning']
+            ?? ($isReversed ? ($card['reversed_meaning'] ?? '') : ($card['meaning'] ?? ''));
+        $keywords = $card['keywords'] ?? str_replace('，', '、', $orientationMeaning !== '' ? $orientationMeaning : ($card['meaning'] ?? ''));
+
+        return [
+            'name' => $card['name'] ?? ('第' . ($index + 1) . '张牌'),
+            'position' => $card['position'] ?? self::guessTarotPositionLabel($totalCards, $index),
+            'orientation' => $orientation,
+            'orientation_meaning' => $orientationMeaning,
+            'keywords' => $keywords,
+            'element' => $card['element'] ?? '未知',
+        ];
+    }
+
+    /**
+     * 按抽牌数量推断牌阵名称。
+     */
+    private static function guessTarotSpreadName(int $cardCount): string
+    {
+        return match($cardCount) {
+            1 => '单张牌',
+            3 => '三牌阵',
+            10 => '凯尔特十字',
+            default => '通用牌阵',
+        };
+    }
+
+    /**
+     * 按牌阵推断标准牌位名称。
+     */
+    private static function guessTarotPositionLabel(int $cardCount, int $index): string
+    {
+        $positions = match($cardCount) {
+            1 => ['今日指引'],
+            3 => ['过去', '现在', '未来'],
+            10 => ['当前状态', '障碍/挑战', '潜意识/基础', '过去影响', '目标可能', '近期发展', '你的态度', '外部环境', '希望/恐惧', '最终走向'],
+            default => [],
+        };
+
+        return $positions[$index] ?? ('第' . ($index + 1) . '张');
     }
     
     /**

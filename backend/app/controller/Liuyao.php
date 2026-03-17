@@ -48,7 +48,11 @@ class Liuyao extends BaseController
             $riZhi = $data['ri_zhi'] ?? '';
 
             if ($riGan === '' || $riZhi === '') {
-                $today = new \DateTime();
+                $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai'));
+                if ((int)$today->format('G') >= 23) {
+                    $today = $today->modify('+1 day');
+                }
+
                 $pillar = (new BaziCalculationService())->calculateDayPillar(
                     (int)$today->format('Y'),
                     (int)$today->format('n'),
@@ -124,7 +128,7 @@ class Liuyao extends BaseController
      */
     private function qiGuaByTime(): array
     {
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai'));
         return LiuyaoService::qiGuaByTime(
             (int)$now->format('Y'),
             (int)$now->format('n'),
