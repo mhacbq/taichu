@@ -71,36 +71,7 @@ class Admin extends BaseController
         return AdminAuthService::checkPermission($this->adminId, $permissionCode);
     }
     
-    /**
-     * 记录操作日志
-     */
-    protected function logOperation(
-        string $action, 
-        string $module = '', 
-        array $data = []
-    ): void {
-        try {
-            AdminLog::record([
-                'admin_id' => $this->adminId,
-                'admin_name' => $this->adminName,
-                'action' => $action,
-                'module' => $module,
-                'target_id' => $data['target_id'] ?? 0,
-                'target_type' => $data['target_type'] ?? '',
-                'detail' => $data['detail'] ?? '',
-                'before_data' => $data['before_data'] ?? null,
-                'after_data' => $data['after_data'] ?? null,
-                'ip' => $this->request->ip(),
-                'user_agent' => $this->request->header('User-Agent') ?? '',
-                'request_url' => $this->request->url(true),
-                'request_method' => $this->request->method(),
-                'status' => $data['status'] ?? 1,
-                'error_msg' => $data['error_msg'] ?? '',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('记录操作日志失败: ' . $e->getMessage());
-        }
-    }
+
 
     /**
      * 获取仪表盘统计数据

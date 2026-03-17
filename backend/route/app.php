@@ -207,48 +207,6 @@ Route::get('api/bazi/share', 'Paipan/share');
 
 
 
-Route::group('api/admin', function () {
-    // 仪表盘
-    Route::group('dashboard', function () {
-        Route::get('statistics', 'Admin/dashboard');
-        Route::get('trend', 'Admin/dashboardTrend');
-        Route::get('realtime', 'Admin/realtime');
-        Route::get('export-realtime', 'Admin/exportRealtime');
-        Route::get('chart/:type', 'Admin/chartData');
-        Route::get('pending-feedback', 'Admin/pendingFeedback');
-    });
-
-    // 配置管理
-    Route::group('config', function () {
-        Route::get('', 'admin.Config/index');
-        Route::get('features', 'admin.Config/features');
-        Route::post('update', 'admin.Config/update');
-        Route::post('update-batch', 'admin.Config/updateBatch');
-        Route::post('update-feature', 'admin.Config/updateFeature');
-        Route::post('update-features', 'admin.Config/updateFeatures');
-        Route::get('vip', 'admin.Config/vip');
-        Route::post('update-vip', 'admin.Config/updateVip');
-        Route::get('points', 'admin.Config/points');
-        Route::post('update-points', 'admin.Config/updatePoints');
-        Route::get('marketing', 'admin.Config/marketing');
-        Route::post('update-marketing', 'admin.Config/updateMarketing');
-        Route::post('refresh-cache', 'admin.Config/refreshCache');
-    });
-
-    // 神煞管理
-    Route::group('shensha', function () {
-        Route::get('list', 'admin.Shensha/index');
-        Route::post('save', 'admin.Shensha/save');
-        Route::post('delete/:id', 'admin.Shensha/delete');
-        Route::post('toggle-status', 'admin.Shensha/toggleStatus');
-    });
-})->middleware([
-
-    \app\middleware\HttpsEnforce::class,
-    \app\middleware\Cors::class,
-    \app\middleware\AdminAuth::class,
-]);
-
 // 404处理
 Route::miss(function() {
     return json([

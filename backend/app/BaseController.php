@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace app;
 
+use app\model\AdminLog;
 use app\service\AdminAuthService;
 use think\App;
 use think\exception\ValidateException;
@@ -182,6 +183,47 @@ abstract class BaseController
         }
 
         return (int) ($this->request->userId ?? 0);
+    }
+
+    /**
+     * 统一记录后台操作日志，并对上下文做脱敏处理
+     */
+    protected function logOperation(
+        string $action,
+        string $module = '',
+        array $data = []
+    ): void {
+        try {
+            $adminUser = $this->request->adminUser ?? [];
+            AdminLog::record([
+                'admin_id' => $this->getAdminId(),
+                'admin_name' => (string) ($adminUser['username'] ?? ''),
+                'action' => $action,
+                'module' => $module,
+                'target_id' => (int) ($data['target_id'] ?? 0),
+                'target_type' => (string) ($data['target_type'] ?? ''),
+                'detail' => (string) ($data['detail'] ?? ''),
+                'before_data' => array_key_exists('before_data', $data)
+                    ? $this->sanitizeLogContext($data['before_data'])
+                    : null,
+                'after_data' => array_key_exists('after_data', $data)
+                    ? $this->sanitizeLogContext($data['after_data'])
+                    : null,
+                'ip' => $this->request->ip(),
+                'user_agent' => (string) ($this->request->header('User-Agent') ?? ''),
+                'request_url' => $this->request->url(true),
+                'request_method' => $this->request->method(),
+                'status' => (int) ($data['status'] ?? 1),
+                'error_msg' => (string) $this->sanitizeLogContext($data['error_msg'] ?? ''),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('后台操作日志写入失败', [
+                'action' => $action,
+                'module' => $module,
+                'admin_id' => $this->getAdminId(),
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
