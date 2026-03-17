@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="currentStep === 1 ? '欢迎来到太初命理 ✨' : '新手指引'"
+    :title="currentStep === 1 ? '欢迎来到太初命理' : '新手指引'"
     width="520px"
     :show-close="false"
     :close-on-click-modal="false"
@@ -22,21 +22,23 @@
       <div class="step-content">
         <!-- 第1步：暖心欢迎 -->
         <template v-if="currentStep === 1">
-          <div class="step-illustration welcome-anim">🌸</div>
+          <div class="step-illustration welcome-anim">
+            <el-icon class="large-icon"><Sunrise /></el-icon>
+          </div>
           <h3>在迷茫中寻找方向</h3>
           <p class="warm-text">生活有时会让人感到困惑和迷茫，这很正常。</p>
           <p class="warm-text">太初命理不是预测命运的"神谕"，而是帮你从另一个角度认识自己、理解当下的工具。</p>
           <div class="comfort-cards">
             <div class="comfort-item">
-              <span class="comfort-icon">💝</span>
+              <el-icon class="comfort-icon"><User /></el-icon>
               <span>你并不孤单</span>
             </div>
             <div class="comfort-item">
-              <span class="comfort-icon">🌱</span>
+              <el-icon class="comfort-icon"><Opportunity /></el-icon>
               <span>迷茫是成长的开始</span>
             </div>
             <div class="comfort-item">
-              <span class="comfort-icon">✨</span>
+              <el-icon class="comfort-icon"><Compass /></el-icon>
               <span>答案在你心中</span>
             </div>
           </div>
@@ -45,11 +47,13 @@
 
         <!-- 第2步：功能介绍 -->
         <template v-if="currentStep === 2">
-          <div class="step-illustration">☯</div>
+          <div class="step-illustration">
+            <el-icon class="large-icon"><YinYang /></el-icon>
+          </div>
           <h3>我们能为你做什么</h3>
           <div class="feature-list">
             <div class="feature-item">
-              <div class="feature-icon-bg">📅</div>
+              <div class="feature-icon-bg"><el-icon><Calendar /></el-icon></div>
               <div class="feature-info">
                 <h4>八字排盘</h4>
                 <p>了解自己的性格特点、优势与挑战，找到适合的发展方向</p>
@@ -57,7 +61,7 @@
               </div>
             </div>
             <div class="feature-item">
-              <div class="feature-icon-bg">🎴</div>
+              <div class="feature-icon-bg"><el-icon><Document /></el-icon></div>
               <div class="feature-info">
                 <h4>塔罗占卜</h4>
                 <p>针对具体困惑获得指引，工作、感情、人际关系都能找到答案</p>
@@ -65,7 +69,7 @@
               </div>
             </div>
             <div class="feature-item">
-              <div class="feature-icon-bg">🌟</div>
+              <div class="feature-icon-bg"><el-icon><MagicStick /></el-icon></div>
               <div class="feature-info">
                 <h4>每日运势</h4>
                 <p>基于你的八字生成个性化建议，趋吉避凶，把握每一天</p>
@@ -77,7 +81,9 @@
 
         <!-- 第3步：积分说明 -->
         <template v-if="currentStep === 3">
-          <div class="step-illustration">💎</div>
+          <div class="step-illustration">
+            <el-icon class="large-icon"><Diamond /></el-icon>
+          </div>
           <h3>关于积分</h3>
           <p class="points-intro">为了提供更优质的服务，部分功能需要消耗积分：</p>
           <div class="points-table">
@@ -98,7 +104,7 @@
             </div>
           </div>
           <div class="earn-points">
-            <h4>💡 如何获取积分？</h4>
+            <h4><el-icon><Pointer /></el-icon> 如何获取积分？</h4>
             <ul>
               <li>注册即送 <strong>100积分</strong> 新手礼包</li>
               <li>每日签到领积分</li>
@@ -109,25 +115,27 @@
 
         <!-- 第4步：开始体验 -->
         <template v-if="currentStep === 4">
-          <div class="step-illustration">🚀</div>
+          <div class="step-illustration">
+            <el-icon class="large-icon"><Promotion /></el-icon>
+          </div>
           <h3>准备好了吗？</h3>
           <p class="warm-text">记住：命理分析仅供参考，真正的改变来自于你的行动。</p>
           <div class="start-tips">
             <div class="tip-item">
-              <span class="tip-icon">🎯</span>
+              <el-icon class="tip-icon"><Aim /></el-icon>
               <p><strong>建议一：</strong>首次使用先从八字排盘开始，了解自己的基本命格</p>
             </div>
             <div class="tip-item">
-              <span class="tip-icon">💭</span>
+              <el-icon class="tip-icon"><ChatLineRound /></el-icon>
               <p><strong>建议二：</strong>有具体困惑时，使用塔罗占卜获得针对性指引</p>
             </div>
             <div class="tip-item">
-              <span class="tip-icon">🌅</span>
+              <el-icon class="tip-icon"><Sunrise /></el-icon>
               <p><strong>建议三：</strong>每天早上看看今日运势，为一天做好准备</p>
             </div>
           </div>
           <div class="encourage-box">
-            <p>🌟 "每一个迷茫的时刻，都是重新认识自己的机会"</p>
+            <p><el-icon><Star /></el-icon> "每一个迷茫的时刻，都是重新认识自己的机会"</p>
           </div>
         </template>
       </div>
@@ -152,7 +160,7 @@
           @click="finish"
           class="footer-btn primary"
         >
-          开始探索 ✨
+          开始探索
         </el-button>
       </div>
     </template>
@@ -162,6 +170,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { 
+  Sunrise, User, Opportunity, Compass, YinYang, 
+  Calendar, Document, MagicStick, Diamond, Pointer, 
+  Promotion, Aim, ChatLineRound, Star 
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const visible = ref(false)

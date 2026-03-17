@@ -1,6 +1,46 @@
 # 前端修复专家 - 执行记录
 
-## 2026-03-17 16:15 执行摘要
+## 2026-03-17 16:30 执行摘要
+6:
+7:### 本次修复的前端问题（共5个）
+8:
+9:1. **统一全局按钮和卡片圆角** (高优先级)
+10:   - 文件: frontend/src/style.css, frontend/src/styles/theme-white.scss
+11:   - 问题: 按钮和卡片圆角不统一
+12:   - 修复: 在 CSS 变量中定义 `--radius-btn: 25px` 和 `--radius-card: 16px`，并更新相关类
+13:
+14:2. **清理 Bazi.vue CSS 中的 Emoji 遗留** (中优先级)
+15:   - 文件: frontend/src/views/Bazi.vue
+16:   - 问题: 第 3148 行使用 `content: '💡'` 装饰列表
+17:   - 修复: 移除 Emoji，改用金色圆点 (background: var(--primary-color)) 装饰
+18:
+19:3. **App.vue 导航栏硬编码颜色清理** (中优先级)
+20:   - 文件: frontend/src/App.vue
+21:   - 问题: 导航栏背景使用了硬编码的 `rgba(10, 10, 26, 0.95)`
+22:   - 修复: 替换为全局变量 `var(--bg-primary)`，增强主题一致性
+23:
+24:4. **管理端路由角色权限配置** (高优先级)
+25:   - 文件: admin/src/router/index.js
+26:   - 问题: 首页、用户管理、内容管理等多个路由缺少 `roles` 权限配置
+27:   - 修复: 为所有相关路由添加 `meta: { roles: ['admin', 'operator'] }`
+28:
+29:5. **黄历管理页面功能补全** (高优先级)
+30:   - 文件: admin/src/api/content.js, admin/src/views/content/almanac.vue
+31:   - 问题: almanac.vue 仅有模板骨架，缺少 API 调用和逻辑实现
+32:   - 修复: 在 content.js 中添加黄历 CRUD 接口，在 almanac.vue 中实现完整的列表加载、搜索、新增、编辑及删除逻辑
+33:
+34:### Git提交信息
+35:- 提交时间: 2026-03-17 16:30
+36:- 提交信息: fix-frontend-multiple-issues-20260317-1630
+37:
+38:### 修复统计
+39:- 修复文件数: 6个
+40:- 修复问题数: 5个
+41:- 高优先级: 3个
+42:
+43:---
+44:
+45:## 2026-03-17 16:15 执行摘要
 
 ### 本次修复的前端问题（共5个）
 

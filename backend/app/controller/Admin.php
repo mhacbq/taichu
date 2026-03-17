@@ -459,6 +459,210 @@ class Admin extends BaseController
     }
 
     /**
+     * 获取塔罗记录列表
+     */
+    public function tarotRecords(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看内容', 403);
+        }
+        
+        try {
+            $page = $request->get('page', 1);
+            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            $userId = $request->get('user_id', '');
+
+            $query = TarotRecord::order('id', 'desc');
+            if ($userId) {
+                $query->where('user_id', $userId);
+            }
+
+            $total = $query->count();
+            $list = $query->page((int)$page, (int)$pageSize)->select();
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ]);
+        } catch (\Exception $e) {
+            Log::error('获取塔罗记录失败: ' . $e->getMessage());
+            return $this->error('获取记录失败', 500);
+        }
+    }
+
+    /**
+     * 获取塔罗详情
+     */
+    public function tarotDetail($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看内容', 403);
+        }
+        
+        try {
+            $record = TarotRecord::find($id);
+            if (!$record) {
+                return $this->error('记录不存在', 404);
+            }
+            return $this->success($record);
+        } catch (\Exception $e) {
+            return $this->error('获取详情失败', 500);
+        }
+    }
+
+    /**
+     * 删除塔罗记录
+     */
+    public function deleteTarotRecord($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除内容', 403);
+        }
+        
+        try {
+            $record = TarotRecord::find($id);
+            if (!$record) {
+                return $this->error('记录不存在', 404);
+            }
+            
+            $beforeData = $record->toArray();
+            TarotRecord::destroy($id);
+            
+            $this->logOperation('delete', 'content', [
+                'target_id' => $id,
+                'target_type' => 'tarot_record',
+                'detail' => '删除塔罗记录',
+                'before_data' => $beforeData,
+            ]);
+
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+    /**
+     * 每日运势列表
+     */
+    public function dailyFortuneList(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看内容', 403);
+        }
+        
+        try {
+            $page = $request->get('page', 1);
+            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            $date = $request->get('date', '');
+
+            $query = DailyFortune::order('date', 'desc');
+            if ($date) {
+                $query->where('date', $date);
+            }
+
+            $total = $query->count();
+            $list = $query->page((int)$page, (int)$pageSize)->select();
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ]);
+        } catch (\Exception $e) {
+            return $this->error('获取运势列表失败', 500);
+        }
+    }
+
+    /**
+     * 创建每日运势
+     */
+    public function createDailyFortune(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限编辑内容', 403);
+        }
+        
+        try {
+            $data = $request->post();
+            $fortune = DailyFortune::create($data);
+            
+            $this->logOperation('create', 'content', [
+                'target_id' => $fortune->id,
+                'target_type' => 'daily_fortune',
+                'detail' => '新增每日运势: ' . ($data['date'] ?? ''),
+                'after_data' => $data
+            ]);
+
+            return $this->success($fortune, '创建成功');
+        } catch (\Exception $e) {
+            return $this->error('创建失败: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * 更新每日运势
+     */
+    public function updateDailyFortune(Request $request, $id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限编辑内容', 403);
+        }
+        
+        try {
+            $data = $request->put();
+            $fortune = DailyFortune::find($id);
+            if (!$fortune) {
+                return $this->error('记录不存在', 404);
+            }
+            
+            $beforeData = $fortune->toArray();
+            $fortune->save($data);
+            
+            $this->logOperation('update', 'content', [
+                'target_id' => $id,
+                'target_type' => 'daily_fortune',
+                'detail' => '更新每日运势: ' . $fortune->date,
+                'before_data' => $beforeData,
+                'after_data' => $data
+            ]);
+
+            return $this->success(null, '更新成功');
+        } catch (\Exception $e) {
+            return $this->error('更新失败', 500);
+        }
+    }
+
+    /**
+     * 删除每日运势
+     */
+    public function deleteDailyFortune($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除内容', 403);
+        }
+        
+        try {
+            $fortune = DailyFortune::find($id);
+            if (!$fortune) {
+                return $this->error('记录不存在', 404);
+            }
+            
+            $beforeData = $fortune->toArray();
+            DailyFortune::destroy($id);
+            
+            $this->logOperation('delete', 'content', [
+                'target_id' => $id,
+                'target_type' => 'daily_fortune',
+                'detail' => '删除每日运势: ' . $fortune->date,
+                'before_data' => $beforeData,
+            ]);
+
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+    /**
      * 获取积分记录
      */
     public function pointsRecords(Request $request)

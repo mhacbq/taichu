@@ -192,8 +192,8 @@ const frontStyle = computed(() => ({
 .back-pattern {
   width: 100%;
   height: 100%;
-  border: 1px solid rgba(184, 134, 11, 0.4);
-  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   position: relative;
   display: flex;
   align-items: center;
@@ -206,13 +206,13 @@ const frontStyle = computed(() => ({
   left: 5px;
   right: 5px;
   bottom: 5px;
-  border: 1px solid rgba(184, 134, 11, 0.2);
-  border-radius: 4px;
+  border: 1px solid var(--border-light-20);
+  border-radius: 8px;
 }
 
 .center-icon {
   font-size: 50px;
-  color: rgba(184, 134, 11, 0.6);
+  color: var(--primary-light-60);
   animation: rotate 10s linear infinite;
 }
 
@@ -220,7 +220,7 @@ const frontStyle = computed(() => ({
   position: absolute;
   width: 15px;
   height: 15px;
-  border: 2px solid rgba(184, 134, 11, 0.4);
+  border: 2px solid var(--border-light);
 }
 
 .top-left { top: 10px; left: 10px; border-right: none; border-bottom: none; }
