@@ -1,6 +1,35 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-17 20:15 收尾核对记录（本次）
+
+### 本次核对结论
+- 已重新核对本轮“5 个后端问题”相关代码、`TODO.md` 与 Git 历史，确认这批修复并非停留在未提交状态，而是已经进入仓库历史。
+- 当前工作区未发现这些后端文件的待提交变更；目前仅存在与本轮任务无关的前端改动：`frontend/src/App.vue`、`frontend/src/styles/theme-white.scss`。
+
+### 已确认落库的关键提交
+1. **后端与路由主体修复**
+   - 提交：`c30f2f7`（`报错修复`）
+   - 包含文件：`backend/route/admin.php`、`backend/route/app.php`、`backend/app/controller/admin/Payment.php`、`backend/app/controller/Admin.php`、`backend/app/model/RechargeOrder.php`、`backend/.env.example` 等。
+2. **退款数据库字段 SQL**
+   - 提交：`402fd14`（`报错修复`）
+   - 包含文件：`database/20260317_add_recharge_order_refund_fields.sql`。
+3. **TODO 完成状态回写**
+   - 提交：`ee8e9fa`（`chore-todo-clear-resolved-divination-items`）
+   - 已确认 `TODO.md` 中以下条目为完成状态：
+     - 微信退款接口未实现
+     - 第三方推送服务未实现
+     - 列表批量处理能力缺失
+     - 知识库分类联动不顺畅
+     - Dashboard 实时数据导出
+
+### 本次未再执行的动作
+- 未新增 Git 提交：原因是目标后端修复已存在于提交历史，继续提交只会制造空转。
+- 未处理前端未提交改动：原因是它们与本轮后端任务无关，避免误带入提交。
+
+---
+
 ## 2026-03-17 15:00 执行记录（本次）
+
 
 ### 本次完成的后端收尾
 1. **支付管理接口闭环**
