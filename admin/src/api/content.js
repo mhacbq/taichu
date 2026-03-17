@@ -109,3 +109,35 @@ export function deleteAlmanac(id) {
     method: 'delete'
   })
 }
+
+// 神煞管理
+export function getShenshaList(params) {
+  return request({
+    url: '/system/shensha',
+    method: 'get',
+    params
+  })
+}
+
+export function getShenshaOptions() {
+  return request({
+    url: '/system/shensha/options',
+    method: 'get'
+  })
+}
+
+export function saveShensha(data) {
+  const isUpdate = !!data.id
+  return request({
+    url: isUpdate ? `/system/shensha/${data.id}` : '/system/shensha',
+    method: isUpdate ? 'put' : 'post',
+    data
+  })
+}
+
+export function deleteShensha(id) {
+  return request({
+    url: `/system/shensha/${id}`,
+    method: 'delete'
+  })
+}

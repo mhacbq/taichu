@@ -141,8 +141,9 @@
 
       <!-- 单张牌详情弹窗 -->
       <el-dialog
+        v-if="selectedCard"
         v-model="cardDetailVisible"
-        :title="selectedCard?.name + ' - ' + (selectedCard?.reversed ? '逆位' : '正位')"
+        :title="selectedCard.name + ' - ' + (selectedCard.reversed ? '逆位' : '正位')"
         width="500px"
         class="card-detail-dialog"
       >

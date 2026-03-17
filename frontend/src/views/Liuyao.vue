@@ -137,7 +137,9 @@
         <div class="modal-content">
           <div class="modal-header">
             <h3>历史记录</h3>
-            <button class="close-btn" @click="showHistory = false">×</button>
+            <button class="close-btn" @click="showHistory = false">
+              <el-icon><Close /></el-icon>
+            </button>
           </div>
           <div class="history-list">
             <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
@@ -189,6 +191,7 @@ const loadPricing = async () => {
     }
   } catch (error) {
     console.error('获取定价失败:', error)
+    ElMessage.error('获取定价信息失败')
   }
 }
 
@@ -740,7 +743,7 @@ onMounted(() => {
 .btn-secondary {
   flex: 1;
   padding: 14px 24px;
-  border-radius: 12px;
+  border-radius: 25px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -750,6 +753,7 @@ onMounted(() => {
   gap: 8px;
   transition: all 0.3s;
   border: none;
+  min-height: 44px;
 }
 
 .btn-primary {
@@ -815,12 +819,20 @@ onMounted(() => {
   background: none;
   border: none;
   color: var(--text-secondary);
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
 }
 
 .close-btn:hover {
   color: var(--text-primary);
+  background: var(--bg-hover);
+  border-radius: 50%;
 }
 
 .history-list {

@@ -73,3 +73,49 @@
    - 已推送至远程仓库。
 
 ---
+
+## 2026-03-17 17:15 执行记录（本次）
+
+### 本次修复的5个后端问题
+
+1. **积分规则接口缺失**（API/功能）
+   - 文件：`backend/app/controller/Admin.php`
+   - 问题：`/api/admin/points/rules` 的读取与保存接口未实现，后台积分规则页无法对接真实后端
+   - 修复：新增 `getPointsRules`、`savePointsRules`，基于 `system_config` 的 `points` / `points_cost` 分类提供统一读写能力
+
+2. **敏感词管理接口缺失**（API/安全）
+   - 文件：`backend/app/controller/Admin.php`
+   - 问题：敏感词列表、增删改、批量导入接口均缺失，后台无法维护内容风控词库
+   - 修复：新增 `getSensitiveWords`、`addSensitiveWord`、`updateSensitiveWord`、`deleteSensitiveWord`、`importSensitiveWords`，统一存储到 `system_config` 的 `sensitive_words` 分类，并增加去重校验
+
+3. **敏感词更新路由缺失**（API规范）
+   - 文件：`backend/route/admin.php`
+   - 问题：后台前端使用 `PUT /system/sensitive/:id`，但后端路由未定义
+   - 修复：补充 `Route::put('system/sensitive/:id', 'Admin/updateSensitiveWord')`
+
+4. **系统公告接口缺失**（API/功能）
+   - 文件：`backend/app/controller/Admin.php`
+   - 问题：`getNotices`、`saveNotice`、`deleteNotice` 未实现，后台公告管理页无真实数据来源
+   - 修复：新增公告列表/保存/删除接口，使用 `system_config` 的 `system_notice` 分类存储，并修正状态筛选后的分页统计
+
+5. **管理员列表接口与权限边界问题**（功能/安全）
+   - 文件：`backend/app/controller/Admin.php`、`backend/route/sitecontent.php`
+   - 问题：
+     - `getAdminUsers` 未实现，后台管理员管理页无法读取数据
+     - `sitecontent.php` 后台管理路由使用普通 `Auth` 中间件，权限边界不一致
+   - 修复：
+     - 新增 `getAdminUsers`，支持角色关联查询与分页返回
+     - 将站点内容后台路由统一为 `AdminAuth` 中间件
+
+### TODO 清理
+- 将 `Auth.php` 重复导入问题标记为已完成（代码中已无重复导入）
+- 将站点内容管理鉴权不一致标记为已完成
+- 在运营检查报告中标注：已补齐积分规则、敏感词、系统公告、管理员列表等关键接口，保留剩余未完成项
+
+### Git 提交
+- 提交 ID：`d4ce6a3`
+- 提交信息：`fix-backend-admin-config-20260317-1715`
+- 已推送到：origin/master
+
+---
+

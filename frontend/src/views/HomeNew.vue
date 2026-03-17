@@ -267,7 +267,12 @@ onMounted(() => {
   justify-content: center;
   padding: 80px 20px;
   position: relative;
+  background: 
+    radial-gradient(circle at 50% 40%, rgba(184, 134, 11, 0.18) 0%, transparent 60%),
+    radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(184, 134, 11, 0.08) 0%, transparent 40%);
 }
+
 
 .hero-content {
   text-align: center;
@@ -582,8 +587,11 @@ onMounted(() => {
 }
 
 .badge {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--primary-light);
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Responsive */

@@ -547,11 +547,12 @@ class LiuyaoService
         $yaoArray = str_split($code);
         $position = $dongYao - 1;
         
-        // 动爻：阴变阳，阳变阴
+        // 动爻：阴爻(0)动则为老阴(0)，阳爻(1)动则为老阳(3)
+        // 注意：此处 0/1/2/3 对应老阴/少阳/少阴/老阳
         if ($yaoArray[$position] == '0') {
-            $yaoArray[$position] = '3';  // 老阳
-        } else {
             $yaoArray[$position] = '0';  // 老阴
+        } else {
+            $yaoArray[$position] = '3';  // 老阳
         }
         
         return implode('', $yaoArray);

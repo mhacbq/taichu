@@ -9,7 +9,7 @@
     <div class="share-content">
       <!-- 奖励提示 -->
       <div class="reward-banner" v-if="showReward">
-        <span class="reward-icon">🎁</span>
+        <el-icon class="reward-icon"><Present /></el-icon>
         <div class="reward-text">
           <p class="reward-title">分享即可获得 <strong>+5 积分</strong></p>
           <p class="reward-sub">每天首次分享都有奖励哦</p>
@@ -19,7 +19,7 @@
       <!-- 预览卡片 -->
       <div class="preview-card" ref="previewCard">
         <div class="preview-header">
-          <span class="logo-icon">☯</span>
+          <el-icon class="logo-icon"><StarFilled /></el-icon>
           <span class="logo-text">太初命理</span>
         </div>
         <div class="preview-body">
@@ -34,7 +34,7 @@
         <div class="preview-footer">
           <p>扫码获取你的专属运势分析</p>
           <div class="qr-placeholder">
-            <span>☯</span>
+            <el-icon><StarFilled /></el-icon>
           </div>
         </div>
       </div>
@@ -51,7 +51,9 @@
             @click="handleShare(option.type)"
             :disabled="sharing"
           >
-            <span class="btn-icon">{{ option.icon }}</span>
+            <el-icon class="btn-icon">
+              <component :is="option.icon" />
+            </el-icon>
             <span class="btn-text">{{ option.name }}</span>
           </button>
         </div>
@@ -72,8 +74,8 @@
             @click="copyLink"
             :class="{ copied: copied }"
           >
-            <span v-if="!copied">📋 复制链接</span>
-            <span v-else>✓ 已复制</span>
+            <span v-if="!copied"><el-icon><DocumentCopy /></el-icon> 复制链接</span>
+            <span v-else><el-icon><Check /></el-icon> 已复制</span>
           </button>
         </div>
       </div>
@@ -87,7 +89,7 @@
           rows="3"
         ></textarea>
         <button class="copy-text-btn" @click="copyText">
-          📋 复制文案
+          <el-icon><DocumentCopy /></el-icon> 复制文案
         </button>
       </div>
     </div>
@@ -97,6 +99,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Present, StarFilled, DocumentCopy, Check, ChatDotRound, Iphone, UserFilled, Promotion } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: {
@@ -142,10 +145,10 @@ watch(() => props.shareText, (newVal) => {
 })
 
 const shareOptions = [
-  { type: 'wechat', name: '微信好友', icon: '💬' },
-  { type: 'moment', name: '朋友圈', icon: '📱' },
-  { type: 'qq', name: 'QQ', icon: '🐧' },
-  { type: 'weibo', name: '微博', icon: '📢' }
+  { type: 'wechat', name: '微信好友', icon: ChatDotRound },
+  { type: 'moment', name: '朋友圈', icon: Iphone },
+  { type: 'qq', name: 'QQ', icon: UserFilled },
+  { type: 'weibo', name: '微博', icon: Promotion }
 ]
 
 const handleShare = async (type) => {

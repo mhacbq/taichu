@@ -73,6 +73,16 @@ Route::group('api/admin', function () {
         Route::post('feedback/categories', 'Admin/saveFeedbackCategory');
         Route::delete('feedback/categories/:id', 'Admin/deleteFeedbackCategory');
         
+        // 知识库管理
+        Route::get('knowledge/articles', 'Admin/articleList');
+        Route::get('knowledge/articles/:id', 'Admin/articleDetail');
+        Route::post('knowledge/articles', 'Admin/saveArticle');
+        Route::put('knowledge/articles/:id', 'Admin/updateArticle');
+        Route::delete('knowledge/articles/:id', 'Admin/deleteArticle');
+        Route::get('knowledge/categories', 'Admin/articleCategories');
+        Route::post('knowledge/categories', 'Admin/saveArticleCategory');
+        Route::delete('knowledge/categories/:id', 'Admin/deleteArticleCategory');
+        
         // 反作弊系统
         Route::get('anticheat/events', 'Admin/riskEvents');
         Route::get('anticheat/events/:id', 'Admin/riskEventDetail');
@@ -96,6 +106,19 @@ Route::group('api/admin', function () {
         Route::get('system/notices', 'Admin/getNotices');
         Route::post('system/notices', 'Admin/saveNotice');
         Route::delete('system/notices/:id', 'Admin/deleteNotice');
+        Route::get('system/shensha', 'Admin/shenshaList');
+        Route::get('system/shensha/options', 'Admin/shenshaOptions');
+        Route::post('system/shensha', 'Admin/saveShensha');
+        Route::put('system/shensha/:id', 'Admin/saveShensha');
+        Route::delete('system/shensha/:id', 'Admin/deleteShensha');
+        Route::get('system/seo/configs', 'Admin/seoConfigList');
+        Route::post('system/seo/configs', 'Admin/saveSeoConfig');
+        Route::put('system/seo/configs/:id', 'Admin/saveSeoConfig');
+        Route::delete('system/seo/configs/:id', 'Admin/deleteSeoConfig');
+        Route::get('system/seo/stats', 'Admin/seoStats');
+        Route::get('system/seo/robots', 'Admin/seoRobots');
+        Route::put('system/seo/robots', 'Admin/saveSeoRobots');
+        Route::post('system/seo/submit', 'Admin/seoSubmit');
         Route::get('system/admins', 'Admin/getAdminUsers');
         Route::post('system/admins', 'Admin/saveAdminUser');
         Route::delete('system/admins/:id', 'Admin/deleteAdminUser');

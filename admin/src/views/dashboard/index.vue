@@ -129,12 +129,12 @@ async function loadStatistics() {
   try {
     const res = await getStatistics()
     if (res.code === 200) {
-      const data = res.data
+      const stats = res.data.statistics
       statistics.value = [
-        { title: '总用户数', value: data.totalUsers?.value || 0, trend: data.totalUsers?.trend || 0, color: '#409eff', icon: 'UserFilled' },
-        { title: '今日新增', value: data.todayNewUsers?.value || 0, trend: data.todayNewUsers?.trend || 0, color: '#67c23a', icon: 'User' },
-        { title: '八字排盘', value: data.todayBazi?.value || 0, trend: data.todayBazi?.trend || 0, color: '#e6a23c', icon: 'Calendar' },
-        { title: '塔罗占卜', value: data.todayTarot?.value || 0, trend: data.todayTarot?.trend || 0, color: '#f56c6c', icon: 'MagicStick' }
+        { title: '总用户数', value: stats.total_users || 0, trend: 0, color: '#409eff', icon: 'UserFilled' },
+        { title: '今日新增', value: stats.today_users || 0, trend: 0, color: '#67c23a', icon: 'User' },
+        { title: '八字排盘', value: stats.total_bazi || 0, trend: 0, color: '#e6a23c', icon: 'Calendar' },
+        { title: '塔罗占卜', value: stats.total_tarot || 0, trend: 0, color: '#f56c6c', icon: 'MagicStick' }
       ]
     }
   } catch (error) {
@@ -146,7 +146,7 @@ async function loadRealtimeData() {
   try {
     const res = await getRealtimeData()
     if (res.code === 200) {
-      realtimeData.value = res.data || []
+      realtimeData.value = res.data.realtime_list || []
     }
   } catch (error) {
     console.error('加载实时数据失败:', error)
@@ -157,7 +157,7 @@ async function loadPendingFeedback() {
   try {
     const res = await getPendingFeedback()
     if (res.code === 200) {
-      pendingFeedback.value = res.data || []
+      pendingFeedback.value = res.data.list || []
     }
   } catch (error) {
     console.error('加载待处理反馈失败:', error)
@@ -168,7 +168,14 @@ async function loadTrendData() {
   try {
     const res = await getTrendData({ days: 7 })
     if (res.code === 200) {
-      updateUserChart(res.data)
+      const data = res.data
+      const formattedData = {
+        dates: data.user_trend.map(item => item.date),
+        newUsers: data.user_trend.map(item => item.count),
+        baziTrend: data.bazi_trend.map(item => item.count),
+        tarotTrend: data.tarot_trend.map(item => item.count)
+      }
+      updateUserChart(formattedData)
     }
   } catch (error) {
     console.error('加载趋势数据失败:', error)
@@ -177,7 +184,7 @@ async function loadTrendData() {
 
 async function loadChartData() {
   try {
-    const res = await getChartData('feature')
+    const res = await getChartData('feature_usage')
     if (res.code === 200) {
       updateFeatureChart(res.data)
     }
@@ -201,6 +208,7 @@ function updateUserChart(data) {
   
   userChartInstance.setOption({
     tooltip: { trigger: 'axis' },
+    legend: { data: ['新增用户', '八字排盘', '塔罗占卜'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
@@ -214,13 +222,19 @@ function updateUserChart(data) {
         type: 'line',
         smooth: true,
         data: data.newUsers || [],
-        areaStyle: { opacity: 0.3 }
+        areaStyle: { opacity: 0.1 }
       },
       {
-        name: '活跃用户',
+        name: '八字排盘',
         type: 'line',
         smooth: true,
-        data: data.activeUsers || []
+        data: data.baziTrend || []
+      },
+      {
+        name: '塔罗占卜',
+        type: 'line',
+        smooth: true,
+        data: data.tarotTrend || []
       }
     ]
   })
@@ -250,8 +264,10 @@ function updateFeatureChart(data) {
 }
 
 function handleFeedback(row) {
-  console.log('处理反馈', row)
-  ElMessage.info('处理反馈功能开发中')
+  router.push({
+    path: '/feedback/list',
+    query: { id: row.id }
+  })
 }
 </script>
 

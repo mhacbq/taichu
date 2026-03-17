@@ -10,6 +10,7 @@ use app\model\PageVersion;
 use app\model\PageDraft;
 use app\model\PageRecycle;
 use app\model\OperationLog;
+use think\facade\Log;
 use think\Request;
 
 /**
@@ -56,7 +57,7 @@ class Content extends BaseController
                 'updated_at' => $page->updated_at
             ], '获取成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '获取页面失败，请稍后重试');
         }
     }
 
@@ -107,7 +108,7 @@ class Content extends BaseController
                 'updated_at' => $page->updated_at
             ], '保存成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '保存页面失败，请稍后重试');
         }
     }
 
@@ -131,7 +132,7 @@ class Content extends BaseController
             
             return $this->success(null, '自动保存成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '自动保存失败，请稍后重试');
         }
     }
 
@@ -156,7 +157,7 @@ class Content extends BaseController
                 'updated_at' => $draft->updated_at
             ], '获取成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '获取草稿失败，请稍后重试');
         }
     }
 
@@ -181,7 +182,7 @@ class Content extends BaseController
                 'total' => $total
             ], '获取成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '获取版本历史失败，请稍后重试');
         }
     }
 
@@ -226,7 +227,7 @@ class Content extends BaseController
             
             return $this->success(null, '恢复成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '恢复版本失败，请稍后重试');
         }
     }
 
@@ -251,7 +252,7 @@ class Content extends BaseController
                 'description' => $version->description
             ], '获取成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '预览版本失败，请稍后重试');
         }
     }
 
@@ -278,7 +279,7 @@ class Content extends BaseController
             
             return $this->success($exportData, '导出成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '导出页面失败，请稍后重试');
         }
     }
 
@@ -317,7 +318,7 @@ class Content extends BaseController
                 'version' => $page->version
             ], '导入成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '导入页面失败，请稍后重试');
         }
     }
 
@@ -353,7 +354,7 @@ class Content extends BaseController
                 'total' => $total
             ], '获取成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '获取页面列表失败，请稍后重试');
         }
     }
 
@@ -387,7 +388,7 @@ class Content extends BaseController
             
             return $this->success(null, '删除成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '删除页面失败，请稍后重试');
         }
     }
 
@@ -468,8 +469,23 @@ class Content extends BaseController
             
             return $this->success($configs[$type] ?? null, '获取成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            return $this->respondWithInternalError($e, '获取组件配置失败，请稍后重试');
         }
+    }
+
+    /**
+     * 统一处理内容管理异常
+     */
+    private function respondWithInternalError(\Throwable $e, string $message)
+    {
+        Log::error('内容管理接口异常: ' . $e->getMessage(), [
+            'admin_id' => (int) (($this->request->adminUser['id'] ?? null) ?: ($this->request->adminId ?? 0)),
+            'request_url' => $this->request->url(true),
+            'request_method' => $this->request->method(),
+            'params' => $this->request->param(),
+        ]);
+
+        return $this->error($message, 500);
     }
 
     /**

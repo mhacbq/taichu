@@ -4,30 +4,30 @@
       <!-- 根据类型显示不同插图 -->
       <slot name="image">
         <svg v-if="type === 'search'" viewBox="0 0 200 200" fill="none">
-          <circle cx="90" cy="90" r="60" stroke="#d9d9d9" stroke-width="4"/>
-          <path d="M135 135l40 40" stroke="#d9d9d9" stroke-width="4" stroke-linecap="round"/>
-          <circle cx="90" cy="90" r="40" stroke="#f0f0f0" stroke-width="4" stroke-dasharray="8 8"/>
+          <circle cx="90" cy="90" r="60" stroke="var(--border-color)" stroke-width="4"/>
+          <path d="M135 135l40 40" stroke="var(--border-color)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="90" cy="90" r="40" stroke="var(--bg-tertiary)" stroke-width="4" stroke-dasharray="8 8"/>
         </svg>
         <svg v-else-if="type === 'error'" viewBox="0 0 200 200" fill="none">
-          <circle cx="100" cy="100" r="60" stroke="#ffccc7" stroke-width="4"/>
-          <path d="M75 75l50 50M125 75l-50 50" stroke="#ff4d4f" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="60" stroke="var(--danger-light)" stroke-width="4"/>
+          <path d="M75 75l50 50M125 75l-50 50" stroke="var(--danger-color)" stroke-width="6" stroke-linecap="round"/>
         </svg>
         <svg v-else-if="type === 'network'" viewBox="0 0 200 200" fill="none">
-          <rect x="40" y="60" width="120" height="80" rx="8" stroke="#d9d9d9" stroke-width="4"/>
-          <path d="M70 100h60M85 85l-15 15 15 15M115 85l15 15-15 15" stroke="#d9d9d9" stroke-width="4" stroke-linecap="round"/>
-          <circle cx="160" cy="50" r="15" stroke="#ff4d4f" stroke-width="3"/>
-          <path d="M152 50h16M160 42v16" stroke="#ff4d4f" stroke-width="3"/>
+          <rect x="40" y="60" width="120" height="80" rx="8" stroke="var(--border-color)" stroke-width="4"/>
+          <path d="M70 100h60M85 85l-15 15 15 15M115 85l15 15-15 15" stroke="var(--border-color)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="160" cy="50" r="15" stroke="var(--danger-color)" stroke-width="3"/>
+          <path d="M152 50h16M160 42v16" stroke="var(--danger-color)" stroke-width="3"/>
         </svg>
         <svg v-else-if="type === 'no-data'" viewBox="0 0 200 200" fill="none">
-          <rect x="50" y="40" width="100" height="120" rx="8" stroke="#d9d9d9" stroke-width="4"/>
-          <path d="M70 80h60M70 100h60M70 120h40" stroke="#f0f0f0" stroke-width="4" stroke-linecap="round"/>
-          <circle cx="140" cy="160" r="25" fill="#fafafa"/>
-          <path d="M130 160h20" stroke="#d9d9d9" stroke-width="4" stroke-linecap="round"/>
+          <rect x="50" y="40" width="100" height="120" rx="8" stroke="var(--border-color)" stroke-width="4"/>
+          <path d="M70 80h60M70 100h60M70 120h40" stroke="var(--bg-tertiary)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="140" cy="160" r="25" fill="var(--bg-card)"/>
+          <path d="M130 160h20" stroke="var(--border-color)" stroke-width="4" stroke-linecap="round"/>
         </svg>
         <svg v-else viewBox="0 0 200 200" fill="none">
-          <circle cx="100" cy="100" r="60" stroke="#f0f0f0" stroke-width="4"/>
-          <circle cx="100" cy="80" r="20" fill="#d9d9d9"/>
-          <path d="M70 130c0-16.569 13.431-30 30-30s30 13.431 30 30" stroke="#d9d9d9" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="60" stroke="var(--bg-tertiary)" stroke-width="4"/>
+          <circle cx="100" cy="80" r="20" fill="var(--border-color)"/>
+          <path d="M70 130c0-16.569 13.431-30 30-30s30 13.431 30 30" stroke="var(--border-color)" stroke-width="4" stroke-linecap="round"/>
         </svg>
       </slot>
     </div>
@@ -37,7 +37,7 @@
       <p v-if="description" class="empty-state__description">{{ description }}</p>
       <slot name="extra">
         <div v-if="actionText" class="empty-state__action">
-          <button class="btn btn-primary" @click="$emit('action')">
+          <button class="btn btn-primary-custom" @click="$emit('action')">
             {{ actionText }}
           </button>
         </div>
@@ -89,6 +89,7 @@ export default {
   justify-content: center;
   padding: 40px;
   text-align: center;
+  background: transparent;
 }
 
 .empty-state--inline {
@@ -111,6 +112,7 @@ export default {
   width: 160px;
   height: 160px;
   margin-bottom: 24px;
+  opacity: 0.8;
 }
 
 .empty-state__image svg {
@@ -133,7 +135,7 @@ export default {
 .empty-state__title {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 8px;
 }
 
@@ -147,7 +149,7 @@ export default {
 
 .empty-state__description {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0 0 16px;
   line-height: 1.6;
   max-width: 400px;
@@ -161,27 +163,24 @@ export default {
   margin-top: 8px;
 }
 
-.btn {
-  padding: 10px 24px;
-  border-radius: 8px;
+.btn-primary-custom {
+  padding: 10px 30px;
+  border-radius: var(--radius-btn);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
   border: none;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-  color: white;
+.btn-primary-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(184, 134, 11, 0.3);
 }
 
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-}
-
-.btn-primary:active {
+.btn-primary-custom:active {
   transform: translateY(0);
 }
 </style>

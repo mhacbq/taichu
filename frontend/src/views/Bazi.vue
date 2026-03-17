@@ -998,6 +998,7 @@ const loadPoints = async () => {
     }
   } catch (error) {
     console.error('获取积分失败:', error)
+    ElMessage.error('获取账户信息失败，请尝试刷新页面')
   }
 }
 
@@ -2025,7 +2026,7 @@ const formatAiContent = (content) => {
 
 .section-badge {
   background: linear-gradient(135deg, #D4AF37, #B8860B);
-  color: #fff;
+  color: var(--text-primary);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -2140,7 +2141,7 @@ const formatAiContent = (content) => {
 }
 
 .ys-desc {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
   padding-left: 43px;
@@ -2698,7 +2699,7 @@ const formatAiContent = (content) => {
 .liunian-pillar .zhi {
   font-size: 22px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .liunian-wuxing {
@@ -2862,7 +2863,7 @@ const formatAiContent = (content) => {
 .score-value {
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .score-label {
@@ -3089,7 +3090,7 @@ const formatAiContent = (content) => {
 .score-value {
   width: 40px;
   text-align: right;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
 }
 
@@ -3228,7 +3229,7 @@ const formatAiContent = (content) => {
 .dayun-title {
   font-size: 18px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .dayun-score {

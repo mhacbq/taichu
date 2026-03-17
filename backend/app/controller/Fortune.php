@@ -8,6 +8,7 @@ use app\model\BaziRecord;
 use app\service\YearlyFortuneService;
 use app\service\DayunFortuneService;
 use app\service\CacheService;
+use think\facade\Log;
 use think\Request;
 
 /**
@@ -90,8 +91,12 @@ class Fortune extends BaseController
             
             return $this->success($result);
         } catch (\Exception $e) {
-            $code = $e->getCode() === 403 ? 403 : 500;
-            return $this->error($e->getMessage(), $code);
+            return $this->handleFortuneException(
+                '获取流年运势',
+                $e,
+                ['bazi_id' => (int) $baziId, 'year' => $year],
+                '积分不足，解锁流年运势需要' . YearlyFortuneService::YEARLY_FORTUNE_POINTS_COST . '积分'
+            );
         }
     }
     
@@ -231,8 +236,12 @@ class Fortune extends BaseController
             
             return $this->success($result);
         } catch (\Exception $e) {
-            $code = $e->getCode() === 403 ? 403 : 500;
-            return $this->error($e->getMessage(), $code);
+            return $this->handleFortuneException(
+                '获取大运分析',
+                $e,
+                ['bazi_id' => (int) $baziId, 'dayun_index' => $dayunIndex],
+                '积分不足，解锁大运分析需要' . DayunFortuneService::DAYUN_ANALYSIS_POINTS_COST . '积分'
+            );
         }
     }
     
@@ -289,8 +298,12 @@ class Fortune extends BaseController
             
             return $this->success($result);
         } catch (\Exception $e) {
-            $code = $e->getCode() === 403 ? 403 : 500;
-            return $this->error($e->getMessage(), $code);
+            return $this->handleFortuneException(
+                '获取大运图表',
+                $e,
+                ['bazi_id' => (int) $baziId],
+                '积分不足，解锁大运图表需要' . DayunFortuneService::DAYUN_CHART_POINTS_COST . '积分'
+            );
         }
     }
     
@@ -306,6 +319,26 @@ class Fortune extends BaseController
             'dayun_analysis' => DayunFortuneService::DAYUN_ANALYSIS_POINTS_COST,
             'dayun_chart' => DayunFortuneService::DAYUN_CHART_POINTS_COST,
         ]);
+    }
+
+    /**
+     * 统一处理运势分析异常
+     */
+    private function handleFortuneException(string $scene, \Throwable $e, array $context = [], string $forbiddenMessage = '当前权益不足或功能暂未开放')
+    {
+        $code = (int) $e->getCode() === 403 ? 403 : 500;
+
+        Log::error($scene . '失败: ' . $e->getMessage(), array_merge([
+            'user_id' => (int) ($this->request->user['sub'] ?? 0),
+            'request_url' => $this->request->url(true),
+            'request_method' => $this->request->method(),
+        ], $context));
+
+        if ($code === 403) {
+            return $this->error($forbiddenMessage, 403);
+        }
+
+        return $this->error('运势分析失败，请稍后重试', 500);
     }
     
     /**

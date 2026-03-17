@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\VipOrder;
 use app\service\ConfigService;
 use app\service\VipService;
+use think\facade\Log;
 use think\response\Json;
 
 /**
@@ -120,7 +121,14 @@ class Vip extends BaseController
                 'pay_params' => $order['pay_params'] ?? null,
             ], '订单创建成功');
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            Log::error('创建VIP订单失败: ' . $e->getMessage(), [
+                'user_id' => $userId,
+                'vip_type' => $vipType,
+                'pay_method' => $payMethod,
+                'request_url' => $this->request->url(true),
+            ]);
+
+            return $this->error('创建VIP订单失败，请稍后重试', 500);
         }
     }
     

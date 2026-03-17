@@ -198,7 +198,18 @@ class BaziCalculationService
         $monthGanIndex = ($monthGanIndex + $lunarMonthInfo['month'] - 1) % 10;
         
         // ===== 日柱计算 =====
-        $dayPillar = $this->calculateDayPillar($year, $month, $day);
+        // 处理晚子时 (23:00-00:00)：日柱需切换至次日
+        $calcYear = $year;
+        $calcMonth = $month;
+        $calcDay = $day;
+        if ($hour >= 23) {
+            $nextDay = strtotime("+1 day", strtotime("$year-$month-$day"));
+            $calcYear = (int)date('Y', $nextDay);
+            $calcMonth = (int)date('n', $nextDay);
+            $calcDay = (int)date('j', $nextDay);
+        }
+        
+        $dayPillar = $this->calculateDayPillar($calcYear, $calcMonth, $calcDay);
         $dayGanIndex = $dayPillar['gan_index'];
         $dayZhiIndex = $dayPillar['zhi_index'];
         $dayGan = $tianGan[$dayGanIndex];
@@ -206,8 +217,8 @@ class BaziCalculationService
         // ===== 时柱计算 =====
         // 时辰划分：23-1子, 1-3丑, 3-5寅, 5-7卯, 7-9辰, 9-11巳
         // 11-13午, 13-15未, 15-17申, 17-19酉, 19-21戌, 21-23亥
-        if ($hour == 23) {
-            // 23:00-23:59属于次日子时
+        // 注意：23:00-00:00 属于早子时还是晚子时在命理界有争议，此处统一按 23 点后进一日计算
+        if ($hour >= 23) {
             $shiZhiIndex = 0; // 子
         } else {
             $shiZhiIndex = (int)(($hour + 1) / 2) % 12;
@@ -292,16 +303,115 @@ class BaziCalculationService
             'wuxing_stats' => $wuxingCount,
             'day_master' => $dayGan,
             'day_master_wuxing' => $this->ganWuXing[$dayGan],
-            'calculation_note' => '已优化：考虑节气、日上起时法'
+            'strength' => $this->analyzeStrength($pillars),
+            'calculation_note' => '已优化：支持日主强弱分析（得令/得地/得助）'
         ];
     }
     
+    /**
+     * 分析日主强弱
+     * 
+     * @param array $pillars 四柱数据
+     * @return array 强弱分析结果
+     */
+    public function analyzeStrength(array $pillars): array
+    {
+        $dayMaster = $pillars['day']['gan'];
+        $dayMasterWuXing = $this->ganWuXing[$dayMaster];
+        
+        $score = 0;
+        $details = [];
+        
+        // 1. 得令 (30分) - 月令五行对日主的影响
+        $monthZhi = $pillars['month']['zhi'];
+        $monthWuXing = $this->zhiWuXing[$monthZhi];
+        $isDeLing = $this->isSupporting($monthWuXing, $dayMasterWuXing);
+        if ($isDeLing) {
+            $score += 30;
+            $details[] = "得令：生于{$monthZhi}月({$monthWuXing})，月令对日主有生助作用。";
+        } else {
+            $details[] = "失令：生于{$monthZhi}月({$monthWuXing})，月令对日主处于克泄状态。";
+        }
+        
+        // 2. 得地 (30分) - 地支藏干通根情况
+        $branches = [$pillars['year']['zhi'], $pillars['month']['zhi'], $pillars['day']['zhi'], $pillars['hour']['zhi']];
+        $rootCount = 0;
+        foreach ($branches as $zhi) {
+            if (in_array($dayMaster, $this->zhiCangGan[$zhi])) {
+                $rootCount++;
+            }
+        }
+        $rootScore = min(30, $rootCount * 10);
+        $score += $rootScore;
+        if ($rootCount > 0) {
+            $details[] = "得地：地支中有{$rootCount}处通根，日主根基较稳。";
+        } else {
+            $details[] = "失地：地支中无通根，日主浮现无根。";
+        }
+        
+        // 3. 得助 (40分) - 天干帮扶情况
+        $stems = [$pillars['year']['gan'], $pillars['month']['gan'], $pillars['hour']['gan']];
+        $assistCount = 0;
+        foreach ($stems as $gan) {
+            if ($this->isSupporting($this->ganWuXing[$gan], $dayMasterWuXing)) {
+                $assistCount++;
+            }
+        }
+        $assistScore = min(40, $assistCount * 15);
+        $score += $assistScore;
+        if ($assistCount > 0) {
+            $details[] = "得助：天干中有{$assistCount}处同类或相生五行帮扶。";
+        }
+        
+        // 综合判定
+        $status = '中和';
+        if ($score >= 70) $status = '极强';
+        elseif ($score >= 55) $status = '偏强';
+        elseif ($score <= 30) $status = '极弱';
+        elseif ($score <= 45) $status = '偏弱';
+        
+        return [
+            'score' => $score,
+            'status' => $status,
+            'details' => $details,
+            'is_strong' => $score >= 50
+        ];
+    }
+
+    /**
+     * 判断五行是否生助（同类或相生）
+     */
+    protected function isSupporting(string $source, string $target): bool
+    {
+        if ($source === $target) return true; // 同类
+        
+        $generating = [
+            '木' => '火',
+            '火' => '土',
+            '土' => '金',
+            '金' => '水',
+            '水' => '木'
+        ];
+        
+        return ($generating[$source] === $target); // 相生
+    }
+
     /**
      * 获取农历年份（考虑立春）
      */
     protected function getLunarYear(int $year, int $month, int $day): int
     {
-        // 简单处理：如果已经过了立春（约2月4日），则使用当年，否则使用上一年
+        // 优先使用精确节气数据
+        if (isset($this->jieQiData[$year]['立春'])) {
+            $liChunDate = $this->jieQiData[$year]['立春'];
+            $currentDate = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            if (strtotime($currentDate) >= strtotime($liChunDate)) {
+                return $year;
+            }
+            return $year - 1;
+        }
+
+        // 兜底方案：2月4日作为立春分界
         if ($month > 2 || ($month == 2 && $day >= 4)) {
             return $year;
         }
@@ -310,23 +420,64 @@ class BaziCalculationService
     
     /**
      * 获取农历月份信息（考虑节气）
+     * 
+     * 寅月为正月(索引2), 卯月为二月(索引3)...以此类推
+     * 月份切换点为：立春、惊蛰、清明、立夏、芒种、小暑、立秋、白露、寒露、立冬、大雪、小寒
      */
     protected function getLunarMonth(int $year, int $month, int $day): array
     {
-        // 地支对应：寅月为正月
-        $zhiToMonth = ['寅' => 1, '卯' => 2, '辰' => 3, '巳' => 4, '午' => 5, '未' => 6,
-                       '申' => 7, '酉' => 8, '戌' => 9, '亥' => 10, '子' => 11, '丑' => 12];
+        $currentDate = sprintf('%04d-%02d-%02d', $year, $month, $day);
+        $currentTime = strtotime($currentDate);
         
-        // 简化处理：根据公历月份大致对应农历月份
-        // 实际应该根据节气精确计算
-        $lunarMonth = $month;
-        $zhiIndex = ($month + 1) % 12; // 寅月为正月，对应索引2（0-based）
+        // 节气与地支索引映射 (正月寅为2, 二月卯为3...)
+        $monthJieQi = [
+            ['name' => '立春', 'index' => 2],
+            ['name' => '惊蛰', 'index' => 3],
+            ['name' => '清明', 'index' => 4],
+            ['name' => '立夏', 'index' => 5],
+            ['name' => '芒种', 'index' => 6],
+            ['name' => '小暑', 'index' => 7],
+            ['name' => '立秋', 'index' => 8],
+            ['name' => '白露', 'index' => 9],
+            ['name' => '寒露', 'index' => 10],
+            ['name' => '立冬', 'index' => 11],
+            ['name' => '大雪', 'index' => 0],
+            ['name' => '小寒', 'index' => 1]
+        ];
+
+        // 优先使用节气数据
+        if (isset($this->jieQiData[$year])) {
+            $data = $this->jieQiData[$year];
+            
+            // 从后往前找，找到第一个早于当前日期的节气
+            for ($i = count($monthJieQi) - 1; $i >= 0; $i--) {
+                $jq = $monthJieQi[$i];
+                if (isset($data[$jq['name']]) && $currentTime >= strtotime($data[$jq['name']])) {
+                    return [
+                        'month' => ($i + 1), // 这里的month仅作参考
+                        'zhi_index' => $jq['index'],
+                        'jieqi' => $jq['name']
+                    ];
+                }
+            }
+            
+            // 如果早于立春，则是上一年末的小寒后（丑月）
+            return [
+                'month' => 12,
+                'zhi_index' => 1,
+                'jieqi' => '小寒(上年)'
+            ];
+        }
+
+        // 兜底方案：简化计算
+        $zhiIndex = ($month + 1) % 12;
         
         return [
-            'month' => $lunarMonth,
+            'month' => $month,
             'zhi_index' => $zhiIndex
         ];
     }
+
     
     /**
      * 计算日柱（使用蔡勒公式简化版）

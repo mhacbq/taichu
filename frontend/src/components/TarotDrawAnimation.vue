@@ -438,7 +438,7 @@ onMounted(() => {
 .complete-text {
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 @keyframes completePop {
@@ -459,13 +459,13 @@ onMounted(() => {
 .stage-text {
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 10px;
 }
 
 .stage-hint {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
 }
 
 @media (max-width: 768px) {

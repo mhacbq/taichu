@@ -101,6 +101,12 @@ export const asyncRoutes = [
         name: 'DailyFortune',
         component: () => import('@/views/content/daily.vue'),
         meta: { title: '每日运势', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'shensha',
+        name: 'ShenshaManager',
+        component: () => import('@/views/content/shensha.vue'),
+        meta: { title: '神煞管理', roles: ['admin', 'operator'] }
       }
     ]
   },

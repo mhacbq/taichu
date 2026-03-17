@@ -44,6 +44,11 @@ class Admin extends BaseController
     protected const CATEGORY_POINTS_COST = 'points_cost';
     protected const CATEGORY_SENSITIVE_WORDS = 'sensitive_words';
     protected const CATEGORY_SYSTEM_NOTICE = 'system_notice';
+    protected const SHENSHA_TYPES = ['daji', 'ji', 'ping', 'xiong', 'daxiong'];
+    protected const SHENSHA_CATEGORIES = ['guiren', 'xueye', 'ganqing', 'jiankang', 'caiyun', 'qita'];
+    protected const SEO_CHANGE_FREQUENCIES = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
+    protected const SEO_ENGINES = ['baidu', 'bing', '360', 'sogou'];
+    protected const SEO_SUBMIT_TYPES = ['url', 'sitemap'];
     
     /**
      * 初始化
@@ -124,8 +129,8 @@ class Admin extends BaseController
                 $date = date('Y-m-d', strtotime("-$i days"));
                 $userTrend[] = [
                     'date' => $date,
-                    'new_users' => User::where('created_at', 'like', "$date%")->count(),
-                    'active_users' => User::where('last_login_at', 'like', "$date%")->count()
+                    'new_users' => User::whereLike('created_at', "$date%")->count(),
+                    'active_users' => User::whereLike('last_login_at', "$date%")->count()
                 ];
             }
 
@@ -1822,6 +1827,707 @@ class Admin extends BaseController
     }
 
     /**
+     * 获取八字记录详情
+     */
+    public function baziDetail($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看内容详情', 403);
+        }
+        
+        try {
+            $record = BaziRecord::find($id);
+            if (!$record) {
+                return $this->error('记录不存在', 404);
+            }
+            return $this->success($record, '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取八字详情失败: ' . $e->getMessage());
+            return $this->error('获取详情失败', 500);
+        }
+    }
+
+    /**
+     * 获取反馈详情
+     */
+    public function feedbackDetail($id)
+    {
+        if (!$this->checkPermission('feedback_view')) {
+            return $this->error('无权限查看反馈详情', 403);
+        }
+        
+        try {
+            $feedback = Feedback::find($id);
+            if (!$feedback) {
+                return $this->error('反馈不存在', 404);
+            }
+            return $this->success($feedback, '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取反馈详情失败: ' . $e->getMessage());
+            return $this->error('获取详情失败', 500);
+        }
+    }
+
+    /**
+     * 更新反馈状态
+     */
+    public function updateFeedbackStatus(Request $request, $id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限修改反馈状态', 403);
+        }
+        
+        try {
+            $status = $request->put('status');
+            $feedback = Feedback::find($id);
+            if (!$feedback) {
+                return $this->error('反馈不存在', 404);
+            }
+            
+            $oldStatus = $feedback->status;
+            $feedback->status = $status;
+            $feedback->save();
+            
+            $this->logOperation('update_status', 'feedback', [
+                'target_id' => $id,
+                'target_type' => 'feedback',
+                'detail' => "修改反馈状态为: {$status}",
+                'before_data' => ['status' => $oldStatus],
+                'after_data' => ['status' => $status]
+            ]);
+            
+            return $this->success(null, '更新成功');
+        } catch (\Exception $e) {
+            Log::error('更新反馈状态失败: ' . $e->getMessage());
+            return $this->error('操作失败', 500);
+        }
+    }
+
+    /**
+     * 删除反馈
+     */
+    public function deleteFeedback($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除反馈', 403);
+        }
+        
+        try {
+            $feedback = Feedback::find($id);
+            if (!$feedback) {
+                return $this->error('反馈不存在', 404);
+            }
+            
+            $beforeData = $feedback->toArray();
+            Feedback::destroy($id);
+            
+            $this->logOperation('delete', 'feedback', [
+                'target_id' => $id,
+                'target_type' => 'feedback',
+                'detail' => '删除反馈记录',
+                'before_data' => $beforeData
+            ]);
+            
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            Log::error('删除反馈失败: ' . $e->getMessage());
+            return $this->error('删除失败', 500);
+        }
+    }
+
+    /**
+     * 获取反馈分类
+     */
+    public function feedbackCategories()
+    {
+        if (!$this->checkPermission('feedback_view')) {
+            return $this->error('无权限查看反馈分类', 403);
+        }
+
+        try {
+            $list = Db::name('system_config')
+                ->where('category', 'feedback_category')
+                ->select();
+            return $this->success($list, '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取分类失败', 500);
+        }
+    }
+
+    /**
+     * 保存反馈分类
+     */
+    public function saveFeedbackCategory(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限管理反馈分类', 403);
+        }
+
+        try {
+            $data = $request->post();
+            $id = $data['id'] ?? 0;
+            unset($data['id']);
+
+            if ($id > 0) {
+                Db::name('system_config')->where('id', $id)->update($data);
+            } else {
+                $data['category'] = 'feedback_category';
+                $data['config_key'] = 'fb_cat_' . uniqid();
+                $id = Db::name('system_config')->insertGetId($data);
+            }
+
+            return $this->success(['id' => $id], '保存成功');
+        } catch (\Exception $e) {
+            return $this->error('保存失败', 500);
+        }
+    }
+
+    /**
+     * 删除反馈分类
+     */
+    public function deleteFeedbackCategory($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除反馈分类', 403);
+        }
+
+        try {
+            Db::name('system_config')->where('id', $id)->where('category', 'feedback_category')->delete();
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+
+    /**
+     * 获取用户行为记录
+     */
+    public function userBehavior(Request $request)
+    {
+        if (!$this->checkPermission('user_view')) {
+            return $this->error('无权限查看用户行为', 403);
+        }
+        
+        try {
+            $userId = (int) $request->get('user_id');
+            if (!$userId) {
+                return $this->error('缺少用户ID', 400);
+            }
+            
+            // 从操作日志中获取该用户的相关记录
+            $list = AdminLog::where('target_id', $userId)
+                ->where('target_type', 'user')
+                ->order('id', 'desc')
+                ->limit(50)
+                ->select();
+                
+            return $this->success([
+                'list' => $list,
+                'total' => count($list)
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取用户行为记录失败: ' . $e->getMessage());
+            return $this->error('获取失败', 500);
+        }
+    }
+
+    /**
+     * 登录日志
+     */
+    public function loginLogs(Request $request)
+    {
+        if (!$this->checkPermission('log_view')) {
+            return $this->error('无权限查看登录日志', 403);
+        }
+        
+        try {
+            $params = $request->get();
+            $params['action'] = 'login';
+            
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
+            );
+            
+            $result = AdminLog::getLogList($params, $pagination['page'], $pagination['pageSize']);
+            return $this->success($result, '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取登录日志失败: ' . $e->getMessage());
+            return $this->error('获取失败', 500);
+        }
+    }
+
+    /**
+     * API日志
+     */
+    public function apiLogs(Request $request)
+    {
+        if (!$this->checkPermission('log_view')) {
+            return $this->error('无权限查看API日志', 403);
+        }
+        
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
+            );
+            
+            $params = $request->get();
+            $params['module'] = 'api';
+            
+            $result = AdminLog::getLogList($params, $pagination['page'], $pagination['pageSize']);
+            return $this->success($result, '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取API日志失败: ' . $e->getMessage());
+            return $this->error('获取失败', 500);
+        }
+    }
+
+    /**
+     * 获取风险事件列表
+     */
+    public function riskEvents(Request $request)
+    {
+        if (!$this->checkPermission('anticheat_view')) {
+            return $this->error('无权限查看风险事件', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
+            );
+            $status = $request->get('status', '');
+            $type = $request->get('type', '');
+
+            $query = Db::name('tc_anti_cheat_event')->order('id', 'desc');
+            if ($status !== '') {
+                $query->where('status', (int)$status);
+            }
+            if ($type) {
+                $query->where('type', $type);
+            }
+
+            $total = $query->count();
+            $list = $query->page($pagination['page'], $pagination['pageSize'])->select();
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取风险事件失败: ' . $e->getMessage());
+            return $this->error('获取失败', 500);
+        }
+    }
+
+    /**
+     * 获取风险事件详情
+     */
+    public function riskEventDetail($id)
+    {
+        if (!$this->checkPermission('anticheat_view')) {
+            return $this->error('无权限查看详情', 403);
+        }
+
+        try {
+            $event = Db::name('tc_anti_cheat_event')->where('id', $id)->find();
+            if (!$event) {
+                return $this->error('事件不存在', 404);
+            }
+            return $this->success($event, '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取详情失败', 500);
+        }
+    }
+
+    /**
+     * 处理风险事件
+     */
+    public function handleRiskEvent(Request $request, $id)
+    {
+        if (!$this->checkPermission('anticheat_manage')) {
+            return $this->error('无权限处理风险事件', 403);
+        }
+
+        try {
+            $data = $request->put();
+            $status = $data['status'] ?? 1;
+            $remark = $data['remark'] ?? '';
+
+            Db::name('tc_anti_cheat_event')->where('id', $id)->update([
+                'status' => $status,
+                'handle_remark' => $remark,
+                'handler_id' => $this->adminId,
+                'handle_at' => date('Y-m-d H:i:s')
+            ]);
+
+            $this->logOperation('handle_risk_event', 'anticheat', [
+                'target_id' => $id,
+                'detail' => "处理风险事件, 状态: {$status}, 备注: {$remark}"
+            ]);
+
+            return $this->success(null, '操作成功');
+        } catch (\Exception $e) {
+            return $this->error('操作失败', 500);
+        }
+    }
+
+    /**
+     * 获取反作弊规则列表
+     */
+    public function riskRules()
+    {
+        if (!$this->checkPermission('anticheat_view')) {
+            return $this->error('无权限查看规则', 403);
+        }
+
+        try {
+            $list = Db::name('tc_anti_cheat_rule')->select();
+            return $this->success($list, '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取规则失败', 500);
+        }
+    }
+
+    /**
+     * 保存/更新反作弊规则
+     */
+    public function saveRiskRule(Request $request)
+    {
+        if (!$this->checkPermission('anticheat_manage')) {
+            return $this->error('无权限保存规则', 403);
+        }
+
+        try {
+            $data = $request->post();
+            $id = $data['id'] ?? 0;
+            unset($data['id']);
+
+            if ($id > 0) {
+                Db::name('tc_anti_cheat_rule')->where('id', $id)->update($data);
+            } else {
+                $id = Db::name('tc_anti_cheat_rule')->insertGetId($data);
+            }
+
+            $this->logOperation('save_risk_rule', 'anticheat', [
+                'target_id' => $id,
+                'detail' => "保存/更新反作弊规则: " . ($data['name'] ?? '')
+            ]);
+
+            return $this->success(['id' => $id], '保存成功');
+        } catch (\Exception $e) {
+            return $this->error('保存失败', 500);
+        }
+    }
+
+    /**
+     * 删除反作弊规则
+     */
+    public function deleteRiskRule($id)
+    {
+        if (!$this->checkPermission('anticheat_manage')) {
+            return $this->error('无权限删除规则', 403);
+        }
+
+        try {
+            Db::name('tc_anti_cheat_rule')->where('id', $id)->delete();
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+    /**
+     * 获取设备指纹列表
+     */
+    public function deviceFingerprints(Request $request)
+    {
+        if (!$this->checkPermission('anticheat_view')) {
+            return $this->error('无权限查看设备信息', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
+            );
+            $keyword = $request->get('keyword', '');
+
+            $query = Db::name('tc_anti_cheat_device')->order('last_active_at', 'desc');
+            if ($keyword) {
+                $query->whereLike('device_id|block_reason', '%' . $keyword . '%');
+            }
+
+            $total = $query->count();
+            $list = $query->page($pagination['page'], $pagination['pageSize'])->select();
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取设备列表失败', 500);
+        }
+    }
+
+    /**
+     * 拉黑/移出黑名单设备
+     */
+    public function blockDevice(Request $request, $id)
+    {
+        if (!$this->checkPermission('anticheat_manage')) {
+            return $this->error('无权限操作设备', 403);
+        }
+
+        try {
+            $data = $request->put();
+            $isBlocked = $data['is_blocked'] ?? 1;
+            $reason = $data['reason'] ?? '';
+
+            Db::name('tc_anti_cheat_device')->where('id', $id)->update([
+                'is_blocked' => $isBlocked,
+                'block_reason' => $reason
+            ]);
+
+            return $this->success(null, '操作成功');
+        } catch (\Exception $e) {
+            return $this->error('操作失败', 500);
+        }
+    }
+
+    /**
+     * 获取系统任务列表
+     */
+    public function taskList(Request $request)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限管理系统任务', 403);
+        }
+
+        try {
+            $list = Db::name('tc_system_task')->select();
+            return $this->success($list, '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取任务列表失败', 500);
+        }
+    }
+
+    /**
+     * 获取任务详情
+     */
+    public function taskDetail($id)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限查看详情', 403);
+        }
+
+        try {
+            $task = Db::name('tc_system_task')->where('id', $id)->find();
+            if (!$task) {
+                return $this->error('任务不存在', 404);
+            }
+            return $this->success($task, '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取详情失败', 500);
+        }
+    }
+
+    /**
+     * 创建系统任务
+     */
+    public function createTask(Request $request)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限创建任务', 403);
+        }
+
+        try {
+            $data = $request->post();
+            $id = Db::name('tc_system_task')->insertGetId($data);
+            return $this->success(['id' => $id], '创建成功');
+        } catch (\Exception $e) {
+            return $this->error('创建失败', 500);
+        }
+    }
+
+    /**
+     * 更新系统任务
+     */
+    public function updateTask(Request $request, $id)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限修改任务', 403);
+        }
+
+        try {
+            $data = $request->put();
+            Db::name('tc_system_task')->where('id', $id)->update($data);
+            return $this->success(null, '更新成功');
+        } catch (\Exception $e) {
+            return $this->error('更新失败', 500);
+        }
+    }
+
+    /**
+     * 删除系统任务
+     */
+    public function deleteTask($id)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限删除任务', 403);
+        }
+
+        try {
+            Db::name('tc_system_task')->where('id', $id)->delete();
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+    /**
+     * 立即执行任务
+     */
+    public function runTask($id)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限执行任务', 403);
+        }
+
+        try {
+            $task = Db::name('tc_system_task')->where('id', $id)->find();
+            if (!$task) {
+                return $this->error('任务不存在', 404);
+            }
+
+            $this->logOperation('run_task', 'task', [
+                'target_id' => $id,
+                'detail' => "手动触发系统任务: {$task['name']}"
+            ]);
+
+            return $this->success(null, '任务已触发执行');
+        } catch (\Exception $e) {
+            return $this->error('触发失败', 500);
+        }
+    }
+
+    /**
+     * 切换任务状态
+     */
+    public function toggleTaskStatus(Request $request, $id)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限修改任务状态', 403);
+        }
+
+        try {
+            $status = $request->put('status');
+            Db::name('tc_system_task')->where('id', $id)->update(['status' => $status]);
+            return $this->success(null, '状态更新成功');
+        } catch (\Exception $e) {
+            return $this->error('更新失败', 500);
+        }
+    }
+
+    /**
+     * 获取任务运行日志
+     */
+    public function taskLogs(Request $request)
+    {
+        if (!$this->checkPermission('task_view')) {
+            return $this->error('无权限查看任务日志', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
+            );
+            $taskId = $request->get('task_id');
+
+            $query = Db::name('tc_system_task_log')->order('id', 'desc');
+            if ($taskId) {
+                $query->where('task_id', $taskId);
+            }
+
+            $total = $query->count();
+            $list = $query->page($pagination['page'], $pagination['pageSize'])->select();
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total
+            ], '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取日志失败', 500);
+        }
+    }
+
+    /**
+     * 获取系统脚本列表
+     */
+    public function getTaskScripts()
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限管理脚本', 403);
+        }
+
+        try {
+            $list = Db::name('tc_system_script')->select();
+            return $this->success($list, '获取成功');
+        } catch (\Exception $e) {
+            return $this->error('获取脚本列表失败', 500);
+        }
+    }
+
+    /**
+     * 保存系统脚本
+     */
+    public function saveTaskScript(Request $request)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限保存脚本', 403);
+        }
+
+        try {
+            $data = $request->post();
+            $id = $data['id'] ?? 0;
+            unset($data['id']);
+
+            if ($id > 0) {
+                Db::name('tc_system_script')->where('id', $id)->update($data);
+            } else {
+                $id = Db::name('tc_system_script')->insertGetId($data);
+            }
+
+            return $this->success(['id' => $id], '保存成功');
+        } catch (\Exception $e) {
+            return $this->error('保存失败', 500);
+        }
+    }
+
+    /**
+     * 删除脚本
+     */
+    public function deleteTaskScript($id)
+    {
+        if (!$this->checkPermission('task_manage')) {
+            return $this->error('无权限删除脚本', 403);
+        }
+
+        try {
+            Db::name('tc_system_script')->where('id', $id)->delete();
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+
+
+
+    /**
      * 获取待处理反馈数量
      */
     public function pendingFeedback()
@@ -2132,6 +2838,1110 @@ class Admin extends BaseController
     }
 
     /**
+     * 神煞列表
+     */
+    public function shenshaList(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看神煞数据', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $keyword = trim((string) $request->get('keyword', ''));
+            $type = trim((string) $request->get('type', ''));
+            $category = trim((string) $request->get('category', ''));
+            $status = $request->get('status', '');
+
+            $query = Db::name('shensha')
+                ->order('sort', 'asc')
+                ->order('id', 'desc');
+
+            if ($keyword !== '') {
+                $escapedKeyword = addcslashes($keyword, '%_\\');
+                $query->whereLike('name|description|effect', '%' . $escapedKeyword . '%');
+            }
+
+            if ($type !== '') {
+                if (!in_array($type, self::SHENSHA_TYPES, true)) {
+                    return $this->error('神煞类型无效', 400);
+                }
+                $query->where('type', $type);
+            }
+
+            if ($category !== '') {
+                if (!in_array($category, self::SHENSHA_CATEGORIES, true)) {
+                    return $this->error('神煞分类无效', 400);
+                }
+                $query->where('category', $category);
+            }
+
+            if ($status !== '') {
+                $status = (int) $status;
+                if (!in_array($status, [0, 1], true)) {
+                    return $this->error('神煞状态无效', 400);
+                }
+                $query->where('status', $status);
+            }
+
+            $total = $query->count();
+            $rows = $query->page($page, $pageSize)->select()->toArray();
+
+            return $this->success([
+                'list' => array_map([$this, 'formatShenshaRow'], $rows),
+                'total' => $total,
+            ], '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('获取神煞列表失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'params' => $request->get(),
+            ]);
+            return $this->error('获取神煞列表失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 神煞选项
+     */
+    public function shenshaOptions()
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看神煞选项', 403);
+        }
+
+        try {
+            $rows = Db::name('shensha')
+                ->where('status', 1)
+                ->order('type', 'asc')
+                ->order('sort', 'asc')
+                ->field('id,name,type,category')
+                ->select()
+                ->toArray();
+
+            $options = array_map(static function (array $row): array {
+                return [
+                    'id' => (int) $row['id'],
+                    'value' => $row['name'],
+                    'label' => $row['name'],
+                    'type' => $row['type'],
+                    'category' => $row['category'],
+                ];
+            }, $rows);
+
+            return $this->success($options, '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('获取神煞选项失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取神煞选项失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 保存神煞
+     */
+    public function saveShensha(Request $request, int $id = 0)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限维护神煞数据', 403);
+        }
+
+        $data = $request->isPut() ? $request->put() : $request->post();
+        $id = max($id, (int) ($data['id'] ?? 0));
+        $name = trim((string) ($data['name'] ?? ''));
+        $type = trim((string) ($data['type'] ?? 'ji'));
+        $category = trim((string) ($data['category'] ?? 'guiren'));
+        $description = trim((string) ($data['description'] ?? ''));
+        $effect = trim((string) ($data['effect'] ?? ''));
+        $checkRule = trim((string) ($data['checkRule'] ?? ($data['check_rule'] ?? '')));
+        $checkCode = trim((string) ($data['checkCode'] ?? ($data['check_code'] ?? '')));
+        $sort = max(0, (int) ($data['sort'] ?? 0));
+        $status = isset($data['status']) ? (int) $data['status'] : 1;
+        $ganRules = $this->normalizeJsonArrayInput($data['ganRules'] ?? ($data['gan_rules'] ?? []));
+        $zhiRules = $this->normalizeJsonArrayInput($data['zhiRules'] ?? ($data['zhi_rules'] ?? []));
+
+        if ($name === '' || $description === '' || $checkRule === '') {
+            return $this->error('神煞名称、含义说明和查法规则不能为空', 400);
+        }
+        if (!in_array($type, self::SHENSHA_TYPES, true)) {
+            return $this->error('神煞类型无效', 400);
+        }
+        if (!in_array($category, self::SHENSHA_CATEGORIES, true)) {
+            return $this->error('神煞分类无效', 400);
+        }
+        if (!in_array($status, [0, 1], true)) {
+            return $this->error('神煞状态无效', 400);
+        }
+
+        try {
+            $duplicateQuery = Db::name('shensha')->where('name', $name);
+            if ($id > 0) {
+                $duplicateQuery->where('id', '<>', $id);
+            }
+            if ($duplicateQuery->find()) {
+                return $this->error('神煞名称已存在', 400);
+            }
+
+            $existing = $id > 0 ? Db::name('shensha')->where('id', $id)->find() : null;
+            if ($id > 0 && !$existing) {
+                return $this->error('神煞不存在', 404);
+            }
+
+            $payload = [
+                'name' => $name,
+                'type' => $type,
+                'category' => $category,
+                'description' => $description,
+                'effect' => $effect,
+                'check_rule' => $checkRule,
+                'check_code' => $checkCode,
+                'gan_rules' => empty($ganRules) ? null : json_encode($ganRules, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'zhi_rules' => empty($zhiRules) ? null : json_encode($zhiRules, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'sort' => $sort,
+                'status' => $status,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            if ($existing) {
+                Db::name('shensha')->where('id', $id)->update($payload);
+            } else {
+                $payload['created_at'] = date('Y-m-d H:i:s');
+                $id = (int) Db::name('shensha')->insertGetId($payload);
+            }
+
+            $saved = Db::name('shensha')->where('id', $id)->find();
+            $afterData = $saved ? $this->formatShenshaRow($saved) : ['id' => $id, 'name' => $name];
+
+            $this->logOperation('save_shensha', 'content', [
+                'target_id' => $id,
+                'target_type' => 'shensha',
+                'detail' => ($existing ? '更新' : '新增') . '神煞: ' . $name,
+                'before_data' => $existing ?: [],
+                'after_data' => $afterData,
+            ]);
+
+            return $this->success($afterData, '保存成功');
+        } catch (\Throwable $e) {
+            Log::error('保存神煞失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+                'name' => $name,
+            ]);
+            return $this->error('保存神煞失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 删除神煞
+     */
+    public function deleteShensha(int $id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除神煞数据', 403);
+        }
+
+        try {
+            $existing = Db::name('shensha')->where('id', $id)->find();
+            if (!$existing) {
+                return $this->error('神煞不存在', 404);
+            }
+
+            Db::name('shensha')->where('id', $id)->delete();
+
+            $this->logOperation('delete_shensha', 'content', [
+                'target_id' => $id,
+                'target_type' => 'shensha',
+                'detail' => '删除神煞: ' . $existing['name'],
+                'before_data' => $existing,
+            ]);
+
+            return $this->success(null, '删除成功');
+        } catch (\Throwable $e) {
+            Log::error('删除神煞失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('删除神煞失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * SEO 配置列表
+     */
+    public function seoConfigList(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限查看SEO配置', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $keyword = trim((string) $request->get('keyword', ''));
+            $isActive = $request->get('is_active', '');
+
+            $query = Db::name('seo_config')
+                ->order('priority', 'desc')
+                ->order('updated_at', 'desc');
+
+            if ($keyword !== '') {
+                $escapedKeyword = addcslashes($keyword, '%_\\');
+                $query->whereLike('route|title|description', '%' . $escapedKeyword . '%');
+            }
+
+            if ($isActive !== '') {
+                $activeValue = (int) $isActive;
+                if (!in_array($activeValue, [0, 1], true)) {
+                    return $this->error('SEO状态无效', 400);
+                }
+                $query->where('is_active', $activeValue);
+            }
+
+            $total = $query->count();
+            $rows = $query->page($page, $pageSize)->select()->toArray();
+            $activeRows = Db::name('seo_config')
+                ->where('is_active', 1)
+                ->field('route,updated_at')
+                ->select()
+                ->toArray();
+            $lastModified = '';
+            foreach ($activeRows as $row) {
+                if (($row['updated_at'] ?? '') > $lastModified) {
+                    $lastModified = (string) $row['updated_at'];
+                }
+            }
+
+            $xmlSize = 128;
+            foreach ($activeRows as $row) {
+                $xmlSize += strlen((string) ($row['route'] ?? '')) + 128;
+            }
+            $fileSize = number_format($xmlSize / 1024, 1) . ' KB';
+
+            return $this->success([
+                'list' => array_map([$this, 'formatSeoConfigRow'], $rows),
+                'total' => $total,
+                'sitemap' => [
+                    'lastModified' => $lastModified ?: date('Y-m-d H:i:s'),
+                    'urlCount' => count($activeRows),
+                    'fileSize' => $fileSize,
+                    'baiduIndexed' => Db::name('seo_submissions')
+                        ->where('engine', 'baidu')
+                        ->where('type', 'sitemap')
+                        ->where('status', 'success')
+                        ->count() > 0,
+                ],
+                'submitStatus' => $this->formatSeoSubmitStatus(),
+            ], '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('获取SEO配置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'params' => $request->get(),
+            ]);
+            return $this->error('获取SEO配置失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 保存 SEO 配置
+     */
+    public function saveSeoConfig(Request $request, int $id = 0)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限维护SEO配置', 403);
+        }
+
+        $data = $request->isPut() ? $request->put() : $request->post();
+        $id = max($id, (int) ($data['id'] ?? 0));
+        $route = trim((string) ($data['route'] ?? ''));
+        $title = trim((string) ($data['title'] ?? ''));
+        $description = trim((string) ($data['description'] ?? ''));
+        $keywords = $this->normalizeSeoKeywords($data['keywords'] ?? []);
+        $image = trim((string) ($data['image'] ?? ''));
+        $robots = trim((string) ($data['robots'] ?? 'index,follow'));
+        $ogType = trim((string) ($data['og_type'] ?? ($data['ogType'] ?? 'website')));
+        $canonical = trim((string) ($data['canonical'] ?? ''));
+        $priority = filter_var($data['priority'] ?? 0.5, FILTER_VALIDATE_FLOAT);
+        $priority = $priority === false ? 0.5 : max(0, min(1, (float) $priority));
+        $changefreq = trim((string) ($data['changefreq'] ?? 'weekly'));
+        $isActive = isset($data['is_active']) ? (int) $data['is_active'] : (isset($data['isActive']) ? (int) $data['isActive'] : 1);
+
+        if ($route === '' || !str_starts_with($route, '/')) {
+            return $this->error('页面路由必须以 / 开头', 400);
+        }
+        if ($title === '' || $description === '') {
+            return $this->error('SEO标题和描述不能为空', 400);
+        }
+        if (empty($keywords)) {
+            return $this->error('至少需要填写一个关键词', 400);
+        }
+        if (!in_array($robots, ['index,follow', 'noindex,follow', 'noindex,nofollow'], true)) {
+            return $this->error('Robots配置无效', 400);
+        }
+        if (!in_array($changefreq, self::SEO_CHANGE_FREQUENCIES, true)) {
+            return $this->error('更新频率无效', 400);
+        }
+        if (!in_array($isActive, [0, 1], true)) {
+            return $this->error('SEO状态无效', 400);
+        }
+
+        try {
+            $duplicateQuery = Db::name('seo_config')->where('route', $route);
+            if ($id > 0) {
+                $duplicateQuery->where('id', '<>', $id);
+            }
+            if ($duplicateQuery->find()) {
+                return $this->error('该页面路由的SEO配置已存在', 400);
+            }
+
+            $existing = $id > 0 ? Db::name('seo_config')->where('id', $id)->find() : null;
+            if ($id > 0 && !$existing) {
+                return $this->error('SEO配置不存在', 404);
+            }
+
+            $payload = [
+                'route' => $route,
+                'title' => $title,
+                'description' => $description,
+                'keywords' => json_encode($keywords, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'image' => $image,
+                'robots' => $robots,
+                'og_type' => $ogType === '' ? 'website' : $ogType,
+                'canonical' => $canonical,
+                'priority' => $priority,
+                'changefreq' => $changefreq,
+                'is_active' => $isActive,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            if ($existing) {
+                Db::name('seo_config')->where('id', $id)->update($payload);
+            } else {
+                $payload['created_at'] = date('Y-m-d H:i:s');
+                $id = (int) Db::name('seo_config')->insertGetId($payload);
+            }
+
+            $saved = Db::name('seo_config')->where('id', $id)->find();
+            $afterData = $saved ? $this->formatSeoConfigRow($saved) : ['id' => $id, 'route' => $route];
+
+            $this->logOperation('save_seo_config', 'config', [
+                'target_id' => $id,
+                'target_type' => 'seo_config',
+                'detail' => ($existing ? '更新' : '新增') . 'SEO配置: ' . $route,
+                'before_data' => $existing ?: [],
+                'after_data' => $afterData,
+            ]);
+
+            return $this->success($afterData, '保存成功');
+        } catch (\Throwable $e) {
+            Log::error('保存SEO配置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+                'route' => $route,
+            ]);
+            return $this->error('保存SEO配置失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 删除 SEO 配置
+     */
+    public function deleteSeoConfig(int $id)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限删除SEO配置', 403);
+        }
+
+        try {
+            $existing = Db::name('seo_config')->where('id', $id)->find();
+            if (!$existing) {
+                return $this->error('SEO配置不存在', 404);
+            }
+
+            Db::name('seo_config')->where('id', $id)->delete();
+
+            $this->logOperation('delete_seo_config', 'config', [
+                'target_id' => $id,
+                'target_type' => 'seo_config',
+                'detail' => '删除SEO配置: ' . $existing['route'],
+                'before_data' => $existing,
+            ]);
+
+            return $this->success(null, '删除成功');
+        } catch (\Throwable $e) {
+            Log::error('删除SEO配置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('删除SEO配置失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * SEO 统计数据
+     */
+    public function seoStats(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限查看SEO统计', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $pageKeyword = trim((string) $request->get('keyword', ''));
+
+            $baiduIndexed = (int) Db::name('seo_indexed_pages')->where('baidu_status', 'indexed')->count();
+            $bingIndexed = (int) Db::name('seo_indexed_pages')->where('bing_status', 'indexed')->count();
+            $baiduRecent = (int) Db::name('seo_indexed_pages')
+                ->where('baidu_status', 'indexed')
+                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->count();
+            $baiduPrevious = (int) Db::name('seo_indexed_pages')
+                ->where('baidu_status', 'indexed')
+                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-14 days')))
+                ->where('indexed_at', '<', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->count();
+            $bingRecent = (int) Db::name('seo_indexed_pages')
+                ->where('bing_status', 'indexed')
+                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->count();
+            $bingPrevious = (int) Db::name('seo_indexed_pages')
+                ->where('bing_status', 'indexed')
+                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-14 days')))
+                ->where('indexed_at', '<', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->count();
+
+            $allKeywordRows = Db::name('seo_keywords')
+                ->where('is_target', 1)
+                ->order('baidu_rank', 'asc')
+                ->order('bing_rank', 'asc')
+                ->select()
+                ->toArray();
+            $keywordTotal = count($allKeywordRows);
+            $keywordTop10 = 0;
+            foreach ($allKeywordRows as $row) {
+                $baiduRank = (int) ($row['baidu_rank'] ?? 0);
+                $bingRank = (int) ($row['bing_rank'] ?? 0);
+                if (($baiduRank >= 1 && $baiduRank <= 10) || ($bingRank >= 1 && $bingRank <= 10)) {
+                    $keywordTop10++;
+                }
+            }
+            $keywordRows = array_slice($allKeywordRows, 0, 50);
+
+            $trafficCurrent = (int) Db::name('seo_traffic_daily')
+                ->where('stat_date', '>=', date('Y-m-d', strtotime('-30 days')))
+                ->sum('organic_sessions');
+            $trafficPrevious = (int) Db::name('seo_traffic_daily')
+                ->where('stat_date', '>=', date('Y-m-d', strtotime('-60 days')))
+                ->where('stat_date', '<', date('Y-m-d', strtotime('-30 days')))
+                ->sum('organic_sessions');
+
+            $pageQuery = Db::name('seo_indexed_pages')->order('updated_at', 'desc');
+            if ($pageKeyword !== '') {
+                $escapedKeyword = addcslashes($pageKeyword, '%_\\');
+                $pageQuery->whereLike('url|title|page_route', '%' . $escapedKeyword . '%');
+            }
+            $pageTotal = $pageQuery->count();
+            $pageRows = $pageQuery->page($page, $pageSize)->select()->toArray();
+
+            $configRows = Db::name('seo_config')->select()->toArray();
+            $pendingPages = 0;
+            $allIndexedRows = Db::name('seo_indexed_pages')->field('baidu_status,bing_status')->select()->toArray();
+            foreach ($allIndexedRows as $indexedRow) {
+                if (($indexedRow['baidu_status'] ?? '') !== 'indexed' || ($indexedRow['bing_status'] ?? '') !== 'indexed') {
+                    $pendingPages++;
+                }
+            }
+
+            return $this->success([
+                'stats' => [
+                    'baidu' => [
+                        'indexed' => $baiduIndexed,
+                        'trend' => $this->calculatePercentageTrend($baiduRecent, $baiduPrevious),
+                    ],
+                    'bing' => [
+                        'indexed' => $bingIndexed,
+                        'trend' => $this->calculatePercentageTrend($bingRecent, $bingPrevious),
+                    ],
+                    'keywords' => [
+                        'total' => $keywordTotal,
+                        'top10' => $keywordTop10,
+                    ],
+                    'traffic' => [
+                        'organic' => $trafficCurrent,
+                        'trend' => $this->calculatePercentageTrend($trafficCurrent, $trafficPrevious),
+                    ],
+                ],
+                'keywords' => array_map([$this, 'formatSeoKeywordRow'], $keywordRows),
+                'pages' => [
+                    'list' => array_map([$this, 'formatSeoIndexedPageRow'], $pageRows),
+                    'total' => $pageTotal,
+                    'page' => $page,
+                    'pageSize' => $pageSize,
+                ],
+                'suggestions' => $this->buildSeoSuggestions($configRows, $keywordTotal, $keywordTop10, $pendingPages),
+                'submissions' => Db::name('seo_submissions')
+                    ->order('submitted_at', 'desc')
+                    ->limit(10)
+                    ->select()
+                    ->toArray(),
+            ], '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('获取SEO统计失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'params' => $request->get(),
+            ]);
+            return $this->error('获取SEO统计失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 获取 robots.txt 配置
+     */
+    public function seoRobots()
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限查看robots配置', 403);
+        }
+
+        try {
+            $rows = Db::name('seo_robots')
+                ->where('is_active', 1)
+                ->order('sort_order', 'asc')
+                ->order('id', 'asc')
+                ->select()
+                ->toArray();
+
+            return $this->success([
+                'content' => $this->buildRobotsContent($rows),
+                'list' => array_map(function (array $row): array {
+                    return [
+                        'id' => (int) $row['id'],
+                        'user_agent' => $row['user_agent'],
+                        'rules' => $this->normalizeRobotsRulePayload($row['rules'] ?? ''),
+                        'crawl_delay' => (int) ($row['crawl_delay'] ?? 0),
+                        'sitemap_url' => $row['sitemap_url'] ?? '',
+                        'sort_order' => (int) ($row['sort_order'] ?? 0),
+                        'updated_at' => $row['updated_at'] ?? '',
+                    ];
+                }, $rows),
+                'updated_at' => empty($rows) ? '' : max(array_column($rows, 'updated_at')),
+            ], '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('获取robots配置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取robots配置失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 保存 robots.txt 配置
+     */
+    public function saveSeoRobots(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限保存robots配置', 403);
+        }
+
+        $content = trim((string) ($request->put('content', '') ?: $request->post('content', '')));
+        if ($content === '') {
+            return $this->error('robots.txt 内容不能为空', 400);
+        }
+
+        $parsedEntries = $this->parseRobotsContent($content);
+        if (empty($parsedEntries)) {
+            return $this->error('robots.txt 内容格式无效', 400);
+        }
+
+        try {
+            $beforeRows = Db::name('seo_robots')->order('sort_order', 'asc')->select()->toArray();
+            $insertData = [];
+            $now = date('Y-m-d H:i:s');
+            foreach ($parsedEntries as $index => $entry) {
+                $insertData[] = [
+                    'user_agent' => $entry['user_agent'],
+                    'rules' => json_encode($entry['rules'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'crawl_delay' => (int) $entry['crawl_delay'],
+                    'sitemap_url' => $entry['sitemap_url'],
+                    'is_active' => 1,
+                    'sort_order' => $index,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            Db::startTrans();
+            Db::name('seo_robots')->delete();
+            Db::name('seo_robots')->insertAll($insertData);
+            Db::commit();
+
+            $this->logOperation('save_seo_robots', 'config', [
+                'target_type' => 'seo_robots',
+                'detail' => '更新robots.txt配置',
+                'before_data' => $beforeRows,
+                'after_data' => $insertData,
+            ]);
+
+            return $this->success([
+                'count' => count($insertData),
+                'content' => $content,
+            ], '保存成功');
+        } catch (\Throwable $e) {
+            Db::rollback();
+            Log::error('保存robots配置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('保存robots配置失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 提交 SEO 收录请求
+     */
+    public function seoSubmit(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限执行收录提交', 403);
+        }
+
+        $engine = trim((string) $request->post('engine', ''));
+        $type = trim((string) $request->post('type', 'sitemap'));
+        $url = trim((string) $request->post('url', ''));
+
+        if (!in_array($engine, self::SEO_ENGINES, true)) {
+            return $this->error('搜索引擎类型无效', 400);
+        }
+        if (!in_array($type, self::SEO_SUBMIT_TYPES, true)) {
+            return $this->error('提交类型无效', 400);
+        }
+        if ($url === '') {
+            $url = rtrim((string) env('SITE_URL', 'https://taichu.chat'), '/') . ($type === 'sitemap' ? '/sitemap.xml' : '/');
+        }
+
+        try {
+            $payload = [
+                'engine' => $engine,
+                'type' => $type,
+                'url' => $url,
+                'status' => 'success',
+                'response' => '已记录提交请求，待搜索平台同步结果',
+                'submitted_at' => date('Y-m-d H:i:s'),
+                'completed_at' => date('Y-m-d H:i:s'),
+            ];
+            $id = (int) Db::name('seo_submissions')->insertGetId($payload);
+
+            $this->logOperation('submit_seo', 'config', [
+                'target_id' => $id,
+                'target_type' => 'seo_submission',
+                'detail' => sprintf('提交%s到%s', $type, $engine),
+                'after_data' => $payload,
+            ]);
+
+            return $this->success(['id' => $id] + $payload, '提交成功');
+        } catch (\Throwable $e) {
+            Log::error('提交SEO收录请求失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'engine' => $engine,
+                'type' => $type,
+                'url' => $url,
+            ]);
+            return $this->error('提交收录请求失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 格式化神煞行数据
+     */
+    protected function formatShenshaRow(array $row): array
+    {
+        return [
+            'id' => (int) ($row['id'] ?? 0),
+            'name' => $row['name'] ?? '',
+            'type' => $row['type'] ?? '',
+            'category' => $row['category'] ?? '',
+            'description' => $row['description'] ?? '',
+            'effect' => $row['effect'] ?? '',
+            'checkRule' => $row['check_rule'] ?? '',
+            'checkCode' => $row['check_code'] ?? '',
+            'ganRules' => $this->normalizeJsonArrayInput($row['gan_rules'] ?? ''),
+            'zhiRules' => $this->normalizeJsonArrayInput($row['zhi_rules'] ?? ''),
+            'sort' => (int) ($row['sort'] ?? 0),
+            'status' => (int) ($row['status'] ?? 0),
+            'created_at' => $row['created_at'] ?? '',
+            'updated_at' => $row['updated_at'] ?? '',
+        ];
+    }
+
+    /**
+     * 格式化 SEO 配置行数据
+     */
+    protected function formatSeoConfigRow(array $row): array
+    {
+        return [
+            'id' => (int) ($row['id'] ?? 0),
+            'route' => $row['route'] ?? '',
+            'title' => $row['title'] ?? '',
+            'description' => $row['description'] ?? '',
+            'keywords' => $this->normalizeSeoKeywords($row['keywords'] ?? ''),
+            'image' => $row['image'] ?? '',
+            'robots' => $row['robots'] ?? 'index,follow',
+            'ogType' => $row['og_type'] ?? 'website',
+            'canonical' => $row['canonical'] ?? '',
+            'priority' => isset($row['priority']) ? (float) $row['priority'] : 0.5,
+            'changefreq' => $row['changefreq'] ?? 'weekly',
+            'isActive' => (int) ($row['is_active'] ?? 1),
+            'updated_at' => $row['updated_at'] ?? '',
+        ];
+    }
+
+    /**
+     * 格式化 SEO 关键词数据
+     */
+    protected function formatSeoKeywordRow(array $row): array
+    {
+        $categoryMap = [
+            'core' => '核心词',
+            'long' => '长尾词',
+            'related' => '相关词',
+            'brand' => '品牌词',
+        ];
+
+        $baiduRank = (int) ($row['baidu_rank'] ?? 0);
+        $bingRank = (int) ($row['bing_rank'] ?? 0);
+        $ranks = array_filter([$baiduRank, $bingRank]);
+        $bestRank = empty($ranks) ? 0 : min($ranks);
+        $trend = $bestRank === 0 ? 0 : ($bestRank <= 20 ? 1 : -1);
+
+        return [
+            'id' => (int) ($row['id'] ?? 0),
+            'keyword' => $row['keyword'] ?? '',
+            'category' => $categoryMap[$row['category'] ?? 'general'] ?? ($row['category'] ?? '通用词'),
+            'baiduRank' => $baiduRank,
+            'bingRank' => $bingRank,
+            'searchVolume' => (int) ($row['search_volume'] ?? 0),
+            'trend' => $trend,
+        ];
+    }
+
+    /**
+     * 格式化 SEO 页面收录数据
+     */
+    protected function formatSeoIndexedPageRow(array $row): array
+    {
+        $statusMap = [
+            'indexed' => '已收录',
+            'pending' => '待收录',
+            'not_indexed' => '未收录',
+        ];
+
+        $lastCrawl = $row['baidu_last_crawl'] ?? '';
+        if (($row['bing_last_crawl'] ?? '') > $lastCrawl) {
+            $lastCrawl = $row['bing_last_crawl'];
+        }
+
+        return [
+            'id' => (int) ($row['id'] ?? 0),
+            'url' => $row['url'] ?? '',
+            'pageRoute' => $row['page_route'] ?? '',
+            'title' => $row['title'] ?? '',
+            'baiduStatus' => $statusMap[$row['baidu_status'] ?? 'pending'] ?? '待收录',
+            'bingStatus' => $statusMap[$row['bing_status'] ?? 'pending'] ?? '待收录',
+            'lastCrawl' => $lastCrawl ?: '-',
+            'traffic' => (int) ($row['organic_traffic'] ?? 0),
+        ];
+    }
+
+    /**
+     * 解析数组或 JSON 输入
+     */
+    protected function normalizeJsonArrayInput($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (!is_string($value)) {
+            return [];
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * 规范化 SEO 关键词输入
+     */
+    protected function normalizeSeoKeywords($keywords): array
+    {
+        if (is_string($keywords)) {
+            $decoded = json_decode($keywords, true);
+            if (is_array($decoded)) {
+                $keywords = $decoded;
+            } else {
+                $keywords = preg_split('/[,，]/', $keywords) ?: [];
+            }
+        }
+
+        if (!is_array($keywords)) {
+            return [];
+        }
+
+        $keywords = array_map(static function ($item): string {
+            return trim((string) $item);
+        }, $keywords);
+        $keywords = array_values(array_filter(array_unique($keywords), static function (string $item): bool {
+            return $item !== '';
+        }));
+
+        return $keywords;
+    }
+
+    /**
+     * 解析 robots 规则
+     */
+    protected function normalizeRobotsRulePayload($value): array
+    {
+        $rows = $this->normalizeJsonArrayInput($value);
+        $result = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $type = strtolower(trim((string) ($row['type'] ?? '')));
+            $path = trim((string) ($row['path'] ?? ''));
+            if ($type === '' || $path === '') {
+                continue;
+            }
+
+            $result[] = [
+                'type' => $type,
+                'path' => $path,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * 解析 robots 文本
+     */
+    protected function parseRobotsContent(string $content): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $content) ?: [];
+        $entries = [];
+        $current = null;
+
+        $flush = static function (?array $entry, array &$target): void {
+            if (!$entry || empty($entry['user_agent'])) {
+                return;
+            }
+            $target[] = $entry;
+        };
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            if (preg_match('/^User-agent:\s*(.+)$/i', $line, $matches)) {
+                $flush($current, $entries);
+                $current = [
+                    'user_agent' => trim($matches[1]),
+                    'rules' => [],
+                    'crawl_delay' => 0,
+                    'sitemap_url' => '',
+                ];
+                continue;
+            }
+
+            if ($current === null) {
+                continue;
+            }
+
+            if (preg_match('/^(Allow|Disallow):\s*(.*)$/i', $line, $matches)) {
+                $current['rules'][] = [
+                    'type' => strtolower($matches[1]),
+                    'path' => trim($matches[2]) === '' ? '/' : trim($matches[2]),
+                ];
+                continue;
+            }
+
+            if (preg_match('/^Crawl-delay:\s*(\d+)$/i', $line, $matches)) {
+                $current['crawl_delay'] = (int) $matches[1];
+                continue;
+            }
+
+            if (preg_match('/^Sitemap:\s*(.+)$/i', $line, $matches)) {
+                $current['sitemap_url'] = trim($matches[1]);
+            }
+        }
+
+        $flush($current, $entries);
+
+        return array_values(array_filter($entries, static function (array $entry): bool {
+            return $entry['user_agent'] !== '';
+        }));
+    }
+
+    /**
+     * 生成 robots 文本
+     */
+    protected function buildRobotsContent(array $rows): string
+    {
+        if (empty($rows)) {
+            return '';
+        }
+
+        $blocks = [];
+        foreach ($rows as $row) {
+            $lines = ['User-agent: ' . ($row['user_agent'] ?? '*')];
+            foreach ($this->normalizeRobotsRulePayload($row['rules'] ?? '') as $rule) {
+                $prefix = $rule['type'] === 'allow' ? 'Allow' : 'Disallow';
+                $lines[] = $prefix . ': ' . $rule['path'];
+            }
+            $crawlDelay = (int) ($row['crawl_delay'] ?? 0);
+            if ($crawlDelay > 0) {
+                $lines[] = 'Crawl-delay: ' . $crawlDelay;
+            }
+            $sitemapUrl = trim((string) ($row['sitemap_url'] ?? ''));
+            if ($sitemapUrl !== '') {
+                $lines[] = 'Sitemap: ' . $sitemapUrl;
+            }
+            $blocks[] = implode("\r\n", $lines);
+        }
+
+        return implode("\r\n\r\n", $blocks) . "\r\n";
+    }
+
+    /**
+     * SEO 提交状态
+     */
+    protected function formatSeoSubmitStatus(): array
+    {
+        $statusMap = [];
+        foreach (self::SEO_ENGINES as $engine) {
+            $row = Db::name('seo_submissions')
+                ->where('engine', $engine)
+                ->order('submitted_at', 'desc')
+                ->find();
+
+            if (!$row) {
+                $statusMap[$engine] = ['type' => 'info', 'text' => '未提交'];
+                continue;
+            }
+
+            $status = (string) ($row['status'] ?? 'pending');
+            if ($status === 'success') {
+                $statusMap[$engine] = ['type' => 'success', 'text' => '已提交'];
+            } elseif ($status === 'failed') {
+                $statusMap[$engine] = ['type' => 'danger', 'text' => '提交失败'];
+            } else {
+                $statusMap[$engine] = ['type' => 'warning', 'text' => '处理中'];
+            }
+        }
+
+        return $statusMap;
+    }
+
+    /**
+     * 计算趋势百分比
+     */
+    protected function calculatePercentageTrend(int $current, int $previous): int
+    {
+        if ($previous <= 0) {
+            return $current > 0 ? 100 : 0;
+        }
+
+        return (int) round((($current - $previous) / $previous) * 100);
+    }
+
+    /**
+     * 构建 SEO 建议
+     */
+    protected function buildSeoSuggestions(array $configRows, int $keywordTotal, int $keywordTop10, int $pendingPages): array
+    {
+        $suggestions = [];
+
+        $missingDesc = 0;
+        $shortTitle = 0;
+        foreach ($configRows as $row) {
+            $titleLength = mb_strlen((string) ($row['title'] ?? ''));
+            $descLength = mb_strlen((string) ($row['description'] ?? ''));
+            if ($titleLength < 20 || $titleLength > 60) {
+                $shortTitle++;
+            }
+            if ($descLength < 50 || $descLength > 200) {
+                $missingDesc++;
+            }
+        }
+
+        if ($pendingPages > 0) {
+            $suggestions[] = [
+                'priority' => 'high',
+                'title' => '存在待收录页面',
+                'description' => '当前仍有' . $pendingPages . '个页面未完成搜索引擎收录，建议优先补提 sitemap 或 URL。',
+                'action' => '检查收录',
+            ];
+        }
+
+        if ($shortTitle > 0 || $missingDesc > 0) {
+            $suggestions[] = [
+                'priority' => 'medium',
+                'title' => '部分页面 TDK 质量不足',
+                'description' => '共有' . ($shortTitle + $missingDesc) . '项标题或描述长度不在建议区间内，建议继续优化。',
+                'action' => '优化配置',
+            ];
+        }
+
+        if ($keywordTotal > 0 && $keywordTop10 < max(1, (int) ceil($keywordTotal * 0.2))) {
+            $suggestions[] = [
+                'priority' => 'medium',
+                'title' => '核心关键词 Top10 占比偏低',
+                'description' => '当前目标关键词' . $keywordTotal . '个，其中仅' . $keywordTop10 . '个进入前10，建议继续优化内容与内链。',
+                'action' => '查看关键词',
+            ];
+        }
+
+        if (empty($suggestions)) {
+            $suggestions[] = [
+                'priority' => 'low',
+                'title' => '当前 SEO 基础状态稳定',
+                'description' => '页面配置、关键词和收录状态暂无明显阻塞项，可以持续观察搜索表现。',
+                'action' => '查看报告',
+            ];
+        }
+
+        return $suggestions;
+    }
+
+    /**
      * 阳历转农历（简化版）
      */
     private function solarToLunar($year, $month, $day)
@@ -2197,5 +4007,217 @@ class Admin extends BaseController
                 ['name' => '亥', 'time' => '21:00-23:00', 'type' => 'ping', 'yiji' => '平'],
             ],
         ];
+    }
+
+    /**
+     * 文章列表
+     */
+    public function articleList(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看文章', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
+            );
+            $keyword = $request->get('keyword', '');
+            $categoryId = $request->get('category_id', 0);
+
+            $query = Db::name('tc_article')->alias('a')
+                ->join('tc_article_category c', 'a.category_id = c.id', 'left')
+                ->field('a.*, c.name as category_name')
+                ->order('a.created_at', 'desc');
+
+            if ($keyword) {
+                $query->whereLike('a.title|a.summary', '%' . $keyword . '%');
+            }
+
+            if ($categoryId) {
+                $query->where('a.category_id', $categoryId);
+            }
+
+            $total = $query->count();
+            $list = $query->page($pagination['page'], $pagination['pageSize'])->select()->toArray();
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('获取文章列表失败: ' . $e->getMessage());
+            return $this->error('获取文章列表失败', 500);
+        }
+    }
+
+    /**
+     * 文章详情
+     */
+    public function articleDetail($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限查看文章', 403);
+        }
+
+        try {
+            $article = Db::name('tc_article')->where('id', $id)->find();
+            if (!$article) {
+                return $this->error('文章不存在', 404);
+            }
+            return $this->success($article);
+        } catch (\Exception $e) {
+            return $this->error('获取文章详情失败', 500);
+        }
+    }
+
+    /**
+     * 保存文章
+     */
+    public function saveArticle(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限编辑内容', 403);
+        }
+
+        $data = $request->post();
+        if (empty($data['title']) || empty($data['content'])) {
+            return $this->error('标题和内容不能为空', 400);
+        }
+
+        try {
+            $saveData = [
+                'category_id' => $data['category_id'] ?? 0,
+                'title' => $data['title'],
+                'slug' => $data['slug'] ?? time(),
+                'summary' => $data['summary'] ?? '',
+                'content' => $data['content'],
+                'thumbnail' => $data['thumbnail'] ?? '',
+                'status' => $data['status'] ?? 1,
+                'is_hot' => $data['is_hot'] ?? 0,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            $id = Db::name('tc_article')->insertGetId($saveData);
+            return $this->success(['id' => $id], '保存成功');
+        } catch (\Exception $e) {
+            return $this->error('保存失败: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * 更新文章
+     */
+    public function updateArticle(Request $request, $id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限编辑内容', 403);
+        }
+
+        $data = $request->post();
+        try {
+            $updateData = [];
+            $allowedFields = ['title', 'summary', 'content', 'thumbnail', 'status', 'is_hot', 'category_id', 'slug'];
+            foreach ($allowedFields as $field) {
+                if (isset($data[$field])) {
+                    $updateData[$field] = $data[$field];
+                }
+            }
+            $updateData['updated_at'] = date('Y-m-d H:i:s');
+
+            Db::name('tc_article')->where('id', $id)->update($updateData);
+            return $this->success(null, '更新成功');
+        } catch (\Exception $e) {
+            return $this->error('更新失败', 500);
+        }
+    }
+
+    /**
+     * 删除文章
+     */
+    public function deleteArticle($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除内容', 403);
+        }
+
+        try {
+            Db::name('tc_article')->where('id', $id)->delete();
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
+    }
+
+    /**
+     * 文章分类列表
+     */
+    public function articleCategories()
+    {
+        try {
+            $list = Db::name('tc_article_category')->order('sort_order', 'asc')->select()->toArray();
+            return $this->success($list);
+        } catch (\Exception $e) {
+            return $this->error('获取分类失败', 500);
+        }
+    }
+
+    /**
+     * 保存分类
+     */
+    public function saveArticleCategory(Request $request)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限编辑内容', 403);
+        }
+
+        $data = $request->post();
+        if (empty($data['name'])) {
+            return $this->error('分类名称不能为空', 400);
+        }
+
+        try {
+            $saveData = [
+                'name' => $data['name'],
+                'slug' => $data['slug'] ?? time(),
+                'description' => $data['description'] ?? '',
+                'sort_order' => $data['sort_order'] ?? 0,
+                'status' => $data['status'] ?? 1,
+            ];
+
+            if (isset($data['id']) && $data['id'] > 0) {
+                Db::name('tc_article_category')->where('id', $data['id'])->update($saveData);
+                return $this->success(null, '更新成功');
+            } else {
+                $id = Db::name('tc_article_category')->insertGetId($saveData);
+                return $this->success(['id' => $id], '创建成功');
+            }
+        } catch (\Exception $e) {
+            return $this->error('操作失败', 500);
+        }
+    }
+
+    /**
+     * 删除分类
+     */
+    public function deleteArticleCategory($id)
+    {
+        if (!$this->checkPermission('content_manage')) {
+            return $this->error('无权限删除内容', 403);
+        }
+
+        try {
+            // 检查是否有文章使用此分类
+            $count = Db::name('tc_article')->where('category_id', $id)->count();
+            if ($count > 0) {
+                return $this->error('该分类下尚有文章，无法删除', 400);
+            }
+
+            Db::name('tc_article_category')->where('id', $id)->delete();
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            return $this->error('删除失败', 500);
+        }
     }
 }

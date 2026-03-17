@@ -18,6 +18,7 @@ class Tarot extends BaseController
     
     // 塔罗牌数组（包含图片/emoji和颜色）
     protected $tarotCards = [
+        // 大阿卡纳 (22张)
         ['name' => '愚者', 'meaning' => '新的开始，冒险，纯真', 'emoji' => '🃏', 'color' => '#ff9f43', 'element' => '风'],
         ['name' => '魔术师', 'meaning' => '创造力，技巧，意志力', 'emoji' => '🎩', 'color' => '#ff6b6b', 'element' => '风'],
         ['name' => '女祭司', 'meaning' => '直觉，神秘，潜意识', 'emoji' => '🌙', 'color' => '#4834d4', 'element' => '水'],
@@ -40,6 +41,70 @@ class Tarot extends BaseController
         ['name' => '太阳', 'meaning' => '快乐，成功，活力', 'emoji' => '☀️', 'color' => '#f1c40f', 'element' => '火'],
         ['name' => '审判', 'meaning' => '重生，觉醒，宽恕', 'emoji' => '📯', 'color' => '#9b59b6', 'element' => '火'],
         ['name' => '世界', 'meaning' => '完成，成就，旅行', 'emoji' => '🌍', 'color' => '#3498db', 'element' => '土'],
+        
+        // 权杖组 (Wands - 火 - 14张)
+        ['name' => '权杖一', 'meaning' => '新的行动，灵感，创造力', 'emoji' => '🪄', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖二', 'meaning' => '规划，决策，展望', 'emoji' => '🗺️', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖三', 'meaning' => '扩张，远见，合作', 'emoji' => '🔭', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖四', 'meaning' => '稳固，庆祝，和谐', 'emoji' => '🏰', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖五', 'meaning' => '竞争，冲突，挣扎', 'emoji' => '⚔️', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖六', 'meaning' => '胜利，成功，认可', 'emoji' => '🏇', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖七', 'meaning' => '防御，勇气，坚持', 'emoji' => '🛡️', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖八', 'meaning' => '迅速，行动，消息', 'emoji' => '🏹', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖九', 'meaning' => '防御，韧性，警惕', 'emoji' => '🧱', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖十', 'meaning' => '压力，重负，责任', 'emoji' => '🎒', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖侍从', 'meaning' => '热情，消息，探索', 'emoji' => '👦', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖骑士', 'meaning' => '冲动，冒险，热血', 'emoji' => '🏇', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖皇后', 'meaning' => '自信，独立，温暖', 'emoji' => '👸', 'color' => '#ff4757', 'element' => '火'],
+        ['name' => '权杖国王', 'meaning' => '领导力，远见，决断', 'emoji' => '🤴', 'color' => '#ff4757', 'element' => '火'],
+
+        // 圣杯组 (Cups - 水 - 14张)
+        ['name' => '圣杯一', 'meaning' => '情感新开端，直觉，爱', 'emoji' => '🍷', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯二', 'meaning' => '伴侣关系，吸引，团结', 'emoji' => '🥂', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯三', 'meaning' => '友谊，庆祝，社区', 'emoji' => '🍹', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯四', 'meaning' => '冥想，冷淡，退缩', 'emoji' => '🧘', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯五', 'meaning' => '悲伤，失去，后悔', 'emoji' => '🥀', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯六', 'meaning' => '怀旧，童真，赠予', 'emoji' => '🎁', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯七', 'meaning' => '幻想，选择，白日梦', 'emoji' => '🌈', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯八', 'meaning' => '追寻，离开，失望', 'emoji' => '🚶', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯九', 'meaning' => '满足，愿望实现，感官享受', 'emoji' => '😋', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯十', 'meaning' => '和谐，幸福家庭，圆满', 'emoji' => '👨‍👩‍👧‍👦', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯侍从', 'meaning' => '情感消息，敏感，直觉', 'emoji' => '🐟', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯骑士', 'meaning' => '浪漫，邀请，想象力', 'emoji' => '🐎', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯皇后', 'meaning' => '慈悲，直觉，情感稳定', 'emoji' => '👸', 'color' => '#1e90ff', 'element' => '水'],
+        ['name' => '圣杯国王', 'meaning' => '情感平衡，掌控，睿智', 'emoji' => '🤴', 'color' => '#1e90ff', 'element' => '水'],
+
+        // 宝剑组 (Swords - 风 - 14张)
+        ['name' => '宝剑一', 'meaning' => '理智，突破，清晰', 'emoji' => '🗡️', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑二', 'meaning' => '僵局，逃避，抉择', 'emoji' => '⚖️', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑三', 'meaning' => '心碎，痛苦，分离', 'emoji' => '💔', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑四', 'meaning' => '休息，康复，冥想', 'emoji' => '🛌', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑五', 'meaning' => '冲突，背叛，失败', 'emoji' => '😒', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑六', 'meaning' => '过渡，康复，离开', 'emoji' => '⛵', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑七', 'meaning' => '欺骗，逃避，计谋', 'emoji' => '🕵️', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑八', 'meaning' => '受困，无助，限制', 'emoji' => '⛓️', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑九', 'meaning' => '焦虑，噩梦，绝望', 'emoji' => '😫', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑十', 'meaning' => '背水一战，痛苦，终结', 'emoji' => '🔪', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑侍从', 'meaning' => '好奇，消息，机警', 'emoji' => '🦜', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑骑士', 'meaning' => '行动，思维敏捷，直言不讳', 'emoji' => '💨', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑皇后', 'meaning' => '独立，公正，理性', 'emoji' => '👸', 'color' => '#a4b0be', 'element' => '风'],
+        ['name' => '宝剑国王', 'meaning' => '智商，权威，真理', 'emoji' => '🤴', 'color' => '#a4b0be', 'element' => '风'],
+
+        // 星币组 (Pentacles - 土 - 14张)
+        ['name' => '星币一', 'meaning' => '财富开端，繁荣，稳固', 'emoji' => '🪙', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币二', 'meaning' => '平衡，适应，多重任务', 'emoji' => '🤹', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币三', 'meaning' => '团队，技能，合作', 'emoji' => '🏗️', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币四', 'meaning' => '保守，占有欲，贪婪', 'emoji' => '🔒', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币五', 'meaning' => '贫困，困境，排斥', 'emoji' => '🥶', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币六', 'meaning' => '慷慨，施舍，平衡', 'emoji' => '⚖️', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币七', 'meaning' => '评估，耐心，收获', 'emoji' => '🌱', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币八', 'meaning' => '勤奋，技艺，精进', 'emoji' => '🛠️', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币九', 'meaning' => '独立，富足，奢华', 'emoji' => '🏡', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币十', 'meaning' => '家族，财富，遗产', 'emoji' => '🏘️', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币侍从', 'meaning' => '机遇，勤奋，金钱消息', 'emoji' => '📔', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币骑士', 'meaning' => '稳健，责任，勤勉', 'emoji' => '🐂', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币皇后', 'meaning' => '富饶，务实，安全感', 'emoji' => '👸', 'color' => '#ffa502', 'element' => '土'],
+        ['name' => '星币国王', 'meaning' => '成功，丰厚，领导力', 'emoji' => '🤴', 'color' => '#ffa502', 'element' => '土'],
     ];
     
     /**
@@ -202,9 +267,18 @@ class Tarot extends BaseController
             $interpretation .= "元素属性：{$card['element']}\n\n";
             $interpretation .= "这张牌指示您当前的状况与上述牌意相关，建议您仔细思考其中的启示。";
         } else {
-            $positions = ['过去', '现在', '未来', '原因', '环境', '建议', '结果'];
+            // 根据不同牌阵定义牌位
+            $positions = match($count) {
+                3 => ['过去', '现在', '未来'],
+                10 => [
+                    '当前状态', '障碍/挑战', '潜意识/基础', '过去', 
+                    '目标/理想', '不久的将来', '自我表现', '环境影响', 
+                    '希望与恐惧', '最终结果'
+                ],
+                default => ['过去', '现在', '未来', '原因', '环境', '建议', '结果']
+            };
             
-            $interpretation .= "您的牌阵解读如下：\n\n";
+            $interpretation .= "您的【" . ($count == 10 ? "凯尔特十字" : ($count == 3 ? "三牌阵" : "通用")) . "】牌阵解读如下：\n\n";
             
             foreach ($cards as $index => $card) {
                 $position = $card['reversed'] ? '逆位' : '正位';
