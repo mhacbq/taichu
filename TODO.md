@@ -48,14 +48,23 @@
 - [ ] **修复Auth.php重复导入** - `backend/app/controller/Auth.php` 第15-16行重复导入 `use think\facade\Log;`，删除其中一行
 - [ ] **安全风险修复**：
     - 修复 `Admin.php` 和 `Content.php` 中的 SQL 注入隐患，使用参数绑定替代字符串拼接。
-    - 移除 `AdminAuth.php` 中的硬编码管理员凭据，对接数据库验证。
-    - 将 JWT 密钥等敏感信息移出代码，改用环境变量读取。
+    - [x] 移除 `AdminAuth.php` 中的硬编码管理员凭据，对接数据库验证。(已完成)
+    - [x] 将 JWT 密钥等敏感信息移出代码，改用环境变量读取。(已完成)
 - [ ] **API 规范化**：
     - [x] 统一后端响应码，成功一律返回 `200`（目前部分接口返回 `0`）。(已分批修复 Admin 前端判断逻辑)
-    - 统一使用 `BaseController` 的 `success()` 和 `error()` 方法返回数据。
+    - [x] 统一使用 `BaseController` 的 `success()` 和 `error()` 方法返回数据。(已完成核心控制器与 SSE 优化)
 - [ ] **功能补全**：
-    - 实现 Dashboard 实时统计数据接口 (`/dashboard/realtime`)。
-    - 实现待处理反馈统计接口 (`/dashboard/pending-feedback`)。
+    - [x] 实现 Dashboard 实时统计数据接口 (`/dashboard/realtime`)。(已完成)
+    - [x] 实现待处理反馈统计接口 (`/dashboard/pending-feedback`)。(已完成)
+- [ ] **SSE 与接口健壮性**：
+    - [x] 补齐 `AiAnalysis` 旧版路由兼容 (`analyze`/`analyzeStream`/`history`)。
+    - [x] 完善 SSE 流式解盘（响应头、连接超时、断连处理、错误输出标准化）。
+    - [x] 补齐 `AiPrompt` 缺失的 `getDefaultPrompt` 接口与参数校验。
+- [ ] **通用能力与日志**：
+    - [x] 新增 `BaseController::normalizePagination/getPaginationParams` 统一分页处理。
+    - [x] 新增 `BaseController::getOperatorId` 统一操作者ID读取。
+    - [x] 统一后端日志为 `Log::error` 并记录详细上下文，避免异常信息泄露。
+    - [x] 修复 `Upload`、`Liuyao` 等控制器多处异常直接返回 `$e->getMessage()` 的问题。
 
 ---
 
