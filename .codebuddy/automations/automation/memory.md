@@ -31,4 +31,68 @@
 - **验证摘要**: IDE 诊断无新增错误；因当前环境未找到 `php` CLI，尚未补做命令行回归脚本。
 - **状态**: 已完成并提交 Git（`247cb98`、`ee8e9fa`）。
 
+## 2026-03-17 20:55
+- **任务目标**: 继续修复 `[占卜]` 逻辑错误，并优先处理节气、旬空、五行权重、黄历底盘相关问题。
+- **修复内容 (第四批)**:
+    1. **八字排盘**：`getLunarMonth()` 改为按大雪/小寒/立春等节令顺序定月，修复月柱误落丑月。
+    2. **八字排盘**：`Paipan.php` 透传性别到 `calculateBazi()`，并兼容 `male/female` 与 `男/女`，修正女命起运顺逆。
+    3. **八字/合婚**：补齐四柱 `gan_index`/`zhi_index`/`number` 元数据与加权 `wuxing_stats`，合婚免费预览不再因缺少 `zhi_index` 报 500。
+    4. **八字排盘**：补出顶层与各柱 `旬空` 文本，前端排盘结果可直接显示旬空提示。
+    5. **每日运势**：`DailyFortune` 改用 `LunarService` 生成真实农历，并自动修正今日已有错误黄历字符串。
+- **验证摘要**: 5 个相关 PHP 文件 IDE 诊断均为 0；`where.exe php` 仍未找到 PHP CLI，因此未执行命令行语法回归。
+- **状态**: 已完成并提交 Git（`e314d8b`）；TODO 已移除本轮完成的 5 条 `[占卜]` 项。
+
+## 2026-03-17
+- **任务目标**: 继续修复 `[占卜]` 逻辑错误，重点处理节气精度、六神映射、五行权重评分与塔罗元素关系。
+- **修复内容 (第五批)**:
+    1. **八字排盘**：`BaziCalculationService` 新增节气交节时刻计算，`getLunarYear()`、`getLunarMonth()`、`calculateQiYun()` 全部改为按出生时分判定。
+    2. **合婚配对**：`analyzeSanYuanHehun()` 升级为“三元九运 + 纳音方向”联合模型，`analyzeJiuGongHehun()` 同步按立春交节时刻划命理年。
+    3. **合婚配对**：`analyzeWuxingComplement()` 改为按 `wuxing_stats` 加权占比与喜用五行需求打分，不再只看粗阈值。
+    4. **塔罗占卜**：`Tarot.php` 修复元素平票时强判单一主导的问题，并为凯尔特十字补充核心位交叉解读。
+    5. **六爻/塔罗 AI 提示词**：`DeepSeekService` 显式格式化六神/用神爻位映射，并把塔罗元素与位态释义写入提示词。
+- **验证摘要**: `BaziCalculationService.php`、`Hehun.php`、`Tarot.php`、`DeepSeekService.php` IDE 诊断均为 0；`where.exe php` 未找到 PHP CLI，仍未执行命令行语法检查。
+- **状态**: 已完成并提交 Git（`69a6917`）；TODO 已移除本轮完成的 4 条 `[占卜]` 项。
+
+## 2026-03-18 00:10
+- **任务目标**: 继续修复 `[占卜]` 逻辑错误，优先处理日柱基准、黄历口径与积分配置空值问题。
+- **修复内容 (第六批)**:
+    1. **八字排盘/每日运势**：把 `1900-01-31` 的日柱基准校正为 **甲辰日**，修复 `todayGanZhi` 与日柱整体偏移。
+    2. **八字排盘**：`BaziCalculationService` 新增四柱结构归一化，自动回填 `gan_index/zhi_index`、旬空、五行权重等元数据，缓解专业版排盘链路的索引缺失报错。
+    3. **合婚定价**：`ConfigService::calculatePointsCost()` 改为对空配置做特征级默认值兜底，`/api/hehun/pricing` 不再因 `null` 积分基数触发 500。
+    4. **每日运势/后台黄历**：重写 `LunarService` 并统一给 `DailyFortune`、`Daily`、`admin/Almanac` 复用，补齐农历文本、年/月/日干支、建除值日、吉神凶煞、煞方与十二时辰吉凶。
+    5. **待办清理**：已从 `TODO.md` 删除 5 条本轮完成的 `[占卜]` 项，剩余 `zhi_index` 与错月令两项待后续继续处理。
+- **验证摘要**: 8 个相关 PHP 文件 IDE 诊断均为 0；`where.exe php` 仍未找到 PHP CLI，未执行命令行回归。
+- **状态**: 已完成并提交 Git（`273de2b`）；更新了 `overview.md`。
+
+## 2026-03-18 09:20
+- **任务目标**: 继续修复 `[占卜]` 算法问题，重点收敛节气精度、合婚索引兜底、每日运势权重口径、八字简版文案与塔罗元素术语。
+- **修复内容 (第七批)**:
+    1. **节气/八字月柱**：`BaziCalculationService` 把寿星公式改为“小寒至雨水按 `(Y-1)/4`、其余按 `Y/4`”的传统闰年口径，月令边界更稳。
+    2. **合婚配对**：`Hehun` 新增生肖索引三级回退（`zhi_index` / 地支 / 命理年份），并在分析入口再次归一化旧结构，兜住历史缓存。
+    3. **每日运势**：个性化 `todayGanZhi` 改为优先复用黄历同源结果；喜用五行改为重算八字并复用强弱评分，不再只看月令单点。
+    4. **八字简版**：`BaziInterpretationService` 重写性格/事业开头模板，去掉把“日主”直接替换成“你”的粗暴做法，病句消失。
+    5. **塔罗解读**：`Tarot` 与 `DeepSeekService` 统一改用“友好尊严 / 敌对尊严 / 中性尊严”等中文术语，并收紧综合结论去套话。
+- **验证摘要**: 6 个相关 PHP 文件 IDE 诊断均为 0；在 Docker 容器内回归得到 `1990-05-15 10:30` 月柱为 `辛巳`、`2026-03-17` 日柱为 `庚寅`，简版文案与塔罗元素关系输出已中文化。
+- **状态**: 已完成并提交 Git（`5d6c223`）；本轮对应的 5 条 `[占卜]` TODO 已删除。
+
+## 2026-03-18 10:15
+- **任务目标**: 继续修复剩余 `[占卜]` 待办，优先处理流年年份失真、黄历主数据空缺与合婚详细报告库表错位问题。
+- **修复内容 (第八批)**:
+    1. **八字流年**：`FortuneAnalysisService` 改为读取 `liuNian[].year` 真实年份，`best_year / worst_year` 不再返回 `0~4` 索引。
+    2. **每日运势/黄历**：`LunarService` 将黄历主数据统一改为复用八字核心四柱，按节气取 `year_gan_zhi / month_gan_zhi / day_gan_zhi`，并补充 `yearGanzhi/monthGanzhi/dayGanzhi` 别名与空值兜底。
+    3. **合婚详细报告**：`HehunRecord` 新增 `hehun_records` 与 `tc_hehun_record` 双表兼容写入/读取，旧库 `male_birth/female_birth` 也能正常落记录。
+    4. **合婚免费预览**：`Hehun` 在免费层和付费层都先做详细报告链路健康检查，避免先展示可解锁、实际却因库表错位失败。
+- **验证摘要**: 4 个相关 PHP 文件 IDE 诊断为 0；Docker 容器内 `php -l` 逐个检查 `FortuneAnalysisService.php`、`LunarService.php`、`HehunRecord.php`、`Hehun.php` 均通过。
+- **状态**: 已完成并提交 Git（`033cd70`）；本轮对应的 4 条 `[占卜]` TODO 已删除，当前只剩六爻运行态与塔罗模板化两项待后续继续处理。
+
+## 2026-03-18 03:58
+- **任务目标**: 继续修复 `[占卜]` 待办，优先打通大运/流年、六爻运行态、每日运势公开访问、测试验证码与喜用神口径。
+- **修复内容 (第九批)**:
+    1. **八字运势链路**：`Fortune.php` 改为用带 `App` 上下文的 `Paipan` 复算大运，`Paipan::calculateDaYun()` 补齐 `start_age/end_age/start_year/end_year`，`YearlyFortuneService` 补回 `Db` 导入。
+    2. **六爻占卜**：`Liuyao.php` 接入 `SchemaInspector` 兼容 `tc_liuyao_record / liuyao_records`，定价、落盘、历史、详情、AI 回写不再写死单一表名。
+    3. **每日运势**：`Daily.php` 仅对 `luck/checkin/checkinStatus` 保留鉴权，游客可直接浏览 `/daily` 基础运势。
+    4. **短信测试模式**：`SmsService` 发送端新增本地测试短路，`Sms.php` 透传测试码，`Login.vue` 直接提示测试验证码。
+    5. **八字喜用神**：`BaziCalculationService` 与 `BaziInterpretationService` 统一 `favorite_wuxing` / 正文口径，按“身强取克泄耗、身弱取生扶比助”排序输出。
+- **验证摘要**: 10 个相关文件 IDE 诊断均为 0；`TODO.md` 复查后仅剩 1 条塔罗模板化 `[占卜]` 待办。
+- **状态**: 已完成并提交 Git（`81f9e19`）；本轮已从 `TODO.md` 删除 5 条完成项和 1 条过时项。
 
