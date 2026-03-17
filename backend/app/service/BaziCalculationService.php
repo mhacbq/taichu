@@ -116,7 +116,7 @@ class BaziCalculationService
     /**
      * 计算八字
      */
-    public function calculateBazi(string $birthDate): array
+    public function calculateBazi(string $birthDate, string $gender = '男'): array
     {
         $timestamp = strtotime($birthDate);
         $year = (int)date('Y', $timestamp);
@@ -125,9 +125,6 @@ class BaziCalculationService
         $hour = (int)date('G', $timestamp);
         
         // ===== 核心修复：晚子时(23:00-00:00)日柱切换 =====
-        // 晚子时属于“今日之晚”但“明日之始”，在命理学中，日柱应进一日。
-        // 但年柱和月柱应维持原日（除非正好跨越节气时刻，此处简化按日期算）。
-        
         $calcDayYear = $year;
         $calcDayMonth = $month;
         $calcDayDay = $day;
@@ -146,21 +143,21 @@ class BaziCalculationService
         $lunarYear = $this->getLunarYear($year, $month, $day);
         $yearGanIndex = ($lunarYear - 4) % 10;
         $yearZhiIndex = ($lunarYear - 4) % 12;
+        $yearGan = $tianGan[$yearGanIndex];
         
         // 2. 月柱 (基于节气)
         $monthInfo = $this->getLunarMonth($year, $month, $day);
         $monthZhiIndex = $monthInfo['zhi_index'];
-        $yearGan = $tianGan[$yearGanIndex];
         $monthGanStart = $this->yearGanToMonthGanStart[$yearGan];
         $monthGanIndex = (array_search($monthGanStart, $tianGan) + $monthInfo['month_offset']) % 10;
         
-        // 3. 日柱 (基于计算出的 calcDay)
+        // 3. 日柱
         $dayPillar = $this->calculateDayPillar($calcDayYear, $calcDayMonth, $calcDayDay);
         $dayGanIndex = $dayPillar['gan_index'];
         $dayZhiIndex = $dayPillar['zhi_index'];
         $dayGan = $tianGan[$dayGanIndex];
         
-        // 4. 时柱 (日上起时)
+        // 4. 时柱
         $shiZhiIndex = ($hour >= 23) ? 0 : (int)(($hour + 1) / 2) % 12;
         $dayGanHourStart = ['甲'=>'甲','己'=>'甲','乙'=>'丙','庚'=>'丙','丙'=>'戊','辛'=>'戊','丁'=>'庚','壬'=>'庚','戊'=>'壬','癸'=>'壬'];
         $hourGanStart = $dayGanHourStart[$dayGan];
@@ -173,7 +170,7 @@ class BaziCalculationService
             'hour' => ['gan' => $tianGan[$shiGanIndex], 'zhi' => $diZhi[$shiZhiIndex]],
         ];
         
-        // 补充详细属性
+        // 补充属性
         foreach ($pillars as $key => &$p) {
             $p['gan_wuxing'] = $this->ganWuXing[$p['gan']];
             $p['zhi_wuxing'] = $this->zhiWuXing[$p['zhi']];
@@ -186,6 +183,7 @@ class BaziCalculationService
             'day_master' => $dayGan,
             'day_master_wuxing' => $this->ganWuXing[$dayGan],
             'strength' => $this->analyzeStrength($pillars),
+            'qiyun' => $this->calculateQiYun($year, $month, $day, $hour, $gender, $yearGan),
             'calculation_note' => $hour >= 23 ? '已处理晚子时：日柱进一日，年柱月柱维持原日' : '正常排盘'
         ]);
     }
@@ -244,28 +242,145 @@ class BaziCalculationService
         ];
     }
 
+    /**
+     * 精确强弱分析 (基于分值制)
+     */
     public function analyzeStrength(array $pillars): array
     {
-        // 简易强弱分析
         $dm = $pillars['day']['gan'];
         $dmWx = $this->ganWuXing[$dm];
-        $score = 0;
         
-        $supporting = [
-            '木' => ['木', '水'], '火' => ['火', '木'], '土' => ['土', '火'],
-            '金' => ['金', '土'], '水' => ['水', '金']
+        // 定义五行关系：生我、同我、克我、我克、我生
+        $relations = [
+            '木' => ['supporting' => ['木', '水'], 'opposing' => ['金', '土', '火']],
+            '火' => ['supporting' => ['火', '木'], 'opposing' => ['水', '金', '土']],
+            '土' => ['supporting' => ['土', '火'], 'opposing' => ['木', '水', '金']],
+            '金' => ['supporting' => ['金', '土'], 'opposing' => ['火', '木', '水']],
+            '水' => ['supporting' => ['水', '金'], 'opposing' => ['土', '火', '木']]
         ];
         
+        $supporting = $relations[$dmWx]['supporting'];
+        
+        // 1. 地支藏干分值表 (能量权重)
+        // 月令(Month)总分40, 其他地支各10, 天干各10 (总分100)
+        $branchWeights = [
+            '子' => ['癸' => 100],
+            '丑' => ['己' => 60, '癸' => 30, '辛' => 10],
+            '寅' => ['甲' => 60, '丙' => 30, '戊' => 10],
+            '卯' => ['乙' => 100],
+            '辰' => ['戊' => 60, '乙' => 30, '癸' => 10],
+            '巳' => ['丙' => 60, '庚' => 30, '戊' => 10],
+            '午' => ['丁' => 70, '己' => 30],
+            '未' => ['己' => 60, '丁' => 30, '乙' => 10],
+            '申' => ['庚' => 60, '壬' => 30, '戊' => 10],
+            '酉' => ['辛' => 100],
+            '戌' => ['戊' => 60, '辛' => 30, '丁' => 10],
+            '亥' => ['壬' => 70, '甲' => 30]
+        ];
+        
+        $totalScore = 0;
+        
+        // 2. 计算天干得分 (年、月、时各10分)
         foreach (['year', 'month', 'hour'] as $key) {
-            if (in_array($pillars[$key]['gan_wuxing'], $supporting[$dmWx])) $score += 10;
+            if (in_array($pillars[$key]['gan_wuxing'], $supporting)) {
+                $totalScore += 10;
+            }
         }
-        if (in_array($pillars['month']['zhi_wuxing'], $supporting[$dmWx])) $score += 30; // 月令权重高
-        if (in_array($pillars['day']['zhi_wuxing'], $supporting[$dmWx])) $score += 15;
-        if (in_array($pillars['hour']['zhi_wuxing'], $supporting[$dmWx])) $score += 10;
+        
+        // 3. 计算地支得分 (包含藏干权重)
+        $branchPositions = [
+            'month' => 40, // 月令权重最高
+            'day' => 10,
+            'hour' => 10,
+            'year' => 10
+        ];
+        
+        foreach ($branchPositions as $pos => $maxWeight) {
+            $zhi = $pillars[$pos]['zhi'];
+            $cangGans = $branchWeights[$zhi];
+            foreach ($cangGans as $gan => $percent) {
+                $wx = $this->ganWuXing[$gan];
+                if (in_array($wx, $supporting)) {
+                    $totalScore += ($maxWeight * $percent / 100);
+                }
+            }
+        }
+        
+        // 判定结果
+        $status = '中和';
+        if ($totalScore >= 55) $status = '身旺';
+        elseif ($totalScore >= 45) $status = '中和偏旺';
+        elseif ($totalScore >= 35) $status = '中和偏弱';
+        else $status = '身弱';
         
         return [
-            'score' => $score,
-            'status' => $score >= 45 ? '身旺' : '身弱'
+            'score' => round($totalScore, 1),
+            'status' => $status,
+            'favorite_wuxing' => $totalScore >= 50 ? $relations[$dmWx]['opposing'] : $relations[$dmWx]['supporting']
+        ];
+    /**
+     * 计算起运时间 (精确到岁/月/天)
+     */
+    public function calculateQiYun(int $year, int $month, int $day, int $hour, string $gender, string $yearGan): array
+    {
+        // 1. 判定顺逆
+        // 阳男阴女顺行，阴男阳女逆行
+        $yangGans = ['甲', '丙', '戊', '庚', '壬'];
+        $isYangYear = in_array($yearGan, $yangGans);
+        $isForward = ($gender === '男' && $isYangYear) || ($gender === '女' && !$isYangYear);
+        
+        // 2. 查找相邻节气 (Jie)
+        $jieqis = ['立春', '惊蛰', '清明', '立夏', '芒种', '小暑', '立秋', '白露', '寒露', '立冬', '大雪', '小寒'];
+        $birthTs = strtotime("$year-$month-$day $hour:00:00");
+        
+        // 获取当前年份及相邻年份的节气
+        $targetJieTs = 0;
+        
+        // 遍历查找最近的一个节气
+        $checkYears = [$year - 1, $year, $year + 1];
+        $allJieTs = [];
+        foreach ($checkYears as $y) {
+            foreach ($jieqis as $jq) {
+                $date = $this->getJieQiDate($y, $jq);
+                $allJieTs[] = strtotime("$y-{$date[0]}-{$date[1]} 12:00:00"); // 假设正午交节，简化处理
+            }
+        }
+        sort($allJieTs);
+        
+        if ($isForward) {
+            foreach ($allJieTs as $ts) {
+                if ($ts > $birthTs) {
+                    $targetJieTs = $ts;
+                    break;
+                }
+            }
+        } else {
+            foreach (array_reverse($allJieTs) as $ts) {
+                if ($ts < $birthTs) {
+                    $targetJieTs = $ts;
+                    break;
+                }
+            }
+        }
+        
+        // 3. 计算差距
+        $diffSeconds = abs($targetJieTs - $birthTs);
+        $diffDays = $diffSeconds / 86400;
+        
+        // 命理换算：3天=1岁，1天=4个月，1小时=5天
+        $qiyunYear = (int)($diffDays / 3);
+        $remainingDays = $diffDays - ($qiyunYear * 3);
+        $qiyunMonth = (int)($remainingDays * 4);
+        $remainingHours = ($remainingDays * 4 - $qiyunMonth) * (30 / 4); // 简化计算：1个月按30天算
+        $qiyunDay = (int)($remainingHours * 5);
+        
+        return [
+            'is_forward' => $isForward,
+            'years' => $qiyunYear,
+            'months' => $qiyunMonth,
+            'days' => $qiyunDay,
+            'display' => "{$qiyunYear}岁{$qiyunMonth}个月{$qiyunDay}天",
+            'start_date' => date('Y-m-d', strtotime("+$qiyunYear years +$qiyunMonth months +$qiyunDay days", $birthTs))
         ];
     }
 }

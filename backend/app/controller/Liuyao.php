@@ -61,7 +61,14 @@ class Liuyao extends BaseController
             
             // 判断用神
             $questionType = $data['question_type'] ?? '其他';
-            $result['yong_shen'] = LiuyaoService::getYongShen($questionType);
+            $gender = $data['gender'] ?? '男';
+            $result['yong_shen'] = LiuyaoService::getYongShen(
+                $questionType, 
+                $result['liuqin'], 
+                $result['shi_ying'], 
+                $result['yao_code'],
+                $gender
+            );
             
             // 保存记录（使用事务）
             if (!empty($data['user_id'])) {

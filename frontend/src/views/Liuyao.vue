@@ -582,164 +582,186 @@ onMounted(() => {
 /* 卦象展示 */
 .gua-display {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: center;
-  padding: 45px;
-  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+  padding: 50px 40px;
+  background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-primary));
   border-radius: 24px;
-  margin-bottom: 35px;
-  border: 1px solid rgba(184, 134, 11, 0.3);
+  margin-bottom: 40px;
+  border: 1px solid var(--primary-light-20);
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.6), 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 .gua-display::before {
   content: '';
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  border: 1px solid rgba(184, 134, 11, 0.15);
-  border-radius: 18px;
+  inset: 15px;
+  border: 1px solid var(--primary-light-10);
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.gua-display::after {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 2px solid transparent;
+  border-image: linear-gradient(135deg, var(--primary-color), transparent, var(--primary-color)) 1;
+  opacity: 0.2;
   pointer-events: none;
 }
 
 /* 装饰角 - 动态太极 */
 .gua-decoration {
   position: absolute;
-  bottom: -50px;
-  right: -50px;
-  font-size: 200px;
-  color: rgba(184, 134, 11, 0.05);
-  transform: rotate(-15deg);
-  animation: yinYangRotate 20s linear infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 320px;
+  color: var(--primary-light-05);
+  animation: yinYangRotate 30s linear infinite;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
+  filter: blur(2px);
 }
 
 @keyframes yinYangRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 .gua-info {
   text-align: center;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 20px;
-  border-radius: 20px;
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--white-03);
+  padding: 30px;
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--white-08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .gua-name {
   color: var(--primary-color);
-  font-size: 36px;
-  margin-bottom: 12px;
-  font-weight: 800;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  letter-spacing: 4px;
+  font-size: 48px;
+  margin-bottom: 15px;
+  font-weight: 900;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  letter-spacing: 8px;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gua-code {
-  color: var(--text-tertiary);
-  font-size: 13px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 12px;
+  color: var(--white-60);
+  font-size: 14px;
+  letter-spacing: 4px;
+  background: var(--white-05);
+  padding: 6px 16px;
   border-radius: 20px;
   display: inline-block;
+  font-family: monospace;
 }
 
 /* 六爻图形 */
 .yao-container {
   display: flex;
   flex-direction: column-reverse; /* 从下往上排 */
-  gap: 16px;
-  z-index: 1;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 24px 30px;
-  border-radius: 16px;
-  border: 1px solid rgba(184, 134, 11, 0.15);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  gap: 20px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 30px 40px;
+  border-radius: 20px;
+  border: 1px solid var(--primary-light-15);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
 .yao-line {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 6px 16px;
-  border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 25px;
+  padding: 8px 20px;
+  border-radius: 12px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: 1px solid transparent;
 }
 
 .yao-line:hover {
-  background: rgba(184, 134, 11, 0.15);
-  transform: translateX(-5px);
-  border-color: rgba(184, 134, 11, 0.2);
+  background: var(--primary-light-10);
+  transform: translateX(-10px) scale(1.05);
+  border-color: var(--primary-light-30);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .yao-line.moving {
   position: relative;
-  background: rgba(184, 134, 11, 0.05);
+  background: var(--primary-light-05);
+  animation: moving-glow 2s ease-in-out infinite;
+}
+
+@keyframes moving-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--primary-light-20); }
+  50% { box-shadow: 0 0 15px var(--primary-light-40); }
 }
 
 .yao-line.moving::before {
-  content: '';
+  content: '动';
   position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 4px;
-  background: var(--primary-gradient);
-  border-radius: 4px;
-  animation: pulse-border 1s ease-in-out infinite;
-  box-shadow: 0 0 10px var(--primary-light);
+  left: -35px;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--primary-light-10);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--primary-color);
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse-border {
-  0%, 100% { opacity: 0.4; height: 40%; }
-  50% { opacity: 1; height: 80%; }
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
 }
 
 .yao-mark {
-  width: 36px;
+  width: 40px;
   text-align: center;
-  font-size: 24px;
+  font-size: 28px;
   color: var(--primary-light);
   font-weight: 900;
-  filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.5));
+  filter: drop-shadow(0 0 8px var(--primary-color));
 }
 
 .yao-bar {
-  width: 120px;
-  height: 12px;
-  border-radius: 6px;
+  width: 140px;
+  height: 14px;
+  border-radius: 7px;
   position: relative;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .yao-line.yang .yao-bar {
-  background: linear-gradient(90deg, #8B6914 0%, #D4AF37 20%, #F4E4C1 50%, #D4AF37 80%, #8B6914 100%);
-  border: 1px solid rgba(184, 134, 11, 0.4);
+  background: linear-gradient(90deg, #8B6914 0%, #D4AF37 20%, #FFF3D1 50%, #D4AF37 80%, #8B6914 100%);
+  border: 1px solid var(--primary-light-40);
 }
 
 .yao-line.yin .yao-bar::before,
 .yao-line.yin .yao-bar::after {
   content: '';
   position: absolute;
-  width: 44%;
+  width: 42%;
   height: 100%;
-  background: linear-gradient(90deg, #3D2F0C 0%, #8B6914 20%, #B8860B 50%, #8B6914 80%, #3D2F0C 100%);
-  border-radius: 6px;
-  border: 1px solid rgba(184, 134, 11, 0.3);
+  background: linear-gradient(90deg, #2D2209 0%, #8B6914 20%, #B8860B 50%, #8B6914 80%, #2D2209 100%);
+  border-radius: 7px;
+  border: 1px solid var(--primary-light-20);
 }
 
 .yao-line.yin .yao-bar::after {

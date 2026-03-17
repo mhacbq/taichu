@@ -942,13 +942,17 @@ onMounted(() => {
 /* 页面过渡动画 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.fade-enter-from,
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(-20px) scale(1.02);
 }
 
 /* 响应式 */

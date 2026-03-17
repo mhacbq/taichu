@@ -130,29 +130,17 @@ class Notification extends BaseController
     public function getSettings()
     {
         $user = $this->request->user;
-        $userId = $user['sub'];
-        
+        $userId = (int) ($user['sub'] ?? 0);
+
+        if ($userId <= 0) {
+            return $this->error('用户信息无效', 401);
+        }
+
         $settings = Db::name('tc_notification_setting')
             ->where('user_id', $userId)
             ->find();
-        
-        if (!$settings) {
-            // 返回默认设置
-            $settings = [
-                'daily_fortune' => 1,
-                'system_notice' => 1,
-                'activity' => 1,
-                'recharge' => 1,
-                'points_change' => 1,
-                'push_enabled' => 1,
-                'sound_enabled' => 1,
-                'vibration_enabled' => 1,
-                'quiet_hours_start' => '22:00',
-                'quiet_hours_end' => '08:00',
-            ];
-        }
-        
-        return $this->success($settings);
+
+        return $this->success(self::buildSettingsPayload($settings ?: []));
     }
     
     /**
@@ -161,10 +149,14 @@ class Notification extends BaseController
     public function updateSettings()
     {
         $user = $this->request->user;
-        $userId = $user['sub'];
+        $userId = (int) ($user['sub'] ?? 0);
         $data = $this->request->post();
+
+        if ($userId <= 0) {
+            return $this->error('用户信息无效', 401);
+        }
         
-        $allowedFields = [
+        $booleanFields = [
             'daily_fortune',
             'system_notice',
             'activity',
@@ -173,15 +165,26 @@ class Notification extends BaseController
             'push_enabled',
             'sound_enabled',
             'vibration_enabled',
-            'quiet_hours_start',
-            'quiet_hours_end',
         ];
+        $timeFields = ['quiet_hours_start', 'quiet_hours_end'];
+        $allowedFields = array_merge($booleanFields, $timeFields);
         
         $updateData = [];
         foreach ($allowedFields as $field) {
-            if (isset($data[$field])) {
-                $updateData[$field] = $data[$field];
+            if (!array_key_exists($field, $data)) {
+                continue;
             }
+
+            if (in_array($field, $booleanFields, true)) {
+                $updateData[$field] = self::normalizeBoolFlag($data[$field]);
+                continue;
+            }
+
+            $timeValue = trim((string) $data[$field]);
+            if (!self::isValidHourMinute($timeValue)) {
+                return $this->error('免打扰时间格式无效，请使用 HH:MM');
+            }
+            $updateData[$field] = $timeValue;
         }
         
         if (empty($updateData)) {
@@ -190,7 +193,6 @@ class Notification extends BaseController
         
         $updateData['updated_at'] = date('Y-m-d H:i:s');
         
-        // 检查是否已存在设置
         $exists = Db::name('tc_notification_setting')
             ->where('user_id', $userId)
             ->find();
@@ -205,8 +207,9 @@ class Notification extends BaseController
             Db::name('tc_notification_setting')->insert($updateData);
         }
         
-        return $this->success([], '设置更新成功');
+        return $this->success(self::buildSettingsPayload(array_merge($exists ?: [], $updateData)), '设置更新成功');
     }
+
     
     /**
      * 注册推送设备
@@ -315,9 +318,11 @@ class Notification extends BaseController
     public static function sendNotificationDetailed(int $userId, string $type, string $title, string $content, array $data = []): array
     {
         try {
-            $settings = Db::name('tc_notification_setting')
+            $rawSettings = Db::name('tc_notification_setting')
                 ->where('user_id', $userId)
                 ->find();
+            $settings = $rawSettings ? self::buildSettingsPayload($rawSettings) : [];
+
 
             $typeFieldMap = [
                 'daily_fortune' => 'daily_fortune',
@@ -407,11 +412,79 @@ class Notification extends BaseController
             ];
         }
     }
+
+    /**
+     * 构建标准化通知设置
+     */
+    protected static function buildSettingsPayload(array $settings): array
+    {
+        return [
+            'daily_fortune' => self::normalizeBoolFlag($settings['daily_fortune'] ?? 1),
+            'system_notice' => self::normalizeBoolFlag($settings['system_notice'] ?? 1),
+            'activity' => self::normalizeBoolFlag($settings['activity'] ?? 1),
+            'recharge' => self::normalizeBoolFlag($settings['recharge'] ?? 1),
+            'points_change' => self::normalizeBoolFlag($settings['points_change'] ?? 1),
+            'push_enabled' => self::normalizeBoolFlag($settings['push_enabled'] ?? 1),
+            'sound_enabled' => self::normalizeBoolFlag($settings['sound_enabled'] ?? 1),
+            'vibration_enabled' => self::normalizeBoolFlag($settings['vibration_enabled'] ?? 1),
+            'quiet_hours_start' => self::isValidHourMinute((string) ($settings['quiet_hours_start'] ?? '22:00'))
+                ? (string) $settings['quiet_hours_start']
+                : '22:00',
+            'quiet_hours_end' => self::isValidHourMinute((string) ($settings['quiet_hours_end'] ?? '08:00'))
+                ? (string) $settings['quiet_hours_end']
+                : '08:00',
+        ];
+    }
+
+    /**
+     * 归一化布尔开关
+     */
+    protected static function normalizeBoolFlag(mixed $value): int
+    {
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
+        if (is_numeric($value)) {
+            return (int) ((int) $value !== 0);
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true) ? 1 : 0;
+    }
+
+    /**
+     * 验证 HH:MM 时间格式
+     */
+    protected static function isValidHourMinute(string $value): bool
+    {
+        return preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $value) === 1;
+    }
+
+    /**
+     * 检查当前是否可发送推送
+     */
+    protected static function canSendDuringCurrentTime(array $settings): bool
+    {
+        $start = trim((string) ($settings['quiet_hours_start'] ?? ''));
+        $end = trim((string) ($settings['quiet_hours_end'] ?? ''));
+
+        if (!self::isValidHourMinute($start) || !self::isValidHourMinute($end) || $start === $end) {
+            return true;
+        }
+
+        $now = date('H:i');
+        $inQuietHours = $start < $end
+            ? ($now >= $start && $now < $end)
+            : ($now >= $start || $now < $end);
+
+        return !$inQuietHours;
+    }
     
     /**
      * 发送每日运势提醒
      */
     public static function sendDailyFortuneReminder(int $userId): bool
+
     {
         return self::sendNotification(
             $userId,

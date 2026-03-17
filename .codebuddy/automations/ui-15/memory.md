@@ -1,28 +1,29 @@
 # Automation Memory - UI Fixes (2026-03-17)
 
 ## Execution History
-- **Task**: Second round of Deep UI/UX optimization and interaction refinement.
+- **Task**: Third round of Deep UI/UX optimization and interaction refinement.
 - **Status**: Completed (5 major enhancements).
 - **Date**: 2026-03-17
 
 ## Major Changes
-1. **Global Interactivity (style.css)**: 
-   - Upgraded all primary and secondary buttons with 3D hover effects (scale, translate, and dynamic shadows).
-   - Optimized input field focus states using CSS variables for a modern "glow" effect.
-   - Refined scrollbar styling for better contrast and dark theme compatibility.
-2. **Typography & Layout (style.css)**: 
-   - Implemented fluid typography using `clamp()` for section titles, ensuring perfect legibility across all screen sizes.
-   - Added subtle decorative elements to dividers.
-3. **Bazi Visualization (Bazi.vue)**: 
-   - Redesigned the "Day Master" card with high-quality glassmorphism and floating animations.
-   - Enhanced "Pillars" table cells with refined borders and shimmer effects for highlighted columns.
-4. **Liuyao Embellishment (Liuyao.vue)**: 
-   - Added a rotating Taiji background watermark to the hexagram display area, enhancing the ritualistic feel.
-   - Improved spacing and contrast for divination results.
+1. **Global CSS Variables System**: 
+   - Established a standardized opacity variable system (`--white-01` to `--white-90`) in `style.css`.
+   - Replaced hardcoded `rgba(255, 255, 255, ...)` values across major view components for theme consistency.
+2. **Bazi Result Visualization (Bazi.vue)**: 
+   - Enhanced visual hierarchy for Dajun and Liunian items with better contrast and hover effects.
+   - Added "Current" status indicators for the active Dajun and Liunian.
+3. **Tarot Interaction (Tarot.vue)**: 
+   - Improved selection feedback for spread cards and topic tabs with sophisticated hover animations and shadow depth.
+   - Optimized the question template list layout for better readability.
+4. **Liuyao Hexagram Refinement (Liuyao.vue)**: 
+   - Upgraded hexagram display area with a radial gradient background and traditional decorative borders.
+   - Redesigned "Moving Yao" indicators with animated pulses and specific labels.
+5. **Global Transitions (App.vue)**: 
+   - Unified and refined page transition animations using an elegant cubic-bezier curve and subtle scaling effects.
 
 ## Git Commit
-- `fix-ui-multiple-issues-20260317-1630` (1c327cf)
+- `fix-ui-multiple-issues-20260317-1700`
 
 ## Next Steps
-- Implement traditional Chinese texture backgrounds for major sections.
-- Refine Element Plus global component styles to match the custom theme perfectly.
+- Implement finer font weight gradations across the site.
+- Further refine mobile touch targets and spacing in complex results pages.

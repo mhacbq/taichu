@@ -2544,14 +2544,14 @@ class Admin extends BaseController
      */
     public function pendingFeedback()
     {
-        // 检查权限
         if (!$this->checkPermission('feedback_view')) {
             return $this->error('无权限查看反馈', 403);
         }
 
         try {
-            $count = Feedback::where('status', 0)->count();
-            $list = Feedback::where('status', 0)
+            $query = $this->buildPendingFeedbackQuery();
+            $count = $query->count();
+            $list = $this->buildPendingFeedbackQuery()
                 ->order('created_at', 'desc')
                 ->limit(5)
                 ->select()
@@ -2559,9 +2559,9 @@ class Admin extends BaseController
 
             return $this->success([
                 'count' => $count,
-                'list' => $list
+                'list' => $list,
             ], '获取成功');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('获取待处理反馈失败: ' . $e->getMessage());
             return $this->error('获取待处理反馈失败', 500);
         }
@@ -2570,44 +2570,221 @@ class Admin extends BaseController
     /**
      * 获取实时数据
      */
-    public function realtime()
+    public function realtime(Request $request)
     {
-        // 检查权限
         if (!$this->checkPermission('stats_view')) {
             return $this->error('无权限访问统计数据', 403);
         }
 
         try {
-            // 获取今日数据
-            $todayUsers = User::where('created_at', '>=', date('Y-m-d'))->count();
-            $todayBazi = BaziRecord::where('created_at', '>=', date('Y-m-d'))->count();
-            $todayTarot = TarotRecord::where('created_at', '>=', date('Y-m-d'))->count();
-            $todayFeedback = Feedback::where('created_at', '>=', date('Y-m-d'))->count();
-
-            // 获取在线用户数（最近15分钟内有活动的用户）
-            $onlineUsers = User::where('last_active', '>=', date('Y-m-d H:i:s', strtotime('-15 minutes')))->count();
-
-            // 获取待处理反馈数
-            $pendingFeedback = Feedback::where('status', 0)->count();
-
-            return $this->success([
-                'today_users' => $todayUsers,
-                'today_bazi' => $todayBazi,
-                'today_tarot' => $todayTarot,
-                'today_feedback' => $todayFeedback,
-                'online_users' => $onlineUsers,
-                'pending_feedback' => $pendingFeedback,
-                'timestamp' => date('Y-m-d H:i:s')
-            ], '获取成功');
-        } catch (\Exception $e) {
+            $limit = max(1, min(50, (int) $request->get('limit', 10)));
+            return $this->success($this->buildRealtimePayload($limit), '获取成功');
+        } catch (\Throwable $e) {
             Log::error('获取实时数据失败: ' . $e->getMessage());
             return $this->error('获取实时数据失败', 500);
         }
     }
 
     /**
+     * 导出实时看板快照
+     */
+    public function exportRealtime(Request $request)
+    {
+        if (!$this->checkPermission('stats_view')) {
+            return $this->error('无权限导出实时数据', 403);
+        }
+
+        try {
+            $limit = max(1, min(100, (int) $request->get('limit', 50)));
+            $payload = $this->buildRealtimePayload($limit);
+
+            $rows = [
+                ['指标', '数值'],
+                ['今日新增用户', (string) ($payload['today_users'] ?? 0)],
+                ['今日八字排盘', (string) ($payload['today_bazi'] ?? 0)],
+                ['今日塔罗占卜', (string) ($payload['today_tarot'] ?? 0)],
+                ['今日反馈', (string) ($payload['today_feedback'] ?? 0)],
+                ['近15分钟活跃用户', (string) ($payload['online_users'] ?? 0)],
+                ['待处理反馈', (string) ($payload['pending_feedback'] ?? 0)],
+                ['生成时间', (string) ($payload['timestamp'] ?? '')],
+                [],
+                ['时间', '事件', '用户'],
+            ];
+
+            foreach ($payload['realtime_list'] ?? [] as $item) {
+                $rows[] = [
+                    (string) ($item['time'] ?? ''),
+                    (string) ($item['action'] ?? ''),
+                    (string) ($item['user'] ?? ''),
+                ];
+            }
+
+            $csvLines = array_map(function (array $row): string {
+                return implode(',', array_map(fn ($value) => $this->escapeCsv((string) $value), $row));
+            }, $rows);
+            $csv = "\xEF\xBB\xBF" . implode("\n", $csvLines) . "\n";
+
+            $this->logOperation('export_realtime', 'stats', [
+                'detail' => '导出实时看板快照，条数：' . count($payload['realtime_list'] ?? []),
+            ]);
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="dashboard_realtime_' . date('YmdHis') . '.csv"',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('导出实时看板快照失败: ' . $e->getMessage());
+            return $this->error('导出实时数据失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 构建实时看板数据
+     */
+    protected function buildRealtimePayload(int $limit = 10): array
+    {
+        $todayStart = date('Y-m-d 00:00:00');
+        $recentActiveAt = date('Y-m-d H:i:s', strtotime('-15 minutes'));
+        $realtimeList = $this->buildRealtimeList($limit);
+
+        return [
+            'today_users' => User::where('created_at', '>=', $todayStart)->count(),
+            'today_bazi' => BaziRecord::where('created_at', '>=', $todayStart)->count(),
+            'today_tarot' => TarotRecord::where('created_at', '>=', $todayStart)->count(),
+            'today_feedback' => Feedback::where('created_at', '>=', $todayStart)->count(),
+            'online_users' => User::where('last_login_at', '>=', $recentActiveAt)->count(),
+            'pending_feedback' => $this->buildPendingFeedbackQuery()->count(),
+            'realtime_list' => $realtimeList,
+            'timestamp' => date('Y-m-d H:i:s'),
+        ];
+    }
+
+    /**
+     * 构建实时动态列表
+     */
+    protected function buildRealtimeList(int $limit = 10): array
+    {
+        $userRows = User::order('created_at', 'desc')
+            ->limit($limit)
+            ->field('id,nickname,username,created_at')
+            ->select()
+            ->toArray();
+
+        $baziRows = BaziRecord::order('created_at', 'desc')
+            ->limit($limit)
+            ->field('user_id,created_at')
+            ->select()
+            ->toArray();
+
+        $tarotRows = TarotRecord::order('created_at', 'desc')
+            ->limit($limit)
+            ->field('user_id,created_at,spread_type')
+            ->select()
+            ->toArray();
+
+        $feedbackRows = $this->buildPendingFeedbackQuery()
+            ->order('created_at', 'desc')
+            ->limit($limit)
+            ->field('user_id,type,created_at')
+            ->select()
+            ->toArray();
+
+        $userNameMap = $this->resolveRealtimeUserNames(array_merge(
+            array_column($baziRows, 'user_id'),
+            array_column($tarotRows, 'user_id'),
+            array_column($feedbackRows, 'user_id')
+        ));
+
+        $events = [];
+        foreach ($userRows as $row) {
+            $events[] = [
+                'time' => date('H:i:s', strtotime((string) ($row['created_at'] ?? 'now'))),
+                'action' => '新用户注册',
+                'user' => (string) ($row['nickname'] ?: ($row['username'] ?? ('用户#' . (int) ($row['id'] ?? 0)))),
+                'sort_time' => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+        foreach ($baziRows as $row) {
+            $userId = (int) ($row['user_id'] ?? 0);
+            $events[] = [
+                'time' => date('H:i:s', strtotime((string) ($row['created_at'] ?? 'now'))),
+                'action' => '提交八字排盘',
+                'user' => $userNameMap[$userId] ?? ('用户#' . $userId),
+                'sort_time' => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+        foreach ($tarotRows as $row) {
+            $userId = (int) ($row['user_id'] ?? 0);
+            $spreadType = trim((string) ($row['spread_type'] ?? ''));
+            $events[] = [
+                'time' => date('H:i:s', strtotime((string) ($row['created_at'] ?? 'now'))),
+                'action' => $spreadType !== '' ? '进行塔罗占卜（' . $spreadType . '）' : '进行塔罗占卜',
+                'user' => $userNameMap[$userId] ?? ('用户#' . $userId),
+                'sort_time' => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+        foreach ($feedbackRows as $row) {
+            $userId = (int) ($row['user_id'] ?? 0);
+            $feedbackType = trim((string) ($row['type'] ?? '反馈'));
+            $events[] = [
+                'time' => date('H:i:s', strtotime((string) ($row['created_at'] ?? 'now'))),
+                'action' => '提交待处理反馈（' . $feedbackType . '）',
+                'user' => $userNameMap[$userId] ?? ($userId > 0 ? '用户#' . $userId : '匿名用户'),
+                'sort_time' => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+
+        usort($events, static function (array $left, array $right): int {
+            return strcmp((string) ($right['sort_time'] ?? ''), (string) ($left['sort_time'] ?? ''));
+        });
+
+        $events = array_slice($events, 0, $limit);
+
+        return array_map(static function (array $event): array {
+            unset($event['sort_time']);
+            return $event;
+        }, $events);
+    }
+
+    /**
+     * 获取待处理反馈查询
+     */
+    protected function buildPendingFeedbackQuery()
+    {
+        return Feedback::where(function ($query) {
+            $query->where('status', 0)
+                ->whereOr('status', 'pending');
+        });
+    }
+
+    /**
+     * 解析实时动态中的用户名称
+     */
+    protected function resolveRealtimeUserNames(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $rows = User::whereIn('id', $userIds)
+            ->field('id,nickname,username')
+            ->select()
+            ->toArray();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            $result[$id] = (string) (($row['nickname'] ?? '') ?: ($row['username'] ?? ('用户#' . $id)));
+        }
+
+        return $result;
+    }
+
+    /**
      * 导出用户数据
      */
+
     public function exportUsers(Request $request)
     {
         // 检查权限

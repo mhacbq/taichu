@@ -656,211 +656,179 @@ const getCardAdvice = (card) => {
 }
 
 .spread-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 25px;
+  background: var(--white-03);
+  border-radius: var(--radius-lg);
+  padding: 30px 20px;
   text-align: center;
   cursor: pointer;
-  border: 2px solid var(--border-color);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid var(--white-10);
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 }
 
 .spread-card:hover {
-  border-color: var(--primary-light);
-  background: var(--bg-secondary);
-  transform: translateY(-5px);
+  border-color: var(--primary-light-40);
+  background: var(--white-08);
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
 }
 
 .spread-card.active {
   border-color: var(--primary-color);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--primary-light-05) 100%);
-  box-shadow: 0 0 20px var(--primary-light-20);
-  transform: translateY(-8px) scale(1.02);
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--primary-light-10) 100%);
+  box-shadow: 0 0 30px var(--primary-light-30);
+  transform: translateY(-10px) scale(1.05);
+  z-index: 2;
+}
+
+.spread-card.active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--primary-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .spread-card.active::after {
-  content: '✓';
+  content: '✦';
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 24px;
-  height: 24px;
-  background: var(--primary-color);
-  color: var(--text-primary);
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: var(--primary-gradient);
+  color: #000;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  animation: scale-in 0.3s ease;
+  font-size: 16px;
+  font-weight: bold;
+  animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 15px var(--primary-color);
 }
 
 @keyframes scale-in {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+  from { transform: scale(0) rotate(-45deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
 }
 
 .spread-icon {
-  font-size: 36px;
-  margin-bottom: 15px;
+  font-size: 42px;
+  margin-bottom: 5px;
   color: var(--primary-color);
-  transition: transform 0.3s ease;
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.spread-card:hover .spread-icon {
+  transform: scale(1.15) translateY(-5px);
+  color: var(--primary-light);
 }
 
 .spread-card.active .spread-icon {
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 10px var(--primary-color));
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 15px var(--primary-color));
 }
-
 
 .spread-card h3 {
   color: var(--text-primary);
-  margin-bottom: 10px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 .spread-card p {
   color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.question-section {
-  max-width: 600px;
-  margin: 0 auto 30px;
-}
-
-.question-section h3 {
-  margin-bottom: 20px;
-  color: var(--text-primary);
-}
-
-.question-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 12px 15px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
   font-size: 13px;
-}
-
-.hint-icon {
-  font-size: 16px;
-  color: var(--success-color);
-}
-
-.draw-btn {
-  margin-top: 20px;
-  width: 100%;
-  min-height: 48px;
-}
-
-.btn-icon {
-  margin-right: 5px;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* 问题引导 */
 .question-guide {
-  max-width: 700px;
-  margin: 0 auto 30px;
-}
-
-.question-guide h3 {
-  color: var(--text-primary);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.guide-icon {
-  font-size: 24px;
+  max-width: 800px;
+  margin: 0 auto 40px;
+  background: var(--white-02);
+  border: 1px solid var(--white-05);
 }
 
 .topic-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 25px;
 }
 
 .topic-tab {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  min-height: 40px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-btn);
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 10px;
+  background: var(--white-05);
+  border: 1px solid var(--white-10);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .topic-tab:hover {
-  background: var(--bg-secondary);
-  border-color: var(--primary-light);
+  background: var(--white-10);
+  border-color: var(--primary-light-30);
+  transform: translateY(-3px);
 }
 
 .topic-tab.active {
   background: var(--primary-gradient);
   border-color: var(--primary-color);
-  box-shadow: var(--shadow-sm);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px var(--primary-light-30);
 }
 
+.topic-tab .topic-icon {
+  font-size: 24px;
+  color: var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.topic-tab.active .topic-icon,
 .topic-tab.active .topic-name {
-  color: var(--text-primary);
-}
-
-.topic-icon {
-  font-size: 18px;
-}
-
-.topic-name {
-  color: var(--text-primary);
-  font-size: 14px;
-}
-
-.question-templates {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 20px;
-}
-
-.template-hint {
-  color: var(--text-tertiary);
-  font-size: 13px;
-  margin-bottom: 15px;
+  color: #000;
+  font-weight: 800;
 }
 
 .template-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .template-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 15px;
-  min-height: 44px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
+  background: var(--white-05);
+  border: 1px solid var(--white-08);
+  padding: 14px 18px;
+  border-radius: 12px;
   transition: all 0.3s ease;
-  border: 1px solid var(--border-light);
 }
 
 .template-item:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--primary-light);
-  transform: translateX(5px);
-  box-shadow: var(--shadow-sm);
+  background: var(--white-10);
+  border-color: var(--primary-color);
+  transform: scale(1.02) translateX(5px);
 }
 
 .template-bullet {

@@ -367,32 +367,70 @@ class LiuyaoService
     }
 
     /**
-     * 判断用神
-     * 根据所问事项自动判断用神
-     * 
-     * @param string $questionType 问事类型
-     * @return array 用神信息
+     * 判断用神 (深度分析版)
+     * 根据所问事项自动判断用神，并分析其在卦中的状态
      */
-    public static function getYongShen(string $questionType): array
+    public static function getYongShen(string $questionType, array $liuqin, array $shiYing, string $yaoCode, string $gender = '男', array $timeInfo = []): array
     {
-        // 用神对应表
+        // 1. 基本映射
         $yongShenMap = [
-            '求财' => ['liuqin' => '妻财', 'description' => '妻财爻为用神，代表钱财、利润'],
-            '感情' => [
-                'male' => ['liuqin' => '妻财', 'description' => '男测感情以妻财为用神'],
-                'female' => ['liuqin' => '官鬼', 'description' => '女测感情以官鬼为用神'],
-            ],
-            '事业' => ['liuqin' => '官鬼', 'description' => '官鬼爻为用神，代表工作、职位'],
-            '健康' => ['liuqin' => '世爻', 'description' => '以世爻为用神，代表自己'],
-            '学业' => ['liuqin' => '父母', 'description' => '父母爻为用神，代表学业、成绩'],
-            '出行' => ['liuqin' => '世爻', 'description' => '以世爻为用神'],
-            '失物' => ['liuqin' => '妻财', 'description' => '妻财爻为用神'],
-            '官司' => ['liuqin' => '官鬼', 'description' => '官鬼爻为用神'],
-            '父母' => ['liuqin' => '父母', 'description' => '父母爻为用神'],
-            '子女' => ['liuqin' => '子孙', 'description' => '子孙爻为用神'],
+            '求财' => '妻财',
+            '事业' => '官鬼',
+            '健康' => '世爻',
+            '学业' => '父母',
+            '出行' => '世爻',
+            '失物' => '妻财',
+            '官司' => '官鬼',
+            '父母' => '父母',
+            '子女' => '子孙',
         ];
         
-        return $yongShenMap[$questionType] ?? ['liuqin' => '世爻', 'description' => '以世爻为用神'];
+        $targetLiuqin = $yongShenMap[$questionType] ?? '世爻';
+        
+        // 特殊处理：感情根据性别区分用神
+        if ($questionType === '感情') {
+            $targetLiuqin = ($gender === '女') ? '官鬼' : '妻财';
+        }
+        
+        // 特殊处理：如果用神是“世爻”，直接指向世位
+        if ($targetLiuqin === '世爻') {
+            $position = $shiYing['shi'];
+            $targetLiuqin = $liuqin[$position] ?? '世爻';
+        } else {
+            // 在六爻中寻找匹配的六亲位置
+            $positions = [];
+            foreach ($liuqin as $pos => $lq) {
+                if ($lq === $targetLiuqin) {
+                    $positions[] = $pos;
+                }
+            }
+            // 如果有多个，通常取动爻，若无动爻则取世应，此处简化取第一个
+            $position = $positions[0] ?? $shiYing['ying'];
+        }
+        
+        // 2. 状态分析
+        $yaoArray = str_split($yaoCode);
+        $isMoving = ($yaoArray[$position - 1] == '0' || $yaoArray[$position - 1] == '3');
+        
+        $status = [];
+        if ($position === $shiYing['shi']) $status[] = '持世';
+        if ($position === $shiYing['ying']) $status[] = '在应位';
+        if ($isMoving) $status[] = '发动';
+        
+        // 3. 结合时令 (月破/旬空) - 需传入 timeInfo
+        if (!empty($timeInfo)) {
+            // 此处可扩展月破、旬空判断逻辑
+            // $status[] = '月破'; 
+            // $status[] = '旬空';
+        }
+
+        return [
+            'liuqin' => $targetLiuqin,
+            'position' => $position,
+            'is_moving' => $isMoving,
+            'status' => implode('、', $status),
+            'description' => "以第{$position}爻【{$targetLiuqin}】为用神。状态： " . (implode('、', $status) ?: '安静')
+        ];
     }
 
     /**

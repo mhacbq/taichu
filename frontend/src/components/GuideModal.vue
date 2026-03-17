@@ -28,29 +28,29 @@
           <h3>在迷茫中寻找方向</h3>
           <p class="warm-text">生活有时会让人感到困惑和迷茫，这很正常。</p>
           <p class="warm-text">太初命理不是预测命运的"神谕"，而是帮你从另一个角度认识自己、理解当下的工具。</p>
-          <div class="comfort-cards">
-            <div class="comfort-item">
-              <el-icon class="comfort-icon"><User /></el-icon>
-              <span>你并不孤单</span>
-            </div>
-            <div class="comfort-item">
-              <el-icon class="comfort-icon"><Opportunity /></el-icon>
-              <span>迷茫是成长的开始</span>
-            </div>
-            <div class="comfort-item">
-              <el-icon class="comfort-icon"><Compass /></el-icon>
-              <span>答案在你心中</span>
-            </div>
+        <div class="comfort-cards">
+          <div class="comfort-item">
+            <el-icon class="comfort-icon"><User /></el-icon>
+            <span>你并不孤单</span>
           </div>
-          <p class="sub-text">让我们一起探索，找到属于你的那份指引。</p>
-        </template>
+          <div class="comfort-item">
+            <el-icon class="comfort-icon"><Lightning /></el-icon>
+            <span>迷茫是成长的开始</span>
+          </div>
+          <div class="comfort-item">
+            <el-icon class="comfort-icon"><Compass /></el-icon>
+            <span>答案在你心中</span>
+          </div>
+        </div>
+        <p class="sub-text">让我们一起探索，找到属于你的那份指引。</p>
+      </template>
 
-        <!-- 第2步：功能介绍 -->
-        <template v-if="currentStep === 2">
-          <div class="step-illustration">
-            <el-icon class="large-icon"><YinYang /></el-icon>
-          </div>
-          <h3>我们能为你做什么</h3>
+      <!-- 第2步：功能介绍 -->
+      <template v-if="currentStep === 2">
+        <div class="step-illustration">
+          <YinYangIcon class="large-icon" />
+        </div>
+        <h3>我们能为你做什么</h3>
           <div class="feature-list">
             <div class="feature-item">
               <div class="feature-icon-bg"><el-icon><Calendar /></el-icon></div>
@@ -227,7 +227,7 @@ onMounted(() => {
   font-size: 22px;
   font-weight: bold;
   color: var(--text-primary);
-  background: linear-gradient(135deg, var(--text-primary) 0%, #daa520 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -258,7 +258,7 @@ onMounted(() => {
 }
 
 .step-dot.active {
-  background: linear-gradient(135deg, #daa520, #ffd700);
+  background: var(--primary-gradient);
   width: 30px;
   border-radius: 5px;
 }
@@ -270,7 +270,15 @@ onMounted(() => {
 .step-illustration {
   font-size: 60px;
   margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   animation: float 3s ease-in-out infinite;
+}
+
+.large-icon {
+  font-size: 60px;
+  color: var(--primary-color);
 }
 
 @keyframes float {
@@ -317,8 +325,8 @@ onMounted(() => {
 }
 
 .comfort-item {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(218, 165, 32, 0.1));
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 15px 20px;
   display: flex;
@@ -326,16 +334,19 @@ onMounted(() => {
   gap: 8px;
   color: var(--text-secondary);
   font-size: 14px;
+  min-height: 44px;
   transition: all 0.3s ease;
 }
 
 .comfort-item:hover {
   transform: translateY(-3px);
-  border-color: rgba(184, 134, 11, 0.4);
+  border-color: var(--primary-color);
+  background: var(--bg-card);
 }
 
 .comfort-icon {
   font-size: 20px;
+  color: var(--primary-color);
 }
 
 /* 功能列表 */
@@ -355,23 +366,25 @@ onMounted(() => {
   padding: 18px;
   text-align: left;
   border: 1px solid var(--border-color);
+  min-height: 44px;
   transition: all 0.3s ease;
 }
 
 .feature-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(184, 134, 11, 0.3);
+  background: var(--bg-card);
+  border-color: var(--primary-color);
 }
 
 .feature-icon-bg {
   width: 45px;
   height: 45px;
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.3), rgba(218, 165, 32, 0.3));
+  background: var(--primary-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  color: var(--bg-main);
   flex-shrink: 0;
 }
 
@@ -390,16 +403,16 @@ onMounted(() => {
 
 .feature-tag {
   display: inline-block;
-  background: rgba(184, 134, 11, 0.2);
-  color: var(--primary-color);
+  background: var(--primary-light);
+  color: var(--text-primary);
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
 }
 
 .feature-tag.free {
-  background: rgba(103, 194, 58, 0.2);
-  color: var(--success-color);
+  background: var(--success-color);
+  color: white;
 }
 
 /* 积分表格 */
@@ -421,6 +434,7 @@ onMounted(() => {
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid var(--border-color);
+  min-height: 44px;
 }
 
 .points-row:last-child {
@@ -433,7 +447,7 @@ onMounted(() => {
 }
 
 .points-cost {
-  color: #ffd700;
+  color: var(--primary-color);
   font-weight: 500;
 }
 
@@ -445,7 +459,7 @@ onMounted(() => {
 
 .free-tag {
   background: var(--success-gradient);
-  color: var(--text-primary);
+  color: white;
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
@@ -456,8 +470,8 @@ onMounted(() => {
 }
 
 .earn-points {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.2);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 18px;
   text-align: left;
@@ -467,6 +481,9 @@ onMounted(() => {
   color: var(--success-color);
   margin-bottom: 12px;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .earn-points ul {
@@ -475,7 +492,7 @@ onMounted(() => {
 
 .earn-points li {
   color: var(--text-secondary);
-  padding: 6px 0;
+  padding: 8px 0;
   padding-left: 20px;
   position: relative;
   font-size: 14px;
@@ -505,10 +522,12 @@ onMounted(() => {
   border-radius: 10px;
   padding: 15px;
   text-align: left;
+  min-height: 44px;
 }
 
 .tip-icon {
   font-size: 24px;
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
@@ -524,8 +543,8 @@ onMounted(() => {
 }
 
 .encourage-box {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(218, 165, 32, 0.15));
-  border: 1px solid rgba(184, 134, 11, 0.3);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 18px;
   margin-top: 20px;
@@ -536,6 +555,10 @@ onMounted(() => {
   font-size: 14px;
   margin: 0;
   font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* 底部按钮 */
@@ -547,19 +570,21 @@ onMounted(() => {
 
 .footer-btn {
   min-width: 120px;
-  padding: 12px 24px;
+  height: 44px;
   font-size: 15px;
+  border-radius: 22px;
 }
 
 .footer-btn.primary {
-  background: linear-gradient(135deg, #b8860b, #daa520);
+  background: var(--primary-gradient);
   border: none;
-  color: var(--text-primary);
+  color: var(--bg-main);
+  font-weight: bold;
 }
 
 .footer-btn.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(184, 134, 11, 0.4);
+  box-shadow: 0 5px 20px var(--primary-light);
 }
 
 @media (max-width: 768px) {

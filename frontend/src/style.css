@@ -13,16 +13,16 @@
   --bg-primary: #0a0a1a;
   --bg-secondary: #111122;
   --bg-tertiary: #16162e;
-  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card: var(--white-05);
   
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.9);
-  --text-tertiary: rgba(255, 255, 255, 0.6);
+  --text-secondary: var(--white-90);
+  --text-tertiary: var(--white-60);
 
-  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-muted: var(--white-40);
   
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-light: rgba(255, 255, 255, 0.05);
+  --border-color: var(--white-10);
+  --border-light: var(--white-05);
   
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
@@ -83,8 +83,27 @@
   --warning-light: rgba(230, 162, 60, 0.2);
   --danger-light: rgba(245, 108, 108, 0.2);
   
-  --bg-hover: rgba(255, 255, 255, 0.08);
-  --border-light-20: rgba(255, 255, 255, 0.2);
+  --bg-hover: var(--white-08);
+  --border-light-20: var(--white-20);
+
+  /* 透明度变量系统 */
+  --white-01: rgba(255, 255, 255, 0.01);
+  --white-02: rgba(255, 255, 255, 0.02);
+  --white-03: rgba(255, 255, 255, 0.03);
+  --white-05: rgba(255, 255, 255, 0.05);
+  --white-06: rgba(255, 255, 255, 0.06);
+  --white-08: rgba(255, 255, 255, 0.08);
+  --white-10: rgba(255, 255, 255, 0.1);
+  --white-15: rgba(255, 255, 255, 0.15);
+  --white-20: rgba(255, 255, 255, 0.2);
+  --white-30: rgba(255, 255, 255, 0.3);
+  --white-40: rgba(255, 255, 255, 0.4);
+  --white-50: rgba(255, 255, 255, 0.5);
+  --white-60: rgba(255, 255, 255, 0.6);
+  --white-70: rgba(255, 255, 255, 0.7);
+  --white-80: rgba(255, 255, 255, 0.8);
+  --white-85: rgba(255, 255, 255, 0.85);
+  --white-90: rgba(255, 255, 255, 0.9);
 
   /* 状态渐变色 */
   --success-gradient: linear-gradient(135deg, #67c23a, #85ce61);
@@ -310,7 +329,7 @@ body {
   text-align: center;
   padding: 100px 40px;
   color: var(--text-tertiary);
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--white-02);
   border-radius: var(--radius-xl);
   border: 1px dashed var(--border-light-20);
   display: flex;

@@ -279,9 +279,8 @@ class Hehun extends BaseController
         $useAi = $data['useAi'] ?? true;
         
         // 计算双方八字（免费层也需要）
-        // 使用BaziCalculationService服务类，避免直接实例化控制器
-        $maleBazi = $this->baziCalculationService->calculateBazi($data['maleBirthDate']);
-        $femaleBazi = $this->baziCalculationService->calculateBazi($data['femaleBirthDate']);
+        $maleBazi = $this->baziCalculationService->calculateBazi($data['maleBirthDate'], '男');
+        $femaleBazi = $this->baziCalculationService->calculateBazi($data['femaleBirthDate'], '女');
         
         // 执行完整合婚分析
         $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);
@@ -489,31 +488,35 @@ class Hehun extends BaseController
         $scores['year'] = $yearScore;
         $details['year'] = $this->getYearPillarDescription($yearScore);
         
-        // 2. 日柱（日主）配对分析 - 30分
+        // 2. 日柱（配偶宫）深度配对 - 25分
         $dayScore = $this->analyzeDayPillar($maleBazi['day'], $femaleBazi['day']);
-        $scores['day'] = $dayScore;
+        $scores['day'] = min(25, $dayScore); 
         $details['day'] = $this->getDayPillarDescription($dayScore);
         
-        // 3. 五行互补分析 - 20分
+        // 3. 五行喜用互补分析 - 20分
         $wuxingScore = $this->analyzeWuxingComplement($maleBazi, $femaleBazi);
         $scores['wuxing'] = $wuxingScore;
         $details['wuxing'] = $this->getWuxingDescription($wuxingScore);
         
-        // 4. 天干地支合冲分析 - 20分
+        // 4. 天干地支合冲分析 - 15分
         $hechongScore = $this->analyzeHeChong($maleBazi, $femaleBazi);
-        $scores['hechong'] = $hechongScore;
+        $scores['hechong'] = min(15, $hechongScore);
         $details['hechong'] = $this->getHeChongDescription($hechongScore);
         
         // 5. 纳音五行分析 - 15分
         $nayinScore = $this->analyzeNayin($maleBazi, $femaleBazi);
         $scores['nayin'] = $nayinScore;
         $details['nayin'] = $this->getNayinDescription($nayinScore);
+
+        // 6. 神煞互补分析 - 10分
+        $shenshaScore = $this->analyzeShenshaComplement($maleBazi, $femaleBazi);
+        $scores['shensha'] = $shenshaScore;
+        $details['shensha'] = $this->getShenshaDescription($shenshaScore);
         
-        // 6. 三元合婚分析（传统合婚法）
+        // 7. 传统合婚模型 (三元/九宫)
         $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
-        
-        // 7. 九宫合婚分析（传统合婚法）
         $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
+
 
         
         // 计算总分
@@ -637,41 +640,86 @@ class Hehun extends BaseController
     }
     
     /**
-     * 五行互补分析
+     * 五行喜用互补分析
      */
     protected function analyzeWuxingComplement(array $maleBazi, array $femaleBazi): int
     {
-        $maleStats = $maleBazi['wuxing_stats'];
-        $femaleStats = $femaleBazi['wuxing_stats'];
+        $score = 10;
         
-        $score = 10; // 基础分
+        // 1. 喜用神互补 (核心深度优化)
+        // 如果一方的旺五行是另一方的喜用五行，则大吉
+        $maleFav = $maleBazi['strength']['favorite_wuxing'] ?? [];
+        $femaleFav = $femaleBazi['strength']['favorite_wuxing'] ?? [];
         
-        // 检查双方五行是否互补
-        foreach ($maleStats as $element => $count) {
-            // 男方旺的，女方弱则为互补
-            if ($count >= 3 && $femaleStats[$element] <= 1) {
-                $score -= 2; // 双方都旺同一五行，减分
-            }
-            // 男方弱的，女方旺则为互补
-            if ($count <= 1 && $femaleStats[$element] >= 3) {
-                $score += 3; // 互补，加分
+        $maleStats = $maleBazi['wuxing_stats'] ?? [];
+        $femaleStats = $femaleBazi['wuxing_stats'] ?? [];
+
+        foreach ($maleStats as $wx => $count) {
+            if ($count >= 3 && in_array($wx, $femaleFav)) {
+                $score += 5; // 男方旺的正是女方喜的
             }
         }
-        
-        // 检查日主五行关系
-        $maleDayWuxing = $maleBazi['day_master_wuxing'];
-        $femaleDayWuxing = $femaleBazi['day_master_wuxing'];
-        
-        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
-        $keRelation = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
-        
-        if ($shengRelation[$maleDayWuxing] === $femaleDayWuxing) {
-            $score += 5; // 相生
-        } elseif ($keRelation[$maleDayWuxing] === $femaleDayWuxing) {
-            $score -= 3; // 相克
+        foreach ($femaleStats as $wx => $count) {
+            if ($count >= 3 && in_array($wx, $maleFav)) {
+                $score += 5; // 女方旺的正是男方喜的
+            }
         }
         
         return max(0, min(20, $score));
+    }
+
+    /**
+     * 神煞互补分析
+     */
+    protected function analyzeShenshaComplement(array $maleBazi, array $femaleBazi): int
+    {
+        $score = 5; // 基础分
+        
+        // 1. 天乙贵人互补 (以日干查对方地支)
+        // 简化版贵人口诀：甲戊庚牛羊...
+        $guiRenMap = [
+            '甲' => ['丑', '未'], '戊' => ['丑', '未'], '庚' => ['丑', '未'],
+            '乙' => ['子', '申'], '己' => ['子', '申'],
+            '丙' => ['亥', '酉'], '丁' => ['亥', '酉'],
+            '壬' => ['卯', '巳'], '癸' => ['卯', '巳'],
+            '辛' => ['午', '寅']
+        ];
+        
+        $maleDayGan = $maleBazi['day']['gan'];
+        $femaleDayGan = $femaleBazi['day']['gan'];
+        
+        $femaleBranches = [$femaleBazi['year']['zhi'], $femaleBazi['month']['zhi'], $femaleBazi['day']['zhi'], $femaleBazi['hour']['zhi']];
+        $maleBranches = [$maleBazi['year']['zhi'], $maleBazi['month']['zhi'], $maleBazi['day']['zhi'], $maleBazi['hour']['zhi']];
+        
+        if (isset($guiRenMap[$maleDayGan])) {
+            foreach ($femaleBranches as $zhi) {
+                if (in_array($zhi, $guiRenMap[$maleDayGan])) {
+                    $score += 3; // 女方地支有男方的贵人
+                    break;
+                }
+            }
+        }
+        
+        if (isset($guiRenMap[$femaleDayGan])) {
+            foreach ($maleBranches as $zhi) {
+                if (in_array($zhi, $guiRenMap[$femaleDayGan])) {
+                    $score += 3; // 男方地支有女方的贵人
+                    break;
+                }
+            }
+        }
+        
+        return max(0, min(10, $score));
+    }
+    
+    /**
+     * 获取神煞互补描述
+     */
+    protected function getShenshaDescription(int $score): string
+    {
+        if ($score >= 8) return '神煞互为贵人，生活中多得对方助力，逢凶化吉，缘分极深。';
+        if ($score >= 5) return '神煞配合尚可，无明显冲突，感情生活平稳。';
+        return '神煞配合一般，建议在日常生活中多给予对方情感支持。';
     }
     
     /**

@@ -195,692 +195,741 @@
             <span class="meta-tag" v-if="result.from_cache"><el-icon><Lightning /></el-icon> 智能缓存</span>
           </div>
         </div>
-        
-        <!-- 日主信息 -->
-        <div class="day-master-info">
-          <div class="day-master-card">
-            <span class="label">日主</span>
-            <span class="value">{{ result.bazi?.day_master }}</span>
-            <span class="wuxing">{{ result.bazi?.day_master_wuxing }}</span>
-          </div>
-        </div>
-        
-        <!-- 八字排盘表 -->
-        <div class="bazi-paipan">
-          <div class="paipan-row">
-            <div class="paipan-cell header">年柱</div>
-            <div class="paipan-cell header">月柱</div>
-            <div class="paipan-cell header">日柱</div>
-            <div class="paipan-cell header">时柱</div>
-          </div>
-          <!-- 天干行 -->
-          <div class="paipan-row">
-            <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi?.year?.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi?.year?.gan_wuxing">{{ result.bazi?.year?.gan_wuxing }}</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi?.month?.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi?.month?.gan_wuxing">{{ result.bazi?.month?.gan_wuxing }}</span>
-            </div>
-            <div class="paipan-cell highlight">
-              <span class="gan-text">{{ result.bazi?.day?.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi?.day?.gan_wuxing">{{ result.bazi?.day?.gan_wuxing }}</span>
-              <span class="rizhu-tag">日主</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi?.hour?.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi?.hour?.gan_wuxing">{{ result.bazi?.hour?.gan_wuxing }}</span>
-            </div>
-          </div>
-          <!-- 十神行 -->
-          <div class="paipan-row shishen-row">
-            <div class="paipan-cell shishen-cell">{{ result.bazi?.year?.shishen }}</div>
-            <div class="paipan-cell shishen-cell">{{ result.bazi?.month?.shishen }}</div>
-            <div class="paipan-cell shishen-cell highlight">日主</div>
-            <div class="paipan-cell shishen-cell">{{ result.bazi?.hour?.shishen }}</div>
-          </div>
-          <!-- 地支行 -->
-          <div class="paipan-row">
-            <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi?.year?.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi?.year?.zhi_wuxing">{{ result.bazi?.year?.zhi_wuxing }}</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi?.month?.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi?.month?.zhi_wuxing">{{ result.bazi?.month?.zhi_wuxing }}</span>
-            </div>
-            <div class="paipan-cell highlight">
-              <span class="zhi-text">{{ result.bazi?.day?.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi?.day?.zhi_wuxing">{{ result.bazi?.day?.zhi_wuxing }}</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi?.hour?.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi?.hour?.zhi_wuxing">{{ result.bazi?.hour?.zhi_wuxing }}</span>
-            </div>
-          </div>
-          <!-- 藏干行 -->
-          <div class="paipan-row canggan-row">
-            <div class="paipan-cell canggan-cell">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi?.year?.canggan || []" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi?.year?.canggan_shishen?.[idx] }})</small>
-                </span>
-              </div>
-            </div>
-            <div class="paipan-cell canggan-cell">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi?.month?.canggan || []" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi?.month?.canggan_shishen?.[idx] }})</small>
-                </span>
-              </div>
-            </div>
-            <div class="paipan-cell canggan-cell highlight">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi?.day?.canggan || []" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi?.day?.canggan_shishen?.[idx] }})</small>
-                </span>
-              </div>
-            </div>
-            <div class="paipan-cell canggan-cell">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi?.hour?.canggan || []" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi?.hour?.canggan_shishen?.[idx] }})</small>
-                </span>
-              </div>
-            </div>
-          </div>
-          <!-- 纳音行 -->
-          <div class="paipan-row nayin-row">
-            <div class="paipan-cell nayin-cell">{{ result.bazi?.year?.nayin }}</div>
-            <div class="paipan-cell nayin-cell">{{ result.bazi?.month?.nayin }}</div>
-            <div class="paipan-cell nayin-cell highlight">{{ result.bazi?.day?.nayin }}</div>
-            <div class="paipan-cell nayin-cell">{{ result.bazi?.hour?.nayin }}</div>
-          </div>
-        </div>
-        
-        <!-- 五行统计 -->
-        <div class="wuxing-stats">
-          <h3>五行分布</h3>
-          <div class="wuxing-bars">
-            <div v-for="(count, wx) in result.bazi?.wuxing_stats" :key="wx" class="wuxing-bar-item">
-              <span class="wuxing-name">{{ wx }}</span>
-              <div class="wuxing-bar">
-                <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%', '--target-width': (count / 8 * 100) + '%' }"></div>
-              </div>
-              <span class="wuxing-count">{{ count }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 专业解读卡片 -->
-        <div class="professional-reading" v-if="result.fullInterpretation">
-          <h3>
-            <el-icon class="section-icon"><Document /></el-icon>
-            命盘精解
-            <span class="section-badge">专业版</span>
-          </h3>
-          
-          <!-- 日主信息卡片 -->
-          <div class="day-master-detail" v-if="result.fullInterpretation.basic">
-            <div class="dm-header">
-              <div class="dm-symbol">{{ result.fullInterpretation.basic.day_master_symbol }}</div>
-              <div class="dm-title">
-                <h4>{{ result.fullInterpretation.basic.day_master }}日主 · {{ result.fullInterpretation.basic.day_master_nature }}</h4>
-                <p class="dm-traits">
-                  <span v-for="(trait, idx) in result.fullInterpretation.basic.traits" :key="idx" class="trait-tag">{{ trait }}</span>
-                </p>
-              </div>
-            </div>
-            <div class="dm-content">
-              <div class="dm-section">
-                <h5>核心优势</h5>
-                <p>{{ result.fullInterpretation.basic.strengths }}</p>
-              </div>
-              <div class="dm-section">
-                <h5>需要注意</h5>
-                <p>{{ result.fullInterpretation.basic.weaknesses }}</p>
-              </div>
-            </div>
-          </div>
 
-          <!-- 喜用神分析 -->
-          <div class="yongshen-section" v-if="result.fullInterpretation.yongshen">
-            <div class="ys-header">
-              <el-icon class="ys-icon"><StarFilled /></el-icon>
-              <div class="ys-info">
-                <h4>喜用神：{{ result.fullInterpretation.yongshen.shen }}、{{ result.fullInterpretation.yongshen.xi }}</h4>
-                <span class="ys-type">{{ result.fullInterpretation.yongshen.type }}格</span>
+        <el-collapse v-model="activeNames" class="result-collapse">
+          <!-- 命盘基础部分 -->
+          <el-collapse-item name="basic">
+            <template #title>
+              <div class="collapse-title-wrapper">
+                <el-icon class="title-icon"><Grid /></el-icon>
+                <span class="title-text">命盘核心数据</span>
+                <span class="title-desc">日主、八字、五行分布</span>
               </div>
-            </div>
-            <p class="ys-desc">{{ result.fullInterpretation.yongshen.desc }}</p>
-          </div>
-
-          <!-- 详细解读卡片网格 -->
-          <div class="reading-cards-grid">
-            <div class="reading-card card-hover" v-if="result.fullInterpretation.personality">
-              <div class="rc-header">
-                <el-icon class="rc-icon"><UserFilled /></el-icon>
-                <h4>性格详解</h4>
+            </template>
+            
+            <!-- 日主信息 -->
+            <div class="day-master-info">
+              <div class="day-master-card">
+                <span class="label">日主</span>
+                <span class="value">{{ result.bazi?.day_master }}</span>
+                <span class="wuxing">{{ result.bazi?.day_master_wuxing }}</span>
               </div>
-              <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
             </div>
             
-            <div class="reading-card card-hover" v-if="result.fullInterpretation.career">
-              <div class="rc-header">
-                <el-icon class="rc-icon"><Briefcase /></el-icon>
-                <h4>事业财运</h4>
+            <!-- 八字排盘表 -->
+            <div class="bazi-paipan">
+              <div class="paipan-row">
+                <div class="paipan-cell header">年柱</div>
+                <div class="paipan-cell header">月柱</div>
+                <div class="paipan-cell header">日柱</div>
+                <div class="paipan-cell header">时柱</div>
               </div>
-              <p class="rc-content">{{ result.fullInterpretation.career }}</p>
-            </div>
-            
-            <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth">
-              <div class="rc-header">
-                <el-icon class="rc-icon"><Money /></el-icon>
-                <h4>财富分析</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
-            </div>
-            
-            <div class="reading-card card-hover" v-if="result.fullInterpretation.relationship">
-              <div class="rc-header">
-                <el-icon class="rc-icon"><UserFilled /></el-icon>
-                <h4>感情婚姻</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
-            </div>
-            
-            <div class="reading-card card-hover" v-if="result.fullInterpretation.health">
-              <div class="rc-header">
-                <el-icon class="rc-icon"><Aim /></el-icon>
-                <h4>健康提醒</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.health }}</p>
-            </div>
-            
-            <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice">
-              <div class="rc-header">
-                <el-icon class="rc-icon"><Lightbulb /></el-icon>
-                <h4>开运建议</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 通俗解读：这对我意味着什么 -->
-        <div class="simple-interpretation" v-if="result.simpleInterpretation && !result.fullInterpretation">
-          <h3>
-            <el-icon class="section-icon"><Lightbulb /></el-icon>
-            这对我意味着什么？
-            <span class="section-subtitle">通俗解读</span>
-          </h3>
-          <div class="interpretation-cards">
-            <div class="interp-card personality card-hover">
-              <div class="interp-header">
-                <el-icon class="interp-icon"><UserFilled /></el-icon>
-                <h4>我的性格特点</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
-            </div>
-            <div class="interp-card career card-hover">
-              <div class="interp-header">
-                <el-icon class="interp-icon"><Briefcase /></el-icon>
-                <h4>适合的发展方向</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
-            </div>
-            <div class="interp-card relationship card-hover">
-              <div class="interp-header">
-                <el-icon class="interp-icon"><UserFilled /></el-icon>
-                <h4>人际关系建议</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
-            </div>
-            <div class="interp-card advice card-hover">
-              <div class="interp-header">
-                <el-icon class="interp-icon"><StarFilled /></el-icon>
-                <h4>给你的建议</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bazi-analysis">
-          <h3>详细命理分析</h3>
-          <div class="analysis-content">{{ result.analysis }}</div>
-        </div>
-
-        <!-- 大运分析 -->
-        <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
-          <h3>
-            大运走势
-            <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
-              <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
-            </el-tooltip>
-          </h3>
-          <div class="dayun-timeline">
-            <div 
-              v-for="(yun, index) in result.dayun" 
-              :key="index"
-              class="dayun-item"
-              :class="{ 'current': isCurrentDaYun(yun) }"
-            >
-              <div class="dayun-age">{{ yun.age_start }}-{{ yun.age_end }}岁</div>
-              <div class="dayun-pillar">
-                <span class="gan">{{ yun.gan }}</span>
-                <span class="zhi">{{ yun.zhi }}</span>
-              </div>
-              <div class="dayun-shishen">{{ yun.shishen }}</div>
-              <div class="dayun-luck" :class="yun.luck">{{ yun.luck }}</div>
-              <div class="dayun-desc">{{ yun.luck_desc }}</div>
-              <div class="dayun-nayin">{{ yun.nayin }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 流年分析 -->
-        <div class="liunian-section" v-if="result.liunian && result.liunian.length > 0">
-          <h3>
-            流年运势
-            <el-tooltip content="流年是每年的运势参考，结合大运提供年度生活建议" placement="top">
-              <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
-            </el-tooltip>
-          </h3>
-          <div class="liunian-grid">
-            <div 
-              v-for="(year, index) in result.liunian" 
-              :key="index"
-              class="liunian-item"
-              :class="{ 'current': year.is_current }"
-            >
-              <div class="liunian-year">{{ year.year }}年</div>
-              <div class="liunian-pillar">
-                <span class="gan">{{ year.gan }}</span>
-                <span class="zhi">{{ year.zhi }}</span>
-              </div>
-              <div class="liunian-wuxing">
-                <span class="badge" :class="year.gan_wuxing">{{ year.gan_wuxing }}</span>
-                <span class="badge" :class="year.zhi_wuxing">{{ year.zhi_wuxing }}</span>
-              </div>
-              <div class="liunian-nayin">{{ year.nayin }}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 流年运势分析 -->
-        <div class="yearly-fortune-section" v-if="result.bazi">
-          <h3>
-            <span class="section-icon"><el-icon><Calendar /></el-icon></span>
-            流年运势深度分析
-            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.yearly_fortune }}积分</el-tag>
-          </h3>
-          
-          <!-- 年份选择 -->
-          <div class="year-selector">
-            <span class="selector-label">选择年份：</span>
-            <el-slider
-              v-model="selectedYear"
-              :min="new Date().getFullYear() - 3"
-              :max="new Date().getFullYear() + 7"
-              :step="1"
-              show-stops
-              class="year-slider"
-            />
-            <span class="selected-year">{{ selectedYear }}年</span>
-          </div>
-          
-          <!-- 流年分析结果 -->
-          <div v-if="yearlyFortuneResult" class="yearly-result">
-            <div class="yearly-header">
-              <div class="year-info">
-                <span class="year-number">{{ yearlyFortuneResult.year }}</span>
-                <span class="year-ganzhi">{{ yearlyFortuneResult.ganzhi }}年</span>
-                <span class="year-nayin">{{ yearlyFortuneResult.nayin }}</span>
-              </div>
-              <div class="score-display">
-                <div class="score-circle" :class="getScoreClass(yearlyFortuneResult.score)">
-                  <span class="score-value">{{ yearlyFortuneResult.score }}</span>
-                  <span class="score-label">运势评分</span>
+              <!-- 天干行 -->
+              <div class="paipan-row">
+                <div class="paipan-cell">
+                  <span class="gan-text">{{ result.bazi?.year?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.year?.gan_wuxing">{{ result.bazi?.year?.gan_wuxing }}</span>
                 </div>
-                <div class="rating-badge" :class="getScoreClass(yearlyFortuneResult.score)">
-                  {{ yearlyFortuneResult.rating }}
+                <div class="paipan-cell">
+                  <span class="gan-text">{{ result.bazi?.month?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.month?.gan_wuxing">{{ result.bazi?.month?.gan_wuxing }}</span>
+                </div>
+                <div class="paipan-cell highlight">
+                  <span class="gan-text">{{ result.bazi?.day?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.day?.gan_wuxing">{{ result.bazi?.day?.gan_wuxing }}</span>
+                  <span class="rizhu-tag">日主</span>
+                </div>
+                <div class="paipan-cell">
+                  <span class="gan-text">{{ result.bazi?.hour?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.hour?.gan_wuxing">{{ result.bazi?.hour?.gan_wuxing }}</span>
+                </div>
+              </div>
+              <!-- 十神行 -->
+              <div class="paipan-row shishen-row">
+                <div class="paipan-cell shishen-cell">{{ result.bazi?.year?.shishen }}</div>
+                <div class="paipan-cell shishen-cell">{{ result.bazi?.month?.shishen }}</div>
+                <div class="paipan-cell shishen-cell highlight">日主</div>
+                <div class="paipan-cell shishen-cell">{{ result.bazi?.hour?.shishen }}</div>
+              </div>
+              <!-- 地支行 -->
+              <div class="paipan-row">
+                <div class="paipan-cell">
+                  <span class="zhi-text">{{ result.bazi?.year?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.year?.zhi_wuxing">{{ result.bazi?.year?.zhi_wuxing }}</span>
+                </div>
+                <div class="paipan-cell">
+                  <span class="zhi-text">{{ result.bazi?.month?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.month?.zhi_wuxing">{{ result.bazi?.month?.zhi_wuxing }}</span>
+                </div>
+                <div class="paipan-cell highlight">
+                  <span class="zhi-text">{{ result.bazi?.day?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.day?.zhi_wuxing">{{ result.bazi?.day?.zhi_wuxing }}</span>
+                </div>
+                <div class="paipan-cell">
+                  <span class="zhi-text">{{ result.bazi?.hour?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.hour?.zhi_wuxing">{{ result.bazi?.hour?.zhi_wuxing }}</span>
+                </div>
+              </div>
+              <!-- 藏干行 -->
+              <div class="paipan-row canggan-row">
+                <div class="paipan-cell canggan-cell">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.year?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.year?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="paipan-cell canggan-cell">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.month?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.month?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="paipan-cell canggan-cell highlight">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.day?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.day?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="paipan-cell canggan-cell">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.hour?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.hour?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <!-- 纳音行 -->
+              <div class="paipan-row nayin-row">
+                <div class="paipan-cell nayin-cell">{{ result.bazi?.year?.nayin }}</div>
+                <div class="paipan-cell nayin-cell">{{ result.bazi?.month?.nayin }}</div>
+                <div class="paipan-cell nayin-cell highlight">{{ result.bazi?.day?.nayin }}</div>
+                <div class="paipan-cell nayin-cell">{{ result.bazi?.hour?.nayin }}</div>
+              </div>
+            </div>
+            
+            <!-- 五行统计 -->
+            <div class="wuxing-stats">
+              <h3>五行分布</h3>
+              <div class="wuxing-bars">
+                <div v-for="(count, wx) in result.bazi?.wuxing_stats" :key="wx" class="wuxing-bar-item">
+                  <span class="wuxing-name">{{ wx }}</span>
+                  <div class="wuxing-bar">
+                    <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%', '--target-width': (count / 8 * 100) + '%' }"></div>
+                  </div>
+                  <span class="wuxing-count">{{ count }}</span>
                 </div>
               </div>
             </div>
-            
-            <div class="yearly-analysis">
-              <div class="analysis-card overall">
-                <h4><el-icon><Aim /></el-icon> 整体运势</h4>
-                <p>{{ yearlyFortuneResult.overall }}</p>
+          </el-collapse-item>
+        
+          <!-- 性格与解读部分 -->
+          <el-collapse-item name="interpretation">
+            <template #title>
+              <div class="collapse-title-wrapper">
+                <el-icon class="title-icon"><Document /></el-icon>
+                <span class="title-text">性格与命理解读</span>
+                <span class="title-desc">专业精解、通俗解读、详细分析</span>
+              </div>
+            </template>
+
+            <!-- 专业解读卡片 -->
+            <div class="professional-reading" v-if="result.fullInterpretation">
+              <div class="section-subtitle-wrapper">
+                <span class="section-badge">专业版</span>
               </div>
               
-              <div class="analysis-grid">
-                <div class="analysis-card">
-                  <h4><el-icon><Briefcase /></el-icon> 事业运势</h4>
-                  <p>{{ yearlyFortuneResult.career }}</p>
+              <!-- 日主信息卡片 -->
+              <div class="day-master-detail" v-if="result.fullInterpretation.basic">
+                <div class="dm-header">
+                  <div class="dm-symbol">{{ result.fullInterpretation.basic.day_master_symbol }}</div>
+                  <div class="dm-title">
+                    <h4>{{ result.fullInterpretation.basic.day_master }}日主 · {{ result.fullInterpretation.basic.day_master_nature }}</h4>
+                    <p class="dm-traits">
+                      <span v-for="(trait, idx) in result.fullInterpretation.basic.traits" :key="idx" class="trait-tag">{{ trait }}</span>
+                    </p>
+                  </div>
                 </div>
-                <div class="analysis-card">
-                  <h4><el-icon><Money /></el-icon> 财富运势</h4>
-                  <p>{{ yearlyFortuneResult.wealth }}</p>
+                <div class="dm-content">
+                  <div class="dm-section">
+                    <h5>核心优势</h5>
+                    <p>{{ result.fullInterpretation.basic.strengths }}</p>
+                  </div>
+                  <div class="dm-section">
+                    <h5>需要注意</h5>
+                    <p>{{ result.fullInterpretation.basic.weaknesses }}</p>
+                  </div>
                 </div>
-                <div class="analysis-card">
-                  <h4><el-icon><UserFilled /></el-icon> 感情运势</h4>
-                  <p>{{ yearlyFortuneResult.relationship }}</p>
+              </div>
+
+              <!-- 喜用神分析 -->
+              <div class="yongshen-section" v-if="result.fullInterpretation.yongshen">
+                <div class="ys-header">
+                  <el-icon class="ys-icon"><StarFilled /></el-icon>
+                  <div class="ys-info">
+                    <h4>喜用神：{{ result.fullInterpretation.yongshen.shen }}、{{ result.fullInterpretation.yongshen.xi }}</h4>
+                    <span class="ys-type">{{ result.fullInterpretation.yongshen.type }}格</span>
+                  </div>
                 </div>
-                <div class="analysis-card">
-                  <h4><el-icon><Warning /></el-icon> 健康提醒</h4>
-                  <p>{{ yearlyFortuneResult.health }}</p>
+                <p class="ys-desc">{{ result.fullInterpretation.yongshen.desc }}</p>
+              </div>
+
+              <!-- 详细解读卡片网格 -->
+              <div class="reading-cards-grid">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.personality">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><UserFilled /></el-icon>
+                    <h4>性格详解</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.career">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Briefcase /></el-icon>
+                    <h4>事业财运</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.career }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Money /></el-icon>
+                    <h4>财富分析</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.relationship">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><UserFilled /></el-icon>
+                    <h4>感情婚姻</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.health">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Aim /></el-icon>
+                    <h4>健康提醒</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.health }}</p>
+                </div>
+                
+                <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Lightbulb /></el-icon>
+                    <h4>开运建议</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 通俗解读：这对我意味着什么 -->
+            <div class="simple-interpretation" v-if="result.simpleInterpretation && !result.fullInterpretation">
+              <div class="section-subtitle-wrapper">
+                <span class="section-subtitle">通俗解读</span>
+              </div>
+              <div class="interpretation-cards">
+                <div class="interp-card personality card-hover">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><UserFilled /></el-icon>
+                    <h4>我的性格特点</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
+                </div>
+                <div class="interp-card career card-hover">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><Briefcase /></el-icon>
+                    <h4>适合的发展方向</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
+                </div>
+                <div class="interp-card relationship card-hover">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><UserFilled /></el-icon>
+                    <h4>人际关系建议</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
+                </div>
+                <div class="interp-card advice card-hover">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><StarFilled /></el-icon>
+                    <h4>给你的建议</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bazi-analysis">
+              <h3>详细命理分析</h3>
+              <div class="analysis-content">{{ result.analysis }}</div>
+            </div>
+          </el-collapse-item>
+
+          <!-- 运势趋势部分 -->
+          <el-collapse-item name="fortune">
+            <template #title>
+              <div class="collapse-title-wrapper">
+                <el-icon class="title-icon"><TrendCharts /></el-icon>
+                <span class="title-text">大运与流年走势</span>
+                <span class="title-desc">十年大运、逐年流年参考</span>
+              </div>
+            </template>
+
+            <!-- 大运分析 -->
+            <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
+              <div class="section-title-with-tip">
+                <h3>大运走势</h3>
+                <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
+                  <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
+                </el-tooltip>
+              </div>
+              <div class="dayun-timeline">
+                <div 
+                  v-for="(yun, index) in result.dayun" 
+                  :key="index"
+                  class="dayun-item"
+                  :class="{ 'current': isCurrentDaYun(yun) }"
+                >
+                  <div class="dayun-age">{{ yun.age_start }}-{{ yun.age_end }}岁</div>
+                  <div class="dayun-pillar">
+                    <span class="gan">{{ yun.gan }}</span>
+                    <span class="zhi">{{ yun.zhi }}</span>
+                  </div>
+                  <div class="dayun-shishen">{{ yun.shishen }}</div>
+                  <div class="dayun-luck" :class="yun.luck">{{ yun.luck }}</div>
+                  <div class="dayun-desc">{{ yun.luck_desc }}</div>
+                  <div class="dayun-nayin">{{ yun.nayin }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 流年分析 -->
+            <div class="liunian-section" v-if="result.liunian && result.liunian.length > 0">
+              <div class="section-title-with-tip">
+                <h3>流年运势</h3>
+                <el-tooltip content="流年是每年的运势参考，结合大运提供年度生活建议" placement="top">
+                  <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
+                </el-tooltip>
+              </div>
+              <div class="liunian-grid">
+                <div 
+                  v-for="(year, index) in result.liunian" 
+                  :key="index"
+                  class="liunian-item"
+                  :class="{ 'current': year.is_current }"
+                >
+                  <div class="liunian-year">{{ year.year }}年</div>
+                  <div class="liunian-pillar">
+                    <span class="gan">{{ year.gan }}</span>
+                    <span class="zhi">{{ year.zhi }}</span>
+                  </div>
+                  <div class="liunian-wuxing">
+                    <span class="badge" :class="year.gan_wuxing">{{ year.gan_wuxing }}</span>
+                    <span class="badge" :class="year.zhi_wuxing">{{ year.zhi_wuxing }}</span>
+                  </div>
+                  <div class="liunian-nayin">{{ year.nayin }}</div>
+                </div>
+              </div>
+            </div>
+          </el-collapse-item>
+        
+          <!-- 深度预测部分 -->
+          <el-collapse-item name="tools">
+            <template #title>
+              <div class="collapse-title-wrapper">
+                <el-icon class="title-icon"><Aim /></el-icon>
+                <span class="title-text">深度预测工具</span>
+                <span class="title-desc">流年深度分析、大运评分、运势K线</span>
+              </div>
+            </template>
+            
+            <!-- 流年运势分析 -->
+            <div class="yearly-fortune-section" v-if="result.bazi">
+              <div class="section-title-with-tag">
+                <h3>流年运势深度分析</h3>
+                <el-tag type="warning" size="small">消耗{{ fortunePointsCost.yearly_fortune }}积分</el-tag>
+              </div>
+              
+              <!-- 年份选择 -->
+              <div class="year-selector">
+                <span class="selector-label">选择年份：</span>
+                <el-slider
+                  v-model="selectedYear"
+                  :min="new Date().getFullYear() - 3"
+                  :max="new Date().getFullYear() + 7"
+                  :step="1"
+                  show-stops
+                  class="year-slider"
+                />
+                <span class="selected-year">{{ selectedYear }}年</span>
+              </div>
+              
+              <!-- 流年分析结果 -->
+              <div v-if="yearlyFortuneResult" class="yearly-result">
+                <div class="yearly-header">
+                  <div class="year-info">
+                    <span class="year-number">{{ yearlyFortuneResult.year }}</span>
+                    <span class="year-ganzhi">{{ yearlyFortuneResult.ganzhi }}年</span>
+                    <span class="year-nayin">{{ yearlyFortuneResult.nayin }}</span>
+                  </div>
+                  <div class="score-display">
+                    <div class="score-circle" :class="getScoreClass(yearlyFortuneResult.score)">
+                      <span class="score-value">{{ yearlyFortuneResult.score }}</span>
+                      <span class="score-label">运势评分</span>
+                    </div>
+                    <div class="rating-badge" :class="getScoreClass(yearlyFortuneResult.score)">
+                      {{ yearlyFortuneResult.rating }}
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="yearly-analysis">
+                  <div class="analysis-card overall">
+                    <h4><el-icon><Aim /></el-icon> 整体运势</h4>
+                    <p>{{ yearlyFortuneResult.overall }}</p>
+                  </div>
+                  
+                  <div class="analysis-grid">
+                    <div class="analysis-card">
+                      <h4><el-icon><Briefcase /></el-icon> 事业运势</h4>
+                      <p>{{ yearlyFortuneResult.career }}</p>
+                    </div>
+                    <div class="analysis-card">
+                      <h4><el-icon><Money /></el-icon> 财富运势</h4>
+                      <p>{{ yearlyFortuneResult.wealth }}</p>
+                    </div>
+                    <div class="analysis-card">
+                      <h4><el-icon><UserFilled /></el-icon> 感情运势</h4>
+                      <p>{{ yearlyFortuneResult.relationship }}</p>
+                    </div>
+                    <div class="analysis-card">
+                      <h4><el-icon><Warning /></el-icon> 健康提醒</h4>
+                      <p>{{ yearlyFortuneResult.health }}</p>
+                    </div>
+                  </div>
+                  
+                  <div class="analysis-card advice">
+                    <h4><el-icon><Lightbulb /></el-icon> 开运建议</h4>
+                    <p>{{ yearlyFortuneResult.advice }}</p>
+                  </div>
+                  
+                  <div class="lucky-info">
+                    <div class="lucky-section">
+                      <h5>幸运月份</h5>
+                      <div class="lucky-tags">
+                        <span v-for="month in yearlyFortuneResult.lucky_months" :key="month" class="lucky-tag good">
+                          {{ month }}月
+                        </span>
+                      </div>
+                    </div>
+                    <div class="lucky-section">
+                      <h5>注意月份</h5>
+                      <div class="lucky-tags">
+                        <span v-for="month in yearlyFortuneResult.unlucky_months" :key="month" class="lucky-tag bad">
+                          {{ month }}月
+                        </span>
+                      </div>
+                    </div>
+                    <div class="lucky-section">
+                      <h5>幸运颜色</h5>
+                      <div class="lucky-tags">
+                        <span v-for="color in yearlyFortuneResult.lucky_colors" :key="color" class="lucky-tag color">
+                          {{ color }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="lucky-section">
+                      <h5>幸运数字</h5>
+                      <div class="lucky-tags">
+                        <span v-for="num in yearlyFortuneResult.lucky_numbers" :key="num" class="lucky-tag number">
+                          {{ num }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div class="analysis-card advice">
-                <h4><el-icon><Lightbulb /></el-icon> 开运建议</h4>
-                <p>{{ yearlyFortuneResult.advice }}</p>
+              <!-- 分析按钮 -->
+              <div v-else class="analysis-actions">
+                <p class="analysis-desc">基于你的八字，AI为你深度分析流年运势</p>
+                <el-button 
+                  type="warning" 
+                  size="large"
+                  :loading="yearlyFortuneLoading"
+                  :disabled="currentPoints < fortunePointsCost.yearly_fortune"
+                  @click="showPointsConfirm('yearly')"
+                >
+                  <el-icon class="btn-icon"><StarFilled /></el-icon>
+                  {{ currentPoints < fortunePointsCost.yearly_fortune ? '积分不足' : '开始流年分析' }}
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 大运运势分析 -->
+            <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
+              <div class="section-title-with-tag">
+                <h3>大运运势评分</h3>
+                <el-tag type="warning" size="small">消耗{{ fortunePointsCost.dayun_analysis }}积分</el-tag>
               </div>
               
-              <div class="lucky-info">
-                <div class="lucky-section">
-                  <h5><el-icon><StarFilled /></el-icon> 幸运月份</h5>
-                  <div class="lucky-tags">
-                    <span v-for="month in yearlyFortuneResult.lucky_months" :key="month" class="lucky-tag good">
-                      {{ month }}月
-                    </span>
-                  </div>
-                </div>
-                <div class="lucky-section">
-                  <h5><el-icon><Warning /></el-icon> 注意月份</h5>
-                  <div class="lucky-tags">
-                    <span v-for="month in yearlyFortuneResult.unlucky_months" :key="month" class="lucky-tag bad">
-                      {{ month }}月
-                    </span>
-                  </div>
-                </div>
-                <div class="lucky-section">
-                  <h5><el-icon><Brush /></el-icon> 幸运颜色</h5>
-                  <div class="lucky-tags">
-                    <span v-for="color in yearlyFortuneResult.lucky_colors" :key="color" class="lucky-tag color">
-                      {{ color }}
-                    </span>
-                  </div>
-                </div>
-                <div class="lucky-section">
-                  <h5><el-icon><Menu /></el-icon> 幸运数字</h5>
-                  <div class="lucky-tags">
-                    <span v-for="num in yearlyFortuneResult.lucky_numbers" :key="num" class="lucky-tag number">
-                      {{ num }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 分析按钮 -->
-          <div v-else class="analysis-actions">
-            <p class="analysis-desc">基于你的八字，AI为你深度分析流年运势</p>
-            <el-button 
-              type="warning" 
-              size="large"
-              :loading="yearlyFortuneLoading"
-              :disabled="currentPoints < fortunePointsCost.yearly_fortune"
-              @click="showPointsConfirm('yearly')"
-            >
-              <el-icon class="btn-icon"><StarFilled /></el-icon>
-              {{ currentPoints < fortunePointsCost.yearly_fortune ? '积分不足' : '开始流年分析' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 大运运势分析 -->
-        <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
-          <h3>
-            <el-icon class="section-icon"><Aim /></el-icon>
-            大运运势评分
-            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_analysis }}积分</el-tag>
-          </h3>
-          
-          <!-- 大运选择 -->
-          <div class="dayun-selector">
-            <span class="selector-label">选择大运：</span>
-            <el-radio-group v-model="selectedDayunIndex" size="small">
-              <el-radio-button 
-                v-for="(yun, index) in result.dayun" 
-                :key="index" 
-                :label="index"
-              >
-                {{ yun.gan }}{{ yun.zhi }} ({{ yun.age_start }}-{{ yun.age_end }}岁)
-              </el-radio-button>
-            </el-radio-group>
-          </div>
-          
-          <!-- 大运分析结果 -->
-          <div v-if="dayunAnalysisResult" class="dayun-analysis-result">
-            <div class="dayun-header">
-              <div class="dayun-info">
-                <span class="dayun-name">{{ dayunAnalysisResult.dayun.gan }}{{ dayunAnalysisResult.dayun.zhi }}</span>
-                <span class="dayun-shishen">{{ dayunAnalysisResult.dayun.shishen }}</span>
-                <span class="dayun-age">{{ dayunAnalysisResult.dayun.start_age }}-{{ dayunAnalysisResult.dayun.end_age }}岁</span>
-              </div>
-              <div class="dayun-level-badge" :class="getScoreClass(dayunAnalysisResult.overall_score)">
-                {{ dayunAnalysisResult.fortune_level }}
-              </div>
-            </div>
-            
-            <div class="dayun-scores">
-              <div class="score-item">
-                <span class="score-name">综合</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.overall" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.overall)"
-                  :stroke-width="12"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.overall }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">事业</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.career" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.career)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.career }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">财运</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.wealth" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.wealth)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.wealth }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">感情</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.relationship" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.relationship)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.relationship }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">健康</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.health" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.health)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.health }}</span>
-              </div>
-            </div>
-            
-            <div class="dayun-analysis-text">
-              <div class="text-card" v-for="(text, key) in dayunAnalysisResult.analysis" :key="key">
-                <p>{{ text }}</p>
-              </div>
-            </div>
-            
-            <div class="key-suggestions">
-              <h4><el-icon><Lightbulb /></el-icon> 关键建议</h4>
-              <ul>
-                <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
-                  {{ suggestion }}
-                </li>
-              </ul>
-            </div>
-          </div>
-          
-          <!-- 分析按钮 -->
-          <div v-else class="analysis-actions">
-            <p class="analysis-desc">深度分析此大运的各方面运势评分</p>
-            <el-button 
-              type="primary" 
-              size="large"
-              :loading="dayunAnalysisLoading"
-              :disabled="currentPoints < fortunePointsCost.dayun_analysis"
-              @click="showPointsConfirm('dayun')"
-            >
-              <el-icon class="btn-icon"><TrendCharts /></el-icon>
-              {{ currentPoints < fortunePointsCost.dayun_analysis ? '积分不足' : '开始大运评分' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 运势K线图 -->
-        <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
-          <h3>
-            <span class="section-icon"><el-icon><TrendCharts /></el-icon></span>
-            运势K线图
-            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_chart }}积分</el-tag>
-          </h3>
-          
-          <!-- K线图结果 -->
-          <div v-if="dayunChartData" class="chart-result">
-            <div class="chart-summary">
-              <p>{{ dayunChartData.summary }}</p>
-              <div v-if="dayunChartData.best_period" class="best-period">
-                <span class="best-label">最佳时期：</span>
-                <span class="best-value">
-                  {{ dayunChartData.best_period.dayun_name }}运 
-                  ({{ dayunChartData.best_period.age_range }})
-                  评分{{ dayunChartData.best_period.dayun_score }}分
-                </span>
-              </div>
-            </div>
-            
-            <div class="chart-container">
-              <div v-for="(dayun, index) in dayunChartData.chart_data" :key="index" class="chart-dayun">
-                <div class="chart-dayun-header">
-                  <span class="dayun-title">{{ dayun.dayun_name }}运</span>
-                  <span class="dayun-score" :class="getScoreClass(dayun.overall_score)">
-                    {{ dayun.overall_score }}分
-                  </span>
-                  <span class="dayun-trend">{{ dayun.trend }}</span>
-                </div>
-                <div class="chart-years">
-                  <div 
-                    v-for="year in dayun.years" 
-                    :key="year.year"
-                    class="chart-year-bar"
-                    :class="{ 'current': year.is_current }"
-                    :style="{ height: year.score + '%' }"
-                    :title="`${year.year}年 (${year.age}岁): ${year.score}分`"
+              <!-- 大运选择 -->
+              <div class="dayun-selector">
+                <span class="selector-label">选择大运：</span>
+                <el-radio-group v-model="selectedDayunIndex" size="small">
+                  <el-radio-button 
+                    v-for="(yun, index) in result.dayun" 
+                    :key="index" 
+                    :label="index"
                   >
-                    <span class="year-label">{{ year.year }}</span>
-                    <span class="year-score">{{ year.score }}</span>
+                    {{ yun.gan }}{{ yun.zhi }} ({{ yun.age_start }}-{{ yun.age_end }}岁)
+                  </el-radio-button>
+                </el-radio-group>
+              </div>
+              
+              <!-- 大运分析结果 -->
+              <div v-if="dayunAnalysisResult" class="dayun-analysis-result">
+                <div class="dayun-header">
+                  <div class="dayun-info">
+                    <span class="dayun-name">{{ dayunAnalysisResult.dayun.gan }}{{ dayunAnalysisResult.dayun.zhi }}</span>
+                    <span class="dayun-shishen">{{ dayunAnalysisResult.dayun.shishen }}</span>
+                    <span class="dayun-age">{{ dayunAnalysisResult.dayun.start_age }}-{{ dayunAnalysisResult.dayun.end_age }}岁</span>
+                  </div>
+                  <div class="dayun-level-badge" :class="getScoreClass(dayunAnalysisResult.overall_score)">
+                    {{ dayunAnalysisResult.fortune_level }}
                   </div>
                 </div>
-                <div class="chart-legend">
-                  <span>{{ dayun.start_age }}-{{ dayun.end_age }}岁</span>
-                  <span :class="getScoreClass(dayun.overall_score)">{{ dayun.fortune_level }}</span>
+                
+                <div class="dayun-scores">
+                  <div class="score-item">
+                    <span class="score-name">综合</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.overall" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.overall)"
+                      :stroke-width="12"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.overall }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">事业</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.career" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.career)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.career }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">财运</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.wealth" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.wealth)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.wealth }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">感情</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.relationship" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.relationship)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.relationship }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">健康</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.health" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.health)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.health }}</span>
+                  </div>
+                </div>
+                
+                <div class="dayun-analysis-text">
+                  <div class="text-card" v-for="(text, key) in dayunAnalysisResult.analysis" :key="key">
+                    <p>{{ text }}</p>
+                  </div>
+                </div>
+                
+                <div class="key-suggestions">
+                  <h4><el-icon><Lightbulb /></el-icon> 关键建议</h4>
+                  <ul>
+                    <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
+                      {{ suggestion }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- 分析按钮 -->
+              <div v-else class="analysis-actions">
+                <p class="analysis-desc">深度分析此大运的各方面运势评分</p>
+                <el-button 
+                  type="primary" 
+                  size="large"
+                  :loading="dayunAnalysisLoading"
+                  :disabled="currentPoints < fortunePointsCost.dayun_analysis"
+                  @click="showPointsConfirm('dayun')"
+                >
+                  <el-icon class="btn-icon"><TrendCharts /></el-icon>
+                  {{ currentPoints < fortunePointsCost.dayun_analysis ? '积分不足' : '开始大运评分' }}
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 运势K线图 -->
+            <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
+              <div class="section-title-with-tag">
+                <h3>运势K线图</h3>
+                <el-tag type="warning" size="small">消耗{{ fortunePointsCost.dayun_chart }}积分</el-tag>
+              </div>
+              
+              <!-- K线图结果 -->
+              <div v-if="dayunChartData" class="chart-result">
+                <div class="chart-summary">
+                  <p>{{ dayunChartData.summary }}</p>
+                  <div v-if="dayunChartData.best_period" class="best-period">
+                    <span class="best-label">最佳时期：</span>
+                    <span class="best-value">
+                      {{ dayunChartData.best_period.dayun_name }}运 
+                      ({{ dayunChartData.best_period.age_range }})
+                      评分{{ dayunChartData.best_period.dayun_score }}分
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="chart-container">
+                  <div v-for="(dayun, index) in dayunChartData.chart_data" :key="index" class="chart-dayun">
+                    <div class="chart-dayun-header">
+                      <span class="dayun-title">{{ dayun.dayun_name }}运</span>
+                      <span class="dayun-score" :class="getScoreClass(dayun.overall_score)">
+                        {{ dayun.overall_score }}分
+                      </span>
+                      <span class="dayun-trend">{{ dayun.trend }}</span>
+                    </div>
+                    <div class="chart-years">
+                      <div 
+                        v-for="year in dayun.years" 
+                        :key="year.year"
+                        class="chart-year-bar"
+                        :class="{ 'current': year.is_current }"
+                        :style="{ height: year.score + '%' }"
+                        :title="`${year.year}年 (${year.age}岁): ${year.score}分`"
+                      >
+                        <span class="year-label">{{ year.year }}</span>
+                        <span class="year-score">{{ year.score }}</span>
+                      </div>
+                    </div>
+                    <div class="chart-legend">
+                      <span>{{ dayun.start_age }}-{{ dayun.end_age }}岁</span>
+                      <span :class="getScoreClass(dayun.overall_score)">{{ dayun.fortune_level }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 生成按钮 -->
+              <div v-else class="analysis-actions">
+                <p class="analysis-desc">可视化展示你一生的大运走势，找到最佳发展时期</p>
+                <el-button 
+                  type="success" 
+                  size="large"
+                  :loading="dayunChartLoading"
+                  :disabled="currentPoints < fortunePointsCost.dayun_chart"
+                  @click="showPointsConfirm('chart')"
+                >
+                  <el-icon><TrendCharts /></el-icon>
+                  {{ currentPoints < fortunePointsCost.dayun_chart ? '积分不足' : '生成运势K线图' }}
+                </el-button>
+              </div>
+            </div>
+          </el-collapse-item>
+
+          <!-- AI 解盘部分 -->
+          <el-collapse-item name="ai">
+            <template #title>
+              <div class="collapse-title-wrapper">
+                <el-icon class="title-icon"><Cpu /></el-icon>
+                <span class="title-text">AI 智能解盘</span>
+                <span class="title-desc">基于 AI 的深度命理对话与分析</span>
+              </div>
+            </template>
+
+            <!-- AI智能解盘 -->
+            <div class="ai-analysis-section" v-if="result.bazi">
+              <div class="section-title-with-tag">
+                <h3>AI智能解盘</h3>
+                <el-tag type="warning" size="small">消耗30积分</el-tag>
+              </div>
+              
+              <!-- AI解盘结果 -->
+              <div v-if="aiAnalysisResult" class="ai-result">
+                <div class="ai-result-header">
+                  <span class="ai-model">{{ aiAnalysisResult.model || 'AI' }} 解读</span>
+                  <el-button type="primary" link size="small" @click="clearAiResult">
+                    重新解读
+                  </el-button>
+                </div>
+                <div class="ai-content" v-html="formatAiContent(aiAnalysisResult.analysis)"></div>
+              </div>
+              
+              <!-- AI解盘输入 -->
+              <div v-else-if="!aiAnalyzing" class="ai-input">
+                <p class="ai-desc">基于你的八字信息，让AI为你提供深度分析</p>
+                <el-input
+                  v-model="aiPrompt"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="输入你想问的问题（可选），例如：我的事业运势如何？"
+                  class="mb-3"
+                />
+                <el-button 
+                  type="warning" 
+                  size="large"
+                  :disabled="currentPoints < 30"
+                  @click="startAiAnalysis"
+                >
+                  <el-icon><Magic /></el-icon>
+                  {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
+                </el-button>
+              </div>
+              
+              <!-- AI解盘加载中 -->
+              <div v-else class="ai-loading">
+                <div class="ai-loading-spinner">
+                  <span class="spinner"></span>
+                  <span>AI正在深度分析你的八字...</span>
+                </div>
+                <div class="ai-loading-timeout" v-if="aiLoadingTime > 0">
+                  <span class="timeout-text">预计等待 {{ aiLoadingTime }} 秒</span>
+                </div>
+                <div class="ai-stream-content" v-if="aiStreamContent">
+                  {{ aiStreamContent }}
+                </div>
+                <div class="ai-loading-actions">
+                  <el-button type="danger" size="small" @click="cancelAiAnalysis">
+                    <el-icon><CircleClose /></el-icon>
+                    取消分析
+                  </el-button>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <!-- 生成按钮 -->
-          <div v-else class="analysis-actions">
-            <p class="analysis-desc">可视化展示你一生的大运走势，找到最佳发展时期</p>
-            <el-button 
-              type="success" 
-              size="large"
-              :loading="dayunChartLoading"
-              :disabled="currentPoints < fortunePointsCost.dayun_chart"
-              @click="showPointsConfirm('chart')"
-            >
-              <el-icon><TrendCharts /></el-icon>
-              {{ currentPoints < fortunePointsCost.dayun_chart ? '积分不足' : '生成运势K线图' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- AI智能解盘 -->
-        <div class="ai-analysis-section" v-if="result.bazi">
-          <h3>
-            <span class="section-icon"><el-icon><Cpu /></el-icon></span>
-            AI智能解盘
-            <el-tag type="warning" size="small" class="ml-2">消耗30积分</el-tag>
-          </h3>
-          
-          <!-- AI解盘结果 -->
-          <div v-if="aiAnalysisResult" class="ai-result">
-            <div class="ai-result-header">
-              <span class="ai-model">{{ aiAnalysisResult.model || 'AI' }} 解读</span>
-              <el-button type="primary" link size="small" @click="clearAiResult">
-                重新解读
-              </el-button>
-            </div>
-            <div class="ai-content" v-html="formatAiContent(aiAnalysisResult.analysis)"></div>
-          </div>
-          
-          <!-- AI解盘输入 -->
-          <div v-else-if="!aiAnalyzing" class="ai-input">
-            <p class="ai-desc">基于你的八字信息，让AI为你提供深度分析</p>
-            <el-input
-              v-model="aiPrompt"
-              type="textarea"
-              :rows="2"
-              placeholder="输入你想问的问题（可选），例如：我的事业运势如何？"
-              class="mb-3"
-            />
-            <el-button 
-              type="warning" 
-              size="large"
-              :disabled="currentPoints < 30"
-              @click="startAiAnalysis"
-            >
-              <el-icon><Magic /></el-icon>
-              {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
-            </el-button>
-          </div>
-          
-          <!-- AI解盘加载中 -->
-          <div v-else class="ai-loading">
-            <div class="ai-loading-spinner">
-              <span class="spinner"></span>
-              <span>AI正在深度分析你的八字...</span>
-            </div>
-            <div class="ai-loading-timeout" v-if="aiLoadingTime > 0">
-              <span class="timeout-text">预计等待 {{ aiLoadingTime }} 秒</span>
-            </div>
-            <div class="ai-stream-content" v-if="aiStreamContent">
-              {{ aiStreamContent }}
-            </div>
-            <div class="ai-loading-actions">
-              <el-button type="danger" size="small" @click="cancelAiAnalysis">
-                <el-icon><CircleClose /></el-icon>
-                取消分析
-              </el-button>
-            </div>
-          </div>
-        </div>
+          </el-collapse-item>
+        </el-collapse>
 
         <!-- 操作按钮 -->
         <div class="result-actions">
@@ -927,6 +976,7 @@ const versionMode = ref('simple') // 'simple' or 'pro'
 const isFirstBazi = ref(true) // 是否首次排盘
 const loadingStep = ref(1) // 加载步骤
 const stepIntervalRef = ref(null) // 步骤动画定时器引用
+const activeNames = ref(['basic']) // 折叠面板默认展开“命盘信息”
 
 // AI解盘相关
 const aiPrompt = ref('')
@@ -1421,6 +1471,81 @@ const formatAiContent = (content) => {
 </script>
 
 <style scoped>
+/* 结果折叠面板样式 */
+.result-collapse {
+  border: none;
+  background: transparent;
+  --el-collapse-header-bg-color: transparent;
+  --el-collapse-content-bg-color: transparent;
+}
+
+:deep(.el-collapse-item__header) {
+  height: auto;
+  min-height: 60px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+:deep(.el-collapse-item__wrap) {
+  border-bottom: 1px solid var(--border-light);
+}
+
+:deep(.el-collapse-item__content) {
+  padding: 20px 0;
+}
+
+.collapse-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.title-icon {
+  font-size: 20px;
+  color: var(--primary-color);
+  background: rgba(184, 134, 11, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.title-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.title-desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-left: 10px;
+  font-weight: normal;
+}
+
+.section-title-with-tip,
+.section-title-with-tag,
+.section-subtitle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.section-subtitle-wrapper {
+  margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+  .title-text {
+    font-size: 16px;
+  }
+  
+  .title-desc {
+    display: none; /* 移动端隐藏描述以节省空间 */
+  }
+}
+
 /* 页面级动画 */
 @keyframes fadeInUp {
   from {
@@ -1560,7 +1685,7 @@ const formatAiContent = (content) => {
 
 .step-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   transition: all 0.3s ease;
 }
 
@@ -2150,16 +2275,19 @@ const formatAiContent = (content) => {
 }
 
 .ys-info h4 {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 18px;
 }
 
 .ys-type {
-  background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
-  padding: 3px 10px;
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--primary-light);
+  padding: 4px 12px;
   border-radius: 10px;
   font-size: 12px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .ys-desc {
@@ -2589,28 +2717,47 @@ const formatAiContent = (content) => {
 }
 
 .dayun-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 12px;
   padding: 15px;
   text-align: center;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--white-10);
+  position: relative;
+  overflow: hidden;
 }
 
 .dayun-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-3px);
+  background: var(--white-10);
+  transform: translateY(-5px);
+  border-color: var(--primary-light-30);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .dayun-item.current {
-  border-color: var(--primary-color, #B8860B);
-  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--primary-color);
+  background: var(--primary-light-10);
+  box-shadow: 0 0 15px var(--primary-light-20);
+}
+
+.dayun-item.current::after {
+  content: '当前';
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--primary-color);
+  color: #000;
+  font-size: 10px;
+  padding: 2px 8px;
+  font-weight: bold;
+  border-bottom-left-radius: 8px;
 }
 
 .dayun-age {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-80);
   margin-bottom: 10px;
+  font-weight: 500;
 }
 
 .dayun-pillar {
@@ -2622,69 +2769,80 @@ const formatAiContent = (content) => {
 
 .dayun-pillar .gan,
 .dayun-pillar .zhi {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 26px;
+  font-weight: 800;
   color: var(--text-primary);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .dayun-shishen {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  color: var(--primary-light);
   margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .dayun-luck {
   display: inline-block;
-  padding: 3px 12px;
-  border-radius: 15px;
+  padding: 4px 14px;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: bold;
   margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .dayun-luck.吉 {
-  background: rgba(103, 194, 58, 0.3);
-  color: #67c23a;
+  background: var(--success-gradient);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.4);
 }
 
 .dayun-luck.凶 {
-  background: rgba(245, 108, 108, 0.3);
-  color: #f56c6c;
+  background: var(--danger-gradient);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
 }
 
 .dayun-luck.平 {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--white-20);
+  color: var(--white-90);
 }
 
 .dayun-desc {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.4;
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--white-60);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding: 0 5px;
 }
 
 .dayun-nayin {
   font-size: 11px;
-  color: rgba(255, 215, 0, 0.8);
+  color: var(--primary-light);
+  font-style: italic;
+  opacity: 0.9;
 }
 
 /* 流年区域样式 */
 .liunian-section {
-  margin-top: 30px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 15px;
-  padding: 25px;
+  margin-top: 40px;
+  background: var(--white-03);
+  border-radius: 20px;
+  padding: 30px;
+  border: 1px solid var(--white-05);
 }
 
 .liunian-section h3 {
   color: var(--text-primary);
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  font-weight: 800;
 }
 
 .liunian-grid {
@@ -2694,60 +2852,82 @@ const formatAiContent = (content) => {
 }
 
 .liunian-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 15px;
+  background: var(--white-05);
+  border-radius: 14px;
+  padding: 18px 12px;
   text-align: center;
   transition: all 0.3s ease;
-  border: 1px solid transparent;
+  border: 1px solid var(--white-10);
+  position: relative;
 }
 
 .liunian-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-10);
+  border-color: var(--primary-light-20);
+  transform: scale(1.03);
 }
 
 .liunian-item.current {
-  border-color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
+  border-color: var(--primary-color);
+  background: var(--primary-light-15);
+  box-shadow: 0 0 12px var(--primary-light-20);
+  z-index: 1;
+}
+
+.liunian-item.current::before {
+  content: '今年';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-gradient);
+  color: #000;
+  font-size: 10px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 .liunian-year {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 10px;
-  font-weight: 500;
+  font-size: 15px;
+  color: var(--white-90);
+  margin-bottom: 12px;
+  font-weight: 700;
 }
 
 .liunian-pillar {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 10px;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
 .liunian-pillar .gan,
 .liunian-pillar .zhi {
-  font-size: 22px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--text-primary);
 }
 
 .liunian-wuxing {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .liunian-wuxing .badge {
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: bold;
 }
 
 .liunian-nayin {
   font-size: 11px;
-  color: rgba(255, 215, 0, 0.8);
+  color: var(--primary-light);
+  opacity: 0.8;
 }
 
 /* 积分确认对话框 */
@@ -3165,7 +3345,7 @@ const formatAiContent = (content) => {
 }
 
 .key-suggestions li {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--white-85);
   padding: 8px 0;
   padding-left: 20px;
   position: relative;
@@ -3345,7 +3525,7 @@ const formatAiContent = (content) => {
 }
 
 .analysis-desc {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   margin-bottom: 20px;
   font-size: 14px;
 }
@@ -3369,7 +3549,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-desc {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   text-align: center;
   margin-bottom: 15px;
 }
@@ -3418,7 +3598,7 @@ const formatAiContent = (content) => {
   flex-direction: column;
   align-items: center;
   gap: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
 }
 
 .ai-loading-spinner .spinner {
@@ -3440,7 +3620,7 @@ const formatAiContent = (content) => {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   text-align: left;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   line-height: 1.6;
   min-height: 100px;
   max-height: 400px;
@@ -3450,7 +3630,7 @@ const formatAiContent = (content) => {
 .ai-loading-timeout {
   text-align: center;
   margin: 10px 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .ai-loading-timeout .timeout-text {
@@ -3525,47 +3705,76 @@ const formatAiContent = (content) => {
   }
   
   .dayun-timeline {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding: 10px 5px 20px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dayun-timeline::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .dayun-timeline::-webkit-scrollbar-thumb {
+    background: var(--primary-light-30);
+    border-radius: 2px;
   }
 
   .dayun-item {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    text-align: left;
-    gap: 12px;
-    padding: 12px 16px;
+    text-align: center;
+    gap: 8px;
+    padding: 15px;
   }
 
   .dayun-age {
-    margin-bottom: 0;
-    min-width: 65px;
+    margin-bottom: 5px;
   }
 
   .dayun-pillar {
-    margin-bottom: 0;
-    gap: 3px;
+    margin-bottom: 5px;
+    gap: 5px;
   }
 
   .dayun-pillar .gan, .dayun-pillar .zhi {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   .dayun-shishen, .dayun-luck, .dayun-nayin {
-    margin-bottom: 0;
+    margin-bottom: 2px;
   }
 
   .dayun-desc {
-    display: none; /* 移动端隐藏详细描述以节省空间 */
+    display: none;
   }
   
   .liunian-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 10px 5px 20px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .liunian-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .liunian-grid::-webkit-scrollbar-thumb {
+    background: var(--primary-light-30);
+    border-radius: 2px;
   }
 
   .liunian-item {
-    padding: 10px;
+    flex: 0 0 100px;
+    scroll-snap-align: start;
+    padding: 12px;
   }
 
   .liunian-year {

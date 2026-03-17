@@ -339,6 +339,13 @@ class PushService
                 'message' => '缺少 Webhook URL 配置',
             ];
         }
+        if (!filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+            return [
+                'success' => false,
+                'message' => 'Webhook URL 配置无效',
+            ];
+        }
+
 
         $headers = ['Content-Type: application/json'];
         $bearerToken = self::getEnvValue(['PUSH_WEBHOOK_BEARER', 'push.webhook_bearer']);
@@ -371,15 +378,26 @@ class PushService
      */
     protected static function sendHttpJson(string $url, array $payload, array $headers = []): array
     {
+        if (!function_exists('curl_init')) {
+            throw new \RuntimeException('当前环境未安装 cURL 扩展');
+        }
+
         $ch = curl_init($url);
+        if ($ch === false) {
+            throw new \RuntimeException('初始化 HTTP 客户端失败');
+        }
+
+        $verifySsl = self::getEnvValue(['PUSH_SSL_VERIFY', 'push.ssl_verify'], 'true') !== 'false';
+
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $verifySsl ? 2 : 0);
+
 
         $body = curl_exec($ch);
         $error = curl_error($ch);
