@@ -26,6 +26,9 @@
 
           <!-- 卦象展示 -->
           <div class="gua-display">
+            <div class="gua-decoration">
+              <el-icon><YinYang /></el-icon>
+            </div>
             <div class="gua-info">
               <h3 class="gua-name">{{ result.gua.name }}</h3>
               <p class="gua-code">卦象代码：{{ result.gua.code }}</p>
@@ -91,10 +94,10 @@
           <div class="form-group">
             <label>您的问题 <span class="required">*</span></label>
             <textarea v-model="form.question" rows="4" placeholder="例如：
-• 我最近的考试能通过吗？
-• 这份工作适合我吗？
-• 我和TA的感情发展如何？
-• 这个项目能成功吗？" maxlength="100"></textarea>
+我最近的考试能通过吗？
+这份工作适合我吗？
+我和TA的感情发展如何？
+这个项目能成功吗？" maxlength="100"></textarea>
             <span class="char-count">{{ form.question.length }}/100</span>
           </div>
 
@@ -595,16 +598,21 @@ onMounted(() => {
 }
 
 /* 装饰角 - 动态太极 */
-.gua-display::after {
-  content: '☯';
+.gua-decoration {
   position: absolute;
-  bottom: -30px;
-  right: -30px;
-  font-size: 150px;
+  bottom: -50px;
+  right: -50px;
+  font-size: 200px;
   color: rgba(184, 134, 11, 0.05);
   transform: rotate(-15deg);
   animation: yinYangRotate 20s linear infinite;
   pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes yinYangRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .gua-info {

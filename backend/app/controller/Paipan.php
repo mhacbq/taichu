@@ -788,18 +788,28 @@ class Paipan extends BaseController
         $day = (int)date('j', $timestamp);
         $hour = (int)date('G', $timestamp);
         
+        // 晚子时处理：23:00-00:00 属于次日的子时，日柱需进一日
+        $calcTimestamp = $timestamp;
+        if ($hour == 23) {
+            $calcTimestamp += 3600; // 增加1小时进入次日
+        }
+        
+        $calcYear = (int)date('Y', $calcTimestamp);
+        $calcMonth = (int)date('n', $calcTimestamp);
+        $calcDay = (int)date('j', $calcTimestamp);
+        
         // 天干
         $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
         // 地支
         $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
         
         // ===== 年柱计算 =====
-        $lunarYear = $this->getLunarYear($year, $month, $day);
+        $lunarYear = $this->getLunarYear($calcYear, $calcMonth, $calcDay);
         $yearGanIndex = ($lunarYear - 4) % 10;
         $yearZhiIndex = ($lunarYear - 4) % 12;
         
         // ===== 月柱计算 =====
-        $lunarMonthInfo = $this->getLunarMonth($year, $month, $day);
+        $lunarMonthInfo = $this->getLunarMonth($calcYear, $calcMonth, $calcDay);
         $monthZhiIndex = $lunarMonthInfo['zhi_index'];
         
         // 月干：五虎遁月法
@@ -809,7 +819,7 @@ class Paipan extends BaseController
         $monthGanIndex = ($monthGanIndex + $lunarMonthInfo['month'] - 1) % 10;
         
         // ===== 日柱计算 =====
-        $dayPillar = $this->calculateDayPillar($year, $month, $day);
+        $dayPillar = $this->calculateDayPillar($calcYear, $calcMonth, $calcDay);
         $dayGanIndex = $dayPillar['gan_index'];
         $dayZhiIndex = $dayPillar['zhi_index'];
         $dayGan = $tianGan[$dayGanIndex];
@@ -818,7 +828,6 @@ class Paipan extends BaseController
         // 时辰划分：23-1子, 1-3丑, 3-5寅, 5-7卯, 7-9辰, 9-11巳
         // 11-13午, 13-15未, 15-17申, 17-19酉, 19-21戌, 21-23亥
         if ($hour == 23) {
-            // 23:00-23:59属于次日子时
             $shiZhiIndex = 0; // 子
         } else {
             $shiZhiIndex = (int)(($hour + 1) / 2) % 12;

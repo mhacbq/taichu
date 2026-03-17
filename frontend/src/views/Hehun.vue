@@ -1006,11 +1006,14 @@ onMounted(() => {
 }
 
 .solution-list li:before {
-  content: '•';
+  content: '';
   position: absolute;
   left: 0;
-  color: var(--primary-color);
-  font-weight: bold;
+  top: 18px;
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color);
+  border-radius: 1px;
 }
 
 /* 操作按钮 */

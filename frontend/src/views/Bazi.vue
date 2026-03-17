@@ -2876,10 +2876,10 @@ const formatAiContent = (content) => {
   background: rgba(0, 0, 0, 0.3);
 }
 
-.score-circle.excellent { border-color: #67c23a; }
-.score-circle.good { border-color: #e6a23c; }
-.score-circle.average { border-color: #f56c6c; }
-.score-circle.poor { border-color: #909399; }
+.score-circle.excellent { border-color: var(--success-color); }
+.score-circle.good { border-color: var(--warning-color); }
+.score-circle.average { border-color: var(--danger-color); }
+.score-circle.poor { border-color: var(--info-color); }
 
 .score-value {
   font-size: 28px;
@@ -2900,10 +2900,10 @@ const formatAiContent = (content) => {
   color: #fff;
 }
 
-.rating-badge.excellent { background: linear-gradient(135deg, #67c23a, #85ce61); }
-.rating-badge.good { background: linear-gradient(135deg, #e6a23c, #ebb563); }
-.rating-badge.average { background: linear-gradient(135deg, #f56c6c, #f78989); }
-.rating-badge.poor { background: linear-gradient(135deg, #909399, #a6a9ad); }
+.rating-badge.excellent { background: var(--success-gradient); }
+.rating-badge.good { background: var(--warning-gradient); }
+.rating-badge.average { background: var(--danger-gradient); }
+.rating-badge.poor { background: linear-gradient(135deg, var(--info-color), #a6a9ad); }
 
 /* 分析卡片 */
 .yearly-analysis {
@@ -3074,10 +3074,10 @@ const formatAiContent = (content) => {
   color: #fff;
 }
 
-.dayun-level-badge.excellent { background: linear-gradient(135deg, #67c23a, #85ce61); }
-.dayun-level-badge.good { background: linear-gradient(135deg, #e6a23c, #ebb563); }
-.dayun-level-badge.average { background: linear-gradient(135deg, #f56c6c, #f78989); }
-.dayun-level-badge.poor { background: linear-gradient(135deg, #909399, #a6a9ad); }
+.dayun-level-badge.excellent { background: var(--success-gradient); }
+.dayun-level-badge.good { background: var(--warning-gradient); }
+.dayun-level-badge.average { background: var(--danger-gradient); }
+.dayun-level-badge.poor { background: linear-gradient(135deg, var(--info-color), #a6a9ad); }
 
 /* 分数条 */
 .dayun-scores {
@@ -3260,10 +3260,10 @@ const formatAiContent = (content) => {
   font-weight: bold;
 }
 
-.dayun-score.excellent { background: rgba(103, 194, 58, 0.3); color: #67c23a; }
-.dayun-score.good { background: rgba(230, 162, 60, 0.3); color: #e6a23c; }
-.dayun-score.average { background: rgba(245, 108, 108, 0.3); color: #f56c6c; }
-.dayun-score.poor { background: rgba(144, 147, 153, 0.3); color: #909399; }
+.dayun-score.excellent { background: var(--success-light); color: var(--success-color); }
+.dayun-score.good { background: var(--warning-light); color: var(--warning-color); }
+.dayun-score.average { background: var(--danger-light); color: var(--danger-color); }
+.dayun-score.poor { background: rgba(144, 147, 153, 0.2); color: var(--info-color); }
 
 .dayun-trend {
   margin-left: auto;
@@ -3283,7 +3283,7 @@ const formatAiContent = (content) => {
 .chart-year-bar {
   flex: 1;
   min-width: 20px;
-  background: linear-gradient(to top, #67c23a, #85ce61);
+  background: var(--success-gradient);
   border-radius: 4px 4px 0 0;
   position: relative;
   display: flex;

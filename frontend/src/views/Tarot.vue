@@ -662,22 +662,58 @@ const getCardAdvice = (card) => {
   text-align: center;
   cursor: pointer;
   border: 2px solid var(--border-color);
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
 }
 
-.spread-card:hover,
+.spread-card:hover {
+  border-color: var(--primary-light);
+  background: var(--bg-secondary);
+  transform: translateY(-5px);
+}
+
 .spread-card.active {
   border-color: var(--primary-color);
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-5px);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--primary-light-05) 100%);
+  box-shadow: 0 0 20px var(--primary-light-20);
+  transform: translateY(-8px) scale(1.02);
+}
+
+.spread-card.active::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  animation: scale-in 0.3s ease;
+}
+
+@keyframes scale-in {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
 }
 
 .spread-icon {
   font-size: 36px;
   margin-bottom: 15px;
   color: var(--primary-color);
+  transition: transform 0.3s ease;
 }
+
+.spread-card.active .spread-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 10px var(--primary-color));
+}
+
 
 .spread-card h3 {
   color: var(--text-primary);

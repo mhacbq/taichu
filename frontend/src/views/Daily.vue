@@ -36,7 +36,9 @@
                 <span class="value">{{ fortune.personalized.dayMaster }}</span>
                 <span class="wuxing-badge" :class="fortune.personalized.dayMasterWuxing">{{ fortune.personalized.dayMasterWuxing }}</span>
               </div>
-              <div class="relation-arrow">→</div>
+              <div class="relation-arrow">
+                <el-icon><Right /></el-icon>
+              </div>
               <div class="today-card">
                 <span class="label">今日干支</span>
                 <span class="value">{{ fortune.personalized.todayGanZhi }}</span>
@@ -188,9 +190,9 @@ const error = ref(false)
 const errorMessage = ref('')
 
 const getScoreColor = (score) => {
-  if (score >= 80) return '#67C23A'
-  if (score >= 60) return '#E6A23C'
-  return '#F56C6C'
+  if (score >= 80) return '#67c23a'
+  if (score >= 60) return '#e6a23c'
+  return '#f56c6c'
 }
 
 const getScoreClass = (score) => {

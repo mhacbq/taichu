@@ -129,7 +129,7 @@
               >
                 {{ method.actionText }}
               </el-button>
-              <span v-else class="completed-badge">✓</span>
+              <el-icon v-else class="completed-badge"><Check /></el-icon>
             </div>
           </div>
         </div>
@@ -403,7 +403,7 @@ const shareToWechat = () => {
 
 使用我的邀请码【${inviteCode.value}】注册，我们双方都能获得20积分奖励！
 
-快来试试吧 👇
+快来试试吧
 ${inviteLink.value}`
 
   if (navigator.share) {

@@ -438,7 +438,7 @@ onMounted(() => {
 }
 
 .points-btn.checkin {
-  background: linear-gradient(135deg, #D4AF37, #B8860B);
+  background: var(--primary-gradient);
   color: var(--text-primary);
 }
 
@@ -604,7 +604,7 @@ onMounted(() => {
 }
 
 .btn-badge {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
+  background: var(--success-gradient);
   color: var(--text-primary);
   padding: 2px 8px;
   border-radius: 10px;
@@ -674,7 +674,7 @@ onMounted(() => {
 }
 
 .feature-link:hover {
-  color: #B8860B;
+  color: var(--primary-light);
 }
 
 .about {
