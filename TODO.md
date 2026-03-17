@@ -18,8 +18,8 @@
 
 ### 🔴 高优先级
 - [x] **清理粉色系残留**：已完成核心页面清理，搜索并替换全站剩余的 `rgba(233, 69, 96)`、`#e94560` 为金色系 `var(--primary-color)`。
-- [x] **移除 Emoji 图标**：将组件（Bazi.vue, Tarot.vue, Liuyao.vue 等）中大量使用的 Emoji（✨, ☯, 🎴, 💕 等）替换为 Element Plus 图标。 (已完成 GuideModal.vue, Bazi.vue CSS 遗留清理)
-- [ ] **白色文字硬编码清理**：统一替换全站至少 93 处 `color: #fff` 为 CSS 变量 `var(--text-primary)`，避免深色主题下不可读问题。
+- [x] **移除 Emoji 图标**：将组件（Bazi.vue, Tarot.vue, Liuyao.vue 等）中大量使用的 Emoji（✨, ☯, 🎴, 💕 等）替换为 Element Plus 图标。 (已完成 GuideModal.vue, Tarot.vue, Bazi.vue CSS 遗留清理)
+- [ ] **白色文字硬编码清理**：统一替换全站至少 93 处 `color: #fff` 为 CSS 变量 `var(--text-primary)`，避免深色主题下不可读问题。(已清理 Home.vue, Bazi.vue, Liuyao.vue)
 - [ ] **塔罗牌视觉升级**：设计或引入真实的塔罗牌图片/SVG 资源，替代当前的 Emoji 牌面。
 
 ### 🟡 中优先级
@@ -30,7 +30,7 @@
 - [ ] **交互体验提升**：
     - [x] 添加 Vue Router 页面切换过渡动画。(已在 App.vue 实现 fade 过渡)
     - [x] 实现全站统一的“空状态 (Empty State)”组件。
-    - [ ] 统一全站加载状态 (Loading) 为太极旋转动画。
+    - [x] 统一全站加载状态 (Loading) 为太极旋转动画。(已在 Bazi.vue, Liuyao.vue 实现)
     - [ ] **移动端触摸区域优化**：确保所有按钮和交互元素的触摸区域不小于 44px，特别是 mobile-nav-close 和 close-btn 等关键按钮。
 
 ### 🟢 低优先级

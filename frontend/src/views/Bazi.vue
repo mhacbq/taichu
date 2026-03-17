@@ -160,10 +160,7 @@
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-state card">
         <div class="loading-animation">
-          <div class="yin-yang">
-            <div class="yin"></div>
-            <div class="yang"></div>
-          </div>
+          <div class="loading-taiji"></div>
         </div>
         <h3>正在为你排盘...</h3>
         <p class="loading-text">计算天干地支 · 分析五行配置 · 生成命理解读</p>
@@ -2596,7 +2593,7 @@ const formatAiContent = (content) => {
 .dayun-pillar .zhi {
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .dayun-shishen {

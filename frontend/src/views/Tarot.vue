@@ -54,7 +54,7 @@
           >
             <span class="topic-icon">
               <el-icon v-if="topic.icon === 'briefcase'"><Briefcase /></el-icon>
-              <el-icon v-else-if="topic.icon === 'heart'"><Sugar /></el-icon>
+              <el-icon v-else-if="topic.icon === 'heart'"><Heart /></el-icon>
               <el-icon v-else-if="topic.icon === 'star'"><StarFilled /></el-icon>
               <el-icon v-else-if="topic.icon === 'question'"><QuestionFilled /></el-icon>
               <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
@@ -185,7 +185,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
 import TarotCard from '../components/TarotCard.vue'
-import { Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight } from '@element-plus/icons-vue'
+import { Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Heart } from '@element-plus/icons-vue'
 
 const spreads = [
   { id: 'single', name: '单张牌', icon: 'card', description: '简单直接，适合快速解答' },

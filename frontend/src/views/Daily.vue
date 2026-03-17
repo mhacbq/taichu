@@ -247,6 +247,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   padding: 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
 }
 
 .lunar-date,
@@ -457,8 +459,8 @@ onMounted(() => {
 /* 个性化运势样式 */
 .personalized-fortune {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
-  border: 1px solid rgba(184, 134, 11, 0.3);
+  background: linear-gradient(135deg, var(--primary-light-10), var(--primary-light-05));
+  border: 1px solid var(--primary-light-30);
 }
 
 .personalized-fortune h2 {
@@ -488,7 +490,7 @@ onMounted(() => {
 
 .master-card, .today-card {
   background: var(--bg-tertiary);
-  border-radius: 15px;
+  border-radius: 16px;
   padding: 20px 30px;
   text-align: center;
   min-width: 120px;
@@ -516,7 +518,7 @@ onMounted(() => {
   font-size: 12px;
 }
 
-.wuxing-badge.金 { background: rgba(255, 215, 0, 0.15); color: var(--wuxing-jin); }
+.wuxing-badge.金 { background: var(--primary-light-15); color: var(--wuxing-jin); }
 .wuxing-badge.木 { background: rgba(34, 139, 34, 0.15); color: var(--wuxing-mu); }
 .wuxing-badge.水 { background: rgba(30, 144, 255, 0.15); color: var(--wuxing-shui); }
 .wuxing-badge.火 { background: rgba(255, 69, 0, 0.15); color: var(--wuxing-huo); }
@@ -546,19 +548,19 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 15px 30px;
-  border-radius: 15px;
+  border-radius: 16px;
   font-size: 20px;
   font-weight: bold;
   color: #fff;
 }
 
 .luck-badge.吉 {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.2), rgba(103, 194, 58, 0.1));
+  background: linear-gradient(135deg, var(--success-light), rgba(103, 194, 58, 0.1));
   border: 1px solid rgba(103, 194, 58, 0.4);
 }
 
 .luck-badge.凶 {
-  background: linear-gradient(135deg, rgba(245, 108, 108, 0.2), rgba(245, 108, 108, 0.1));
+  background: linear-gradient(135deg, var(--danger-light), rgba(245, 108, 108, 0.1));
   border: 1px solid rgba(245, 108, 108, 0.4);
 }
 
@@ -596,7 +598,7 @@ onMounted(() => {
 
 .personal-advice {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
   margin-bottom: 25px;
 }
@@ -620,7 +622,7 @@ onMounted(() => {
 
 .lucky-item {
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: 16px;
   padding: 15px;
   display: flex;
   align-items: center;

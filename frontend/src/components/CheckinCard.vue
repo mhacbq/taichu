@@ -167,7 +167,7 @@ onMounted(() => {
 }
 
 .checkin-card.checked {
-  border: 1px solid rgba(103, 194, 58, 0.3);
+  border: 1px solid var(--success-light);
 }
 
 .checkin-header {
@@ -178,14 +178,14 @@ onMounted(() => {
 }
 
 .checkin-header h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .consecutive-days {
   background: var(--primary-gradient);
   padding: 5px 12px;
-  border-radius: 15px;
+  border-radius: 16px;
   font-size: 14px;
   color: #fff;
   display: flex;
@@ -217,18 +217,18 @@ onMounted(() => {
 }
 
 .points-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .points-value {
-  color: #ffd700;
+  color: var(--accent-color);
   font-size: 24px;
   font-weight: bold;
 }
 
 .bonus-hint {
-  color: #67C23A;
+  color: var(--success-color);
   font-size: 13px;
   margin-top: 8px;
 }
@@ -240,12 +240,12 @@ onMounted(() => {
 }
 
 .checkin-calendar {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-light);
   padding-top: 20px;
 }
 
 .calendar-header {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 15px;
   text-align: center;
@@ -262,14 +262,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .calendar-day.checked {
-  background: linear-gradient(135deg, #67C23A, #85ce61);
+  background: var(--success-gradient);
   color: #fff;
   font-weight: bold;
 }
@@ -279,7 +279,7 @@ onMounted(() => {
 }
 
 .calendar-day.today.checked {
-  border-color: #67C23A;
+  border-color: var(--success-color);
 }
 
 @media (max-width: 480px) {
@@ -287,7 +287,7 @@ onMounted(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .checkin-btn {
     width: 100%;
   }

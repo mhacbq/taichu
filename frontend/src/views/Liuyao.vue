@@ -119,7 +119,7 @@
           </div>
 
           <button class="btn-submit" @click="submitDivination" :disabled="isLoading || !form.question.trim()">
-            <span v-if="isLoading" class="loading"></span>
+            <div v-if="isLoading" class="loading-taiji mini"></div>
             <span v-else>
               <el-icon class="btn-icon"><YinYang /></el-icon>
               开始占卜
@@ -346,7 +346,7 @@ onMounted(() => {
 .form-card {
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 40px;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-lg);
@@ -377,7 +377,7 @@ onMounted(() => {
 }
 
 .form-group label .required {
-  color: var(--primary-color, #B8860B);
+  color: var(--primary-color);
 }
 
 .form-group textarea {
@@ -433,14 +433,14 @@ onMounted(() => {
   text-align: center;
   padding: 16px;
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: 16px;
   margin: 20px 0;
   border: 1px solid var(--border-light);
 }
 
 .pricing-free,
 .pricing-vip {
-  color: #67c23a;
+  color: var(--success-color);
   font-size: 18px;
   font-weight: 600;
 }
@@ -456,7 +456,7 @@ onMounted(() => {
   background: var(--primary-gradient);
   color: #fff;
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
@@ -474,7 +474,7 @@ onMounted(() => {
 
 .btn-submit:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
+  box-shadow: 0 10px 30px var(--primary-light-40);
 }
 
 .btn-icon {
@@ -520,7 +520,7 @@ onMounted(() => {
 .result-card {
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 32px;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-lg);
@@ -539,7 +539,7 @@ onMounted(() => {
 }
 
 .first-free-badge {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
+  background: var(--success-gradient);
   color: #fff;
   padding: 6px 14px;
   border-radius: 20px;
@@ -549,7 +549,7 @@ onMounted(() => {
 .question-box {
   padding: 16px 20px;
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: 16px;
   margin-bottom: 24px;
   border: 1px solid var(--border-light);
 }
@@ -603,12 +603,12 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.3s;
 }
 
 .yao-line.moving {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
 }
 
 .yao-mark {
@@ -654,7 +654,7 @@ onMounted(() => {
 .gua-ci-section {
   padding: 20px;
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: 16px;
   margin-bottom: 24px;
   border: 1px solid var(--border-light);
 }
@@ -697,12 +697,12 @@ onMounted(() => {
   margin-bottom: 24px;
   padding: 20px;
   background: var(--bg-secondary);
-  border-radius: 12px;
-  border-left: 4px solid #67c23a;
+  border-radius: 16px;
+  border-left: 4px solid var(--success-color);
 }
 
 .ai-section h4 {
-  color: #67c23a;
+  color: var(--success-color);
   margin-bottom: 12px;
   font-size: 16px;
   display: flex;
@@ -723,7 +723,7 @@ onMounted(() => {
   justify-content: space-between;
   padding: 16px 20px;
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: 16px;
   color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 24px;
@@ -740,7 +740,7 @@ onMounted(() => {
 .btn-secondary {
   flex: 1;
   padding: 14px 24px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -754,22 +754,22 @@ onMounted(() => {
 
 .btn-primary {
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
+  box-shadow: 0 8px 25px var(--primary-light-40);
 }
 
 .btn-secondary {
   background: var(--bg-secondary);
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-light);
 }
 
 .btn-secondary:hover {
-  background: var(--border-light);
+  background: var(--bg-hover);
 }
 
 /* 弹窗 */
@@ -788,14 +788,14 @@ onMounted(() => {
 }
 
 .modal-content {
-  background: #FFFFFF;
+  background: var(--bg-card);
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow: hidden;
-  border: 1px solid rgba(184, 134, 11, 0.15);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
 }
 
 .modal-header {
@@ -803,7 +803,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(184, 134, 11, 0.15);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .modal-header h3 {
@@ -834,7 +834,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 14px 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -879,7 +879,7 @@ onMounted(() => {
 }
 
 .delete-btn:hover {
-  color: #ff4d4f;
+  color: var(--error-color);
 }
 
 /* 响应式 */
