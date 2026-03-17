@@ -6,7 +6,7 @@ namespace app\controller;
 use app\BaseController;
 use app\model\AiPrompt as AiPromptModel;
 use think\Request;
-use think\facade\Log;
+
 
 /**
  * AI提示词管理控制器
@@ -92,7 +92,10 @@ class AiPrompt extends BaseController
             $data['variables'] = $this->parseJsonField($data['variables'] ?? [], '变量配置');
             $data['model_params'] = $this->parseJsonField($data['model_params'] ?? [], '模型参数');
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage(), 400);
+            return $this->respondBusinessException($e, 'ai_prompt_parse_json', '提示词配置格式无效', 400, [
+                'key' => (string) ($data['key'] ?? ''),
+                'type' => (string) ($data['type'] ?? ''),
+            ]);
         }
 
         $data['sort_order'] = max(0, (int) ($data['sort_order'] ?? 0));

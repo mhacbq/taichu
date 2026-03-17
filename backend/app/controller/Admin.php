@@ -1213,12 +1213,10 @@ class Admin extends BaseController
             return $this->success(['updated_count' => $updateCount], '保存成功');
 
         } catch (\Exception $e) {
-            Log::error('保存系统设置失败: ' . $e->getMessage(), [
-                'admin_id' => $this->adminId,
-                'settings' => $settings ?? [],
-                'trace' => $e->getTraceAsString()
+            return $this->respondSystemException('admin_save_settings', $e, '保存失败，请稍后重试', [
+                'config_keys' => $configKeys,
+                'settings_count' => count($configKeys),
             ]);
-            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     

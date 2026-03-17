@@ -7,7 +7,7 @@ use app\BaseController;
 use app\model\AiPrompt;
 use think\Request;
 use think\facade\Config;
-use think\facade\Log;
+
 
 
 /**
@@ -625,13 +625,17 @@ class AiAnalysis extends BaseController
 
             return $this->error('连接失败，请检查配置', 500);
         } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage(), 400);
-        } catch (\Throwable $e) {
-            Log::error('测试AI连接失败: ' . $e->getMessage(), [
-                'api_url' => $config['api_url'] ?? '',
+            return $this->respondBusinessException($e, 'ai_test_connection_validate', '测试配置无效', 400, [
+                'api_host' => $apiHost,
+                'model' => $modelInput,
             ]);
-            return $this->error('连接失败，请检查配置后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('ai_test_connection', $e, '连接失败，请检查配置后重试', [
+                'api_host' => $apiHost,
+                'model' => $modelInput,
+            ]);
         }
+
     }
 
     /**

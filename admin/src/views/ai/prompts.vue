@@ -202,17 +202,7 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="设为默认">
-              <el-switch
-                v-model="form.is_default"
-                :active-value="1"
-                :inactive-value="0"
-                active-text="是"
-                inactive-text="否"
-              />
-            </el-form-item>
-          </el-col>
+
         </el-row>
       </el-form>
 
@@ -493,10 +483,19 @@ const handleSubmit = async () => {
   }
 
   const data = {
-    ...form,
+    id: form.id,
+    name: form.name,
+    key: form.key,
+    type: form.type,
+    system_prompt: form.system_prompt,
+    user_prompt_template: form.user_prompt_template,
+    description: form.description,
+    sort_order: form.sort_order,
+    is_enabled: form.is_enabled,
     variables,
     model_params: modelParams
   }
+
 
   submitLoading.value = true
   try {

@@ -6,5 +6,6 @@
 - 工作区仍残留未纳入本次提交的其它改动：`frontend/src/App.vue`、`frontend/src/styles/theme-white.scss`、`frontend/src/views/Home.vue` 以及两个异常未跟踪文件，后续任务需避开或单独处理。
 - 2026-03-17：新增一轮 5 点维护批次，完成 `BaseController` 统一异常/脱敏日志、`admin/System.php` 与 `admin/Shensha.php` 异常收口、`admin/src/views/system/notice.vue` 接入真实公告管理，并核销部分历史误报 TODO；`npm run build --prefix admin` 与 `git diff --check` 通过，提交为 `a9b404f`（`refactor-unify-admin-exceptions-and-notice-page`）。
 - 2026-03-17：继续完成一轮后台代码维护，统一 `backend/route/admin.php` 的 Almanac / SEO 路由入口，删除 `backend/app/controller/Admin.php` 中已迁出的 SEO 旧实现，并在 `backend/app/controller/admin/User.php` 补齐 `Request` 导入、异常脱敏收口与单用户状态操作日志；同步更新 `TODO.md`，验证结果为 `read_lints` 0 条、`git diff --check` 通过，当前环境未提供 `php` 命令，未执行 CLI 语法检查。
-
-
+- 2026-03-18：完成一轮 4 点占卜/登录链路维护，修复 `SmsService` 测试验证码分支缺少 `Log` 导入、为 `Hehun.php` 增加积分配置兜底并补齐 `database/20260318_fix_hehun_points_config.sql`、让 `Daily.php` 兼容 `checkin_record/tc_checkin_record` 两套签到表结构，并补齐 `frontend/src/views/Tarot.vue` 的积分加载/错误重试状态；同步核销 `TODO.md` 对应 4 项，`read_lints` 针对改动文件均为 0，`git diff --check` 通过，提交为 `24330a5`（`fix-divination-login-checkin-and-tarot-flow`）。
+- 2026-03-18：完成一轮 3 点代码维护批次，处理 `frontend/src/utils/requestCache.js` 未定义实例与冗余调试逻辑、`frontend/src/utils/analytics.js` 的环境判断/埋点脱敏、以及 `backend/app/service/AiService.php` 的统一第三方调用与结构化脱敏日志；`read_lints` 针对 3 个改动文件均为 0，`npm run build --prefix frontend` 与 `git diff --check` 通过，`php -l` 仍因环境缺少 `php` 命令未执行，提交为 `e0798f4`（`refactor-harden-cache-analytics-and-ai-logging`）。
+- 2026-03-18：完成一轮 5 点代码维护批次，统一 `Admin/AiPrompt/AiAnalysis` 的业务/系统异常收口，移除 `Admin::saveSettings()` 的原始配置/trace 落日志，规范 `AiAnalysis` 普通与流式解盘日志上下文，并清理 `admin/src/views/ai/prompts.vue` 无效的“设为默认”开关与冗余 payload；`read_lints` 针对 4 个改动文件为 0，`npm run build --prefix admin` 通过，仓库级 `git diff --check` 仍被其他历史未清理文件拦住，本轮目标文件状态正常，待提交。
