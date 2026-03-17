@@ -35,12 +35,8 @@ WORKDIR /var/www/html
 # 复制项目文件
 COPY . .
 
-# --- 新增：处理 .env 文件 ---
-# 如果项目目录下不存在 .env，则从 .env.example 复制一份
-# 并使用 sed 命令强制开启调试模式和修正数据库地址
-RUN if [ ! -f .env ]; then cp .env.example .env; fi \
-    && sed -i 's/APP_DEBUG = false/APP_DEBUG = true/g' .env \
-    && sed -i 's/127.0.0.1/host.docker.internal/g' .env
+# 如果容器里没有 .env，就从 .env.example 复制一个
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
 # 如果仓库未提供 .htaccess，则在复制代码后兜底生成
 RUN if [ ! -f /var/www/html/public/.htaccess ]; then \
