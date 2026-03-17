@@ -66,15 +66,15 @@ class LunarService
     public static function solarToLunar(string $date): array
     {
         $timestamp = strtotime($date);
-        $year = (int)date('Y', $timestamp);
+        $lunarYear = (int)date('Y', $timestamp);
 
-        // 农历年份以春节为界，保持农历年月日显示正确。
-        $newYearDate = self::$lunarData[$year][0] ?? null;
+        // 农历年份仍以春节为界，用于农历月日与梅花易数的年支数。
+        $newYearDate = self::$lunarData[$lunarYear][0] ?? null;
         if ($newYearDate && $timestamp < strtotime($newYearDate)) {
-            $year--;
+            $lunarYear--;
         }
 
-        $data = self::$lunarData[$year] ?? null;
+        $data = self::$lunarData[$lunarYear] ?? null;
         if (!$data) {
             return self::fallbackSolarToLunar($date);
         }
@@ -108,28 +108,57 @@ class LunarService
         }
 
         $lunarDay = $offset + 1;
-        $yearGanIndex = ($year - 4) % 10;
-        $yearZhiIndex = ($year - 4) % 12;
-        $yearGanZhi = self::TIAN_GAN[$yearGanIndex] . self::DI_ZHI[$yearZhiIndex];
+        $lunarYearGanZhi = self::getYearGanZhiByYear($lunarYear);
+        $pillars = self::resolveGanZhiPillars($date, $lunarYearGanZhi);
 
-        $baziService = new BaziCalculationService();
-        $bazi = $baziService->calculateBazi($date . ' 12:00:00', '男');
-        $monthGanZhi = ($bazi['month']['gan'] ?? '') . ($bazi['month']['zhi'] ?? '');
-        $dayGanZhi = ($bazi['day']['gan'] ?? '') . ($bazi['day']['zhi'] ?? '');
+        return self::buildLunarResponse(
+            $lunarYear,
+            $lunarMonth,
+            $lunarDay,
+            $isLeap,
+            $lunarYearGanZhi,
+            $pillars['year'],
+            $pillars['month'],
+            $pillars['day']
+        );
+    }
 
+    /**
+     * 构建统一返回结构。
+     */
+    private static function buildLunarResponse(
+        int $lunarYear,
+        int $lunarMonth,
+        int $lunarDay,
+        bool $isLeap,
+        string $lunarYearGanZhi,
+        string $yearGanZhi,
+        string $monthGanZhi,
+        string $dayGanZhi
+    ): array {
+        $yearZhiIndex = self::getZhiIndex(mb_substr($lunarYearGanZhi, 1, 1));
         $almanac = self::buildAlmanacDetail($yearGanZhi, $monthGanZhi, $dayGanZhi);
-        $lunarText = trim($yearGanZhi . '年 ' . self::formatLunarMonth($lunarMonth, $isLeap) . self::formatLunarDay($lunarDay));
+        $lunarText = trim($lunarYearGanZhi . '年 ' . self::formatLunarMonth($lunarMonth, $isLeap) . self::formatLunarDay($lunarDay));
+        $ganzhiText = trim(implode(' ', array_filter([
+            $yearGanZhi !== '' ? $yearGanZhi . '年' : '',
+            $monthGanZhi !== '' ? $monthGanZhi . '月' : '',
+            $dayGanZhi !== '' ? $dayGanZhi . '日' : '',
+        ])));
 
         return [
             'year_zhi_index' => $yearZhiIndex + 1,
             'lunar_month' => $lunarMonth,
             'lunar_day' => $lunarDay,
             'is_leap' => $isLeap,
+            'lunar_year_gan_zhi' => $lunarYearGanZhi,
             'year_gan_zhi' => $yearGanZhi,
             'month_gan_zhi' => $monthGanZhi,
             'day_gan_zhi' => $dayGanZhi,
+            'yearGanzhi' => $yearGanZhi,
+            'monthGanzhi' => $monthGanZhi,
+            'dayGanzhi' => $dayGanZhi,
             'lunar_text' => $lunarText,
-            'ganzhi' => trim($yearGanZhi . '年 ' . $monthGanZhi . '月 ' . $dayGanZhi . '日'),
+            'ganzhi' => $ganzhiText,
             'yi' => $almanac['yi'],
             'ji' => $almanac['ji'],
             'jishen' => $almanac['jishen'],
@@ -141,6 +170,64 @@ class LunarService
     }
 
     /**
+     * 解析黄历所需四柱。
+     *
+     * 农历显示继续沿用春节口径，但黄历主数据（岁次/月建/日辰）
+     * 统一复用八字核心算法，按节气与交节时刻取值，避免立春前后口径漂移。
+     */
+    private static function resolveGanZhiPillars(string $date, string $fallbackYearGanZhi): array
+    {
+        $yearGanZhi = $fallbackYearGanZhi;
+        $monthGanZhi = '';
+        $dayGanZhi = '';
+        $baziService = new BaziCalculationService();
+
+        try {
+            $bazi = $baziService->calculateBazi($date . ' 12:00:00', '男');
+            $yearGanZhi = self::normalizePillar($bazi['year'] ?? []) ?: $fallbackYearGanZhi;
+            $monthGanZhi = self::normalizePillar($bazi['month'] ?? []);
+            $dayGanZhi = self::normalizePillar($bazi['day'] ?? []);
+        } catch (\Throwable $e) {
+            // 保持静默回退，继续使用简化算法兜底。
+        }
+
+        if ($dayGanZhi === '') {
+            $timestamp = strtotime($date . ' 12:00:00');
+            $dayPillar = $baziService->calculateDayPillar(
+                (int)date('Y', $timestamp),
+                (int)date('n', $timestamp),
+                (int)date('j', $timestamp)
+            );
+            $dayGanZhi = self::TIAN_GAN[$dayPillar['gan_index']] . self::DI_ZHI[$dayPillar['zhi_index']];
+        }
+
+        return [
+            'year' => $yearGanZhi,
+            'month' => $monthGanZhi,
+            'day' => $dayGanZhi,
+        ];
+    }
+
+    /**
+     * 规范四柱结构为干支文本。
+     */
+    private static function normalizePillar(array $pillar): string
+    {
+        $gan = trim((string)($pillar['gan'] ?? ''));
+        $zhi = trim((string)($pillar['zhi'] ?? ''));
+
+        return $gan . $zhi;
+    }
+
+    /**
+     * 通过年份计算干支。
+     */
+    private static function getYearGanZhiByYear(int $year): string
+    {
+        return self::TIAN_GAN[($year - 4) % 10] . self::DI_ZHI[($year - 4) % 12];
+    }
+
+    /**
      * 构建黄历辅助信息。
      */
     private static function buildAlmanacDetail(string $yearGanZhi, string $monthGanZhi, string $dayGanZhi): array
@@ -149,12 +236,25 @@ class LunarService
         $dayGan = mb_substr($dayGanZhi, 0, 1);
         $dayZhi = mb_substr($dayGanZhi, 1, 1);
 
+        $profileMap = self::getZhiriProfileMap();
+
+        if ($monthZhi === '' || $dayGan === '' || $dayZhi === '') {
+            $profile = $profileMap['平'];
+            return [
+                'zhiri' => '平',
+                'yi' => $profile['yi'],
+                'ji' => $profile['ji'],
+                'jishen' => $profile['jishen'],
+                'xiongsha' => $profile['xiongsha'],
+                'sha' => self::getShaDirection($dayZhi),
+                'shichen' => self::buildShiChenData($dayGan, $profile['yi'], $profile['ji']),
+            ];
+        }
+
         $monthZhiIndex = self::getZhiIndex($monthZhi);
         $dayZhiIndex = self::getZhiIndex($dayZhi);
         $zhiriIndex = ($dayZhiIndex - $monthZhiIndex + 12) % 12;
         $zhiri = self::ZHIRI_ORDER[$zhiriIndex] ?? '平';
-
-        $profileMap = self::getZhiriProfileMap();
         $profile = $profileMap[$zhiri] ?? $profileMap['平'];
 
         return [
@@ -204,7 +304,8 @@ class LunarService
         $auspiciousGods = ['青龙', '明堂', '金匮', '天德', '玉堂', '司命'];
         $timeRanges = ['23:00-00:59', '01:00-02:59', '03:00-04:59', '05:00-06:59', '07:00-08:59', '09:00-10:59', '11:00-12:59', '13:00-14:59', '15:00-16:59', '17:00-18:59', '19:00-20:59', '21:00-22:59'];
 
-        $startOffset = $startOffsetMap[$dayGan] ?? 0;
+        $normalizedDayGan = $dayGan !== '' ? $dayGan : '甲';
+        $startOffset = $startOffsetMap[$normalizedDayGan] ?? 0;
         $result = [];
         foreach (self::SHICHEN_BRANCHES as $index => $branch) {
             $god = self::SHICHEN_GODS[($startOffset + $index) % 12];
@@ -268,33 +369,19 @@ class LunarService
         $year = (int)date('Y', $timestamp);
         $month = (int)date('n', $timestamp);
         $day = (int)date('j', $timestamp);
-        $yearGanZhi = self::TIAN_GAN[($year - 4) % 10] . self::DI_ZHI[($year - 4) % 12];
+        $lunarYearGanZhi = self::getYearGanZhiByYear($year);
+        $pillars = self::resolveGanZhiPillars($date, $lunarYearGanZhi);
 
-        $baziService = new BaziCalculationService();
-        $bazi = $baziService->calculateBazi($date . ' 12:00:00', '男');
-        $monthGanZhi = ($bazi['month']['gan'] ?? '') . ($bazi['month']['zhi'] ?? '');
-        $dayGanZhi = ($bazi['day']['gan'] ?? '') . ($bazi['day']['zhi'] ?? '');
-        $almanac = self::buildAlmanacDetail($yearGanZhi, $monthGanZhi, $dayGanZhi);
-        $lunarText = trim($yearGanZhi . '年 ' . self::formatLunarMonth($month, false) . self::formatLunarDay($day));
-
-        return [
-            'year_zhi_index' => (($year - 4) % 12) + 1,
-            'lunar_month' => $month,
-            'lunar_day' => $day,
-            'is_leap' => false,
-            'year_gan_zhi' => $yearGanZhi,
-            'month_gan_zhi' => $monthGanZhi,
-            'day_gan_zhi' => $dayGanZhi,
-            'lunar_text' => $lunarText,
-            'ganzhi' => trim($yearGanZhi . '年 ' . $monthGanZhi . '月 ' . $dayGanZhi . '日'),
-            'yi' => $almanac['yi'],
-            'ji' => $almanac['ji'],
-            'jishen' => $almanac['jishen'],
-            'xiongsha' => $almanac['xiongsha'],
-            'sha' => $almanac['sha'],
-            'zhiri' => $almanac['zhiri'],
-            'shichen' => $almanac['shichen'],
-        ];
+        return self::buildLunarResponse(
+            $year,
+            $month,
+            $day,
+            false,
+            $lunarYearGanZhi,
+            $pillars['year'],
+            $pillars['month'],
+            $pillars['day']
+        );
     }
 
     private static function formatLunarMonth(int $month, bool $isLeap = false): string

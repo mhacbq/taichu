@@ -321,9 +321,15 @@ class Hehun extends BaseController
         
         // 执行完整合婚分析
         $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);
+        $storageStatus = HehunRecord::getStorageStatus();
         
         // 如果是免费层，只返回基础信息
         if ($tier === self::TIER_FREE) {
+            $pricing = $this->getQuickPricing($user['sub']);
+            $pricing['unlock_ready'] = $storageStatus['ready'];
+            $pricing['unlock_message'] = $storageStatus['message'];
+            $pricing['storage_table'] = $storageStatus['table'];
+
             return $this->success([
                 'tier' => self::TIER_FREE,
                 'male_bazi' => [
@@ -347,8 +353,11 @@ class Hehun extends BaseController
                     'comment' => $hehunResult['comment'],
                     'suggestions' => [count($hehunResult['suggestions']) > 0 ? $hehunResult['suggestions'][0] : '双方缘分尚可，建议查看详细报告了解更多。']
                 ],
-                'preview_hint' => '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告',
-                'pricing' => $this->getQuickPricing($user['sub'])
+                'preview_hint' => $storageStatus['ready']
+                    ? '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告'
+                    : '当前详细报告链路正在维护，建议先等待库表修复完成后再解锁。',
+                'storage_status' => $storageStatus,
+                'pricing' => $pricing
             ]);
         }
         
@@ -361,6 +370,13 @@ class Hehun extends BaseController
      */
     protected function processPremiumHehun(array $data, array $user, array $maleBazi, array $femaleBazi, array $hehunResult, string $maleName, string $femaleName, bool $useAi)
     {
+        $storageStatus = HehunRecord::getStorageStatus();
+        if (!$storageStatus['ready']) {
+            return $this->error($storageStatus['message'], 503, [
+                'storage_table' => $storageStatus['table'],
+            ]);
+        }
+
         // AI深度分析（付费层）- 在事务外执行AI调用
         $aiAnalysis = null;
         if ($useAi) {
@@ -428,19 +444,19 @@ class Hehun extends BaseController
                 ]);
             }
             
-            // 保存合婚记录
-            $record = HehunRecord::create([
+            // 保存合婚记录（兼容 hehun_records / tc_hehun_record 两套历史表结构）
+            $recordId = HehunRecord::createCompatible([
                 'user_id' => $user['sub'],
                 'male_name' => $maleName,
                 'female_name' => $femaleName,
                 'male_birth_date' => $data['maleBirthDate'],
                 'female_birth_date' => $data['femaleBirthDate'],
-                'male_bazi' => json_encode($maleBazi),
-                'female_bazi' => json_encode($femaleBazi),
+                'male_bazi' => $maleBazi,
+                'female_bazi' => $femaleBazi,
                 'score' => $hehunResult['score'],
                 'level' => $hehunResult['level'],
-                'result' => json_encode($hehunResult),
-                'ai_analysis' => $aiAnalysis ? json_encode($aiAnalysis) : null,
+                'result' => $hehunResult,
+                'ai_analysis' => $aiAnalysis,
                 'is_ai_analysis' => $useAi,
                 'points_cost' => $needPoints ? $finalPoints : 0,
             ]);
@@ -453,7 +469,7 @@ class Hehun extends BaseController
                 ->value('points');
             
             $result = [
-                'id' => $record->id,
+                'id' => $recordId,
                 'tier' => $isVip ? self::TIER_VIP : self::TIER_PREMIUM,
                 'male_bazi' => $maleBazi,
                 'female_bazi' => $femaleBazi,
@@ -1402,10 +1418,7 @@ PROMPT;
         $user = $this->request->user;
         $limit = $this->request->get('limit', 20);
         
-        $history = HehunRecord::where('user_id', $user['sub'])
-            ->order('create_time', 'desc')
-            ->limit((int)$limit)
-            ->select();
+        $history = HehunRecord::getUserHistory((int)$user['sub'], (int)$limit);
         
         return $this->success($history);
     }
@@ -1429,9 +1442,7 @@ PROMPT;
         $template = $data['template'] ?? 'default';
         
         // 获取合婚记录
-        $record = HehunRecord::where('id', $data['record_id'])
-            ->where('user_id', $user['sub'])
-            ->find();
+        $record = HehunRecord::findUserRecord((int)$data['record_id'], (int)$user['sub']);
         
         if (!$record) {
             return $this->error('合婚记录不存在', 404);
@@ -1452,15 +1463,15 @@ PROMPT;
         // 生成报告
         try {
             $reportData = [
-                'male_name' => $record->male_name,
-                'female_name' => $record->female_name,
-                'male_bazi' => json_decode($record->male_bazi, true),
-                'female_bazi' => json_decode($record->female_bazi, true),
-                'hehun' => json_decode($record->result, true),
-                'ai_analysis' => $record->ai_analysis ? json_decode($record->ai_analysis, true) : null,
-                'score' => $record->score,
-                'level' => $record->level,
-                'created_at' => $record->create_time,
+                'male_name' => $record['male_name'],
+                'female_name' => $record['female_name'],
+                'male_bazi' => $record['male_bazi'],
+                'female_bazi' => $record['female_bazi'],
+                'hehun' => $record['result'],
+                'ai_analysis' => $record['ai_analysis'] ?: null,
+                'score' => $record['score'],
+                'level' => $record['level'],
+                'created_at' => $record['create_time'],
                 'template' => $template
             ];
             
