@@ -12,6 +12,7 @@ use app\service\BaziCalculationService;
 use app\service\CacheService;
 use app\service\ConfigService;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 八字合婚控制器
@@ -48,6 +49,38 @@ class Hehun extends BaseController
     {
         parent::__construct($app);
         $this->baziCalculationService = new BaziCalculationService();
+    }
+
+    protected function resolveHehunBasePoints(): int
+    {
+        $configuredValue = ConfigService::get('points_cost_hehun', null);
+        if (is_numeric($configuredValue)) {
+            return max(0, (int) $configuredValue);
+        }
+
+        Log::warning('合婚积分配置缺失或非法，已回退默认值', [
+            'config_key' => 'points_cost_hehun',
+            'fallback' => self::HEHUN_POINTS_COST,
+            'value_type' => gettype($configuredValue),
+        ]);
+
+        return self::HEHUN_POINTS_COST;
+    }
+
+    protected function resolveHehunExportPoints(): int
+    {
+        $configuredValue = ConfigService::get('points_cost_hehun_export', null);
+        if (is_numeric($configuredValue)) {
+            return max(0, (int) $configuredValue);
+        }
+
+        Log::warning('合婚导出积分配置缺失或非法，已回退默认值', [
+            'config_key' => 'points_cost_hehun_export',
+            'fallback' => self::HEHUN_EXPORT_COST,
+            'value_type' => gettype($configuredValue),
+        ]);
+
+        return self::HEHUN_EXPORT_COST;
     }
     
     /**
@@ -184,8 +217,8 @@ class Hehun extends BaseController
         $isVip = $userModel->is_vip ?? false;
         
         // 获取基础积分消耗
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
-        $exportPoints = ConfigService::get('points_cost_hehun_export', self::HEHUN_EXPORT_COST);
+        $basePoints = $this->resolveHehunBasePoints();
+        $exportPoints = $this->resolveHehunExportPoints();
         
         // 检查是否新用户
         $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
@@ -336,7 +369,7 @@ class Hehun extends BaseController
         
         // 计算实际积分消耗（事务外计算）
         $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $basePoints = $this->resolveHehunBasePoints();
         $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
         $finalPoints = $costInfo['final'];
         
@@ -465,7 +498,7 @@ class Hehun extends BaseController
         $isVip = $userModel->is_vip ?? false;
         $isNewUser = HehunRecord::getUserCount($userId) === 0;
         
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $basePoints = $this->resolveHehunBasePoints();
         $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
         
         return [
@@ -1385,7 +1418,7 @@ PROMPT;
         $isVip = $userModel->is_vip ?? false;
         
         // 计算导出积分消耗
-        $exportPoints = ConfigService::get('points_cost_hehun_export', self::HEHUN_EXPORT_COST);
+        $exportPoints = $this->resolveHehunExportPoints();
         $needPoints = !$isVip;
         
         if ($needPoints && $userModel->points < $exportPoints) {

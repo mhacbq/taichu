@@ -25,6 +25,8 @@ class Daily extends BaseController
      */
     protected $baziCalculationService;
 
+    protected ?array $checkinStorage = null;
+
     public function __construct(\think\App $app)
     {
         parent::__construct($app);
@@ -384,6 +386,75 @@ class Daily extends BaseController
         ];
     }
 
+    protected function resolveCheckinStorage(): array
+    {
+        if ($this->checkinStorage !== null) {
+            return $this->checkinStorage;
+        }
+
+        foreach (['checkin_record', 'tc_checkin_record'] as $table) {
+            if (!$this->tableExists($table)) {
+                continue;
+            }
+
+            $columns = $this->getTableColumns($table);
+            $dateColumn = isset($columns['date']) ? 'date' : (isset($columns['checkin_date']) ? 'checkin_date' : 'date');
+            $consecutiveColumn = isset($columns['consecutive_days']) ? 'consecutive_days' : (isset($columns['continuous_days']) ? 'continuous_days' : 'consecutive_days');
+
+            return $this->checkinStorage = [
+                'table' => $table,
+                'date_column' => $dateColumn,
+                'consecutive_column' => $consecutiveColumn,
+            ];
+        }
+
+        return $this->checkinStorage = [
+            'table' => 'checkin_record',
+            'date_column' => 'date',
+            'consecutive_column' => 'consecutive_days',
+        ];
+    }
+
+    protected function findCheckinRecord(int $userId, string $date): ?array
+    {
+        $storage = $this->resolveCheckinStorage();
+
+        return Db::name($storage['table'])
+            ->where('user_id', $userId)
+            ->where($storage['date_column'], $date)
+            ->find();
+    }
+
+    protected function getMonthCheckins(int $userId, string $monthStart): array
+    {
+        $storage = $this->resolveCheckinStorage();
+
+        return Db::name($storage['table'])
+            ->where('user_id', $userId)
+            ->where($storage['date_column'], '>=', $monthStart)
+            ->column($storage['date_column']);
+    }
+
+    protected function tableExists(string $table): bool
+    {
+        $escapedTable = addslashes($table);
+        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
+    }
+
+    protected function getTableColumns(string $table): array
+    {
+        $escapedTable = str_replace('`', '``', $table);
+        $columns = [];
+
+        foreach (Db::query("SHOW COLUMNS FROM `{$escapedTable}`") as $column) {
+            $field = (string) ($column['Field'] ?? '');
+            if ($field !== '') {
+                $columns[$field] = true;
+            }
+        }
+
+        return $columns;
+    }
     
     /**
      * 每日签到
@@ -397,12 +468,10 @@ class Daily extends BaseController
         }
 
         $today = date('Y-m-d');
+        $storage = $this->resolveCheckinStorage();
         
         // 检查今天是否已签到
-        $todayCheckin = Db::name('checkin_record')
-            ->where('user_id', $userId)
-            ->where('date', $today)
-            ->find();
+        $todayCheckin = $this->findCheckinRecord($userId, $today);
         
         if ($todayCheckin) {
             return $this->error('您今天已经签到过了，明天再来吧！', 400);
@@ -410,12 +479,9 @@ class Daily extends BaseController
         
         // 获取昨天是否签到（用于计算连续天数）
         $yesterday = date('Y-m-d', strtotime('-1 day'));
-        $yesterdayCheckin = Db::name('checkin_record')
-            ->where('user_id', $userId)
-            ->where('date', $yesterday)
-            ->find();
+        $yesterdayCheckin = $this->findCheckinRecord($userId, $yesterday);
         
-        $consecutiveDays = $yesterdayCheckin ? ((int) $yesterdayCheckin['consecutive_days'] + 1) : 1;
+        $consecutiveDays = $yesterdayCheckin ? ((int) ($yesterdayCheckin[$storage['consecutive_column']] ?? 0) + 1) : 1;
         
         // 计算奖励
         $basePoints = self::CHECKIN_POINTS;
@@ -431,11 +497,11 @@ class Daily extends BaseController
         
         Db::startTrans();
         try {
-            // 记录签到，依赖(user_id, date)唯一索引兜底并发重复请求
-            Db::name('checkin_record')->insert([
+            // 记录签到，依赖(user_id, date/checkin_date)唯一索引兜底并发重复请求
+            Db::name($storage['table'])->insert([
                 'user_id' => $userId,
-                'date' => $today,
-                'consecutive_days' => $consecutiveDays,
+                $storage['date_column'] => $today,
+                $storage['consecutive_column'] => $consecutiveDays,
                 'points' => $totalPoints,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
@@ -512,32 +578,24 @@ class Daily extends BaseController
         $user = $this->request->user;
         $userId = $user['sub'];
         $today = date('Y-m-d');
+        $storage = $this->resolveCheckinStorage();
         
         // 检查今天是否已签到
-        $todayCheckin = Db::name('checkin_record')
-            ->where('user_id', $userId)
-            ->where('date', $today)
-            ->find();
+        $todayCheckin = $this->findCheckinRecord($userId, $today);
         
         // 获取连续签到天数
-        $consecutiveDays = $todayCheckin ? $todayCheckin['consecutive_days'] : 0;
+        $consecutiveDays = $todayCheckin ? (int) ($todayCheckin[$storage['consecutive_column']] ?? 0) : 0;
         
         // 如果今天没签到，检查昨天是否签到
         if (!$todayCheckin) {
             $yesterday = date('Y-m-d', strtotime('-1 day'));
-            $yesterdayCheckin = Db::name('checkin_record')
-                ->where('user_id', $userId)
-                ->where('date', $yesterday)
-                ->find();
-            $consecutiveDays = $yesterdayCheckin ? $yesterdayCheckin['consecutive_days'] : 0;
+            $yesterdayCheckin = $this->findCheckinRecord($userId, $yesterday);
+            $consecutiveDays = $yesterdayCheckin ? (int) ($yesterdayCheckin[$storage['consecutive_column']] ?? 0) : 0;
         }
         
         // 获取本月签到记录
         $monthStart = date('Y-m-01');
-        $monthCheckins = Db::name('checkin_record')
-            ->where('user_id', $userId)
-            ->where('date', '>=', $monthStart)
-            ->column('date');
+        $monthCheckins = $this->getMonthCheckins($userId, $monthStart);
         
         return $this->success([
             'checkedIn' => !!$todayCheckin,

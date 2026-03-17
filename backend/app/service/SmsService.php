@@ -7,6 +7,7 @@ use app\model\SmsConfig;
 use app\model\SmsCode;
 use app\model\InviteRecord;
 use think\facade\Cache;
+use think\facade\Log;
 
 /**
  * 短信服务类
@@ -183,10 +184,15 @@ class SmsService
         
         if ($isLocalTestMode && $code === $testCode) {
             // 测试模式下使用固定验证码，直接返回成功
-            trace("[SMS TEST MODE] 手机号 {$phone} 使用测试验证码 {$testCode} 通过验证", 'info');
+            Log::info('短信测试模式验证码校验通过', [
+                'phone' => self::maskPhone($phone),
+                'type' => $type,
+                'mode' => 'local_test',
+            ]);
             InviteRecord::clearVerifyFail($phone, $type);
             return true;
         }
+
         
         // 1. 检查失败次数限制
         if (!InviteRecord::checkVerifyFailLimit($phone, $type)) {
@@ -214,5 +220,17 @@ class SmsService
         $key = "sms_verify_fail:{$phone}:{$type}";
         $failCount = Cache::get($key, 0);
         return max(0, 5 - $failCount);
+    }
+
+    /**
+     * 脱敏手机号
+     */
+    private static function maskPhone(string $phone): string
+    {
+        if (strlen($phone) < 7) {
+            return str_repeat('*', strlen($phone));
+        }
+
+        return substr($phone, 0, 3) . '****' . substr($phone, -4);
     }
 }

@@ -10,10 +10,11 @@
       <div class="points-hint card card-hover">
         <el-icon class="hint-icon"><Coin /></el-icon>
         <span>本次占卜将消耗 <strong>5 积分</strong></span>
-        <span class="current-points">当前积分: {{ currentPoints }}</span>
+        <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
+        <span v-if="pointsError" class="points-warning">积分同步中，请稍后重试</span>
       </div>
 
-      <div v-if="currentPoints < 5" class="insufficient-points card card-hover">
+      <div v-if="currentPoints !== null && currentPoints < 5" class="insufficient-points card card-hover">
         <p><el-icon><MagicStick /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
       </div>
 
@@ -98,7 +99,7 @@
           size="large"
           @click="showConfirm"
           :loading="loading"
-          :disabled="!question || currentPoints < 5"
+          :disabled="!question || pointsLoading || currentPoints === null || currentPoints < 5"
           class="draw-btn"
         >
           <el-icon class="btn-icon"><Document /></el-icon>
@@ -231,12 +232,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic } from '../api'
 
 import BackButton from '../components/BackButton.vue'
 import TarotCard from '../components/TarotCard.vue'
+import EmptyState from '../components/EmptyState.vue'
 import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
 
 const spreads = [
@@ -299,12 +301,15 @@ const questionTemplates = {
 const selectedSpread = ref('three')
 const question = ref('')
 const loading = ref(false)
+const pointsLoading = ref(false)
+const pointsError = ref(false)
 const cards = ref([])
 const interpretation = ref('')
-const currentPoints = ref(0)
+const currentPoints = ref(null)
 const cardDetailVisible = ref(false)
 const selectedCard = ref(null)
 const selectedTopic = ref('')
+const flowError = ref(null)
 
 const getSpreadName = (spreadType) => {
   return spreads.find((spread) => spread.id === spreadType)?.name || '当前牌阵'
@@ -316,6 +321,29 @@ const reportUiError = (action, error, userMessage = '') => {
   if (userMessage) {
     ElMessage.error(userMessage)
   }
+}
+
+const pointsDisplayText = computed(() => {
+  if (pointsLoading.value) {
+    return '加载中...'
+  }
+
+  if (currentPoints.value === null || currentPoints.value === undefined) {
+    return '暂未获取'
+  }
+
+  return currentPoints.value
+})
+
+const setFlowError = (stage, message) => {
+  flowError.value = {
+    stage,
+    message,
+  }
+}
+
+const clearFlowError = () => {
+  flowError.value = null
 }
 
 const refreshPoints = async ({ silent = false } = {}) => {
@@ -519,6 +547,28 @@ const loadPoints = async () => {
   await refreshPoints()
 }
 
+const interpretCurrentCards = async () => {
+  const interpretResponse = await interpretTarot({
+    cards: cards.value,
+    question: question.value,
+  })
+
+  if (interpretResponse.code === 200) {
+    interpretation.value = interpretResponse.data.interpretation
+    clearFlowError()
+    ElMessage.success('抽牌成功')
+    return true
+  }
+
+  setFlowError('interpret', interpretResponse.message || '解读失败')
+  ElMessage.error(interpretResponse.message || '解读失败')
+  if (interpretResponse.code === 403) {
+    await loadPoints()
+  }
+
+  return false
+}
+
 // 显示确认对话框
 const showConfirm = async () => {
   if (!question.value.trim()) {
@@ -527,6 +577,11 @@ const showConfirm = async () => {
   }
 
   await refreshPoints({ silent: true })
+
+  if (currentPoints.value === null) {
+    ElMessage.warning('积分状态同步中，请稍后再试')
+    return
+  }
 
   if (currentPoints.value < 5) {
     ElMessage.warning('积分不足，请先签到领取积分')
@@ -549,7 +604,6 @@ const showConfirm = async () => {
   }
 }
 
-
 const drawCards = async () => {
   loading.value = true
   try {
@@ -560,37 +614,65 @@ const drawCards = async () => {
 
     if (drawResponse.code === 200) {
       cards.value = drawResponse.data.cards
-      currentPoints.value = drawResponse.data.remaining_points
+      interpretation.value = ''
+      savedRecordId.value = null
+      savedShareCode.value = null
 
-      const interpretResponse = await interpretTarot({
-        cards: cards.value,
-        question: question.value,
-      })
+      const remainingPoints = Number(drawResponse.data.remaining_points)
+      if (Number.isFinite(remainingPoints)) {
+        currentPoints.value = remainingPoints
+      }
 
-      if (interpretResponse.code === 200) {
-        interpretation.value = interpretResponse.data.interpretation
-        ElMessage.success('抽牌成功')
-      } else {
-        ElMessage.error(interpretResponse.message || '解读失败')
-        if (interpretResponse.code === 403) {
-          loadPoints()
-        }
-      }
-    } else {
-      ElMessage.error(drawResponse.message || '抽牌失败')
-      if (drawResponse.code === 403) {
-        loadPoints()
-      }
+      clearFlowError()
+      await interpretCurrentCards()
+      return
+    }
+
+    setFlowError('draw', drawResponse.message || '抽牌失败')
+    ElMessage.error(drawResponse.message || '抽牌失败')
+    if (drawResponse.code === 403) {
+      await loadPoints()
     }
   } catch (error) {
+    setFlowError('draw', '网络错误，请稍后重试')
     reportUiError('抽牌失败', error, '网络错误，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
+const retryLastAction = async () => {
+  if (!flowError.value) {
+    return
+  }
+
+  if (flowError.value.stage === 'interpret' && cards.value.length > 0) {
+    loading.value = true
+    try {
+      await interpretCurrentCards()
+    } catch (error) {
+      setFlowError('interpret', '网络错误，请稍后重试')
+      reportUiError('重试塔罗解读失败', error, '网络错误，请稍后重试')
+    } finally {
+      loading.value = false
+    }
+    return
+  }
+
+  await drawCards()
+}
+
+const handlePointsUpdated = () => {
+  refreshPoints({ silent: true })
+}
+
 onMounted(() => {
   loadPoints()
+  window.addEventListener('points-updated', handlePointsUpdated)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('points-updated', handlePointsUpdated)
 })
 
 
@@ -700,6 +782,7 @@ const resetTarot = () => {
   question.value = ''
   savedRecordId.value = null
   savedShareCode.value = null
+  clearFlowError()
 }
 
 // 显示卡片详情
@@ -764,6 +847,11 @@ const getCardAdvice = (card) => {
   margin-left: auto;
   color: var(--wuxing-jin);
   font-weight: 500;
+}
+
+.points-warning {
+  color: var(--warning-color, #d97706);
+  font-size: 13px;
 }
 
 .insufficient-points {
