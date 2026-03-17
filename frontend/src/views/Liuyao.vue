@@ -466,7 +466,7 @@ onMounted(() => {
   width: 100%;
   padding: 18px;
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
   border: none;
   border-radius: 16px;
   font-size: 18px;
@@ -552,10 +552,13 @@ onMounted(() => {
 
 .first-free-badge {
   background: var(--success-gradient);
-  color: #fff;
-  padding: 6px 14px;
+  color: var(--text-primary);
+  padding: 12px 24px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .question-box {

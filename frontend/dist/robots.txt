@@ -1,0 +1,55 @@
+# robots.txt for 太初命理
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+
+# 允许访问的页面
+Allow: /
+Allow: /bazi
+Allow: /tarot
+Allow: /daily
+Allow: /help
+Allow: /recharge
+
+# 禁止访问的页面
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /api/
+Disallow: /login
+Disallow: /404
+
+# 禁止访问特定文件类型
+Disallow: /*.pdf$
+Disallow: /*.doc$
+Disallow: /*.docx$
+
+# 抓取频率
+Crawl-delay: 1
+
+# 站点地图
+Sitemap: https://taichu.chat/sitemap.xml
+
+# 百度爬虫专用
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 1
+
+# 搜狗爬虫
+User-agent: Sogou spider
+Allow: /
+Crawl-delay: 1
+
+# 360爬虫
+User-agent: 360Spider
+Allow: /
+Crawl-delay: 1
+
+# 禁止不良爬虫
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /

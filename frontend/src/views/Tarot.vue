@@ -688,7 +688,7 @@ const getCardAdvice = (card) => {
   width: 24px;
   height: 24px;
   background: var(--primary-color);
-  color: white;
+  color: var(--text-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -987,19 +987,22 @@ const getCardAdvice = (card) => {
 }
 
 .card-element {
-  font-size: 11px;
-  padding: 3px 10px;
+  font-size: 13px;
+  padding: 8px 16px;
   border-radius: var(--radius-xl);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   margin-top: 8px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
-.card-element.火 { background: rgba(255, 69, 0, 0.3); color: #ff6347; }
-.card-element.水 { background: rgba(30, 144, 255, 0.3); color: #87ceeb; }
-.card-element.木 { background: rgba(34, 139, 34, 0.3); color: #90ee90; }
-.card-element.金 { background: rgba(255, 215, 0, 0.3); color: #ffd700; }
-.card-element.土 { background: rgba(139, 69, 19, 0.3); color: #deb887; }
-.card-element.风 { background: rgba(147, 112, 219, 0.3); color: #dda0dd; }
+.card-element.火 { background: rgba(var(--wuxing-huo-rgb), 0.2); color: var(--wuxing-huo); }
+.card-element.水 { background: rgba(var(--wuxing-shui-rgb), 0.2); color: var(--wuxing-shui); }
+.card-element.木 { background: rgba(var(--wuxing-mu-rgb), 0.2); color: var(--wuxing-mu); }
+.card-element.金 { background: rgba(var(--wuxing-jin-rgb), 0.2); color: var(--wuxing-jin); }
+.card-element.土 { background: rgba(var(--wuxing-tu-rgb), 0.2); color: var(--wuxing-tu); }
+.card-element.风 { background: rgba(var(--primary-light-rgb), 0.2); color: var(--primary-light); }
 
 .reversed-badge {
   position: absolute;

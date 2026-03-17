@@ -1598,11 +1598,14 @@ const formatAiContent = (content) => {
 }
 
 .meta-tag {
-  background: rgba(103, 194, 58, 0.2);
-  color: #67c23a;
-  padding: 4px 12px;
-  border-radius: 15px;
+  background: rgba(var(--success-color-rgb), 0.2);
+  color: var(--success-color);
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 @keyframes pulse {
@@ -1828,7 +1831,7 @@ const formatAiContent = (content) => {
 
 .current-points {
   margin-left: auto;
-  color: #ffd700;
+  color: var(--primary-light);
   font-weight: 500;
 }
 
@@ -2040,10 +2043,13 @@ const formatAiContent = (content) => {
 .section-badge {
   background: linear-gradient(135deg, #D4AF37, #B8860B);
   color: var(--text-primary);
-  padding: 4px 12px;
+  padding: 12px 24px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* 日主详情卡片 */
@@ -2091,9 +2097,12 @@ const formatAiContent = (content) => {
 .trait-tag {
   background: rgba(184, 134, 11, 0.2);
   color: var(--text-primary);
-  padding: 4px 12px;
-  border-radius: 15px;
-  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .dm-content {
@@ -2103,13 +2112,13 @@ const formatAiContent = (content) => {
 }
 
 .dm-section h5 {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .dm-section p {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   line-height: 1.7;
   font-size: 14px;
 }
@@ -2529,11 +2538,11 @@ const formatAiContent = (content) => {
   transition: width 0.5s ease;
 }
 
-.wuxing-fill.金 { background: linear-gradient(90deg, var(--wuxing-jin), #ffec8b); }
-.wuxing-fill.木 { background: linear-gradient(90deg, var(--wuxing-mu), #90ee90); }
-.wuxing-fill.水 { background: linear-gradient(90deg, var(--wuxing-shui), #87ceeb); }
-.wuxing-fill.火 { background: linear-gradient(90deg, var(--wuxing-huo), #ff6347); }
-.wuxing-fill.土 { background: linear-gradient(90deg, var(--wuxing-tu), #deb887); }
+.wuxing-fill.金 { background: linear-gradient(90deg, var(--wuxing-jin), var(--primary-light-15)); }
+.wuxing-fill.木 { background: linear-gradient(90deg, var(--wuxing-mu), var(--success-light)); }
+.wuxing-fill.水 { background: linear-gradient(90deg, var(--wuxing-shui), var(--info-light)); }
+.wuxing-fill.火 { background: linear-gradient(90deg, var(--wuxing-huo), var(--danger-light)); }
+.wuxing-fill.土 { background: linear-gradient(90deg, var(--wuxing-tu), var(--warning-light)); }
 
 .wuxing-count {
   width: 30px;
@@ -2754,7 +2763,7 @@ const formatAiContent = (content) => {
 
 .points-confirm-dialog .points-title {
   font-size: 20px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
   margin-bottom: 10px;
 }
@@ -2897,7 +2906,7 @@ const formatAiContent = (content) => {
   border-radius: 20px;
   font-size: 18px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .rating-badge.excellent { background: var(--success-gradient); }
@@ -3071,7 +3080,7 @@ const formatAiContent = (content) => {
   border-radius: 25px;
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .dayun-level-badge.excellent { background: var(--success-gradient); }
