@@ -28,7 +28,7 @@
               <span class="user-info">
                 <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
                 <span class="nickname">{{ userNickname || '用户' }}</span>
-                <span class="dropdown-arrow">▼</span>
+                <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -57,7 +57,9 @@
       <div class="mobile-nav" :class="{ active: showMobileMenu }">
         <div class="mobile-nav-header">
           <span class="mobile-nav-title">菜单</span>
-          <button class="mobile-nav-close" @click="showMobileMenu = false">✕</button>
+          <button class="mobile-nav-close" @click="showMobileMenu = false" aria-label="关闭菜单">
+            <el-icon><CloseBold /></el-icon>
+          </button>
         </div>
         <div class="mobile-nav-links">
           <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">
@@ -169,12 +171,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
 import { 
+  ArrowDown,
   Calendar, 
   MagicStick, 
   Star, 
   User, 
   SwitchButton, 
   Close,
+  CloseBold,
   Present,
   Collection,
   Sunrise,
@@ -379,21 +383,22 @@ onMounted(() => {
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
+  padding: 10px 16px;
+  border-radius: var(--radius-btn);
   transition: all 0.3s ease;
 }
 
 .nav-link:hover {
   color: var(--primary-color);
-  background: rgba(184, 134, 11, 0.08);
+  background: var(--surface-hover);
 }
 
 .nav-link.router-link-active {
   color: var(--primary-color);
-  background: rgba(184, 134, 11, 0.12);
+  background: var(--surface-strong);
+  box-shadow: inset 0 0 0 1px var(--primary-light-20);
 }
 
 /* 用户操作区 */
@@ -428,11 +433,14 @@ onMounted(() => {
   padding: 6px 12px 6px 6px;
   border-radius: 25px;
   background: var(--bg-tertiary);
+  border: 1px solid transparent;
   transition: all 0.3s ease;
 }
 
 .user-info:hover {
-  background: var(--border-color);
+  background: var(--bg-card);
+  border-color: var(--primary-light-20);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .avatar {
@@ -444,14 +452,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--text-accent-contrast);
+  font-weight: 600;
 }
 
 .nickname {
-  font-size: 14px;
+  font-size: var(--font-small);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -459,8 +467,16 @@ onMounted(() => {
 }
 
 .dropdown-arrow {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.user-info:hover .dropdown-arrow {
+  transform: translateY(1px);
 }
 
 .dropdown-icon {
@@ -469,26 +485,27 @@ onMounted(() => {
 
 .login-btn {
   background: var(--primary-gradient);
-  color: var(--text-primary);
+  color: var(--text-accent-contrast);
   padding: 10px 24px;
   border-radius: 25px;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--primary-light-20);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
+  box-shadow: 0 8px 22px rgba(var(--primary-rgb), 0.18);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4);
+  box-shadow: 0 12px 26px rgba(var(--primary-rgb), 0.24);
 }
 
 /* 移动端菜单按钮 */
 .mobile-menu-btn {
   display: none;
-  background: none;
-  border: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   cursor: pointer;
   padding: 10px;
   width: 44px;
@@ -497,8 +514,14 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   gap: 6px;
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   transition: all 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+  border-color: var(--primary-light-20);
+  box-shadow: 0 12px 22px rgba(var(--primary-rgb), 0.12);
 }
 
 .mobile-menu-btn span {
@@ -528,17 +551,16 @@ onMounted(() => {
   position: fixed;
   top: 0;
   right: -100%;
-  width: 80%;
-  max-width: 300px;
+  width: min(84vw, 340px);
   height: 100vh;
-  background: rgba(10, 10, 26, 0.98);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  background: var(--bg-overlay);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   z-index: 1001;
   flex-direction: column;
   transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: -15px 0 50px rgba(0, 0, 0, 0.7);
-  border-left: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: -20px 0 48px rgba(15, 23, 42, 0.16);
+  border-left: 1px solid var(--border-light);
 }
 
 .mobile-nav.active {
@@ -549,24 +571,24 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30px 24px;
+  padding: 30px 24px 24px;
   border-bottom: 1px solid var(--border-light);
 }
 
 .mobile-nav-title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--font-h4);
+  font-weight: var(--weight-bold);
   color: var(--primary-color);
-  letter-spacing: 2px;
+  letter-spacing: var(--tracking-normal);
 }
 
 .mobile-nav-close {
-  background: rgba(255, 255, 255, 0.05);
-  border: none;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
   color: var(--text-secondary);
   cursor: pointer;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -575,8 +597,9 @@ onMounted(() => {
 }
 
 .mobile-nav-close:hover {
-  background: var(--primary-light-20);
-  color: var(--text-primary);
+  background: var(--surface-hover);
+  color: var(--primary-color);
+  border-color: var(--primary-light-20);
   transform: rotate(90deg);
 }
 
@@ -592,9 +615,9 @@ onMounted(() => {
   gap: 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 16px 30px;
-  font-size: 16px;
-  font-weight: 500;
+  padding: 16px 28px;
+  font-size: var(--font-body);
+  font-weight: var(--weight-medium);
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 }
@@ -602,20 +625,20 @@ onMounted(() => {
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
   color: var(--primary-color);
-  background: linear-gradient(90deg, rgba(184, 134, 11, 0.2), transparent);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12), transparent 85%);
   border-left-color: var(--primary-color);
-  padding-left: 36px;
+  padding-left: 34px;
 }
 
 .nav-icon {
   font-size: 20px;
-  color: var(--primary-light);
+  color: var(--primary-color);
 }
 
 .mobile-nav-footer {
-  padding: 30px 24px;
+  padding: 28px 24px;
   border-top: 1px solid var(--border-light);
-  background: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.03), rgba(var(--primary-rgb), 0.08));
 }
 
 .mobile-user-info {
@@ -633,10 +656,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-primary);
+  color: var(--text-accent-contrast);
   font-weight: 600;
   font-size: 16px;
-  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.28);
 }
 
 .mobile-nickname {
@@ -647,13 +670,13 @@ onMounted(() => {
 }
 
 .mobile-points {
-  background: rgba(184, 134, 11, 0.15);
+  background: rgba(var(--primary-rgb), 0.1);
   padding: 6px 12px;
   border-radius: 20px;
   color: var(--primary-color);
   font-weight: 700;
   font-size: 12px;
-  border: 1px solid rgba(184, 134, 11, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
 }
 
 .mobile-login-btn,
@@ -673,14 +696,14 @@ onMounted(() => {
 
 .mobile-login-btn {
   background: var(--primary-gradient);
-  color: var(--text-primary);
-  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.4);
+  color: var(--text-accent-contrast);
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.2);
 }
 
 .mobile-logout-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-light);
 }
 
 .mobile-overlay {
@@ -690,9 +713,9 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 999;
   opacity: 0;
   transition: all 0.4s ease;

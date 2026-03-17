@@ -78,8 +78,8 @@
             <span v-if="result.points_cost > 0">消耗 {{ result.points_cost }} 积分</span>
             <span v-else>本次免费</span>
             <span v-if="shouldShowRemainingPoints">剩余 {{ result.remaining_points }} 积分</span>
-            <span v-else-if="result.is_history" class="history-points-note">历史记录不展示剩余积分</span>
           </div>
+
 
 
           <!-- 操作按钮 -->
@@ -169,7 +169,11 @@
                 <p class="history-question">{{ item.question }}</p>
                 <p class="history-gua">{{ item.gua_name }} · {{ formatDate(item.created_at) }}</p>
               </div>
-              <button class="delete-btn" @click.stop="deleteRecord(item.id)"><el-icon><Delete /></el-icon></button>
+              <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
+                <el-icon><Delete /></el-icon>
+                <span class="delete-label">删除</span>
+              </button>
+
             </div>
           </div>
         </div>
@@ -1077,25 +1081,51 @@ onMounted(() => {
 }
 
 .delete-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 12px;
+  background: var(--error-bg);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 999px;
+  color: var(--error-color);
   cursor: pointer;
-  padding: 8px;
-  font-size: 16px;
-  opacity: 0;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 1;
   transition: all 0.3s;
 }
 
-.history-item:hover .delete-btn {
-  opacity: 1;
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-.delete-btn:hover {
-  color: var(--error-color);
+.delete-label {
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading,
+  .gua-decoration,
+  .yao-line,
+  .yao-line.moving,
+  .yao-line.moving::before,
+  .btn-submit,
+  .delete-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .yao-line:hover,
+  .btn-submit:not(:disabled):hover {
+    transform: none !important;
+  }
 }
 
 /* 响应式 */
+
 @media (max-width: 768px) {
   .page-title {
     font-size: 28px;

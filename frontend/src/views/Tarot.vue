@@ -153,9 +153,10 @@
         v-if="selectedCard"
         v-model="cardDetailVisible"
         :title="selectedCard.name + ' - ' + (selectedCard.reversed ? '逆位' : '正位')"
-        width="500px"
+        width="min(92vw, 500px)"
         class="card-detail-dialog"
       >
+
         <div v-if="selectedCard" class="card-detail">
           <div class="detail-header-new">
             <TarotCard 
@@ -834,6 +835,7 @@ const getCardAdvice = (card) => {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  min-height: 44px;
   padding: 15px 10px;
   background: var(--white-05);
   border: 1px solid var(--white-10);
@@ -841,6 +843,7 @@ const getCardAdvice = (card) => {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 
 .topic-tab:hover {
   background: var(--white-10);
@@ -876,10 +879,12 @@ const getCardAdvice = (card) => {
 .template-item {
   background: var(--surface-raised);
   border: 1px solid var(--border-light);
+  min-height: 44px;
   padding: 14px 18px;
   border-radius: 12px;
   transition: all 0.3s ease;
 }
+
 
 .template-item:hover {
   background: var(--surface-hover);
@@ -1159,6 +1164,35 @@ const getCardAdvice = (card) => {
   .spread-options {
     grid-template-columns: 1fr;
   }
+
+  .question-guide {
+    padding: 20px 16px;
+  }
+
+  .topic-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .topic-tab {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+
+  .template-list {
+    grid-template-columns: 1fr;
+  }
+
+  .template-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .template-text {
+    flex: 1;
+  }
   
   .cards-display {
     gap: 15px;
@@ -1177,4 +1211,16 @@ const getCardAdvice = (card) => {
     font-size: 14px;
   }
 }
+
+@media (max-width: 480px) {
+  .topic-tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .card-detail-dialog :deep(.el-dialog) {
+    width: calc(100vw - 24px) !important;
+    margin: 4vh auto;
+  }
+}
+
 </style>

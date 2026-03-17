@@ -325,7 +325,40 @@ const frontStyle = computed(() => ({
   50% { opacity: 0.8; transform: scale(1.2); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .tarot-card-component,
+  .card-inner,
+  .visual-glow,
+  .mystic-pattern,
+  .center-icon {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .tarot-card-component:hover,
+  .tarot-card-component.is-revealed .card-inner,
+  .tarot-card-component.is-reversed.is-revealed .card-inner {
+    transform: none !important;
+  }
+
+  .tarot-card-component.is-revealed .card-front,
+  .tarot-card-component.is-reversed.is-revealed .card-front {
+    transform: none;
+  }
+
+  .card-front,
+  .card-back {
+    position: relative;
+    backface-visibility: visible;
+  }
+
+  .card-back {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
+
   .tarot-card-component {
     width: 140px;
     height: 240px;

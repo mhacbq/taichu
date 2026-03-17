@@ -54,7 +54,7 @@
                 <div class="faq-question" @click="toggleQuestion(item)">
                   <span class="q-icon">Q</span>
                   <span class="question-text">{{ item.question }}</span>
-                  <span class="expand-icon" :class="{ expanded: item.expanded }">▼</span>
+                  <el-icon class="expand-icon" :class="{ expanded: item.expanded }"><ArrowDown /></el-icon>
                 </div>
                 <div class="faq-answer" v-show="item.expanded">
                   <span class="a-icon">A</span>
@@ -122,7 +122,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BackButton from '../components/BackButton.vue'
-import { Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, CollectionTag, Coin, Lock } from '@element-plus/icons-vue'
+import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, CollectionTag, Coin, Lock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -187,7 +187,9 @@ const categories = ref([
       {
         question: '可以多次排盘吗？',
         answer: '可以，每次排盘消耗10积分。同一人的八字是固定的，重复排盘结果相同。建议将结果保存或分享，方便日后查看。',
-        expanded: falsen      }
+        expanded: false
+      }
+
     ]
   },
   {
@@ -291,11 +293,19 @@ const goToFeedback = () => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  background: var(--bg-hover);
-  box-shadow: none;
-  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 1px var(--border-light) inset, 0 6px 16px rgba(15, 23, 42, 0.04);
+  border: 1px solid transparent;
   border-radius: 25px;
   padding: 5px 15px;
+}
+
+.search-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--primary-light-20) inset, 0 10px 22px rgba(var(--primary-rgb), 0.08);
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--primary-color) inset, var(--focus-ring);
 }
 
 .search-input :deep(.el-input__inner) {
@@ -394,7 +404,7 @@ const goToFeedback = () => {
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  color: var(--text-primary);
+  color: var(--text-accent-contrast);
   flex-shrink: 0;
 }
 
@@ -421,28 +431,30 @@ const goToFeedback = () => {
   border-top: 1px solid var(--border-light);
   margin-top: 0;
   padding-top: 15px;
+  background: rgba(var(--primary-rgb), 0.02);
 }
 
 .a-icon {
   width: 24px;
   height: 24px;
-  background: rgba(103, 194, 58, 0.8);
+  background: rgba(103, 194, 58, 0.16);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  color: var(--text-primary);
+  color: var(--success-color);
   flex-shrink: 0;
 }
 
 .faq-answer p {
-  color: var(--white-70);
+  color: var(--text-secondary);
   line-height: 1.8;
   margin: 0;
   white-space: pre-line;
 }
+
 
 /* 联系区域 */
 .contact-section {

@@ -64,24 +64,25 @@
               <p>{{ fortune.personalized.advice }}</p>
             </div>
             
-            <div class="lucky-info">
-              <div class="lucky-item card-hover">
-                <span class="lucky-label">幸运色</span>
-                <div class="lucky-values">
+            <div class="personal-lucky-grid">
+              <div class="personal-lucky-item card-hover">
+                <span class="personal-lucky-label">幸运色</span>
+                <div class="personal-lucky-values">
                   <span v-for="color in fortune.personalized.luckyColors" :key="color" class="lucky-tag color">
                     {{ color }}
                   </span>
                 </div>
               </div>
-              <div class="lucky-item card-hover">
-                <span class="lucky-label">幸运方位</span>
-                <div class="lucky-values">
+              <div class="personal-lucky-item card-hover">
+                <span class="personal-lucky-label">幸运方位</span>
+                <div class="personal-lucky-values">
                   <span v-for="dir in fortune.personalized.luckyDirections" :key="dir" class="lucky-tag direction">
                     {{ dir }}
                   </span>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
         

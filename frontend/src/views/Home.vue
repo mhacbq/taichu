@@ -191,11 +191,28 @@ import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
 import { Sunrise, Sunny, Moon, Coin, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
 
-const stats = ref([
-  { number: '加载中...', label: '服务用户', icon: 'UserFilled' },
-  { number: '加载中...', label: '分析次数', icon: 'DataLine' },
-  { number: '98%', label: '好评率', icon: 'ChatLineRound' },
-])
+const statIconMap = {
+  UserFilled,
+  DataLine,
+  ChatLineRound,
+}
+
+const defaultStats = [
+  { number: '加载中...', label: '服务用户', icon: UserFilled },
+  { number: '加载中...', label: '分析次数', icon: DataLine },
+  { number: '98%', label: '好评率', icon: ChatLineRound },
+]
+
+const resolveStatIcon = (icon, fallbackIcon = UserFilled) => {
+  if (typeof icon === 'object' || typeof icon === 'function') {
+    return icon
+  }
+
+  return statIconMap[icon] || fallbackIcon
+}
+
+const stats = ref(defaultStats)
+
 
 const isLoggedIn = ref(false)
 const userPoints = ref(0)
@@ -286,13 +303,21 @@ const loadStats = async () => {
   try {
     const response = await getHomeStats()
     if (response.code === 200) {
-      stats.value = response.data.stats
+      const incomingStats = response.data.stats || []
+      stats.value = incomingStats.length
+        ? incomingStats.map((item, index) => ({
+            ...item,
+            icon: resolveStatIcon(item.icon, defaultStats[index]?.icon || UserFilled),
+          }))
+        : defaultStats
       userCount.value = response.data.userCount || 12000
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
+    stats.value = defaultStats
   }
 }
+
 
 const loadUserPoints = async () => {
   const token = localStorage.getItem('token')
@@ -547,8 +572,10 @@ onMounted(() => {
 }
 
 .hero-title {
-  font-size: 56px;
-  font-weight: bold;
+  font-size: clamp(42px, 7vw, 60px);
+  font-weight: var(--weight-black);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
   margin-bottom: 20px;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
@@ -557,51 +584,25 @@ onMounted(() => {
 }
 
 .hero-subtitle {
-  font-size: 20px;
+  font-size: var(--font-body-lg);
   color: var(--text-secondary);
   margin-bottom: 40px;
-  max-width: 600px;
+  max-width: 640px;
   margin-left: auto;
   margin-right: auto;
+  line-height: var(--line-height-base);
 }
 
 .hero-actions {
   display: flex;
   gap: 20px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
-.btn-primary {
-  padding: 12px 32px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-btn);
-  font-weight: 600;
-}
-
+.btn-primary,
 .btn-secondary {
-  background: transparent;
-  border: 2px solid var(--border-color);
-  padding: 12px 32px;
-  height: 44px;
-  border-radius: var(--radius-btn);
-  color: var(--text-primary);
-  font-size: 16px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-
-.btn-secondary:hover {
-  border-color: var(--primary-color);
-  background: rgba(212, 175, 55, 0.08);
+  min-width: 190px;
 }
 
 .btn-icon {
@@ -610,20 +611,22 @@ onMounted(() => {
 
 .btn-badge {
   background: var(--success-gradient);
-  color: var(--text-primary);
-  padding: 2px 8px;
-  border-radius: 10px;
+  color: var(--text-inverse);
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 11px;
+  font-weight: var(--weight-semibold);
   margin-left: 5px;
 }
 
 .hero-hint {
   color: var(--text-tertiary);
-  font-size: 14px;
+  font-size: var(--font-small);
   margin-top: 20px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  line-height: var(--line-height-base);
 }
 
 .features {
@@ -643,15 +646,15 @@ onMounted(() => {
   padding: 40px 30px;
   text-align: center;
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
   transition: all 0.3s ease;
 }
 
 .feature-card:hover {
-  transform: translateY(-10px);
+  transform: translateY(-8px);
   background: var(--bg-card);
-  border-color: rgba(212, 175, 55, 0.4);
-  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light-30);
+  box-shadow: var(--shadow-hover);
 }
 
 .feature-icon {
@@ -660,21 +663,23 @@ onMounted(() => {
 }
 
 .feature-card h3 {
-  font-size: 24px;
-  margin-bottom: 15px;
+  font-size: var(--font-h3);
+  font-weight: var(--weight-bold);
+  margin-bottom: 12px;
   color: var(--text-primary);
 }
 
 .feature-card p {
   color: var(--text-secondary);
-  line-height: 1.6;
+  font-size: var(--font-body);
+  line-height: var(--line-height-base);
   margin-bottom: 20px;
 }
 
 .feature-link {
   color: var(--primary-color);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--weight-semibold);
   transition: all 0.3s ease;
 }
 
@@ -729,7 +734,7 @@ onMounted(() => {
   background: var(--bg-card);
   border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
   transition: all 0.3s ease;
   perspective: 1000px;
 }
@@ -737,7 +742,7 @@ onMounted(() => {
 .stat-icon-wrapper {
   width: 60px;
   height: 60px;
-  background: rgba(184, 134, 11, 0.1);
+  background: rgba(var(--primary-rgb), 0.1);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -753,17 +758,18 @@ onMounted(() => {
 
 .stat-item:hover .stat-icon-wrapper {
   background: var(--primary-color);
-  color: var(--text-primary);
+  color: var(--text-inverse);
   transform: rotateY(360deg) scale(1.1);
   -webkit-transform: rotateY(360deg) scale(1.1);
   /* 针对不支持 rotateY 的旧版浏览器的降级方案 */
-  box-shadow: 0 0 15px var(--primary-color);
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3);
 }
 
 .stat-number {
   display: block;
-  font-size: 36px;
-  font-weight: bold;
+  font-size: clamp(30px, 4vw, 38px);
+  font-weight: var(--weight-black);
+  line-height: 1.1;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -773,7 +779,8 @@ onMounted(() => {
 
 .stat-label {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--font-small);
+  line-height: var(--line-height-base);
 }
 
 /* 用户评价区域 */
@@ -799,14 +806,14 @@ onMounted(() => {
   border-radius: var(--radius-xl);
   padding: 25px;
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .testimonial-card:hover {
   transform: translateY(-5px);
   background: var(--bg-card);
-  border-color: rgba(212, 175, 55, 0.4);
-  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light-30);
+  box-shadow: var(--shadow-hover);
 }
 
 .testimonial-header {
@@ -825,13 +832,14 @@ onMounted(() => {
   justify-content: center;
   font-size: 20px;
   color: var(--primary-light);
-  font-weight: bold;
+  font-weight: var(--weight-bold);
   border: 2px solid var(--primary-light-20);
 }
 
 .testimonial-info h4 {
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: var(--font-body);
+  font-weight: var(--weight-semibold);
   margin-bottom: 5px;
 }
 
@@ -851,8 +859,8 @@ onMounted(() => {
 
 .testimonial-content {
   color: var(--text-secondary);
-  line-height: 1.7;
-  font-size: 14px;
+  line-height: var(--line-height-base);
+  font-size: var(--font-small);
   margin-bottom: 15px;
 }
 
@@ -862,14 +870,40 @@ onMounted(() => {
 }
 
 .service-tag {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(var(--primary-rgb), 0.12);
   color: var(--primary-color);
   padding: 4px 12px;
   border-radius: var(--radius-xl);
   font-size: 12px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .warm-greeting,
+  .greeting-icon,
+  .points-btn,
+  .welcome-btn,
+  .feature-card,
+  .testimonial-card,
+  .stat-icon-wrapper {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .points-btn:hover,
+  .welcome-btn:hover,
+  .feature-card:hover,
+  .testimonial-card:hover,
+  .stat-item:hover .stat-icon-wrapper {
+    transform: none !important;
+  }
+
+  .stat-item:hover .stat-icon-wrapper {
+    box-shadow: none;
+  }
+}
+
 @media (max-width: 992px) {
+
   .features-grid {
     grid-template-columns: 1fr;
   }
