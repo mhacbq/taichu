@@ -171,9 +171,10 @@
 作为代码审查专家，我对太初命理网站的代码进行了全面检查，发现以下问题：
 
 ### 🔴 高优先级
-- [ ] [2026-03-17] 后端管理路由配置不完整 - backend/route/app.php - 补齐 Almanac, Knowledge, SEO 等模块路由
-- [ ] [2026-03-17] 后端异常信息泄露风险 - backend/app/controller/*.php - 统一封装异常返回，避免直接输出 $e->getMessage()
-- [ ] [2026-03-17] 后端 Admin.php 控制器过于臃肿 - backend/app/controller/Admin.php - 拆分至 app/controller/admin/ 目录
+- [x] [2026-03-17] 后端管理路由配置不完整 - backend/route/{app,admin}.php - 已移除 `app.php` 中重复后台路由，并将 Almanac / Notice / SEO 后台入口统一收口到 `backend/route/admin.php`。
+- [ ] [2026-03-17] 后端异常信息泄露风险 - backend/app/controller/{Alipay,AiPrompt,AiAnalysis,Feedback,Hehun,Task}.php - `Admin.php` 与 `app/controller/admin/User.php` 已完成统一异常返回和脱敏日志收口，剩余公开业务控制器仍需继续清理直接输出 `$e->getMessage()` 的遗留点。
+
+- [x] [2026-03-17] 后端 Admin.php 控制器过于臃肿 - backend/app/controller/Admin.php - 本轮已将公告、黄历、SEO 继续拆分至 `app/controller/admin/{Notice,Almanac,Seo}.php`，并删除旧控制器中的重复实现。
 
 
 ### 🟡 中优先级
@@ -190,7 +191,8 @@
 ### 🟢 低优先级（运营优化建议）
 
 - [x] [运营] Dashboard 实时数据导出 - 首页看板 - 已补齐后台 dashboard/export-realtime 路由，支持实时快照 CSV 导出。
-- [ ] [运营] 控制器代码架构优化 - 后端 Admin.php - 4200行单文件过大，存在维护风险，建议彻底完成向模块化控制器（admin/目录）的迁移。
+- [ ] [运营] 控制器代码架构优化 - 后端 Admin.php - 本轮已继续拆出公告、黄历、SEO 模块，但主控制器仍承载较多历史接口，后续仍需继续向模块化控制器（admin/目录）迁移。
+
 
 
 ---
@@ -271,10 +273,12 @@
 
 
 ### 🟡 中优先级
-- [ ] [2026-03-17] 后端异常信息泄露风险 - backend/app/controller/Admin.php 第678行等 - 部分接口直接返回 `$e->getMessage()` 给客户端，可能泄露敏感信息，建议统一封装异常返回。
+- [x] [2026-03-17] 后端异常信息泄露风险 - backend/app/controller/Admin.php 第678行等 - 本轮复核确认 `Admin.php` 直接回传 `$e->getMessage()` 的分支已收口，同时 SEO 相关接口已迁出主控制器。
+
 
 ### 🟢 低优先级
-- [ ] [2026-03-17] 后端Admin控制器代码量过大 - backend/app/controller/Admin.php - 包含90+个public方法，代码量超过4000行，建议继续向admin/目录迁移。
+- [ ] [2026-03-17] 后端Admin控制器代码量过大 - backend/app/controller/Admin.php - 本轮已迁出公告、黄历、SEO 模块并删除旧实现，但主控制器仍较大，建议继续向 admin/ 目录迁移剩余历史接口。
+
 
 ---
 
@@ -324,3 +328,21 @@
 ### 🟡 中优先级（体验问题）
 
 ### 🟢 低优先级（专业性优化）
+
+---
+
+## 🎨 第三十九轮UI设计检查报告 (2026-03-17)
+
+作为资深产品经理和UI设计师，我继续从首页登录态可信度、八字结果归属、塔罗积分首屏反馈、合婚输入门槛与每日运势错误承接几个角度复核太初命理网站，确认以下问题尚未在当前 `TODO.md` 中登记后，新增如下：
+
+### 🔴 高优先级（功能性问题）
+- [ ] [UI] 首页登录态积分卡在余额接口失败时直接展示“0分”，容易制造积分丢失错觉 - `frontend/src/views/Home.vue` - 为积分卡增加 loading/error 状态，失败时显示“积分暂未同步 / 重新登录 / 重试”而不是默认 0 分。
+- [ ] [UI] 八字页重新排盘后，上一次流年/大运/AI 解盘结果会残留到新的命盘上下文 - `frontend/src/views/Bazi.vue` - 在重新排盘和排盘成功后统一重置 `yearlyFortuneResult / dayunAnalysisResult / dayunChartData / aiAnalysisResult` 等派生状态，并按 `result.id` 绑定分析结果归属。
+- [ ] [UI] 八字页“保存结果，可在个人中心查看”与实际仅写入本地浏览器存储不一致，容易引发跨设备找不到记录的投诉 - `frontend/src/views/Bazi.vue` - 若短期仅支持本地存储，应改成“保存到本机”；若承诺个人中心可查看，则接入服务端历史记录与可达入口。
+- [ ] [UI] 合婚页把双方精确出生时间设为硬门槛，没有“未知时辰 / 仅生日 / 大概时间段”入口，容易逼用户随便填时间后得到伪精确结论 - `frontend/src/views/Hehun.vue` - 增加时辰精度选项，并在低精度场景明确提示结果可信度下降。
+
+### 🟡 中优先级（体验问题）
+- [ ] [UI] 塔罗页积分尚未加载完成前就先显示“积分不足”并禁用主按钮，弱网下会误伤首屏转化 - `frontend/src/views/Tarot.vue` - 将积分初始值改为未就绪态，加载完成前展示“积分同步中”占位而不是不足提示。
+- [ ] [UI] 每日运势首次自动加载失败时同时弹 toast 和页内错误卡，负面反馈叠加过重 - `frontend/src/views/Daily.vue` - 区分自动加载与用户主动重试，自动失败仅保留页内错误态，重试失败再使用 toast。
+
+### 🟢 低优先级（美观问题）

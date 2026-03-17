@@ -16,7 +16,9 @@ Route::group('api/admin', function () {
         // 仪表盘
         Route::get('dashboard/statistics', 'admin.Dashboard/index');
         Route::get('dashboard/trend', 'admin.Dashboard/trend');
+        Route::post('dashboard/refresh-stats', 'admin.Dashboard/updateStats');
         Route::get('dashboard/chart/:type', 'Admin/chartData');
+
         Route::get('dashboard/realtime', 'Admin/realtime');
         Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
         Route::get('dashboard/pending-feedback', 'Admin/pendingFeedback');
@@ -25,7 +27,7 @@ Route::group('api/admin', function () {
         Route::get('users', 'admin.User/index');
         Route::get('users/:id', 'admin.User/detail');
         Route::put('users/:id/status', 'admin.User/toggleStatus');
-        Route::put('users/batch-status', 'Admin/batchUpdateUserStatus');
+        Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
         Route::get('users/behavior', 'Admin/userBehavior');
         Route::get('users/export', 'Admin/exportUsers');
         
@@ -40,10 +42,10 @@ Route::group('api/admin', function () {
         Route::post('content/daily', 'Admin/createDailyFortune');
         Route::put('content/daily/:id', 'Admin/updateDailyFortune');
         Route::delete('content/daily/:id', 'Admin/deleteDailyFortune');
-        Route::get('content/almanac', 'Admin/almanacList');
-        Route::post('content/almanac', 'Admin/saveAlmanac');
-        Route::put('content/almanac/:id', 'Admin/updateAlmanac');
-        Route::delete('content/almanac/:id', 'Admin/deleteAlmanac');
+        Route::get('content/almanac', 'admin.Almanac/almanacList');
+        Route::post('content/almanac', 'admin.Almanac/saveAlmanac');
+        Route::put('content/almanac/:id', 'admin.Almanac/updateAlmanac');
+        Route::delete('content/almanac/:id', 'admin.Almanac/deleteAlmanac');
         
         // 积分管理
         Route::get('points/records', 'Admin/pointsRecords');
@@ -122,22 +124,22 @@ Route::group('api/admin', function () {
         Route::delete('system/sensitive/:id', 'Admin/deleteSensitiveWord');
 
         Route::post('system/sensitive/import', 'Admin/importSensitiveWords');
-        Route::get('system/notices', 'Admin/getNotices');
-        Route::post('system/notices', 'Admin/saveNotice');
-        Route::delete('system/notices/:id', 'Admin/deleteNotice');
+        Route::get('system/notices', 'admin.Notice/getNotices');
+        Route::post('system/notices', 'admin.Notice/saveNotice');
+        Route::delete('system/notices/:id', 'admin.Notice/deleteNotice');
         Route::get('system/shensha', 'admin.Shensha/index');
         Route::get('system/shensha/options', 'admin.Shensha/options');
         Route::post('system/shensha', 'admin.Shensha/save');
         Route::put('system/shensha/:id', 'admin.Shensha/save');
         Route::delete('system/shensha/:id', 'admin.Shensha/delete');
-        Route::get('system/seo/configs', 'Admin/seoConfigList');
-        Route::post('system/seo/configs', 'Admin/saveSeoConfig');
-        Route::put('system/seo/configs/:id', 'Admin/saveSeoConfig');
-        Route::delete('system/seo/configs/:id', 'Admin/deleteSeoConfig');
-        Route::get('system/seo/stats', 'Admin/seoStats');
-        Route::get('system/seo/robots', 'Admin/seoRobots');
-        Route::put('system/seo/robots', 'Admin/saveSeoRobots');
-        Route::post('system/seo/submit', 'Admin/seoSubmit');
+        Route::get('system/seo/configs', 'admin.Seo/seoConfigList');
+        Route::post('system/seo/configs', 'admin.Seo/saveSeoConfig');
+        Route::put('system/seo/configs/:id', 'admin.Seo/saveSeoConfig');
+        Route::delete('system/seo/configs/:id', 'admin.Seo/deleteSeoConfig');
+        Route::get('system/seo/stats', 'admin.Seo/seoStats');
+        Route::get('system/seo/robots', 'admin.Seo/seoRobots');
+        Route::put('system/seo/robots', 'admin.Seo/saveSeoRobots');
+        Route::post('system/seo/submit', 'admin.Seo/seoSubmit');
         Route::get('system/admins', 'Admin/getAdminUsers');
         Route::post('system/admins', 'Admin/saveAdminUser');
         Route::delete('system/admins/:id', 'Admin/deleteAdminUser');
@@ -181,8 +183,12 @@ Route::group('api/admin', function () {
         Route::delete('tasks/scripts/:id', 'Admin/deleteTaskScript');
         
         // 黄历管理
-        Route::get('almanac/list', 'Admin/almanacList');
-        Route::post('almanac/save', 'Admin/saveAlmanac');
-        Route::post('almanac/generate-month', 'Admin/generateAlmanacMonth');
+        Route::get('almanac/list', 'admin.Almanac/almanacList');
+        Route::post('almanac/save', 'admin.Almanac/saveAlmanac');
+        Route::post('almanac/generate-month', 'admin.Almanac/generateAlmanacMonth');
     })->middleware(\app\middleware\AdminAuth::class);
-})->middleware([\app\middleware\RateLimit::class]);
+})->middleware([
+    \app\middleware\HttpsEnforce::class,
+    \app\middleware\Cors::class,
+    \app\middleware\RateLimit::class,
+]);

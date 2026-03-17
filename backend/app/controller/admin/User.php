@@ -6,8 +6,8 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\service\AdminStatsService;
+use think\Request;
 use think\facade\Db;
-use think\facade\Log;
 
 /**
  * 后台用户管理控制器
@@ -30,11 +30,9 @@ class User extends BaseController
             $data = AdminStatsService::getUserList($params);
             return $this->success($data);
         } catch (\Throwable $e) {
-            Log::error('后台获取用户列表失败', [
-                'admin_id' => $this->getAdminId(),
-                'error' => $e->getMessage(),
+            return $this->respondSystemException('admin_user_index', $e, '获取用户列表失败，请稍后重试', [
+                'params' => $params ?? [],
             ]);
-            return $this->error('获取用户列表失败，请稍后重试', 500);
         }
     }
 
@@ -106,12 +104,9 @@ class User extends BaseController
 
             return $this->success($payload);
         } catch (\Throwable $e) {
-            Log::error('后台获取用户详情失败', [
-                'admin_id' => $this->getAdminId(),
+            return $this->respondSystemException('admin_user_detail', $e, '获取用户详情失败，请稍后重试', [
                 'user_id' => $id,
-                'error' => $e->getMessage(),
             ]);
-            return $this->error('获取用户详情失败，请稍后重试', 500);
         }
     }
 
@@ -149,21 +144,21 @@ class User extends BaseController
 
             return $this->success($result, '积分调整成功');
         } catch (\Throwable $e) {
-            Log::error('后台调整用户积分失败', [
-                'admin_id' => $this->getAdminId(),
+            $context = [
                 'user_id' => $data['user_id'] ?? null,
                 'points' => $normalizedPoints,
-                'error' => $e->getMessage(),
-            ]);
+                'reason' => $data['reason'] ?? '',
+            ];
 
-            $statusCode = in_array($e->getMessage(), ['用户不存在'], true)
-                ? 404
-                : (in_array($e->getMessage(), ['积分不足'], true) ? 400 : 500);
-            $message = in_array($e->getMessage(), ['用户不存在', '积分不足'], true)
-                ? $e->getMessage()
-                : '调整积分失败，请稍后重试';
+            if ($e->getMessage() === '用户不存在') {
+                return $this->respondBusinessException($e, 'admin_adjust_points_user_not_found', '用户不存在', 404, $context);
+            }
 
-            return $this->error($message, $statusCode);
+            if ($e->getMessage() === '积分不足') {
+                return $this->respondBusinessException($e, 'admin_adjust_points_insufficient', '积分不足', 400, $context);
+            }
+
+            return $this->respondSystemException('admin_adjust_points', $e, '调整积分失败，请稍后重试', $context);
         }
     }
 
@@ -192,23 +187,85 @@ class User extends BaseController
                 $newStatus = (int) ($user->status == 1 ? 0 : 1);
             }
 
+            $oldStatus = (int) ($user->status ?? 0);
             $user->status = $newStatus;
             $user->save();
 
+            $this->logOperation('toggle_user_status', 'user', [
+                'target_id' => $id,
+                'target_type' => 'user',
+                'detail' => sprintf('更新用户状态: %s -> %s', $oldStatus, $newStatus),
+                'before_data' => ['status' => $oldStatus],
+                'after_data' => ['status' => $newStatus],
+            ]);
+
             return $this->success(['status' => $newStatus], '状态更新成功');
         } catch (\Throwable $e) {
-            Log::error('后台更新用户状态失败', [
-                'admin_id' => $this->getAdminId(),
+            return $this->respondSystemException('admin_toggle_user_status', $e, '更新状态失败，请稍后重试', [
                 'user_id' => $id,
-                'error' => $e->getMessage(),
+                'requested_status' => $this->request->put('status', null),
             ]);
-            return $this->error('更新状态失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 批量更新用户状态
+     */
+    public function batchUpdateStatus(Request $request)
+    {
+        if (!$this->hasAdminPermission('user_edit')) {
+            return $this->error('无权限批量编辑用户', 403);
+        }
+
+        $ids = $request->put('ids', []);
+        $status = $request->put('status');
+
+        try {
+            if (!is_array($ids) || empty($ids)) {
+                return $this->error('用户ID列表不能为空', 400);
+            }
+            if (!in_array($status, [0, 1, 2], true)) {
+                return $this->error('状态值无效，必须是0(禁用)、1(正常)或2(待验证)', 400);
+            }
+
+            $userIds = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $value): bool => $value > 0)));
+            if (empty($userIds)) {
+                return $this->error('用户ID列表无效', 400);
+            }
+
+            $existingCount = \app\model\User::whereIn('id', $userIds)->count();
+            if ($existingCount === 0) {
+                return $this->error('未找到可更新的用户', 404);
+            }
+
+            \app\model\User::whereIn('id', $userIds)->update(['status' => $status]);
+
+            $this->logOperation('batch_update_status', 'user', [
+                'detail' => '批量更新用户状态为: ' . $status,
+                'after_data' => [
+                    'user_ids' => $userIds,
+                    'status' => $status,
+                    'matched_count' => $existingCount,
+                ],
+            ]);
+
+            return $this->success([
+                'updated_count' => $existingCount,
+                'status' => $status,
+                'user_ids' => $userIds,
+            ], '批量操作成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('user_batch_update_status', $e, '批量操作失败，请稍后重试', [
+                'ids' => $ids,
+                'status' => $status,
+            ]);
         }
     }
 
     /**
      * 兼容 points 与 type/amount 两套积分调整入参
      */
+
     protected function resolvePointsDelta(array $data): ?int
     {
         $directPoints = filter_var($data['points'] ?? null, FILTER_VALIDATE_INT);
