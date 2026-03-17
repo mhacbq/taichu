@@ -79,65 +79,73 @@ export function deleteDailyFortune(id) {
 }
 
 // 黄历管理
-export function getAlmanacList(params) {
+export function getAlmanacList(params, options = {}) {
   return request({
     url: '/content/almanac',
     method: 'get',
-    params
+    params,
+    ...options
   })
 }
 
-export function createAlmanac(data) {
+export function createAlmanac(data, options = {}) {
   return request({
     url: '/content/almanac',
     method: 'post',
-    data
+    data,
+    ...options
   })
 }
 
-export function updateAlmanac(id, data) {
+export function updateAlmanac(id, data, options = {}) {
   return request({
     url: `/content/almanac/${id}`,
     method: 'put',
-    data
+    data,
+    ...options
   })
 }
 
-export function deleteAlmanac(id) {
+export function deleteAlmanac(id, options = {}) {
   return request({
     url: `/content/almanac/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...options
   })
 }
 
 // 神煞管理
-export function getShenshaList(params) {
+export function getShenshaList(params, options = {}) {
   return request({
     url: '/system/shensha',
     method: 'get',
-    params
+    params,
+    ...options
   })
 }
 
-export function getShenshaOptions() {
+export function getShenshaOptions(options = {}) {
   return request({
     url: '/system/shensha/options',
-    method: 'get'
+    method: 'get',
+    ...options
   })
 }
 
-export function saveShensha(data) {
+export function saveShensha(data, options = {}) {
   const isUpdate = !!data.id
   return request({
     url: isUpdate ? `/system/shensha/${data.id}` : '/system/shensha',
     method: isUpdate ? 'put' : 'post',
-    data
+    data,
+    ...options
   })
 }
 
-export function deleteShensha(id) {
+export function deleteShensha(id, options = {}) {
   return request({
     url: `/system/shensha/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...options
   })
 }

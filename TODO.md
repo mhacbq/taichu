@@ -1,16 +1,35 @@
+## 🛠 第二十六轮后台运营修复记录 (2026-03-18)
+
+作为后台修复负责人，我继续围绕独立后台的运营主链路，对知识库、Dashboard、用户、内容、订单等核心页面做联动修复，完成以下 5 个不重复问题：
+
+### 🔴 高优先级（运营阻塞问题）
+- [x] [运营] 当前独立后台虽已有 `/api/admin/knowledge/articles`、`/api/admin/knowledge/categories` 等后端接口，但后台仍缺少真正可用的文章/分类管理入口，运营无法在独立后台发布、编辑或分类命理文章 - 内容管理 / 知识库文章管理 - 已新增 `admin/src/api/knowledge.js` 与 `admin/src/views/site-content/knowledge.vue`，并在 `admin/src/router/index.js`、Dashboard 快捷操作中接入 `/site/knowledge` 入口，后台现可直接管理知识库文章与分类。
+- [x] [运营] Dashboard 在统计、趋势、实时数据任一接口失败时仍继续展示默认 0 值或“尚未加载”，运营难以分辨“确实无数据”还是“接口未成功返回”，并可能导出无效快照 - 后台首页 / Dashboard - 已在 `admin/src/views/dashboard/index.vue` 为整页看板补齐显式错误态、重试入口和只读保护；任一模块加载失败即停止展示默认空数据，并统一按 `roles` 数组过滤快捷操作与导出入口。
+
+### 🟡 中优先级（运营体验问题）
+- [x] [运营] 用户列表在加载失败时只有 toast 提示，表格主体仍可能显示空表或旧数据，状态切换、批量启停和积分调整仍可继续操作，容易误判为“没有用户”或误改用户状态 - 用户管理 / 用户列表 - 已在 `admin/src/views/user/list.vue` 补齐页级错误态与只读保护；列表加载失败时不再展示默认空数据，并统一禁用状态修改、批量操作、积分调整和导出入口。
+- [x] [运营] 黄历/神煞管理在接口失败时仍主要依赖 toast，页面主体继续保留空表或旧列表，写操作未统一进入只读保护；同时神煞页筛选项与后端 options、状态筛选、状态切换更新链路存在脱节 - 内容管理 / 黄历与神煞 - 已在 `admin/src/views/content/{almanac,shensha}.vue` 补齐显式错误态、重试入口与只读保护，并改为真实读取 `/api/admin/system/shensha/options`；同时加固 `backend/app/controller/admin/Shensha.php`，补上 `AdminAuth`、`content_manage` 权限、`status` 筛选与局部更新兼容。
+- [x] [运营] 充值订单与 VIP 订单页在加载失败时仍主要依赖 toast 报错，页面主体会继续显示空表或旧数据，统计卡片也会沿用默认值或旧列表结果，运营很难判断“暂无数据”还是“接口没加载成功” - 订单管理 / 充值订单 / VIP 订单 - 已在 `admin/src/views/payment/{orders,vip-orders}.vue` 补齐整页错误态、重试入口与只读保护，统一改为基于 `roles` 数组判断管理员写权限，并在失败态下禁用补单、退款等写操作。
+
+### 🟢 低优先级（运营优化建议）
+- [x] [代码] 本轮同步把 `admin/src/api/{dashboard,content,payment,user,points}.js` 的相关接口扩展为可传 `showErrorMessage: false`，让页面统一接管错误态与只读保护，减少重复 toast 干扰。
+
+---
+
 ## 🛠 第二十五轮后台运营检查报告 (2026-03-18)
 
 作为网站运营人员，我先按真实运营路径打开独立后台 `http://localhost:3001/login`，并用默认账号 `admin / admin123` 发起登录；浏览器与直连接口都返回“管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql”。在登录链路仍被阻断的前提下，我继续结合当前后台运行态、已注册路由与核心页面实现复核 Dashboard、用户、内容、订单、系统配置链路，仅记录本轮新增且未与现有 `TODO.md` 重复的项：
 
 ### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] 当前独立后台仍没有任何“知识库文章/分类管理”页面或菜单入口，`admin/src/router/index.js` 与 `admin/src/views/` 都未接入知识库模块；虽然后端已经注册 `/api/admin/knowledge/articles`、`/api/admin/knowledge/categories` 等接口，运营仍无法在后台实际发布、编辑或分类命理文章 - 内容管理 / 知识库文章管理 - 直接阻断文章运营与 SEO 内容更新。
+- [x] [运营] 当前独立后台仍没有任何“知识库文章/分类管理”页面或菜单入口，`admin/src/router/index.js` 与 `admin/src/views/` 都未接入知识库模块；虽然后端已经注册 `/api/admin/knowledge/articles`、`/api/admin/knowledge/categories` 等接口，运营仍无法在后台实际发布、编辑或分类命理文章 - 内容管理 / 知识库文章管理 - 已复核确认该项已在现有代码落地：`admin/src/router/index.js` 已注册 `/site/knowledge` 菜单，`admin/src/views/site-content/knowledge.vue` 与 `admin/src/api/knowledge.js` 已接通文章/分类管理 UI，`backend/app/controller/admin/Knowledge.php` 与 `backend/route/admin.php` 也已完整提供文章、分类的列表/详情/保存/删除接口。
 
 ### 🟡 中优先级（运营体验问题）
-- [ ] [运营] VIP 订单页在加载失败时仍主要依赖 toast 报错，页面主体会继续显示空表或旧数据，顶部统计也会沿用旧列表结果，运营很难判断“暂无数据”还是“接口没加载成功” - 订单管理 / VIP 订单 - 建议补齐整页错误态、重试入口与只读保护。
+- [x] [运营] VIP 订单页在加载失败时仍主要依赖 toast 报错，页面主体会继续显示空表或旧数据，顶部统计也会沿用旧列表结果，运营很难判断“暂无数据”还是“接口没加载成功” - 订单管理 / VIP 订单 - 已在 `admin/src/views/payment/vip-orders.vue` 补齐整页错误态、重试入口、失败时清空旧列表/统计与只读保护；同时为 `admin/src/api/payment.js` 的 VIP 订单请求补上可选参数透传，页面可统一关闭默认 toast 并改为页内错误承接。
 
 ### 🟢 低优先级（运营优化建议）
 
 ---
+
 
 ## 🛠 第二十四轮后台运营检查报告 (2026-03-18)
 

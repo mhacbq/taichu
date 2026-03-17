@@ -1,6 +1,14 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 后台运营只读保护与知识库入口修复记录（本次）
+
+- 完成 5 个后台 / 运营类问题：补齐独立后台知识库文章/分类管理入口；为 Dashboard、用户列表、黄历/神煞、充值订单、VIP 订单页统一增加显式错误态、重试入口与只读保护；神煞后台补 `AdminAuth`、`content_manage` 权限、`status` 筛选与局部更新兼容；相关 admin API 封装支持 `showErrorMessage: false` 由页面接管错误态。
+- 关键代码：新增 `admin/src/api/knowledge.js`、`admin/src/views/site-content/knowledge.vue`；更新 `admin/src/router/index.js`、`admin/src/views/dashboard/index.vue`、`admin/src/views/payment/{orders,vip-orders}.vue`、`admin/src/views/user/list.vue`、`admin/src/views/content/{almanac,shensha}.vue`、`backend/app/controller/admin/Shensha.php`、`TODO.md`。
+- 验证：已对本轮目标前端 / PHP 文件执行 IDE 诊断检查（0 条），执行 `git diff --check` 通过，并完成 `npm --prefix admin run build` 构建验证；仍只有既有 Sass legacy JS API 与大 chunk 警告，未阻塞构建。
+- Git：本轮提交信息使用 `fix-backend-admin-ops-readonly-20260318-0115`。
+
 ## 2026-03-18 00:30 后台鉴权与系统权限边界修复记录（本次）
+
 
 - 完成 5 个后台 / 运营类问题：移除后台 JWT 固定默认密钥回退、补齐管理员 Token 声明与启用状态校验、为 `auth/info` 返回真实角色/权限/状态、收紧系统角色/权限/字典接口的 `config_manage` 权限边界、统一以 `SchemaInspector` 替代 MySQL `SHOW TABLES / SHOW COLUMNS` 探测。
 - 关键代码：新增 `backend/app/service/SchemaInspector.php`；更新 `backend/app/controller/admin/Auth.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/AdminAuthService.php`、`backend/app/service/AdminStatsService.php`、`backend/app/controller/admin/System.php`，并已在 `TODO.md` 回写第二十四轮完成项。

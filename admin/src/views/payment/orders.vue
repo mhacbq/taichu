@@ -1,14 +1,16 @@
 <template>
   <div class="app-container">
-    <el-card v-if="pageError" shadow="never" class="page-state-card">
-      <el-result icon="warning" :title="pageError.title" :sub-title="pageError.description">
-        <template #extra>
-          <el-button type="primary" :loading="pageLoading" @click="handleReload">重新加载</el-button>
-        </template>
-      </el-result>
-    </el-card>
+    <template v-if="pageError">
+      <el-card shadow="never" class="page-state-card">
+        <el-result icon="warning" :title="pageError.title" :sub-title="pageError.description">
+          <template #extra>
+            <el-button type="primary" :loading="loading" @click="refreshPage">重新加载</el-button>
+          </template>
+        </el-result>
+      </el-card>
+    </template>
 
-    <div v-else v-loading="pageLoading">
+    <template v-else>
       <el-row :gutter="16" class="stats-row">
         <el-col :xs="12" :sm="12" :md="6">
           <el-card shadow="hover" class="stats-card">
@@ -63,16 +65,14 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">
-              <el-icon><Search /></el-icon>搜索
-            </el-button>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
           </el-form-item>
         </el-form>
       </el-card>
 
       <el-card shadow="never">
-        <el-table v-loading="pageLoading" :data="orderList" stripe border>
+        <el-table v-loading="loading" :data="orderList" stripe border>
           <el-table-column type="index" label="#" width="56" />
           <el-table-column prop="order_no" label="订单号" min-width="190" show-overflow-tooltip />
           <el-table-column prop="pay_order_no" label="支付单号" min-width="190" show-overflow-tooltip>
@@ -119,6 +119,7 @@
                 v-if="row.status === 'pending' && canModifyOrder"
                 link
                 type="success"
+                :disabled="readonlyMode"
                 @click="handleComplete(row)"
               >
                 补单
@@ -127,6 +128,7 @@
                 v-if="row.status === 'paid' && canModifyOrder"
                 link
                 type="danger"
+                :disabled="readonlyMode"
                 @click="handleRefund(row)"
               >
                 退款
@@ -147,63 +149,62 @@
           />
         </div>
       </el-card>
+    </template>
 
-      <el-dialog v-model="detailVisible" title="充值订单详情" width="720px">
-        <el-descriptions v-if="currentOrder" :column="2" border>
-          <el-descriptions-item label="订单号" :span="2">{{ currentOrder.order_no }}</el-descriptions-item>
-          <el-descriptions-item label="支付单号" :span="2">{{ currentOrder.pay_order_no || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="退款单号" :span="2">{{ currentOrder.refund_no || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="用户ID">{{ currentOrder.user_id }}</el-descriptions-item>
-          <el-descriptions-item label="用户昵称">{{ currentOrder.user_nickname || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="用户手机号">{{ currentOrder.user_phone || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="支付方式">{{ getPaymentTypeText(currentOrder.payment_type) }}</el-descriptions-item>
-          <el-descriptions-item label="充值金额">¥{{ formatAmount(currentOrder.amount) }}</el-descriptions-item>
-          <el-descriptions-item label="到账积分">{{ currentOrder.points }}</el-descriptions-item>
-          <el-descriptions-item label="订单状态">
-            <el-tag :type="getStatusType(currentOrder.status)">{{ getStatusText(currentOrder.status) }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="支付时间">{{ currentOrder.pay_time || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ currentOrder.created_at || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="过期时间">{{ currentOrder.expire_time || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="客户端IP">{{ currentOrder.client_ip || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="退款金额">{{ currentOrder.refund_amount ? `¥${formatAmount(currentOrder.refund_amount)}` : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="退款时间">{{ currentOrder.refund_time || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="退款原因" :span="2">{{ currentOrder.refund_reason || '-' }}</el-descriptions-item>
-        </el-descriptions>
-      </el-dialog>
+    <el-dialog v-model="detailVisible" title="充值订单详情" width="720px" destroy-on-close>
+      <el-descriptions v-if="currentOrder" :column="2" border>
+        <el-descriptions-item label="订单号" :span="2">{{ currentOrder.order_no }}</el-descriptions-item>
+        <el-descriptions-item label="支付单号" :span="2">{{ currentOrder.pay_order_no || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="退款单号" :span="2">{{ currentOrder.refund_no || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="用户ID">{{ currentOrder.user_id }}</el-descriptions-item>
+        <el-descriptions-item label="用户昵称">{{ currentOrder.user_nickname || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="用户手机号">{{ currentOrder.user_phone || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="支付方式">{{ getPaymentTypeText(currentOrder.payment_type) }}</el-descriptions-item>
+        <el-descriptions-item label="充值金额">¥{{ formatAmount(currentOrder.amount) }}</el-descriptions-item>
+        <el-descriptions-item label="到账积分">{{ currentOrder.points }}</el-descriptions-item>
+        <el-descriptions-item label="订单状态">
+          <el-tag :type="getStatusType(currentOrder.status)">{{ getStatusText(currentOrder.status) }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ currentOrder.pay_time || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ currentOrder.created_at || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="过期时间">{{ currentOrder.expire_time || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="客户端IP">{{ currentOrder.client_ip || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="退款金额">{{ currentOrder.refund_amount ? `¥${formatAmount(currentOrder.refund_amount)}` : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="退款时间">{{ currentOrder.refund_time || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="退款原因" :span="2">{{ currentOrder.refund_reason || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
 
-      <el-dialog v-model="refundVisible" title="充值订单退款" width="500px">
-        <el-form :model="refundForm" label-width="100px">
-          <el-form-item label="订单号">
-            <span>{{ currentOrder?.order_no }}</span>
-          </el-form-item>
-          <el-form-item label="退款金额">
-            <span class="amount">¥{{ formatAmount(currentOrder?.amount) }}</span>
-          </el-form-item>
-          <el-form-item label="退款原因" required>
-            <el-input
-              v-model="refundForm.reason"
-              type="textarea"
-              rows="3"
-              maxlength="100"
-              show-word-limit
-              placeholder="请输入退款原因"
-            />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="refundVisible = false">取消</el-button>
-          <el-button type="danger" @click="confirmRefund" :loading="refunding">确认退款</el-button>
-        </template>
-      </el-dialog>
-    </div>
+    <el-dialog v-model="refundVisible" title="充值订单退款" width="500px" destroy-on-close>
+      <el-form :model="refundForm" label-width="100px" :disabled="readonlyMode">
+        <el-form-item label="订单号">
+          <span>{{ currentOrder?.order_no }}</span>
+        </el-form-item>
+        <el-form-item label="退款金额">
+          <span class="amount">¥{{ formatAmount(currentOrder?.amount) }}</span>
+        </el-form-item>
+        <el-form-item label="退款原因" required>
+          <el-input
+            v-model="refundForm.reason"
+            type="textarea"
+            rows="3"
+            maxlength="100"
+            show-word-limit
+            placeholder="请输入退款原因"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="refundVisible = false">取消</el-button>
+        <el-button type="danger" :disabled="readonlyMode" @click="confirmRefund" :loading="refunding">确认退款</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
 import {
   getRechargeOrders,
   getRechargeStats,
@@ -213,18 +214,25 @@ import {
 } from '@/api/payment'
 import { useUserStore } from '@/stores/user'
 import { createReadonlyErrorState } from '@/utils/page-error'
+import { normalizeAdminRoles } from '@/utils/admin-permission'
 
 const userStore = useUserStore()
-const pageLoading = ref(false)
-const pageError = ref(null)
+const currentRoles = computed(() => normalizeAdminRoles(
+  userStore.roles || userStore.userInfo?.roles || userStore.userInfo?.role || []
+))
+const canModifyOrder = computed(() => currentRoles.value.includes('admin'))
+
+const loading = ref(false)
 const total = ref(0)
 const orderList = ref([])
 const currentOrder = ref(null)
 const detailVisible = ref(false)
 const refundVisible = ref(false)
 const refunding = ref(false)
+const pageError = ref(null)
 
-const stats = reactive(createDefaultStats())
+const stats = reactive(createInitialStats())
+
 const queryForm = reactive({
   order_no: '',
   user_id: '',
@@ -238,13 +246,9 @@ const refundForm = reactive({
   reason: ''
 })
 
-const canModifyOrder = computed(() => userStore.userInfo?.role === 'admin' && !pageError.value)
+const readonlyMode = computed(() => Boolean(pageError.value))
 
-onMounted(() => {
-  loadPageData()
-})
-
-function createDefaultStats() {
+function createInitialStats() {
   return {
     total_amount: 0,
     total_points: 0,
@@ -258,12 +262,20 @@ function createDefaultStats() {
 function resetPageState() {
   orderList.value = []
   total.value = 0
-  Object.assign(stats, createDefaultStats())
-  currentOrder.value = null
-  detailVisible.value = false
-  refundVisible.value = false
-  refundForm.reason = ''
+  Object.assign(stats, createInitialStats())
 }
+
+function ensureWritable(message) {
+  if (!readonlyMode.value) {
+    return true
+  }
+  ElMessage.warning(message)
+  return false
+}
+
+onMounted(() => {
+  refreshPage()
+})
 
 function buildOrderParams() {
   const params = {
@@ -323,58 +335,44 @@ function getPaymentTypeText(type) {
   }[type] || type || '-'
 }
 
-async function fetchOrders() {
-  const { data } = await getRechargeOrders(buildOrderParams())
-  return {
-    list: Array.isArray(data?.list) ? data.list : [],
-    total: Number(data?.total || 0)
+async function loadOrders() {
+  loading.value = true
+  try {
+    const { data } = await getRechargeOrders(buildOrderParams(), { showErrorMessage: false })
+    orderList.value = Array.isArray(data?.list) ? data.list : []
+    total.value = Number(data?.total || 0)
+  } finally {
+    loading.value = false
   }
 }
 
-async function fetchStats() {
-  const { data } = await getRechargeStats(buildStatsParams())
-  return {
+async function loadStats() {
+  const { data } = await getRechargeStats(buildStatsParams(), { showErrorMessage: false })
+  Object.assign(stats, {
     total_amount: Number(data?.total_amount || 0),
     total_points: Number(data?.total_points || 0),
     order_count: Number(data?.order_count || 0),
     user_count: Number(data?.user_count || 0),
     pending_count: Number(data?.pending_count || 0),
     avg_amount: Number(data?.avg_amount || 0)
-  }
+  })
 }
 
-async function loadPageData() {
-  pageLoading.value = true
+async function refreshPage() {
   try {
-    const [ordersResult, statsResult] = await Promise.allSettled([
-      fetchOrders(),
-      fetchStats()
-    ])
-
-    const failedResult = [ordersResult, statsResult].find(result => result.status === 'rejected')
-    if (failedResult) {
-      resetPageState()
-      pageError.value = createReadonlyErrorState(failedResult.reason, '充值订单')
-      return false
-    }
-
-    orderList.value = ordersResult.value.list
-    total.value = ordersResult.value.total
-    Object.assign(stats, statsResult.value)
+    await Promise.all([loadOrders(), loadStats()])
     pageError.value = null
-    return true
-  } finally {
-    pageLoading.value = false
+  } catch (error) {
+    resetPageState()
+    detailVisible.value = false
+    refundVisible.value = false
+    pageError.value = createReadonlyErrorState(error, '充值订单', 'stats_view / config_manage')
   }
-}
-
-async function handleReload() {
-  await loadPageData()
 }
 
 function handleSearch() {
   queryForm.page = 1
-  loadPageData()
+  refreshPage()
 }
 
 function handleReset() {
@@ -386,23 +384,30 @@ function handleReset() {
     page: 1,
     limit: 20
   })
-  loadPageData()
+  refreshPage()
 }
 
 function handleSizeChange(size) {
   queryForm.limit = size
   queryForm.page = 1
-  loadPageData()
+  loadOrders().catch(handleLoadFailure)
 }
 
 function handleCurrentChange(page) {
   queryForm.page = page
-  loadPageData()
+  loadOrders().catch(handleLoadFailure)
+}
+
+function handleLoadFailure(error) {
+  resetPageState()
+  detailVisible.value = false
+  refundVisible.value = false
+  pageError.value = createReadonlyErrorState(error, '充值订单', 'stats_view / config_manage')
 }
 
 async function handleDetail(row) {
   try {
-    const { data } = await getOrderDetail(row.order_no || row.id)
+    const { data } = await getOrderDetail(row.order_no || row.id, { showErrorMessage: false })
     currentOrder.value = data
     detailVisible.value = true
   } catch (error) {
@@ -411,6 +416,10 @@ async function handleDetail(row) {
 }
 
 async function handleComplete(row) {
+  if (!ensureWritable('充值订单尚未成功加载，当前暂时无法执行补单')) {
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       `确定要手动完成订单 ${row.order_no} 吗？该操作会为用户补发 ${row.points} 积分。`,
@@ -422,9 +431,9 @@ async function handleComplete(row) {
       }
     )
 
-    await manualCompleteOrder(row.order_no)
+    await manualCompleteOrder(row.order_no, { showErrorMessage: false })
     ElMessage.success('补单成功')
-    await loadPageData()
+    await refreshPage()
   } catch (error) {
     if (error !== 'cancel' && error !== 'close') {
       ElMessage.error(error.message || '补单失败')
@@ -433,12 +442,20 @@ async function handleComplete(row) {
 }
 
 function handleRefund(row) {
+  if (!ensureWritable('充值订单尚未成功加载，当前暂时无法发起退款')) {
+    return
+  }
+
   currentOrder.value = row
   refundForm.reason = '管理员后台退款'
   refundVisible.value = true
 }
 
 async function confirmRefund() {
+  if (!ensureWritable('充值订单尚未成功加载，当前暂时无法执行退款')) {
+    return
+  }
+
   if (!refundForm.reason.trim()) {
     ElMessage.warning('请输入退款原因')
     return
@@ -446,10 +463,10 @@ async function confirmRefund() {
 
   refunding.value = true
   try {
-    await refundOrder(currentOrder.value.order_no, { reason: refundForm.reason.trim() })
+    await refundOrder(currentOrder.value.order_no, { reason: refundForm.reason.trim() }, { showErrorMessage: false })
     ElMessage.success('退款成功')
     refundVisible.value = false
-    await loadPageData()
+    await refreshPage()
   } catch (error) {
     ElMessage.error(error.message || '退款失败')
   } finally {
@@ -459,13 +476,7 @@ async function confirmRefund() {
 </script>
 
 <style lang="scss" scoped>
-.app-container {
-  padding: 20px;
-}
-
-.page-state-card,
-.stats-row,
-.search-form {
+.stats-row {
   margin-bottom: 20px;
 }
 
@@ -493,6 +504,10 @@ async function confirmRefund() {
   color: #e6a23c;
 }
 
+.search-form {
+  margin-bottom: 20px;
+}
+
 .amount {
   color: #f56c6c;
   font-weight: 700;
@@ -507,5 +522,9 @@ async function confirmRefund() {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+.page-state-card {
+  margin-bottom: 20px;
 }
 </style>

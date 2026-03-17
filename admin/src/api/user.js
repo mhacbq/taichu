@@ -30,28 +30,32 @@ export function getUserList(params) {
   })
 }
 
-export function getUserDetail(id) {
+export function getUserDetail(id, options = {}) {
   return request({
     url: `/users/${id}`,
-    method: 'get'
+    method: 'get',
+    ...options
   })
 }
 
-export function updateUserStatus(id, status) {
+export function updateUserStatus(id, status, options = {}) {
   return request({
     url: `/users/${id}/status`,
     method: 'put',
-    data: { status }
+    data: { status },
+    ...options
   })
 }
 
-export function batchUpdateUserStatus(ids, status) {
+export function batchUpdateUserStatus(ids, status, options = {}) {
   return request({
     url: '/users/batch-status',
     method: 'put',
-    data: { ids, status }
+    data: { ids, status },
+    ...options
   })
 }
+
 
 
 export function getUserBehavior(params) {

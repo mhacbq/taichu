@@ -125,6 +125,12 @@ export const asyncRoutes = [
         meta: { title: '内容管理', roles: ['admin', 'operator'] }
       },
       {
+        path: 'knowledge',
+        name: 'KnowledgeManager',
+        component: () => import('@/views/site-content/knowledge.vue'),
+        meta: { title: '知识库文章', roles: ['admin', 'operator'] }
+      },
+      {
         path: 'seo',
         name: 'SeoManager',
         component: () => import('@/views/site-content/seo.vue'),
@@ -132,6 +138,7 @@ export const asyncRoutes = [
       },
       {
         path: 'testimonials',
+
 
         name: 'TestimonialsManager',
         component: () => import('@/views/site-content/testimonials.vue'),

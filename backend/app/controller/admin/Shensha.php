@@ -11,22 +11,29 @@ use app\model\Shensha as ShenshaModel;
  */
 class Shensha extends BaseController
 {
+    protected $middleware = [\app\middleware\AdminAuth::class];
+
     /**
      * 获取神煞列表
      */
     public function index()
     {
+        if (!$this->hasAdminPermission('content_manage')) {
+            return $this->error('无权限查看神煞', 403);
+        }
+
         try {
             $page = max(1, (int) $this->request->param('page', 1));
             $pageSize = max(1, min(100, (int) $this->request->param('pageSize', 20)));
             $keyword = trim((string) $this->request->param('keyword', ''));
             $type = trim((string) $this->request->param('type', ''));
             $category = trim((string) $this->request->param('category', ''));
+            $statusParam = $this->request->param('status', '');
 
             $query = ShenshaModel::order('sort', 'asc')->order('id', 'asc');
 
             if ($keyword !== '') {
-                $query->where('name|description', 'like', "%{$keyword}%");
+                $query->whereLike('name|description|effect', "%{$keyword}%");
             }
 
             if ($type !== '') {
@@ -35,6 +42,14 @@ class Shensha extends BaseController
 
             if ($category !== '') {
                 $query->where('category', $category);
+            }
+
+            if ($statusParam !== '' && $statusParam !== null) {
+                $status = (int) $statusParam;
+                if (!in_array($status, [0, 1], true)) {
+                    return $this->error('状态值无效', 400);
+                }
+                $query->where('status', $status);
             }
 
             $total = $query->count();
@@ -51,6 +66,7 @@ class Shensha extends BaseController
                 'keyword' => trim((string) $this->request->param('keyword', '')),
                 'type' => trim((string) $this->request->param('type', '')),
                 'category' => trim((string) $this->request->param('category', '')),
+                'status' => $this->request->param('status', ''),
             ]);
         }
     }
@@ -60,6 +76,10 @@ class Shensha extends BaseController
      */
     public function options()
     {
+        if (!$this->hasAdminPermission('content_manage')) {
+            return $this->error('无权限查看神煞筛选项', 403);
+        }
+
         try {
             $types = ShenshaModel::where('type', '<>', '')
                 ->distinct(true)
@@ -88,23 +108,52 @@ class Shensha extends BaseController
      */
     public function save()
     {
+        if (!$this->hasAdminPermission('content_manage')) {
+            return $this->error('无权限编辑神煞', 403);
+        }
+
         try {
             $data = $this->request->post();
             $id = (int) ($data['id'] ?? $this->request->param('id', 0));
+            $isUpdate = $id > 0;
+            $nameProvided = array_key_exists('name', $data);
             $name = trim((string) ($data['name'] ?? ''));
 
-            if ($name === '') {
-                return $this->error('神煞名称不能为空');
+            if (!$isUpdate && $name === '') {
+                return $this->error('神煞名称不能为空', 400);
             }
 
-            $data['name'] = $name;
+            if ($nameProvided) {
+                if ($name === '') {
+                    return $this->error('神煞名称不能为空', 400);
+                }
+                $data['name'] = $name;
+            }
+
+            if (array_key_exists('type', $data)) {
+                $data['type'] = trim((string) $data['type']);
+            }
+
+            if (array_key_exists('category', $data)) {
+                $data['category'] = trim((string) $data['category']);
+            }
+
+            if (array_key_exists('status', $data)) {
+                $status = (int) $data['status'];
+                if (!in_array($status, [0, 1], true)) {
+                    return $this->error('状态值无效', 400);
+                }
+                $data['status'] = $status;
+            }
+
             $data['id'] = $id;
 
-            if ($id > 0) {
+            if ($isUpdate) {
                 $model = ShenshaModel::find($id);
                 if (!$model) {
-                    return $this->error('记录不存在');
+                    return $this->error('记录不存在', 404);
                 }
+                unset($data['id']);
             } else {
                 unset($data['id']);
                 $model = new ShenshaModel();
@@ -149,10 +198,14 @@ class Shensha extends BaseController
      */
     public function delete(int $id)
     {
+        if (!$this->hasAdminPermission('content_manage')) {
+            return $this->error('无权限删除神煞', 403);
+        }
+
         try {
             $model = ShenshaModel::find($id);
             if (!$model) {
-                return $this->error('记录不存在');
+                return $this->error('记录不存在', 404);
             }
 
             $model->delete();
@@ -170,17 +223,21 @@ class Shensha extends BaseController
      */
     public function toggleStatus()
     {
+        if (!$this->hasAdminPermission('content_manage')) {
+            return $this->error('无权限更新神煞状态', 403);
+        }
+
         try {
             $id = (int) $this->request->post('id');
             $status = (int) $this->request->post('status');
 
             if (!in_array($status, [0, 1], true)) {
-                return $this->error('状态值无效');
+                return $this->error('状态值无效', 400);
             }
 
             $model = ShenshaModel::find($id);
             if (!$model) {
-                return $this->error('记录不存在');
+                return $this->error('记录不存在', 404);
             }
 
             $model->status = $status;
