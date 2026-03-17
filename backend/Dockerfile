@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 # 安装Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 设置Apache配置
+# 设置Apache配置（伪静态需要 AllowOverride All）
 RUN echo '<VirtualHost *:80>\n\
     DocumentRoot /var/www/html/public\n\
     <Directory /var/www/html/public>\n\
@@ -25,6 +25,8 @@ RUN echo '<VirtualHost *:80>\n\
         AllowOverride All\n\
         Require all granted\n\
     </Directory>\n\
+    ErrorLog ${APACHE_LOG_DIR}/error.log\n\
+    CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
 </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
 # 设置工作目录
@@ -32,6 +34,25 @@ WORKDIR /var/www/html
 
 # 复制项目文件
 COPY . .
+
+# --- 新增：处理 .env 文件 ---
+# 如果项目目录下不存在 .env，则从 .env.example 复制一份
+# 并使用 sed 命令强制开启调试模式和修正数据库地址
+RUN if [ ! -f .env ]; then cp .env.example .env; fi \
+    && sed -i 's/APP_DEBUG = false/APP_DEBUG = true/g' .env \
+    && sed -i 's/127.0.0.1/host.docker.internal/g' .env
+
+# 如果仓库未提供 .htaccess，则在复制代码后兜底生成
+RUN if [ ! -f /var/www/html/public/.htaccess ]; then \
+      mkdir -p /var/www/html/public; \
+      printf '%s\n' \
+        'Options +FollowSymLinks -MultiViews' \
+        'RewriteEngine On' \
+        'RewriteCond %{REQUEST_FILENAME} !-d' \
+        'RewriteCond %{REQUEST_FILENAME} !-f' \
+        'RewriteRule ^(.*)$ index.php/$1 [QSA,PT,L]' \
+        > /var/www/html/public/.htaccess; \
+    fi
 
 # 安装依赖
 RUN composer install --ignore-platform-req=ext-fileinfo --no-security-blocking --no-dev --optimize-autoloader --no-scripts

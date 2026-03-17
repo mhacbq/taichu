@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 // 应用入口文件
 
+// 安全读取请求方法，兼容 CLI 等无 REQUEST_METHOD 的场景
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? '';
+
 // 处理 CORS 预检请求（在框架加载前处理，确保跨域正常）
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if ($requestMethod === 'OPTIONS') {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
     header("Access-Control-Allow-Origin: $origin");
     header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin');
