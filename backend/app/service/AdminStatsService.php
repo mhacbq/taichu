@@ -2,6 +2,7 @@
 
 namespace app\service;
 
+use app\model\AdminLog;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -23,14 +24,25 @@ class AdminStatsService
         $today = date('Y-m-d');
         $yesterday = date('Y-m-d', strtotime('-1 day'));
         $thisMonth = date('Y-m');
-        
+
+        $overview = self::getOverviewStats($today, $yesterday);
+        $userStats = self::getUserStats($today, $thisMonth);
+        $orderStats = self::getOrderStats($today, $thisMonth);
+        $divinationStats = self::getDivinationStats($today);
+        $pointsStats = self::getPointsStats($today);
+        $trend = self::getTrendStats(30);
+
         return [
-            'overview' => self::getOverviewStats($today, $yesterday),
-            'user_stats' => self::getUserStats($today, $thisMonth),
-            'order_stats' => self::getOrderStats($today, $thisMonth),
-            'divination_stats' => self::getDivinationStats($today),
-            'points_stats' => self::getPointsStats($today),
-            'trend' => self::getTrendStats(),
+            'overview' => $overview,
+            'user_stats' => $userStats,
+            'order_stats' => $orderStats,
+            'divination_stats' => $divinationStats,
+            'points_stats' => $pointsStats,
+            'trend' => $trend,
+            'statistics' => self::buildLegacyDashboardStatistics($userStats, $divinationStats),
+            'user_trend' => $trend['user_trend'] ?? [],
+            'bazi_trend' => $trend['bazi_trend'] ?? [],
+            'tarot_trend' => $trend['tarot_trend'] ?? [],
         ];
     }
 
@@ -224,44 +236,74 @@ class AdminStatsService
     }
 
     /**
-     * 获取趋势统计（最近30天）
+     * 获取趋势统计（兼容旧后台结构）
      */
-    private static function getTrendStats(): array
+    public static function getTrendStats(int $days = 30): array
     {
+        $days = max(1, min(90, $days));
         $endDate = date('Y-m-d');
-        $startDate = date('Y-m-d', strtotime('-29 days'));
-        
+        $startDate = date('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
+
         $trend = Db::table('site_daily_stats')
             ->whereBetween('stat_date', [$startDate, $endDate])
             ->order('stat_date', 'ASC')
             ->column('*', 'stat_date');
-        
+
         $dates = [];
         $revenue = [];
         $orders = [];
         $newUsers = [];
         $divination = [];
-        
-        for ($i = 29; $i >= 0; $i--) {
-            $date = date('Y-m-d', strtotime("-{$i} days"));
+        $userTrend = [];
+        $baziTrend = [];
+        $tarotTrend = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime('-' . $i . ' days'));
             $dates[] = date('m-d', strtotime($date));
-            
+
             $dayStats = $trend[$date] ?? [];
-            
-            $revenue[] = $dayStats['paid_amount'] ?? 0;
-            $orders[] = $dayStats['paid_count'] ?? 0;
-            $newUsers[] = $dayStats['new_users'] ?? 0;
-            $divination[] = ($dayStats['bazi_count'] ?? 0) 
-                + ($dayStats['tarot_count'] ?? 0) 
-                + ($dayStats['liuyao_count'] ?? 0);
+            $paidAmount = (float) ($dayStats['paid_amount'] ?? 0);
+            $paidCount = (int) ($dayStats['paid_count'] ?? 0);
+            $dayNewUsers = (int) ($dayStats['new_users'] ?? 0);
+            $dayBazi = (int) ($dayStats['bazi_count'] ?? 0);
+            $dayTarot = (int) ($dayStats['tarot_count'] ?? 0);
+            $dayLiuyao = (int) ($dayStats['liuyao_count'] ?? 0);
+
+            $revenue[] = $paidAmount;
+            $orders[] = $paidCount;
+            $newUsers[] = $dayNewUsers;
+            $divination[] = $dayBazi + $dayTarot + $dayLiuyao;
+
+            $userTrend[] = ['date' => $date, 'count' => $dayNewUsers];
+            $baziTrend[] = ['date' => $date, 'count' => $dayBazi];
+            $tarotTrend[] = ['date' => $date, 'count' => $dayTarot];
         }
-        
+
         return [
             'dates' => $dates,
             'revenue' => $revenue,
             'orders' => $orders,
             'new_users' => $newUsers,
             'divination' => $divination,
+            'user_trend' => $userTrend,
+            'bazi_trend' => $baziTrend,
+            'tarot_trend' => $tarotTrend,
+        ];
+    }
+
+    /**
+     * 构建独立后台兼容统计卡片数据
+     */
+    private static function buildLegacyDashboardStatistics(array $userStats, array $divinationStats): array
+    {
+        return [
+            'total_users' => (int) ($userStats['total'] ?? 0),
+            'today_users' => (int) ($userStats['today_new'] ?? 0),
+            'total_bazi' => (int) ($divinationStats['total']['bazi'] ?? 0),
+            'today_bazi' => (int) ($divinationStats['today']['bazi'] ?? 0),
+            'total_tarot' => (int) ($divinationStats['total']['tarot'] ?? 0),
+            'today_tarot' => (int) ($divinationStats['today']['tarot'] ?? 0),
         ];
     }
 
@@ -375,11 +417,29 @@ class AdminStatsService
      */
     public static function getUserList(array $params = []): array
     {
+        $page = max(1, (int) ($params['page'] ?? 1));
+        $pageSize = (int) ($params['page_size'] ?? ($params['pageSize'] ?? 20));
+        $pageSize = max(1, min(100, $pageSize));
+
+        $username = trim((string) ($params['username'] ?? ''));
+        $phone = trim((string) ($params['phone'] ?? ''));
+        $keyword = trim((string) ($params['keyword'] ?? ''));
+        $status = $params['status'] ?? null;
+        $isVip = $params['is_vip'] ?? null;
+
+        $dateRange = $params['dateRange'] ?? [];
+        if (!is_array($dateRange)) {
+            $dateRange = [];
+        }
+        $startDate = trim((string) ($params['startDate'] ?? ($params['start_date'] ?? ($dateRange[0] ?? ''))));
+        $endDate = trim((string) ($params['endDate'] ?? ($params['end_date'] ?? ($dateRange[1] ?? ''))));
+
         $query = Db::table('tc_user')->alias('u')
             ->leftJoin('tc_user_vip uv', 'u.id = uv.user_id AND uv.status = 1 AND uv.end_time > NOW()')
             ->field([
                 'u.id',
                 'u.nickname',
+                'u.avatar',
                 'u.phone',
                 'u.points',
                 'u.created_at',
@@ -387,40 +447,69 @@ class AdminStatsService
                 'u.status',
                 'CASE WHEN uv.id IS NOT NULL THEN 1 ELSE 0 END as is_vip',
                 'uv.end_time as vip_end_time',
+                '(SELECT COUNT(*) FROM tc_bazi_record br WHERE br.user_id = u.id) as bazi_count',
+                '(SELECT COUNT(*) FROM tc_tarot_record tr WHERE tr.user_id = u.id) as tarot_count',
             ]);
-        
-        // 筛选条件
-        if (!empty($params['keyword'])) {
-            $query->where(function ($q) use ($params) {
-                $q->whereLike('u.nickname', '%' . $params['keyword'] . '%')
-                  ->whereOrLike('u.phone', '%' . $params['keyword'] . '%');
+
+        if ($username !== '') {
+            $escapedUsername = addcslashes($username, '%_\\');
+            $query->whereLike('u.nickname', '%' . $escapedUsername . '%');
+        } elseif ($keyword !== '') {
+            $escapedKeyword = addcslashes($keyword, '%_\\');
+            $query->where(function ($q) use ($escapedKeyword) {
+                $q->whereLike('u.nickname', '%' . $escapedKeyword . '%')
+                    ->whereOrLike('u.phone', '%' . $escapedKeyword . '%');
             });
         }
-        
-        if (isset($params['status'])) {
-            $query->where('u.status', $params['status']);
+
+        if ($phone !== '') {
+            $escapedPhone = addcslashes($phone, '%_\\');
+            $query->whereLike('u.phone', '%' . $escapedPhone . '%');
         }
-        
-        if (!empty($params['is_vip'])) {
+
+        if ($status !== null && $status !== '') {
+            $query->where('u.status', (int) $status);
+        }
+
+        if ($isVip !== null && $isVip !== '' && (int) $isVip === 1) {
             $query->whereNotNull('uv.id');
         }
-        
-        // 排序
-        $orderBy = $params['order_by'] ?? 'id';
-        $orderSort = $params['order_sort'] ?? 'DESC';
-        $query->order($orderBy, $orderSort);
-        
-        // 分页
-        $page = $params['page'] ?? 1;
-        $pageSize = $params['page_size'] ?? 20;
-        
+
+        if ($startDate !== '') {
+            $query->where('u.created_at', '>=', $startDate . ' 00:00:00');
+        }
+
+        if ($endDate !== '') {
+            $query->where('u.created_at', '<=', $endDate . ' 23:59:59');
+        }
+
+        $allowedOrderFields = ['id', 'points', 'created_at', 'last_login_at'];
+        $orderBy = (string) ($params['order_by'] ?? 'id');
+        if (!in_array($orderBy, $allowedOrderFields, true)) {
+            $orderBy = 'id';
+        }
+        $orderSort = strtoupper((string) ($params['order_sort'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+        $query->order('u.' . $orderBy, $orderSort);
+
         $total = $query->count();
-        $list = $query->page($page, $pageSize)->select();
-        
+        $list = $query->page($page, $pageSize)->select()->toArray();
+
+        foreach ($list as &$item) {
+            $item['status'] = (int) ($item['status'] ?? 0);
+            $item['points'] = (int) ($item['points'] ?? 0);
+            $item['bazi_count'] = (int) ($item['bazi_count'] ?? 0);
+            $item['tarot_count'] = (int) ($item['tarot_count'] ?? 0);
+            $item['is_vip'] = (int) ($item['is_vip'] ?? 0);
+            $item['username'] = (string) (($item['phone'] ?? '') ?: ('用户#' . (int) ($item['id'] ?? 0)));
+            $item['avatar'] = (string) ($item['avatar'] ?? '');
+        }
+        unset($item);
+
         return [
             'total' => $total,
             'page' => $page,
             'page_size' => $pageSize,
+            'pageSize' => $pageSize,
             'list' => $list,
         ];
     }

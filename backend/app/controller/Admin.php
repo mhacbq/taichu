@@ -12,9 +12,11 @@ use app\model\AdminLog;
 use app\model\DailyFortune;
 use app\model\TarotRecord;
 use app\service\AdminAuthService;
+use app\service\ConfigService;
 use think\Request;
 use think\facade\Log;
 use think\facade\Db;
+
 
 /**
  * 后台管理控制器
@@ -1139,8 +1141,10 @@ class Admin extends BaseController
                 'tarot_cost' => 10,
                 'enable_register' => true,
                 'enable_daily' => true,
-                'enable_feedback' => true
+                'enable_feedback' => true,
+                'enable_ai_analysis' => true
             ], $configList);
+
 
             // 处理布尔类型和数字类型转换
             foreach ($settings as $key => &$value) {
@@ -1173,18 +1177,18 @@ class Admin extends BaseController
         }
         
         try {
-            $settings = $request->post();
-            
+            $settings = $request->isPut() ? $request->put() : $request->post();
+
             if (empty($settings) || !is_array($settings)) {
                 return $this->error('设置数据不能为空', 400);
             }
-            
+
             // 获取操作前的设置用于日志记录
             $configKeys = array_keys($settings);
             $oldSettings = Db::name('system_config')
                 ->whereIn('config_key', $configKeys)
                 ->column('config_value', 'config_key');
-            
+
             // 批量更新配置
             $updateCount = 0;
             foreach ($settings as $key => $value) {
@@ -1192,16 +1196,16 @@ class Admin extends BaseController
                 if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
                     continue;
                 }
-                
+
                 // 获取配置类型
                 $config = Db::name('system_config')
                     ->where('config_key', $key)
                     ->find();
-                
+
                 if ($config) {
                     // 根据类型处理值
                     $processedValue = $this->processConfigValue($value, $config['config_type']);
-                    
+
                     Db::name('system_config')
                         ->where('config_key', $key)
                         ->update([
@@ -1223,7 +1227,9 @@ class Admin extends BaseController
                     $updateCount++;
                 }
             }
-            
+
+            ConfigService::clearCache();
+
             // 记录操作日志
             $this->logOperation('update', 'config', [
                 'detail' => '更新系统设置',
@@ -1232,6 +1238,7 @@ class Admin extends BaseController
             ]);
 
             return $this->success(['updated_count' => $updateCount], '保存成功');
+
         } catch (\Exception $e) {
             Log::error('保存系统设置失败: ' . $e->getMessage(), [
                 'admin_id' => $this->adminId,
@@ -1763,20 +1770,45 @@ class Admin extends BaseController
             $keyword = trim((string) $request->get('keyword', ''));
             $status = $request->get('status', '');
 
-            $query = Db::name('admin')
+            $adminTable = $this->resolveCompatibleTable(['tc_admin', 'admin'], 'tc_admin');
+            if (!$this->tableExists($adminTable)) {
+                return $this->error('管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql', 500);
+            }
+
+            $columns = $this->getCompatibleTableColumns($adminTable);
+            $nicknameField = isset($columns['nickname']) ? 'a.nickname' : "''";
+            $statusField = isset($columns['status']) ? 'a.status' : '1';
+            $lastLoginField = isset($columns['last_login_at']) ? 'a.last_login_at' : 'NULL';
+
+            $query = Db::table($adminTable)
                 ->alias('a')
                 ->leftJoin('tc_admin_user_role aur', 'aur.admin_id = a.id')
                 ->leftJoin('tc_admin_role r', 'r.id = aur.role_id')
-                ->field('a.id,a.username,a.nickname,a.status,a.last_login_at,r.name as role_name,r.code as role_code')
+                ->field(implode(',', [
+                    'a.id',
+                    'a.username',
+                    $nicknameField . ' as nickname',
+                    $statusField . ' as status',
+                    $lastLoginField . ' as last_login_at',
+                    'r.name as role_name',
+                    'r.code as role_code',
+                ]))
                 ->group('a.id')
                 ->order('a.id', 'desc');
 
             if ($keyword !== '') {
-                $query->whereLike('a.username|a.nickname', '%' . addcslashes($keyword, '%_\\') . '%');
+                $escapedKeyword = '%' . addcslashes($keyword, '%_\\') . '%';
+                $query->where(function ($q) use ($escapedKeyword, $columns) {
+                    $q->whereLike('a.username', $escapedKeyword);
+                    if (isset($columns['nickname'])) {
+                        $q->whereOrLike('a.nickname', $escapedKeyword);
+                    }
+                });
             }
-            if ($status !== '') {
+            if ($status !== '' && isset($columns['status'])) {
                 $query->where('a.status', (int) $status);
             }
+
 
             $rows = $query->select()->toArray();
             $total = count($rows);
@@ -2965,21 +2997,50 @@ class Admin extends BaseController
             return $this->error('无权限查看黄历', 403);
         }
 
-        $year = filter_var($request->get('year', date('Y')), FILTER_VALIDATE_INT) ?: (int)date('Y');
-        $month = filter_var($request->get('month', date('m')), FILTER_VALIDATE_INT) ?: (int)date('m');
-
         try {
-            $list = Db::name('almanac')
-                ->where('solar_date', '>=', "$year-$month-01")
-                ->where('solar_date', '<=', "$year-$month-" . cal_days_in_month(CAL_GREGORIAN, $month, $year))
-                ->order('solar_date', 'asc')
-                ->select()
-                ->toArray();
+            $table = $this->resolveCompatibleTable(['tc_almanac', 'almanac'], 'tc_almanac');
+            if (!$this->tableExists($table)) {
+                return $this->error('黄历数据表不存在，请先初始化黄历表', 500);
+            }
+
+            $columns = $this->getCompatibleTableColumns($table);
+            $dateColumn = $this->resolveAlmanacDateColumn($columns);
+            if ($dateColumn === null) {
+                return $this->error('黄历数据表缺少日期字段', 500);
+            }
+
+            $date = trim((string) $request->get('date', ''));
+            $year = filter_var($request->get('year', date('Y')), FILTER_VALIDATE_INT) ?: (int) date('Y');
+            $month = filter_var($request->get('month', date('m')), FILTER_VALIDATE_INT) ?: (int) date('m');
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('limit', $request->get('pageSize', self::DEFAULT_PAGE_SIZE)),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+
+            $query = Db::table($table)->order($dateColumn, 'desc');
+            if ($date !== '') {
+                $query->where($dateColumn, $date);
+            } else {
+                $startDate = sprintf('%04d-%02d-01', $year, $month);
+                $endDate = sprintf('%04d-%02d-%02d', $year, $month, cal_days_in_month(CAL_GREGORIAN, $month, $year));
+                $query->where($dateColumn, '>=', $startDate)
+                    ->where($dateColumn, '<=', $endDate);
+            }
+
+            $total = $query->count();
+            $list = $query->page($pagination['page'], $pagination['pageSize'])->select()->toArray();
+            $list = array_map(fn (array $row): array => $this->normalizeAlmanacRecord($row), $list);
 
             return $this->success([
                 'list' => $list,
+                'total' => $total,
                 'year' => $year,
                 'month' => $month,
+                'page' => $pagination['page'],
+                'limit' => $pagination['pageSize'],
+                'pageSize' => $pagination['pageSize'],
             ]);
         } catch (\Exception $e) {
             Log::error('获取黄历列表失败: ' . $e->getMessage());
@@ -2996,52 +3057,58 @@ class Admin extends BaseController
             return $this->error('无权限编辑黄历', 403);
         }
 
-        $data = $request->post();
+        return $this->persistAlmanacRecord($request->post(), (int) $request->post('id', 0));
+    }
 
-        // 验证必填字段
-        if (empty($data['solar_date'])) {
-            return $this->error('阳历日期不能为空', 400);
+    /**
+     * 更新黄历
+     */
+    public function updateAlmanac(Request $request, int $id)
+    {
+        if (!$this->checkPermission('almanac_edit')) {
+            return $this->error('无权限编辑黄历', 403);
+        }
+
+        $payload = $request->put();
+        if (!is_array($payload)) {
+            $payload = [];
+        }
+        $payload['id'] = $id;
+
+        return $this->persistAlmanacRecord($payload, $id);
+    }
+
+    /**
+     * 删除黄历
+     */
+    public function deleteAlmanac(int $id)
+    {
+        if (!$this->checkPermission('almanac_edit')) {
+            return $this->error('无权限删除黄历', 403);
         }
 
         try {
-            // 检查记录是否存在
-            $exists = Db::name('almanac')
-                ->where('solar_date', $data['solar_date'])
-                ->find();
-
-            $saveData = [
-                'solar_date' => $data['solar_date'],
-                'lunar_date' => $data['lunar_date'] ?? '',
-                'ganzhi' => $data['ganzhi'] ?? '',
-                'yi' => is_array($data['yi']) ? json_encode($data['yi'], JSON_UNESCAPED_UNICODE) : ($data['yi'] ?? ''),
-                'ji' => is_array($data['ji']) ? json_encode($data['ji'], JSON_UNESCAPED_UNICODE) : ($data['ji'] ?? ''),
-                'jishen' => is_array($data['jishen']) ? json_encode($data['jishen'], JSON_UNESCAPED_UNICODE) : ($data['jishen'] ?? ''),
-                'xiongsha' => is_array($data['xiongsha']) ? json_encode($data['xiongsha'], JSON_UNESCAPED_UNICODE) : ($data['xiongsha'] ?? ''),
-                'sha' => $data['sha'] ?? '',
-                'zhiri' => $data['zhiri'] ?? '',
-                'shichen' => is_array($data['shichen']) ? json_encode($data['shichen'], JSON_UNESCAPED_UNICODE) : ($data['shichen'] ?? ''),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ];
-
-            if ($exists) {
-                Db::name('almanac')
-                    ->where('solar_date', $data['solar_date'])
-                    ->update($saveData);
-            } else {
-                $saveData['created_at'] = date('Y-m-d H:i:s');
-                Db::name('almanac')->insert($saveData);
+            $table = $this->resolveCompatibleTable(['tc_almanac', 'almanac'], 'tc_almanac');
+            if (!$this->tableExists($table)) {
+                return $this->error('黄历数据表不存在，请先初始化黄历表', 500);
             }
 
-            // 记录操作日志
-            $this->logOperation('保存黄历', 'almanac', [
-                'target_id' => $data['solar_date'],
-                'detail' => '保存黄历: ' . $data['solar_date']
+            $record = Db::table($table)->where('id', $id)->find();
+            if (!$record) {
+                return $this->error('黄历记录不存在', 404);
+            }
+
+            Db::table($table)->where('id', $id)->delete();
+
+            $this->logOperation('删除黄历', 'almanac', [
+                'target_id' => $id,
+                'detail' => '删除黄历: ' . (string) ($record['solar_date'] ?? $record['date'] ?? $id),
             ]);
 
-            return $this->success([], '保存成功');
+            return $this->success([], '删除成功');
         } catch (\Exception $e) {
-            Log::error('保存黄历失败: ' . $e->getMessage());
-            return $this->error('保存失败', 500);
+            Log::error('删除黄历失败: ' . $e->getMessage());
+            return $this->error('删除失败', 500);
         }
     }
 
@@ -3062,48 +3129,49 @@ class Admin extends BaseController
         }
 
         try {
-            // 获取该月所有日期
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
+            $table = $this->resolveCompatibleTable(['tc_almanac', 'almanac'], 'tc_almanac');
+            if (!$this->tableExists($table)) {
+                return $this->error('黄历数据表不存在，请先初始化黄历表', 500);
+            }
+
+            $columns = $this->getCompatibleTableColumns($table);
+            $dateColumn = $this->resolveAlmanacDateColumn($columns);
+            if ($dateColumn === null) {
+                return $this->error('黄历数据表缺少日期字段', 500);
+            }
+
+            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, (int) $month, (int) $year);
             $insertData = [];
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
                 $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
-                
-                // 检查是否已存在
-                $exists = Db::name('almanac')
-                    ->where('solar_date', $date)
-                    ->find();
+                $exists = Db::table($table)->where($dateColumn, $date)->find();
 
                 if (!$exists) {
-                    // 使用 Lunar 类计算农历信息
                     $lunarInfo = $this->solarToLunar($year, $month, $day);
-                    
-                    $insertData[] = [
+                    $insertData[] = $this->buildAlmanacSavePayload([
                         'solar_date' => $date,
-                        'lunar_date' => $lunarInfo['lunar_date'],
-                        'ganzhi' => $lunarInfo['ganzhi'],
-                        'yi' => json_encode($lunarInfo['yi'], JSON_UNESCAPED_UNICODE),
-                        'ji' => json_encode($lunarInfo['ji'], JSON_UNESCAPED_UNICODE),
-                        'jishen' => json_encode($lunarInfo['jishen'], JSON_UNESCAPED_UNICODE),
-                        'xiongsha' => json_encode($lunarInfo['xiongsha'], JSON_UNESCAPED_UNICODE),
-                        'sha' => $lunarInfo['sha'],
-                        'zhiri' => $lunarInfo['zhiri'],
-                        'shichen' => json_encode($lunarInfo['shichen'], JSON_UNESCAPED_UNICODE),
-                        'created_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s'),
-                    ];
+                        'lunar_date' => $lunarInfo['lunar_date'] ?? '',
+                        'ganzhi' => $lunarInfo['ganzhi'] ?? '',
+                        'yi' => $lunarInfo['yi'] ?? [],
+                        'ji' => $lunarInfo['ji'] ?? [],
+                        'jishen' => $lunarInfo['jishen'] ?? [],
+                        'xiongsha' => $lunarInfo['xiongsha'] ?? [],
+                        'sha' => $lunarInfo['sha'] ?? '',
+                        'zhiri' => $lunarInfo['zhiri'] ?? '',
+                        'shichen' => $lunarInfo['shichen'] ?? [],
+                    ], $columns, $date);
                 }
             }
 
+            $insertData = array_values(array_filter($insertData));
             if (!empty($insertData)) {
-                // 批量插入
-                Db::name('almanac')->insertAll($insertData);
+                Db::table($table)->insertAll($insertData);
             }
 
-            // 记录操作日志
             $this->logOperation('生成月历', 'almanac', [
                 'target_id' => 0,
-                'detail' => "生成 {$year}年{$month}月 黄历，共" . count($insertData) . "条"
+                'detail' => "生成 {$year}年{$month}月 黄历，共" . count($insertData) . '条',
             ]);
 
             return $this->success([
@@ -3113,6 +3181,268 @@ class Admin extends BaseController
             Log::error('生成月历失败: ' . $e->getMessage());
             return $this->error('生成失败', 500);
         }
+    }
+
+    /**
+     * 持久化黄历记录
+     */
+    protected function persistAlmanacRecord(array $data, int $id = 0)
+    {
+        $table = $this->resolveCompatibleTable(['tc_almanac', 'almanac'], 'tc_almanac');
+        if (!$this->tableExists($table)) {
+            return $this->error('黄历数据表不存在，请先初始化黄历表', 500);
+        }
+
+        $columns = $this->getCompatibleTableColumns($table);
+        $dateColumn = $this->resolveAlmanacDateColumn($columns);
+        if ($dateColumn === null) {
+            return $this->error('黄历数据表缺少日期字段', 500);
+        }
+
+        try {
+            $existing = null;
+            if ($id > 0 && isset($columns['id'])) {
+                $existing = Db::table($table)->where('id', $id)->find();
+                if (!$existing) {
+                    return $this->error('黄历记录不存在', 404);
+                }
+            }
+
+            $recordDate = trim((string) ($data['solar_date'] ?? $data['date'] ?? ($existing[$dateColumn] ?? '')));
+            if ($recordDate === '') {
+                return $this->error('阳历日期不能为空', 400);
+            }
+
+            $saveData = $this->buildAlmanacSavePayload($data, $columns, $recordDate, $existing === null);
+            if (empty($saveData)) {
+                return $this->error('没有可保存的黄历字段', 400);
+            }
+
+            if ($existing) {
+                Db::table($table)->where('id', $id)->update($saveData);
+            } else {
+                $target = Db::table($table)->where($dateColumn, $recordDate)->find();
+                if ($target) {
+                    Db::table($table)->where($dateColumn, $recordDate)->update($saveData);
+                } else {
+                    Db::table($table)->insert($saveData);
+                }
+            }
+
+            $this->logOperation('保存黄历', 'almanac', [
+                'target_id' => $id,
+                'detail' => '保存黄历: ' . $recordDate,
+            ]);
+
+            return $this->success([
+                'date' => $recordDate,
+            ], '保存成功');
+        } catch (\Exception $e) {
+            Log::error('保存黄历失败: ' . $e->getMessage());
+            return $this->error('保存失败', 500);
+        }
+    }
+
+    /**
+     * 构建黄历存储数据
+     */
+    protected function buildAlmanacSavePayload(array $data, array $columns, string $recordDate, bool $isCreate = true): array
+    {
+        $saveData = [];
+        if (isset($columns['solar_date'])) {
+            $saveData['solar_date'] = $recordDate;
+        }
+        if (isset($columns['date'])) {
+            $saveData['date'] = $recordDate;
+        }
+        if (isset($columns['lunar_date'])) {
+            $saveData['lunar_date'] = (string) ($data['lunar_date'] ?? '');
+        }
+        if (isset($columns['ganzhi'])) {
+            $saveData['ganzhi'] = (string) ($data['ganzhi'] ?? '');
+        } elseif (isset($columns['ganzhi_day'])) {
+            $saveData['ganzhi_day'] = (string) ($data['ganzhi'] ?? ($data['ganzhi_day'] ?? ''));
+        }
+        if (isset($columns['yi'])) {
+            $saveData['yi'] = $this->normalizeAlmanacStorageValue($data['yi'] ?? ($data['suit'] ?? ''), $columns, 'yi');
+        }
+        if (isset($columns['ji'])) {
+            $saveData['ji'] = $this->normalizeAlmanacStorageValue($data['ji'] ?? ($data['avoid'] ?? ''), $columns, 'ji');
+        }
+        if (isset($columns['jishen'])) {
+            $saveData['jishen'] = $this->normalizeAlmanacStorageValue($data['jishen'] ?? '', $columns, 'jishen');
+        }
+        if (isset($columns['xiongsha'])) {
+            $saveData['xiongsha'] = $this->normalizeAlmanacStorageValue($data['xiongsha'] ?? '', $columns, 'xiongsha');
+        }
+        if (isset($columns['sha'])) {
+            $saveData['sha'] = (string) ($data['sha'] ?? '');
+        }
+        if (isset($columns['zhiri'])) {
+            $saveData['zhiri'] = (string) ($data['zhiri'] ?? '');
+        }
+        if (isset($columns['shichen'])) {
+            $saveData['shichen'] = $this->normalizeAlmanacStorageValue($data['shichen'] ?? '', $columns, 'shichen');
+        }
+        if (isset($columns['wuxing'])) {
+            $saveData['wuxing'] = (string) ($data['wuxing'] ?? '');
+        } elseif (isset($columns['nayin']) && !empty($data['wuxing']) && empty($data['nayin'])) {
+            $saveData['nayin'] = (string) $data['wuxing'];
+        }
+        if (isset($columns['updated_at'])) {
+            $saveData['updated_at'] = date('Y-m-d H:i:s');
+        }
+        if ($isCreate && isset($columns['created_at'])) {
+            $saveData['created_at'] = date('Y-m-d H:i:s');
+        }
+
+        return $saveData;
+    }
+
+    /**
+     * 兼容不同黄历表结构的字段输出
+     */
+    protected function normalizeAlmanacRecord(array $row): array
+    {
+        $date = (string) ($row['solar_date'] ?? ($row['date'] ?? ''));
+        $ganzhi = (string) (($row['ganzhi'] ?? '') ?: ($row['ganzhi_day'] ?? ''));
+        $wuxing = (string) (($row['wuxing'] ?? '') ?: ($row['nayin'] ?? ''));
+        $suit = $this->stringifyAlmanacValue($row['yi'] ?? '');
+        $avoid = $this->stringifyAlmanacValue($row['ji'] ?? '');
+
+        return array_merge($row, [
+            'date' => $date,
+            'solar_date' => $date,
+            'suit' => $suit,
+            'avoid' => $avoid,
+            'yi' => $row['yi'] ?? $suit,
+            'ji' => $row['ji'] ?? $avoid,
+            'ganzhi' => $ganzhi,
+            'wuxing' => $wuxing,
+        ]);
+    }
+
+    /**
+     * 兼容字符串/JSON 黄历字段
+     */
+    protected function stringifyAlmanacValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            return implode(' ', array_map('strval', array_filter($value, static fn ($item): bool => $item !== null && $item !== '')));
+        }
+
+        $stringValue = trim((string) $value);
+        if ($stringValue === '') {
+            return '';
+        }
+
+        $decoded = json_decode($stringValue, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $flattened = [];
+            foreach ($decoded as $item) {
+                if (is_scalar($item)) {
+                    $flattened[] = (string) $item;
+                }
+            }
+            if (!empty($flattened)) {
+                return implode(' ', $flattened);
+            }
+        }
+
+        return $stringValue;
+    }
+
+    /**
+     * 根据字段类型归一化黄历存储值
+     */
+    protected function normalizeAlmanacStorageValue(mixed $value, array $columns, string $field): string
+    {
+        if (is_array($value)) {
+            $items = array_values(array_filter(array_map('strval', $value), static fn (string $item): bool => trim($item) !== ''));
+            return $this->isJsonColumn($columns, $field)
+                ? json_encode($items, JSON_UNESCAPED_UNICODE)
+                : implode(' ', $items);
+        }
+
+        $stringValue = trim((string) $value);
+        if ($stringValue === '') {
+            return $this->isJsonColumn($columns, $field) ? '[]' : '';
+        }
+
+        if (!$this->isJsonColumn($columns, $field)) {
+            return $stringValue;
+        }
+
+        $decoded = json_decode($stringValue, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return json_encode($decoded, JSON_UNESCAPED_UNICODE);
+        }
+
+        $parts = preg_split('/[\s,，]+/u', $stringValue, -1, PREG_SPLIT_NO_EMPTY);
+        return json_encode(array_values($parts ?: [$stringValue]), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 解析黄历日期字段名
+     */
+    protected function resolveAlmanacDateColumn(array $columns): ?string
+    {
+        foreach (['solar_date', 'date'] as $field) {
+            if (isset($columns[$field])) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 判断是否为 JSON 字段
+     */
+    protected function isJsonColumn(array $columns, string $field): bool
+    {
+        return isset($columns[$field]) && str_contains($columns[$field], 'json');
+    }
+
+    /**
+     * 解析兼容表名
+     */
+    protected function resolveCompatibleTable(array $candidates, string $fallback): string
+    {
+        foreach ($candidates as $table) {
+            if ($this->tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * 获取兼容表字段信息
+     */
+    protected function getCompatibleTableColumns(string $table): array
+    {
+        $escapedTable = str_replace('`', '``', $table);
+        $columns = [];
+
+        foreach (Db::query("SHOW COLUMNS FROM `{$escapedTable}`") as $column) {
+            $field = (string) ($column['Field'] ?? '');
+            if ($field !== '') {
+                $columns[$field] = strtolower((string) ($column['Type'] ?? ''));
+            }
+        }
+
+        return $columns;
+    }
+
+    /**
+     * 判断数据表是否存在
+     */
+    protected function tableExists(string $table): bool
+    {
+        $escapedTable = addslashes($table);
+        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
     }
 
     /**

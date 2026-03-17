@@ -40,6 +40,10 @@ Route::group('api/admin', function () {
         Route::post('content/daily', 'Admin/createDailyFortune');
         Route::put('content/daily/:id', 'Admin/updateDailyFortune');
         Route::delete('content/daily/:id', 'Admin/deleteDailyFortune');
+        Route::get('content/almanac', 'Admin/almanacList');
+        Route::post('content/almanac', 'Admin/saveAlmanac');
+        Route::put('content/almanac/:id', 'Admin/updateAlmanac');
+        Route::delete('content/almanac/:id', 'Admin/deleteAlmanac');
         
         // 积分管理
         Route::get('points/records', 'Admin/pointsRecords');
@@ -62,8 +66,15 @@ Route::group('api/admin', function () {
         Route::get('payment/stats', 'admin.Payment/getStats');
         Route::get('payment/trend', 'admin.Payment/getTrend');
 
-        
+        // VIP订单管理
+        Route::get('order', 'admin.Order/index');
+        Route::get('order/:id', 'admin.Order/detail');
+        Route::post('order/refund', 'admin.Order/refund');
+        Route::get('order/packages', 'admin.Order/packages');
+        Route::post('order/save-package', 'admin.Order/savePackage');
+
         // 短信管理
+
         Route::get('sms/config', 'admin.Sms/getConfig');
         Route::post('sms/config', 'admin.Sms/saveConfig');
         Route::post('sms/test', 'admin.Sms/testSend');

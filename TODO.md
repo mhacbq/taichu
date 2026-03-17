@@ -3,12 +3,14 @@
 作为网站运营人员，我继续基于实际登录页操作（http://localhost:3001/login）、直连接口探测和后台前后端代码交叉核验，重点复核 Dashboard、用户详情/筛选、通知配置等链路，新增以下不重复问题：
 
 ### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] Dashboard 首页统计卡片与后端响应结构错位，核心经营指标无法可靠展示 - 后台首页 Dashboard - `admin/src/views/dashboard/index.vue` 读取 `res.data.statistics.*`，但 `backend/app/service/AdminStatsService.php` 实际返回 `overview/user_stats/order_stats/divination_stats`；用户数、订单数、收入等日常看板会报错或长期显示 0，运营无法据此做日常判断。
-- [ ] [运营] 用户详情页渲染结构和积分调整入参都未对齐后端 - 用户管理/用户详情与积分调整 - `backend/app/controller/admin/User.php` 返回 `{ user, stats, actions }`，前端 `admin/src/views/user/detail.vue` 却按平铺对象渲染；同时 `admin/src/views/user/{detail,list}.vue` 都向 `/points/adjust` 提交 `type/amount` 而不是后端要求的 `points` 整数，导致详情查看、统计核对和手动调积分链路一起失效。
+- [x] [运营] Dashboard 首页统计卡片与后端响应结构错位，核心经营指标无法可靠展示 - 后台首页 Dashboard - 已在 `backend/app/service/AdminStatsService.php` 补齐 `statistics/user_trend/bazi_trend/tarot_trend` 兼容结构，独立后台可继续按 `res.data.statistics.*` 渲染统计卡片与趋势图。
+- [x] [运营] 用户详情页渲染结构和积分调整入参都未对齐后端 - 用户管理/用户详情与积分调整 - 已在 `backend/app/controller/admin/User.php` 同时返回平铺字段与 `user/stats/actions` 嵌套结构，并兼容 `/points/adjust` 的 `points` 与 `type/amount` 两套入参。
 
 ### 🟡 中优先级（运营体验问题）
-- [ ] [运营] 用户列表搜索筛选与分页参数未对齐后端，按用户名/手机号/时间筛选和每页条数调整可能无效 - 用户管理/用户列表 - 前端 `admin/src/views/user/list.vue` 传的是 `username、phone、dateRange、pageSize`，后端 `backend/app/service/AdminStatsService.php` 只识别 `keyword、status、is_vip、page_size`，运营排查指定用户时结果容易失真。
-- [ ] [运营] 系统公告页面仍是静态壳子，通知配置无法实际加载、发布或删除 - 系统配置/通知配置 - `admin/src/views/system/notice.vue` 未接入 `getNotices/saveNotice/deleteNotice`，列表默认空白，保存按钮也没有提交逻辑，运营无法通过后台维护公告通知。
+- [x] [运营] 用户列表搜索筛选与分页参数未对齐后端，按用户名/手机号/时间筛选和每页条数调整可能无效 - 用户管理/用户列表 - 已在 `backend/app/service/AdminStatsService.php` 兼容 `username、phone、dateRange、pageSize` 等参数别名，并补齐列表展示所需的 `username/avatar/bazi_count/tarot_count` 字段。
+
+- [x] [运营] 系统公告页面仍是静态壳子，通知配置无法实际加载、发布或删除 - 系统配置/通知配置 - 已为 `admin/src/views/system/notice.vue` 接入 `getNotices/saveNotice/deleteNotice`，补齐加载、发布/编辑、删除与提交状态处理，后台可直接维护公告通知。
+
 
 ### 🟢 低优先级（运营优化建议）
 - [ ] [运营] Dashboard 缺少面向运营的快捷操作入口 - 后台首页 Dashboard - 当前只有统计图表和待处理反馈，没有直达黄历、订单、公告、系统设置等高频操作的入口，建议补齐常用操作面板。
@@ -20,11 +22,12 @@
 作为网站运营人员，我实际拉起了独立管理后台（http://localhost:3001），确认登录页可以访问；随后结合真实接口请求、数据库状态与后台前端代码，对登录、Dashboard、用户、内容、订单、系统配置等链路进行了交叉核验，新增以下不重复问题：
 
 ### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] 管理后台账号密码登录直接 500 - 管理员登录 - 独立后台登录页可打开，但 `admin/src/views/login/index.vue` 提交后会走 `admin/vite.config.js` 指向的 `http://localhost:8000` 代理；而直连 `http://localhost:8080/api/admin/auth/login` 又会在 `backend/app/controller/admin/Auth.php` 查询不存在的 `admin` 表，实测报错 `Table 'taichu.admin' doesn't exist`，后台无法完成账号密码登录。
-- [ ] [运营] 后台鉴权中间件缺少 `ADMIN_JWT_SECRET` 导致受保护接口全量 500 - 登录后跳转和权限验证 - 实测请求 `/api/admin/auth/info` 返回 `ADMIN_JWT_SECRET environment variable is not set`，`backend/app/middleware/AdminAuth.php` 在构造阶段直接抛异常，意味着即使补齐登录入口，Dashboard 和各管理接口也无法正常进入。
+- [x] [运营] 管理后台账号密码登录直接 500 - 管理员登录 - 已在 `backend/app/controller/admin/Auth.php` 兼容 `tc_admin/admin` 表名与 `ADMIN_JWT_SECRET/JWT_SECRET`，并新增 `database/20260317_create_admin_users_table.sql` 用于初始化管理员主表与默认管理员账号。
+- [x] [运营] 后台鉴权中间件缺少 `ADMIN_JWT_SECRET` 导致受保护接口全量 500 - 登录后跳转和权限验证 - 已在 `backend/app/middleware/AdminAuth.php` 去除构造阶段硬依赖，改为优先读 `ADMIN_JWT_SECRET`，回退 `JWT_SECRET`，最后使用开发默认值并记录 warning。
 - [x] [运营] 独立管理后台业务路由未真正注册 - 后台首页 Dashboard - 已改为在 `admin/src/router/index.js` 中注册 `constantRoutes + asyncRoutes`，并清理 `admin/src/stores/user.js` 中未落地的伪动态路由逻辑，登录后可正常进入后台业务页。
 
-- [ ] [运营] 黄历管理 CRUD 请求路径与后端路由不一致 - 内容管理/黄历数据 - `admin/src/api/content.js` 把黄历接口写成 `/content/almanac*`，但后端 `backend/route/admin.php` 实际只注册了 `/api/admin/almanac/list`、`/save`、`/generate-month`，运营无法正常新增、编辑、删除黄历信息。
+- [x] [运营] 黄历管理 CRUD 请求路径与后端路由不一致 - 内容管理/黄历数据 - 已在 `backend/route/admin.php` 补齐 `/api/admin/content/almanac*` REST 路由，并在 `backend/app/controller/Admin.php` 兼容 `tc_almanac/almanac` 表结构、CRUD 与月度生成逻辑。
+
 - [x] [运营] 支付配置、充值订单、VIP订单接口路径错误且 VIP 路由缺失 - 订单/积分管理 - 已修正 `admin/src/api/payment.js` 的支付/订单请求地址，补齐 `backend/route/admin.php` 中的 `/api/admin/order*` 路由，并对充值订单、支付配置、VIP订单页面字段映射做了联调，后台可直接使用现有接口。
 - [x] [运营] SEO 管理前端界面联调缺失 - 内容管理/SEO内容 - 已在 `admin/src/views/site-content/seo.vue` 补齐搜索、分页、编辑、Robots 保存与搜索引擎收录提交 UI，并改为按后端返回的 `list/sitemap/submitStatus` 结构渲染。
 - [x] [运营] 系统设置获取存在硬编码且修改后未即时同步 - 系统设置 - 已移除 `admin/src/views/system/settings.vue` 的硬编码默认值，修复 Logo 上传地址和返回解析，同时在 `backend/app/controller/Admin.php` 保存后清理 `ConfigService` 缓存，确保后台修改后前台新请求立即读取最新配置。
@@ -41,13 +44,8 @@
 作为资深产品经理和UI设计师，我继续从关键转化文案、合婚交互预期、异常反馈承接、全局导航一致性与移动端菜单交互几个角度复核太初命理网站，新增以下不重复问题：
 
 ### 🔴 高优先级（功能性问题）
-- [ ] [UI] 八字首免承诺与确认弹窗文案冲突 - `frontend/src/views/Bazi.vue` - 表单首屏和主按钮明确写着“首次免费排盘”，但点击后确认弹窗仍固定提示“本次排盘将消耗 10 积分”，会在首单转化前制造明显的价格疑虑，建议按 `isFirstBazi` 动态改写弹窗标题与说明，并把“本次免费 / 后续 10 积分”的规则一次讲清。
 
 ### 🟡 中优先级（体验问题）
-- [ ] [UI] 合婚页 AI 勾选项与免费预览实际行为不一致 - `frontend/src/views/Hehun.vue` - 表单默认勾选“使用AI深度分析（更准确）”，但免费预览提交时请求参数被硬编码为 `useAi: false`，用户会误以为眼前结果已经启用 AI，建议把勾选项后移到解锁完整版流程，或在免费态明确标注“AI 仅在详细报告生效”。
-- [ ] [UI] 塔罗主流程缺少页内失败态承接 - `frontend/src/views/Tarot.vue` - 抽牌、解读、保存、分享失败时页面目前只弹 `ElMessage`，主区域不会留下错误说明与重试入口，用户很难判断是网络波动还是操作未生效，建议在核心操作区补充可见的错误卡片、最近失败原因与一键重试按钮。
-- [ ] [UI] 六爻与合婚页缺少统一返回入口 - `frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue` - 同批命理工具页里八字、塔罗、每日运势都已接入共享返回按钮，但六爻与合婚仍主要依赖浏览器回退，移动端或嵌入式 WebView 场景下返回路径不稳定，建议统一页头结构并补齐站内返回按钮与 fallback 路径。
-- [ ] [UI] 移动端侧滑菜单打开后缺少滚动锁定 - `frontend/src/App.vue` - `showMobileMenu` 目前只控制抽屉和遮罩显隐，没有对 `body` 或根容器施加滚动锁定，用户在菜单展开时仍可能拖动底层页面，导致视觉位移和误触，建议在菜单打开时禁用背景滚动，并在关闭或路由切换后恢复。
 
 ### 🟢 低优先级（美观问题）
 
@@ -221,13 +219,15 @@
 ### 🔴 高优先级
 
 ### 🟡 中优先级
-- [ ] [2026-03-17] 后端控制器异常处理不统一 - backend/app/controller - 多个控制器（如admin/System.php、admin/Shensha.php等）在catch块中直接返回 `$e->getMessage()` 给客户端，违反了安全最佳实践。建议在BaseController中统一异常处理，或在catch块中使用通用错误消息。
+- [x] [2026-03-17] 后端控制器异常处理不统一 - backend/app/controller - 已在 `backend/app/BaseController.php` 增加统一业务/系统异常响应与脱敏日志 helper，并将 `admin/System.php`、`admin/Shensha.php` 接入统一处理，去掉直接回传原始异常的分支。
+
 
 ### 🟢 低优先级
 - [x] [2026-03-17] 独立后台 API 前缀重复拼接清理 - `admin/src/api/{siteContent,sms,ai,aiPrompt}.js` - 已统一改为相对 `/api/admin` 的实际后端路径，并对齐 SEO/Robots/Sitemap 提交接口。
 - [x] [2026-03-17] 短信测试模式日志明文暴露 - `backend/app/service/SmsService.php` - 已改为结构化脱敏日志，不再输出手机号与测试验证码明文。
 - [x] [2026-03-17] 后端局部异常回传未脱敏 - `backend/app/controller/admin/Dashboard.php`、`backend/app/controller/SiteContent.php` - 已补结构化日志并改为通用错误文案回前端。
-- [ ] [2026-03-17] 后端Auth控制器表名硬编码 - backend/app/controller/admin/Auth.php 第41行 - 控制器直接使用 `Db::name('admin')` 查询，但数据库中实际表名可能为 `tc_admin` 或其他前缀，需确认数据库表名或使用配置。
+- [x] [2026-03-17] 后端Auth控制器表名硬编码 - `backend/app/controller/admin/Auth.php` - 已改为自动探测 `tc_admin/admin` 表，并在 `backend/app/controller/Admin.php` 的管理员列表接口同步补齐同类兼容逻辑，避免登录修好了但后台管理员列表继续炸。
+
 
 
 ---
