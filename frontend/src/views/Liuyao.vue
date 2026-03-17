@@ -4,7 +4,7 @@
       <!-- 页面标题 -->
       <div class="page-header">
         <h1 class="page-title">
-          <el-icon class="title-icon"><YinYang /></el-icon>
+          <el-icon class="title-icon"><Magic /></el-icon>
           六爻占卜
         </h1>
         <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
@@ -27,7 +27,7 @@
           <!-- 卦象展示 -->
           <div class="gua-display">
             <div class="gua-decoration">
-              <el-icon><YinYang /></el-icon>
+              <el-icon><Magic /></el-icon>
             </div>
             <div class="gua-info">
               <h3 class="gua-name">{{ result.gua.name }}</h3>
@@ -38,12 +38,19 @@
             <div class="yao-container">
               <div v-for="(yao, index) in result.yao_result" :key="index" class="yao-line"
                 :class="{ 'moving': yao == 0 || yao == 3, 'yang': yao >= 2, 'yin': yao <= 1 }">
+                <!-- 伏神显示 -->
+                <div v-if="result.fushen && result.fushen[index]" class="fushen-box">
+                   <span class="fushen-label">伏</span>
+                   <span class="fushen-name">{{ result.fushen[index].name }}</span>
+                   <span class="fushen-ganzhi">{{ result.fushen[index].ganzhi }}</span>
+                </div>
                 <span class="yao-mark">{{ getYaoMark(yao) }}</span>
                 <span class="yao-bar"></span>
                 <span class="yao-name">{{ result.yao_names[index] }}</span>
               </div>
             </div>
           </div>
+
 
           <!-- 卦辞 -->
           <div class="gua-ci-section">
@@ -60,7 +67,7 @@
           <!-- AI分析 -->
           <div v-if="result.ai_analysis" class="ai-section">
             <h4>
-              <el-icon><Magic /></el-icon>
+              <el-icon><MagicStick /></el-icon>
               AI深度分析
             </h4>
             <div class="ai-content">{{ result.ai_analysis.content }}</div>
@@ -75,12 +82,12 @@
 
           <!-- 操作按钮 -->
           <div class="action-buttons">
-            <button class="btn-secondary" @click="resetForm">
+            <el-button type="info" round size="large" @click="resetForm">
               <el-icon><RefreshRight /></el-icon> 再次占卜
-            </button>
-            <button class="btn-primary" @click="saveResult">
+            </el-button>
+            <el-button type="primary" round size="large" @click="saveResult">
               <el-icon><Download /></el-icon> 保存结果
-            </button>
+            </el-button>
           </div>
         </div>
       </div>
@@ -93,19 +100,22 @@
 
           <div class="form-group">
             <label>您的问题 <span class="required">*</span></label>
-            <textarea v-model="form.question" rows="4" placeholder="例如：
+            <el-input
+              v-model="form.question"
+              type="textarea"
+              :rows="4"
+              placeholder="例如：
 我最近的考试能通过吗？
 这份工作适合我吗？
 我和TA的感情发展如何？
-这个项目能成功吗？" maxlength="100"></textarea>
-            <span class="char-count">{{ form.question.length }}/100</span>
+这个项目能成功吗？"
+              maxlength="100"
+              show-word-limit
+            />
           </div>
 
           <div class="options-section">
-            <label class="option-item">
-              <input type="checkbox" v-model="form.useAi" />
-              <span>使用AI深度分析（更准确、更详细）</span>
-            </label>
+            <el-checkbox v-model="form.useAi" label="使用AI深度分析（更准确、更详细）" />
           </div>
 
           <!-- 定价信息 -->
@@ -121,13 +131,20 @@
             </div>
           </div>
 
-          <button class="btn-submit" @click="submitDivination" :disabled="isLoading || !form.question.trim()">
-            <div v-if="isLoading" class="loading-taiji mini"></div>
-            <span v-else>
-              <el-icon class="btn-icon"><YinYang /></el-icon>
-              开始占卜
-            </span>
-          </button>
+          <el-button 
+            type="primary" 
+            size="large" 
+            class="btn-submit" 
+            @click="submitDivination" 
+            :disabled="isLoading || !form.question.trim()"
+            :loading="isLoading"
+          >
+            <template #icon v-if="!isLoading">
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
+            </template>
+            {{ isLoading ? '正在占卜...' : '开始占卜' }}
+          </el-button>
+
 
           <div class="history-link" v-if="history.length > 0">
             <a @click="showHistory = true">查看历史记录 ({{ history.length }}条)</a>
@@ -163,7 +180,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { YinYang, RefreshRight, Download, Delete, Magic, Present, Trophy } from '@element-plus/icons-vue'
+import { RefreshRight, Download, Delete, MagicStick, Present, Trophy } from '@element-plus/icons-vue'
 
 // 表单数据
 const form = reactive({

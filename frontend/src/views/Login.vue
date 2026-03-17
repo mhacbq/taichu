@@ -4,7 +4,7 @@
       <div class="login-box">
         <div class="login-header">
           <div class="logo">
-            <el-icon class="logo-icon"><YinYang /></el-icon>
+            <el-icon class="logo-icon"><Star /></el-icon>
             <span>太初命理</span>
           </div>
           <h2>欢迎回来</h2>
@@ -60,7 +60,7 @@
         </div>
 
         <div class="login-tips">
-          <p><el-icon><Lightbulb /></el-icon> 登录后可获得 100 积分新手礼包</p>
+          <p><el-icon><Star /></el-icon> 登录后可获得 100 积分新手礼包</p>
           <p><el-icon><LockIcon /></el-icon> 我们严格保护您的隐私信息</p>
           <p class="agreement-tip">
             登录即表示同意
@@ -78,7 +78,7 @@
 import { ref, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Phone, Lock, Lightbulb, Lock as LockIcon, YinYang } from '@element-plus/icons-vue'
+import { Phone, Lock, Star, Lock as LockIcon } from '@element-plus/icons-vue'
 import { phoneLogin, sendSmsCode } from '../api'
 import { validatePhone } from '../utils/validators'
 

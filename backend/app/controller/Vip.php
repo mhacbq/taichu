@@ -18,7 +18,7 @@ class Vip extends BaseController
     /**
      * 中间件配置
      */
-    protected array $middleware = [
+    protected $middleware = [
         \app\middleware\Auth::class,
     ];
     

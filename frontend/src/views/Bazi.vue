@@ -18,7 +18,7 @@
       <div class="bazi-form card" v-if="!result">
         <!-- 积分消耗提示 -->
         <div class="points-hint">
-          <el-icon class="hint-icon"><Diamond /></el-icon>
+          <el-icon class="hint-icon"><Coin /></el-icon>
           <span>
             <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
             <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
@@ -38,7 +38,7 @@
             </el-radio-button>
             <el-radio-button label="pro">
               <span class="mode-option">
-                <el-icon class="mode-icon"><Diamond /></el-icon>
+                <el-icon class="mode-icon"><Coin /></el-icon>
                 专业版
               </span>
             </el-radio-button>
@@ -83,7 +83,7 @@
             clearable
             :height="200"
           />
-          <p class="form-hint"><el-icon><Magic /></el-icon> 不知道出生地可以跳过，默认使用北京时间</p>
+          <p class="form-hint"><el-icon><MagicStick /></el-icon> 不知道出生地可以跳过，默认使用北京时间</p>
         </div>
         
         <el-button 
@@ -99,7 +99,7 @@
 
         <!-- 积分不足提示 -->
         <div v-if="!isFirstBazi && currentPoints < 10" class="insufficient-points">
-          <p><el-icon><Lightbulb /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+          <p><el-icon><StarFilled /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
         </div>
       </div>
 
@@ -128,7 +128,7 @@
         class="points-confirm-dialog"
       >
         <div class="points-confirm-content">
-          <div class="points-icon"><el-icon :size="48"><Diamond /></el-icon></div>
+          <div class="points-icon"><el-icon :size="48"><Coin /></el-icon></div>
           <p class="points-title">
             {{ 
               pointsConfirmType === 'yearly' ? '流年运势分析' : 
@@ -308,7 +308,23 @@
                 <div class="paipan-cell nayin-cell highlight">{{ result.bazi?.day?.nayin }}</div>
                 <div class="paipan-cell nayin-cell">{{ result.bazi?.hour?.nayin }}</div>
               </div>
+              <!-- 旬空行 -->
+              <div class="paipan-row xunkong-row" v-if="result.bazi?.xunkong">
+                <div class="paipan-cell xunkong-cell">
+                   <span class="xunkong-label">年空:</span> {{ result.bazi?.year?.xunkong || '-' }}
+                </div>
+                <div class="paipan-cell xunkong-cell">
+                   <span class="xunkong-label">月空:</span> {{ result.bazi?.month?.xunkong || '-' }}
+                </div>
+                <div class="paipan-cell xunkong-cell highlight">
+                   <span class="xunkong-label">日空:</span> {{ result.bazi?.day?.xunkong || '-' }}
+                </div>
+                <div class="paipan-cell xunkong-cell">
+                   <span class="xunkong-label">时空:</span> {{ result.bazi?.hour?.xunkong || '-' }}
+                </div>
+              </div>
             </div>
+
             
             <!-- 五行统计 -->
             <div class="wuxing-stats">
@@ -420,7 +436,7 @@
                 
                 <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice">
                   <div class="rc-header">
-                    <el-icon class="rc-icon"><Lightbulb /></el-icon>
+                    <el-icon class="rc-icon"><StarFilled /></el-icon>
                     <h4>开运建议</h4>
                   </div>
                   <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
@@ -615,7 +631,7 @@
                   </div>
                   
                   <div class="analysis-card advice">
-                    <h4><el-icon><Lightbulb /></el-icon> 开运建议</h4>
+                    <h4><el-icon><StarFilled /></el-icon> 开运建议</h4>
                     <p>{{ yearlyFortuneResult.advice }}</p>
                   </div>
                   
@@ -766,7 +782,7 @@
                 </div>
                 
                 <div class="key-suggestions">
-                  <h4><el-icon><Lightbulb /></el-icon> 关键建议</h4>
+                  <h4><el-icon><StarFilled /></el-icon> 关键建议</h4>
                   <ul>
                     <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
                       {{ suggestion }}
@@ -903,7 +919,7 @@
                   :disabled="currentPoints < 30"
                   @click="startAiAnalysis"
                 >
-                  <el-icon><Magic /></el-icon>
+                  <el-icon><MagicStick /></el-icon>
                   {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
                 </el-button>
               </div>
@@ -951,7 +967,7 @@
 <script setup>
 import { h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document } from '@element-plus/icons-vue'
+import { HeartFilled, Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -963,6 +979,8 @@ import {
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
 import BackButton from '../components/BackButton.vue'
 import { sanitizeHtml } from '../utils/sanitize'
+import { CHINA_CITIES } from '../utils/constants'
+
 
 const birthDate = ref('')
 const gender = ref('male')
@@ -1016,21 +1034,13 @@ const versionHint = computed(() => {
     : '专业版：适合进阶，包含真太阳时、大运流年等详细分析'
 })
 
-// 中国城市数据
-const cities = [
-  '北京市', '上海市', '广州市', '深圳市', '杭州市', '南京市', '武汉市', '成都市', '西安市',
-  '重庆市', '天津市', '苏州市', '长沙市', '郑州市', '沈阳市', '青岛市', '宁波市', '东莞市',
-  '佛山市', '合肥市', '大连市', '厦门市', '福州市', '哈尔滨市', '济南市', '温州市', '长春市',
-  '石家庄市', '常州市', '泉州市', '南宁市', '贵阳市', '南昌市', '昆明市', '乌鲁木齐市',
-  '兰州市', '呼和浩特市', '海口市', '银川市', '西宁市', '拉萨市', '台北市', '香港', '澳门'
-]
-
 const cityOptions = computed(() => {
-  return cities.map(city => ({
+  return CHINA_CITIES.map(city => ({
     value: city,
     label: city
   }))
 })
+
 
 // 获取当前积分和首次排盘状态
 const loadPoints = async () => {
@@ -1864,9 +1874,9 @@ const formatAiContent = (content) => {
 .loading-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
+    var(--white-05) 25%,
+    var(--white-10) 50%,
+    var(--white-05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -1893,7 +1903,7 @@ const formatAiContent = (content) => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.2),
+    var(--white-20),
     transparent
   );
   animation: shimmer 2s infinite;
@@ -1970,7 +1980,7 @@ const formatAiContent = (content) => {
 }
 
 .insufficient-points a {
-  color: var(--primary-color, #B8860B);
+  color: var(--primary-color);
   text-decoration: underline;
 }
 
@@ -2051,8 +2061,8 @@ const formatAiContent = (content) => {
 }
 
 .paipan-cell.highlight {
-  color: var(--primary-color, #B8860B);
-  background: rgba(184, 134, 11, 0.1);
+  color: var(--primary-color);
+  background: var(--primary-light-10);
   border-radius: 10px;
 }
 
@@ -2149,8 +2159,8 @@ const formatAiContent = (content) => {
 /* 专业解读区域 */
 .professional-reading {
   margin: 30px 0;
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.05));
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  background: linear-gradient(135deg, var(--primary-light-05), var(--white-05));
+  border: 1px solid var(--primary-light-20);
   border-radius: 20px;
   padding: 30px;
 }
@@ -2166,7 +2176,7 @@ const formatAiContent = (content) => {
 }
 
 .section-badge {
-  background: linear-gradient(135deg, #D4AF37, #B8860B);
+  background: var(--primary-gradient);
   color: var(--text-primary);
   padding: 12px 24px;
   border-radius: 12px;
@@ -2198,13 +2208,13 @@ const formatAiContent = (content) => {
 .dm-symbol {
   width: 70px;
   height: 70px;
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.3), rgba(212, 175, 55, 0.2));
+  background: linear-gradient(135deg, var(--primary-light-30), var(--primary-light-20));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  border: 2px solid rgba(184, 134, 11, 0.5);
+  border: 2px solid var(--primary-light-60);
 }
 
 .dm-title h4 {
@@ -2220,7 +2230,7 @@ const formatAiContent = (content) => {
 }
 
 .trait-tag {
-  background: rgba(184, 134, 11, 0.2);
+  background: var(--primary-light-20);
   color: var(--text-primary);
   padding: 10px 20px;
   border-radius: 20px;
@@ -2619,6 +2629,25 @@ const formatAiContent = (content) => {
   padding: 8px;
 }
 
+/* 旬空行 */
+.xunkong-row {
+  margin-top: 5px;
+  background: var(--bg-hover);
+  border-radius: 8px;
+}
+
+.xunkong-cell {
+  font-size: 11px;
+  color: var(--danger-color);
+  padding: 8px;
+}
+
+.xunkong-label {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+
 /* 五行统计 */
 .wuxing-stats {
   background: var(--bg-secondary);
@@ -2950,18 +2979,18 @@ const formatAiContent = (content) => {
 
 .points-confirm-dialog .points-desc {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   margin-bottom: 10px;
 }
 
 .points-confirm-dialog .points-desc strong {
-  color: #ffd700;
+  color: var(--star-color);
   font-size: 20px;
 }
 
 .points-confirm-dialog .points-balance {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 /* 流年运势分析 */
@@ -3078,7 +3107,7 @@ const formatAiContent = (content) => {
 
 .score-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .rating-badge {
@@ -3148,7 +3177,7 @@ const formatAiContent = (content) => {
 }
 
 .lucky-section h5 {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -3177,7 +3206,7 @@ const formatAiContent = (content) => {
 
 .lucky-tag.color {
   background: rgba(255, 215, 0, 0.3);
-  color: #ffd700;
+  color: var(--star-color);
 }
 
 .lucky-tag.number {
@@ -3244,7 +3273,7 @@ const formatAiContent = (content) => {
 
 .dayun-shishen {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   padding: 5px 12px;
   background: rgba(64, 158, 255, 0.2);
   border-radius: 15px;
@@ -3252,7 +3281,7 @@ const formatAiContent = (content) => {
 
 .dayun-age {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .dayun-level-badge {
@@ -3289,7 +3318,7 @@ const formatAiContent = (content) => {
 
 .score-name {
   width: 50px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   font-size: 14px;
 }
 
@@ -3313,13 +3342,13 @@ const formatAiContent = (content) => {
 }
 
 .text-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 10px;
   padding: 15px;
 }
 
 .text-card p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--white-85);
   line-height: 1.8;
   font-size: 14px;
 }
@@ -3333,7 +3362,7 @@ const formatAiContent = (content) => {
 }
 
 .key-suggestions h4 {
-  color: #ffd700;
+  color: var(--star-color);
   margin-bottom: 15px;
   font-size: 16px;
 }
@@ -3394,7 +3423,7 @@ const formatAiContent = (content) => {
 }
 
 .chart-summary p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--white-85);
   margin-bottom: 10px;
 }
 
@@ -3403,11 +3432,11 @@ const formatAiContent = (content) => {
   align-items: center;
   gap: 10px;
   padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--white-10);
 }
 
 .best-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .best-value {
@@ -3456,7 +3485,7 @@ const formatAiContent = (content) => {
 
 .dayun-trend {
   margin-left: auto;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   font-size: 14px;
 }
 
@@ -3490,7 +3519,7 @@ const formatAiContent = (content) => {
 }
 
 .chart-year-bar.current {
-  background: linear-gradient(to top, #ffd700, #ffec8b);
+  background: linear-gradient(to top, var(--star-color), #ffec8b);
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
@@ -3498,7 +3527,7 @@ const formatAiContent = (content) => {
   position: absolute;
   bottom: -20px;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   white-space: nowrap;
 }
 
@@ -3513,9 +3542,9 @@ const formatAiContent = (content) => {
   justify-content: space-between;
   align-items: center;
   padding-top: 25px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--white-10);
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 /* 分析按钮区域 */
@@ -3559,7 +3588,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-result {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 12px;
   padding: 20px;
 }
@@ -3570,7 +3599,7 @@ const formatAiContent = (content) => {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--white-10);
 }
 
 .ai-model {
@@ -3579,7 +3608,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-content {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--white-90);
   line-height: 1.8;
   font-size: 15px;
 }

@@ -541,13 +541,13 @@ const getStatusText = (status) => {
 }
 
 .option-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-08);
   transform: translateY(-2px);
 }
 
 .option-item.active {
   border-color: var(--primary-color);
-  background: rgba(184, 134, 11, 0.1);
+  background: var(--primary-light-10);
 }
 
 .option-item.hot {
@@ -651,12 +651,12 @@ const getStatusText = (status) => {
 }
 
 .payment-option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-08);
 }
 
 .payment-option.active {
   border-color: var(--primary-color);
-  background: rgba(184, 134, 11, 0.1);
+  background: var(--primary-light-10);
 }
 
 .payment-option span {

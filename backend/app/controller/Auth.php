@@ -16,7 +16,7 @@ use think\facade\Log;
 
 class Auth extends BaseController
 {
-    protected array $middleware = [
+    protected $middleware = [
         \app\middleware\Auth::class => ['only' => ['userinfo', 'updateProfile', 'myInvites']],
     ];
 

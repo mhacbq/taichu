@@ -60,7 +60,7 @@
             </div>
             
             <div class="personal-advice">
-              <h4><el-icon><Lightbulb /></el-icon> 今日建议</h4>
+              <h4><el-icon><StarFilled /></el-icon> 今日建议</h4>
               <p>{{ fortune.personalized.advice }}</p>
             </div>
             
@@ -177,7 +177,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Lightbulb } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'

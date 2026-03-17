@@ -79,7 +79,7 @@ const props = defineProps({
         target: '.quick-actions',
         title: '快速开始',
         description: '点击这里快速进行八字排盘、塔罗占卜或查看今日运势',
-        icon: 'Magic',
+        icon: 'MagicStick',
         iconBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
         iconColor: '#fff',
         position: 'bottom'

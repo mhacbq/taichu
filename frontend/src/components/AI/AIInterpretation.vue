@@ -101,7 +101,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Magic,
+  MagicStick,
   StarFilled,
   Star,
   Share,

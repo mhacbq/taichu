@@ -6,6 +6,7 @@ namespace app\controller;
 use app\BaseController;
 use app\model\DailyFortune;
 use app\model\PointsRecord;
+use app\service\BaziCalculationService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -17,6 +18,17 @@ class Daily extends BaseController
     const CHECKIN_POINTS = 5;
     // 连续签到额外奖励
     const CONSECUTIVE_BONUS = [3 => 3, 7 => 7, 15 => 15, 30 => 30];
+
+    /**
+     * @var BaziCalculationService
+     */
+    protected $baziCalculationService;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->baziCalculationService = new BaziCalculationService();
+    }
     
     /**
      * 获取今日运势
@@ -198,7 +210,7 @@ class Daily extends BaseController
     
     /**
      * 获取指定日期的日干支
-     * 使用公历转干支算法
+     * 统一使用 BaziCalculationService 提供的核心算法
      */
     protected function getDayGanZhi(string $date): string
     {
@@ -207,26 +219,12 @@ class Daily extends BaseController
         $month = (int)date('m', $timestamp);
         $day = (int)date('d', $timestamp);
         
-        // 天干地支数组
         $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
         $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
         
-        // 计算儒略日数（简化算法）
-        $a = floor((14 - $month) / 12);
-        $y = $year + 4800 - $a;
-        $m = $month + 12 * $a - 3;
+        $dayPillar = $this->baziCalculationService->calculateDayPillar($year, $month, $day);
         
-        $julianDay = $day + floor((153 * $m + 2) / 5) + 365 * $y + floor($y / 4) - floor($y / 100) + floor($y / 400) - 32045;
-        
-        // 日干支计算（以1900-01-31为基准，当天是甲子日）
-        $baseJulianDay = 2415021; // 1900-01-31的儒略日
-        $offset = $julianDay - $baseJulianDay;
-        
-        // 计算日干支索引
-        $ganIndex = ($offset % 10 + 10) % 10;
-        $zhiIndex = ($offset % 12 + 12) % 12;
-        
-        return $tianGan[$ganIndex] . $diZhi[$zhiIndex];
+        return $tianGan[$dayPillar['gan_index']] . $diZhi[$dayPillar['zhi_index']];
     }
     
     /**

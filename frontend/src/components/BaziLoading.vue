@@ -213,7 +213,7 @@ onUnmounted(() => {
 
 .sub-text {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 @keyframes pulse {
@@ -236,14 +236,14 @@ onUnmounted(() => {
 .progress-bar {
   flex: 1;
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #b8860b, #daa520);
+  background: var(--primary-gradient);
   border-radius: 4px;
   transition: width 0.1s ease;
   box-shadow: 0 0 10px rgba(184, 134, 11, 0.5);
@@ -251,21 +251,21 @@ onUnmounted(() => {
 
 .progress-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   min-width: 40px;
 }
 
 /* 提示文字 */
 .tips-container {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--white-10);
 }
 
 .tip-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   line-height: 1.6;
   margin: 0;
 }

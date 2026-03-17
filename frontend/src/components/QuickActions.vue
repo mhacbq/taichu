@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { Calendar, Magic, Star, UserFilled, ArrowRight, Lightning } from '@element-plus/icons-vue'
+import { Calendar, MagicStick, Star, UserFilled, ArrowRight, Lightning } from '@element-plus/icons-vue'
 
 // 自定义太极图标组件
 const YinYangIcon = {

@@ -82,12 +82,22 @@ class BaziCalculationService
     ];
 
     /**
-     * 节气日期计算 (基于21世纪寿星公式)
+     * 节气日期计算 (支持20世纪和21世纪寿星公式)
      */
     protected function getJieQiDate(int $year, string $name): array
     {
+        // 20世纪节气常数 (1900-1999)
+        $jieQiConstants20 = [
+            '小寒' => [1, 6.11], '大寒' => [1, 20.84], '立春' => [2, 4.6298], '雨水' => [2, 19.46],
+            '惊蛰' => [3, 6.3826], '春分' => [3, 21.415], '清明' => [4, 5.59], '谷雨' => [4, 20.888],
+            '立夏' => [5, 6.318], '小满' => [5, 21.86], '芒种' => [6, 6.5], '夏至' => [6, 22.2],
+            '小暑' => [7, 7.928], '大暑' => [7, 23.65], '立秋' => [8, 8.35], '处暑' => [8, 23.95],
+            '白露' => [9, 8.44], '秋分' => [9, 23.822], '寒露' => [10, 9.098], '霜降' => [10, 24.218],
+            '立冬' => [11, 8.218], '小雪' => [11, 23.08], '大雪' => [12, 7.9], '冬至' => [12, 22.6]
+        ];
+
         // 21世纪节气常数 (2000-2099)
-        $jieQiConstants = [
+        $jieQiConstants21 = [
             '小寒' => [1, 5.4055], '大寒' => [1, 20.12], '立春' => [2, 3.87], '雨水' => [2, 18.73],
             '惊蛰' => [3, 5.63], '春分' => [3, 20.646], '清明' => [4, 4.81], '谷雨' => [4, 20.1],
             '立夏' => [5, 5.52], '小满' => [5, 21.04], '芒种' => [6, 5.678], '夏至' => [6, 21.37],
@@ -96,19 +106,28 @@ class BaziCalculationService
             '立冬' => [11, 7.438], '小雪' => [11, 22.36], '大雪' => [12, 7.18], '冬至' => [12, 21.94]
         ];
 
-        if (!isset($jieQiConstants[$name])) return [0, 0];
+        $is21st = ($year >= 2000);
+        $constants = $is21st ? $jieQiConstants21 : $jieQiConstants20;
         
-        $month = $jieQiConstants[$name][0];
-        $C = $jieQiConstants[$name][1];
+        if (!isset($constants[$name])) return [0, 0];
+        
+        $month = $constants[$name][0];
+        $C = $constants[$name][1];
         $y = $year % 100;
         
         // 寿星公式：[Y*D+C]-L
         // Y=年份后两位，D=0.2422，C=常数，L=闰年数
-        $day = floor($y * 0.2422 + $C) - floor(($y - 1) / 4);
+        // 20世纪以1900为基准，21世纪以2000为基准
+        $day = floor($y * 0.2422 + $C) - floor(($y - ($is21st ? 0 : 1)) / 4);
         
         // 特殊年份修正
-        if ($name === '立春' && $year === 2019) $day -= 1;
-        if ($name === '雨水' && $year === 2026) $day -= 1;
+        if ($is21st) {
+            if ($name === '立春' && $year === 2019) $day -= 1;
+            if ($name === '雨水' && $year === 2026) $day -= 1;
+        } else {
+            if ($name === '立春' && ($year === 1902 || $year === 1918 || $year === 1982)) $day += 1;
+            if ($name === '惊蛰' && $year === 1906) $day += 1;
+        }
         
         return [$month, (int)$day];
     }
@@ -177,6 +196,8 @@ class BaziCalculationService
             $p['shishen'] = $this->shiShenTable[$dayGan][$p['gan']] ?? '';
             $p['nayin'] = $this->naYin[$p['gan'].$p['zhi']] ?? '';
             $p['canggan'] = $this->zhiCangGan[$p['zhi']];
+            // 旬空
+            $p['xunkong'] = $this->calculateXunKong($pillars['day']['gan'], $pillars['day']['zhi']);
         }
         
         return array_merge($pillars, [
@@ -188,7 +209,7 @@ class BaziCalculationService
         ]);
     }
 
-    protected function getLunarYear(int $year, int $month, int $day): int
+    public function getLunarYear(int $year, int $month, int $day): int
     {
         $lichun = $this->getJieQiDate($year, '立春');
         if ($month < $lichun[0] || ($month == $lichun[0] && $day < $lichun[1])) {
@@ -229,17 +250,56 @@ class BaziCalculationService
         ];
     }
 
-    protected function calculateDayPillar(int $year, int $month, int $day): array
+    /**
+     * 计算儒略日
+     */
+    public function getJulianDay(int $year, int $month, int $day): int
     {
-        // 基准：1900-01-31 是甲子日 (0, 0)
-        $base = strtotime('1900-01-31');
-        $target = strtotime("$year-$month-$day");
-        $diff = (int)round(($target - $base) / 86400);
+        if ($month <= 2) {
+            $year -= 1;
+            $month += 12;
+        }
+        $A = floor($year / 100);
+        $B = 2 - $A + floor($A / 4);
+        $JD = floor(365.25 * ($year + 4716)) + floor(30.6001 * ($month + 1)) + $day + $B - 1524.5;
+        return (int)$JD;
+    }
+
+    /**
+     * 计算日柱
+     */
+    public function calculateDayPillar(int $year, int $month, int $day): array
+    {
+        // 1900-01-31 是甲子日 (0, 0)
+        $targetJD = $this->getJulianDay($year, $month, $day);
+        $baseJD = $this->getJulianDay(1900, 1, 31);
+        $diff = $targetJD - $baseJD;
         
         return [
             'gan_index' => ($diff % 10 + 10) % 10,
             'zhi_index' => ($diff % 12 + 12) % 12
         ];
+    }
+
+    /**
+     * 计算旬空
+     */
+    public function calculateXunKong(string $gan, string $zhi): array
+    {
+        $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        
+        $gIdx = array_search($gan, $tianGan);
+        $zIdx = array_search($zhi, $diZhi);
+        
+        // 旬首地支索引 = (地支索引 - 天干索引 + 12) % 12
+        $xunShouZhiIdx = ($zIdx - $gIdx + 12) % 12;
+        
+        // 旬空地支为旬首往前推两个地支
+        $kong1Idx = ($xunShouZhiIdx + 10) % 12;
+        $kong2Idx = ($xunShouZhiIdx + 11) % 12;
+        
+        return [$diZhi[$kong1Idx], $diZhi[$kong2Idx]];
     }
 
     /**
@@ -318,6 +378,7 @@ class BaziCalculationService
             'status' => $status,
             'favorite_wuxing' => $totalScore >= 50 ? $relations[$dmWx]['opposing'] : $relations[$dmWx]['supporting']
         ];
+    }
     /**
      * 计算起运时间 (精确到岁/月/天)
      */

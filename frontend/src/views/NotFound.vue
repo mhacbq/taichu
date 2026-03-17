@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { Magic } from '@element-plus/icons-vue'
+import { MagicStick } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

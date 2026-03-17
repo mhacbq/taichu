@@ -159,7 +159,7 @@ const currentRecord = ref(null)
 const tabs = [
   { key: 'all', label: '全部', icon: 'Document', count: 0 },
   { key: 'bazi', label: '八字排盘', icon: 'Calendar', count: 0 },
-  { key: 'tarot', label: '塔罗占卜', icon: 'Magic', count: 0 },
+  { key: 'tarot', label: '塔罗占卜', icon: 'MagicStick', count: 0 },
   { key: 'fortune', label: '每日运势', icon: 'Star', count: 0 }
 ]
 

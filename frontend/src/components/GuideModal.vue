@@ -82,7 +82,7 @@
         <!-- 第3步：积分说明 -->
         <template v-if="currentStep === 3">
           <div class="step-illustration">
-            <el-icon class="large-icon"><Diamond /></el-icon>
+            <el-icon class="large-icon"><Coin /></el-icon>
           </div>
           <h3>关于积分</h3>
           <p class="points-intro">为了提供更优质的服务，部分功能需要消耗积分：</p>
@@ -104,7 +104,7 @@
             </div>
           </div>
           <div class="earn-points">
-            <h4><el-icon><Pointer /></el-icon> 如何获取积分？</h4>
+            <h4><el-icon><Mouse /></el-icon> 如何获取积分？</h4>
             <ul>
               <li>注册即送 <strong>100积分</strong> 新手礼包</li>
               <li>每日签到领积分</li>
@@ -170,11 +170,22 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  Sunrise, User, Opportunity, Compass, YinYang, 
-  Calendar, Document, MagicStick, Diamond, Pointer, 
-  Promotion, Aim, ChatLineRound, Star 
+import {
+  Sunrise,
+  User,
+  Lightning,
+  Compass,
+  Calendar,
+  Document,
+  MagicStick,
+  Coin,
+  Mouse,
+  Promotion,
+  Aim,
+  ChatLineRound,
+  Star
 } from '@element-plus/icons-vue'
+import YinYangIcon from './YinYangIcon.vue'
 
 const router = useRouter()
 const visible = ref(false)

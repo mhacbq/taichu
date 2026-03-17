@@ -148,11 +148,11 @@ watch(() => props.fortuneData, () => {
 
 <style scoped>
 .fortune-calendar {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--white-10);
 }
 
 .calendar-header {
@@ -167,7 +167,7 @@ watch(() => props.fortuneData, () => {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   color: #fff;
   font-size: 20px;
   cursor: pointer;
@@ -178,7 +178,7 @@ watch(() => props.fortuneData, () => {
 }
 
 .nav-btn:hover {
-  background: rgba(255, 215, 0, 0.3);
+  background: var(--primary-light-30);
   transform: scale(1.1);
 }
 
@@ -190,7 +190,7 @@ watch(() => props.fortuneData, () => {
 .year {
   display: block;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   margin-bottom: 4px;
 }
 
@@ -209,7 +209,7 @@ watch(() => props.fortuneData, () => {
 .weekday {
   text-align: center;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--white-50);
   padding: 8px 0;
 }
 
@@ -229,11 +229,11 @@ watch(() => props.fortuneData, () => {
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-03);
 }
 
 .calendar-day:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   transform: translateY(-2px);
 }
 
@@ -242,12 +242,12 @@ watch(() => props.fortuneData, () => {
 }
 
 .calendar-day.today {
-  background: rgba(255, 215, 0, 0.2);
-  border: 1px solid rgba(255, 215, 0, 0.5);
+  background: var(--primary-light-20);
+  border: 1px solid var(--primary-light-60);
 }
 
 .calendar-day.selected {
-  background: linear-gradient(135deg, #ffd700, #ffc107);
+  background: var(--primary-gradient);
   box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
 }
 
@@ -297,7 +297,7 @@ watch(() => props.fortuneData, () => {
   gap: 24px;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--white-10);
 }
 
 .legend-item {
@@ -305,7 +305,7 @@ watch(() => props.fortuneData, () => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .dot {

@@ -167,7 +167,7 @@
             <div class="feature-card">
               <div class="feature-icon">
                 <el-icon v-if="feature.icon === 'aim'"><Aim /></el-icon>
-                <el-icon v-else-if="feature.icon === 'magic'"><Magic /></el-icon>
+                <el-icon v-else-if="feature.icon === 'magic'"><MagicStick /></el-icon>
                 <el-icon v-else-if="feature.icon === 'cpu'"><Cpu /></el-icon>
                 <el-icon v-else-if="feature.icon === 'cellphone'"><Cellphone /></el-icon>
                 <el-icon v-else-if="feature.icon === 'lock'"><Lock /></el-icon>
@@ -211,7 +211,7 @@ import QuickActions from '../components/QuickActions.vue'
 import MoodTracker from '../components/MoodTracker.vue'
 import AchievementSystem from '../components/AchievementSystem.vue'
 import FortuneCalendar from '../components/FortuneCalendar.vue'
-import { StarFilled, DataLine, Aim, Magic, Cpu, Cellphone, Lock, Present, Calendar, Briefcase, Money, Star, CircleCheck } from '@element-plus/icons-vue'
+import { StarFilled, DataLine, Aim, MagicStick, Cpu, Cellphone, Lock, Present, Calendar, Briefcase, Money, Star, CircleCheck } from '@element-plus/icons-vue'
 
 const isLoggedIn = ref(false)
 
@@ -358,7 +358,7 @@ onMounted(() => {
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--white-20);
   transform: translateY(-2px);
   border-color: var(--primary-color);
 }
@@ -373,14 +373,14 @@ onMounted(() => {
 .stat-item {
   text-align: center;
   padding: 15px 25px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-03);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
   transition: all 0.3s ease;
 }
 
 .stat-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--white-06);
   transform: translateY(-5px);
   border-color: var(--primary-light-30);
   box-shadow: var(--shadow-md);
@@ -449,7 +449,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-03);
   border-radius: var(--radius-md);
   transition: all 0.3s ease;
   border: 1px solid var(--border-light);
@@ -553,7 +553,7 @@ onMounted(() => {
   transform: translateY(-6px);
   border-color: var(--primary-light-40);
   box-shadow: var(--shadow-xl);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-08);
 }
 
 .feature-icon {

@@ -42,6 +42,13 @@
 
   /* 字体层次 */
   --font-main: 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+  --font-h1: clamp(32px, 6vw, 48px);
+  --font-h2: clamp(24px, 4vw, 32px);
+  --font-h3: clamp(20px, 3vw, 24px);
+  --font-body: 16px;
+  --font-small: 14px;
+  --font-tiny: 12px;
+  
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
@@ -68,6 +75,13 @@
   --danger-color: #f56c6c;
   --info-color: #909399;
 
+  /* 语义化颜色 */
+  --color-primary: var(--primary-color);
+  --color-success: var(--success-color);
+  --color-warning: var(--warning-color);
+  --color-danger: var(--danger-color);
+  --color-info: var(--info-color);
+
   /* 主色调透明度变量 */
   --primary-light-05: rgba(184, 134, 11, 0.05);
   --primary-light-10: rgba(184, 134, 11, 0.1);
@@ -82,9 +96,11 @@
   --success-light: rgba(103, 194, 58, 0.2);
   --warning-light: rgba(230, 162, 60, 0.2);
   --danger-light: rgba(245, 108, 108, 0.2);
+  --info-light: rgba(144, 147, 153, 0.2);
   
   --bg-hover: var(--white-08);
   --border-light-20: var(--white-20);
+  --border-primary: var(--primary-light-30);
 
   /* 透明度变量系统 */
   --white-01: rgba(255, 255, 255, 0.01);
@@ -114,13 +130,13 @@
 
 /* 统一卡片悬停效果 */
 .card-hover, .card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 .card-hover:hover, .card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(184, 134, 11, 0.2);
-  border-color: rgba(212, 175, 55, 0.4) !important;
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(184, 134, 11, 0.15);
+  border-color: var(--border-primary) !important;
 }
 
 body {
@@ -129,6 +145,7 @@ body {
   min-height: 100vh;
   color: var(--text-primary);
   line-height: 1.8;
+  font-size: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -157,7 +174,7 @@ body {
   border-radius: var(--radius-btn);
   color: var(--text-primary);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
@@ -165,18 +182,18 @@ body {
 }
 
 .btn-primary:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 12px 30px rgba(184, 134, 11, 0.45);
-  letter-spacing: 1px;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
+  filter: brightness(1.1);
 }
 
 .btn-primary:active {
-  transform: translateY(-1px) scale(0.98);
+  transform: translateY(0) scale(0.98);
 }
 
 /* 次要按钮 */
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-03);
   border: 2px solid var(--primary-color);
   padding: 0 28px;
   height: 48px;
@@ -187,7 +204,7 @@ body {
   border-radius: var(--radius-btn);
   color: var(--primary-color);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-sizing: border-box;
@@ -195,10 +212,10 @@ body {
 
 
 .btn-secondary:hover {
-  background: rgba(184, 134, 11, 0.15);
+  background: var(--primary-light-15);
   color: var(--primary-light);
   border-color: var(--primary-light);
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-2px);
 }
 
 /* 卡片样式 - 白色风格 */
@@ -208,7 +225,6 @@ body {
   padding: 28px;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 /* 玻璃拟态卡片（浅色版） */
@@ -218,18 +234,18 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border-radius: var(--radius-xl);
   padding: 30px;
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  border: 1px solid var(--primary-light-20);
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
 
 /* 标题样式 */
 .section-title {
-  font-size: clamp(28px, 5vw, 42px);
+  font-size: var(--font-h1);
   text-align: center;
   margin-bottom: 56px;
   color: var(--text-primary);
   font-weight: var(--weight-black);
-  letter-spacing: -1px;
+  letter-spacing: -0.02em;
 }
 
 .section-title span {
@@ -242,7 +258,7 @@ body {
 }
 
 .section-subtitle {
-  font-size: clamp(14px, 2vw, 16px);
+  font-size: var(--font-body);
   color: var(--text-secondary);
   text-align: center;
   margin-top: -44px;
@@ -256,25 +272,48 @@ body {
 /* 输入框样式 */
 .input-field {
   width: 100%;
-  padding: 16px 20px;
+  padding: 14px 20px;
   border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: 15px;
-  background: rgba(255, 255, 255, 0.03);
+  font-size: var(--font-small);
+  background: var(--white-03);
   color: var(--text-primary);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-field:focus {
   outline: none;
   border-color: var(--primary-light);
-  box-shadow: 0 0 0 4px var(--primary-light-15);
-  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px var(--primary-light-15);
+  background: var(--white-06);
   transform: translateY(-1px);
 }
 
 .input-field::placeholder {
   color: var(--text-muted);
+}
+
+/* Element Plus 全局重写 */
+:deep(.el-input__wrapper),
+:deep(.el-textarea__inner),
+:deep(.el-select__wrapper) {
+  background-color: var(--white-03) !important;
+  box-shadow: 0 0 0 1px var(--border-color) inset !important;
+  border-radius: var(--radius-md) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-textarea__inner:hover),
+:deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--primary-light-40) inset !important;
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-textarea__inner:focus),
+:deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px var(--primary-light) inset, 0 0 0 3px var(--primary-light-15) !important;
+  background-color: var(--white-05) !important;
 }
 
 /* 标签样式 */
@@ -284,11 +323,12 @@ body {
   padding: 6px 18px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-xl);
-  font-size: 13px;
+  font-size: var(--font-tiny);
   color: var(--text-secondary);
   font-weight: var(--weight-bold);
   border: 1px solid var(--border-light);
   transition: all 0.3s ease;
+  min-height: 32px;
 }
 
 .tag:hover {
@@ -302,6 +342,7 @@ body {
   color: var(--primary-light);
   border-color: var(--primary-light-30);
 }
+
 
 /* 分隔线 */
 .divider {

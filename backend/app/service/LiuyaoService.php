@@ -404,6 +404,24 @@ class LiuyaoService
                     $positions[] = $pos;
                 }
             }
+            
+            // 如果没找到用神，则需寻找“伏神”
+            if (empty($positions)) {
+                $info = self::getGuaInfo($yaoCode);
+                $fushen = self::getFuShen($info['gong'], $targetLiuqin);
+                if ($fushen) {
+                    return [
+                        'liuqin' => $targetLiuqin,
+                        'position' => $fushen['position'],
+                        'is_moving' => false,
+                        'is_fushen' => true,
+                        'fushen_info' => $fushen,
+                        'status' => '伏藏',
+                        'description' => "用神【{$targetLiuqin}】不现，伏于第{$fushen['position']}爻【{$liuqin[$fushen['position']]}】之下。"
+                    ];
+                }
+            }
+            
             // 如果有多个，通常取动爻，若无动爻则取世应，此处简化取第一个
             $position = $positions[0] ?? $shiYing['ying'];
         }
@@ -417,20 +435,73 @@ class LiuyaoService
         if ($position === $shiYing['ying']) $status[] = '在应位';
         if ($isMoving) $status[] = '发动';
         
-        // 3. 结合时令 (月破/旬空) - 需传入 timeInfo
-        if (!empty($timeInfo)) {
-            // 此处可扩展月破、旬空判断逻辑
-            // $status[] = '月破'; 
-            // $status[] = '旬空';
+        // 3. 结合时令 (月破/旬空)
+        if (!empty($timeInfo) && isset($timeInfo['ri_gan']) && isset($timeInfo['ri_zhi'])) {
+            $xunkong = self::calculateXunKong($timeInfo['ri_gan'], $timeInfo['ri_zhi']);
+            $yaoDiZhi = self::getYaoDiZhi(self::getGuaName($yaoCode), $yaoCode);
+            $currentZhi = $yaoDiZhi[$position] ?? '';
+            if (in_array($currentZhi, $xunkong)) {
+                $status[] = '旬空';
+            }
         }
 
         return [
             'liuqin' => $targetLiuqin,
             'position' => $position,
             'is_moving' => $isMoving,
+            'is_fushen' => false,
             'status' => implode('、', $status),
             'description' => "以第{$position}爻【{$targetLiuqin}】为用神。状态： " . (implode('、', $status) ?: '安静')
         ];
+    }
+
+    /**
+     * 获取伏神信息
+     * 当用神不现于本卦时，从所属卦宫的首卦中寻找
+     */
+    public static function getFuShen(string $gong, string $missingLiuqin): ?array
+    {
+        $pureGuaZhi = self::NA_JIA[$gong] ?? null;
+        if (!$pureGuaZhi) return null;
+        
+        $gongWuxing = self::BA_GUA_WUXING[$gong];
+        $diZhiWuxing = [
+            '子' => '水', '丑' => '土', '寅' => '木', '卯' => '木',
+            '辰' => '土', '巳' => '火', '午' => '火', '未' => '土',
+            '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水',
+        ];
+
+        for ($i = 0; $i < 6; $i++) {
+            $zhi = ($i < 3) ? $pureGuaZhi['inner'][$i] : $pureGuaZhi['outer'][$i - 3];
+            $lq = self::getLiuQinByWuxing($gongWuxing, $diZhiWuxing[$zhi]);
+            if ($lq === $missingLiuqin) {
+                return [
+                    'position' => $i + 1,
+                    'di_zhi' => $zhi,
+                    'liuqin' => $lq
+                ];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 计算旬空
+     */
+    public static function calculateXunKong(string $riGan, string $riZhi): array
+    {
+        $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        
+        $gIdx = array_search($riGan, $tianGan);
+        $zIdx = array_search($riZhi, $diZhi);
+        if ($gIdx === false || $zIdx === false) return [];
+        
+        $xunShouZhiIdx = ($zIdx - $gIdx + 12) % 12;
+        $kong1Idx = ($xunShouZhiIdx + 10) % 12;
+        $kong2Idx = ($xunShouZhiIdx + 11) % 12;
+        
+        return [$diZhi[$kong1Idx], $diZhi[$kong2Idx]];
     }
 
     /**

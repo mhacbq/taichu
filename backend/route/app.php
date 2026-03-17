@@ -2,26 +2,6 @@
 
 use think\facade\Route;
 
-// CORS预检 - 处理所有OPTIONS请求
-Route::options('api/:any', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
-
-// 根路径OPTIONS
-Route::options('', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
-
 // API路由组
 Route::group('api', function () {
     
@@ -200,40 +180,15 @@ Route::group('liuyao', function () {
     \app\middleware\RateLimit::class,
 ]);
 
-// 支付回调（不需要认证）- 添加OPTIONS支持
-Route::options('api/payment/notify', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
+// 支付回调（不需要认证）
 Route::post('api/payment/notify', 'Payment/notify');
 Route::post('api/alipay/notify', 'Alipay/notify');
 Route::get('api/alipay/return', 'Alipay/return');
 
-// 公开分享接口 - 添加OPTIONS支持
-Route::options('api/tarot/share', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
+// 公开分享接口
 Route::get('api/tarot/share', 'Tarot/share');
 Route::get('api/bazi/share', 'Paipan/share');
 
-// 后台管理路由 - OPTIONS预检
-Route::options('api/admin/:any', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
 
 
 

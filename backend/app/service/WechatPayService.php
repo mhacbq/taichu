@@ -45,13 +45,35 @@ class WechatPayService
 
         // 退款接口需要证书
         $cert = [];
+        $tempFiles = [];
         if (!empty($config['api_cert']) && !empty($config['api_key_pem'])) {
-            // 假设证书存储在 runtime 目录下的 temp 文件中，或者直接从配置中读取内容并写入临时文件
-            // 这里为了演示，我们假设证书路径已配置
-            $cert = [
-                'cert' => $config['api_cert'], 
-                'key' => $config['api_key_pem']
-            ];
+            // 检查配置是路径还是内容
+            $certContent = $config['api_cert'];
+            $keyContent = $config['api_key_pem'];
+
+            if (strpos($certContent, '-----BEGIN CERTIFICATE-----') !== false) {
+                // 内容模式：写入临时文件
+                $certPath = runtime_path('temp') . 'wechat_cert_' . md5($certContent) . '.pem';
+                if (!file_exists($certPath)) {
+                    file_put_contents($certPath, $certContent);
+                }
+                $cert['cert'] = $certPath;
+                $tempFiles[] = $certPath;
+            } else {
+                $cert['cert'] = $certContent;
+            }
+
+            if (strpos($keyContent, '-----BEGIN PRIVATE KEY-----') !== false || strpos($keyContent, '-----BEGIN RSA PRIVATE KEY-----') !== false) {
+                // 内容模式：写入临时文件
+                $keyPath = runtime_path('temp') . 'wechat_key_' . md5($keyContent) . '.pem';
+                if (!file_exists($keyPath)) {
+                    file_put_contents($keyPath, $keyContent);
+                }
+                $cert['key'] = $keyPath;
+                $tempFiles[] = $keyPath;
+            } else {
+                $cert['key'] = $keyContent;
+            }
         }
 
         try {
@@ -62,8 +84,8 @@ class WechatPayService
             if ($result['return_code'] === 'SUCCESS' && $result['result_code'] === 'SUCCESS') {
                 return [
                     'success' => true,
-                    'refund_id' => $result['refund_id'],
-                    'amount' => $result['refund_fee'] / 100,
+                    'refund_id' => $result['refund_id'] ?? '',
+                    'amount' => (isset($result['refund_fee']) ? $result['refund_fee'] / 100 : $refundAmount),
                 ];
             }
 
@@ -75,7 +97,7 @@ class WechatPayService
             Log::error('微信退款异常: ' . $e->getMessage());
             return [
                 'success' => false,
-                'message' => '网络异常或证书配置错误',
+                'message' => '网络异常或证书配置错误: ' . $e->getMessage(),
             ];
         }
     }

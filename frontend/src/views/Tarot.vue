@@ -8,13 +8,13 @@
 
       <!-- 积分提示 -->
       <div class="points-hint card card-hover">
-        <el-icon class="hint-icon"><Diamond /></el-icon>
+        <el-icon class="hint-icon"><Coin /></el-icon>
         <span>本次占卜将消耗 <strong>5 积分</strong></span>
         <span class="current-points">当前积分: {{ currentPoints }}</span>
       </div>
 
       <div v-if="currentPoints < 5" class="insufficient-points card card-hover">
-        <p><el-icon><Magic /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+        <p><el-icon><MagicStick /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
       </div>
 
       <div class="tarot-intro card card-hover">
@@ -30,7 +30,7 @@
             <div class="spread-icon">
               <el-icon v-if="spread.icon === 'card'"><Document /></el-icon>
               <el-icon v-else-if="spread.icon === 'cards'"><ChatDotRound /></el-icon>
-              <el-icon v-else-if="spread.icon === 'magic'"><Magic /></el-icon>
+              <el-icon v-else-if="spread.icon === 'magic'"><MagicStick /></el-icon>
             </div>
             <h3>{{ spread.name }}</h3>
             <p>{{ spread.description }}</p>
@@ -105,7 +105,7 @@
 
       <div v-if="cards.length > 0" class="cards-result card card-hover">
         <h3>您的牌阵</h3>
-        <p class="cards-hint"><el-icon><Magic /></el-icon> 点击任意牌查看详细解读</p>
+        <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击任意牌查看详细解读</p>
         <div class="cards-display">
           <TarotCard 
             v-for="(card, index) in cards" 
@@ -186,7 +186,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
 import TarotCard from '../components/TarotCard.vue'
-import { Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Heart } from '@element-plus/icons-vue'
+import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Heart } from '@element-plus/icons-vue'
 
 const spreads = [
   { id: 'single', name: '单张牌', icon: 'card', description: '简单直接，适合快速解答' },

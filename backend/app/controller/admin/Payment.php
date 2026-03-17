@@ -1,20 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace app\controller;
+namespace app\controller\admin;
 
 use app\BaseController;
 use app\model\PaymentConfig;
 use app\model\RechargeOrder;
 use app\model\User;
+use app\service\WechatPayService;
 use think\Request;
 use think\facade\Db;
 use think\facade\Log;
 
+
 /**
  * 后台支付管理控制器
  */
-class AdminPayment extends BaseController
+class Payment extends BaseController
 {
     protected $middleware = [\app\middleware\AdminAuth::class];
 
@@ -113,7 +115,12 @@ class AdminPayment extends BaseController
      */
     public function getOrders(Request $request)
     {
+        if ($response = $this->requirePaymentViewPermission('无权限查看充值订单')) {
+            return $response;
+        }
+
         $pagination = $this->getPaginationParams('page', 'limit', 20, 100);
+
         $page = $pagination['page'];
         $limit = $pagination['pageSize'];
         $status = trim((string) $request->get('status', ''));
@@ -191,13 +198,104 @@ class AdminPayment extends BaseController
             'limit' => $limit,
         ]);
     }
+
+    /**
+     * 导出充值订单
+     */
+    public function exportOrders(Request $request)
+    {
+        if ($response = $this->requirePaymentViewPermission('无权限导出充值订单')) {
+            return $response;
+        }
+
+        $status = trim((string) $request->get('status', ''));
+        $keyword = trim((string) $request->get('keyword', ''));
+        $startDate = trim((string) $request->get('start_date', ''));
+        $endDate = trim((string) $request->get('end_date', ''));
+
+        try {
+            $query = RechargeOrder::with('user');
+
+            if ($status !== '') {
+                if (!in_array($status, self::ORDER_STATUSES, true)) {
+                    return $this->error('订单状态参数无效');
+                }
+                $query->where('status', $status);
+            }
+
+            if ($keyword !== '') {
+                $keyword = preg_replace('/[%_\\]/', '', $keyword) ?: '';
+                $matchedUserIds = User::whereLike('nickname', '%' . $keyword . '%')->column('id');
+                $query->where(function ($q) use ($keyword, $matchedUserIds) {
+                    $q->whereLike('order_no', '%' . $keyword . '%')
+                        ->whereOrLike('pay_order_no', '%' . $keyword . '%');
+
+                    if (ctype_digit($keyword)) {
+                        $q->whereOr('user_id', (int) $keyword);
+                    }
+
+                    if (!empty($matchedUserIds)) {
+                        $q->whereOrIn('user_id', $matchedUserIds);
+                    }
+                });
+            }
+
+            if ($startDate !== '') {
+                if (!$this->isDateOnly($startDate)) {
+                    return $this->error('开始日期格式无效');
+                }
+                $query->where('created_at', '>=', $startDate . ' 00:00:00');
+            }
+            if ($endDate !== '') {
+                if (!$this->isDateOnly($endDate)) {
+                    return $this->error('结束日期格式无效');
+                }
+                $query->where('created_at', '<=', $endDate . ' 23:59:59');
+            }
+
+            $orders = $query->order('created_at', 'desc')->select();
+            $csv = "\xEF\xBB\xBF" . implode(',', ['订单号', '支付单号', '用户ID', '用户昵称', '金额', '积分', '状态', '支付方式', '支付时间', '创建时间']) . "\n";
+
+            foreach ($orders as $order) {
+                $row = [
+                    $this->escapeCsv((string) $order->order_no),
+                    $this->escapeCsv((string) ($order->pay_order_no ?? '')),
+                    (string) $order->user_id,
+                    $this->escapeCsv((string) ($order->user ? $order->user->nickname : '未知用户')),
+                    (string) $order->amount,
+                    (string) $order->points,
+                    $this->escapeCsv((string) $order->status),
+                    $this->escapeCsv((string) $order->payment_type),
+                    (string) ($order->pay_time ?? ''),
+                    (string) ($order->created_at ?? ''),
+                ];
+                $csv .= implode(',', $row) . "\n";
+            }
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="recharge_orders_' . date('YmdHis') . '.csv"',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('导出充值订单失败: ' . $e->getMessage(), [
+                'admin_id' => $this->getOperatorId(),
+            ]);
+            return $this->error('导出充值订单失败，请稍后重试', 500);
+        }
+    }
     
     /**
      * 获取订单详情
      */
+
     public function getOrderDetail(Request $request, string $id)
     {
+        if ($response = $this->requirePaymentViewPermission('无权限查看订单详情')) {
+            return $response;
+        }
+
         $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
+
         if ($identifier === '') {
             return $this->error('订单标识不能为空');
         }
@@ -363,7 +461,12 @@ class AdminPayment extends BaseController
      */
     public function getStats()
     {
+        if ($response = $this->requirePaymentViewPermission('无权限查看充值统计')) {
+            return $response;
+        }
+
         $params = $this->request->get();
+
         $startDate = $params['start_date'] ?? date('Y-m-01');
         $endDate = $params['end_date'] ?? date('Y-m-d');
         

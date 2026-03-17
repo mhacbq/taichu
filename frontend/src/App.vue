@@ -61,13 +61,13 @@
         </div>
         <div class="mobile-nav-links">
           <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><Home /></el-icon> 首页
+            <el-icon class="nav-icon" :size="18"><House /></el-icon> 首页
           </router-link>
           <router-link to="/bazi" class="mobile-nav-link" @click="showMobileMenu = false">
             <el-icon class="nav-icon" :size="18"><Calendar /></el-icon> 八字排盘
           </router-link>
           <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><Magic /></el-icon> 塔罗占卜
+            <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon> 塔罗占卜
           </router-link>
           <router-link to="/liuyao" class="mobile-nav-link" @click="showMobileMenu = false">
             <el-icon class="nav-icon" :size="18"><YinYang /></el-icon> 六爻占卜
@@ -112,7 +112,7 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <span class="footer-logo"><el-icon :size="24"><YinYang /></el-icon> 太初命理</span>
+            <span class="footer-logo"><YinYangIcon :size="24" style="margin-right: 10px;" /> 太初命理</span>
             <p class="footer-tagline">传承千年智慧，指引人生方向</p>
           </div>
           <div class="footer-quote">

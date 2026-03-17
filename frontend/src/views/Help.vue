@@ -97,11 +97,11 @@
         <h3>快速入口</h3>
         <div class="links-grid">
           <router-link to="/bazi" class="quick-link">
-            <span class="link-icon"><el-icon><YinYang /></el-icon></span>
+            <span class="link-icon"><el-icon><Coin /></el-icon></span>
             <span>八字排盘</span>
           </router-link>
           <router-link to="/tarot" class="quick-link">
-            <span class="link-icon"><el-icon><Magic /></el-icon></span>
+            <span class="link-icon"><el-icon><MagicStick /></el-icon></span>
             <span>塔罗占卜</span>
           </router-link>
           <router-link to="/daily" class="quick-link">
@@ -122,7 +122,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BackButton from '../components/BackButton.vue'
-import { Search, Phone, ChatDotRound, Message, YinYang, Magic, StarFilled, UserFilled, CollectionTag, Coin, Lock } from '@element-plus/icons-vue'
+import { Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, CollectionTag, Coin, Lock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -312,19 +312,19 @@ const goToFeedback = () => {
 }
 
 .tag-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   font-size: 14px;
 }
 
 .hot-tag {
   cursor: pointer;
-  background: rgba(184, 134, 11, 0.2);
-  border-color: rgba(184, 134, 11, 0.3);
+  background: var(--primary-light-20);
+  border-color: var(--primary-light-30);
   color: var(--text-primary);
 }
 
 .hot-tag:hover {
-  background: rgba(184, 134, 11, 0.4);
+  background: var(--primary-light-40);
 }
 
 /* FAQ区域 */
@@ -356,7 +356,7 @@ const goToFeedback = () => {
 
 .faq-collapse :deep(.el-collapse-item__content) {
   padding: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
 }
 
 .faq-list {
@@ -364,8 +364,8 @@ const goToFeedback = () => {
 }
 
 .faq-item {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--white-03);
+  border: 1px solid var(--white-10);
   border-radius: 10px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -381,13 +381,13 @@ const goToFeedback = () => {
 }
 
 .faq-question:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
 }
 
 .q-icon {
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  background: var(--primary-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -438,7 +438,7 @@ const goToFeedback = () => {
 }
 
 .faq-answer p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   line-height: 1.8;
   margin: 0;
   white-space: pre-line;

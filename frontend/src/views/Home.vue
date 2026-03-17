@@ -22,7 +22,7 @@
         <!-- 用户积分卡片 - 已登录 -->
         <div v-if="isLoggedIn" class="user-points-card">
           <div class="points-display">
-            <el-icon class="points-icon" :size="32"><Diamond /></el-icon>
+            <el-icon class="points-icon" :size="32"><Coin /></el-icon>
             <div class="points-info">
               <span class="points-label">我的积分</span>
               <span class="points-value">{{ userPoints }}</span>
@@ -189,7 +189,7 @@
 import { ref, onMounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
-import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
+import { Sunrise, Sunny, Moon, Coin, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
 
 const stats = ref([
   { number: '加载中...', label: '服务用户', icon: 'UserFilled' },

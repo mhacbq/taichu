@@ -513,14 +513,19 @@ class Hehun extends BaseController
         $scores['shensha'] = $shenshaScore;
         $details['shensha'] = $this->getShenshaDescription($shenshaScore);
         
-        // 7. 传统合婚模型 (三元/九宫)
+        // 7. 传统合婚模型 (三元/九宫) - 额外加分项 (最多10分)
         $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
         $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
-
-
+        
+        $traditionalScore = 0;
+        if ($jiugongAnalysis['grade'] === '上等婚') $traditionalScore += 10;
+        elseif ($jiugongAnalysis['grade'] === '中等婚') $traditionalScore += 5;
+        
+        $scores['traditional'] = $traditionalScore;
+        $details['traditional'] = $jiugongAnalysis['description'] . ' ' . $jiugongAnalysis['suggestion'];
         
         // 计算总分
-        $totalScore = array_sum($scores);
+        $totalScore = min(100, array_sum($scores));
         
         // 确定等级
         $level = $this->calculateLevel($totalScore);
@@ -1765,8 +1770,12 @@ HTML;
      */
     protected function analyzeSanYuanHehun(array $maleBazi, array $femaleBazi, string $maleBirthDate, string $femaleBirthDate): array
     {
-        $maleYear = (int)date('Y', strtotime($maleBirthDate));
-        $femaleYear = (int)date('Y', strtotime($femaleBirthDate));
+        $maleTs = strtotime($maleBirthDate);
+        $femaleTs = strtotime($femaleBirthDate);
+        
+        // 修正：使用立春划分的命理年
+        $maleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $maleTs), (int)date('n', $maleTs), (int)date('j', $maleTs));
+        $femaleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $femaleTs), (int)date('n', $femaleTs), (int)date('j', $femaleTs));
         
         // 获取纳音五行
         $maleNayin = $this->getNayinWuxing($maleBazi['year']['gan'], $maleBazi['year']['zhi']);
@@ -1822,6 +1831,9 @@ HTML;
             $result['suggestion'] = '此为中等婚配，婚姻需双方共同经营。';
         }
         
+        // 增加纳音合婚歌诀
+        $result['nayin_gejue'] = $this->getNayinGeJue($maleNayin, $femaleNayin);
+        
         // 元运分析
         if ($maleYuan === $femaleYuan) {
             $result['yuan_analysis'] = "双方同属{$maleYuan}，元运相同，气场相合，有利于婚姻稳定。";
@@ -1838,8 +1850,12 @@ HTML;
      */
     protected function analyzeJiuGongHehun(array $maleBazi, array $femaleBazi, string $maleBirthDate = '', string $femaleBirthDate = ''): array
     {
-        $maleYear = (int)date('Y', strtotime($maleBirthDate ?: '1990-01-01'));
-        $femaleYear = (int)date('Y', strtotime($femaleBirthDate ?: '1990-01-01'));
+        $maleTs = strtotime($maleBirthDate ?: '1990-01-01');
+        $femaleTs = strtotime($femaleBirthDate ?: '1990-01-01');
+        
+        // 修正：使用立春划分的命理年
+        $maleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $maleTs), (int)date('n', $maleTs), (int)date('j', $maleTs));
+        $femaleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $femaleTs), (int)date('n', $femaleTs), (int)date('j', $femaleTs));
         
         // 计算命卦
         $maleGua = $this->calculateMingGua($maleYear, 'male');
@@ -2017,6 +2033,42 @@ HTML;
         return '无';
     }
     
+    /**
+     * 获取纳音合婚歌诀
+     */
+    protected function getNayinGeJue(string $maleWuxing, string $femaleWuxing): string
+    {
+        $gejue = [
+            '金金' => '两金夫妻硬对硬，有女无男守空房，日夜争打语不合，各人各心各白眼。',
+            '金木' => '金木夫妻不多年，整天吵打哭连连，原来二命都有害，半世鳏寡守空房。',
+            '金水' => '金水夫妻富高强，钱财积聚百岁长，婚姻和合前程远，禾仓田宅福寿长。',
+            '金火' => '未有金火不相当，半世婚姻儿女孤，虽有钱财常争打，老来无依各西东。',
+            '金土' => '金土夫妻好姻缘，仕宦才名显赫全，六畜增生仓库满，儿女多才且贤能。',
+            '木木' => '双木夫妻福满多，钱财积聚好生活，原来二命都有害，各人各心各白眼。', // 备注：此处传统有不同版本，取互助意
+            '木火' => '木火夫妻大吉昌，此项婚配已相当，合来儿女多聪明，福禄双全百年长。',
+            '木土' => '土木夫妻本不宜，灾难重重两分离，原来二命都有害，半世鳏寡守空房。',
+            '木水' => '木水夫妻好姻缘，财源广进百岁前，儿女多才且贤能，富贵双全且长寿。',
+            '木金' => '木金夫妻本不宜，灾难重重两分离，原来二命都有害，半世鳏寡守空房。',
+            '水水' => '两水夫妻喜洋洋，儿女聪明家兴旺，财源广进百岁长，福寿双全好时光。',
+            '水火' => '水火夫妻不相配，虽然有钱也受苦，原来二命都有害，半世鳏寡守空房。',
+            '水土' => '水土夫妻不久长，三岁五岁不见面，口舌是非争不断，半世鳏寡守空房。',
+            '水木' => '水木夫妻好姻缘，财源广进百岁前，儿女多才且贤能，富贵双全且长寿。',
+            '水金' => '水金夫妻富高强，钱财积聚百岁长，婚姻和合前程远，禾仓田宅福寿长。',
+            '火火' => '两火夫妻日夜愁，妻离子散各西东，原来二命都有害，半世鳏寡守空房。',
+            '火土' => '火土夫妻好相配，高官厚禄名声大，儿女聪明且多才，福禄双全百年长。',
+            '火木' => '火木夫妻大吉昌，此项婚配已相当，合来儿女多聪明，福禄双全百年长。',
+            '火金' => '火金夫妻克连连，半世婚姻儿女孤，虽有钱财常争打，老来无依各西东。',
+            '火水' => '火水夫妻不相配，虽然有钱也受苦，原来二命都有害，半世鳏寡守空房。',
+            '土土' => '双土夫妻好姻缘，共看儿女后代贤，两意相投合心意，一生衣禄且平安。',
+            '土金' => '土金夫妻好姻缘，仕宦才名显赫全，六畜增生仓库满，儿女多才且贤能。',
+            '土水' => '土水夫妻不久长，三岁五岁不见面，口舌是非争不断，半世鳏寡守空房。',
+            '土木' => '土木夫妻本不宜，灾难重重两分离，原来二命都有害，半世鳏寡守空房。',
+            '土火' => '土火夫妻好相配，高官厚禄名声大，儿女聪明且多才，福禄双全百年长。',
+        ];
+
+        return $gejue[$maleWuxing . $femaleWuxing] ?? '命理天定，事在人为，只要相互体谅，必能白头偕老。';
+    }
+
     /**
      * 获取天干数字
      */

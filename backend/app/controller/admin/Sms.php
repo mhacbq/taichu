@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace app\controller;
+namespace app\controller\admin;
 
 use app\BaseController;
 use app\model\SmsConfig;
@@ -10,7 +10,7 @@ use app\service\SmsService;
 /**
  * 后台短信管理控制器
  */
-class AdminSms extends BaseController
+class Sms extends BaseController
 {
     protected $middleware = [\app\middleware\AdminAuth::class];
     

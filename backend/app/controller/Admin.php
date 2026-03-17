@@ -395,6 +395,61 @@ class Admin extends BaseController
     }
 
     /**
+     * 批量更新用户状态
+     */
+    public function batchUpdateUserStatus(Request $request)
+    {
+        if (!$this->checkPermission('user_edit')) {
+            return $this->error('无权限批量编辑用户', 403);
+        }
+
+        try {
+            $ids = $request->put('ids', []);
+            $status = $request->put('status');
+
+            if (!is_array($ids) || empty($ids)) {
+                return $this->error('用户ID列表不能为空', 400);
+            }
+            if (!in_array($status, [0, 1, 2], true)) {
+                return $this->error('状态值无效，必须是0(禁用)、1(正常)或2(待验证)', 400);
+            }
+
+            $userIds = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $value): bool => $value > 0)));
+            if (empty($userIds)) {
+                return $this->error('用户ID列表无效', 400);
+            }
+
+            $existingCount = User::whereIn('id', $userIds)->count();
+            if ($existingCount === 0) {
+                return $this->error('未找到可更新的用户', 404);
+            }
+
+            User::whereIn('id', $userIds)->update(['status' => $status]);
+
+            $this->logOperation('batch_update_status', 'user', [
+                'detail' => '批量更新用户状态为: ' . $status,
+                'after_data' => [
+                    'user_ids' => $userIds,
+                    'status' => $status,
+                    'matched_count' => $existingCount,
+                ],
+            ]);
+
+            return $this->success([
+                'updated_count' => $existingCount,
+                'status' => $status,
+                'user_ids' => $userIds,
+            ], '批量操作成功');
+        } catch (\Throwable $e) {
+            Log::error('批量更新用户状态失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('批量操作失败，请稍后重试', 500);
+        }
+    }
+
+
+    /**
      * 获取八字记录列表
      */
     public function baziRecords(Request $request)
@@ -2795,26 +2850,58 @@ class Admin extends BaseController
         try {
             $params = $request->get();
             $query = User::order('id', 'desc');
+            $username = trim((string) ($params['username'] ?? ($params['keyword'] ?? '')));
+            $phone = trim((string) ($params['phone'] ?? ''));
+            $status = $params['status'] ?? '';
+            $dateRange = $params['dateRange'] ?? [];
+            $startDate = trim((string) ($params['startDate'] ?? ((is_array($dateRange) && isset($dateRange[0])) ? $dateRange[0] : '')));
+            $endDate = trim((string) ($params['endDate'] ?? ((is_array($dateRange) && isset($dateRange[1])) ? $dateRange[1] : '')));
+            $params['keyword'] = $username;
+            if ($username !== '') {
+                $safeUsername = preg_replace('/[%_\\]/', '', $username) ?: '';
+                $query->whereLike('username|nickname', '%' . $safeUsername . '%');
+                $username = '';
+            }
+            if ($phone !== '') {
+                $safePhone = preg_replace('/[%_\\]/', '', $phone) ?: '';
+                $query->whereLike('phone', '%' . $safePhone . '%');
+            }
+
+
+
 
             // 搜索条件
-            if (!empty($params['keyword'])) {
+            if ($username !== '') {
+
                 // 使用参数绑定防止SQL注入
                 $keyword = preg_replace('/[%_\\\\]/', '', $params['keyword']);
                 $query->whereLike('nickname|phone', '%' . $keyword . '%');
             }
 
             // 状态筛选
-            if (isset($params['status']) && $params['status'] !== '') {
-                $query->where('status', (int)$params['status']);
+            if ($status !== '') {
+                $status = (int) $status;
+                if (!in_array($status, [0, 1, 2], true)) {
+                    return $this->error('用户状态参数无效', 400);
+                }
+                $query->where('status', $status);
             }
 
+
             // 时间范围
-            if (!empty($params['startDate'])) {
-                $query->where('created_at', '>=', $params['startDate']);
+            if ($startDate !== '') {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) !== 1) {
+                    return $this->error('开始日期格式无效', 400);
+                }
+                $query->where('created_at', '>=', $startDate . ' 00:00:00');
             }
-            if (!empty($params['endDate'])) {
-                $query->where('created_at', '<=', $params['endDate'] . ' 23:59:59');
+            if ($endDate !== '') {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) !== 1) {
+                    return $this->error('结束日期格式无效', 400);
+                }
+                $query->where('created_at', '<=', $endDate . ' 23:59:59');
             }
+
 
             $users = $query->select()->toArray();
 
@@ -2825,13 +2912,15 @@ class Admin extends BaseController
             foreach ($users as $user) {
                 $row = [
                     $user['id'],
-                    $this->escapeCsv($user['nickname'] ?? ''),
+                    $this->escapeCsv((string) ($user['nickname'] ?? '')),
+
                     $user['phone'] ?? '',
                     $user['points'] ?? 0,
                     $user['vip_level'] ?? 0,
-                    $user['status'] == 1 ? '正常' : ($user['status'] == 0 ? '禁用' : '未知'),
+                    (int) ($user['status'] ?? 0) === 1 ? '正常' : ((int) ($user['status'] ?? 0) === 0 ? '禁用' : '待验证'),
                     $user['created_at'] ?? '',
-                    $user['last_active'] ?? ''
+                    $user['last_login_at'] ?? ''
+
                 ];
                 $csv .= implode(',', $row) . "\n";
             }

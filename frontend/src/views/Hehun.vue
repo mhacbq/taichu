@@ -52,7 +52,7 @@
           </div>
           
           <div class="suggestion-box">
-            <h4><el-icon><Lightbulb /></el-icon> 建议</h4>
+            <h4><el-icon><Collection /></el-icon> 建议</h4>
             <p>{{ freeResult.hehun.suggestions[0] }}</p>
           </div>
           
@@ -254,7 +254,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
-import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu, Lightbulb } from '@element-plus/icons-vue'
+import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 
 /**
@@ -895,7 +895,7 @@ onMounted(() => {
 }
 
 .points-tag {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--white-20);
   padding: 4px 10px;
   border-radius: var(--radius-xl);
   font-size: 12px;
@@ -1151,7 +1151,7 @@ onMounted(() => {
   
   .main-score {
     border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--white-10);
     padding-bottom: 24px;
   }
   

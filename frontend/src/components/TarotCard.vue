@@ -38,7 +38,7 @@
           <div class="back-border-outer"></div>
           <div class="back-border-inner"></div>
           <div class="center-emblem">
-            <el-icon class="center-icon"><YinYang /></el-icon>
+            <el-icon class="center-icon"><MagicStick /></el-icon>
           </div>
           <!-- Mandala style corners -->
           <div class="mandala-corner tl"></div>
@@ -53,7 +53,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { YinYang } from '@element-plus/icons-vue'
+import { MagicStick } from '@element-plus/icons-vue'
 
 const props = defineProps({
   name: String,
@@ -162,8 +162,8 @@ const frontStyle = computed(() => ({
   font-size: 11px;
   padding: 2px 10px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--white-05);
+  border: 1px solid var(--white-10);
   color: var(--text-secondary);
 }
 
@@ -189,7 +189,7 @@ const frontStyle = computed(() => ({
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-03);
   border: 1px solid rgba(212, 175, 55, 0.2);
   display: flex;
   align-items: center;

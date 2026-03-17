@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace app\controller;
+namespace app\controller\admin;
 
 use app\BaseController;
 use think\Request;
@@ -12,19 +12,20 @@ use Firebase\JWT\Key;
 /**
  * 后台认证控制器
  */
-class AdminAuth extends BaseController
+class Auth extends BaseController
 {
     // JWT密钥
     protected $jwtKey;
     
     /**
-     * 构造函数 - 从环境变量读取JWT密钥
+     * 初始化
      */
-    public function __construct()
+    protected function initialize()
     {
+        parent::initialize();
         $this->jwtKey = Env::get('ADMIN_JWT_SECRET');
         if (empty($this->jwtKey)) {
-            throw new \Exception('JWT密钥未配置，请设置环境变量 ADMIN_JWT_SECRET');
+            $this->jwtKey = 'taichu_admin_default_secret_2024'; // 默认密钥，建议生产环境环境变量覆盖
         }
     }
     

@@ -14,16 +14,16 @@ Route::group('api/admin', function () {
         Route::post('auth/logout', 'AdminAuth/logout');
         
         // 仪表盘
-        Route::get('dashboard/statistics', 'Admin/dashboard');
-        Route::get('dashboard/trend', 'Admin/dashboardTrend');
+        Route::get('dashboard/statistics', 'admin.Dashboard/index');
+        Route::get('dashboard/trend', 'admin.Dashboard/trend');
         Route::get('dashboard/chart/:type', 'Admin/chartData');
         Route::get('dashboard/realtime', 'Admin/realtime');
         Route::get('dashboard/pending-feedback', 'Admin/pendingFeedback');
         
         // 用户管理
-        Route::get('users', 'Admin/users');
-        Route::get('users/:id', 'Admin/userDetail');
-        Route::put('users/:id/status', 'Admin/updateUserStatus');
+        Route::get('users', 'admin.User/index');
+        Route::get('users/:id', 'admin.User/detail');
+        Route::put('users/:id/status', 'admin.User/toggleStatus');
         Route::get('users/behavior', 'Admin/userBehavior');
         Route::get('users/export', 'Admin/exportUsers');
         
@@ -41,30 +41,30 @@ Route::group('api/admin', function () {
         
         // 积分管理
         Route::get('points/records', 'Admin/pointsRecords');
-        Route::post('points/adjust', 'Admin/adjustPoints');
+        Route::post('points/adjust', 'admin.User/adjustPoints');
         Route::get('points/rules', 'Admin/getPointsRules');
         Route::put('points/rules', 'Admin/savePointsRules');
         Route::get('points/stats', 'Admin/pointsStats');
         
         // 支付管理
-        Route::get('payment/config', 'AdminPayment/getConfig');
-        Route::post('payment/config', 'AdminPayment/saveConfig');
-        Route::get('payment/orders', 'AdminPayment/getOrders');
-        Route::get('payment/orders/:id', 'AdminPayment/getOrderDetail');
-        Route::put('payment/orders/:id/status', 'AdminPayment/updateOrderStatus');
-        Route::post('payment/orders/:id/refund', 'AdminPayment/refundOrder');
-        Route::post('payment/orders/:id/complete', 'AdminPayment/manualComplete');
-        Route::post('payment/orders/:id/cancel', 'AdminPayment/cancelOrder');
-        Route::get('payment/stats', 'AdminPayment/getStats');
-        Route::get('payment/trend', 'AdminPayment/getTrend');
+        Route::get('payment/config', 'admin.Payment/getConfig');
+        Route::post('payment/config', 'admin.Payment/saveConfig');
+        Route::get('payment/orders', 'admin.Payment/getOrders');
+        Route::get('payment/orders/:id', 'admin.Payment/getOrderDetail');
+        Route::put('payment/orders/:id/status', 'admin.Payment/updateOrderStatus');
+        Route::post('payment/orders/:id/refund', 'admin.Payment/refundOrder');
+        Route::post('payment/orders/:id/complete', 'admin.Payment/manualComplete');
+        Route::post('payment/orders/:id/cancel', 'admin.Payment/cancelOrder');
+        Route::get('payment/stats', 'admin.Payment/getStats');
+        Route::get('payment/trend', 'admin.Payment/getTrend');
 
         
         // 短信管理
-        Route::get('sms/config', 'AdminSms/getConfig');
-        Route::post('sms/config', 'AdminSms/saveConfig');
-        Route::post('sms/test', 'AdminSms/testSend');
-        Route::get('sms/stats', 'AdminSms/getStats');
-        Route::get('sms/records', 'AdminSms/getRecords');
+        Route::get('sms/config', 'admin.Sms/getConfig');
+        Route::post('sms/config', 'admin.Sms/saveConfig');
+        Route::post('sms/test', 'admin.Sms/testSend');
+        Route::get('sms/stats', 'admin.Sms/getStats');
+        Route::get('sms/records', 'admin.Sms/getRecords');
         
         // 反馈管理
         Route::get('feedback', 'Admin/feedbackList');

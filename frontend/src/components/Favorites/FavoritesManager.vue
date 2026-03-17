@@ -191,7 +191,7 @@ const favorites = ref([
   {
     id: '2',
     type: 'tarot',
-    icon: 'Magic',
+    icon: 'MagicStick',
     color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     title: '塔罗占卜 - 事业发展',
     description: '太阳正位，事业光明前景，把握机遇',

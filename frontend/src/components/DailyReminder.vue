@@ -243,13 +243,13 @@ export default {
 
 .reminder-desc {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   line-height: 1.6;
   margin: 0 0 24px;
 }
 
 .reminder-fortune {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 24px;
@@ -265,7 +265,7 @@ export default {
 
 .fortune-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
 }
 
 .fortune-stars {
@@ -275,12 +275,12 @@ export default {
 
 .star-icon {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--white-30);
   transition: color 0.3s;
 }
 
 .star-icon.active {
-  color: #fbbf24;
+  color: var(--star-color);
   text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
 }
 
@@ -296,7 +296,7 @@ export default {
   padding: 6px 12px;
   background: rgba(139, 92, 246, 0.3);
   border-radius: 20px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--white-90);
 }
 
 .reminder-actions {
@@ -332,11 +332,11 @@ export default {
 
 .btn-text {
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .btn-text:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--white-90);
 }
 
 .btn-icon {
@@ -352,9 +352,9 @@ export default {
   height: 32px;
   padding: 0;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -363,7 +363,7 @@ export default {
 }
 
 .reminder-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--white-20);
   color: white;
 }
 
