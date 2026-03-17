@@ -6,8 +6,10 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\service\AdminStatsService;
+use app\service\SchemaInspector;
 use think\Request;
 use think\facade\Db;
+
 
 /**
  * 后台用户管理控制器
@@ -52,24 +54,35 @@ class User extends BaseController
             }
 
             $userData = $user->toArray();
-            $pointsRecords = \app\model\PointsRecord::where('user_id', $id)
-                ->order('created_at', 'desc')
-                ->limit(20)
-                ->select()
-                ->toArray();
-
-            $baziCount = \app\model\BaziRecord::where('user_id', $id)->count();
-            $tarotCount = \app\model\TarotRecord::where('user_id', $id)->count();
-            $liuyaoCount = $this->tableExists('tc_liuyao_record')
-                ? Db::table('tc_liuyao_record')->where('user_id', $id)->count()
-                : 0;
-            $vipOrders = $this->tableExists('tc_vip_order')
-                ? Db::table('tc_vip_order')->where('user_id', $id)->order('created_at', 'desc')->limit(10)->select()->toArray()
+            $pointsRecords = SchemaInspector::tableExists('tc_points_record')
+                ? \app\model\PointsRecord::where('user_id', $id)
+                    ->order('created_at', 'desc')
+                    ->limit(20)
+                    ->select()
+                    ->toArray()
                 : [];
-            $rechargeOrders = $this->tableExists('tc_recharge_order')
-                ? Db::table('tc_recharge_order')->where('user_id', $id)->order('created_at', 'desc')->limit(10)->select()->toArray()
+
+            $liuyaoTable = $this->resolveFirstExistingTable(['tc_liuyao_record', 'liuyao_records']);
+            $vipOrderTable = $this->resolveFirstExistingTable(['tc_vip_order', 'vip_orders']);
+            $rechargeOrderTable = $this->resolveFirstExistingTable(['tc_recharge_order']);
+
+            $baziCount = SchemaInspector::tableExists('tc_bazi_record')
+                ? \app\model\BaziRecord::where('user_id', $id)->count()
+                : 0;
+            $tarotCount = SchemaInspector::tableExists('tc_tarot_record')
+                ? \app\model\TarotRecord::where('user_id', $id)->count()
+                : 0;
+            $liuyaoCount = $liuyaoTable !== null
+                ? Db::table($liuyaoTable)->where('user_id', $id)->count()
+                : 0;
+            $vipOrders = $vipOrderTable !== null
+                ? Db::table($vipOrderTable)->where('user_id', $id)->order('created_at', 'desc')->limit(10)->select()->toArray()
+                : [];
+            $rechargeOrders = $rechargeOrderTable !== null
+                ? Db::table($rechargeOrderTable)->where('user_id', $id)->order('created_at', 'desc')->limit(10)->select()->toArray()
                 : [];
             $canAdjustPoints = $this->hasAdminPermission('points_adjust');
+
 
             $stats = [
                 'bazi_count' => $baziCount,
@@ -292,11 +305,16 @@ class User extends BaseController
     }
 
     /**
-     * 判断数据表是否存在
+     * 返回首个存在的数据表名
      */
-    protected function tableExists(string $table): bool
+    protected function resolveFirstExistingTable(array $tables): ?string
     {
-        $escapedTable = addslashes($table);
-        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
+        foreach ($tables as $table) {
+            if (SchemaInspector::tableExists((string) $table)) {
+                return (string) $table;
+            }
+        }
+
+        return null;
     }
 }

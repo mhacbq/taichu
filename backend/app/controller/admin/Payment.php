@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\PaymentConfig;
 use app\model\RechargeOrder;
 use app\model\User;
+use app\service\SchemaInspector;
 use app\service\WechatPayService;
 use think\Request;
 use think\facade\Db;
@@ -589,45 +590,54 @@ class Payment extends BaseController
         }
 
         $params = $this->request->get();
+        $startDate = trim((string) ($params['start_date'] ?? date('Y-m-01')));
+        $endDate = trim((string) ($params['end_date'] ?? date('Y-m-d')));
 
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
-        
-        $totalAmount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
-            ->where('pay_time', '>=', $startDate . ' 00:00:00')
-            ->where('pay_time', '<=', $endDate . ' 23:59:59')
-            ->sum('amount');
-        
-        $totalPoints = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
-            ->where('pay_time', '>=', $startDate . ' 00:00:00')
-            ->where('pay_time', '<=', $endDate . ' 23:59:59')
-            ->sum('points');
-        
-        $orderCount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
-            ->where('pay_time', '>=', $startDate . ' 00:00:00')
-            ->where('pay_time', '<=', $endDate . ' 23:59:59')
-            ->count();
-        
-        $userCount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
-            ->where('pay_time', '>=', $startDate . ' 00:00:00')
-            ->where('pay_time', '<=', $endDate . ' 23:59:59')
-            ->distinct('user_id')
-            ->count();
-        
-        $pendingCount = RechargeOrder::where('status', RechargeOrder::STATUS_PENDING)
-            ->where('created_at', '>=', $startDate . ' 00:00:00')
-            ->where('created_at', '<=', $endDate . ' 23:59:59')
-            ->count();
-        
-        return $this->success([
-            'total_amount' => round($totalAmount, 2),
-            'total_points' => (int) $totalPoints,
-            'order_count' => $orderCount,
-            'user_count' => $userCount,
-            'pending_count' => $pendingCount,
-            'avg_amount' => $orderCount > 0 ? round($totalAmount / $orderCount, 2) : 0,
-        ]);
+        if (!$this->isDateOnly($startDate)) {
+            return $this->error('开始日期格式无效');
+        }
+        if (!$this->isDateOnly($endDate)) {
+            return $this->error('结束日期格式无效');
+        }
+        if ($startDate > $endDate) {
+            return $this->error('开始日期不能晚于结束日期');
+        }
+
+        try {
+            $paidBaseQuery = Db::table('tc_recharge_order')
+                ->where('pay_time', '>=', $startDate . ' 00:00:00')
+                ->where('pay_time', '<=', $endDate . ' 23:59:59');
+            $this->applyRechargeOrderStatusFilter($paidBaseQuery, 'paid');
+
+            $totalAmount = (float) ((clone $paidBaseQuery)->sum('amount') ?? 0);
+            $totalPoints = (int) ((clone $paidBaseQuery)->sum('points') ?? 0);
+            $orderCount = (int) (clone $paidBaseQuery)->count();
+            $userCount = (int) (clone $paidBaseQuery)
+                ->distinct(true)
+                ->count('user_id');
+
+            $pendingBaseQuery = Db::table('tc_recharge_order')
+                ->where('created_at', '>=', $startDate . ' 00:00:00')
+                ->where('created_at', '<=', $endDate . ' 23:59:59');
+            $this->applyRechargeOrderStatusFilter($pendingBaseQuery, 'pending');
+            $pendingCount = (int) $pendingBaseQuery->count();
+
+            return $this->success([
+                'total_amount' => round($totalAmount, 2),
+                'total_points' => $totalPoints,
+                'order_count' => $orderCount,
+                'user_count' => $userCount,
+                'pending_count' => $pendingCount,
+                'avg_amount' => $orderCount > 0 ? round($totalAmount / $orderCount, 2) : 0,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('admin_payment_stats', $e, '获取充值统计失败，请稍后重试', [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]);
+        }
     }
+
     
     /**
      * 获取近7天充值趋势
@@ -640,27 +650,25 @@ class Payment extends BaseController
 
         $days = 7;
         $data = [];
-        
+
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-{$i} days"));
-            
-            $amount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
+
+            $baseQuery = Db::table('tc_recharge_order')
                 ->where('pay_time', '>=', $date . ' 00:00:00')
-                ->where('pay_time', '<=', $date . ' 23:59:59')
-                ->sum('amount');
-            
-            $count = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
-                ->where('pay_time', '>=', $date . ' 00:00:00')
-                ->where('pay_time', '<=', $date . ' 23:59:59')
-                ->count();
-            
+                ->where('pay_time', '<=', $date . ' 23:59:59');
+            $this->applyRechargeOrderStatusFilter($baseQuery, 'paid');
+
+            $amount = (float) ((clone $baseQuery)->sum('amount') ?? 0);
+            $count = (int) (clone $baseQuery)->count();
+
             $data[] = [
                 'date' => $date,
                 'amount' => round($amount, 2),
                 'count' => $count,
             ];
         }
-        
+
         return $this->success($data);
     }
 
@@ -915,6 +923,39 @@ class Payment extends BaseController
         }
     }
 
+
+    /**
+     * 统一应用充值订单状态筛选，兼容 status / pay_status 两套字段
+     */
+    protected function applyRechargeOrderStatusFilter($query, string $status): void
+    {
+        $columns = SchemaInspector::getTableColumns('tc_recharge_order');
+        if (isset($columns['status'])) {
+            $statusMap = [
+                'pending' => RechargeOrder::STATUS_PENDING,
+                'paid' => RechargeOrder::STATUS_PAID,
+                'cancelled' => RechargeOrder::STATUS_CANCELLED,
+                'refunded' => RechargeOrder::STATUS_REFUNDED,
+            ];
+            $query->where('status', $statusMap[$status] ?? $status);
+            return;
+        }
+
+        if (isset($columns['pay_status'])) {
+            $statusMap = [
+                'pending' => 0,
+                'paid' => 1,
+                'cancelled' => 2,
+                'refunded' => 3,
+            ];
+            $query->where('pay_status', $statusMap[$status] ?? 0);
+            return;
+        }
+
+        if ($status === 'paid') {
+            $query->whereNotNull('pay_time');
+        }
+    }
 
     /**
      * 校验 YYYY-MM-DD 日期

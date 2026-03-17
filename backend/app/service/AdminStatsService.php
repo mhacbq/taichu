@@ -13,10 +13,10 @@ use think\facade\Log;
 class AdminStatsService
 {
     protected static array $tableColumnCache = [];
+    protected static array $resolvedTableCache = [];
+
     /**
      * 获取Dashboard统计数据
-     * 
-     * @return array
      */
     public static function getDashboardStats(): array
     {
@@ -50,51 +50,54 @@ class AdminStatsService
      */
     private static function getOverviewStats(string $today, string $yesterday): array
     {
-        // 今日数据
-        $todayStats = Db::table('site_daily_stats')
-            ->where('stat_date', $today)
-            ->find();
-        
-        // 昨日数据
-        $yesterdayStats = Db::table('site_daily_stats')
-            ->where('stat_date', $yesterday)
-            ->find();
-        
-        // 累计数据
-        $totalUsers = Db::table('tc_user')->where('status', 1)->count();
-        $totalPoints = Db::table('tc_user')->sum('points');
-        
+        $todayStats = self::getDailyStatsSnapshot($today);
+        $yesterdayStats = self::getDailyStatsSnapshot($yesterday);
+
+        $totalUsers = 0;
+        $totalPoints = 0;
+        if (self::tableExists('tc_user')) {
+            $totalUserQuery = Db::table('tc_user');
+            if (self::tableHasColumn('tc_user', 'status')) {
+                $totalUserQuery->where('status', 1);
+            }
+            $totalUsers = (int) $totalUserQuery->count();
+
+            if (self::tableHasColumn('tc_user', 'points')) {
+                $totalPoints = (int) (Db::table('tc_user')->sum('points') ?? 0);
+            }
+        }
+
         return [
             'today_revenue' => [
-                'value' => $todayStats['paid_amount'] ?? 0,
-                'yesterday' => $yesterdayStats['paid_amount'] ?? 0,
+                'value' => (float) ($todayStats['paid_amount'] ?? 0),
+                'yesterday' => (float) ($yesterdayStats['paid_amount'] ?? 0),
                 'change' => self::calculateChange(
-                    $todayStats['paid_amount'] ?? 0,
-                    $yesterdayStats['paid_amount'] ?? 0
+                    (float) ($todayStats['paid_amount'] ?? 0),
+                    (float) ($yesterdayStats['paid_amount'] ?? 0)
                 ),
             ],
             'today_orders' => [
-                'value' => $todayStats['paid_count'] ?? 0,
-                'yesterday' => $yesterdayStats['paid_count'] ?? 0,
+                'value' => (int) ($todayStats['paid_count'] ?? 0),
+                'yesterday' => (int) ($yesterdayStats['paid_count'] ?? 0),
                 'change' => self::calculateChange(
-                    $todayStats['paid_count'] ?? 0,
-                    $yesterdayStats['paid_count'] ?? 0
+                    (float) ($todayStats['paid_count'] ?? 0),
+                    (float) ($yesterdayStats['paid_count'] ?? 0)
                 ),
             ],
             'new_users' => [
-                'value' => $todayStats['new_users'] ?? 0,
-                'yesterday' => $yesterdayStats['new_users'] ?? 0,
+                'value' => (int) ($todayStats['new_users'] ?? 0),
+                'yesterday' => (int) ($yesterdayStats['new_users'] ?? 0),
                 'change' => self::calculateChange(
-                    $todayStats['new_users'] ?? 0,
-                    $yesterdayStats['new_users'] ?? 0
+                    (float) ($todayStats['new_users'] ?? 0),
+                    (float) ($yesterdayStats['new_users'] ?? 0)
                 ),
             ],
             'active_users' => [
-                'value' => $todayStats['active_users'] ?? 0,
-                'yesterday' => $yesterdayStats['active_users'] ?? 0,
+                'value' => (int) ($todayStats['active_users'] ?? 0),
+                'yesterday' => (int) ($yesterdayStats['active_users'] ?? 0),
                 'change' => self::calculateChange(
-                    $todayStats['active_users'] ?? 0,
-                    $yesterdayStats['active_users'] ?? 0
+                    (float) ($todayStats['active_users'] ?? 0),
+                    (float) ($yesterdayStats['active_users'] ?? 0)
                 ),
             ],
             'total_users' => $totalUsers,
@@ -107,28 +110,39 @@ class AdminStatsService
      */
     private static function getUserStats(string $today, string $thisMonth): array
     {
-        // 本月新增
-        $monthNewUsers = Db::table('tc_user')
-            ->whereLike('created_at', $thisMonth . '%')
-            ->count();
-        
-        // 用户来源统计（如果有来源字段）
-        $userSources = Db::table('tc_user')
-            ->field('source, COUNT(*) as count')
-            ->group('source')
-            ->select();
-        
-        // VIP用户统计
-        $vipUsers = Db::table('tc_user_vip')
-            ->where('status', 1)
-            ->where('end_time', '>', date('Y-m-d H:i:s'))
-            ->count();
-        
+        $monthNewUsers = self::tableExists('tc_user')
+            ? (int) Db::table('tc_user')->whereLike('created_at', $thisMonth . '%')->count()
+            : 0;
+
+        $userSources = [];
+        if (self::tableHasColumn('tc_user', 'source')) {
+            $userSources = Db::table('tc_user')
+                ->field('source, COUNT(*) as count')
+                ->group('source')
+                ->select()
+                ->toArray();
+        }
+
+        $vipUsers = 0;
+        $vipTable = self::resolveVipUserTable();
+        if ($vipTable !== null) {
+            $vipQuery = Db::table($vipTable);
+            if (self::tableHasColumn($vipTable, 'status')) {
+                $vipQuery->where('status', 1);
+            } elseif (self::tableHasColumn($vipTable, 'is_active')) {
+                $vipQuery->where('is_active', 1);
+            }
+            if (self::tableHasColumn($vipTable, 'end_time')) {
+                $vipQuery->where('end_time', '>', date('Y-m-d H:i:s'));
+            }
+            $vipUsers = (int) $vipQuery->count();
+        }
+
+        $todayStats = self::getDailyStatsSnapshot($today);
+
         return [
-            'total' => Db::table('tc_user')->count(),
-            'today_new' => Db::table('site_daily_stats')
-                ->where('stat_date', $today)
-                ->value('new_users') ?? 0,
+            'total' => self::tableExists('tc_user') ? (int) Db::table('tc_user')->count() : 0,
+            'today_new' => (int) ($todayStats['new_users'] ?? 0),
             'month_new' => $monthNewUsers,
             'vip_users' => $vipUsers,
             'sources' => $userSources,
@@ -140,32 +154,28 @@ class AdminStatsService
      */
     private static function getOrderStats(string $today, string $thisMonth): array
     {
-        // 今日订单
-        $todayStats = Db::table('site_daily_stats')
-            ->where('stat_date', $today)
-            ->find();
-        
-        // 本月订单
-        $monthStats = Db::table('site_daily_stats')
-            ->whereLike('stat_date', $thisMonth . '%')
-            ->field('SUM(order_count) as total_orders, SUM(paid_amount) as total_amount')
-            ->find();
-        
-        // 订单状态分布
-        $statusDistribution = Db::table('tc_vip_order')
-            ->field('status, COUNT(*) as count')
-            ->group('status')
-            ->select();
-        
+        $todayStats = self::getDailyStatsSnapshot($today);
+        $monthStats = self::getMonthlyOrderStats($thisMonth);
+
+        $statusDistribution = [];
+        $vipOrderTable = self::resolveVipOrderTable();
+        if ($vipOrderTable !== null && self::tableHasColumn($vipOrderTable, 'status')) {
+            $statusDistribution = Db::table($vipOrderTable)
+                ->field('status, COUNT(*) as count')
+                ->group('status')
+                ->select()
+                ->toArray();
+        }
+
         return [
             'today' => [
-                'total' => $todayStats['order_count'] ?? 0,
-                'paid' => $todayStats['paid_count'] ?? 0,
-                'amount' => $todayStats['paid_amount'] ?? 0,
+                'total' => (int) ($todayStats['order_count'] ?? 0),
+                'paid' => (int) ($todayStats['paid_count'] ?? 0),
+                'amount' => (float) ($todayStats['paid_amount'] ?? 0),
             ],
             'month' => [
-                'total' => $monthStats['total_orders'] ?? 0,
-                'amount' => $monthStats['total_amount'] ?? 0,
+                'total' => (int) ($monthStats['total_orders'] ?? 0),
+                'amount' => (float) ($monthStats['total_amount'] ?? 0),
             ],
             'status_distribution' => $statusDistribution,
         ];
@@ -176,33 +186,21 @@ class AdminStatsService
      */
     private static function getDivinationStats(string $today): array
     {
-        $stats = Db::table('site_daily_stats')
-            ->where('stat_date', $today)
-            ->find();
-        
-        // 各类型占卜总数
-        $totalStats = Db::table('site_daily_stats')
-            ->field([
-                'SUM(bazi_count) as total_bazi',
-                'SUM(tarot_count) as total_tarot',
-                'SUM(liuyao_count) as total_liuyao',
-                'SUM(hehun_count) as total_hehun',
-            ])
-            ->find();
-        
+        $todayStats = self::getDailyStatsSnapshot($today);
+
         return [
             'today' => [
-                'bazi' => $stats['bazi_count'] ?? 0,
-                'tarot' => $stats['tarot_count'] ?? 0,
-                'liuyao' => $stats['liuyao_count'] ?? 0,
-                'hehun' => $stats['hehun_count'] ?? 0,
-                'daily_fortune' => $stats['daily_fortune_count'] ?? 0,
+                'bazi' => (int) ($todayStats['bazi_count'] ?? 0),
+                'tarot' => (int) ($todayStats['tarot_count'] ?? 0),
+                'liuyao' => (int) ($todayStats['liuyao_count'] ?? 0),
+                'hehun' => (int) ($todayStats['hehun_count'] ?? 0),
+                'daily_fortune' => (int) ($todayStats['daily_fortune_count'] ?? 0),
             ],
             'total' => [
-                'bazi' => $totalStats['total_bazi'] ?? 0,
-                'tarot' => $totalStats['total_tarot'] ?? 0,
-                'liuyao' => $totalStats['total_liuyao'] ?? 0,
-                'hehun' => $totalStats['total_hehun'] ?? 0,
+                'bazi' => self::countAllRows('tc_bazi_record'),
+                'tarot' => self::countAllRows('tc_tarot_record'),
+                'liuyao' => self::countAllRows(self::resolveLiuyaoRecordTable()),
+                'hehun' => self::countAllRows('hehun_records'),
             ],
         ];
     }
@@ -212,24 +210,29 @@ class AdminStatsService
      */
     private static function getPointsStats(string $today): array
     {
-        $stats = Db::table('site_daily_stats')
-            ->where('stat_date', $today)
-            ->find();
-        
-        // 积分消耗排行（按用户）
-        $topConsumers = Db::table('tc_points_record')
-            ->where('type', 'consume')
-            ->whereLike('created_at', $today . '%')
-            ->field('user_id, SUM(points) as total_points')
-            ->group('user_id')
-            ->order('total_points', 'DESC')
-            ->limit(10)
-            ->select();
-        
+        $stats = self::getDailyStatsSnapshot($today);
+        $topConsumers = [];
+
+        if (self::tableExists('tc_points_record')
+            && self::tableHasColumn('tc_points_record', 'type')
+            && self::tableHasColumn('tc_points_record', 'created_at')
+            && self::tableHasColumn('tc_points_record', 'user_id')
+            && self::tableHasColumn('tc_points_record', 'points')) {
+            $topConsumers = Db::table('tc_points_record')
+                ->where('type', 'consume')
+                ->whereLike('created_at', $today . '%')
+                ->field('user_id, SUM(points) as total_points')
+                ->group('user_id')
+                ->order('total_points', 'DESC')
+                ->limit(10)
+                ->select()
+                ->toArray();
+        }
+
         return [
-            'today_given' => $stats['points_given'] ?? 0,
-            'today_consumed' => $stats['points_consumed'] ?? 0,
-            'balance' => $stats['points_balance'] ?? 0,
+            'today_given' => (int) ($stats['points_given'] ?? 0),
+            'today_consumed' => (int) ($stats['points_consumed'] ?? 0),
+            'balance' => (int) ($stats['points_balance'] ?? 0),
             'top_consumers' => $topConsumers,
         ];
     }
@@ -242,11 +245,7 @@ class AdminStatsService
         $days = max(1, min(90, $days));
         $endDate = date('Y-m-d');
         $startDate = date('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
-
-        $trend = Db::table('site_daily_stats')
-            ->whereBetween('stat_date', [$startDate, $endDate])
-            ->order('stat_date', 'ASC')
-            ->column('*', 'stat_date');
+        $storedTrend = self::buildStoredTrendMap($startDate, $endDate);
 
         $dates = [];
         $revenue = [];
@@ -261,7 +260,7 @@ class AdminStatsService
             $date = date('Y-m-d', strtotime('-' . $i . ' days'));
             $dates[] = date('m-d', strtotime($date));
 
-            $dayStats = $trend[$date] ?? [];
+            $dayStats = $storedTrend[$date] ?? self::buildLiveDailyStats($date);
             $paidAmount = (float) ($dayStats['paid_amount'] ?? 0);
             $paidCount = (int) ($dayStats['paid_count'] ?? 0);
             $dayNewUsers = (int) ($dayStats['new_users'] ?? 0);
@@ -307,6 +306,333 @@ class AdminStatsService
     }
 
     /**
+     * 读取已落库的日统计数据
+     */
+    private static function buildStoredTrendMap(string $startDate, string $endDate): array
+    {
+        if (!self::tableExists('site_daily_stats')) {
+            return [];
+        }
+
+        $rows = Db::table('site_daily_stats')
+            ->whereBetween('stat_date', [$startDate, $endDate])
+            ->order('stat_date', 'ASC')
+            ->select()
+            ->toArray();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $statDate = (string) ($row['stat_date'] ?? '');
+            if ($statDate === '') {
+                continue;
+            }
+
+            $result[$statDate] = $row;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 获取月度订单统计
+     */
+    private static function getMonthlyOrderStats(string $thisMonth): array
+    {
+        if (self::tableExists('site_daily_stats')) {
+            $monthStats = Db::table('site_daily_stats')
+                ->whereLike('stat_date', $thisMonth . '%')
+                ->field('SUM(order_count) as total_orders, SUM(paid_amount) as total_amount')
+                ->find() ?: [];
+
+            return [
+                'total_orders' => (int) ($monthStats['total_orders'] ?? 0),
+                'total_amount' => (float) ($monthStats['total_amount'] ?? 0),
+            ];
+        }
+
+        $orderTable = self::resolveRechargeOrderTable();
+        if ($orderTable === null) {
+            return ['total_orders' => 0, 'total_amount' => 0];
+        }
+
+        $paidAmount = 0;
+        if (self::tableHasColumn($orderTable, 'pay_time')) {
+            $paidAmountQuery = Db::table($orderTable)
+                ->whereLike('pay_time', $thisMonth . '%');
+
+            foreach (self::getRechargePaidConditions($orderTable) as $condition) {
+                [$field, $operator, $value] = $condition;
+                $paidAmountQuery->where($field, $operator, $value);
+            }
+
+            $paidAmount = (float) ($paidAmountQuery->sum('amount') ?? 0);
+        }
+
+        return [
+            'total_orders' => (int) Db::table($orderTable)->whereLike('created_at', $thisMonth . '%')->count(),
+            'total_amount' => $paidAmount,
+        ];
+    }
+
+    /**
+     * 获取指定日期的统计快照
+     */
+    private static function getDailyStatsSnapshot(string $date): array
+    {
+        if (self::tableExists('site_daily_stats')) {
+            $stats = Db::table('site_daily_stats')
+                ->where('stat_date', $date)
+                ->find();
+            if (is_array($stats) && !empty($stats)) {
+                return $stats;
+            }
+        }
+
+        return self::buildLiveDailyStats($date);
+    }
+
+    /**
+     * 根据当前业务表实时构建某天的统计数据
+     */
+    private static function buildLiveDailyStats(string $date): array
+    {
+        $rechargeOrderTable = self::resolveRechargeOrderTable();
+        $refundTimeField = $rechargeOrderTable !== null && self::tableHasColumn($rechargeOrderTable, 'refund_time')
+            ? 'refund_time'
+            : null;
+        $paidConditions = self::getRechargePaidConditions($rechargeOrderTable);
+        $refundConditions = self::getRechargeRefundConditions($rechargeOrderTable);
+
+        $orderCount = self::countRowsByDate($rechargeOrderTable, 'created_at', $date);
+        $orderAmount = self::sumFieldByDate($rechargeOrderTable, 'created_at', $date, 'amount');
+        $paidCount = self::countRowsByDate($rechargeOrderTable, 'pay_time', $date, $paidConditions);
+        $paidAmount = self::sumFieldByDate($rechargeOrderTable, 'pay_time', $date, 'amount', $paidConditions);
+        $refundCount = $refundTimeField !== null
+            ? self::countRowsByDate($rechargeOrderTable, $refundTimeField, $date, $refundConditions)
+            : 0;
+        $refundAmount = $refundTimeField !== null
+            ? self::sumFieldByDate($rechargeOrderTable, $refundTimeField, $date, 'refund_amount', $refundConditions)
+            : 0;
+
+        return [
+            'stat_date' => $date,
+            'new_users' => self::countRowsByDate('tc_user', 'created_at', $date),
+            'active_users' => self::countRowsByDate('tc_user', 'last_login_at', $date),
+            'total_users' => self::countAllRows('tc_user'),
+            'points_given' => self::sumPointsByTypeAndDate($date, ['income', 'recharge']),
+            'points_consumed' => abs(self::sumPointsByTypeAndDate($date, ['consume'])),
+            'points_balance' => self::tableExists('tc_user') ? (int) (Db::table('tc_user')->sum('points') ?? 0) : 0,
+            'bazi_count' => self::countRowsByDate('tc_bazi_record', 'created_at', $date),
+            'tarot_count' => self::countRowsByDate('tc_tarot_record', 'created_at', $date),
+            'liuyao_count' => self::countRowsByDate(self::resolveLiuyaoRecordTable(), 'created_at', $date),
+            'hehun_count' => self::countRowsByDate('hehun_records', 'created_at', $date),
+            'daily_fortune_count' => 0,
+            'order_count' => $orderCount,
+            'order_amount' => round($orderAmount, 2),
+            'paid_count' => $paidCount,
+            'paid_amount' => round($paidAmount, 2),
+            'refund_count' => $refundCount,
+            'refund_amount' => round($refundAmount, 2),
+        ];
+    }
+
+    /**
+     * 统计某天的记录数
+     */
+    private static function countRowsByDate(?string $table, string $timeField, string $date, array $conditions = []): int
+    {
+        if ($table === null || !self::tableExists($table) || !self::tableHasColumn($table, $timeField)) {
+            return 0;
+        }
+
+        $query = Db::table($table)
+            ->where($timeField, '>=', $date . ' 00:00:00')
+            ->where($timeField, '<=', $date . ' 23:59:59');
+
+        foreach ($conditions as $condition) {
+            if (!is_array($condition) || count($condition) < 3) {
+                continue;
+            }
+
+            [$field, $operator, $value] = $condition;
+            if (!is_string($field) || $field === '' || !self::tableHasColumn($table, $field)) {
+                return 0;
+            }
+
+            $query->where($field, (string) $operator, $value);
+        }
+
+        return (int) $query->count();
+    }
+
+    /**
+     * 统计某天某个数值字段的汇总
+     */
+    private static function sumFieldByDate(?string $table, string $timeField, string $date, string $field, array $conditions = []): float
+    {
+        if ($table === null
+            || !self::tableExists($table)
+            || !self::tableHasColumn($table, $timeField)
+            || !self::tableHasColumn($table, $field)) {
+            return 0;
+        }
+
+        $query = Db::table($table)
+            ->where($timeField, '>=', $date . ' 00:00:00')
+            ->where($timeField, '<=', $date . ' 23:59:59');
+
+        foreach ($conditions as $condition) {
+            if (!is_array($condition) || count($condition) < 3) {
+                continue;
+            }
+
+            [$conditionField, $operator, $value] = $condition;
+            if (!is_string($conditionField) || $conditionField === '' || !self::tableHasColumn($table, $conditionField)) {
+                return 0;
+            }
+
+            $query->where($conditionField, (string) $operator, $value);
+        }
+
+        return (float) ($query->sum($field) ?? 0);
+    }
+
+    /**
+     * 汇总某天的积分发放/消耗
+     */
+    private static function sumPointsByTypeAndDate(string $date, array $types): int
+    {
+        if (empty($types)
+            || !self::tableExists('tc_points_record')
+            || !self::tableHasColumn('tc_points_record', 'type')
+            || !self::tableHasColumn('tc_points_record', 'points')
+            || !self::tableHasColumn('tc_points_record', 'created_at')) {
+            return 0;
+        }
+
+        $query = Db::table('tc_points_record')
+            ->where('created_at', '>=', $date . ' 00:00:00')
+            ->where('created_at', '<=', $date . ' 23:59:59');
+
+        if (count($types) === 1) {
+            $query->where('type', $types[0]);
+        } else {
+            $query->whereIn('type', $types);
+        }
+
+        return (int) ($query->sum('points') ?? 0);
+    }
+
+    /**
+     * 生成充值订单“已支付”筛选条件
+     */
+    private static function getRechargePaidConditions(?string $table): array
+    {
+        if ($table === null) {
+            return [];
+        }
+
+        if (self::tableHasColumn($table, 'status')) {
+            return [['status', '=', 'paid']];
+        }
+
+        if (self::tableHasColumn($table, 'pay_status')) {
+            return [['pay_status', '=', 1]];
+        }
+
+        return [];
+    }
+
+    /**
+     * 生成充值订单“已退款”筛选条件
+     */
+    private static function getRechargeRefundConditions(?string $table): array
+    {
+        if ($table !== null && self::tableHasColumn($table, 'status')) {
+            return [['status', '=', 'refunded']];
+        }
+
+        return [];
+    }
+
+    /**
+     * 统计整表记录数
+     */
+    private static function countAllRows(?string $table): int
+    {
+        if ($table === null || !self::tableExists($table)) {
+            return 0;
+        }
+
+        return (int) Db::table($table)->count();
+    }
+
+    /**
+     * 解析充值订单表
+     */
+    private static function resolveRechargeOrderTable(): ?string
+    {
+        return self::resolveFirstExistingTable('recharge_order', ['tc_recharge_order']);
+    }
+
+    /**
+     * 解析 VIP 订单表
+     */
+    private static function resolveVipOrderTable(): ?string
+    {
+        return self::resolveFirstExistingTable('vip_order', ['tc_vip_order', 'vip_orders']);
+    }
+
+    /**
+     * 解析用户 VIP 表
+     */
+    private static function resolveVipUserTable(): ?string
+    {
+        return self::resolveFirstExistingTable('vip_user', ['tc_user_vip', 'user_vip']);
+    }
+
+    /**
+     * 解析六爻记录表
+     */
+    private static function resolveLiuyaoRecordTable(): ?string
+    {
+        return self::resolveFirstExistingTable('liuyao_record', ['tc_liuyao_record', 'liuyao_records']);
+    }
+
+    /**
+     * 返回首个存在的数据表
+     */
+    private static function resolveFirstExistingTable(string $cacheKey, array $candidates): ?string
+    {
+        if (array_key_exists($cacheKey, self::$resolvedTableCache)) {
+            return self::$resolvedTableCache[$cacheKey];
+        }
+
+        foreach ($candidates as $table) {
+            if (self::tableExists((string) $table)) {
+                self::$resolvedTableCache[$cacheKey] = (string) $table;
+                return (string) $table;
+            }
+        }
+
+        self::$resolvedTableCache[$cacheKey] = null;
+        return null;
+    }
+
+    /**
+     * 判断数据表是否存在指定字段
+     */
+    private static function tableHasColumn(string $table, string $column): bool
+    {
+        if ($table === '' || $column === '') {
+            return false;
+        }
+
+        $columns = self::getTableColumns($table);
+        return isset($columns[$column]);
+    }
+
+    /**
      * 计算增长率
      */
     private static function calculateChange(float $today, float $yesterday): array
@@ -317,14 +643,15 @@ class AdminStatsService
                 'type' => $today > 0 ? 'increase' : 'flat',
             ];
         }
-        
+
         $change = (($today - $yesterday) / $yesterday) * 100;
-        
+
         return [
             'value' => round(abs($change), 2),
             'type' => $change > 0 ? 'increase' : ($change < 0 ? 'decrease' : 'flat'),
         ];
     }
+
 
     /**
      * 更新每日统计（定时任务调用）
@@ -332,77 +659,30 @@ class AdminStatsService
     public static function updateDailyStats(?string $date = null): bool
     {
         $date = trim((string) ($date ?? '')) ?: date('Y-m-d');
+        $snapshot = self::buildLiveDailyStats($date);
 
-        // 用户统计
+        if (!self::tableExists('site_daily_stats')) {
+            Log::warning('site_daily_stats 表不存在，跳过统计落库', [
+                'date' => $date,
+            ]);
+            return true;
+        }
 
-        $newUsers = Db::table('tc_user')
-            ->whereLike('created_at', $date . '%')
-            ->count();
-        
-        $activeUsers = Db::table('tc_user')
-            ->whereLike('last_login_at', $date . '%')
-            ->count();
-        
-        // 积分统计
-        $pointsGiven = Db::table('tc_points_record')
-            ->where('type', 'income')
-            ->whereLike('created_at', $date . '%')
-            ->sum('points') ?? 0;
-        
-        $pointsConsumed = Db::table('tc_points_record')
-            ->where('type', 'consume')
-            ->whereLike('created_at', $date . '%')
-            ->sum('points') ?? 0;
-        
-        // 占卜统计
-        $baziCount = Db::table('tc_bazi_record')
-            ->whereLike('created_at', $date . '%')
-            ->count();
-        
-        $tarotCount = Db::table('tc_tarot_record')
-            ->whereLike('created_at', $date . '%')
-            ->count();
-        
-        $liuyaoCount = Db::table('tc_liuyao_record')
-            ->whereLike('created_at', $date . '%')
-            ->count();
-        
-        $hehunCount = Db::table('hehun_records')
-            ->whereLike('created_at', $date . '%')
-            ->count();
-        
-        // 订单统计
-        $orderStats = Db::table('tc_vip_order')
-            ->whereLike('created_at', $date . '%')
-            ->field([
-                'COUNT(*) as order_count',
-                'SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as paid_count',
-                'SUM(CASE WHEN status = 1 THEN pay_amount ELSE 0 END) as paid_amount',
-            ])
-            ->find();
-        
-        // 保存或更新统计
-        $data = [
-            'stat_date' => $date,
-            'new_users' => $newUsers,
-            'active_users' => $activeUsers,
-            'points_given' => $pointsGiven,
-            'points_consumed' => abs($pointsConsumed),
-            'points_balance' => (int) (Db::table('tc_user')->sum('points') ?? 0),
-            'bazi_count' => $baziCount,
-            'tarot_count' => $tarotCount,
-            'liuyao_count' => $liuyaoCount,
-            'hehun_count' => $hehunCount,
-            'order_count' => $orderStats['order_count'] ?? 0,
-            'paid_count' => $orderStats['paid_count'] ?? 0,
-            'paid_amount' => $orderStats['paid_amount'] ?? 0,
-        ];
+        $columns = self::getTableColumns('site_daily_stats');
+        $data = [];
+        foreach ($snapshot as $field => $value) {
+            if (isset($columns[$field])) {
+                $data[$field] = $value;
+            }
+        }
+        if (isset($columns['updated_at'])) {
+            $data['updated_at'] = date('Y-m-d H:i:s');
+        }
 
-        
         $exists = Db::table('site_daily_stats')
             ->where('stat_date', $date)
             ->find();
-        
+
         if ($exists) {
             Db::table('site_daily_stats')
                 ->where('stat_date', $date)
@@ -410,8 +690,92 @@ class AdminStatsService
         } else {
             Db::table('site_daily_stats')->insert($data);
         }
-        
+
         return true;
+    }
+
+    /**
+     * 构建按用户统计次数的子查询字段
+     */
+    private static function buildUserRelationCountField(?string $table, string $alias): string
+    {
+        if ($table === null
+            || !self::tableExists($table)
+            || !self::tableHasColumn($table, 'user_id')) {
+            return '0 as ' . $alias;
+        }
+
+        return sprintf('(SELECT COUNT(*) FROM %s stats WHERE stats.user_id = u.id) as %s', $table, $alias);
+    }
+
+    /**
+     * 构建 VIP 有效记录筛选 SQL
+     */
+    private static function buildVipActiveConditionSql(string $table, string $alias = 'uv'): string
+    {
+        $conditions = [sprintf('%s.user_id = u.id', $alias)];
+
+        if (self::tableHasColumn($table, 'status')) {
+            $conditions[] = sprintf('%s.status = 1', $alias);
+        } elseif (self::tableHasColumn($table, 'is_active')) {
+            $conditions[] = sprintf('%s.is_active = 1', $alias);
+        }
+
+        if (self::tableHasColumn($table, 'end_time')) {
+            $conditions[] = sprintf("%s.end_time > '%s'", $alias, date('Y-m-d H:i:s'));
+        }
+
+        return implode(' AND ', $conditions);
+    }
+
+    /**
+     * 构建用户列表所需的 VIP 字段
+     */
+    private static function buildUserVipFields(): array
+    {
+        $vipTable = self::resolveVipUserTable();
+        if ($vipTable === null || !self::tableHasColumn($vipTable, 'user_id')) {
+            return [
+                '0 as is_vip',
+                'NULL as vip_end_time',
+            ];
+        }
+
+        $conditionSql = self::buildVipActiveConditionSql($vipTable);
+        $vipEndTimeField = self::tableHasColumn($vipTable, 'end_time')
+            ? sprintf('(SELECT MAX(uv.end_time) FROM %s uv WHERE %s) as vip_end_time', $vipTable, $conditionSql)
+            : 'NULL as vip_end_time';
+
+        return [
+            sprintf('CASE WHEN EXISTS(SELECT 1 FROM %s uv WHERE %s) THEN 1 ELSE 0 END as is_vip', $vipTable, $conditionSql),
+            $vipEndTimeField,
+        ];
+    }
+
+    /**
+     * 按是否 VIP 过滤用户列表
+     */
+    private static function applyVipFilterToUserQuery($query, $isVip): void
+    {
+        if ($isVip === null || $isVip === '' || !in_array((int) $isVip, [0, 1], true)) {
+            return;
+        }
+
+        $vipTable = self::resolveVipUserTable();
+        if ($vipTable === null || !self::tableHasColumn($vipTable, 'user_id')) {
+            if ((int) $isVip === 1) {
+                $query->whereRaw('1 = 0');
+            }
+            return;
+        }
+
+        $conditionSql = self::buildVipActiveConditionSql($vipTable);
+        if ((int) $isVip === 1) {
+            $query->whereRaw(sprintf('EXISTS(SELECT 1 FROM %s uv WHERE %s)', $vipTable, $conditionSql));
+            return;
+        }
+
+        $query->whereRaw(sprintf('NOT EXISTS(SELECT 1 FROM %s uv WHERE %s)', $vipTable, $conditionSql));
     }
 
     /**
@@ -419,6 +783,16 @@ class AdminStatsService
      */
     public static function getUserList(array $params = []): array
     {
+        if (!self::tableExists('tc_user')) {
+            return [
+                'total' => 0,
+                'page' => 1,
+                'page_size' => 20,
+                'pageSize' => 20,
+                'list' => [],
+            ];
+        }
+
         $page = max(1, (int) ($params['page'] ?? 1));
         $pageSize = (int) ($params['page_size'] ?? ($params['pageSize'] ?? 20));
         $pageSize = max(1, min(100, $pageSize));
@@ -436,22 +810,22 @@ class AdminStatsService
         $startDate = trim((string) ($params['startDate'] ?? ($params['start_date'] ?? ($dateRange[0] ?? ''))));
         $endDate = trim((string) ($params['endDate'] ?? ($params['end_date'] ?? ($dateRange[1] ?? ''))));
 
-        $query = Db::table('tc_user')->alias('u')
-            ->leftJoin('tc_user_vip uv', 'u.id = uv.user_id AND uv.status = 1 AND uv.end_time > NOW()')
-            ->field([
-                'u.id',
-                'u.nickname',
-                'u.avatar',
-                'u.phone',
-                'u.points',
-                'u.created_at',
-                'u.last_login_at',
-                'u.status',
-                'CASE WHEN uv.id IS NOT NULL THEN 1 ELSE 0 END as is_vip',
-                'uv.end_time as vip_end_time',
-                '(SELECT COUNT(*) FROM tc_bazi_record br WHERE br.user_id = u.id) as bazi_count',
-                '(SELECT COUNT(*) FROM tc_tarot_record tr WHERE tr.user_id = u.id) as tarot_count',
-            ]);
+        $fields = [
+            'u.id',
+            self::tableHasColumn('tc_user', 'nickname') ? 'u.nickname' : "'' as nickname",
+            self::tableHasColumn('tc_user', 'avatar') ? 'u.avatar' : "'' as avatar",
+            self::tableHasColumn('tc_user', 'phone') ? 'u.phone' : "'' as phone",
+            self::tableHasColumn('tc_user', 'points') ? 'u.points' : '0 as points',
+            self::tableHasColumn('tc_user', 'created_at') ? 'u.created_at' : 'NULL as created_at',
+            self::tableHasColumn('tc_user', 'last_login_at') ? 'u.last_login_at' : 'NULL as last_login_at',
+            self::tableHasColumn('tc_user', 'status') ? 'u.status' : '1 as status',
+            self::buildUserRelationCountField('tc_bazi_record', 'bazi_count'),
+            self::buildUserRelationCountField('tc_tarot_record', 'tarot_count'),
+        ];
+
+        $fields = array_merge($fields, self::buildUserVipFields());
+
+        $query = Db::table('tc_user')->alias('u')->field($fields);
 
         if ($username !== '') {
             $escapedUsername = addcslashes($username, '%_\\');
@@ -469,31 +843,29 @@ class AdminStatsService
             $query->whereLike('u.phone', '%' . $escapedPhone . '%');
         }
 
-        if ($status !== null && $status !== '') {
+        if ($status !== null && $status !== '' && self::tableHasColumn('tc_user', 'status')) {
             $query->where('u.status', (int) $status);
         }
 
-        if ($isVip !== null && $isVip !== '' && (int) $isVip === 1) {
-            $query->whereNotNull('uv.id');
-        }
+        self::applyVipFilterToUserQuery($query, $isVip);
 
-        if ($startDate !== '') {
+        if ($startDate !== '' && self::tableHasColumn('tc_user', 'created_at')) {
             $query->where('u.created_at', '>=', $startDate . ' 00:00:00');
         }
 
-        if ($endDate !== '') {
+        if ($endDate !== '' && self::tableHasColumn('tc_user', 'created_at')) {
             $query->where('u.created_at', '<=', $endDate . ' 23:59:59');
         }
 
         $allowedOrderFields = ['id', 'points', 'created_at', 'last_login_at'];
         $orderBy = (string) ($params['order_by'] ?? 'id');
-        if (!in_array($orderBy, $allowedOrderFields, true)) {
+        if (!in_array($orderBy, $allowedOrderFields, true) || !self::tableHasColumn('tc_user', $orderBy)) {
             $orderBy = 'id';
         }
         $orderSort = strtoupper((string) ($params['order_sort'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
         $query->order('u.' . $orderBy, $orderSort);
 
-        $total = $query->count();
+        $total = (int) (clone $query)->count('u.id');
         $list = $query->page($page, $pageSize)->select()->toArray();
 
         foreach ($list as &$item) {
@@ -504,6 +876,8 @@ class AdminStatsService
             $item['is_vip'] = (int) ($item['is_vip'] ?? 0);
             $item['username'] = (string) (($item['phone'] ?? '') ?: ('用户#' . (int) ($item['id'] ?? 0)));
             $item['avatar'] = (string) ($item['avatar'] ?? '');
+            $item['nickname'] = (string) ($item['nickname'] ?? $item['username']);
+            $item['phone'] = (string) ($item['phone'] ?? '');
         }
         unset($item);
 

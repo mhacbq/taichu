@@ -1,6 +1,14 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 02:10 Dashboard / 用户 / 充值统计兼容修复记录（本次）
+
+- 本轮聚焦 5 个后台运营主链路问题：Dashboard statistics 500、Dashboard trend 500、用户列表加载失败、用户详情加载失败、充值统计 500。
+- 关键代码：`backend/app/service/AdminStatsService.php` 改为用 schema 探测 + 实时快照降级处理 Dashboard 与用户列表，兼容 `tc_user_vip/user_vip`、`status/pay_status`、缺失命理记录表；`backend/app/controller/admin/User.php` 为详情链路补齐缺表降级；`backend/app/controller/admin/Payment.php` 改为兼容旧版充值订单状态字段并保留正确的去重用户统计。
+- 验证：已对 `AdminStatsService.php`、`admin/User.php`、`admin/Payment.php` 执行 IDE 诊断检查，结果均为 0 条；`git diff --check -- backend/app/service/AdminStatsService.php backend/app/controller/admin/User.php backend/app/controller/admin/Payment.php` 通过；当前环境仍无 `php` CLI，无法执行 `php -l`。
+- TODO：已把 Dashboard、用户、充值统计三条运营待办回写为完成状态；Git 提交尚未执行。
+
 ## 2026-03-18 后台运营只读保护与知识库入口修复记录（本次）
+
 
 - 完成 5 个后台 / 运营类问题：补齐独立后台知识库文章/分类管理入口；为 Dashboard、用户列表、黄历/神煞、充值订单、VIP 订单页统一增加显式错误态、重试入口与只读保护；神煞后台补 `AdminAuth`、`content_manage` 权限、`status` 筛选与局部更新兼容；相关 admin API 封装支持 `showErrorMessage: false` 由页面接管错误态。
 - 关键代码：新增 `admin/src/api/knowledge.js`、`admin/src/views/site-content/knowledge.vue`；更新 `admin/src/router/index.js`、`admin/src/views/dashboard/index.vue`、`admin/src/views/payment/{orders,vip-orders}.vue`、`admin/src/views/user/list.vue`、`admin/src/views/content/{almanac,shensha}.vue`、`backend/app/controller/admin/Shensha.php`、`TODO.md`。

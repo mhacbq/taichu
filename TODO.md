@@ -2,11 +2,13 @@
 
 ### 🔴 高优先级
 - [x] [2026-03-18] [代码] 后端部分控制器直接返回 `$e->getMessage()` 给前端，可能泄露敏感异常信息 - backend/app/controller/{Admin,AiPrompt,AiAnalysis}.php - 已将反作弊规则新增/更新、AI 提示词 JSON 校验、AI 配置保存与连接测试等入口统一切换到 `respondBusinessException()` / `respondSystemException()`，避免原始异常信息直接暴露给前端。
-- [ ] [运营] 重建到当前仓库代码后，管理员已能成功登录，但 Dashboard 的 `/api/admin/dashboard/statistics` 与 `/api/admin/dashboard/trend` 仍持续返回 500，首页只能停留在“运营看板加载失败”错误态，日常查看用户数、订单数、收入趋势与快捷决策被直接阻断 - 后台首页 / Dashboard - 影响每日运营看板、数据复盘与首页快捷入口使用，需尽快修复运行态统计接口。
-- [ ] [运营] 管理员成功登录后，用户列表 `/user/list` 与用户详情 `/user/detail/:id` 仍会直接进入“加载失败”只读态；浏览器网络显示列表/详情请求都已命中 `GET /api/admin/users*`，但页面无法消费真实数据，导致用户搜索、详情查看和列表内调积分链路全部不可用 - 用户管理 / 用户列表 / 用户详情 - 属于核心运营主链路阻塞，需优先核对接口返回码/数据结构与前端判定逻辑。
+- [x] [运营] 重建到当前仓库代码后，管理员已能成功登录，但 Dashboard 的 `/api/admin/dashboard/statistics` 与 `/api/admin/dashboard/trend` 仍持续返回 500，首页只能停留在“运营看板加载失败”错误态，日常查看用户数、订单数、收入趋势与快捷决策被直接阻断 - 后台首页 / Dashboard - 已在 `backend/app/service/AdminStatsService.php` 改为统一走 schema 探测与运行态降级：趋势统计不再依赖 `column('*')` 的隐式行为，`site_daily_stats` 缺失时自动回退实时业务表；`refresh-stats` 也改为复用实时快照落库，避免旧表名/旧字段继续导致 Dashboard 统计与趋势接口 500。
+- [x] [运营] 管理员成功登录后，用户列表 `/user/list` 与用户详情 `/user/detail/:id` 仍会直接进入“加载失败”只读态；浏览器网络显示列表/详情请求都已命中 `GET /api/admin/users*`，但页面无法消费真实数据，导致用户搜索、详情查看和列表内调积分链路全部不可用 - 用户管理 / 用户列表 / 用户详情 - 已在 `backend/app/service/AdminStatsService.php` 将用户列表改为基于运行态表探测的子查询方案，兼容 `tc_user_vip/user_vip` 与缺失命理记录表；同时在 `backend/app/controller/admin/User.php` 为积分记录、八字、塔罗、六爻、订单信息补齐缺表降级，恢复列表/详情链路。
+
 
 ### 🟡 中优先级
-- [ ] [运营] 充值订单页 `GET /api/admin/payment/orders` 已能返回列表，但统计接口 `/api/admin/payment/stats` 仍返回 500，页面顶部“支付订单 / 累计实收 / 累计发放积分 / 待支付订单”继续显示默认 0 值，运营容易把异常误判成真实订单表现 - 订单管理 / 充值订单 - 建议补齐统计接口容错，并在统计失败时显式提示而不是继续展示默认 0 值。
+- [x] [运营] 充值订单页 `GET /api/admin/payment/orders` 已能返回列表，但统计接口 `/api/admin/payment/stats` 仍返回 500，页面顶部“支付订单 / 累计实收 / 累计发放积分 / 待支付订单”继续显示默认 0 值，运营容易把异常误判成真实订单表现 - 订单管理 / 充值订单 - 已在 `backend/app/controller/admin/Payment.php` 修正去重用户统计写法，并把统计/趋势查询改为兼容 `status` / `pay_status` 两套状态字段；旧 schema 下也能正确计算支付、待支付与趋势数据，不再因状态列漂移直接 500。
+
 
 ### 🟢 低优先级
 
@@ -554,7 +556,7 @@
 
 
 ### 🟢 低优先级（美观问题）
-- [ ] [UI] 首页 Hero 文案混入“首屏信息更聚焦”“不会再被多张卡片挤压得头重脚轻”等内部改版措辞，像在解释设计过程而不是对用户说话，削弱品牌可信度与高级感 - 首页 / Hero 首屏与登录态积分说明 - 建议统一改成围绕价值、权益和下一步行动的用户语言，避免暴露内部设计视角。
+
 
 ---
 
