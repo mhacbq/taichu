@@ -37,6 +37,11 @@ class Paipan extends BaseController
      * @var FortuneAnalysisService
      */
     protected $fortuneAnalysisService;
+
+    /**
+     * 缓存 tc_bazi_record 是否存在 is_first 字段
+     */
+    protected static ?bool $hasIsFirstColumn = null;
     
     public function __construct(\think\App $app)
     {
@@ -163,7 +168,7 @@ class Paipan extends BaseController
             }
             
             // 保存排盘记录
-            $record = BaziRecord::create([
+            $recordData = [
                 'user_id' => $user['sub'],
                 'birth_date' => $birthDate,
                 'gender' => $gender,
@@ -177,8 +182,13 @@ class Paipan extends BaseController
                 'hour_gan' => $bazi['hour']['gan'],
                 'hour_zhi' => $bazi['hour']['zhi'],
                 'analysis' => $analysis,
-                'is_first' => $isFirstBazi,
-            ]);
+            ];
+
+            if ($this->hasIsFirstColumn()) {
+                $recordData['is_first'] = (int)$isFirstBazi;
+            }
+
+            $record = BaziRecord::create($recordData);
             
             Db::commit();
             
@@ -276,7 +286,7 @@ class Paipan extends BaseController
             }
             
             // 保存排盘记录
-            $record = BaziRecord::create([
+            $recordData = [
                 'user_id' => $user['sub'],
                 'birth_date' => $birthDate,
                 'gender' => 'unknown', // 从缓存获取时可能不知道性别
@@ -290,8 +300,13 @@ class Paipan extends BaseController
                 'hour_gan' => $cachedResult['bazi']['hour']['gan'],
                 'hour_zhi' => $cachedResult['bazi']['hour']['zhi'],
                 'analysis' => $cachedResult['analysis'],
-                'is_first' => $isFirstBazi,
-            ]);
+            ];
+
+            if ($this->hasIsFirstColumn()) {
+                $recordData['is_first'] = (int)$isFirstBazi;
+            }
+
+            $record = BaziRecord::create($recordData);
             
             Db::commit();
             
@@ -341,6 +356,26 @@ class Paipan extends BaseController
         $history = BaziRecord::getUserHistoryPaged($user['sub'], $page, $pageSize);
         
         return $this->success($history);
+    }
+
+    /**
+     * 检查 tc_bazi_record 是否包含 is_first 字段（兼容旧库结构）
+     */
+    protected function hasIsFirstColumn(): bool
+    {
+        if (self::$hasIsFirstColumn !== null) {
+            return self::$hasIsFirstColumn;
+        }
+
+        try {
+            $result = Db::query("SHOW COLUMNS FROM `tc_bazi_record` LIKE 'is_first'");
+            self::$hasIsFirstColumn = !empty($result);
+        } catch (\Throwable $e) {
+            self::$hasIsFirstColumn = false;
+            Log::warning('检查 tc_bazi_record.is_first 字段失败，按不存在处理: ' . $e->getMessage());
+        }
+
+        return self::$hasIsFirstColumn;
     }
     
     /**
