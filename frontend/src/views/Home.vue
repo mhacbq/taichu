@@ -61,14 +61,18 @@
             <router-link to="/bazi" class="btn-primary">
               <el-icon class="btn-icon"><Calendar /></el-icon>
               开始排盘
-              <span class="btn-badge">首测免费</span>
+              <span class="btn-badge btn-badge--login">需登录</span>
+              <span class="btn-badge btn-badge--free">首测免费</span>
             </router-link>
             <router-link to="/tarot" class="btn-secondary">
               <el-icon class="btn-icon"><MagicStick /></el-icon>
               塔罗占卜
+              <span class="btn-badge btn-badge--login btn-badge--outline">需登录</span>
             </router-link>
           </div>
           <p class="hero-hint" :class="{ 'hero-hint--muted': statsLoading || statsError }"><el-icon><Star /></el-icon> {{ heroHintText }}</p>
+          <p class="hero-gate-note">八字、塔罗、六爻、合婚需登录后使用；每日运势可直接浏览。</p>
+
 
         </div>
       </div>
@@ -83,6 +87,10 @@
             <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
             <h3>八字分析</h3>
             <p>基于传统文化的性格分析，了解您的个性特点、发展方向、人际关系</p>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+              <span class="feature-note feature-note--free">首测免费</span>
+            </div>
             <router-link to="/bazi" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -91,6 +99,9 @@
             <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
             <h3>塔罗测试</h3>
             <p>趣味塔罗牌阵探索，为您的困惑提供思考角度，发现内心可能</p>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+            </div>
             <router-link to="/tarot" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -99,6 +110,9 @@
             <div class="feature-icon"><el-icon :size="48"><Switch /></el-icon></div>
             <h3>六爻占卜</h3>
             <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+            </div>
             <router-link to="/liuyao" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -107,6 +121,9 @@
             <div class="feature-icon"><el-icon :size="48"><Link /></el-icon></div>
             <h3>八字合婚</h3>
             <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+            </div>
             <router-link to="/hehun" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -683,16 +700,36 @@ onMounted(() => {
 }
 
 .btn-badge {
-  background: var(--success-gradient);
-  color: var(--text-inverse);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: var(--weight-semibold);
   margin-left: 5px;
+  line-height: 1;
+}
+
+.btn-badge--login {
+  background: rgba(15, 23, 42, 0.16);
+  color: currentColor;
+}
+
+.btn-badge--free {
+  background: var(--success-gradient);
+  color: var(--text-inverse);
+}
+
+.btn-badge--outline {
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
 }
 
 .hero-hint {
+
   color: var(--text-tertiary);
   font-size: var(--font-small);
   margin-top: 20px;
@@ -706,8 +743,15 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+.hero-gate-note {
+  margin-top: 12px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.7;
+}
 
 .features {
+
   padding: 80px 0;
 }
 
@@ -751,10 +795,39 @@ onMounted(() => {
   color: var(--text-secondary);
   font-size: var(--font-body);
   line-height: var(--line-height-base);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.feature-access {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.feature-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+
+.feature-note--free {
+  background: rgba(103, 194, 58, 0.14);
+  border-color: rgba(103, 194, 58, 0.18);
+  color: var(--success-color);
 }
 
 .feature-link {
+
   color: var(--primary-color);
   text-decoration: none;
   font-weight: var(--weight-semibold);

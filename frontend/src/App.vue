@@ -10,10 +10,22 @@
         <!-- 桌面端导航 -->
         <div class="nav-links desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/bazi" class="nav-link">八字排盘</router-link>
-          <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
-          <router-link to="/liuyao" class="nav-link">六爻占卜</router-link>
-          <router-link to="/hehun" class="nav-link">八字合婚</router-link>
+          <router-link to="/bazi" class="nav-link nav-link--gated">
+            <span>八字排盘</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
+          <router-link to="/tarot" class="nav-link nav-link--gated">
+            <span>塔罗占卜</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
+          <router-link to="/liuyao" class="nav-link nav-link--gated">
+            <span>六爻占卜</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
+          <router-link to="/hehun" class="nav-link nav-link--gated">
+            <span>八字合婚</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
           <router-link to="/daily" class="nav-link">每日运势</router-link>
         </div>
 
@@ -46,7 +58,14 @@
         </div>
 
         <!-- 移动端汉堡菜单按钮 -->
-        <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu" :class="{ active: showMobileMenu }">
+        <button
+          class="mobile-menu-btn"
+          @click="toggleMobileMenu"
+          :class="{ active: showMobileMenu }"
+          :aria-expanded="showMobileMenu ? 'true' : 'false'"
+          aria-controls="app-mobile-nav"
+          aria-label="打开菜单"
+        >
           <span></span>
           <span></span>
           <span></span>
@@ -54,31 +73,41 @@
       </div>
 
       <!-- 移动端导航菜单 -->
-      <div class="mobile-nav" :class="{ active: showMobileMenu }">
+      <div id="app-mobile-nav" class="mobile-nav" :class="{ active: showMobileMenu }">
         <div class="mobile-nav-header">
           <span class="mobile-nav-title">菜单</span>
-          <button class="mobile-nav-close" @click="showMobileMenu = false" aria-label="关闭菜单">
+          <button class="mobile-nav-close" @click="closeMobileMenu" aria-label="关闭菜单">
             <el-icon><CloseBold /></el-icon>
           </button>
         </div>
         <div class="mobile-nav-links">
-          <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><House /></el-icon> 首页
+          <router-link to="/" class="mobile-nav-link" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><House /></el-icon>
+            <span>首页</span>
           </router-link>
-          <router-link to="/bazi" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><Calendar /></el-icon> 八字排盘
+          <router-link to="/bazi" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Calendar /></el-icon>
+            <span>八字排盘</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon> 塔罗占卜
+          <router-link to="/tarot" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon>
+            <span>塔罗占卜</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/liuyao" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><YinYang /></el-icon> 六爻占卜
+          <router-link to="/liuyao" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><YinYang /></el-icon>
+            <span>六爻占卜</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/hehun" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><Link /></el-icon> 八字合婚
+          <router-link to="/hehun" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Link /></el-icon>
+            <span>八字合婚</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/daily" class="mobile-nav-link" @click="showMobileMenu = false">
-            <el-icon class="nav-icon" :size="18"><Star /></el-icon> 每日运势
+          <router-link to="/daily" class="mobile-nav-link" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Star /></el-icon>
+            <span>每日运势</span>
           </router-link>
         </div>
         <div class="mobile-nav-footer">
@@ -92,14 +121,14 @@
               <el-icon :size="16"><SwitchButton /></el-icon> 退出登录
             </a>
           </template>
-          <router-link v-else to="/login" class="mobile-login-btn" @click="showMobileMenu = false">
+          <router-link v-else to="/login" class="mobile-login-btn" @click="closeMobileMenu">
             登录 / 注册
           </router-link>
         </div>
       </div>
       
       <!-- 遮罩层 -->
-      <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="showMobileMenu = false"></div>
+      <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
     </nav>
     
     <main class="main-content">
@@ -166,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
@@ -197,7 +226,6 @@ const YinYang = {
     ])
   }
 }
-import { h } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -207,6 +235,7 @@ const userNickname = ref('')
 const userPoints = ref(0)
 const showMobileMenu = ref(false)
 const showCompanion = ref(false)
+const scrollLockTop = ref(0)
 
 // 暖心语录
 const companionMessages = [
@@ -242,6 +271,62 @@ const randomQuote = computed(() => {
 
 const toggleCompanion = () => {
   showCompanion.value = !showCompanion.value
+}
+
+const lockPageScroll = () => {
+  if (typeof document === 'undefined') return
+
+  const body = document.body
+  const html = document.documentElement
+  scrollLockTop.value = window.scrollY || window.pageYOffset || html.scrollTop || body.scrollTop || 0
+
+  body.style.position = 'fixed'
+  body.style.top = `-${scrollLockTop.value}px`
+  body.style.left = '0'
+  body.style.right = '0'
+  body.style.width = '100%'
+  body.style.overflow = 'hidden'
+  body.style.touchAction = 'none'
+  html.style.overflow = 'hidden'
+}
+
+const unlockPageScroll = () => {
+  if (typeof document === 'undefined') return
+
+  const body = document.body
+  const html = document.documentElement
+  const offset = scrollLockTop.value || 0
+  const wasLocked = body.style.position === 'fixed'
+
+  body.style.position = ''
+  body.style.top = ''
+  body.style.left = ''
+  body.style.right = ''
+  body.style.width = ''
+  body.style.overflow = ''
+  body.style.touchAction = ''
+  html.style.overflow = ''
+
+  if (wasLocked) {
+    window.scrollTo(0, offset)
+  }
+}
+
+const closeMobileMenu = () => {
+  showMobileMenu.value = false
+}
+
+const openMobileMenu = () => {
+  showMobileMenu.value = true
+}
+
+const toggleMobileMenu = () => {
+  if (showMobileMenu.value) {
+    closeMobileMenu()
+    return
+  }
+
+  openMobileMenu()
 }
 
 // 检查登录状态
@@ -303,7 +388,7 @@ const handleLogout = () => {
   isLoggedIn.value = false
   ElMessage.success('已退出登录')
   router.push('/')
-  showMobileMenu.value = false
+  closeMobileMenu()
 }
 
 // 显示反馈
@@ -316,14 +401,26 @@ const showAbout = () => {
   ElMessage.info('关于我们页面开发中')
 }
 
+watch(showMobileMenu, (visible) => {
+  if (visible) {
+    lockPageScroll()
+  } else {
+    unlockPageScroll()
+  }
+})
+
 // 监听路由变化
 watch(() => route.path, () => {
   checkLoginStatus()
-  showMobileMenu.value = false
+  closeMobileMenu()
 })
 
 onMounted(() => {
   checkLoginStatus()
+})
+
+onBeforeUnmount(() => {
+  unlockPageScroll()
 })
 </script>
 
@@ -388,7 +485,30 @@ onMounted(() => {
   padding: 10px 16px;
   border-radius: var(--radius-btn);
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.nav-link--gated {
+  gap: 10px;
+}
+
+.nav-require-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
 
 .nav-link:hover {
   color: var(--primary-color);
@@ -561,6 +681,7 @@ onMounted(() => {
   transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: -20px 0 48px rgba(15, 23, 42, 0.16);
   border-left: 1px solid var(--border-light);
+  overscroll-behavior: contain;
 }
 
 .mobile-nav.active {
@@ -621,6 +742,31 @@ onMounted(() => {
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 }
+
+.mobile-nav-link > span:not(.mobile-nav-badge) {
+  flex: 1;
+}
+
+.mobile-nav-link--gated {
+  padding-right: 24px;
+}
+
+.mobile-nav-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
@@ -719,6 +865,7 @@ onMounted(() => {
   z-index: 999;
   opacity: 0;
   transition: all 0.4s ease;
+  touch-action: none;
 }
 
 .mobile-overlay.active {

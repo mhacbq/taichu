@@ -94,8 +94,12 @@
             <el-button type="info" round size="large" @click="resetForm">
               <el-icon><RefreshRight /></el-icon> 再次占卜
             </el-button>
-            <el-button type="primary" round size="large" @click="saveResult">
-              <el-icon><Download /></el-icon> 保存结果
+            <div class="saved-status" role="status" aria-live="polite">
+              <el-icon><CircleCheckFilled /></el-icon>
+              <span>已自动保存到历史记录</span>
+            </div>
+            <el-button v-if="history.length > 0" round size="large" @click="showHistory = true">
+              <el-icon><Collection /></el-icon> 查看历史
             </el-button>
           </div>
         </div>
@@ -270,7 +274,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Close } from '@element-plus/icons-vue'
+import { RefreshRight, Delete, MagicStick, Present, Trophy, Close, CircleCheckFilled, Collection } from '@element-plus/icons-vue'
 import BackButton from '../components/BackButton.vue'
 
 const methodOptions = [
@@ -574,10 +578,7 @@ const resetForm = () => {
   loadPricing()
 }
 
-// 保存结果
-const saveResult = () => {
-  ElMessage.success('结果已自动保存到历史记录')
-}
+
 
 // 加载历史记录详情
 const loadHistoryDetail = (item) => {
@@ -1282,9 +1283,27 @@ onMounted(() => {
 .action-buttons {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+.saved-status {
+  flex: 1;
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(103, 194, 58, 0.12);
+  border: 1px solid rgba(103, 194, 58, 0.24);
+  color: var(--success-color);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .btn-primary,
+
 .btn-secondary {
   flex: 1;
   padding: 14px 24px;

@@ -17,13 +17,18 @@
       
       <div class="bazi-form card" v-if="!result">
         <!-- 积分消耗提示 -->
-        <div class="points-hint">
+        <div class="points-hint" :class="{ 'points-hint--loading': accountStatus === 'loading', 'points-hint--error': accountStatus === 'error' }">
           <el-icon class="hint-icon"><Coin /></el-icon>
-          <span>
-            <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
-            <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
-          </span>
-          <span class="current-points">当前积分: {{ currentPoints }}</span>
+          <span v-if="accountStatus === 'loading'">正在查询账户与价格信息...</span>
+          <span v-else-if="accountStatus === 'error'">账户与价格暂不可用，确认前不展示消费承诺</span>
+          <template v-else>
+            <span>
+              <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
+              <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
+            </span>
+            <span class="current-points">当前积分: {{ currentPoints }}</span>
+          </template>
+          <el-button v-if="accountStatus === 'error'" link type="primary" class="points-retry" @click="loadPoints()">重新获取</el-button>
         </div>
 
         <!-- 简版/专业版切换 -->
@@ -92,14 +97,15 @@
           size="large" 
           @click="showConfirm" 
           :loading="loading"
-          :disabled="!isFirstBazi && currentPoints < 10"
+          :disabled="!canStartBazi"
         >
-          <el-icon v-if="isFirstBazi"><Present /></el-icon>
-          {{ isFirstBazi ? ' 首次免费排盘' : '开始排盘' }}
+          <el-icon v-if="isAccountReady && isFirstBazi"><Present /></el-icon>
+          {{ startBaziButtonText }}
         </el-button>
 
         <!-- 积分不足提示 -->
-        <div v-if="!isFirstBazi && currentPoints < 10" class="insufficient-points">
+        <div v-if="accountStatus === 'ready' && !isFirstBazi && currentPoints < BAZI_BASE_COST" class="insufficient-points">
+
           <p><el-icon><StarFilled /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
         </div>
       </div>
@@ -579,7 +585,7 @@
             <div class="yearly-fortune-section" v-if="result.bazi">
               <div class="section-title-with-tag">
                 <h3>流年运势深度分析</h3>
-                <el-tag type="warning" size="small">消耗{{ fortunePointsCost.yearly_fortune }}积分</el-tag>
+                <el-tag type="warning" size="small">{{ getFortuneToolTagText('yearly') }}</el-tag>
               </div>
               
               <!-- 年份选择 -->
@@ -689,11 +695,11 @@
                   type="warning" 
                   size="large"
                   :loading="yearlyFortuneLoading"
-                  :disabled="currentPoints < fortunePointsCost.yearly_fortune"
+                  :disabled="!canUseFortuneTool('yearly')"
                   @click="showPointsConfirm('yearly')"
                 >
                   <el-icon class="btn-icon"><StarFilled /></el-icon>
-                  {{ currentPoints < fortunePointsCost.yearly_fortune ? '积分不足' : '开始流年分析' }}
+                  {{ getFortuneToolActionText('yearly', '开始流年分析') }}
                 </el-button>
               </div>
             </div>
@@ -702,7 +708,7 @@
             <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
               <div class="section-title-with-tag">
                 <h3>大运运势评分</h3>
-                <el-tag type="warning" size="small">消耗{{ fortunePointsCost.dayun_analysis }}积分</el-tag>
+                <el-tag type="warning" size="small">{{ getFortuneToolTagText('dayun') }}</el-tag>
               </div>
               
               <!-- 大运选择 -->
@@ -808,11 +814,11 @@
                   type="primary" 
                   size="large"
                   :loading="dayunAnalysisLoading"
-                  :disabled="currentPoints < fortunePointsCost.dayun_analysis"
+                  :disabled="!canUseFortuneTool('dayun')"
                   @click="showPointsConfirm('dayun')"
                 >
                   <el-icon class="btn-icon"><TrendCharts /></el-icon>
-                  {{ currentPoints < fortunePointsCost.dayun_analysis ? '积分不足' : '开始大运评分' }}
+                  {{ getFortuneToolActionText('dayun', '开始大运评分') }}
                 </el-button>
               </div>
             </div>
@@ -821,7 +827,7 @@
             <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
               <div class="section-title-with-tag">
                 <h3>运势K线图</h3>
-                <el-tag type="warning" size="small">消耗{{ fortunePointsCost.dayun_chart }}积分</el-tag>
+                <el-tag type="warning" size="small">{{ getFortuneToolTagText('chart') }}</el-tag>
               </div>
               
               <!-- K线图结果 -->
@@ -875,11 +881,11 @@
                   type="success" 
                   size="large"
                   :loading="dayunChartLoading"
-                  :disabled="currentPoints < fortunePointsCost.dayun_chart"
+                  :disabled="!canUseFortuneTool('chart')"
                   @click="showPointsConfirm('chart')"
                 >
                   <el-icon><TrendCharts /></el-icon>
-                  {{ currentPoints < fortunePointsCost.dayun_chart ? '积分不足' : '生成运势K线图' }}
+                  {{ getFortuneToolActionText('chart', '生成运势K线图') }}
                 </el-button>
               </div>
             </div>
@@ -899,7 +905,7 @@
             <div class="ai-analysis-section" v-if="result.bazi">
               <div class="section-title-with-tag">
                 <h3>AI智能解盘</h3>
-                <el-tag type="warning" size="small">消耗30积分</el-tag>
+                <el-tag type="warning" size="small">{{ aiPricingTagText }}</el-tag>
               </div>
               
               <!-- AI解盘结果 -->
@@ -926,11 +932,11 @@
                 <el-button 
                   type="warning" 
                   size="large"
-                  :disabled="currentPoints < 30"
+                  :disabled="!canStartAiAnalysis"
                   @click="startAiAnalysis"
                 >
                   <el-icon><MagicStick /></el-icon>
-                  {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
+                  {{ aiActionText }}
                 </el-button>
               </div>
               
@@ -993,16 +999,22 @@ import { sanitizeHtml } from '../utils/sanitize'
 import { CHINA_CITIES } from '../utils/constants'
 
 
+const BAZI_BASE_COST = 10
+const AI_ANALYSIS_COST = 30
+
 const birthDate = ref('')
 const gender = ref('male')
 const location = ref('')
 const loading = ref(false)
 const result = ref(null)
 const currentPoints = ref(0)
+const accountStatus = ref('loading')
+const fortunePricingStatus = ref('loading')
 const confirmVisible = ref(false)
 const saving = ref(false)
 const versionMode = ref('simple') // 'simple' or 'pro'
 const isFirstBazi = ref(true) // 是否首次排盘
+
 const loadingStep = ref(1) // 加载步骤
 const stepIntervalRef = ref(null) // 步骤动画定时器引用
 const activeNames = ref(['basic']) // 折叠面板默认展开“命盘信息”
@@ -1018,9 +1030,9 @@ const aiLoadingTimer = ref(null)
 
 // 流年运势相关
 const fortunePointsCost = ref({
-  yearly_fortune: 30,
-  dayun_analysis: 50,
-  dayun_chart: 30
+  yearly_fortune: null,
+  dayun_analysis: null,
+  dayun_chart: null,
 })
 const selectedYear = ref(new Date().getFullYear())
 const yearlyFortuneResult = ref(null)
@@ -1083,37 +1095,182 @@ const cityOptions = computed(() => {
   }))
 })
 
+const isAccountReady = computed(() => accountStatus.value === 'ready')
+const isFortunePricingReady = computed(() => fortunePricingStatus.value === 'ready')
+
+const canStartBazi = computed(() => {
+  if (!isAccountReady.value) {
+    return false
+  }
+
+  return isFirstBazi.value || currentPoints.value >= BAZI_BASE_COST
+})
+
+const startBaziButtonText = computed(() => {
+  if (accountStatus.value === 'loading') {
+    return '账户信息查询中...'
+  }
+
+  if (accountStatus.value === 'error') {
+    return '请先获取价格信息'
+  }
+
+  return isFirstBazi.value ? '首次免费排盘' : '开始排盘'
+})
+
+const getFortuneToolCost = (type) => {
+  const costKeyMap = {
+    yearly: 'yearly_fortune',
+    dayun: 'dayun_analysis',
+    chart: 'dayun_chart',
+  }
+
+  const rawCost = fortunePointsCost.value[costKeyMap[type]]
+  const parsedCost = Number(rawCost)
+  return Number.isFinite(parsedCost) ? parsedCost : null
+}
+
+const getFortuneToolTagText = (type) => {
+  if (fortunePricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (fortunePricingStatus.value === 'error') {
+    return '价格稍后确认'
+  }
+
+  const cost = getFortuneToolCost(type)
+  if (!Number.isFinite(cost)) {
+    return '价格待确认'
+  }
+
+  return cost > 0 ? `消耗${cost}积分` : '本次免费'
+}
+
+const canUseFortuneTool = (type) => {
+  if (!isAccountReady.value || !isFortunePricingReady.value) {
+    return false
+  }
+
+  const cost = getFortuneToolCost(type)
+  return Number.isFinite(cost) && currentPoints.value >= cost
+}
+
+const getFortuneToolActionText = (type, readyText) => {
+  if (accountStatus.value === 'loading' || fortunePricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (accountStatus.value === 'error' || fortunePricingStatus.value === 'error') {
+    return '请先刷新价格信息'
+  }
+
+  const cost = getFortuneToolCost(type)
+  if (!Number.isFinite(cost)) {
+    return '价格暂不可用'
+  }
+
+  if (cost > 0 && currentPoints.value < cost) {
+    return `积分不足（需${cost}积分）`
+  }
+
+  return readyText
+}
+
+const aiPricingTagText = computed(() => {
+  if (fortunePricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (fortunePricingStatus.value === 'error') {
+    return '价格稍后确认'
+  }
+
+  return `消耗${AI_ANALYSIS_COST}积分`
+})
+
+const canStartAiAnalysis = computed(() => {
+  if (!isAccountReady.value || !isFortunePricingReady.value) {
+    return false
+  }
+
+  return currentPoints.value >= AI_ANALYSIS_COST
+})
+
+const aiActionText = computed(() => {
+  if (accountStatus.value === 'loading' || fortunePricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (accountStatus.value === 'error' || fortunePricingStatus.value === 'error') {
+    return '请先刷新价格信息'
+  }
+
+  return currentPoints.value < AI_ANALYSIS_COST ? `积分不足（需${AI_ANALYSIS_COST}积分）` : '开始AI解盘'
+})
 
 // 获取当前积分和首次排盘状态
-const loadPoints = async () => {
-  try {
-    const response = await getPointsBalance()
-    if (response.code === 200) {
-      currentPoints.value = response.data.balance
-      isFirstBazi.value = response.data.first_bazi !== false
+const loadPoints = async ({ silent = false } = {}) => {
+  accountStatus.value = 'loading'
+  fortunePricingStatus.value = 'loading'
+
+  const [accountResult, pricingResult] = await Promise.allSettled([
+    getPointsBalance(),
+    getFortunePointsCost(),
+  ])
+
+  const accountResponse = accountResult.status === 'fulfilled' ? accountResult.value : null
+  if (accountResponse?.code === 200) {
+    currentPoints.value = Number(accountResponse.data?.balance ?? 0)
+    isFirstBazi.value = accountResponse.data?.first_bazi !== false
+    accountStatus.value = 'ready'
+  } else {
+    currentPoints.value = 0
+    accountStatus.value = 'error'
+    console.error('获取账户信息失败:', accountResult.status === 'rejected' ? accountResult.reason : accountResponse)
+    if (!silent) {
+      ElMessage.error(accountResponse?.message || '获取账户信息失败，请尝试刷新页面')
     }
-    
-    // 获取运势分析积分消耗
-    const costResponse = await getFortunePointsCost()
-    if (costResponse.code === 200) {
-      fortunePointsCost.value = costResponse.data
+  }
+
+  const pricingResponse = pricingResult.status === 'fulfilled' ? pricingResult.value : null
+  if (pricingResponse?.code === 200) {
+    fortunePointsCost.value = {
+      yearly_fortune: pricingResponse.data?.yearly_fortune ?? null,
+      dayun_analysis: pricingResponse.data?.dayun_analysis ?? null,
+      dayun_chart: pricingResponse.data?.dayun_chart ?? null,
     }
-  } catch (error) {
-    console.error('获取积分失败:', error)
-    ElMessage.error('获取账户信息失败，请尝试刷新页面')
+    fortunePricingStatus.value = 'ready'
+  } else {
+    fortunePointsCost.value = {
+      yearly_fortune: null,
+      dayun_analysis: null,
+      dayun_chart: null,
+    }
+    fortunePricingStatus.value = 'error'
+    console.error('获取深度工具价格失败:', pricingResult.status === 'rejected' ? pricingResult.reason : pricingResponse)
+    if (!silent) {
+      ElMessage.error(pricingResponse?.message || '获取深度工具价格失败，请稍后重试')
+    }
   }
 }
 
+
 // 显示积分消耗确认对话框
 const showPointsConfirm = (type, data = {}) => {
-  const costs = {
-    'yearly': fortunePointsCost.value.yearly_fortune,
-    'dayun': fortunePointsCost.value.dayun_analysis,
-    'chart': fortunePointsCost.value.dayun_chart
+  if (!isAccountReady.value || !isFortunePricingReady.value) {
+    ElMessage.warning('价格信息还在同步，请稍后再试')
+    return
   }
-  
-  if (currentPoints.value < costs[type]) {
-    ElMessage.warning(`积分不足，需要${costs[type]}积分，请先签到领取积分`)
+
+  const cost = getFortuneToolCost(type)
+  if (!Number.isFinite(cost)) {
+    ElMessage.warning('当前价格信息暂不可用，请稍后重试')
+    return
+  }
+
+  if (currentPoints.value < cost) {
+    ElMessage.warning(`积分不足，需要${cost}积分，请先签到领取积分`)
     return
   }
   
@@ -1121,6 +1278,7 @@ const showPointsConfirm = (type, data = {}) => {
   pointsConfirmData.value = data
   pointsConfirmVisible.value = true
 }
+
 
 // 确认消耗积分
 const confirmPointsConsume = async () => {
@@ -1238,7 +1396,13 @@ const showConfirm = () => {
     ElMessage.warning('请选择出生日期')
     return
   }
-  if (!isFirstBazi.value && currentPoints.value < 10) {
+
+  if (!isAccountReady.value) {
+    ElMessage.warning(accountStatus.value === 'error' ? '账户信息暂不可用，请先刷新价格信息' : '账户信息还在同步，请稍候')
+    return
+  }
+
+  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
@@ -1250,6 +1414,7 @@ const showConfirm = () => {
     confirmVisible.value = true
   }
 }
+
 
 // 确认排盘
 const confirmCalculate = async () => {
@@ -1292,7 +1457,7 @@ const calculateBazi = async () => {
       ElMessage.error(response.message || '排盘失败')
       // 如果是积分不足，刷新积分
       if (response.code === 403) {
-        loadPoints()
+        loadPoints({ silent: true })
       }
     }
   } catch (error) {
@@ -1309,7 +1474,7 @@ const calculateBazi = async () => {
 }
 
 onMounted(() => {
-  loadPoints()
+  loadPoints({ silent: true })
 })
 
 // 组件卸载时清理定时器
@@ -1396,10 +1561,16 @@ const shareResult = () => {
 
 // AI解盘
 const startAiAnalysis = async () => {
-  if (currentPoints.value < 30) {
+  if (!isAccountReady.value || !isFortunePricingReady.value) {
+    ElMessage.warning('价格信息还在同步，请稍后再试')
+    return
+  }
+
+  if (currentPoints.value < AI_ANALYSIS_COST) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
+
   
   aiAnalyzing.value = true
   aiStreamContent.value = ''
@@ -1471,7 +1642,7 @@ const startAiAnalysis = async () => {
       const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
       if (res.code === 200) {
         aiAnalysisResult.value = res.data
-        currentPoints.value = res.data.remaining_points || currentPoints.value - 30
+        currentPoints.value = res.data.remaining_points || currentPoints.value - AI_ANALYSIS_COST
       } else {
         ElMessage.error(res.message || 'AI解盘失败')
       }
@@ -2011,10 +2182,22 @@ const formatAiContent = (content) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
   color: var(--text-primary);
 }
 
+.points-hint--loading {
+  border-color: rgba(var(--primary-rgb), 0.18);
+  background: rgba(var(--primary-rgb), 0.08);
+}
+
+.points-hint--error {
+  border-color: rgba(245, 108, 108, 0.22);
+  background: rgba(245, 108, 108, 0.08);
+}
+
 .hint-icon {
+
   font-size: 20px;
 }
 
@@ -2024,7 +2207,12 @@ const formatAiContent = (content) => {
   font-weight: 500;
 }
 
+.points-retry {
+  margin-left: auto;
+}
+
 .insufficient-points {
+
   margin-top: 15px;
   padding: 12px;
   background: rgba(245, 108, 108, 0.1);

@@ -363,9 +363,24 @@
       </div>
 
       <!-- 历史记录 -->
-      <div class="history-section" v-if="history.length > 0">
-        <h3>历史记录</h3>
-        <div class="history-list">
+      <div class="history-section" v-if="historyLoaded || historyLoading || historyError">
+        <div class="history-header">
+          <h3>历史记录</h3>
+          <el-button v-if="historyError" type="primary" link @click="loadHistory">重新加载</el-button>
+        </div>
+        <div v-if="historyLoading" class="history-state">
+          <p>正在加载历史记录...</p>
+          <span>最近的合婚分析会在这里展示。</span>
+        </div>
+        <div v-else-if="historyError" class="history-state history-state--error">
+          <p>{{ historyError }}</p>
+          <span>可以稍后重试，或重新做一次合婚分析生成新记录。</span>
+        </div>
+        <div v-else-if="history.length === 0" class="history-state">
+          <p>还没有合婚记录</p>
+          <span>完成一次分析后，这里会展示最近的 5 条记录。</span>
+        </div>
+        <div v-else class="history-list">
           <div 
             v-for="item in history" 
             :key="item.id"
@@ -373,7 +388,7 @@
             @click="loadHistoryDetail(item)"
           >
             <div class="history-info">
-              <span class="history-names">{{ item.male_name }} & {{ item.female_name }}</span>
+              <span class="history-names">{{ formatHistoryNames(item) }}</span>
               <span class="history-date">{{ formatDate(item.created_at) }}</span>
             </div>
             <div class="history-score">{{ item.score }}分</div>
@@ -445,6 +460,10 @@ const freeResult = ref(null)
 const premiumResult = ref(null)
 const pricing = ref(null)
 const history = ref([])
+const historyLoading = ref(false)
+const historyLoaded = ref(false)
+const historyError = ref('')
+
 
 
 // 维度名称映射
@@ -790,18 +809,30 @@ const exportReport = async () => {
 
 // 加载历史记录
 const loadHistory = async () => {
+  historyLoading.value = true
+  historyError.value = ''
+
   try {
     const response = await getHehunHistory({ page: 1, page_size: 5 })
     if (response.code === 200) {
       history.value = response.data.list || []
+    } else {
+      history.value = []
+      historyError.value = response.message || '历史记录加载失败，请稍后重试'
     }
   } catch (error) {
+    history.value = []
+    historyError.value = '历史记录加载失败，请稍后重试'
     console.error('获取历史记录失败:', error)
+  } finally {
+    historyLoading.value = false
+    historyLoaded.value = true
   }
 }
 
 // 安全解析JSON
 const safeJsonParse = (jsonStr, defaultVal = null) => {
+
   if (!jsonStr) return defaultVal
   try {
     return JSON.parse(jsonStr)
@@ -811,8 +842,34 @@ const safeJsonParse = (jsonStr, defaultVal = null) => {
   }
 }
 
+const getHistoryBirthLabel = (birthDate) => {
+  if (!birthDate) {
+    return ''
+  }
+
+  const match = String(birthDate).trim().match(/^(\d{4}-\d{2}-\d{2})/)
+  return match ? match[1] : String(birthDate).trim()
+}
+
+const getHistoryPersonLabel = (name, birthDate, roleLabel) => {
+  const trimmedName = typeof name === 'string' ? name.trim() : ''
+  if (trimmedName) {
+    return trimmedName
+  }
+
+  const birthLabel = getHistoryBirthLabel(birthDate)
+  return birthLabel ? `${roleLabel} ${birthLabel}` : roleLabel
+}
+
+const formatHistoryNames = (item = {}) => {
+  const maleLabel = getHistoryPersonLabel(item.male_name, item.male_birth_date, '男方')
+  const femaleLabel = getHistoryPersonLabel(item.female_name, item.female_birth_date, '女方')
+  return `${maleLabel} & ${femaleLabel}`
+}
+
 // 加载历史记录详情
 const loadHistoryDetail = async (item) => {
+
   try {
     // 填充表单
     form.maleName = item.male_name
@@ -1860,12 +1917,46 @@ onMounted(() => {
   margin-top: 40px;
 }
 
-.history-section h3 {
-  color: var(--text-primary);
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
+.history-section h3 {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.history-state {
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.history-state p {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.history-state span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.history-state--error {
+  border-color: rgba(245, 108, 108, 0.2);
+  background: rgba(245, 108, 108, 0.08);
+}
+
 .history-list {
+
   display: flex;
   flex-direction: column;
   gap: 12px;

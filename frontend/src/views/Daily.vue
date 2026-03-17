@@ -129,7 +129,7 @@
           <p class="fortune-summary">{{ fortune.summary }}</p>
         </div>
 
-        <div class="aspect-grid">
+        <div v-if="hasAspectCards" class="aspect-grid">
           <div class="aspect-card card card-hover" v-for="aspect in fortune.aspects" :key="aspect.name">
             <div class="aspect-icon">
               <el-icon>
@@ -143,41 +143,42 @@
             <p class="aspect-desc">{{ aspect.description }}</p>
           </div>
         </div>
+        <div v-else class="section-empty card card-hover">
+          <h3>分项运势整理中</h3>
+          <p>今日事业、财运、感情与健康的细分运势还在生成，稍后再来看看。</p>
+        </div>
 
         <div class="lucky-section card card-hover">
           <h3>今日宜忌</h3>
-          <div class="lucky-grid">
-            <div class="lucky-item good">
+          <div v-if="hasLuckySection" class="lucky-grid">
+            <div v-if="hasYiItems" class="lucky-item good">
               <span class="lucky-label">宜</span>
               <div class="lucky-tags">
                 <el-tag v-for="item in fortune.yi" :key="item" type="success">{{ item }}</el-tag>
               </div>
             </div>
-            <div class="lucky-item bad">
+            <div v-if="hasJiItems" class="lucky-item bad">
               <span class="lucky-label">忌</span>
               <div class="lucky-tags">
                 <el-tag v-for="item in fortune.ji" :key="item" type="danger">{{ item }}</el-tag>
               </div>
             </div>
           </div>
+          <div v-else class="section-empty section-empty--compact">
+            <p>今日宜忌数据整理中，稍后再看。</p>
+          </div>
         </div>
 
         <div class="details-section card card-hover">
           <h3>详细运势</h3>
-          <el-collapse v-model="activeNames">
-            <el-collapse-item title="事业运势" name="career">
-              <p>{{ fortune.details.career }}</p>
-            </el-collapse-item>
-            <el-collapse-item title="财运运势" name="wealth">
-              <p>{{ fortune.details.wealth }}</p>
-            </el-collapse-item>
-            <el-collapse-item title="感情运势" name="love">
-              <p>{{ fortune.details.love }}</p>
-            </el-collapse-item>
-            <el-collapse-item title="健康运势" name="health">
-              <p>{{ fortune.details.health }}</p>
+          <el-collapse v-if="detailSections.length" v-model="activeNames">
+            <el-collapse-item v-for="section in detailSections" :key="section.key" :title="section.title" :name="section.key">
+              <p>{{ section.content }}</p>
             </el-collapse-item>
           </el-collapse>
+          <div v-else class="section-empty section-empty--compact">
+            <p>今日详细运势仍在整理中，稍后再看。</p>
+          </div>
         </div>
       </div>
 
@@ -196,7 +197,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
@@ -230,7 +231,28 @@ const getAspectIcon = (aspectName = '') => {
   return MagicStick
 }
 
+const hasAspectCards = computed(() => {
+  return Array.isArray(fortune.value?.aspects) && fortune.value.aspects.some((aspect) => {
+    return Boolean(aspect?.name || aspect?.description || Number.isFinite(Number(aspect?.score)))
+  })
+})
+
+const hasYiItems = computed(() => Array.isArray(fortune.value?.yi) && fortune.value.yi.length > 0)
+const hasJiItems = computed(() => Array.isArray(fortune.value?.ji) && fortune.value.ji.length > 0)
+const hasLuckySection = computed(() => hasYiItems.value || hasJiItems.value)
+
+const detailSections = computed(() => {
+  const details = fortune.value?.details || {}
+  return [
+    { key: 'career', title: '事业运势', content: details.career },
+    { key: 'wealth', title: '财运运势', content: details.wealth },
+    { key: 'love', title: '感情运势', content: details.love },
+    { key: 'health', title: '健康运势', content: details.health },
+  ].filter((item) => typeof item.content === 'string' && item.content.trim())
+})
+
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
+
   error.value = false
   errorMessage.value = ''
   try {
@@ -389,7 +411,35 @@ onMounted(() => {
   line-height: 1.6;
 }
 
+.section-empty {
+  max-width: 800px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+.section-empty h3,
+.section-empty p {
+  margin: 0;
+}
+
+.section-empty h3 {
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.section-empty p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.section-empty--compact {
+  max-width: none;
+  margin: 0;
+  padding: 6px 0 0;
+}
+
 .aspect-grid {
+
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
