@@ -48,8 +48,9 @@ class Daily extends BaseController
         // 获取用户八字信息，生成个性化运势
         $personalized = null;
         if ($user) {
-            $personalized = $this->generatePersonalizedFortune($user['sub'], $fortune);
+            $personalized = $this->generatePersonalizedFortune($user['sub'], $fortune, $almanac);
         }
+
         
         return $this->success([
             'date' => $fortune->date,
@@ -88,7 +89,7 @@ class Daily extends BaseController
     /**
      * 生成个性化运势
      */
-    protected function generatePersonalizedFortune(int $userId, $fortune): ?array
+    protected function generatePersonalizedFortune(int $userId, $fortune, array $almanac = []): ?array
     {
         // 获取用户最近的八字排盘记录
         $baziRecord = Db::name('tc_bazi_record')
@@ -100,11 +101,15 @@ class Daily extends BaseController
             return null;
         }
         
-        // 计算今日干支（统一以运势记录日期 + 东八区历日为准）
+        // 今日干支优先复用黄历口径，确保页面展示与个性化分析始终是同一套底盘。
         $today = $fortune->date ?: (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai')))->format('Y-m-d');
-        $todayGanZhi = $this->getDayGanZhi($today);
+        $todayGanZhi = (string)($almanac['day_gan_zhi'] ?? '');
+        if (mb_strlen($todayGanZhi) < 2) {
+            $todayGanZhi = $this->getDayGanZhi($today);
+        }
         $todayGan = mb_substr($todayGanZhi, 0, 1);
         $todayZhi = mb_substr($todayGanZhi, 1, 1);
+
         
         // 用户日主
         $dayMaster = $baziRecord['day_gan'];
@@ -281,39 +286,62 @@ class Daily extends BaseController
      */
     protected function calculateFavoriteWuxing(array $baziRecord, int $userId): string
     {
-        $dayMaster = $baziRecord['day_gan'];
+        $birthDate = (string)($baziRecord['birth_date'] ?? '');
+        $gender = (string)($baziRecord['gender'] ?? '男');
+        $seed = crc32($userId . date('Ymd') . 'favorite-wuxing');
+
+        if ($birthDate !== '') {
+            try {
+                $bazi = $this->baziCalculationService->calculateBazi($birthDate, $gender);
+                $favoriteWuxing = array_values(array_filter(
+                    $bazi['strength']['favorite_wuxing'] ?? [],
+                    static fn($item) => is_string($item) && $item !== ''
+                ));
+
+                if (!empty($favoriteWuxing)) {
+                    return $favoriteWuxing[$seed % count($favoriteWuxing)];
+                }
+
+                $dayMasterWuxing = (string)($bazi['day_master_wuxing'] ?? ($bazi['day']['gan_wuxing'] ?? ''));
+                if ($dayMasterWuxing !== '') {
+                    return $dayMasterWuxing;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('每日运势喜用五行回退到简化算法', [
+                    'user_id' => $userId,
+                    'birth_date' => $birthDate,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $dayMaster = (string)($baziRecord['day_gan'] ?? '戊');
         $ganWuXing = ['甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土', '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'];
         $dmWx = $ganWuXing[$dayMaster] ?? '土';
 
-        // 五行生克关系
-        $sheng = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金']; // 被生
-
-        // 简易强弱判断
-        $monthZhi = $baziRecord['month_zhi'] ?? '';
+        // 回退方案仍保留“身弱取印比、身旺取食财官”的传统原则，但仅在旧记录缺少出生信息时启用。
+        $sheng = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金'];
+        $monthZhi = (string)($baziRecord['month_zhi'] ?? '');
         $zhiWuXing = ['子' => '水', '丑' => '土', '寅' => '木', '卯' => '木', '辰' => '土', '巳' => '火', '午' => '火', '未' => '土', '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'];
         $monthWx = $zhiWuXing[$monthZhi] ?? '';
-
-        $isStrong = ($monthWx === $dmWx || $monthWx === $sheng[$dmWx]);
-        
-        // 使用固定种子，确保结果每日一致且对不同用户唯一
-        $seed = crc32($userId . date('Ymd'));
+        $isStrong = ($monthWx === $dmWx || $monthWx === ($sheng[$dmWx] ?? ''));
 
         if (!$isStrong) {
-            // 身弱，喜印比 (生我者或同我者)
-            return ($seed % 2 == 0) ? $dmWx : $sheng[$dmWx];
-        } else {
-            // 身旺，喜食财官 (我生者、我克者、克我者)
-            $options = [
-                '木' => ['火', '土', '金'],
-                '火' => ['土', '金', '水'],
-                '土' => ['金', '水', '木'],
-                '金' => ['水', '木', '火'],
-                '水' => ['木', '火', '土'],
-            ];
-            $choices = $options[$dmWx];
-            return $choices[$seed % count($choices)];
+            return ($seed % 2 === 0) ? $dmWx : ($sheng[$dmWx] ?? $dmWx);
         }
+
+        $options = [
+            '木' => ['火', '土', '金'],
+            '火' => ['土', '金', '水'],
+            '土' => ['金', '水', '木'],
+            '金' => ['水', '木', '火'],
+            '水' => ['木', '火', '土'],
+        ];
+        $choices = $options[$dmWx] ?? ['土'];
+
+        return $choices[$seed % count($choices)];
     }
+
     
     /**
      * 生成幸运数字

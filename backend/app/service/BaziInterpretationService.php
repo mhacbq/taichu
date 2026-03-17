@@ -564,7 +564,7 @@ class BaziInterpretationService
     {
         $chars = $this->ganCharacteristics[$dayMaster];
         
-        $analysis = "作为{$chars['nature']}日主，你如同{$chars['symbol']}一般。";
+        $analysis = "你的日主属{$chars['nature']}，气质像{$chars['symbol']}。";
         $analysis .= $chars['strengths'] . '。';
         
         // 结合十神
@@ -578,14 +578,15 @@ class BaziInterpretationService
         
         // 结合五行
         if ($wuxingAnalysis['balance_score'] >= 75) {
-            $analysis .= '你的五行配置较为平衡，性格稳重，各方面发展都比较顺利。';
+            $analysis .= '你的五行配置较为平衡，性格稳重，各方面发展都比较顺遂。';
         } else {
             $dominant = $wuxingAnalysis['dominant'];
-            $analysis .= "你的{$dominant}较旺，这会增强你的" . $this->getWuxingTrait($dominant) . '特质。';
+            $analysis .= "你的{$dominant}之气偏旺，会增强你" . $this->getWuxingTrait($dominant) . '的一面。';
         }
         
         return $analysis;
     }
+
 
     /**
      * 生成事业分析
@@ -594,11 +595,11 @@ class BaziInterpretationService
     {
         $chars = $this->ganCharacteristics[$dayMaster];
         
-        $analysis = "基于你的{$wuxing}日主特性，" . implode('、', $chars['career']) . '等行业比较适合你。';
+        $analysis = "从{$wuxing}属性来看，" . implode('、', $chars['career']) . '等行业比较适合你。';
         
         // 结合喜用神
         if (isset($yongshen['shen'])) {
-            $analysis .= "你的喜用神为{$yongshen['shen']}，从事与{$yongshen['shen']}相关的行业会有更好的发展。";
+            $analysis .= "命局喜{$yongshen['shen']}，接触与{$yongshen['shen']}相关的行业更容易发挥长处。";
             $careerByWuxing = [
                 '金' => '金融、法律、机械、汽车、珠宝',
                 '木' => '教育、文化、出版、设计、环保',
@@ -606,7 +607,7 @@ class BaziInterpretationService
                 '火' => '能源、餐饮、美容、演艺、互联网',
                 '土' => '房地产、建筑、农业、保险、管理',
             ];
-            $analysis .= "如{$careerByWuxing[$yongshen['shen']]}等领域。";
+            $analysis .= "例如{$careerByWuxing[$yongshen['shen']]}等方向。";
         }
         
         // 结合十神
@@ -623,6 +624,7 @@ class BaziInterpretationService
         
         return $analysis;
     }
+
 
     /**
      * 生成财运分析
@@ -817,9 +819,9 @@ class BaziInterpretationService
      */
     protected function simplifyText(string $text): string
     {
-        // 移除过于专业的术语，简化表达
+        // 移除过于专业的术语，简化表达。
+        // 这里不再直接把“日主”替换成“你”，否则很容易产生“阳金你”“金你特性”这类病句。
         $replacements = [
-            '日主' => '你',
             '命局' => '八字',
             '喜用神' => '有利的五行',
             '身强' => '自身能量强',
@@ -833,7 +835,11 @@ class BaziInterpretationService
         foreach ($replacements as $old => $new) {
             $text = str_replace($old, $new, $text);
         }
+
+        $text = preg_replace('/，+/', '，', $text) ?? $text;
+        $text = preg_replace('/。+/', '。', $text) ?? $text;
         
-        return $text;
+        return trim($text);
     }
+
 }

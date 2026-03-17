@@ -161,6 +161,11 @@ class BaziCalculationService
 
         $is21st = ($year >= 2000);
         $constants = $is21st ? $jieQiConstants21 : $jieQiConstants20;
+        $termAdjustments = [
+            '立春' => [1902 => 1, 1918 => 1, 1982 => 1, 2019 => -1],
+            '惊蛰' => [1906 => 1],
+            '雨水' => [2026 => -1],
+        ];
 
         if (!isset($constants[$name])) {
             return [
@@ -178,25 +183,18 @@ class BaziCalculationService
         $C = (float)$constants[$name][1];
         $y = $year % 100;
 
-        // 寿星公式：[Y*0.2422 + C] - L
-        $value = $y * 0.2422 + $C - floor(($y - ($is21st ? 0 : 1)) / 4);
+        // 寿星通式：[Y×0.2422 + C] - L。
+        // 小寒、大寒、立春、雨水位于闰日之前，L 取 floor((Y-1)/4)；
+        // 其余节气位于闰日之后，L 取 floor(Y/4)。这比“一刀切”更贴近通行历算口径。
+        $preLeapTerms = ['小寒', '大寒', '立春', '雨水'];
+        $leapBase = in_array($name, $preLeapTerms, true) ? max(0, $y - 1) : $y;
+        $value = $y * 0.2422 + $C - floor($leapBase / 4);
 
         // 特殊年份修正
-        if ($is21st) {
-            if ($name === '立春' && $year === 2019) {
-                $value -= 1;
-            }
-            if ($name === '雨水' && $year === 2026) {
-                $value -= 1;
-            }
-        } else {
-            if ($name === '立春' && ($year === 1902 || $year === 1918 || $year === 1982)) {
-                $value += 1;
-            }
-            if ($name === '惊蛰' && $year === 1906) {
-                $value += 1;
-            }
+        if (isset($termAdjustments[$name][$year])) {
+            $value += $termAdjustments[$name][$year];
         }
+
 
         $day = (int)floor($value);
         $fraction = max(0.0, $value - $day);

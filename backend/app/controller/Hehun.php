@@ -516,9 +516,13 @@ class Hehun extends BaseController
      */
     protected function analyzeHehun(array $maleBazi, array $femaleBazi, string $maleName, string $femaleName, string $maleBirthDate = '', string $femaleBirthDate = ''): array
     {
+        $maleBazi = $this->baziCalculationService->normalizeBaziStructure($maleBazi);
+        $femaleBazi = $this->baziCalculationService->normalizeBaziStructure($femaleBazi);
+
         $scores = [];
         $details = [];
         $suggestions = [];
+
         
         // 1. 年柱（生肖）配对分析 - 15分
         $yearScore = $this->analyzeYearPillar($maleBazi['year'], $femaleBazi['year']);
@@ -597,10 +601,9 @@ class Hehun extends BaseController
     {
         // 获取生肖
         $shengxiao = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
-        $zhiIndexMap = ['子' => 0, '丑' => 1, '寅' => 2, '卯' => 3, '辰' => 4, '巳' => 5, '午' => 6, '未' => 7, '申' => 8, '酉' => 9, '戌' => 10, '亥' => 11];
 
-        $maleIndex = isset($maleYear['zhi_index']) ? (int)$maleYear['zhi_index'] : ($zhiIndexMap[$maleYear['zhi'] ?? '子'] ?? 0);
-        $femaleIndex = isset($femaleYear['zhi_index']) ? (int)$femaleYear['zhi_index'] : ($zhiIndexMap[$femaleYear['zhi'] ?? '子'] ?? 0);
+        $maleIndex = $this->resolveShengxiaoIndex($maleYear);
+        $femaleIndex = $this->resolveShengxiaoIndex($femaleYear);
         $maleSx = $shengxiao[$maleIndex] ?? '鼠';
         $femaleSx = $shengxiao[$femaleIndex] ?? '鼠';
         
@@ -616,6 +619,27 @@ class Hehun extends BaseController
         
         return 10; // 中等婚配
     }
+
+    protected function resolveShengxiaoIndex(array $pillar): int
+    {
+        if (isset($pillar['zhi_index']) && is_numeric($pillar['zhi_index'])) {
+            return ((int)$pillar['zhi_index'] % 12 + 12) % 12;
+        }
+
+        $zhiIndexMap = ['子' => 0, '丑' => 1, '寅' => 2, '卯' => 3, '辰' => 4, '巳' => 5, '午' => 6, '未' => 7, '申' => 8, '酉' => 9, '戌' => 10, '亥' => 11];
+        $zhi = (string)($pillar['zhi'] ?? '');
+        if ($zhi !== '' && isset($zhiIndexMap[$zhi])) {
+            return $zhiIndexMap[$zhi];
+        }
+
+        if (isset($pillar['number']) && is_numeric($pillar['number'])) {
+            $year = (int)$pillar['number'];
+            return (($year - 4) % 12 + 12) % 12;
+        }
+
+        return 0;
+    }
+
     
     /**
      * 获取年柱配对描述

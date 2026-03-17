@@ -407,14 +407,37 @@ class Tarot extends BaseController
         $firstCard = $cards[0];
         $lastCard = $cards[count($cards) - 1];
         $firstProfile = $profiles[0]['name'] ?? '起点';
-        $lastProfile = $profiles[count($cards) - 1]['name'] ?? '落点';
+        $lastIndex = count($cards) - 1;
+        $lastProfile = $profiles[$lastIndex]['name'] ?? '落点';
+        $lastAdvice = $profiles[$lastIndex]['advice'] ?? '顺着结果线索提前布局下一步';
         $reversedCount = count(array_filter($cards, static fn($card) => !empty($card['reversed'])));
         $energyDesc = $reversedCount > 0
-            ? "牌阵中有{$reversedCount}张逆位，说明这个{$theme}课题并非单靠向前冲就能解决，先梳理卡点反而更关键。"
-            : "整组牌以顺势推进为主，这个{$theme}课题更适合在保持节奏的前提下稳步落实。";
+            ? "牌阵中有{$reversedCount}张逆位，说明这个{$theme}课题不能只靠硬推，先厘清卡点与内在顾虑会更有效。"
+            : "整组牌以顺势推进为主，这个{$theme}课题适合在看清节奏后稳步落实。";
 
-        return "就{$theme}而言，眼下最需要处理的是「{$firstProfile}」里的{$firstCard['name']}：{$this->expandCardMeaning($firstCard)}。而后续走向会逐渐收束到「{$lastProfile}」的{$lastCard['name']}：{$this->expandCardMeaning($lastCard)}。{$energyDesc}";
+        $elementCounts = ['风' => 0, '水' => 0, '火' => 0, '土' => 0];
+        foreach ($cards as $card) {
+            $element = $card['element'] ?? '';
+            if (isset($elementCounts[$element])) {
+                $elementCounts[$element]++;
+            }
+        }
+
+        $dominantSummary = '';
+        $maxCount = max($elementCounts);
+        if ($maxCount > 0) {
+            $dominantElements = array_keys(array_filter($elementCounts, static fn($count) => $count === $maxCount));
+            $dominantAspects = array_map(fn($element) => $this->getElementAspect($element), $dominantElements);
+            if (count($dominantElements) === 1) {
+                $dominantSummary = "当前主导力量落在{$dominantElements[0]}元素，对应的关键切口是{$dominantAspects[0]}。";
+            } else {
+                $dominantSummary = '当前没有单一元素独大，' . implode('、', $dominantElements) . '并行发声，说明你需要同时兼顾' . implode('、', $dominantAspects) . '。';
+            }
+        }
+
+        return "就{$theme}而言，眼下最需要处理的是「{$firstProfile}」里的{$firstCard['name']}：{$this->expandCardMeaning($firstCard)}。后续走向会逐渐收束到「{$lastProfile}」的{$lastCard['name']}：{$this->expandCardMeaning($lastCard)}。{$energyDesc}{$dominantSummary}接下来最值得执行的一步，是围绕「{$lastProfile}」去做：{$lastAdvice}。";
     }
+
 
     /**
      * 推断问题主题，让总结更贴近用户实际提问。
@@ -708,16 +731,17 @@ class Tarot extends BaseController
         ];
 
         if (isset($friendly[$pairStr])) {
-            return '友元素协同：' . $friendly[$pairStr];
+            return '友好尊严：' . $friendly[$pairStr];
         }
 
         if (isset($hostile[$pairStr])) {
-            return '元素张力：' . $hostile[$pairStr];
+            return '敌对尊严：' . $hostile[$pairStr];
         }
 
         if (isset($neutral[$pairStr])) {
-            return '元素调和：' . $neutral[$pairStr];
+            return '中性尊严：' . $neutral[$pairStr];
         }
+
 
         return '';
     }

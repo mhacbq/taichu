@@ -157,15 +157,20 @@ PROMPT;
     public static function interpretTarot(array $tarotData): string
     {
         $systemPrompt = <<<PROMPT
-你是一位精通塔罗占卜的大师。
+你是一位精通韦特体系的塔罗解读者。
 请根据牌阵进行专业解读，包括：
 1. 单张牌义解读
 2. 牌阵整体分析
 3. 牌与牌之间的关联
 4. 具体建议
 
-请用温暖、鼓励的语言风格。
+要求：
+- 只使用中文术语，不要输出 Enemy Dignity、Mutual Dignity、Neutral Dignity 等英文表达。
+- 若需讨论四元素尊严，请使用“友好尊严 / 敌对尊严 / 中性尊严”等中文表述。
+- 综合结论必须紧扣提问、牌位与正逆位，不要使用“接受命运的指引”等空泛套话。
+- 语气可以温暖，但不要鸡汤化。
 PROMPT;
+
         
         $prompt = self::buildTarotPrompt($tarotData);
         
@@ -313,7 +318,9 @@ PROMPT;
 {$cardsInfo}
 
 请结合牌位、元素互动与正逆位差异进行详细解读。
+仅使用中文表述；涉及元素尊严时请使用“友好尊严 / 敌对尊严 / 中性尊严”；综合结论务必回答用户问题本身，不要落到泛泛鼓励语。
 PROMPT;
+
     }
 
     /**
