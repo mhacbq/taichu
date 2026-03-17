@@ -14,7 +14,8 @@
 - 为完成后台构建验证，额外补装 `admin` 端 `vuedraggable` 依赖，并在 `admin/src/utils/format.js` 补齐 `formatDateTime` 导出。
 - 已同步清理 `TODO.md` 中对应 5 条待办。
 - 验证结果：`npm run build --prefix frontend` 通过，`npm run build --prefix admin` 通过；后台构建仍有 Sass 旧 API 与大包体告警，但不影响编译成功。
-- Git：待本轮提交推送。
+- Git：提交 `c50a908 fix-frontend-multiple-issues-20260317-2110`，已推送到 `origin/master`。
+
 
 ### 本次修复的前端问题（共5个）
 
