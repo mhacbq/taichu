@@ -209,17 +209,26 @@
           </div>
 
           <!-- 定价信息 -->
-          <div class="pricing-info" v-if="pricing">
-            <div v-if="pricing.is_first_free" class="pricing-free">
-              <span><el-icon><Present /></el-icon> 首次占卜免费</span>
+          <div class="pricing-info" v-if="pricingLoading || pricing || pricingError">
+            <div v-if="pricingLoading" class="pricing-loading">
+              <span>正在同步当前占卜价格...</span>
             </div>
-            <div v-else-if="pricing.is_vip_free" class="pricing-vip">
-              <span><el-icon><Trophy /></el-icon> VIP免费</span>
+            <template v-else-if="pricing">
+              <div v-if="pricing.is_first_free" class="pricing-free">
+                <span><el-icon><Present /></el-icon> 首次占卜免费</span>
+              </div>
+              <div v-else-if="pricing.is_vip_free" class="pricing-vip">
+                <span><el-icon><Trophy /></el-icon> VIP免费</span>
+              </div>
+              <div v-else class="pricing-normal">
+                <span>本次消耗 {{ pricing.cost }} 积分</span>
+              </div>
+              <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
+            </template>
+            <div v-else class="pricing-error">
+              <p class="pricing-reason pricing-reason--error">{{ pricingError }}</p>
+              <el-button type="primary" link @click="loadPricing">重新获取价格</el-button>
             </div>
-            <div v-else class="pricing-normal">
-              <span>本次消耗 {{ pricing.cost }} 积分</span>
-            </div>
-            <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
           </div>
 
           <el-button
@@ -233,8 +242,9 @@
             <template #icon v-if="!isLoading">
               <el-icon class="btn-icon"><MagicStick /></el-icon>
             </template>
-            {{ isLoading ? '正在占卜...' : '开始占卜' }}
+            {{ isLoading ? '正在占卜...' : submitButtonText }}
           </el-button>
+
 
           <div class="history-link" v-if="history.length > 0">
             <a @click="showHistory = true">查看历史记录 ({{ history.length }}条)</a>
@@ -333,7 +343,8 @@ const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
   minute: '2-digit',
   second: '2-digit',
   hour12: false,
-}).format(new Date()))
+}).format(new Date(currentBeijingTimestamp.value)))
+
 
 const currentMethodDescription = computed(() => {
   return methodOptions.find((item) => item.value === form.method)?.description || ''

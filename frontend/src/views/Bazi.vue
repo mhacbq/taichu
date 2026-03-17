@@ -1001,7 +1001,7 @@ import { CHINA_CITIES } from '../utils/constants'
 
 
 const BAZI_BASE_COST = 10
-const AI_ANALYSIS_COST = 30
+const AI_ANALYSIS_DEFAULT_COST = 30
 
 const birthDate = ref('')
 const gender = ref('male')
@@ -1011,7 +1011,10 @@ const result = ref(null)
 const currentPoints = ref(0)
 const accountStatus = ref('loading')
 const fortunePricingStatus = ref('loading')
+const aiPricingStatus = ref('loading')
+const aiAnalysisCost = ref(AI_ANALYSIS_DEFAULT_COST)
 const confirmVisible = ref(false)
+
 const saving = ref(false)
 const versionMode = ref('simple') // 'simple' or 'pro'
 const isFirstBazi = ref(true) // 是否首次排盘
@@ -1178,24 +1181,47 @@ const getFortuneToolActionText = (type, readyText) => {
   return readyText
 }
 
+const resolveAiAnalysisCost = (clientConfig = {}) => {
+  const costs = clientConfig?.points?.costs || {}
+  const candidates = [
+    costs.ai_analysis,
+    costs.aiAnalysis,
+    costs.bazi_ai_analysis,
+    clientConfig?.ai_analysis_cost,
+  ]
+
+  for (const candidate of candidates) {
+    const parsed = Number(candidate)
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, parsed)
+    }
+  }
+
+  return null
+}
+
 const aiPricingTagText = computed(() => {
-  if (accountStatus.value === 'loading') {
-    return '账户查询中'
+  if (accountStatus.value === 'loading' || aiPricingStatus.value === 'loading') {
+    return '价格查询中'
   }
 
   if (accountStatus.value === 'error') {
     return '账户稍后确认'
   }
 
-  return `消耗${AI_ANALYSIS_COST}积分`
+  if (aiPricingStatus.value === 'fallback') {
+    return `预计消耗${aiAnalysisCost.value}积分`
+  }
+
+  return aiAnalysisCost.value > 0 ? `消耗${aiAnalysisCost.value}积分` : '本次免费'
 })
 
 const canStartAiAnalysis = computed(() => {
-  if (!isAccountReady.value) {
+  if (!isAccountReady.value || !isAiPricingReady.value) {
     return false
   }
 
-  return currentPoints.value >= AI_ANALYSIS_COST
+  return currentPoints.value >= aiAnalysisCost.value
 })
 
 const aiActionText = computed(() => {
@@ -1203,14 +1229,23 @@ const aiActionText = computed(() => {
     return '账户查询中'
   }
 
+  if (aiPricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
   if (accountStatus.value === 'error') {
     return '请先刷新账户信息'
   }
 
-  return currentPoints.value < AI_ANALYSIS_COST ? `积分不足（需${AI_ANALYSIS_COST}积分）` : '开始AI解盘'
+  if (!isAiPricingReady.value) {
+    return '请先刷新价格信息'
+  }
+
+  return currentPoints.value < aiAnalysisCost.value ? `积分不足（需${aiAnalysisCost.value}积分）` : '开始AI解盘'
 })
 
 const needsFortunePriceRecovery = computed(() => accountStatus.value === 'error' || fortunePricingStatus.value === 'error')
+
 const fortunePriceRecoveryText = computed(() => {
   if (accountStatus.value === 'error') {
     return '当前账户与积分状态暂未同步成功，请先重新获取，避免误判剩余积分或消费承诺。'
@@ -1238,11 +1273,14 @@ const refreshFortunePricing = () => {
 const loadPoints = async ({ silent = false } = {}) => {
   accountStatus.value = 'loading'
   fortunePricingStatus.value = 'loading'
+  aiPricingStatus.value = 'loading'
 
-  const [accountResult, pricingResult] = await Promise.allSettled([
+  const [accountResult, pricingResult, clientConfigResult] = await Promise.allSettled([
     getPointsBalance(),
     getFortunePointsCost(),
+    getClientConfig(),
   ])
+
 
   const accountResponse = accountResult.status === 'fulfilled' ? accountResult.value : null
   if (accountResponse?.code === 200) {
@@ -1278,7 +1316,25 @@ const loadPoints = async ({ silent = false } = {}) => {
       ElMessage.error(pricingResponse?.message || '获取深度工具价格失败，请稍后重试')
     }
   }
+
+  const clientConfigResponse = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
+  if (clientConfigResponse?.code === 200) {
+    const resolvedAiCost = resolveAiAnalysisCost(clientConfigResponse.data)
+    if (Number.isFinite(resolvedAiCost)) {
+      aiAnalysisCost.value = resolvedAiCost
+      aiPricingStatus.value = 'ready'
+    } else {
+      aiAnalysisCost.value = AI_ANALYSIS_DEFAULT_COST
+      aiPricingStatus.value = 'fallback'
+      console.warn('客户端配置缺少 AI 解盘价格，已回退默认价格')
+    }
+  } else {
+    aiAnalysisCost.value = AI_ANALYSIS_DEFAULT_COST
+    aiPricingStatus.value = 'fallback'
+    console.warn('获取 AI 解盘价格失败，已回退默认价格', clientConfigResult.status === 'rejected' ? clientConfigResult.reason : clientConfigResponse)
+  }
 }
+
 
 
 // 显示积分消耗确认对话框
@@ -1586,15 +1642,16 @@ const shareResult = () => {
 
 // AI解盘
 const startAiAnalysis = async () => {
-  if (!isAccountReady.value || !isFortunePricingReady.value) {
-    ElMessage.warning('价格信息还在同步，请稍后再试')
+  if (!isAccountReady.value || !isAiPricingReady.value) {
+    ElMessage.warning('AI 解盘价格还在同步，请稍后再试')
     return
   }
 
-  if (currentPoints.value < AI_ANALYSIS_COST) {
+  if (currentPoints.value < aiAnalysisCost.value) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
+
 
   
   aiAnalyzing.value = true
@@ -1667,8 +1724,11 @@ const startAiAnalysis = async () => {
       const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
       if (res.code === 200) {
         aiAnalysisResult.value = res.data
-        currentPoints.value = res.data.remaining_points || currentPoints.value - AI_ANALYSIS_COST
+        currentPoints.value = Number.isFinite(Number(res.data?.remaining_points))
+          ? Number(res.data.remaining_points)
+          : Math.max(0, currentPoints.value - aiAnalysisCost.value)
       } else {
+
         ElMessage.error(res.message || 'AI解盘失败')
       }
     }

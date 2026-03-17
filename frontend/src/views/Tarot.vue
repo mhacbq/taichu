@@ -147,7 +147,8 @@
               @click="showCardDetail(card, index)"
             />
 
-            <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(selectedSpread, index) }}</span>
+            <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(displayedSpread, index) }}</span>
+
           </div>
         </div>
 
@@ -698,12 +699,13 @@ const saveTarotResult = async () => {
   
   try {
     const response = await saveTarotRecord({
-      spread_type: selectedSpread.value,
+      spread_type: drawnSpread.value || selectedSpread.value,
       question: question.value,
       cards: cards.value,
       interpretation: interpretation.value,
       ai_analysis: ''
     })
+
     
     if (response.code === 200) {
       savedRecordId.value = response.data.record_id

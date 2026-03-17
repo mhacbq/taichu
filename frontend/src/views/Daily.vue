@@ -217,10 +217,12 @@ import BackButton from '../components/BackButton.vue'
 
 const solarDate = ref('')
 const lunarDate = ref('')
+const isLoading = ref(true)
 const fortune = ref(null)
 const activeNames = ref(['career', 'wealth'])
 const error = ref(false)
 const errorMessage = ref('')
+
 
 const getScoreColor = (score) => {
   if (score >= 80) return '#67c23a'
