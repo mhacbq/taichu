@@ -736,14 +736,22 @@ class Hehun extends BaseController
         $maleStats = $this->normalizeWuxingDistribution($maleBazi['wuxing_stats'] ?? []);
         $femaleStats = $this->normalizeWuxingDistribution($femaleBazi['wuxing_stats'] ?? []);
 
-        $score = 6;
+        // 以 8 分为中轴，允许“补益”与“失衡”双向拉动，避免低配命局被基础分直接抬成及格。
+        $score = 8;
         $score += $this->scorePartnerWuxingSupport($femaleStats, $maleFav);
         $score += $this->scorePartnerWuxingSupport($maleStats, $femaleFav);
 
         $maleStrengthScore = (float)($maleBazi['strength']['score'] ?? 50);
         $femaleStrengthScore = (float)($femaleBazi['strength']['score'] ?? 50);
-        if (abs($maleStrengthScore - $femaleStrengthScore) <= 15) {
+        $strengthGap = abs($maleStrengthScore - $femaleStrengthScore);
+        if ($strengthGap <= 10) {
             $score += 2;
+        } elseif ($strengthGap <= 20) {
+            $score += 1;
+        } elseif ($strengthGap >= 35) {
+            $score -= 2;
+        } elseif ($strengthGap >= 25) {
+            $score -= 1;
         }
 
         $maleDayMaster = $maleBazi['day_master_wuxing'] ?? '';
@@ -755,8 +763,20 @@ class Hehun extends BaseController
             $score += 1;
         }
 
+        $maleDominant = $this->getDominantWuxing($maleStats);
+        $femaleDominant = $this->getDominantWuxing($femaleStats);
+        if (
+            $maleDominant !== ''
+            && $maleDominant === $femaleDominant
+            && !in_array($maleDominant, $maleFav, true)
+            && !in_array($femaleDominant, $femaleFav, true)
+        ) {
+            $score -= 2;
+        }
+
         return max(0, min(20, (int)round($score)));
     }
+
 
     /**
      * 规范化五行分布为占比，便于合婚时按权重比较。
@@ -797,21 +817,42 @@ class Hehun extends BaseController
             $supportRatio += (float)($partnerDistribution[$wx] ?? 0);
         }
 
-        if ($supportRatio >= 0.5) {
+        if ($supportRatio >= 0.45) {
             return 5;
         }
-        if ($supportRatio >= 0.35) {
+        if ($supportRatio >= 0.32) {
             return 4;
         }
         if ($supportRatio >= 0.22) {
-            return 3;
-        }
-        if ($supportRatio >= 0.12) {
             return 2;
         }
+        if ($supportRatio >= 0.15) {
+            return 1;
+        }
+        if ($supportRatio >= 0.08) {
+            return 0;
+        }
+        if ($supportRatio >= 0.05) {
+            return -1;
+        }
 
-        return 0;
+        return -2;
     }
+
+    /**
+     * 获取命局中当前最强的五行。
+     */
+    protected function getDominantWuxing(array $distribution): string
+    {
+        $filtered = array_filter($distribution, static fn($value) => (float)$value > 0);
+        if ($filtered === []) {
+            return '';
+        }
+
+        arsort($filtered, SORT_NUMERIC);
+        return (string) array_key_first($filtered);
+    }
+
 
     /**
      * 神煞互补分析

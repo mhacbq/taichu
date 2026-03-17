@@ -211,8 +211,10 @@ PROMPT;
 【日辰月建】
 日辰：{$data['ri_chen']}
 月建：{$data['yue_jian']}
+旬空：{$data['xun_kong'] ?? '未提供'}
 
 请进行详细解读。
+
 PROMPT;
     }
 

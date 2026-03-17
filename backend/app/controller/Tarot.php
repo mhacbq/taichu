@@ -353,13 +353,43 @@ class Tarot extends BaseController
     protected function buildPositionInterpretation(array $card, array $profile, string $question): string
     {
         $meaning = $this->expandCardMeaning($card);
-        $elementAspect = $this->getElementAspect($card['element'] ?? '');
         $positionName = $profile['name'] ?? '当前牌位';
         $focus = $profile['focus'] ?? '这个议题的关键侧面';
         $advice = $profile['advice'] ?? '顺着牌阵脉络继续观察';
+        $element = $card['element'] ?? '';
+        $elementAspect = $this->getElementAspect($element);
+        $lead = match ($positionName) {
+            '今日指引' => "这张单牌先照向{$focus}，像是在提醒你别把重点放散。",
+            '过去' => "过去位说明，事情之所以走到现在，根子多半落在{$focus}。",
+            '现在' => "现在位最直接，它把眼下真正需要面对的{$focus}摆到了台前。",
+            '未来' => "未来位给出的不是宿命结论，而是当前轨迹继续推进后最可能先出现的{$focus}。",
+            '障碍/挑战' => "障碍位说得很直白：真正卡住你的，不只是一时情绪，而是{$focus}。",
+            '潜意识/基础' => "基础位落在深层，说明许多反应并非偶然，而是被{$focus}持续牵引。",
+            '目标可能' => "目标位照见你心里真正想靠近的方向，关键仍在{$focus}。",
+            '近期发展' => "近期发展位看的是下一步风向，{$focus}会先浮上来。",
+            '你的态度' => "这张牌落在自我位置，提示你当前处理问题的方式正集中在{$focus}。",
+            '外部环境' => "外部环境位提醒你，外界真正施加影响的地方在{$focus}。",
+            '希望/恐惧' => "希望与恐惧位最容易暴露内在拉扯，核心还是{$focus}。",
+            '最终走向' => "结果位看的是收束方式，最后会把问题引回{$focus}。",
+            default => "落在「{$positionName}」时，这张牌主要回应{$focus}。",
+        };
+        $orientationFocus = $this->getOrientationFocusText($card, $positionName);
+        $elementText = $element !== ''
+            ? "它属{$element}元素，落点自然更偏向{$elementAspect}这一层。"
+            : '';
 
-        return "牌意核心：{$meaning}。落在「{$positionName}」时，重点落在{$focus}；就你提出的“{$question}”而言，建议{$advice}。这张牌带有{$card['element']}元素，更适合从{$elementAspect}这一层切入。";
+        return $this->normalizeTarotText("{$lead}{$orientationFocus}{$meaning}。{$elementText}回到你问的“{$question}”，{$advice}。");
     }
+
+    protected function getOrientationFocusText(array $card, string $positionName): string
+    {
+        if (!empty($card['reversed'])) {
+            return "逆位说明这股力量在「{$positionName}」上更像延迟、别扭或内耗，不能只看表面动作，得先处理没说出口的阻力。";
+        }
+
+        return "正位说明这股力量在「{$positionName}」上仍有顺势展开的空间，关键在于是否愿意正面回应。";
+    }
+
 
     /**
      * 扩充正逆位牌义，尤其补足权杖/宝剑逆位的深层说明。
@@ -404,17 +434,65 @@ class Tarot extends BaseController
         }
 
         $theme = $this->inferQuestionTheme($question);
-        $firstCard = $cards[0];
-        $lastCard = $cards[count($cards) - 1];
-        $firstProfile = $profiles[0]['name'] ?? '起点';
-        $lastIndex = count($cards) - 1;
-        $lastProfile = $profiles[$lastIndex]['name'] ?? '落点';
-        $lastAdvice = $profiles[$lastIndex]['advice'] ?? '顺着结果线索提前布局下一步';
+        $count = count($cards);
         $reversedCount = count(array_filter($cards, static fn($card) => !empty($card['reversed'])));
-        $energyDesc = $reversedCount > 0
-            ? "牌阵中有{$reversedCount}张逆位，说明这个{$theme}课题不能只靠硬推，先厘清卡点与内在顾虑会更有效。"
-            : "整组牌以顺势推进为主，这个{$theme}课题适合在看清节奏后稳步落实。";
+        $reversalSummary = $reversedCount > 0
+            ? "本组牌里有{$reversedCount}张逆位，说明{$theme}议题真正难的不是没有机会，而是内在顾虑、旧习惯或时机延滞还没处理干净。"
+            : "这组牌以正位推进为主，说明{$theme}议题并非完全受阻，关键在于是否愿意按牌阵节奏稳步落实。";
+        $elementSummary = $this->summarizeDominantElements($cards);
 
+        if ($count === 1) {
+            $card = $cards[0];
+            $profile = $profiles[0]['name'] ?? '核心位置';
+            return $this->normalizeTarotText("这次单牌把重点直接压在「{$profile}」：{$card['name']}提示{$this->getCardStateSnippet($card)}。{$reversalSummary}{$elementSummary}");
+        }
+
+        if ($count === 3) {
+            $past = $cards[0];
+            $present = $cards[1];
+            $future = $cards[2];
+            $presentAdvice = $profiles[1]['advice'] ?? '先把眼前最关键的一步处理好';
+
+            return $this->normalizeTarotText(
+                "就{$theme}而言，过去位的{$past['name']}说明旧脉络一直在发酵：{$this->getCardStateSnippet($past)}；"
+                . "现在位的{$present['name']}才是眼下真正要回应的焦点：{$this->getCardStateSnippet($present)}；"
+                . "若沿当前轨迹继续推进，未来位的{$future['name']}会把结果引向{$this->getCardStateSnippet($future)}。"
+                . "{$reversalSummary}{$elementSummary}现在最值得做的，不是急着猜结局，而是{$presentAdvice}。"
+            );
+        }
+
+        if ($count === 10) {
+            $current = $cards[0];
+            $challenge = $cards[1] ?? $current;
+            $self = $cards[6] ?? $current;
+            $environment = $cards[7] ?? $challenge;
+            $outcome = $cards[9] ?? $cards[$count - 1];
+            $outcomeAdvice = $profiles[9]['advice'] ?? '先把自己与环境的错位调到同一条线上';
+
+            return $this->normalizeTarotText(
+                "凯尔特十字更看重结构张力：当前状态位的{$current['name']}说明局势表层正在经历{$this->getCardStateSnippet($current)}；"
+                . "挑战位的{$challenge['name']}则指出真正的绊脚石在{$this->getCardStateSnippet($challenge)}。"
+                . "来到人物轴线时，你的态度位{$self['name']}与环境位{$environment['name']}一起说明，内外节奏并没有完全同步。"
+                . "最终走向位的{$outcome['name']}不是天降答案，而是当这些张力被处理后最可能收束成的结果：{$this->getCardStateSnippet($outcome)}。"
+                . "{$reversalSummary}{$elementSummary}所以这组牌给你的重点，不是套牌义，而是{$outcomeAdvice}。"
+            );
+        }
+
+        $firstCard = $cards[0];
+        $lastCard = $cards[$count - 1];
+        $firstProfile = $profiles[0]['name'] ?? '起点';
+        $lastProfile = $profiles[$count - 1]['name'] ?? '落点';
+        $lastAdvice = $profiles[$count - 1]['advice'] ?? '顺着结果线索提前布局下一步';
+
+        return $this->normalizeTarotText(
+            "就{$theme}而言，事情先从「{$firstProfile}」的{$firstCard['name']}展开：{$this->getCardStateSnippet($firstCard)}；"
+            . "最后会收束到「{$lastProfile}」的{$lastCard['name']}：{$this->getCardStateSnippet($lastCard)}。"
+            . "{$reversalSummary}{$elementSummary}接下来更值得执行的一步，是{$lastAdvice}。"
+        );
+    }
+
+    protected function summarizeDominantElements(array $cards): string
+    {
         $elementCounts = ['风' => 0, '水' => 0, '火' => 0, '土' => 0];
         foreach ($cards as $card) {
             $element = $card['element'] ?? '';
@@ -423,20 +501,37 @@ class Tarot extends BaseController
             }
         }
 
-        $dominantSummary = '';
         $maxCount = max($elementCounts);
-        if ($maxCount > 0) {
-            $dominantElements = array_keys(array_filter($elementCounts, static fn($count) => $count === $maxCount));
-            $dominantAspects = array_map(fn($element) => $this->getElementAspect($element), $dominantElements);
-            if (count($dominantElements) === 1) {
-                $dominantSummary = "当前主导力量落在{$dominantElements[0]}元素，对应的关键切口是{$dominantAspects[0]}。";
-            } else {
-                $dominantSummary = '当前没有单一元素独大，' . implode('、', $dominantElements) . '并行发声，说明你需要同时兼顾' . implode('、', $dominantAspects) . '。';
-            }
+        if ($maxCount <= 0) {
+            return '';
         }
 
-        return "就{$theme}而言，眼下最需要处理的是「{$firstProfile}」里的{$firstCard['name']}：{$this->expandCardMeaning($firstCard)}。后续走向会逐渐收束到「{$lastProfile}」的{$lastCard['name']}：{$this->expandCardMeaning($lastCard)}。{$energyDesc}{$dominantSummary}接下来最值得执行的一步，是围绕「{$lastProfile}」去做：{$lastAdvice}。";
+        $dominantElements = array_keys(array_filter($elementCounts, static fn($value) => $value === $maxCount));
+        $missingElements = array_keys(array_filter($elementCounts, static fn($value) => $value === 0));
+        $summary = '';
+        if (count($dominantElements) === 1) {
+            $element = $dominantElements[0];
+            $summary .= "当前主轴偏向{$element}元素，重点自然落在{$this->getElementAspect($element)}。";
+        } else {
+            $summary .= '当前没有单一元素独占上风，' . implode('、', $dominantElements) . '并行发声，意味着这个议题得多线并看。';
+        }
+
+        if ($missingElements !== []) {
+            $summary .= '相对偏弱的是' . implode('、', $missingElements) . '元素，对应视角容易被忽略。';
+        }
+
+        return $summary;
     }
+
+    protected function getCardStateSnippet(array $card): string
+    {
+        $meaning = !empty($card['reversed'])
+            ? ($card['reversed_meaning'] ?: ($card['meaning'] ?? ''))
+            : ($card['meaning'] ?? '');
+
+        return $this->normalizeTarotText($meaning);
+    }
+
 
 
     /**
@@ -472,64 +567,45 @@ class Tarot extends BaseController
     {
         $elements = ['风' => 0, '水' => 0, '火' => 0, '土' => 0];
         $elementMeanings = [
-            '风' => '思维、沟通、变化、理智',
-            '水' => '情感、直觉、潜意识、流动',
-            '火' => '行动、能量、热情、意志',
-            '土' => '物质、现实、稳定、身体',
+            '风' => '思维、沟通、判断',
+            '水' => '情感、直觉、连结',
+            '火' => '行动、意志、推动',
+            '土' => '现实、资源、落地',
         ];
 
         foreach ($cards as $card) {
-            if (isset($elements[$card['element']])) {
-                $elements[$card['element']]++;
+            $element = $card['element'] ?? '';
+            if (isset($elements[$element])) {
+                $elements[$element]++;
             }
         }
 
-        $total = count($cards);
-        $analysis = [];
+        $total = max(1, count($cards));
+        $distribution = [];
         foreach ($elements as $element => $count) {
             if ($count > 0) {
-                $percentage = round(($count / $total) * 100);
-                $analysis[] = "{$element}元素({$elementMeanings[$element]})：{$count}张({$percentage}%)";
+                $distribution[] = "{$element}{$count}张（{$elementMeanings[$element]}，约" . round(($count / $total) * 100) . '%）';
             }
         }
 
-        $result = implode('、', $analysis);
-        $maxCount = max($elements);
-        $dominantElements = array_keys(array_filter($elements, static fn($count) => $count === $maxCount && $count > 0));
-
-        $guidance = [
-            '风' => '提示您需要更多理性思考和有效沟通来解决当前问题。',
-            '水' => '暗示情感和直觉在当前处境中起主导作用，请倾听内心的声音。',
-            '火' => '表明现在是需要行动和决断的时候，用热情和意志克服困难。',
-            '土' => '强调物质基础和现实条件的重要性，务实稳健地处理问题。',
-        ];
-
-        if (count($dominantElements) === 1) {
-            $dominant = $dominantElements[0];
-            $result .= "\n\n牌阵主导元素是【{$dominant}】，" . $guidance[$dominant];
-        } elseif (!empty($dominantElements)) {
-            $combined = implode('、', $dominantElements);
-            $result .= "\n\n牌阵没有单一主导元素，【{$combined}】并列最强。";
-            $result .= '这说明当前议题并非单线推进，而是需要同时兼顾';
-            $result .= implode('、', array_map(fn($element) => $this->getElementAspect($element), $dominantElements));
-            $result .= '等多个层面，不能只抓其中一个切口。';
+        $segments = [];
+        if ($distribution !== []) {
+            $segments[] = '牌阵里的元素分布是：' . implode('；', $distribution) . '。';
         }
 
-        $missing = array_filter($elements, static fn($v) => $v === 0);
-        if (!empty($missing)) {
-            $missingNames = array_keys($missing);
-            $result .= "\n\n注意：牌阵中缺少" . implode('、', $missingNames) . '元素，';
-            $missingGuidance = [
-                '风' => '可能意味着思考不够清晰或沟通存在障碍。',
-                '水' => '可能表示情感被压抑或忽视了直觉的作用。',
-                '火' => '可能暗示行动力不足或缺乏足够的热情。',
-                '土' => '可能说明对现实条件的关注不够或基础不够稳固。',
-            ];
-            $result .= $missingGuidance[$missingNames[0]];
+        $dominantSummary = $this->summarizeDominantElements($cards);
+        if ($dominantSummary !== '') {
+            $segments[] = $dominantSummary;
         }
 
-        return $result;
+        $relationNotes = $this->collectElementRelationNotes($cards);
+        if ($relationNotes !== []) {
+            $segments[] = '相邻牌的元素尊严显示：' . implode('；', $relationNotes) . '。';
+        }
+
+        return $this->normalizeTarotText(implode(' ', $segments));
     }
+
     
     /**
      * 分析牌与牌之间的关系
@@ -541,50 +617,84 @@ class Tarot extends BaseController
             return '';
         }
 
-        $analysis = [];
         $positions = $this->getSpreadPositions($count);
+        $analysis = [];
 
         $firstCard = $cards[0];
         $lastCard = $cards[$count - 1];
-        $analysis[] = "【首尾呼应】从「{$firstCard['name']}」到「{$lastCard['name']}」，";
-        $analysis[] = $this->getCardRelationship($firstCard, $lastCard);
+        $analysis[] = '首尾主线：从「' . $firstCard['name'] . '」走到「' . $lastCard['name'] . '」，' . $this->getCardRelationship($firstCard, $lastCard);
 
         if ($count === 10) {
             $analysis[] = $this->analyzeCelticCrossRelationships($cards, $positions);
         } elseif ($count >= 3) {
-            $analysis[] = "\n【牌位流转】";
+            $flows = [];
             for ($i = 0; $i < $count - 1; $i++) {
                 $current = $cards[$i];
                 $next = $cards[$i + 1];
-                $analysis[] = "{$positions[$i]}→{$positions[$i + 1]}：" . $this->getTransitionDesc($current, $next);
+                $flows[] = ($positions[$i] ?? ('第' . ($i + 1) . '张'))
+                    . '→'
+                    . ($positions[$i + 1] ?? ('第' . ($i + 2) . '张'))
+                    . '：'
+                    . $this->getTransitionDesc($current, $next);
             }
+            $analysis[] = '牌位流转：' . implode('；', $flows) . '。';
         }
 
-        $elementPairs = [];
-        for ($i = 0; $i < min(3, $count - 1); $i++) {
-            $pair = $cards[$i]['element'] . '-' . $cards[$i + 1]['element'];
-            if (!in_array($pair, $elementPairs, true)) {
-                $elementPairs[] = $pair;
-                $relation = $this->getElementRelation($cards[$i]['element'], $cards[$i + 1]['element']);
-                if ($relation) {
-                    $analysis[] = "\n【元素互动】{$cards[$i]['name']}({$cards[$i]['element']})与{$cards[$i + 1]['name']}({$cards[$i + 1]['element']})：{$relation}";
-                }
-            }
+        $elementNotes = $this->collectElementRelationNotes($cards);
+        if ($elementNotes !== []) {
+            $analysis[] = '元素脉络：' . implode('；', $elementNotes) . '。';
         }
 
         $upright = count(array_filter($cards, static fn($c) => !$c['reversed']));
         $reversed = $count - $upright;
-        $analysis[] = "\n【正逆位分布】正位{$upright}张，逆位{$reversed}张。";
         if ($reversed > $upright) {
-            $analysis[] = '逆位牌较多，提示当前可能存在阻碍或需要更多内省。';
+            $analysis[] = "正逆位分布为正位{$upright}张、逆位{$reversed}张，阻滞面比顺势面更强，解读时要优先看卡点。";
         } elseif ($upright > $reversed) {
-            $analysis[] = '正位牌较多，整体能量流动较为顺畅。';
+            $analysis[] = "正逆位分布为正位{$upright}张、逆位{$reversed}张，整体仍以顺势推进为主。";
         } else {
-            $analysis[] = '正逆位平衡，暗示内在外在因素交织影响。';
+            $analysis[] = "正逆位分布为正位{$upright}张、逆位{$reversed}张，内在顾虑与外部机会同时存在。";
         }
 
-        return implode('', $analysis);
+        return $this->normalizeTarotText(implode(PHP_EOL, $analysis));
     }
+
+    protected function collectElementRelationNotes(array $cards): array
+    {
+        $notes = [];
+        $seen = [];
+        for ($i = 0; $i < count($cards) - 1; $i++) {
+            $left = $cards[$i];
+            $right = $cards[$i + 1];
+            $leftElement = $left['element'] ?? '';
+            $rightElement = $right['element'] ?? '';
+            if ($leftElement === '' || $rightElement === '') {
+                continue;
+            }
+
+            $pair = $leftElement . '-' . $rightElement;
+            if (isset($seen[$pair])) {
+                continue;
+            }
+            $seen[$pair] = true;
+
+            $relation = $this->getElementRelation($leftElement, $rightElement);
+            if ($relation !== '') {
+                $notes[] = $left['name'] . '与' . $right['name'] . '呈现' . $relation;
+            }
+        }
+
+        return $notes;
+    }
+
+    protected function normalizeTarotText(string $text): string
+    {
+        $text = preg_replace('/[。]{2,}/u', '。', $text) ?? $text;
+        $text = preg_replace('/([，；：]){2,}/u', '$1', $text) ?? $text;
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+
+        return trim($text);
+    }
+
 
     /**
      * 获取当前牌阵的标准牌位名称。

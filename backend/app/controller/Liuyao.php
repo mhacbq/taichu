@@ -523,12 +523,17 @@ PROMPT;
         $result['hu_gua'] = LiuyaoService::getHuGua($result['yao_code']);
         $result['gua_info'] = $this->getGuaInfo($result['main_gua'], $result['bian_gua']['bian_name']);
 
-        [$riGan, $riZhi] = $this->resolveRiChen($data);
+        $referenceMoment = $this->resolveDivinationMoment();
+        [$riGan, $riZhi] = $this->resolveRiChen($data, $referenceMoment);
         $timeInfo = [
             'ri_gan' => $riGan,
             'ri_zhi' => $riZhi,
+            'ri_chen' => $riGan . $riZhi,
+            'yue_jian' => $this->resolveYueJian($referenceMoment),
+            'divination_at' => $referenceMoment->format('Y-m-d H:i:s'),
             'xunkong' => LiuyaoService::calculateXunKong($riGan, $riZhi),
         ];
+
 
         $result['question'] = trim((string) ($data['question'] ?? ''));
         $result['time_info'] = $timeInfo;
@@ -562,31 +567,40 @@ PROMPT;
     }
 
     /**
+     * 统一六爻所使用的起卦时刻。
+     * 晚子时按次日处理，以保持与八字日柱口径一致。
+     */
+    private function resolveDivinationMoment(): \DateTimeImmutable
+    {
+        $moment = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai'));
+        if ((int) $moment->format('G') >= 23) {
+            $moment = $moment->modify('+1 day');
+        }
+
+        return $moment;
+    }
+
+    /**
      * 自动补齐日辰
      */
-    private function resolveRiChen(array $data): array
+    private function resolveRiChen(array $data, \DateTimeImmutable $referenceMoment): array
     {
         $riGan = trim((string) ($data['ri_gan'] ?? ''));
         $riZhi = trim((string) ($data['ri_zhi'] ?? ''));
 
-        if ($riGan === '' || $riZhi === '') {
-            $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai'));
-            if ((int) $today->format('G') >= 23) {
-                $today = $today->modify('+1 day');
-            }
+        if (($riGan === '') xor ($riZhi === '')) {
+            throw new \InvalidArgumentException('日辰天干与地支必须同时提供，或同时留空由系统自动推算');
+        }
 
+        if ($riGan === '' && $riZhi === '') {
             $pillar = (new BaziCalculationService())->calculateDayPillar(
-                (int) $today->format('Y'),
-                (int) $today->format('n'),
-                (int) $today->format('j')
+                (int) $referenceMoment->format('Y'),
+                (int) $referenceMoment->format('n'),
+                (int) $referenceMoment->format('j')
             );
 
-            if ($riGan === '') {
-                $riGan = self::VALID_GAN[(int) $pillar['gan_index']];
-            }
-            if ($riZhi === '') {
-                $riZhi = self::VALID_ZHI[(int) $pillar['zhi_index']];
-            }
+            $riGan = self::VALID_GAN[(int) $pillar['gan_index']];
+            $riZhi = self::VALID_ZHI[(int) $pillar['zhi_index']];
         }
 
         if (!in_array($riGan, self::VALID_GAN, true)) {
@@ -598,6 +612,19 @@ PROMPT;
 
         return [$riGan, $riZhi];
     }
+
+    /**
+     * 推导当前起卦时刻的月建。
+     * 以八字统一节气口径取月支，六爻展示时追加“月”字。
+     */
+    private function resolveYueJian(\DateTimeImmutable $referenceMoment): string
+    {
+        $bazi = (new BaziCalculationService())->calculateBazi($referenceMoment->format('Y-m-d H:i:s'), '男');
+        $monthZhi = trim((string) ($bazi['month']['zhi'] ?? ''));
+
+        return $monthZhi !== '' ? $monthZhi . '月' : '';
+    }
+
 
     /**
      * 解析并统一爻值编码（0 老阴 / 1 少阳 / 2 少阴 / 3 老阳）
@@ -758,12 +785,17 @@ PROMPT;
             $segments[] = '用神分析：' . $coreResult['yong_shen']['description'];
         }
 
+        if (!empty($coreResult['time_info']['yue_jian'])) {
+            $segments[] = '月建参考：' . $coreResult['time_info']['yue_jian'];
+        }
+
         if (!empty($coreResult['time_info']['xunkong'])) {
             $segments[] = '旬空参考：' . implode('、', (array) $coreResult['time_info']['xunkong']);
         }
 
         return implode(PHP_EOL . PHP_EOL, array_filter($segments));
     }
+
 
     /**
      * AI 提示数据
@@ -788,10 +820,12 @@ PROMPT;
             'dong_yao' => empty($dongYao) ? '无动爻' : implode('、', $dongYao),
             'liu_shen' => $coreResult['liu_shen'] ?? [],
             'yong_shen' => $coreResult['yong_shen'] ?? [],
-            'ri_chen' => ($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''),
-            'yue_jian' => $coreResult['time_info']['xunkong'] ? '旬空：' . implode('、', (array) $coreResult['time_info']['xunkong']) : '未提供',
+            'ri_chen' => $coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? '')),
+            'yue_jian' => $coreResult['time_info']['yue_jian'] ?? '未提供',
+            'xun_kong' => $coreResult['time_info']['xunkong'] ? implode('、', (array) $coreResult['time_info']['xunkong']) : '未提供',
         ];
     }
+
 
     /**
      * 保存前端兼容结果
@@ -835,8 +869,9 @@ PROMPT;
                 'liushen' => json_encode($coreResult['liu_shen'] ?? [], JSON_UNESCAPED_UNICODE),
                 'yongshen' => $coreResult['yong_shen']['liuqin'] ?? '',
                 'liunian' => $coreResult['time_info']['ri_zhi'] ?? '',
-                'yuejian' => implode('、', (array) ($coreResult['time_info']['xunkong'] ?? [])),
-                'rigan' => ($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''),
+                'yuejian' => $coreResult['time_info']['yue_jian'] ?? '',
+                'rigan' => $coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? '')),
+
                 'interpretation' => $interpretation,
                 'ai_interpretation' => $aiContent ?? '',
                 'updated_at' => $createdAt,

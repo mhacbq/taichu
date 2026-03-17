@@ -877,11 +877,17 @@ class Paipan extends BaseController
         $monthGanIndex = $this->resolveGanIndex($bazi['month'] ?? []);
         $monthZhiIndex = $this->resolveZhiIndex($bazi['month'] ?? []);
         
-        // 计算起运年龄（根据出生日期到最近节气的天数）
-        $startAge = $this->calculateQiYunAge($birthDate, $isForward);
-        $birthTimestamp = strtotime($birthDate);
-        $birthYear = (int)date('Y', $birthTimestamp);
-        
+        // 起运起点优先复用服务层已按交节时刻换算出的精确结果，避免专业版继续沿用旧的“只看节气日期、整数折岁”口径。
+        $qiyun = is_array($bazi['qiyun'] ?? null) ? $bazi['qiyun'] : [];
+        $startAge = max(0, (int) ($qiyun['years'] ?? $this->calculateQiYunAge($birthDate, $isForward)));
+        $qiyunDisplay = trim((string) ($qiyun['display'] ?? ($startAge . '岁起运')));
+        $qiyunStartDate = trim((string) ($qiyun['start_date'] ?? ''));
+        if ($qiyunStartDate === '') {
+            $birthMoment = new \DateTimeImmutable($birthDate);
+            $qiyunStartDate = $birthMoment->modify('+' . $startAge . ' years')->format('Y-m-d');
+        }
+        $qiyunStartMoment = new \DateTimeImmutable($qiyunStartDate);
+
         $daYun = [];
         
         for ($i = 0; $i < 8; $i++) {
@@ -901,8 +907,10 @@ class Paipan extends BaseController
             $shiShen = $this->calculateShiShen($dayGan, $gan);
             $ageStart = $startAge + $i * 10;
             $ageEnd = $startAge + ($i + 1) * 10 - 1;
-            $startYear = $birthYear + $ageStart;
-            $endYear = $birthYear + $ageEnd;
+            $startMoment = $i === 0 ? $qiyunStartMoment : $qiyunStartMoment->modify('+' . ($i * 10) . ' years');
+            $endMoment = $startMoment->modify('+9 years');
+            $startYear = (int) $startMoment->format('Y');
+            $endYear = (int) $endMoment->format('Y');
             
             $daYun[] = [
                 'gan' => $gan,
@@ -916,10 +924,14 @@ class Paipan extends BaseController
                 'end_age' => $ageEnd,
                 'start_year' => $startYear,
                 'end_year' => $endYear,
+                'start_date' => $startMoment->format('Y-m-d'),
+                'end_date' => $endMoment->format('Y-m-d'),
+                'qiyun_display' => $qiyunDisplay,
                 'years' => $startYear . '-' . $endYear,
                 'nayin' => $this->naYin[$gan . $zhi] ?? ''
             ];
         }
+
         
         return $daYun;
     }
