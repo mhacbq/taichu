@@ -23,6 +23,16 @@
               <span class="score-label">匹配分</span>
             </div>
           </div>
+
+          <div v-if="hasReducedPrecision" class="precision-summary-card precision-summary-card--result">
+            <div class="precision-summary-header">
+              <el-icon><WarningFilled /></el-icon>
+              <div>
+                <strong>本次结果包含低精度出生时刻</strong>
+                <p>当前结论更适合参考整体关系趋势；如需更细的时柱判断，请补充准确出生时间后重新测算。</p>
+              </div>
+            </div>
+          </div>
           
           <div class="result-level" :class="freeResult.hehun.level">
             {{ freeResult.hehun.level_text }}
@@ -78,6 +88,16 @@
           <div class="result-header">
             <h2>详细合婚报告</h2>
             <div class="premium-badge">完整版</div>
+          </div>
+
+          <div v-if="hasReducedPrecision" class="precision-summary-card precision-summary-card--result">
+            <div class="precision-summary-header">
+              <el-icon><WarningFilled /></el-icon>
+              <div>
+                <strong>本次详细报告包含低精度出生时刻</strong>
+                <p>系统已尽量保留合婚核心趋势，但部分细分维度仍建议在补齐准确时辰后再复核一次。</p>
+              </div>
+            </div>
           </div>
           
           <!-- 综合评分 -->
@@ -160,15 +180,53 @@
                 />
               </div>
             </div>
+            <div class="birth-precision-panel">
+              <label class="precision-heading">出生时刻精度</label>
+              <div class="precision-options">
+                <button
+                  v-for="option in birthPrecisionOptions"
+                  :key="`male-${option.value}`"
+                  type="button"
+                  class="precision-option"
+                  :class="{ active: form.maleBirthPrecision === option.value }"
+                  @click="form.maleBirthPrecision = option.value"
+                >
+                  <span class="precision-option-title">{{ option.label }}</span>
+                  <span class="precision-option-desc">{{ option.desc }}</span>
+                </button>
+              </div>
+              <p class="precision-helper">{{ getBirthPrecisionHint(form.maleBirthPrecision) }}</p>
+            </div>
             <div class="form-row">
               <div class="form-group">
-                <label>出生日期 <span class="required">*</span></label>
+                <label>{{ getBirthInputLabel(form.maleBirthPrecision) }} <span class="required">*</span></label>
                 <input 
-                  v-model="form.maleBirthDate" 
-                  type="datetime-local"
+                  v-model="form.maleBirthDate"
+                  :type="getBirthInputType(form.maleBirthPrecision)"
                   required
                 />
+                <p class="field-helper">{{ getBirthFieldHelper(form.maleBirthPrecision) }}</p>
               </div>
+            </div>
+            <div v-if="form.maleBirthPrecision === 'range'" class="time-range-panel">
+              <label class="time-range-label">大概出生时段</label>
+              <div class="time-range-options">
+                <button
+                  v-for="option in birthTimeRangeOptions"
+                  :key="`male-range-${option.value}`"
+                  type="button"
+                  class="time-range-chip"
+                  :class="{ active: form.maleBirthTimeRange === option.value }"
+                  @click="form.maleBirthTimeRange = option.value"
+                >
+                  <span>{{ option.label }}</span>
+                  <small>{{ option.hint }}</small>
+                </button>
+              </div>
+            </div>
+            <div class="precision-confidence" :class="`precision-confidence--${form.maleBirthPrecision}`">
+              <span class="confidence-badge">{{ getBirthPrecisionBadge(form.maleBirthPrecision) }}</span>
+              <p>{{ getBirthConfidenceCopy(form.maleBirthPrecision, '男方') }}</p>
             </div>
           </div>
           
@@ -189,15 +247,53 @@
                 />
               </div>
             </div>
+            <div class="birth-precision-panel">
+              <label class="precision-heading">出生时刻精度</label>
+              <div class="precision-options">
+                <button
+                  v-for="option in birthPrecisionOptions"
+                  :key="`female-${option.value}`"
+                  type="button"
+                  class="precision-option"
+                  :class="{ active: form.femaleBirthPrecision === option.value }"
+                  @click="form.femaleBirthPrecision = option.value"
+                >
+                  <span class="precision-option-title">{{ option.label }}</span>
+                  <span class="precision-option-desc">{{ option.desc }}</span>
+                </button>
+              </div>
+              <p class="precision-helper">{{ getBirthPrecisionHint(form.femaleBirthPrecision) }}</p>
+            </div>
             <div class="form-row">
               <div class="form-group">
-                <label>出生日期 <span class="required">*</span></label>
+                <label>{{ getBirthInputLabel(form.femaleBirthPrecision) }} <span class="required">*</span></label>
                 <input 
-                  v-model="form.femaleBirthDate" 
-                  type="datetime-local"
+                  v-model="form.femaleBirthDate"
+                  :type="getBirthInputType(form.femaleBirthPrecision)"
                   required
                 />
+                <p class="field-helper">{{ getBirthFieldHelper(form.femaleBirthPrecision) }}</p>
               </div>
+            </div>
+            <div v-if="form.femaleBirthPrecision === 'range'" class="time-range-panel">
+              <label class="time-range-label">大概出生时段</label>
+              <div class="time-range-options">
+                <button
+                  v-for="option in birthTimeRangeOptions"
+                  :key="`female-range-${option.value}`"
+                  type="button"
+                  class="time-range-chip"
+                  :class="{ active: form.femaleBirthTimeRange === option.value }"
+                  @click="form.femaleBirthTimeRange = option.value"
+                >
+                  <span>{{ option.label }}</span>
+                  <small>{{ option.hint }}</small>
+                </button>
+              </div>
+            </div>
+            <div class="precision-confidence" :class="`precision-confidence--${form.femaleBirthPrecision}`">
+              <span class="confidence-badge">{{ getBirthPrecisionBadge(form.femaleBirthPrecision) }}</span>
+              <p>{{ getBirthConfidenceCopy(form.femaleBirthPrecision, '女方') }}</p>
             </div>
           </div>
           
@@ -227,6 +323,26 @@
               <span v-if="normalizedPricing.discount > 0" class="discount">-{{ normalizedPricing.discount }}%</span>
             </div>
             <p v-if="normalizedPricing.reason" class="pricing-reason">{{ normalizedPricing.reason }}</p>
+          </div>
+
+          <div v-if="hasReducedPrecision" class="precision-summary-card">
+            <div class="precision-summary-header">
+              <el-icon><WarningFilled /></el-icon>
+              <div>
+                <strong>当前为低精度合婚输入</strong>
+                <p>可以先看关系趋势，但涉及时柱的细节判断会更保守，请尽量补充更准确的出生时间。</p>
+              </div>
+            </div>
+            <div class="precision-summary-list">
+              <div v-for="item in precisionSummaryList" :key="item.role" class="precision-summary-item">
+                <span class="summary-role">{{ item.role }}</span>
+                <div class="summary-copy">
+                  <strong>{{ item.modeLabel }}</strong>
+                  <span>{{ item.detail }}</span>
+                </div>
+                <span class="summary-trust">{{ item.confidence }}</span>
+              </div>
+            </div>
           </div>
 
           
@@ -272,7 +388,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
-import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu } from '@element-plus/icons-vue'
+import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 import BackButton from '../components/BackButton.vue'
 
@@ -288,12 +404,37 @@ const sanitizeHtml = (html) => {
   })
 }
 
+const birthPrecisionOptions = [
+  { value: 'exact', label: '精确时分', desc: '已知具体出生时间，结果最完整' },
+  { value: 'range', label: '大概时段', desc: '记得是早上或晚上，可先按时段估算' },
+  { value: 'unknown', label: '未知时辰', desc: '只有生日，也能先看合婚趋势' },
+]
+
+const birthTimeRangeOptions = [
+  { value: 'before-dawn', label: '凌晨', hint: '00:00-05:59', time: '03:30' },
+  { value: 'morning', label: '早晨', hint: '06:00-08:59', time: '07:30' },
+  { value: 'forenoon', label: '上午', hint: '09:00-11:59', time: '10:30' },
+  { value: 'noon', label: '中午', hint: '12:00-13:59', time: '12:30' },
+  { value: 'afternoon', label: '下午', hint: '14:00-17:59', time: '15:30' },
+  { value: 'evening', label: '晚上', hint: '18:00-23:59', time: '19:30' },
+]
+
+const defaultBirthTimeRange = 'forenoon'
+const birthTimeRangeMap = birthTimeRangeOptions.reduce((acc, option) => {
+  acc[option.value] = option
+  return acc
+}, {})
+
 // 表单数据
 const form = reactive({
   maleName: '',
   maleBirthDate: '',
+  maleBirthPrecision: 'exact',
+  maleBirthTimeRange: defaultBirthTimeRange,
   femaleName: '',
   femaleBirthDate: '',
+  femaleBirthPrecision: 'exact',
+  femaleBirthTimeRange: defaultBirthTimeRange,
   useAi: true,
 })
 
@@ -305,6 +446,7 @@ const premiumResult = ref(null)
 const pricing = ref(null)
 const history = ref([])
 
+
 // 维度名称映射
 const dimensionNames = {
   personality: '性格匹配',
@@ -314,10 +456,150 @@ const dimensionNames = {
   liunian: '流年运势',
 }
 
+const getBirthPrecisionLabel = (precision) => {
+  if (precision === 'range') return '大概时段'
+  if (precision === 'unknown') return '未知时辰'
+  return '精确时分'
+}
+
+const getBirthPrecisionBadge = (precision) => {
+  if (precision === 'range') return '中可信'
+  if (precision === 'unknown') return '趋势参考'
+  return '高可信'
+}
+
+const getBirthInputLabel = (precision) => (precision === 'exact' ? '出生日期与时间' : '出生日期')
+const getBirthInputType = (precision) => (precision === 'exact' ? 'datetime-local' : 'date')
+
+const getBirthPrecisionHint = (precision) => {
+  if (precision === 'range') {
+    return '若只记得大概是清晨、下午或晚上，可先选择时段；系统会用代表时刻估算时柱。'
+  }
+  if (precision === 'unknown') {
+    return '若完全不清楚出生时辰，也可以只填生日，系统会按中午排盘并降低可信度提示。'
+  }
+  return '填写到分钟可获得更完整的时柱、流年和婚配细节判断。'
+}
+
+const getBirthFieldHelper = (precision) => {
+  if (precision === 'range') {
+    return '先选择生日，再补充一个大概出生时段。'
+  }
+  if (precision === 'unknown') {
+    return '仅用生日先看趋势，涉及时柱的结论会保守处理。'
+  }
+  return '建议尽量填写准确时间，减少时柱偏差。'
+}
+
+const getBirthConfidenceCopy = (precision, roleLabel) => {
+  if (precision === 'range') {
+    return `${roleLabel}当前按大概时段估算，适合先看关系趋势；涉及时柱的细项判断会保守处理。`
+  }
+  if (precision === 'unknown') {
+    return `${roleLabel}当前只提供生日，系统会默认按中午排盘，结论更适合做方向参考。`
+  }
+  return `${roleLabel}已使用精确时间输入，合婚结果可信度最高。`
+}
+
+const resolveBirthDatePayload = (value, precision, timeRange) => {
+  if (!value) {
+    return ''
+  }
+
+  if (precision === 'exact') {
+    return value.replace('T', ' ')
+  }
+
+  const dateOnly = value.slice(0, 10)
+  if (precision === 'unknown') {
+    return dateOnly
+  }
+
+  const matchedRange = birthTimeRangeMap[timeRange] || birthTimeRangeMap[defaultBirthTimeRange]
+  return `${dateOnly} ${matchedRange.time}`
+}
+
+const resolveTimeRangeByClock = (clock = '') => {
+  const [hour = '12'] = clock.split(':')
+  const parsedHour = Number(hour)
+
+  if (parsedHour < 6) return 'before-dawn'
+  if (parsedHour < 9) return 'morning'
+  if (parsedHour < 12) return 'forenoon'
+  if (parsedHour < 14) return 'noon'
+  if (parsedHour < 18) return 'afternoon'
+  return 'evening'
+}
+
+const hydrateBirthState = (birthDate) => {
+  if (!birthDate) {
+    return {
+      value: '',
+      precision: 'exact',
+      timeRange: defaultBirthTimeRange,
+    }
+  }
+
+  const trimmed = String(birthDate).trim()
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return {
+      value: trimmed,
+      precision: 'unknown',
+      timeRange: defaultBirthTimeRange,
+    }
+  }
+
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?$/)
+  if (!match) {
+    return {
+      value: trimmed,
+      precision: 'exact',
+      timeRange: defaultBirthTimeRange,
+    }
+  }
+
+  const [, date, hour, minute] = match
+  return {
+    value: `${date}T${hour}:${minute}`,
+    precision: 'exact',
+    timeRange: resolveTimeRangeByClock(`${hour}:${minute}`),
+  }
+}
+
+const precisionSummaryList = computed(() => ([
+  {
+    role: '男方',
+    modeLabel: getBirthPrecisionLabel(form.maleBirthPrecision),
+    confidence: getBirthPrecisionBadge(form.maleBirthPrecision),
+    detail: getBirthConfidenceCopy(form.maleBirthPrecision, '男方'),
+  },
+  {
+    role: '女方',
+    modeLabel: getBirthPrecisionLabel(form.femaleBirthPrecision),
+    confidence: getBirthPrecisionBadge(form.femaleBirthPrecision),
+    detail: getBirthConfidenceCopy(form.femaleBirthPrecision, '女方'),
+  },
+]))
+
+const hasReducedPrecision = computed(() => {
+  return form.maleBirthPrecision !== 'exact' || form.femaleBirthPrecision !== 'exact'
+})
+
+const buildHehunPayload = ({ tier, useAi }) => ({
+  maleName: form.maleName || '男方',
+  maleBirthDate: resolveBirthDatePayload(form.maleBirthDate, form.maleBirthPrecision, form.maleBirthTimeRange),
+  femaleName: form.femaleName || '女方',
+  femaleBirthDate: resolveBirthDatePayload(form.femaleBirthDate, form.femaleBirthPrecision, form.femaleBirthTimeRange),
+  tier,
+  useAi,
+})
+
 // 表单验证
 const isFormValid = computed(() => {
   return form.maleBirthDate && form.femaleBirthDate
 })
+
 
 const normalizePricingData = (rawPricing) => {
   if (!rawPricing) {
@@ -403,14 +685,10 @@ const submitForm = async () => {
   
   isLoading.value = true
   try {
-    const response = await calculateHehun({
-      maleName: form.maleName || '男方',
-      maleBirthDate: form.maleBirthDate,
-      femaleName: form.femaleName || '女方',
-      femaleBirthDate: form.femaleBirthDate,
+    const response = await calculateHehun(buildHehunPayload({
       tier: 'free',
       useAi: false,
-    })
+    }))
     
     if (response.code === 200) {
       freeResult.value = response.data
@@ -439,14 +717,10 @@ const unlockPremium = async () => {
     )
     
     isLoading.value = true
-    const response = await calculateHehun({
-      maleName: form.maleName || '男方',
-      maleBirthDate: form.maleBirthDate,
-      femaleName: form.femaleName || '女方',
-      femaleBirthDate: form.femaleBirthDate,
+    const response = await calculateHehun(buildHehunPayload({
       tier: 'premium',
       useAi: form.useAi,
-    })
+    }))
     
     if (response.code === 200) {
       freeResult.value = null
@@ -474,9 +748,14 @@ const resetForm = () => {
   premiumResult.value = null
   form.maleName = ''
   form.maleBirthDate = ''
+  form.maleBirthPrecision = 'exact'
+  form.maleBirthTimeRange = defaultBirthTimeRange
   form.femaleName = ''
   form.femaleBirthDate = ''
+  form.femaleBirthPrecision = 'exact'
+  form.femaleBirthTimeRange = defaultBirthTimeRange
 }
+
 
 // 导出报告
 const exportReport = async () => {
@@ -538,10 +817,20 @@ const loadHistoryDetail = async (item) => {
     // 填充表单
     form.maleName = item.male_name
     form.femaleName = item.female_name
-    form.maleBirthDate = item.male_birth_date || ''
-    form.femaleBirthDate = item.female_birth_date || ''
+
+    const maleBirthState = hydrateBirthState(item.male_birth_date)
+    form.maleBirthDate = maleBirthState.value
+    form.maleBirthPrecision = maleBirthState.precision
+    form.maleBirthTimeRange = maleBirthState.timeRange
+
+    const femaleBirthState = hydrateBirthState(item.female_birth_date)
+    form.femaleBirthDate = femaleBirthState.value
+    form.femaleBirthPrecision = femaleBirthState.precision
+    form.femaleBirthTimeRange = femaleBirthState.timeRange
+
     // 显示结果 - 使用安全解析，每个字段独立处理
     const hehunData = safeJsonParse(item.result, {})
+
     const aiAnalysisData = safeJsonParse(item.ai_analysis, null)
     const maleBaziData = safeJsonParse(item.male_bazi, {})
     const femaleBaziData = safeJsonParse(item.female_bazi, {})
@@ -680,7 +969,7 @@ onMounted(() => {
 .form-group input {
   width: 100%;
   padding: 14px 16px;
-  height: 44px;
+  min-height: 48px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
@@ -689,15 +978,169 @@ onMounted(() => {
   transition: all 0.3s;
 }
 
-
 .form-group input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--primary-light-10);
+  box-shadow: var(--focus-ring);
 }
 
 .required {
   color: var(--primary-color);
+}
+
+.field-helper {
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-size: var(--font-caption);
+  line-height: 1.6;
+}
+
+.birth-precision-panel {
+  margin-bottom: 18px;
+}
+
+.precision-heading,
+.time-range-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.precision-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.precision-option {
+  min-height: 88px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.precision-option:hover,
+.precision-option.active {
+  transform: translateY(-2px);
+  border-color: var(--primary-light-30);
+  background: rgba(var(--primary-rgb), 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.precision-option-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.precision-option-desc {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.precision-helper {
+  margin-top: 10px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.time-range-panel {
+  margin-bottom: 18px;
+}
+
+.time-range-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.time-range-chip {
+  min-height: 56px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.time-range-chip small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.time-range-chip:hover,
+.time-range-chip.active {
+  transform: translateY(-2px);
+  border-color: var(--primary-light-30);
+  background: rgba(var(--primary-rgb), 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.precision-confidence {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.precision-confidence--exact {
+  border-color: rgba(103, 194, 58, 0.18);
+  background: rgba(103, 194, 58, 0.08);
+}
+
+.precision-confidence--range {
+  border-color: rgba(230, 162, 60, 0.2);
+  background: rgba(230, 162, 60, 0.08);
+}
+
+.precision-confidence--unknown {
+  border-color: rgba(245, 108, 108, 0.18);
+  background: rgba(245, 108, 108, 0.08);
+}
+
+.precision-confidence p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.confidence-badge {
+  min-width: 72px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--primary-rgb), 0.18);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .options-section {
@@ -706,6 +1149,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 14px;
 }
+
 
 .option-plan-card {
   padding: 16px 18px;
@@ -828,14 +1272,105 @@ onMounted(() => {
   margin-top: 8px;
 }
 
+.precision-summary-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(230, 162, 60, 0.22);
+  background: linear-gradient(135deg, rgba(230, 162, 60, 0.12), rgba(184, 134, 11, 0.06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.precision-summary-card--result {
+  margin-bottom: 20px;
+}
+
+.precision-summary-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.precision-summary-header .el-icon {
+  margin-top: 2px;
+  color: var(--warning-color);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.precision-summary-header strong {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.precision-summary-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.precision-summary-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.precision-summary-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.summary-role {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.summary-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-copy strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.summary-copy span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.summary-trust {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(230, 162, 60, 0.18);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .btn-submit {
   width: 100%;
   padding: 16px;
   min-height: 48px;
   background: var(--primary-gradient);
-  color: var(--text-primary);
-  border: none;
-  border-radius: var(--radius-md);
+  color: var(--text-accent-contrast);
+  border: 1px solid var(--primary-light-30);
+  border-radius: var(--radius-btn);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -844,8 +1379,9 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
 }
+
 
 .btn-submit:disabled {
   opacity: 0.5;
@@ -1052,10 +1588,10 @@ onMounted(() => {
 
 .btn-upgrade {
   padding: 14px 32px;
-  min-height: 44px;
+  min-height: 48px;
   background: var(--primary-gradient);
-  color: var(--text-primary);
-  border: none;
+  color: var(--text-accent-contrast);
+  border: 1px solid var(--primary-light-30);
   border-radius: var(--radius-btn);
   font-size: 16px;
   font-weight: 600;
@@ -1064,8 +1600,9 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   transition: all 0.3s;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
 }
+
 
 .btn-upgrade:hover {
   transform: translateY(-2px);
@@ -1085,11 +1622,12 @@ onMounted(() => {
   grid-template-columns: auto 1fr;
   gap: 40px;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.06));
   border-radius: var(--radius-md);
   margin-bottom: 24px;
   border: 1px solid var(--border-light);
 }
+
 
 .main-score {
   text-align: center;
@@ -1275,8 +1813,8 @@ onMounted(() => {
 .btn-primary,
 .btn-secondary {
   padding: 12px 32px;
-  min-height: 44px;
-  border-radius: var(--radius-md);
+  min-height: 48px;
+  border-radius: var(--radius-btn);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -1290,9 +1828,11 @@ onMounted(() => {
 
 .btn-primary {
   background: var(--primary-gradient);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-md);
+  color: var(--text-accent-contrast);
+  border: 1px solid var(--primary-light-30);
+  box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
 }
+
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -1384,8 +1924,34 @@ onMounted(() => {
     font-size: 28px;
   }
   
-  .form-card {
+  .form-card,
+  .result-card {
     padding: 24px;
+  }
+
+  .precision-options,
+  .time-range-options {
+    grid-template-columns: 1fr;
+  }
+
+  .precision-option,
+  .time-range-chip {
+    min-height: 52px;
+  }
+
+  .precision-confidence,
+  .precision-summary-item {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .precision-summary-item {
+    display: flex;
+  }
+
+  .summary-trust {
+    margin-left: 0;
   }
 
   .option-item {
@@ -1395,6 +1961,11 @@ onMounted(() => {
   .bazi-compare {
     flex-direction: column;
     gap: 20px;
+  }
+
+  .bazi-pillars {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .bazi-divider {
@@ -1410,6 +1981,16 @@ onMounted(() => {
     border-right: none;
     border-bottom: 1px solid var(--white-10);
     padding-bottom: 24px;
+  }
+
+  .pricing-row {
+    flex-wrap: wrap;
+  }
+
+  .btn-upgrade,
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
   }
 
   .rich-content {
@@ -1435,5 +2016,6 @@ onMounted(() => {
     flex-direction: column;
   }
 }
+
 
 </style>

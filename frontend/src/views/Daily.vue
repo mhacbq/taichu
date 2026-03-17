@@ -65,16 +65,32 @@
             </div>
             
             <div class="personal-lucky-grid">
-              <div class="personal-lucky-item card-hover">
-                <span class="personal-lucky-label">幸运色</span>
+              <div class="personal-lucky-item personal-lucky-item--color card-hover">
+                <div class="personal-lucky-head">
+                  <span class="personal-lucky-icon">
+                    <el-icon><MagicStick /></el-icon>
+                  </span>
+                  <div class="personal-lucky-meta">
+                    <span class="personal-lucky-label">幸运色</span>
+                    <span class="personal-lucky-caption">优先选择更顺势的穿搭与配色</span>
+                  </div>
+                </div>
                 <div class="personal-lucky-values">
                   <span v-for="color in fortune.personalized.luckyColors" :key="color" class="lucky-tag color">
                     {{ color }}
                   </span>
                 </div>
               </div>
-              <div class="personal-lucky-item card-hover">
-                <span class="personal-lucky-label">幸运方位</span>
+              <div class="personal-lucky-item personal-lucky-item--direction card-hover">
+                <div class="personal-lucky-head">
+                  <span class="personal-lucky-icon">
+                    <el-icon><Compass /></el-icon>
+                  </span>
+                  <div class="personal-lucky-meta">
+                    <span class="personal-lucky-label">幸运方位</span>
+                    <span class="personal-lucky-caption">安排会面、出行或重要决策时可优先参考</span>
+                  </div>
+                </div>
                 <div class="personal-lucky-values">
                   <span v-for="dir in fortune.personalized.luckyDirections" :key="dir" class="lucky-tag direction">
                     {{ dir }}
@@ -115,7 +131,11 @@
 
         <div class="aspect-grid">
           <div class="aspect-card card card-hover" v-for="aspect in fortune.aspects" :key="aspect.name">
-            <div class="aspect-icon">{{ aspect.icon }}</div>
+            <div class="aspect-icon">
+              <el-icon>
+                <component :is="getAspectIcon(aspect.name)" />
+              </el-icon>
+            </div>
             <h3>{{ aspect.name }}</h3>
             <div class="aspect-score">
               <el-progress :percentage="aspect.score" :color="getScoreColor(aspect.score)" />
@@ -178,7 +198,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
@@ -200,6 +220,14 @@ const getScoreClass = (score) => {
   if (score >= 80) return 'excellent'
   if (score >= 60) return 'good'
   return 'normal'
+}
+
+const getAspectIcon = (aspectName = '') => {
+  if (aspectName.includes('事业')) return Briefcase
+  if (aspectName.includes('财')) return Money
+  if (aspectName.includes('感情') || aspectName.includes('爱情')) return StarFilled
+  if (aspectName.includes('健康')) return Sunny
+  return MagicStick
 }
 
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
@@ -370,11 +398,23 @@ onMounted(() => {
 
 .aspect-card {
   text-align: center;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-card), var(--surface-raised));
 }
 
 .aspect-icon {
-  font-size: 36px;
-  margin-bottom: 10px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-light-15), var(--primary-light-05));
+  border: 1px solid var(--primary-light-20);
+  color: var(--primary-light);
+  font-size: 26px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .aspect-card h3 {
@@ -390,7 +430,7 @@ onMounted(() => {
 .aspect-desc {
   color: var(--text-secondary);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.7;
 }
 
 .lucky-section {
@@ -637,46 +677,95 @@ onMounted(() => {
 
 .personal-lucky-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .personal-lucky-item {
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  padding: 15px;
+  min-height: 132px;
+  background: linear-gradient(180deg, var(--bg-card), var(--surface-raised));
+  border-radius: var(--radius-lg);
+  padding: 18px;
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--border-light);
+}
+
+.personal-lucky-item--color {
+  box-shadow: inset 0 1px 0 rgba(var(--primary-rgb), 0.1);
+}
+
+.personal-lucky-item--direction {
+  box-shadow: inset 0 1px 0 rgba(var(--primary-light-rgb), 0.08);
+}
+
+.personal-lucky-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.personal-lucky-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
   align-items: center;
-  gap: 15px;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--primary-light);
+  background: linear-gradient(135deg, var(--primary-light-20), var(--primary-light-05));
+  border: 1px solid var(--primary-light-20);
+  font-size: 20px;
+}
+
+.personal-lucky-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .personal-lucky-label {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.personal-lucky-caption {
+  font-size: var(--font-caption);
   color: var(--text-tertiary);
-  white-space: nowrap;
+  line-height: 1.6;
 }
 
 .personal-lucky-values {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
-
 .lucky-tag {
-  padding: 5px 12px;
-  border-radius: 15px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border-radius: 999px;
   font-size: 13px;
+  font-weight: var(--weight-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lucky-tag.color {
-  background: rgba(184, 134, 11, 0.1);
-  color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.14);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-light);
 }
 
 .lucky-tag.direction {
-  background: rgba(212, 175, 55, 0.1);
-  color: var(--primary-light);
+  background: rgba(var(--primary-light-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-light-rgb), 0.18);
+  color: var(--text-primary);
 }
 
 /* 无八字提示 */
@@ -732,7 +821,20 @@ onMounted(() => {
   }
 
   .personal-lucky-item {
-    flex-direction: column;
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .personal-lucky-head {
+    align-items: center;
+  }
+
+  .personal-lucky-values {
+    gap: 8px;
+  }
+
+  .lucky-tag {
+    min-height: 34px;
   }
 }
 </style>
