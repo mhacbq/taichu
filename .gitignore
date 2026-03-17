@@ -1,0 +1,5 @@
+# 忽略 backend 目录下的 .env 文件
+backend/.env
+
+# 如果你想忽略所有目录下的 .env
+.env
