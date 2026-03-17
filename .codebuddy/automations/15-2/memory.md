@@ -1,5 +1,15 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 22:05 执行摘要
+
+- 本轮完成 5 个前端修复点：八字页图标缺失/错误导出、合婚页定价结构错位、请求层静默错误能力、每日运势签到卡降级、每日运势个性化幸运区样式落地。
+- 关键文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Daily.vue`、`frontend/src/components/CheckinCard.vue`、`frontend/src/api/request.js`、`frontend/src/api/index.js`。
+- 已从 `TODO.md` 移除 4 条已完成待办：八字页白屏、合婚前端定价字段错位、每日运势首屏报错、每日运势样式串扰。
+- 验证结果：`npm run build --prefix frontend` 通过，`git diff --check`（上述改动文件 + `TODO.md`）通过，IDE/LSP 未发现新增错误。
+- 备注：本轮未处理六爻路由失配、每日运势黄历字段缺失等跨层问题；提交信息计划使用 `fix-frontend-multiple-issues-20260317-2205`。
+
+
+
 ## 2026-03-17 18:44 执行摘要
 
 - 完成 5 个前端待办：塔罗多牌阵牌位标签、塔罗分享承接页、合婚历史导出记录ID、前端后台路由映射、后台配置页成功码判断。

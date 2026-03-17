@@ -17,19 +17,24 @@
         <div class="bonus-hint" v-if="nextBonus > 0">
           再签到 {{ nextBonusDays }} 天可额外获得 {{ nextBonus }} 积分！
         </div>
+        <div v-if="statusUnavailable" class="unavailable-hint">
+          {{ availabilityMessage }}
+        </div>
       </div>
       
       <el-button
         :type="hasCheckedIn ? 'success' : 'primary'"
         size="large"
-        :disabled="hasCheckedIn"
+        :disabled="hasCheckedIn || statusUnavailable"
         :loading="loading"
         @click="handleCheckin"
         class="checkin-btn"
       >
         <span v-if="hasCheckedIn">✓ 今日已签到</span>
+        <span v-else-if="statusUnavailable">签到暂不可用</span>
         <span v-else>立即签到</span>
       </el-button>
+
     </div>
     
     <!-- 签到日历 -->
@@ -63,6 +68,9 @@ const consecutiveDays = ref(0)
 const todayPoints = ref(5)
 const monthCheckins = ref([])
 const consecutiveBonus = ref({})
+const statusUnavailable = ref(false)
+const availabilityMessage = ref('签到功能暂时不可用，不影响查看今日运势')
+
 
 // 计算下一个奖励
 const nextBonus = computed(() => {
@@ -116,26 +124,39 @@ const calendarDays = computed(() => {
 
 const loadCheckinStatus = async () => {
   try {
-    const response = await getCheckinStatus()
+    const response = await getCheckinStatus({ silent: true })
     if (response.code === 200) {
-      hasCheckedIn.value = response.data.checkedIn
-      consecutiveDays.value = response.data.consecutiveDays
-      todayPoints.value = response.data.todayPoints
-      monthCheckins.value = response.data.monthCheckins
-      consecutiveBonus.value = response.data.consecutiveBonus
+      statusUnavailable.value = false
+      availabilityMessage.value = '签到功能暂时不可用，不影响查看今日运势'
+      hasCheckedIn.value = Boolean(response.data?.checkedIn)
+      consecutiveDays.value = response.data?.consecutiveDays ?? 0
+      todayPoints.value = response.data?.todayPoints ?? 5
+      monthCheckins.value = response.data?.monthCheckins || []
+      consecutiveBonus.value = response.data?.consecutiveBonus || {}
+      return
     }
+
+    statusUnavailable.value = true
+    availabilityMessage.value = response.message || '签到功能暂时不可用，不影响查看今日运势'
   } catch (error) {
+    statusUnavailable.value = true
+    availabilityMessage.value = '签到功能暂时不可用，不影响查看今日运势'
     console.error('加载签到状态失败:', error)
   }
 }
 
 const handleCheckin = async () => {
   if (hasCheckedIn.value) return
+  if (statusUnavailable.value) {
+    ElMessage.info('签到功能暂时不可用，请稍后再试')
+    return
+  }
   
   loading.value = true
   try {
     const response = await dailyCheckin()
     if (response.code === 200) {
+      statusUnavailable.value = false
       hasCheckedIn.value = true
       consecutiveDays.value = response.data.consecutiveDays
       ElMessage.success(response.data.message)
@@ -155,6 +176,7 @@ const handleCheckin = async () => {
     loading.value = false
   }
 }
+
 
 onMounted(() => {
   loadCheckinStatus()
@@ -233,6 +255,14 @@ onMounted(() => {
   font-size: 13px;
   margin-top: 8px;
 }
+
+.unavailable-hint {
+  color: var(--warning-color);
+  font-size: 13px;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
 
 .checkin-btn {
   min-width: 120px;

@@ -59,7 +59,7 @@ request.interceptors.response.use(
       config.__retryCount++
       
       // 显示重试提示
-      if (config.__retryCount === 1) {
+      if (config.__retryCount === 1 && !isSilentRequest(config)) {
         ElMessage.warning('网络不稳定，正在尝试重连...')
       }
       
@@ -71,6 +71,7 @@ request.interceptors.response.use(
       
       return request(config)
     }
+
     
     // 处理不同类型的错误
     handleApiError(error)
@@ -117,8 +118,13 @@ function checkShouldRetry(error) {
   return false
 }
 
+function isSilentRequest(config) {
+  return Boolean(config?.silent || config?.skipGlobalError)
+}
+
 // 处理API错误
 function handleApiError(error) {
+
   let message = '请求失败，请稍后重试'
   
   if (error.response) {
@@ -166,9 +172,10 @@ function handleApiError(error) {
   }
   
   // 只在非重试状态下显示错误
-  if (!error.config || error.config.__retryCount === 0) {
+  if ((!error.config || error.config.__retryCount === 0) && !isSilentRequest(error.config)) {
     ElMessage.error(message)
   }
 }
+
 
 export default request

@@ -2,7 +2,130 @@
 
 ## 最近更新
 
+### 前端待办修复（第五轮前端修复批次，2026-03-17）
+- 本轮按 `TODO.md` 中仍待处理的前端/Vue 问题继续收尾，完成了 **5 个前端修复点**：1) 八字页图标缺失与错误图标导出导致的白屏/构建阻塞；2) 合婚页定价结构归一化；3) 请求层静默错误能力；4) 每日运势签到卡静默降级；5) 每日运势个性化幸运区样式落地与类名隔离。
+- 关键改动文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Daily.vue`、`frontend/src/components/CheckinCard.vue`、`frontend/src/api/request.js`、`frontend/src/api/index.js`、`TODO.md`。
+- 已同步从 `TODO.md` 移除 4 条已修复待办：八字页白屏、合婚前端定价字段错位、每日运势首屏报错、每日运势样式串扰。
+
+#### 本轮完成项
+1. **八字排盘页恢复可用**
+   - 补齐 `Bazi.vue` 中模板实际使用的 Element Plus 图标导入，并将不存在的 `Magic` 图标改为 `MagicStick`，同时解决运行期白屏与构建期 `MISSING_EXPORT`。
+2. **合婚页对齐新版 pricing 契约**
+   - 在 `Hehun.vue` 增加 `normalizePricingData()`，兼容 `tier.premium` 与 `unlock_points` 两种返回结构，统一驱动价格徽标、折扣提示与解锁确认文案。
+3. **每日运势页去除首屏误报**
+   - 在 `request.js` 增加 `silent / skipGlobalError` 支持；`CheckinCard.vue` 改为静默拉取签到状态，并在服务异常时展示“签到功能暂不可用，不影响查看今日运势”的降级提示，不再首屏弹红错。
+4. **每日运势个性化区样式补齐**
+   - 为 `.personal-lucky-grid / item / label / values` 补齐基础样式，避免与“今日宜忌”的 `.lucky-*` 类互相污染。
+5. **任务清单保持同步**
+   - 已清理 `TODO.md` 对应待办，确保后续自动化轮次不会重复修同一批前端问题。
+
+#### 验证情况
+- `npm run build --prefix frontend`：通过。
+- `git diff --check -- frontend/src/views/Bazi.vue frontend/src/views/Hehun.vue frontend/src/views/Daily.vue frontend/src/components/CheckinCard.vue frontend/src/api/request.js frontend/src/api/index.js TODO.md`：通过。
+- IDE/LSP 诊断：本轮编辑文件未发现新增错误。
+- 截图/录屏：本轮为代码修复与构建验证，未新增界面截图。
+
+### 后台运营巡检（第二十一轮自动化执行，2026-03-17）
+
+
+### 后台运营巡检（第二十一轮自动化执行，2026-03-17）
+- 本轮先读取自动化历史后，重新实测独立后台 `http://localhost:3001/login`，并在确认本地容器仍跑旧代码后重建了 `backend` 服务，再次用默认账号 `admin / admin123` 发起真实登录；随后结合浏览器自动化、关键接口批量探测、容器错误日志与初始化脚本交叉核验，继续检查管理员登录、Dashboard、内容管理与日志链路。
+- 已将 **3 个高优先级问题、1 个中优先级问题** 写入 `TODO.md` 的 **《第二十一轮后台运营检查报告》**，与前几轮已登记的登录表兼容、JWT 密钥兜底、路由注册等问题做了去重。
+- 本轮未修改业务代码，仅更新 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`；为完成巡检曾临时生成本地探测脚本并在收尾前删除。
+
+#### 关键发现
+- **后台初始化仍断在管理员 bootstrap**：后端重建后，`POST /api/admin/auth/login` 仍返回“管理员账号表不存在，请先执行 `database/20260317_create_admin_users_table.sql`”，说明当前本地/部署初始化流程没有真正执行管理员主表与默认角色绑定脚本，后台账号密码登录继续被阻断。
+- **Dashboard 接口本身又出现新 500**：在注入测试 token 继续排查后，`/api/admin/dashboard/statistics` 与 `/trend` 会直接命中 `app\controller\admin\Dashboard::checkPermission()` 不存在的方法，页面只能显示 0 和“尚未加载”，运营看板失去参考价值。
+- **神煞管理仍缺运行基础**：`/api/admin/system/shensha` 实测返回“获取神煞列表失败，请稍后重试”；结合 `backend/app/model/Shensha.php` 与 `backend/database.sql` 交叉核验，当前主初始化脚本未覆盖 `tc_shensha` 依赖表，内容管理链路无法落地。
+- **后台审计日志全程写入失败**：每次请求都会触发“后台操作日志写入失败”，`AdminAuth.php` 写入的是 `method/url/params` 字段，而 `tc_admin_log` 表结构是 `request_method/request_url/detail` 等命名，日志管理与审计记录当前并不可信。
+
+#### 运行态证据
+- 登录页实测截图：
+  ![后台登录页第二十一轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-round21.png)
+- Dashboard 实测截图：
+  ![后台Dashboard第二十一轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-dashboard-round21.png)
+- 登录接口重建后仍返回：`{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql"}`。
+- 错误日志命中：`Call to undefined method app\controller\admin\Dashboard::checkPermission()` 与多次“后台操作日志写入失败”。
+
+#### 验证说明
+- 已真实验证：登录页可访问、后台容器已重建、默认账号真实登录仍失败、Dashboard 页面可渲染但核心数据请求异常。
+- 已通过接口批量探测复核：`auth/info` 可返回，`dashboard/statistics` 与 `dashboard/trend` 返回 500，`system/shensha` 返回业务 500，其余用户/订单/公告类接口因管理员 bootstrap 缺失继续落到无权限状态。
+- 已通过代码/脚本交叉核验：`backend/app/controller/admin/Dashboard.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/model/Shensha.php`、`backend/database.sql`、`database/20260317_create_admin_users_table.sql`。
+
+### UI 设计巡检（第三十八轮自动化执行，2026-03-17）
+
+- 本轮继续以代码级 UI/UX 审查方式复核首页与五个核心命理功能页，重点补查 **首页统计可信度、移动端结果承载、塔罗多牌阵上下文、个性化运势样式完整性、合婚长报告排版**。
+- 已将 **1 个高优先级 UI 问题、4 个中优先级 UI 问题、1 个低优先级 UI 问题** 写入 `TODO.md` 的 **《第三十八轮UI设计检查报告》**，并确认未与既有待办重复。
+- 本轮未修改业务代码，主要更新文件：`TODO.md`、`.codebuddy/automations/ui/memory.md`、`overview.md`。
+
+#### 关键发现
+- **六爻移动端关键语义可能缺失**：`frontend/src/views/Liuyao.vue` 中伏神标签左侧绝对定位，配合结果容器裁切，手机端可能直接看不全伏神信息。
+- **首页首屏可信度降级不足**：`frontend/src/views/Home.vue` 在统计接口失败时会继续显示“加载中...”和默认 `12000+` 话术，容易让统计区显得像假数据。
+- **核心结果页仍有上下文/样式缺口**：`Bazi.vue` 会在移动端隐藏大运说明，`Tarot.vue` 的详情弹窗缺少牌位上下文，`Daily.vue` 的个性化幸运区存在未落地样式类。
+- **合婚长报告排版粗糙**：`Hehun.vue` 的富文本分析区缺少标题、段落、列表的 typographic 规则，长内容扫描效率偏低。
+
+#### 验证说明
+- 已先复核 `.codebuddy/automations/ui/memory.md` 与 `TODO.md`，确认本轮问题不与已登记项重复。
+- 已基于代码交叉核验关键文件：`frontend/src/views/Home.vue`、`Bazi.vue`、`Tarot.vue`、`Liuyao.vue`、`Hehun.vue`、`Daily.vue`。
+- 已对 `TODO.md` 执行工作区诊断：**未发现新增问题**。
+- 本轮未做浏览器截图或录屏，后续如需确认真实视觉表现，建议补一轮前台页面实测。
+
+### 占卜功能深度体验巡检（第二十二轮，2026-03-17）
+
+- 本轮以“资深命理/塔罗爱好者”视角，实际登录前台站点并结合接口返回、页面快照、代码交叉核验，复查了 **八字排盘、六爻占卜、塔罗占卜、合婚配对、每日运势** 五条主链路。
+- 已将 **4 项高优先级、1 项中优先级、1 项低优先级** 的新增且不重复问题写入 `TODO.md` 的 **《🔮 占卜爱好者深度体验检查报告 - 第二十二轮》**。
+- 本轮未修改业务代码，主要更新了：`TODO.md`、`.codebuddy/automations/30-4/memory.md`、`overview.md`。
+
+#### 关键发现
+1. **八字页前端白屏**：已登录状态访问 `/bazi` 时主内容区为空，只剩导航和页脚；结合 `frontend/src/views/Bazi.vue` 复核，模板用了未导入的 `Magic` / `Share` 图标变量，存在直接打断渲染的风险。
+2. **八字简化版仍错排月柱**：`1990-05-15 10:30 男` 的 simple 结果被排成 `己丑` 月，而按节令与《五虎遁月》应为 `辛巳` 月；同时五行统计出现“五行全 0 但结论说金最旺”的自相矛盾。
+3. **每日运势个性化底盘仍错**：页面展示 `甲子年 1月16日`、`todayGanZhi=庚戌`，与公开黄历可交叉核验的 `丙午年正月廿九 / 庚寅日` 不符，专属建议基础已偏离真实黄历。
+4. **每日运势页首屏弹错**：签到卡请求 `/api/daily/checkin-status` 会命中 `Table 'taichu.checkin_record' doesn't exist`，导致用户刚进页面就看到“服务器错误，请稍后重试”。
+5. **塔罗专业度细节仍偏弱**：凯尔特十字虽已按 10 个牌位输出，但“障碍位”仍直接复述原始牌义，且元素互动段夹杂 `Mutual Dignity / Neutral Dignity` 英文术语，中文专业表达不够稳。
+
+#### 运行态证据
+- 八字页白屏截图：
+  ![八字页白屏](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/bazi-page.png)
+- 每日运势页首屏报错截图：
+  ![每日运势页首屏报错](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/daily-page-alert.png)
+
+#### 验证方式
+- 浏览器真实操作：登录页输入测试手机号 `13800138000` + 开发验证码 `123456`，顺序打开 `/bazi`、`/liuyao`、`/tarot`、`/hehun`、`/daily`。
+- 接口交叉核验：复查 `/api/paipan/bazi`、`/api/daily/fortune`、`/api/daily/checkin-status` 以及塔罗 `draw/interpret` 流程返回。
+- 理论对照：
+  - 八字节令/月柱按节气与《五虎遁月》规则人工复核；
+  - 每日运势日期底盘与公开黄历交叉核验；
+  - 塔罗解读按韦特体系常见牌位语义与关系解读方式审视。
+
+### 管理后台运营修复（Dashboard + 公告联动，2026-03-17）
+
+- 本轮继续处理 `TODO.md` 中的 `[运营]` 待办，重点收尾 **系统公告管理** 与 **Dashboard 运营入口/刷新导出** 两条链路。
+- 已验证 `admin/src/views/system/notice.vue` 当前实现已经接通 `getNotices / saveNotice / deleteNotice`，可直接完成公告加载、发布、编辑和删除；本轮同步将对应 TODO 标记为已完成。
+- 已新增/改造以下文件：
+  - 前端：`admin/src/views/dashboard/index.vue`、`admin/src/api/dashboard.js`
+  - 后端：`backend/app/controller/admin/Dashboard.php`、`backend/app/service/AdminStatsService.php`、`backend/route/admin.php`
+  - 记录：`TODO.md`
+
+#### 本轮完成项
+1. **Dashboard 快捷操作入口补齐**
+   - 新增黄历管理、充值订单、VIP 订单、系统公告、反馈列表、SEO 管理、系统设置等快捷卡片。
+   - 按当前管理员角色过滤展示，避免给 `operator` 暴露无权限入口。
+2. **Dashboard 手动刷新与导出能力打通**
+   - 新增“刷新看板”按钮，前端会调用 `/api/admin/dashboard/refresh-stats`，手动重算当日统计后再刷新页面数据。
+   - 新增“导出实时快照”按钮，直接下载后台 `export-realtime` 生成的 CSV 文件。
+   - 同时修复 `AdminStatsService::updateDailyStats()` 对空日期处理不当的问题，避免手动刷新时写入空日期。
+3. **Dashboard 展示细节优化**
+   - 新增最近更新时间、15 分钟活跃用户、待处理反馈数量展示。
+   - 修复待处理反馈时间列映射，统一把后端 `created_at` 转为前端表格时间字段。
+   - 补齐空状态与部分数据加载失败提示，避免整页“静悄悄失败”。
+
+#### 验证情况
+- 已对本轮改动文件执行 IDE/LSP 诊断：**未发现新增错误**。
+- 已执行 `npm run build --prefix admin`：**通过**。
+- 构建仍有既有 Sass legacy-js-api 弃用提示及大体积 chunk 警告，但未阻塞本轮交付。
+
 ### 代码维护批次（自动化重构任务，2026-03-17）
+
 - 本轮按 `TODO.md` 的代码维护方向处理了 **5 个优化点**：1) 基础控制器统一异常/脱敏日志；2) `admin/System.php` 角色与字典接口异常收口；3) `admin/Shensha.php` 冗余日志逻辑清理；4) `admin/src/views/system/notice.vue` 接入真实公告管理；5) 核销 3 条已被代码修复的历史误报待办。
 - 关键改动文件：`backend/app/BaseController.php`、`backend/app/controller/admin/System.php`、`backend/app/controller/admin/Shensha.php`、`admin/src/views/system/notice.vue`、`TODO.md`。
 

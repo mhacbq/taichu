@@ -33,7 +33,8 @@ export const getTarotShare = (params) => request.get('/tarot/share', { params })
 export const getDailyFortune = () => request.get('/daily/fortune')
 export const getTodayLuck = () => request.get('/daily/luck')
 export const dailyCheckin = () => request.post('/daily/checkin')
-export const getCheckinStatus = () => request.get('/daily/checkin-status')
+export const getCheckinStatus = (config = {}) => request.get('/daily/checkin-status', config)
+
 
 // 积分系统
 export const getPointsBalance = () => request.get('/points/balance')

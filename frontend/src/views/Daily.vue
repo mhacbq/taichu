@@ -628,13 +628,13 @@ onMounted(() => {
   font-size: 15px;
 }
 
-.lucky-info {
+.personal-lucky-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
 
-.lucky-item {
+.personal-lucky-item {
   background: var(--bg-secondary);
   border-radius: 16px;
   padding: 15px;
@@ -643,17 +643,18 @@ onMounted(() => {
   gap: 15px;
 }
 
-.lucky-label {
+.personal-lucky-label {
   font-size: 14px;
   color: var(--text-tertiary);
   white-space: nowrap;
 }
 
-.lucky-values {
+.personal-lucky-values {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+
 
 .lucky-tag {
   padding: 5px 12px;

@@ -32,7 +32,8 @@
           <el-radio-group v-model="versionMode" size="small">
             <el-radio-button label="simple">
               <span class="mode-option">
-                <el-icon class="mode-icon"><Magic /></el-icon>
+                <el-icon class="mode-icon"><MagicStick /></el-icon>
+
                 简化版
               </span>
             </el-radio-button>
@@ -106,17 +107,26 @@
       <!-- 确认对话框 -->
       <el-dialog
         v-model="confirmVisible"
-        title="确认排盘"
+        :title="confirmDialogConfig.title"
         width="400px"
         class="confirm-dialog"
       >
-        <div class="confirm-content">
-          <p>本次排盘将消耗 <strong>10 积分</strong></p>
+        <div class="confirm-content" :class="{ 'confirm-content--free': isFirstBazi }">
+          <p class="confirm-title">
+            <el-icon v-if="isFirstBazi"><Present /></el-icon>
+            <template v-if="isFirstBazi">
+              本次为您的首次排盘，不会扣除积分
+            </template>
+            <template v-else>
+              本次排盘将消耗 <strong>10 积分</strong>
+            </template>
+          </p>
           <p>排盘后可在个人中心查看历史记录</p>
+          <p class="confirm-note">规则说明：首次排盘免费，后续每次排盘消耗 10 积分。</p>
         </div>
         <template #footer>
           <el-button @click="confirmVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmCalculate">确认排盘</el-button>
+          <el-button type="primary" @click="confirmCalculate">{{ confirmDialogConfig.actionText }}</el-button>
         </template>
       </el-dialog>
 
@@ -967,7 +977,8 @@
 <script setup>
 import { h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled } from '@element-plus/icons-vue'
+import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
+
 import {
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -2957,6 +2968,46 @@ const formatAiContent = (content) => {
   font-size: 11px;
   color: var(--primary-light);
   opacity: 0.8;
+}
+
+/* 排盘确认对话框 */
+.confirm-dialog .confirm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.confirm-dialog .confirm-content p {
+  margin: 0;
+}
+
+.confirm-dialog .confirm-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.confirm-dialog .confirm-title strong {
+  color: var(--star-color);
+}
+
+.confirm-dialog .confirm-note {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--primary-light-05);
+  border: 1px solid var(--primary-light-20);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.confirm-dialog .confirm-content--free .confirm-title {
+  color: var(--success-color);
 }
 
 /* 积分确认对话框 */

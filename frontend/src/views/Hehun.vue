@@ -3,11 +3,14 @@
     <div class="container">
       <!-- 页面标题 -->
       <div class="page-header">
-        <h1 class="page-title">
-          <el-icon class="title-icon" :size="36"><Link /></el-icon>
-          八字合婚
-        </h1>
-        <p class="page-subtitle">通过双方八字，分析婚姻匹配度与缘分</p>
+        <BackButton fallback="/" />
+        <div class="page-header-content">
+          <h1 class="page-title">
+            <el-icon class="title-icon" :size="36"><Link /></el-icon>
+            八字合婚
+          </h1>
+          <p class="page-subtitle">通过双方八字，分析婚姻匹配度与缘分</p>
+        </div>
       </div>
 
       <!-- 免费预览结果 -->
@@ -58,11 +61,13 @@
           
           <div class="upgrade-prompt" v-if="!isLoading">
             <p>{{ freeResult.preview_hint }}</p>
+            <p class="upgrade-note">当前基础分析未启用 AI；若需 AI 深度解读，请保持当前勾选并解锁完整版。</p>
             <button class="btn-upgrade" @click="unlockPremium">
               <el-icon><Unlock /></el-icon>
               解锁详细报告
-              <span class="points-tag">{{ pricing.final }}积分</span>
+              <span class="points-tag">{{ pricingDisplayText }}</span>
             </button>
+
           </div>
         </div>
       </div>
@@ -197,21 +202,32 @@
           
           <!-- 选项 -->
           <div class="options-section">
-            <label class="option-item">
+            <div class="option-plan-card">
+              <div class="plan-badge-row">
+                <span class="plan-badge plan-badge--free">免费预览</span>
+                <span class="plan-badge plan-badge--premium">完整版</span>
+              </div>
+              <p class="plan-summary">免费预览仅返回基础匹配分与简要建议；AI 深度分析只在解锁完整版时生效。</p>
+            </div>
+            <label class="option-item" :class="{ active: form.useAi }">
               <input type="checkbox" v-model="form.useAi" />
-              <span>使用AI深度分析（更准确）</span>
+              <span class="option-copy">
+                <span class="option-title">解锁完整版时启用 AI 深度分析</span>
+                <span class="option-desc">当前免费预览固定不启用 AI，勾选仅影响后续详细报告。</span>
+              </span>
             </label>
           </div>
           
           <!-- 定价信息 -->
-          <div class="pricing-info" v-if="pricing">
+          <div class="pricing-info" v-if="normalizedPricing">
             <div class="pricing-row">
               <span>本次消耗：</span>
-              <span class="points">{{ pricing.final }} 积分</span>
-              <span v-if="pricing.discount > 0" class="discount">-{{ pricing.discount }}%</span>
+              <span class="points">{{ pricingDisplayText }}</span>
+              <span v-if="normalizedPricing.discount > 0" class="discount">-{{ normalizedPricing.discount }}%</span>
             </div>
-            <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
+            <p v-if="normalizedPricing.reason" class="pricing-reason">{{ normalizedPricing.reason }}</p>
           </div>
+
           
           <!-- 提交按钮 -->
           <button 
@@ -257,6 +273,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
 import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
+import BackButton from '../components/BackButton.vue'
 
 /**
  * HTML净化函数 - 防止XSS攻击
@@ -301,7 +318,67 @@ const isFormValid = computed(() => {
   return form.maleBirthDate && form.femaleBirthDate
 })
 
+const normalizePricingData = (rawPricing) => {
+  if (!rawPricing) {
+    return null
+  }
+
+  if (typeof rawPricing.final === 'number') {
+    return {
+      final: rawPricing.final,
+      original: rawPricing.original ?? rawPricing.final,
+      discount: rawPricing.discount ?? 0,
+      reason: rawPricing.reason || '',
+      isVip: Boolean(rawPricing.is_vip),
+    }
+  }
+
+  if (typeof rawPricing.unlock_points === 'number') {
+    return {
+      final: rawPricing.unlock_points,
+      original: rawPricing.unlock_points,
+      discount: rawPricing.discount_info?.percent ?? 0,
+      reason: rawPricing.discount_info?.reason || '',
+      isVip: Boolean(rawPricing.is_vip),
+    }
+  }
+
+  const premiumTier = rawPricing.tier?.premium
+  if (!premiumTier) {
+    return null
+  }
+
+  return {
+    final: Number(premiumTier.price ?? 0),
+    original: Number(premiumTier.original_price ?? premiumTier.price ?? 0),
+    discount: Number(premiumTier.discount?.percent ?? 0),
+    reason: premiumTier.discount?.reason || '',
+    isVip: Boolean(rawPricing.user_status?.is_vip),
+  }
+}
+
+const normalizedPricing = computed(() => normalizePricingData(freeResult.value?.pricing || pricing.value))
+const pricingDisplayText = computed(() => {
+  if (!normalizedPricing.value) {
+    return '--'
+  }
+
+  return normalizedPricing.value.final > 0 ? `${normalizedPricing.value.final} 积分` : 'VIP 免费'
+})
+
 const canExportReport = computed(() => Boolean(premiumResult.value?.id))
+const premiumUnlockMessage = computed(() => {
+  const points = normalizedPricing.value?.final ?? 80
+  if (points <= 0) {
+    return form.useAi
+      ? '您当前可免费解锁详细报告，并启用 AI 深度分析，是否继续？'
+      : '您当前可免费解锁详细报告，是否继续？'
+  }
+
+  return form.useAi
+    ? `解锁详细报告将消耗 ${points} 积分，并启用 AI 深度分析，是否继续？`
+    : `解锁详细报告将消耗 ${points} 积分，是否继续？`
+})
 
 
 // 获取定价信息
@@ -351,7 +428,7 @@ const submitForm = async () => {
 const unlockPremium = async () => {
   try {
     await ElMessageBox.confirm(
-      `解锁详细报告将消耗 ${pricing.value?.final || 80} 积分，是否继续？`,
+      premiumUnlockMessage.value,
       '确认解锁',
       {
         confirmButtonText: '确认解锁',
@@ -514,8 +591,14 @@ onMounted(() => {
 }
 
 .page-header {
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
   margin-bottom: 40px;
+}
+
+.page-header-content {
+  flex: 1;
 }
 
 .page-title {
@@ -524,7 +607,7 @@ onMounted(() => {
   margin-bottom: 12px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
 }
 
@@ -535,6 +618,7 @@ onMounted(() => {
 .page-subtitle {
   color: var(--text-secondary);
   font-size: 16px;
+  margin: 0;
 }
 
 /* 表单样式 */
@@ -617,20 +701,93 @@ onMounted(() => {
 
 .options-section {
   margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.option-plan-card {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--primary-light-10), rgba(var(--primary-rgb), 0.04));
+  border: 1px solid var(--primary-light-20);
+}
+
+.plan-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.plan-badge--free {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--success-color);
+}
+
+.plan-badge--premium {
+  background: rgba(var(--primary-rgb), 0.14);
+  color: var(--primary-color);
+}
+
+.plan-summary {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .option-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
   color: var(--text-secondary);
   cursor: pointer;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.option-item.active {
+  border-color: var(--primary-light-30);
+  background: rgba(var(--primary-rgb), 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .option-item input {
   width: 18px;
   height: 18px;
+  margin-top: 2px;
   accent-color: var(--primary-color);
+}
+
+.option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-title {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.option-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .pricing-info {
@@ -880,6 +1037,16 @@ onMounted(() => {
 .upgrade-prompt p {
   color: var(--text-secondary);
   margin-bottom: 16px;
+}
+
+.upgrade-note {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid var(--primary-light-20);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .btn-upgrade {
@@ -1137,12 +1304,22 @@ onMounted(() => {
 
 /* 响应式 */
 @media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
   .page-title {
     font-size: 28px;
   }
   
   .form-card {
     padding: 24px;
+  }
+
+  .option-item {
+    padding: 14px 16px;
   }
   
   .bazi-compare {
