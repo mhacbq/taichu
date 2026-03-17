@@ -346,9 +346,10 @@ class Notification extends BaseController
             
             // 增加未读计数
             $unreadKey = "user:{$userId}:unread_notifications";
-            Cache::inc($unreadKey);
+            \think\facade\Cache::inc($unreadKey);
             
-            // TODO: 调用第三方推送服务（如极光推送、Firebase等）
+            // 3. 调用第三方推送服务
+            \app\service\PushService::sendPush($userId, $title, $content, $data);
             
             return true;
         } catch (\Exception $e) {

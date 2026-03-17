@@ -177,6 +177,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
+import { 
+  getShenshaList, 
+  saveShensha, 
+  deleteShenshaApi, 
+  toggleShenshaStatus 
+} from '@/api/admin'
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -189,33 +195,13 @@ const searchKeyword = ref('')
 const filterType = ref('')
 const filterCategory = ref('')
 
+// 数据列表
+const shenshaList = ref([])
+
 // 分页
 const page = ref(1)
 const pageSize = ref(20)
-// 筛选后的完整列表（不分页）
-const filteredTotalList = computed(() => {
-  let list = shenshaList.value
-  
-  if (searchKeyword.value) {
-    list = list.filter(item => 
-      item.name.includes(searchKeyword.value) ||
-      item.description.includes(searchKeyword.value)
-    )
-  }
-  
-  if (filterType.value) {
-    list = list.filter(item => item.type === filterType.value)
-  }
-  
-  if (filterCategory.value) {
-    list = list.filter(item => item.category === filterCategory.value)
-  }
-  
-  return list
-})
-
-// 总条数计算属性
-const total = computed(() => filteredTotalList.value.length)
+const total = ref(0)
 
 // 表单
 const form = ref({
@@ -227,6 +213,8 @@ const form = ref({
   effect: '',
   checkRule: '',
   checkCode: '',
+  gan_rules: null,
+  zhi_rules: null,
   sort: 0,
   status: 1
 })
@@ -239,52 +227,31 @@ const rules = {
   checkRule: [{ required: true, message: '请输入查法规则', trigger: 'blur' }]
 }
 
-// 模拟数据
-const shenshaList = ref([
-  {
-    id: 1,
-    name: '天乙贵人',
-    type: 'daji',
-    category: 'guiren',
-    description: '最吉之神，命中逢之，遇事有人帮，遇危难有人救',
-    effect: '遇难成祥，逢凶化吉，人缘极佳，易得他人帮助',
-    checkRule: '甲戊见牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸兔蛇藏，庚辛逢虎马，此是贵人方',
-    checkCode: '// PHP代码示例\nfunction getTianyiGuiren($dayGan) {\n  $map = [\n    "甲" => ["丑", "未"],\n    "戊" => ["丑", "未"],\n    "乙" => ["子", "申"],\n    ...\n  ];\n  return $map[$dayGan] ?? [];\n}',
-    sort: 1,
-    status: 1
-  },
-  {
-    id: 2,
-    name: '文昌贵人',
-    type: 'ji',
-    category: 'xueye',
-    description: '主聪明好学，利文途考学',
-    effect: '聪明过人，学业有成，考试顺利，利于文职',
-    checkRule: '甲乙巳午报君知，丙戊申宫丁己鸡，庚猪辛鼠壬逢虎，癸人见卯入云梯',
-    checkCode: '',
-    sort: 2,
-    status: 1
-  },
-  {
-    id: 3,
-    name: '桃花',
-    type: 'ping',
-    category: 'ganqing',
-    description: '主人缘好，感情丰富，异性缘佳',
-    effect: '人缘好，异性缘佳，但也可能感情复杂',
-    checkRule: '申子辰在酉，巳酉丑在午，亥卯未在子，寅午戌在卯',
-    checkCode: '',
-    sort: 3,
-    status: 1
+const loadData = async () => {
+  loading.value = true
+  try {
+    const res = await getShenshaList({
+      page: page.value,
+      pageSize: pageSize.value,
+      keyword: searchKeyword.value,
+      type: filterType.value,
+      category: filterCategory.value
+    })
+    shenshaList.value = res.data.list
+    total.value = res.data.total
+  } catch (error) {
+    console.error('Load shensha error:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
   }
-])
+}
 
-// 筛选后的列表（分页）
-const filteredList = computed(() => {
-  // 使用已筛选的完整列表进行分页切片
-  const start = (page.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredTotalList.value.slice(start, end)
+// 监听筛选条件变化
+import { watch } from 'vue'
+watch([searchKeyword, filterType, filterCategory], () => {
+  page.value = 1
+  loadData()
 })
 
 const getTypeTag = (type) => {
@@ -325,6 +292,13 @@ const openDialog = (row = null) => {
   if (row) {
     isEdit.value = true
     form.value = { ...row }
+    // 如果 JSON 字段是字符串，尝试解析（后端模型已处理，前端预防一下）
+    if (typeof form.value.gan_rules === 'string') {
+        try { form.value.gan_rules = JSON.parse(form.value.gan_rules) } catch(e) {}
+    }
+    if (typeof form.value.zhi_rules === 'string') {
+        try { form.value.zhi_rules = JSON.parse(form.value.zhi_rules) } catch(e) {}
+    }
   } else {
     isEdit.value = false
     form.value = {
@@ -336,6 +310,8 @@ const openDialog = (row = null) => {
       effect: '',
       checkRule: '',
       checkCode: '',
+      gan_rules: null,
+      zhi_rules: null,
       sort: 0,
       status: 1
     }
@@ -350,18 +326,12 @@ const submitForm = async () => {
   submitLoading.value = true
   
   try {
-    if (isEdit.value) {
-      const index = shenshaList.value.findIndex(item => item.id === form.value.id)
-      if (index > -1) {
-        shenshaList.value[index] = { ...form.value }
-      }
-      ElMessage.success('更新成功')
-    } else {
-      form.value.id = Date.now()
-      shenshaList.value.push({ ...form.value })
-      ElMessage.success('新增成功')
-    }
+    await saveShensha(form.value)
+    ElMessage.success(isEdit.value ? '更新成功' : '新增成功')
     dialogVisible.value = false
+    loadData()
+  } catch (error) {
+    ElMessage.error('操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -372,31 +342,23 @@ const deleteShensha = async (row) => {
     await ElMessageBox.confirm('确定要删除此神煞吗？', '提示', {
       type: 'warning'
     })
-    const index = shenshaList.value.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      shenshaList.value.splice(index, 1)
-    }
+    await deleteShenshaApi(row.id)
     ElMessage.success('删除成功')
-  } catch {
-    // 取消
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+        ElMessage.error('删除失败')
+    }
   }
 }
 
-const updateStatus = (row) => {
-  ElMessage.success(row.status === 1 ? '已启用' : '已禁用')
-}
-
-const loadData = async () => {
-  loading.value = true
+const updateStatus = async (row) => {
   try {
-    // TODO: 调用API获取神煞列表
-    // const res = await getShenshaList({ page: page.value, pageSize: pageSize.value })
-    // shenshaList.value = res.data.list
-    // total.value = res.data.total
+    await toggleShenshaStatus(row.id, row.status)
+    ElMessage.success(row.status === 1 ? '已启用' : '已禁用')
   } catch (error) {
-    ElMessage.error('加载数据失败')
-  } finally {
-    loading.value = false
+    row.status = row.status === 1 ? 0 : 1 // 还原状态
+    ElMessage.error('状态更新失败')
   }
 }
 
@@ -404,6 +366,7 @@ onMounted(() => {
   loadData()
 })
 </script>
+
 
 <style scoped>
 .shensha-manage {

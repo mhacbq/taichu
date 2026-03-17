@@ -162,3 +162,25 @@
 
 ---
 
+## 2026-03-17 15:32 执行记录（本次）
+
+### 本次处理概览
+- 修复后台权限与限流相关问题：`BaseController` 新增管理员 ID / 权限判断辅助方法，`AdminPayment`、`AdminSms` 补上读写权限门禁。
+- 重写 `RateLimit` 路由匹配逻辑，修正旧配置与真实路由（如 `payment/create-order`、`ai/analyze(-stream)`、动态 `:id` 路由）不一致的问题。
+- 为 `backend/route/admin.php`、`ai.php`、`aiprompt.php`、`upload.php`、`content.php`、`sitecontent.php` 补挂限流中间件，并把 `app.php` 的后台仪表盘兼容路由对齐到当前 `Admin` 控制器方法。
+- 加固旧版 `backend/app/controller/admin/User.php`、`admin/Order.php`：补 `AdminAuth`、权限校验、操作者 ID 修正，以及异常脱敏日志。
+- `TODO.md` 已将“后台 API 限流增强”条目标记完成。
+
+### 验证结果
+- 已对本轮修改文件执行 IDE 诊断检查，结果为 0 条新增问题。
+- 已执行 `git diff --check`，本轮提交文件通过基础补丁格式检查。
+- 本轮未执行 `php -l`，当前环境仍缺少可用的 `php` CLI。
+
+### Git 提交
+- 提交 ID：`98cb66f`
+- 提交信息：`"fix-backend-multiple-issues-20260317-1532"`
+- 已推送到：origin/master
+- 说明：本次提交实际额外带入了 `backend/docker-compose.yml`、`backend/docker-entrypoint.sh` 的已暂存内容，不属于本轮核心修复；当前工作区中 `backend/docker-compose.yml` 仍有后续未提交改动。
+
+---
+

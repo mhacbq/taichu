@@ -513,7 +513,8 @@ class Hehun extends BaseController
         $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
         
         // 7. 九宫合婚分析（传统合婚法）
-        $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi);
+        $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
+
         
         // 计算总分
         $totalScore = array_sum($scores);
@@ -1785,55 +1786,25 @@ HTML;
     
     /**
      * 九宫合婚分析（传统合婚法）
-     * 根据双方出生年柱推算九宫命卦，判断婚姻吉凶
-     * 
-     * 男命：(11 - 年干支数) % 9 = 命卦
-     * 女命：(4 + 年干支数) % 9 = 命卦
-     * 
-     * 九宫：坎1、坤2、震3、巽4、中5（男坤女艮）、乾6、兑7、艮8、离9
+     * 根据双方出生年推算九宫命卦，判断婚姻吉凶
      */
-    protected function analyzeJiuGongHehun(array $maleBazi, array $femaleBazi): array
+    protected function analyzeJiuGongHehun(array $maleBazi, array $femaleBazi, string $maleBirthDate = '', string $femaleBirthDate = ''): array
     {
-        $maleYearGan = $maleBazi['year']['gan'];
-        $maleYearZhi = $maleBazi['year']['zhi'];
-        $femaleYearGan = $femaleBazi['year']['gan'];
-        $femaleYearZhi = $femaleBazi['year']['zhi'];
+        $maleYear = (int)date('Y', strtotime($maleBirthDate ?: '1990-01-01'));
+        $femaleYear = (int)date('Y', strtotime($femaleBirthDate ?: '1990-01-01'));
         
-        // 计算年干支数
-        $maleGanNum = $this->getGanNumber($maleYearGan);
-        $maleZhiNum = $this->getZhiNumber($maleYearZhi);
-        $femaleGanNum = $this->getGanNumber($femaleYearGan);
-        $femaleZhiNum = $this->getZhiNumber($femaleYearZhi);
-        
-        // 计算命卦（简化算法）
-        $maleGua = $this->calculateMingGua($maleGanNum + $maleZhiNum, 'male');
-        $femaleGua = $this->calculateMingGua($femaleGanNum + $femaleZhiNum, 'female');
+        // 计算命卦
+        $maleGua = $this->calculateMingGua($maleYear, 'male');
+        $femaleGua = $this->calculateMingGua($femaleYear, 'female');
         
         // 九宫八卦名称
         $guaNames = [
-            1 => '坎水',
-            2 => '坤土', 
-            3 => '震木',
-            4 => '巽木',
-            5 => '中土',
-            6 => '乾金',
-            7 => '兑金',
-            8 => '艮土',
-            9 => '离火',
+            1 => '坎水', 2 => '坤土', 3 => '震木', 4 => '巽木', 5 => '中土',
+            6 => '乾金', 7 => '兑金', 8 => '艮土', 9 => '离火',
         ];
         
         // 八卦五行
-        $guaWuxing = [
-            1 => '水',
-            2 => '土',
-            3 => '木',
-            4 => '木',
-            5 => '土',
-            6 => '金',
-            7 => '金',
-            8 => '土',
-            9 => '火',
-        ];
+        $guaWuxing = [1 => '水', 2 => '土', 3 => '木', 4 => '木', 5 => '土', 6 => '金', 7 => '金', 8 => '土', 9 => '火'];
         
         // 分析命卦关系
         $relation = $this->analyzeGuaRelation($maleGua, $femaleGua);
@@ -1841,17 +1812,20 @@ HTML;
         $result = [
             'method' => '九宫合婚法（命卦合婚）',
             'male' => [
+                'year' => $maleYear,
                 'minggua' => $maleGua,
                 'gua_name' => $guaNames[$maleGua] ?? '未知',
                 'wuxing' => $guaWuxing[$maleGua] ?? '未知',
             ],
             'female' => [
+                'year' => $femaleYear,
                 'minggua' => $femaleGua,
                 'gua_name' => $guaNames[$femaleGua] ?? '未知',
                 'wuxing' => $guaWuxing[$femaleGua] ?? '未知',
             ],
             'relation' => $relation,
         ];
+
         
         // 根据命卦关系判断婚姻等级
         switch ($relation['type']) {
@@ -2016,23 +1990,44 @@ HTML;
     }
     
     /**
-     * 计算命卦
+     * 计算命卦（三元命卦算法）
+     * 
+     * @param int $year 出生年份
+     * @param string $gender 性别 male/female
+     * @return int 命卦编号 (1-9)
      */
-    protected function calculateMingGua(int $number, string $gender): int
+    protected function calculateMingGua(int $year, string $gender): int
     {
-        if ($gender === 'male') {
-            $gua = (11 - ($number % 9)) % 9;
-        } else {
-            $gua = (4 + ($number % 9)) % 9;
+        // 1. 计算年份数字总和的模9余数
+        // 例如：1985 -> (1+9+8+5) % 9 = 23 % 9 = 5
+        $sum = 0;
+        $tempYear = $year;
+        while ($tempYear > 0) {
+            $sum += $tempYear % 10;
+            $tempYear = (int)($tempYear / 10);
         }
-        
-        // 处理0值
-        if ($gua === 0) {
-            $gua = 9;
+        $mod = $sum % 9;
+        if ($mod === 0) $mod = 9;
+
+        if ($gender === 'male') {
+            // 男命公式：11 - mod
+            $gua = 11 - $mod;
+            if ($gua > 9) $gua -= 9;
+            
+            // 男命 5 寄 2 (坤)
+            if ($gua === 5) $gua = 2;
+        } else {
+            // 女命公式：4 + mod
+            $gua = 4 + $mod;
+            if ($gua > 9) $gua -= 9;
+            
+            // 女命 5 寄 8 (艮)
+            if ($gua === 5) $gua = 8;
         }
         
         return $gua;
     }
+
     
     /**
      * 分析命卦关系（八宅明镜法）

@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\BaziRecord;
 use app\model\PointsRecord;
 use app\service\CacheService;
+use app\service\BaziCalculationService;
 use app\service\BaziInterpretationService;
 use app\service\FortuneAnalysisService;
 use think\facade\Db;
@@ -23,6 +24,11 @@ class Paipan extends BaseController
     protected $middleware = [\app\middleware\Auth::class];
     
     /**
+     * @var BaziCalculationService
+     */
+    protected $baziService;
+    
+    /**
      * @var BaziInterpretationService
      */
     protected $interpretationService;
@@ -35,6 +41,7 @@ class Paipan extends BaseController
     public function __construct()
     {
         parent::__construct();
+        $this->baziService = new BaziCalculationService();
         $this->interpretationService = new BaziInterpretationService();
         $this->fortuneAnalysisService = new FortuneAnalysisService();
     }
@@ -73,8 +80,8 @@ class Paipan extends BaseController
             }
         }
         
-        // 计算八字（在事务外计算，减少锁持有时间）
-        $bazi = $this->calculateBazi($birthDate);
+        // 计算八字（使用统一的服务类）
+        $bazi = $this->baziService->calculateBazi($birthDate);
         
         // 使用专业解读服务生成分析
         $fullInterpretation = $this->interpretationService->generateFullInterpretation($bazi, $gender);
@@ -88,6 +95,7 @@ class Paipan extends BaseController
         $liuNian = [];
         $fortuneAnalysis = null;
         if ($mode === 'pro') {
+            // 注意：calculateDaYun 暂时保留在控制器中，后续可进一步迁移至服务类
             $daYun = $this->calculateDaYun($bazi, $gender, $birthDate);
             $daYun = $this->analyzeDaYunTrend($daYun, $bazi);
             
@@ -98,6 +106,7 @@ class Paipan extends BaseController
             // 大运流年综合分析
             $fortuneAnalysis = $this->fortuneAnalysisService->analyzeDaYunLiuNian($bazi, $daYun, $liuNian);
         }
+
         
         // ===== 使用数据库行锁防止并发问题 =====
         Db::startTrans();

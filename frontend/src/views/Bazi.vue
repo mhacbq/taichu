@@ -306,7 +306,7 @@
             <div v-for="(count, wx) in result.bazi?.wuxing_stats" :key="wx" class="wuxing-bar-item">
               <span class="wuxing-name">{{ wx }}</span>
               <div class="wuxing-bar">
-                <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%' }"></div>
+                <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%', '--target-width': (count / 8 * 100) + '%' }"></div>
               </div>
               <span class="wuxing-count">{{ count }}</span>
             </div>
@@ -900,9 +900,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { h, ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Download, RefreshRight, Cpu, Share, Document, Brush, User } from '@element-plus/icons-vue'
+import { HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -2421,7 +2421,7 @@ const formatAiContent = (content) => {
 .rizhu-tag {
   font-size: 10px;
   background: var(--primary-color);
-  color: #fff;
+  color: var(--text-primary);
   padding: 2px 6px;
   border-radius: 4px;
   position: absolute;

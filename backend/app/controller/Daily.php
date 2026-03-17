@@ -228,61 +228,138 @@ class Daily extends BaseController
      */
     public function luck()
     {
+        $user = $this->request->user;
         $fortune = DailyFortune::getToday();
+        
+        $favoriteWuxing = '土'; // 默认
+        if ($user) {
+            $baziRecord = Db::name('tc_bazi_record')
+                ->where('user_id', $user['sub'])
+                ->order('created_at', 'desc')
+                ->find();
+            
+            if ($baziRecord) {
+                // 计算喜用五行 (简化逻辑：身弱取印比，身旺取食财官)
+                $favoriteWuxing = $this->calculateFavoriteWuxing($baziRecord);
+            }
+        }
         
         return $this->success([
             'date' => $fortune->date,
             'lunarDate' => $fortune->lunar_date,
             'yi' => explode(',', $fortune->yi),
             'ji' => explode(',', $fortune->ji),
-            'luckyNumbers' => $this->generateLuckyNumbers(),
-            'luckyColors' => $this->generateLuckyColors(),
-            'luckyDirections' => $this->generateLuckyDirections(),
+            'luckyNumbers' => $this->generateLuckyNumbers($favoriteWuxing),
+            'luckyColors' => $this->generateLuckyColors($favoriteWuxing),
+            'luckyDirections' => $this->generateLuckyDirections($favoriteWuxing),
+            'calculation_method' => '基于八字喜用神推算',
         ]);
+    }
+
+    /**
+     * 计算喜用五行（简化版）
+     */
+    protected function calculateFavoriteWuxing(array $baziRecord): string
+    {
+        $dayMaster = $baziRecord['day_gan'];
+        $ganWuXing = ['甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土', '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'];
+        $dmWx = $ganWuXing[$dayMaster] ?? '土';
+
+        // 五行生克关系
+        $sheng = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金']; // 被生
+        $ke = ['木' => '金', '火' => '水', '土' => '木', '金' => '火', '水' => '土']; // 被克
+
+        // 简易强弱判断：由于没有完整排盘，我们根据月令简单估算
+        // 如果出生月令是生我或同我之五行，暂定为身旺，否则为身弱
+        $monthZhi = $baziRecord['month_zhi'] ?? '';
+        $zhiWuXing = ['子' => '水', '丑' => '土', '寅' => '木', '卯' => '木', '辰' => '土', '巳' => '火', '午' => '火', '未' => '土', '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'];
+        $monthWx = $zhiWuXing[$monthZhi] ?? '';
+
+        $isStrong = ($monthWx === $dmWx || $monthWx === $sheng[$dmWx]);
+
+        if (!$isStrong) {
+            // 身弱，喜印比 (生我者或同我者)
+            return (mt_rand(0, 1) == 0) ? $dmWx : $sheng[$dmWx];
+        } else {
+            // 身旺，喜食财官 (我生者、我克者、克我者)
+            $options = [
+                '木' => ['火', '土', '金'],
+                '火' => ['土', '金', '水'],
+                '土' => ['金', '水', '木'],
+                '金' => ['水', '木', '火'],
+                '水' => ['木', '火', '土'],
+            ];
+            $choices = $options[$dmWx];
+            return $choices[array_rand($choices)];
+        }
     }
     
     /**
-     * 生成幸运数字
+     * 生成幸运数字（基于五行数：水16, 火27, 木38, 金49, 土50）
      */
-    protected function generateLuckyNumbers(): array
+    protected function generateLuckyNumbers(string $wuxing): array
     {
-        $numbers = [];
-        while (count($numbers) < 3) {
-            $num = mt_rand(1, 99);
-            if (!in_array($num, $numbers)) {
-                $numbers[] = $num;
-            }
+        $map = [
+            '木' => [3, 8, 13, 18, 23, 28],
+            '火' => [2, 7, 12, 17, 22, 27],
+            '土' => [5, 10, 15, 20, 25, 30],
+            '金' => [4, 9, 14, 19, 24, 29],
+            '水' => [1, 6, 11, 16, 21, 26],
+        ];
+        
+        $pool = $map[$wuxing] ?? $map['土'];
+        // 不再随机打乱，而是根据日期确定偏移量
+        $offset = (int)date('j') % count($pool);
+        $result = [];
+        for ($i = 0; $i < 3; $i++) {
+            $result[] = $pool[($offset + $i) % count($pool)];
         }
-        return $numbers;
+        return $result;
     }
     
     /**
      * 生成幸运颜色
      */
-    protected function generateLuckyColors(): array
+    protected function generateLuckyColors(string $wuxing): array
     {
-        $colors = ['红色', '黄色', '蓝色', '绿色', '紫色', '橙色', '白色', '黑色'];
-        $keys = array_rand($colors, 2);
-        // 确保$keys是数组（当选择2个元素时array_rand返回数组，选择1个时返回单个键）
-        if (!is_array($keys)) {
-            $keys = [$keys, ($keys + 1) % count($colors)];
-        }
-        return [$colors[$keys[0]], $colors[$keys[1]]];
+        $colors = [
+            '金' => ['白色', '金色', '银色'],
+            '木' => ['绿色', '青色', '翠色'],
+            '水' => ['黑色', '蓝色', '灰色'],
+            '火' => ['红色', '紫色', '橙色'],
+            '土' => ['黄色', '棕色', '咖啡色']
+        ];
+        
+        $pool = $colors[$wuxing] ?? ['黄色', '棕色'];
+        $offset = (int)date('j') % count($pool);
+        return [
+            $pool[$offset],
+            $pool[($offset + 1) % count($pool)]
+        ];
     }
     
     /**
      * 生成幸运方位
      */
-    protected function generateLuckyDirections(): array
+    protected function generateLuckyDirections(string $wuxing): array
     {
-        $directions = ['东', '南', '西', '北', '东南', '东北', '西南', '西北'];
-        $keys = array_rand($directions, 2);
-        // 确保$keys是数组
-        if (!is_array($keys)) {
-            $keys = [$keys, ($keys + 1) % count($directions)];
-        }
-        return [$directions[$keys[0]], $directions[$keys[1]]];
+        $directions = [
+            '金' => ['西方', '西北方'],
+            '木' => ['东方', '东南方'],
+            '水' => ['北方'],
+            '火' => ['南方'],
+            '土' => ['中央', '东北方', '西南方']
+        ];
+        
+        $pool = $directions[$wuxing] ?? ['中央'];
+        $offset = (int)date('j') % count($pool);
+        if (count($pool) == 1) return [$pool[0]];
+        return [
+            $pool[$offset],
+            $pool[($offset + 1) % count($pool)]
+        ];
     }
+
     
     /**
      * 每日签到

@@ -36,3 +36,10 @@ export const getRobotsConfig = () => request.get('/admin/seo/robots')
 export const saveRobotsConfig = (content) => request.post('/admin/seo/robots', { content })
 export const generateSitemap = () => request.post('/admin/seo/sitemap-generate')
 
+// 神煞管理
+export const getShenshaList = (params) => request.get('/admin/shensha/list', { params })
+export const saveShensha = (data) => request.post('/admin/shensha/save', data)
+export const deleteShenshaApi = (id) => request.post(`/admin/shensha/delete/${id}`)
+export const toggleShenshaStatus = (id, status) => request.post('/admin/shensha/toggle-status', { id, status })
+
+

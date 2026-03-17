@@ -585,7 +585,7 @@ onMounted(() => {
 .form-group input {
   width: 100%;
   padding: 14px 16px;
-  min-height: 44px;
+  height: 44px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
@@ -593,6 +593,7 @@ onMounted(() => {
   font-size: 15px;
   transition: all 0.3s;
 }
+
 
 .form-group input:focus {
   outline: none;
@@ -1122,41 +1123,6 @@ onMounted(() => {
   font-size: 20px;
   font-weight: bold;
   color: var(--star-color);
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .page-title {
-    font-size: 28px;
-  }
-  
-  .form-card {
-    padding: 24px;
-  }
-  
-  .bazi-compare {
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .bazi-divider {
-    transform: rotate(90deg);
-  }
-  
-  .score-section {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  
-  .main-score {
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 24px;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-  }
 }
 
 /* 响应式 */

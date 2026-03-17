@@ -35,8 +35,10 @@ WORKDIR /var/www/html
 # 复制项目文件
 COPY . .
 
-# 如果容器里没有 .env，就从 .env.example 复制一个
-RUN if [ ! -f .env ]; then cp .env.example .env; fi
+# 复制启动脚本并赋权（.env 配置由 entrypoint 在运行时根据环境变量写入）
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r//' /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # 如果仓库未提供 .htaccess，则在复制代码后兜底生成
 RUN if [ ! -f /var/www/html/public/.htaccess ]; then \
@@ -58,8 +60,8 @@ RUN composer install --ignore-platform-req=ext-fileinfo --no-security-blocking -
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/runtime
 
-# 暴露端口
-EXPOSE 8080
+# 暴露端口（Apache 默认监听 80）
+EXPOSE 80
 
-# 启动Apache
-CMD ["apache2-foreground"]
+# 启动：先由 entrypoint 写入 .env，再启动 Apache
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

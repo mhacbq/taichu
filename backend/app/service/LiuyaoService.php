@@ -9,17 +9,18 @@ namespace app\service;
 class LiuyaoService
 {
     /**
-     * 八卦名称
+     * 八卦名称 (按先天八卦序：1乾、2兑、3离、4震、5巽、6坎、7艮、8坤)
+     * 键名为三位二进制：初爻、二爻、三爻 (1为阳，0为阴)
      */
     const BA_GUA = [
-        '000' => '坤',  // 地
-        '001' => '震',  // 雷
-        '010' => '坎',  // 水
-        '011' => '兑',  // 泽
-        '100' => '艮',  // 山
-        '101' => '离',  // 火
-        '110' => '巽',  // 风
-        '111' => '乾',  // 天
+        '111' => '乾',
+        '110' => '兑',
+        '101' => '离',
+        '100' => '震',
+        '011' => '巽',
+        '010' => '坎',
+        '001' => '艮',
+        '000' => '坤',
     ];
 
     /**
@@ -395,7 +396,7 @@ class LiuyaoService
 
     /**
      * 时间起卦法
-     * 根据当前时间（年月日时）起卦
+     * 根据当前时间（农历年月日时干支分值）起卦
      * 
      * @param int $year 年
      * @param int $month 月
@@ -405,19 +406,40 @@ class LiuyaoService
      */
     public static function qiGuaByTime(int $year, int $month, int $day, int $hour): array
     {
-        // 上卦 = (年+月+日) % 8
-        $shangGuaNum = ($year + $month + $day) % 8;
+        // 1. 处理晚子时 (23:00-00:00)
+        // 在梅花易数中，23点后起卦应按次日计算
+        $calcDate = "$year-$month-$day";
+        if ($hour >= 23) {
+            $dt = new \DateTime($calcDate);
+            $dt->modify('+1 day');
+            $calcDate = $dt->format('Y-m-d');
+        }
+
+        // 2. 转换为农历分值
+        $lunar = LunarService::solarToLunar($calcDate);
+        $yearNum = $lunar['year_zhi_index'];
+        $monthNum = $lunar['lunar_month'];
+        $dayNum = $lunar['lunar_day'];
+        
+        // 时辰支数计算 (子=1, 丑=2, ..., 亥=12)
+        $hourNum = (int)(($hour + 1) / 2) % 12 + 1;
+        // 23:00-01:00 均为子时(1)
+        if ($hour == 23) $hourNum = 1;
+
+        // 3. 计算卦数 (先天八卦数)
+        // 上卦 = (年支数 + 农历月 + 农历日) % 8
+        $shangGuaNum = ($yearNum + $monthNum + $dayNum) % 8;
         if ($shangGuaNum == 0) $shangGuaNum = 8;
         
-        // 下卦 = (年+月+日+时) % 8
-        $xiaGuaNum = ($year + $month + $day + $hour) % 8;
+        // 下卦 = (年支数 + 农历月 + 农历日 + 时支数) % 8
+        $xiaGuaNum = ($yearNum + $monthNum + $dayNum + $hourNum) % 8;
         if ($xiaGuaNum == 0) $xiaGuaNum = 8;
         
-        // 动爻 = (年+月+日+时) % 6
-        $dongYao = ($year + $month + $day + $hour) % 6;
+        // 动爻 = (年支数 + 农历月 + 农历日 + 时支数) % 6
+        $dongYao = ($yearNum + $monthNum + $dayNum + $hourNum) % 6;
         if ($dongYao == 0) $dongYao = 6;
         
-        // 生成卦象
+        // 4. 生成卦象
         $shangGua = self::getBaGuaByNum($shangGuaNum);
         $xiaGua = self::getBaGuaByNum($xiaGuaNum);
         
@@ -425,6 +447,13 @@ class LiuyaoService
         
         return [
             'method' => 'time',
+            'lunar_info' => [
+                'year_num' => $yearNum,
+                'month_num' => $monthNum,
+                'day_num' => $dayNum,
+                'hour_num' => $hourNum,
+                'is_late_zi' => ($hour >= 23),
+            ],
             'shang_gua' => $shangGua,
             'xia_gua' => $xiaGua,
             'dong_yao' => $dongYao,
@@ -432,6 +461,7 @@ class LiuyaoService
             'main_gua' => self::getGuaName(str_replace(['0', '1', '2', '3'], ['0', '1', '0', '1'], $yaoCode)),
         ];
     }
+
 
     /**
      * 数字起卦法

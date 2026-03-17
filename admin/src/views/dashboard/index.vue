@@ -86,10 +86,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { getStatistics, getTrendData, getRealtimeData, getChartData, getPendingFeedback } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const statistics = ref([
   { title: '总用户数', value: 0, trend: 0, color: '#409eff', icon: 'UserFilled' },
   { title: '今日新增', value: 0, trend: 0, color: '#67c23a', icon: 'User' },

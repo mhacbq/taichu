@@ -544,25 +544,40 @@ class AdminStatsService
         
         Db::startTrans();
         try {
-            // 更新订单状态
+            // 生成退款单号
+            $refundNo = 'REF' . date('YmdHis') . mt_rand(1000, 9999);
+            
+            // 1. 调用微信支付退款接口
+            $refundResult = WechatPayService::refund(
+                $order['order_no'],
+                $refundNo,
+                (float)$order['pay_amount'],
+                $amount,
+                $reason
+            );
+
+            if (!$refundResult['success']) {
+                throw new \Exception('微信退款失败: ' . $refundResult['message']);
+            }
+
+            // 2. 更新订单状态
             Db::table('tc_vip_order')
                 ->where('id', $orderId)
                 ->update([
                     'status' => 3,  // 已退款
+                    'refund_no' => $refundNo,
                     'refund_amount' => $amount,
                     'refund_time' => date('Y-m-d H:i:s'),
                     'refund_reason' => $reason,
                 ]);
             
-            // TODO: 调用微信支付退款接口
-            
-            // 记录管理员操作日志
+            // 3. 记录管理员操作日志
             Db::table('tc_admin_log')->insert([
                 'admin_id' => $adminId,
                 'action' => 'refund_order',
                 'target_type' => 'order',
                 'target_id' => $orderId,
-                'content' => "订单退款: 金额{$amount}, 原因: {$reason}",
+                'content' => "订单退款成功: 金额{$amount}, 退款单号: {$refundNo}, 原因: {$reason}",
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
             

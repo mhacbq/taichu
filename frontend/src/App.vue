@@ -180,7 +180,8 @@ import {
   Present,
   Collection,
   Sunrise,
-  Link
+  Link,
+  Home
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
