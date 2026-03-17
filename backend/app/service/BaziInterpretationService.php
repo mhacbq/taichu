@@ -289,15 +289,15 @@ class BaziInterpretationService
     protected function normalizeWuxingStats(array $wuxingStats): array
     {
         $normalized = [
-            '金' => 0,
-            '木' => 0,
-            '水' => 0,
-            '火' => 0,
-            '土' => 0,
+            '金' => 0.0,
+            '木' => 0.0,
+            '水' => 0.0,
+            '火' => 0.0,
+            '土' => 0.0,
         ];
 
         foreach ($normalized as $wx => $defaultValue) {
-            $normalized[$wx] = isset($wuxingStats[$wx]) ? max(0, (int)$wuxingStats[$wx]) : $defaultValue;
+            $normalized[$wx] = isset($wuxingStats[$wx]) ? round(max(0, (float)$wuxingStats[$wx]), 2) : $defaultValue;
         }
 
         return $normalized;
@@ -314,22 +314,25 @@ class BaziInterpretationService
         $analysis = [];
         foreach ($wuxingStats as $wx => $count) {
             $percentage = $total > 0 ? ($count / $total) * 100 : 0;
-            if ($count >= 3) {
-                $strength = '旺';
-                $desc = '过旺';
-            } elseif ($count == 2) {
-                $strength = '强';
-                $desc = '偏强';
-            } elseif ($count == 1) {
-                $strength = '弱';
-                $desc = '偏弱';
-            } else {
+            if ($count <= 0.001) {
                 $strength = '缺';
                 $desc = '缺失';
+            } elseif ($percentage >= 30 || $count >= 3.2) {
+                $strength = '旺';
+                $desc = '过旺';
+            } elseif ($percentage >= 22 || $count >= 2.2) {
+                $strength = '强';
+                $desc = '偏强';
+            } elseif ($percentage >= 12 || $count >= 1.0) {
+                $strength = '平';
+                $desc = '中和';
+            } else {
+                $strength = '弱';
+                $desc = '偏弱';
             }
             
             $analysis[$wx] = [
-                'count' => $count,
+                'count' => round($count, 2),
                 'percentage' => round($percentage, 1),
                 'strength' => $strength,
                 'desc' => $desc,
@@ -360,10 +363,10 @@ class BaziInterpretationService
         $min = min($values);
         $diff = $max - $min;
         
-        // 差值越小越平衡
-        if ($diff <= 1) return 90;
-        if ($diff <= 2) return 75;
-        if ($diff <= 3) return 60;
+        // 差值越小越平衡（适配加权后的浮点分值）
+        if ($diff <= 0.8) return 90;
+        if ($diff <= 1.6) return 75;
+        if ($diff <= 2.5) return 60;
         return 45;
     }
 

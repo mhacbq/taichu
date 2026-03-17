@@ -86,7 +86,7 @@ class Paipan extends BaseController
         }
         
         // 计算八字（使用统一的服务类）
-        $bazi = $this->baziService->calculateBazi($birthDate);
+        $bazi = $this->baziService->calculateBazi($birthDate, $gender);
         
         // 使用专业解读服务生成分析
         $fullInterpretation = $this->interpretationService->generateFullInterpretation($bazi, $gender);
@@ -826,9 +826,9 @@ class Paipan extends BaseController
      * 计算八字
      * 公开方法，可供其他控制器调用
      */
-    public function calculateBazi(string $birthDate): array
+    public function calculateBazi(string $birthDate, string $gender = 'male'): array
     {
-        return $this->baziService->calculateBazi($birthDate);
+        return $this->baziService->calculateBazi($birthDate, $gender);
     }
     
     /**
@@ -846,7 +846,7 @@ class Paipan extends BaseController
         
         $yearGan = $bazi['year']['gan'];
         $isYang = ($ganYinYang[$yearGan] === '阳');
-        $isMale = ($gender === 'male');
+        $isMale = in_array($gender, ['male', '男'], true);
         
         // 确定大运顺逆：阳男阴女顺排，阴男阳女逆排
         $isForward = ($isYang && $isMale) || (!$isYang && !$isMale);

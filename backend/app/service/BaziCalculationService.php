@@ -133,6 +133,19 @@ class BaziCalculationService
     }
 
     /**
+     * 规范化性别输入，兼容前端 male/female 与传统 男/女 表示。
+     */
+    protected function normalizeGenderLabel(string $gender): string
+    {
+        $normalized = strtolower(trim($gender));
+        if (in_array($normalized, ['female', '女'], true)) {
+            return '女';
+        }
+
+        return '男';
+    }
+
+    /**
      * 计算八字
      */
     public function calculateBazi(string $birthDate, string $gender = '男'): array
@@ -142,6 +155,7 @@ class BaziCalculationService
         $month = (int)date('n', $timestamp);
         $day = (int)date('j', $timestamp);
         $hour = (int)date('G', $timestamp);
+        $genderLabel = $this->normalizeGenderLabel($gender);
         
         // ===== 核心修复：晚子时(23:00-00:00)日柱切换 =====
         $calcDayYear = $year;
@@ -183,28 +197,60 @@ class BaziCalculationService
         $shiGanIndex = (array_search($hourGanStart, $tianGan) + $shiZhiIndex) % 10;
         
         $pillars = [
-            'year' => ['gan' => $tianGan[$yearGanIndex], 'zhi' => $diZhi[$yearZhiIndex]],
-            'month' => ['gan' => $tianGan[$monthGanIndex], 'zhi' => $diZhi[$monthZhiIndex]],
-            'day' => ['gan' => $dayGan, 'zhi' => $diZhi[$dayZhiIndex]],
-            'hour' => ['gan' => $tianGan[$shiGanIndex], 'zhi' => $diZhi[$shiZhiIndex]],
+            'year' => [
+                'gan' => $tianGan[$yearGanIndex],
+                'zhi' => $diZhi[$yearZhiIndex],
+                'gan_index' => $yearGanIndex,
+                'zhi_index' => $yearZhiIndex,
+                'number' => $lunarYear,
+            ],
+            'month' => [
+                'gan' => $tianGan[$monthGanIndex],
+                'zhi' => $diZhi[$monthZhiIndex],
+                'gan_index' => $monthGanIndex,
+                'zhi_index' => $monthZhiIndex,
+                'month_offset' => $monthInfo['month_offset'],
+            ],
+            'day' => [
+                'gan' => $dayGan,
+                'zhi' => $diZhi[$dayZhiIndex],
+                'gan_index' => $dayGanIndex,
+                'zhi_index' => $dayZhiIndex,
+            ],
+            'hour' => [
+                'gan' => $tianGan[$shiGanIndex],
+                'zhi' => $diZhi[$shiZhiIndex],
+                'gan_index' => $shiGanIndex,
+                'zhi_index' => $shiZhiIndex,
+            ],
         ];
+
+        $dayXunKong = $this->calculateXunKong($dayGan, $diZhi[$dayZhiIndex]);
+        $xunkongText = implode('', $dayXunKong);
         
         // 补充属性
-        foreach ($pillars as $key => &$p) {
+        foreach ($pillars as &$p) {
             $p['gan_wuxing'] = $this->ganWuXing[$p['gan']];
             $p['zhi_wuxing'] = $this->zhiWuXing[$p['zhi']];
             $p['shishen'] = $this->shiShenTable[$dayGan][$p['gan']] ?? '';
             $p['nayin'] = $this->naYin[$p['gan'].$p['zhi']] ?? '';
             $p['canggan'] = $this->zhiCangGan[$p['zhi']];
-            // 旬空
-            $p['xunkong'] = $this->calculateXunKong($pillars['day']['gan'], $pillars['day']['zhi']);
+            $p['xunkong'] = $xunkongText;
+            $p['xunkong_list'] = $dayXunKong;
         }
+        unset($p);
+
+        $wuxingStats = $this->calculateWuxingStats($pillars);
+        $strength = $this->analyzeStrength($pillars);
         
         return array_merge($pillars, [
             'day_master' => $dayGan,
             'day_master_wuxing' => $this->ganWuXing[$dayGan],
-            'strength' => $this->analyzeStrength($pillars),
-            'qiyun' => $this->calculateQiYun($year, $month, $day, $hour, $gender, $yearGan),
+            'xunkong' => $xunkongText,
+            'xunkong_list' => $dayXunKong,
+            'wuxing_stats' => $wuxingStats,
+            'strength' => $strength,
+            'qiyun' => $this->calculateQiYun($year, $month, $day, $hour, $genderLabel, $yearGan),
             'calculation_note' => $hour >= 23 ? '已处理晚子时：日柱进一日，年柱月柱维持原日' : '正常排盘'
         ]);
     }
@@ -220,33 +266,40 @@ class BaziCalculationService
 
     protected function getLunarMonth(int $year, int $month, int $day): array
     {
-        $dateVal = $month * 100 + $day;
-        
-        // 节气数组（按地支索引顺序：2寅 3卯 ... 0子 1丑）
-        $jieqis = [
-            ['name' => '立春', 'idx' => 2], ['name' => '惊蛰', 'idx' => 3], ['name' => '清明', 'idx' => 4],
-            ['name' => '立夏', 'idx' => 5], ['name' => '芒种', 'idx' => 6], ['name' => '小暑', 'idx' => 7],
-            ['name' => '立秋', 'idx' => 8], ['name' => '白露', 'idx' => 9], ['name' => '寒露', 'idx' => 10],
-            ['name' => '立冬', 'idx' => 11], ['name' => '大雪', 'idx' => 0], ['name' => '小寒', 'idx' => 1]
+        $birthTs = strtotime(sprintf('%04d-%02d-%02d 12:00:00', $year, $month, $day));
+
+        // 以“节”定月：大雪起子月、小寒起丑月、立春起寅月……
+        // 补入上一年大雪，避免 1 月上旬误判为丑月。
+        $boundaries = [
+            ['year' => $year - 1, 'name' => '大雪', 'idx' => 0],
+            ['year' => $year, 'name' => '小寒', 'idx' => 1],
+            ['year' => $year, 'name' => '立春', 'idx' => 2],
+            ['year' => $year, 'name' => '惊蛰', 'idx' => 3],
+            ['year' => $year, 'name' => '清明', 'idx' => 4],
+            ['year' => $year, 'name' => '立夏', 'idx' => 5],
+            ['year' => $year, 'name' => '芒种', 'idx' => 6],
+            ['year' => $year, 'name' => '小暑', 'idx' => 7],
+            ['year' => $year, 'name' => '立秋', 'idx' => 8],
+            ['year' => $year, 'name' => '白露', 'idx' => 9],
+            ['year' => $year, 'name' => '寒露', 'idx' => 10],
+            ['year' => $year, 'name' => '立冬', 'idx' => 11],
+            ['year' => $year, 'name' => '大雪', 'idx' => 0],
         ];
-        
-        $currentZhiIdx = 1; // 默认丑月
-        $monthOffset = 11; // 丑月相对于寅月的偏移
-        
-        foreach (array_reverse($jieqis) as $index => $jq) {
-            $jqDate = $this->getJieQiDate($year, $jq['name']);
-            if ($dateVal >= ($jqDate[0] * 100 + $jqDate[1])) {
-                $currentZhiIdx = $jq['idx'];
-                // 计算月干相对于起始干的偏移
-                // 寅月偏移0，卯月偏移1...
-                $monthOffset = ($currentZhiIdx - 2 + 12) % 12;
-                break;
+
+        $currentZhiIdx = 0; // 默认上一节大雪起子月
+        foreach ($boundaries as $boundary) {
+            [$jqMonth, $jqDay] = $this->getJieQiDate($boundary['year'], $boundary['name']);
+            $jqTs = strtotime(sprintf('%04d-%02d-%02d 12:00:00', $boundary['year'], $jqMonth, $jqDay));
+            if ($birthTs >= $jqTs) {
+                $currentZhiIdx = $boundary['idx'];
+                continue;
             }
+            break;
         }
-        
+
         return [
             'zhi_index' => $currentZhiIdx,
-            'month_offset' => $monthOffset
+            'month_offset' => ($currentZhiIdx - 2 + 12) % 12,
         ];
     }
 
@@ -300,6 +353,56 @@ class BaziCalculationService
         $kong2Idx = ($xunShouZhiIdx + 11) % 12;
         
         return [$diZhi[$kong1Idx], $diZhi[$kong2Idx]];
+    }
+
+    /**
+     * 计算命局五行权重。
+     *
+     * 规则：天干一字一分；地支按藏干分气折算，月令权重 2.5，其余三支各 1.0。
+     * 这样既保留“透干明见”的显性力量，也符合“月令司令”的传统判断。
+     */
+    protected function calculateWuxingStats(array $pillars): array
+    {
+        $stats = ['金' => 0.0, '木' => 0.0, '水' => 0.0, '火' => 0.0, '土' => 0.0];
+        $branchWeights = [
+            '子' => ['癸' => 100],
+            '丑' => ['己' => 60, '癸' => 30, '辛' => 10],
+            '寅' => ['甲' => 60, '丙' => 30, '戊' => 10],
+            '卯' => ['乙' => 100],
+            '辰' => ['戊' => 60, '乙' => 30, '癸' => 10],
+            '巳' => ['丙' => 60, '庚' => 30, '戊' => 10],
+            '午' => ['丁' => 70, '己' => 30],
+            '未' => ['己' => 60, '丁' => 30, '乙' => 10],
+            '申' => ['庚' => 60, '壬' => 30, '戊' => 10],
+            '酉' => ['辛' => 100],
+            '戌' => ['戊' => 60, '辛' => 30, '丁' => 10],
+            '亥' => ['壬' => 70, '甲' => 30],
+        ];
+        $positionWeights = ['year' => 1.0, 'month' => 2.5, 'day' => 1.0, 'hour' => 1.0];
+
+        foreach ($pillars as $pillar) {
+            $ganWuxing = $pillar['gan_wuxing'] ?? ($this->ganWuXing[$pillar['gan']] ?? null);
+            if ($ganWuxing !== null) {
+                $stats[$ganWuxing] += 1.0;
+            }
+        }
+
+        foreach ($positionWeights as $position => $weight) {
+            $zhi = $pillars[$position]['zhi'] ?? '';
+            $hiddenStems = $branchWeights[$zhi] ?? [];
+            foreach ($hiddenStems as $gan => $percent) {
+                $wx = $this->ganWuXing[$gan] ?? null;
+                if ($wx !== null) {
+                    $stats[$wx] += $weight * ($percent / 100);
+                }
+            }
+        }
+
+        foreach ($stats as $wx => $value) {
+            $stats[$wx] = round($value, 2);
+        }
+
+        return $stats;
     }
 
     /**
@@ -366,6 +469,7 @@ class BaziCalculationService
 
         $interaction = $this->calculateBranchInteractionScore($pillars, $supporting, $branchWeights);
         $totalScore = max(0, min(100, $ganScore + $branchScore + $interaction['score']));
+        $wuxingStats = $this->calculateWuxingStats($pillars);
         
         $status = '中和';
         if ($totalScore >= 55) $status = '身旺';
@@ -382,6 +486,7 @@ class BaziCalculationService
                 'branch_support_score' => round($branchScore, 1),
                 'interaction_score' => round($interaction['score'], 1),
                 'branch_interactions' => $interaction['notes'],
+                'wuxing_stats' => $wuxingStats,
             ],
         ];
     }

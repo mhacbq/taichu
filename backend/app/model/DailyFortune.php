@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace app\model;
 
+use app\service\LunarService;
 use think\Model;
 
 class DailyFortune extends Model
@@ -51,7 +52,13 @@ class DailyFortune extends Model
         $fortune = self::where('date', $today)->find();
         
         if (!$fortune) {
-            $fortune = self::generateFortune($today);
+            return self::generateFortune($today);
+        }
+
+        $expectedLunarDate = self::solarToLunar($today);
+        if ($fortune->lunar_date !== $expectedLunarDate) {
+            $fortune->save(['lunar_date' => $expectedLunarDate]);
+            $fortune = self::where('id', $fortune->id)->find() ?? $fortune;
         }
         
         return $fortune;
@@ -87,15 +94,38 @@ class DailyFortune extends Model
     }
     
     /**
-     * 公历转农历（简化版）
+     * 公历转农历（使用统一农历服务）
      */
     protected static function solarToLunar(string $date): string
     {
-        // 实际项目中应使用农历转换库
-        $month = mt_rand(1, 12);
-        $day = mt_rand(1, 30);
-        $ganzhi = ['甲子', '乙丑', '丙寅', '丁卯', '戊辰', '己巳'][mt_rand(0, 5)];
-        return "{$ganzhi}年 {$month}月{$day}日";
+        $lunar = LunarService::solarToLunar($date);
+        $month = self::formatLunarMonth((int)($lunar['lunar_month'] ?? 1), (bool)($lunar['is_leap'] ?? false));
+        $day = self::formatLunarDay((int)($lunar['lunar_day'] ?? 1));
+        $yearGanZhi = $lunar['year_gan_zhi'] ?? '';
+
+        return trim("{$yearGanZhi}年 {$month}{$day}");
+    }
+
+    protected static function formatLunarMonth(int $month, bool $isLeap = false): string
+    {
+        $months = [1 => '正月', 2 => '二月', 3 => '三月', 4 => '四月', 5 => '五月', 6 => '六月', 7 => '七月', 8 => '八月', 9 => '九月', 10 => '十月', 11 => '冬月', 12 => '腊月'];
+        $monthText = $months[$month] ?? ($month . '月');
+
+        return $isLeap ? '闰' . $monthText : $monthText;
+    }
+
+    protected static function formatLunarDay(int $day): string
+    {
+        $days = [
+            1 => '初一', 2 => '初二', 3 => '初三', 4 => '初四', 5 => '初五',
+            6 => '初六', 7 => '初七', 8 => '初八', 9 => '初九', 10 => '初十',
+            11 => '十一', 12 => '十二', 13 => '十三', 14 => '十四', 15 => '十五',
+            16 => '十六', 17 => '十七', 18 => '十八', 19 => '十九', 20 => '二十',
+            21 => '廿一', 22 => '廿二', 23 => '廿三', 24 => '廿四', 25 => '廿五',
+            26 => '廿六', 27 => '廿七', 28 => '廿八', 29 => '廿九', 30 => '三十',
+        ];
+
+        return $days[$day] ?? ((string)$day);
     }
     
     /**

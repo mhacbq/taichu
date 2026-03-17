@@ -1,4 +1,23 @@
+## 🛠 第十九轮后台运营检查报告 (2026-03-17)
+
+作为网站运营人员，我实际拉起了独立管理后台（http://localhost:3001），确认登录页可以访问；随后结合真实接口请求、数据库状态与后台前端代码，对登录、Dashboard、用户、内容、订单、系统配置等链路进行了交叉核验，新增以下不重复问题：
+
+### 🔴 高优先级（运营阻塞问题）
+- [ ] [运营] 管理后台账号密码登录直接 500 - 管理员登录 - 独立后台登录页可打开，但 `admin/src/views/login/index.vue` 提交后会走 `admin/vite.config.js` 指向的 `http://localhost:8000` 代理；而直连 `http://localhost:8080/api/admin/auth/login` 又会在 `backend/app/controller/admin/Auth.php` 查询不存在的 `admin` 表，实测报错 `Table 'taichu.admin' doesn't exist`，后台无法完成账号密码登录。
+- [ ] [运营] 后台鉴权中间件缺少 `ADMIN_JWT_SECRET` 导致受保护接口全量 500 - 登录后跳转和权限验证 - 实测请求 `/api/admin/auth/info` 返回 `ADMIN_JWT_SECRET environment variable is not set`，`backend/app/middleware/AdminAuth.php` 在构造阶段直接抛异常，意味着即使补齐登录入口，Dashboard 和各管理接口也无法正常进入。
+- [ ] [运营] 独立管理后台业务路由未真正注册 - 后台首页 Dashboard - `admin/src/router/index.js` 只把 `constantRoutes` 注入 router，`asyncRoutes` 中声明的 `/dashboard`、`/user/*`、`/content/*` 等页面并未注册，登录成功后 `router.push('/')` 也无法稳定落到实际后台首页，侧栏与快捷入口存在整体失效风险。
+- [ ] [运营] 黄历管理 CRUD 请求路径与后端路由不一致 - 内容管理/黄历数据 - `admin/src/api/content.js` 把黄历接口写成 `/content/almanac*`，但后端 `backend/route/admin.php` 实际只注册了 `/api/admin/almanac/list`、`/save`、`/generate-month`，运营无法正常新增、编辑、删除黄历信息。
+- [ ] [运营] 支付配置、充值订单、VIP订单接口路径错误且 VIP 路由缺失 - 订单/积分管理 - `admin/src/api/payment.js` 使用 `/admin/payment/*`、`/admin/order/*`，叠加 `admin/src/api/request.js` 的 `baseURL=/api/admin` 后会请求错误地址；同时 `backend/route/admin.php` 并未注册 `/order/*` 路由，导致支付配置、订单列表、VIP 订单处理无法正常使用。
+- [ ] [运营] 站点内容、FAQ、评价与 SEO 管理接口重复拼接 `/api/admin` - 内容管理/SEO内容 - `admin/src/api/siteContent.js` 已写死 `/api/admin/site/*`，再叠加 `baseURL=/api/admin` 会命中错误路径，内容运营和 SEO 配置页面会整体加载失败。
+
+### 🟡 中优先级（运营体验问题）
+
+### 🟢 低优先级（运营优化建议）
+
+---
+
 ## 🎨 第三十六轮UI设计检查报告 (2026-03-17)
+
 
 作为资深产品经理和UI设计师，我继续从首页信息表达、共享组件对比度、交互可发现性、移动端引导区密度与动效可访问性几个角度复核太初命理网站，新增以下不重复问题：
 
@@ -180,7 +199,6 @@
 - [ ] [占卜] 命卦计算忽略立春划分 - 合婚配对 - Hehun.php 计算命卦时直接取公历年份，未按命理传统以立春作为生肖及命卦的起始点，导致年初出生者数据全错。
 
 ### 🟡 中优先级（体验问题/专业深度）
-- [ ] [占卜] 缺失"旬空"提示 - 八字排盘 - 核心排盘结果中未标注旬空，这在喜用神判断和流年分析中是极关键的变量。
 - [ ] [占卜] 塔罗逆位牌义支持不均 - 塔罗占卜 - 部分权杖组和宝剑组牌义逆位释义过于简略，无法支撑复杂的凯尔特十字牌阵深度解读。
 
 ### 🟢 低优先级（专业性优化）
@@ -211,12 +229,8 @@
 作为精通东西方命理占卜的资深爱好者，我对太初命理网站进行了新一轮实测与代码交叉核验，新增以下不重复问题：
 
 ### 🔴 高优先级（逻辑错误/准确性问题）
-- [ ] [占卜] 节气定月逻辑倒序导致多数日期月柱恒落丑月 - 八字排盘 - `BaziCalculationService::getLunarMonth()` 逆序遍历节气并以“小寒”优先命中，像测试生辰 1990-05-15 10:30 男 被错误排成己丑月，实际按五虎遁与节气应在辛巳月，连带十神、藏干、纳音、喜用神及后续大运流年分析整体失准。
-- [ ] [占卜] 起运顺逆默认按男命计算 - 八字排盘 - `Paipan.php` 调用 `calculateBazi($birthDate)` 时未传入前端性别，而 `BaziCalculationService::calculateQiYun()` 只识别“男/女”，女命起运方向与起运时点会被系统性算错。
 - [ ] [占卜] 六爻接口路由与控制器方法完全失配 - 六爻占卜 - 前端调用 `/api/liuyao/pricing`、`/api/liuyao/divination`，后端实际只有 `qiGua/records/recordDetail` 等方法，实测返回“方法不存在: app\controller\Liuyao->getPricing()/divination()”，核心起卦链路不可用。
-- [ ] [占卜] 合婚免费预览提交直接 500 - 合婚配对 - `Hehun.php` 第563行在生肖配对分析读取 `maleYear['zhi_index']` / `femaleYear['zhi_index']`，但八字服务返回的年柱并未携带该索引，实测直接触发 `Undefined array key "zhi_index"`，首次免费合婚无法完成。
 - [ ] [占卜] 每日运势前端取数字段与后端响应结构不一致 - 每日运势 - `Daily.vue` 读取 `response.data.fortune`、`response.data.solarDate`，而后端返回的是 `data.date`、`data.overallScore`、`data.aspects` 等平铺结构，导致接口 200 仍无法正确渲染主运势内容。
-- [ ] [占卜] 每日运势黄历年号明显错误 - 每日运势 - 2026-03-17 实测返回 `lunarDate: 甲子年 1月16日`，但当日实际应为丙午年正月廿九，黄历底盘错误会进一步污染今日干支、宜忌及个性化运势判断。
 
 ### 🟡 中优先级（体验问题）
 - [ ] [占卜] 六爻前端缺少手动起卦与时间起卦入口 - 六爻占卜 - 页面只有问题输入框与 AI 勾选，未暴露手动摇卦、时间起卦、日辰信息等专业参数，无法满足六爻爱好者的标准问卦流程。
