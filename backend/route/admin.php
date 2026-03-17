@@ -169,4 +169,4 @@ Route::group('api/admin', function () {
         Route::post('almanac/save', 'Admin/saveAlmanac');
         Route::post('almanac/generate-month', 'Admin/generateAlmanacMonth');
     })->middleware(\app\middleware\AdminAuth::class);
-});
+})->middleware([\app\middleware\RateLimit::class]);

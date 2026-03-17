@@ -10,55 +10,98 @@ class RateLimit
     /**
      * 限流配置
      */
-    protected $config = [
+    protected array $config = [
         // 默认限制：每分钟60次
         'default' => [
             'max_requests' => 60,
             'window' => 60,
         ],
-        // 登录接口：每分钟5次
+        // 登录接口
         'auth/login' => [
             'max_requests' => 5,
             'window' => 60,
         ],
-        // 手机号登录：每分钟3次
         'auth/phone-login' => [
             'max_requests' => 3,
             'window' => 60,
         ],
-        // 排盘接口：每分钟10次
+        'admin/auth/login' => [
+            'max_requests' => 5,
+            'window' => 300,
+        ],
+        // 短信与支付
+        'sms/send-code' => [
+            'max_requests' => 1,
+            'window' => 60,
+        ],
+        'payment/create-order' => [
+            'max_requests' => 5,
+            'window' => 60,
+        ],
+        'admin/sms/test' => [
+            'max_requests' => 3,
+            'window' => 300,
+        ],
+        'admin/payment/orders/:id/refund' => [
+            'max_requests' => 5,
+            'window' => 3600,
+        ],
+        'admin/payment/orders/:id/complete' => [
+            'max_requests' => 10,
+            'window' => 3600,
+        ],
+        // 占卜与AI
         'paipan/bazi' => [
             'max_requests' => 10,
             'window' => 60,
         ],
-        // 塔罗抽牌：每分钟10次
         'tarot/draw' => [
             'max_requests' => 10,
             'window' => 60,
         ],
-        // 签到接口：每分钟3次
         'daily/checkin' => [
             'max_requests' => 3,
             'window' => 60,
         ],
-        // AI分析接口：每小时20次（更严格的限制）
-        'ai/analysis' => [
+        'ai/analyze' => [
             'max_requests' => 20,
-            'window' => 3600, // 1小时
+            'window' => 3600,
         ],
-        // AI流式分析：每小时10次
-        'ai/analysis-stream' => [
+        'ai/analyze-stream' => [
             'max_requests' => 10,
             'window' => 3600,
         ],
-        // 支付下单：每分钟5次
-        'payment/order' => [
-            'max_requests' => 5,
+        'ai/analyze/bazi' => [
+            'max_requests' => 20,
+            'window' => 3600,
+        ],
+        'ai/analyze/bazi/stream' => [
+            'max_requests' => 10,
+            'window' => 3600,
+        ],
+        // 管理后台高风险写接口
+        'upload/image' => [
+            'max_requests' => 20,
             'window' => 60,
         ],
-        // 短信验证码：每分钟1次，每小时5次（双重限制）
-        'sms/send-code' => [
-            'max_requests' => 1,
+        'upload/images' => [
+            'max_requests' => 10,
+            'window' => 60,
+        ],
+        'upload/file' => [
+            'max_requests' => 10,
+            'window' => 60,
+        ],
+        'content/page/import' => [
+            'max_requests' => 5,
+            'window' => 300,
+        ],
+        'content/page/:pageId/autosave' => [
+            'max_requests' => 60,
+            'window' => 60,
+        ],
+        'admin/site/content/batch' => [
+            'max_requests' => 20,
             'window' => 60,
         ],
     ];
@@ -68,29 +111,33 @@ class RateLimit
      */
     public function handle($request, \Closure $next)
     {
-        $path = $request->pathinfo();
+        $path = $this->normalizePath((string) $request->pathinfo());
         $clientId = $this->getClientId($request);
         
         // 获取限流配置
-        $config = $this->config[$path] ?? $this->config['default'];
+        $config = $this->resolveConfig($path);
         
         // VIP用户放宽限制（2倍）
         $isVip = $this->isVipUser($request);
         if ($isVip) {
-            $config['max_requests'] = (int)($config['max_requests'] * 2);
+            $config['max_requests'] = (int) ($config['max_requests'] * 2);
         }
         
         // 生成缓存key
-        $key = "rate_limit:{$path}:{$clientId}";
+        $key = 'rate_limit:' . md5($path) . ':' . $clientId;
         
         // 获取当前请求次数
         $requests = Cache::get($key, []);
+        if (!is_array($requests)) {
+            $requests = [];
+        }
+
         $now = time();
         
         // 清理过期的请求记录
-        $requests = array_filter($requests, function($time) use ($now, $config) {
-            return $time > ($now - $config['window']);
-        });
+        $requests = array_values(array_filter($requests, function ($time) use ($now, $config) {
+            return is_numeric($time) && (int) $time > ($now - $config['window']);
+        }));
         
         // 检查是否超过限制
         if (count($requests) >= $config['max_requests']) {
@@ -127,13 +174,61 @@ class RateLimit
         if (method_exists($response, 'header')) {
             $response->header([
                 'X-RateLimit-Limit' => $config['max_requests'],
-                'X-RateLimit-Remaining' => $config['max_requests'] - count($requests),
+                'X-RateLimit-Remaining' => max(0, $config['max_requests'] - count($requests)),
                 'X-RateLimit-Reset' => $now + $config['window'],
                 'X-RateLimit-VIP' => $isVip ? '1' : '0',
             ]);
         }
         
         return $response;
+    }
+
+    /**
+     * 标准化请求路径
+     */
+    protected function normalizePath(string $path): string
+    {
+        $normalized = trim($path, '/');
+        if (str_starts_with($normalized, 'api/')) {
+            $normalized = substr($normalized, 4);
+        }
+
+        $normalized = preg_replace('#/+#', '/', $normalized) ?: $normalized;
+
+        return trim($normalized, '/');
+    }
+
+    /**
+     * 解析当前请求的限流配置
+     */
+    protected function resolveConfig(string $path): array
+    {
+        foreach ($this->config as $pattern => $config) {
+            if ($pattern === 'default') {
+                continue;
+            }
+
+            if ($this->pathMatches($pattern, $path)) {
+                return $config;
+            }
+        }
+
+        return $this->config['default'];
+    }
+
+    /**
+     * 判断配置路径模式是否匹配当前请求
+     */
+    protected function pathMatches(string $pattern, string $path): bool
+    {
+        if ($pattern === $path) {
+            return true;
+        }
+
+        $regex = preg_quote(trim($pattern, '/'), '#');
+        $regex = preg_replace('/\\\\:([A-Za-z_][A-Za-z0-9_]*)/', '[^/]+', $regex) ?: $regex;
+
+        return preg_match('#^' . $regex . '$#', trim($path, '/')) === 1;
     }
     
     /**
@@ -152,7 +247,7 @@ class RateLimit
         $vipStatus = Cache::get($cacheKey);
         
         if ($vipStatus !== null) {
-            return (bool)$vipStatus;
+            return (bool) $vipStatus;
         }
         
         // 从数据库查询VIP状态
@@ -181,6 +276,10 @@ class RateLimit
         // 优先使用用户ID（已登录用户）
         if (property_exists($request, 'user') && $request->user && isset($request->user['sub'])) {
             return 'user_' . $request->user['sub'];
+        }
+
+        if (property_exists($request, 'adminUser') && $request->adminUser && isset($request->adminUser['id'])) {
+            return 'admin_' . $request->adminUser['id'];
         }
         
         // 使用IP地址（未登录用户）

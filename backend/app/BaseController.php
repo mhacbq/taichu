@@ -131,13 +131,42 @@ abstract class BaseController
     }
 
     /**
+     * 获取当前后台管理员ID
+     */
+    protected function getAdminId(): int
+    {
+        $adminUser = $this->request->adminUser ?? [];
+        if (isset($adminUser['id']) && is_numeric($adminUser['id'])) {
+            return (int) $adminUser['id'];
+        }
+
+        return 0;
+    }
+
+    /**
+     * 判断当前后台管理员是否拥有指定权限
+     */
+    protected function hasAdminPermission(string $permissionCode): bool
+    {
+        return AdminAuthService::checkPermission($this->getAdminId(), $permissionCode);
+    }
+
+    /**
+     * 判断当前后台管理员是否拥有任一权限
+     */
+    protected function hasAnyAdminPermission(array $permissionCodes): bool
+    {
+        return AdminAuthService::checkAnyPermission($this->getAdminId(), $permissionCodes);
+    }
+
+    /**
      * 获取当前操作者ID，优先读取后台管理员信息
      */
     protected function getOperatorId(): int
     {
-        $adminUser = $this->request->adminUser ?? [];
-        if (isset($adminUser['id'])) {
-            return (int) $adminUser['id'];
+        $adminId = $this->getAdminId();
+        if ($adminId > 0) {
+            return $adminId;
         }
 
         return (int) ($this->request->userId ?? 0);

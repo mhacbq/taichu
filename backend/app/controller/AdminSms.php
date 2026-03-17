@@ -89,6 +89,10 @@ class AdminSms extends BaseController
      */
     public function testSend()
     {
+        if ($response = $this->requireSmsManagePermission('无权限发送测试短信')) {
+            return $response;
+        }
+
         $data = $this->request->post();
         
         if (empty($data['phone'])) {
@@ -154,6 +158,10 @@ class AdminSms extends BaseController
      */
     public function getRecords()
     {
+        if ($response = $this->requireSmsManagePermission('无权限查看短信记录')) {
+            return $response;
+        }
+
         $params = $this->request->get();
         $page = (int) ($params['page'] ?? 1);
         $limit = (int) ($params['limit'] ?? 20);

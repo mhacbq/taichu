@@ -11,7 +11,7 @@ Route::group('api/admin/ai-prompts', function () {
     Route::post(':id/preview', 'AiPrompt/preview');
     Route::post(':id/duplicate', 'AiPrompt/duplicate');
     Route::get('types', 'AiPrompt/getTypes');
-})->middleware(\app\middleware\AdminAuth::class);
+})->middleware([\app\middleware\AdminAuth::class, \app\middleware\RateLimit::class]);
 
 
 // 前台获取提示词（用于AI解盘）

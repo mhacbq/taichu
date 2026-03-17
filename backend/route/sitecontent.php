@@ -45,4 +45,4 @@ Route::group('api/admin/site', function () {
     // 运势模板管理
     Route::get('fortune-templates', 'SiteContent/getFortuneTemplateList');
     Route::post('fortune-templates', 'SiteContent/saveFortuneTemplate');
-})->middleware(\app\middleware\AdminAuth::class);
+})->middleware([\app\middleware\AdminAuth::class, \app\middleware\RateLimit::class]);

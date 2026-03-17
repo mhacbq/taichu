@@ -240,11 +240,11 @@ Route::options('api/admin/:any', function() {
 Route::group('api/admin', function () {
     // 仪表盘
     Route::group('dashboard', function () {
-        Route::get('statistics', 'admin.Dashboard/statistics');
-        Route::get('trend', 'admin.Dashboard/trend');
-        Route::get('realtime', 'admin.Dashboard/realtime');
-        Route::get('chart/:type', 'admin.Dashboard/chart');
-        Route::get('pending-feedback', 'admin.Dashboard/pendingFeedback');
+        Route::get('statistics', 'Admin/dashboard');
+        Route::get('trend', 'Admin/dashboardTrend');
+        Route::get('realtime', 'Admin/realtime');
+        Route::get('chart/:type', 'Admin/chartData');
+        Route::get('pending-feedback', 'Admin/pendingFeedback');
     });
 
     // 配置管理
@@ -263,7 +263,16 @@ Route::group('api/admin', function () {
         Route::post('update-marketing', 'admin.Config/updateMarketing');
         Route::post('refresh-cache', 'admin.Config/refreshCache');
     });
+
+    // 神煞管理
+    Route::group('shensha', function () {
+        Route::get('list', 'admin.Shensha/index');
+        Route::post('save', 'admin.Shensha/save');
+        Route::post('delete/:id', 'admin.Shensha/delete');
+        Route::post('toggle-status', 'admin.Shensha/toggleStatus');
+    });
 })->middleware([
+
     \app\middleware\HttpsEnforce::class,
     \app\middleware\Cors::class,
     \app\middleware\AdminAuth::class,

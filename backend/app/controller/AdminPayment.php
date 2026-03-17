@@ -30,6 +30,10 @@ class AdminPayment extends BaseController
      */
     public function getConfig()
     {
+        if ($response = $this->requirePaymentManagePermission('无权限查看支付配置')) {
+            return $response;
+        }
+
         $config = PaymentConfig::getSafeConfig();
         
         if (!$config) {
@@ -227,6 +231,10 @@ class AdminPayment extends BaseController
      */
     public function manualComplete(Request $request, string $id)
     {
+        if ($response = $this->requirePaymentManagePermission('无权限执行手动补单')) {
+            return $response;
+        }
+
         $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
         if ($identifier === '') {
             return $this->error('订单标识不能为空');
@@ -400,6 +408,10 @@ class AdminPayment extends BaseController
      */
     public function getTrend()
     {
+        if ($response = $this->requirePaymentViewPermission('无权限查看支付趋势')) {
+            return $response;
+        }
+
         $days = 7;
         $data = [];
         

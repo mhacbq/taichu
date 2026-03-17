@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: taichu-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: taichu
+      MYSQL_USER: taichu
+      MYSQL_PASSWORD: taichu123
+    ports:
+      - "3306:3306"
+    volumes:
+      - taichu_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taichu-app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: taichu
+      DB_USER: taichu
+      DB_PASSWORD: taichu123
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  taichu_mysql_data:
+

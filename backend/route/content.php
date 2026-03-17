@@ -28,5 +28,6 @@ Route::group('api/content', function () {
     // 块配置
     Route::get('block-config/:type', 'content/getBlockConfig');
 })->middleware([
-    \app\middleware\AdminAuth::class
+    \app\middleware\AdminAuth::class,
+    \app\middleware\RateLimit::class
 ]);
