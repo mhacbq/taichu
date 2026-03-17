@@ -181,6 +181,9 @@ PROMPT;
      */
     private static function buildLiuyaoPrompt(array $data): string
     {
+        $liuShenText = self::formatLiuShen($data['liu_shen'] ?? '');
+        $yongShenText = self::formatYongShen($data['yong_shen'] ?? '');
+
         return <<<PROMPT
 【所问事项】
 {$data['question']}
@@ -195,9 +198,10 @@ PROMPT;
 【动爻】第{$data['dong_yao']}爻
 
 【六神】（从初爻到上爻）
-{$data['liu_shen']}
+{$liuShenText}
 
-【用神】{$data['yong_shen']}
+【用神】
+{$yongShenText}
 
 【日辰月建】
 日辰：{$data['ri_chen']}
@@ -205,6 +209,51 @@ PROMPT;
 
 请进行详细解读。
 PROMPT;
+    }
+
+    /**
+     * 格式化六神信息。
+     */
+    private static function formatLiuShen($liuShen): string
+    {
+        if (!is_array($liuShen)) {
+            return (string)$liuShen;
+        }
+
+        $positionMap = [1 => '初爻', 2 => '二爻', 3 => '三爻', 4 => '四爻', 5 => '五爻', 6 => '上爻'];
+        $lines = [];
+        foreach ($liuShen as $position => $name) {
+            $displayName = $name === '螣蛇' ? '螣蛇（腾蛇）' : $name;
+            $lines[] = ($positionMap[$position] ?? "第{$position}爻") . '：' . $displayName;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * 格式化用神信息。
+     */
+    private static function formatYongShen($yongShen): string
+    {
+        if (!is_array($yongShen)) {
+            return (string)$yongShen;
+        }
+
+        $parts = [];
+        if (!empty($yongShen['liuqin'])) {
+            $parts[] = '六亲：' . $yongShen['liuqin'];
+        }
+        if (!empty($yongShen['position'])) {
+            $parts[] = '爻位：第' . $yongShen['position'] . '爻';
+        }
+        if (!empty($yongShen['status'])) {
+            $parts[] = '状态：' . $yongShen['status'];
+        }
+        if (!empty($yongShen['description'])) {
+            $parts[] = '说明：' . $yongShen['description'];
+        }
+
+        return empty($parts) ? json_encode($yongShen, JSON_UNESCAPED_UNICODE) : implode("\n", $parts);
     }
     
     /**
@@ -241,9 +290,16 @@ PROMPT;
         $cardsInfo = '';
         foreach ($data['cards'] as $index => $card) {
             $position = $index + 1;
+            $element = $card['element'] ?? '未知';
+            $orientationMeaning = $card['orientation_meaning'] ?? ($card['reversed_meaning'] ?? '');
             $cardsInfo .= "【第{$position}张】{$card['name']}（{$card['position']}）\n";
             $cardsInfo .= "正逆位：{$card['orientation']}\n";
-            $cardsInfo .= "关键词：{$card['keywords']}\n\n";
+            $cardsInfo .= "元素：{$element}\n";
+            $cardsInfo .= "关键词：{$card['keywords']}\n";
+            if ($orientationMeaning !== '') {
+                $cardsInfo .= "位态释义：{$orientationMeaning}\n";
+            }
+            $cardsInfo .= "\n";
         }
         
         return <<<PROMPT
@@ -254,7 +310,7 @@ PROMPT;
 
 {$cardsInfo}
 
-请进行详细解读。
+请结合牌位、元素互动与正逆位差异进行详细解读。
 PROMPT;
     }
     

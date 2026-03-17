@@ -320,46 +320,48 @@ class Tarot extends BaseController
             '火' => '行动、能量、热情、意志',
             '土' => '物质、现实、稳定、身体',
         ];
-        
+
         foreach ($cards as $card) {
             if (isset($elements[$card['element']])) {
                 $elements[$card['element']]++;
             }
         }
-        
+
         $total = count($cards);
         $analysis = [];
-        
-        // 计算各元素占比
         foreach ($elements as $element => $count) {
             if ($count > 0) {
                 $percentage = round(($count / $total) * 100);
                 $analysis[] = "{$element}元素({$elementMeanings[$element]})：{$count}张({$percentage}%)";
             }
         }
-        
-        // 分析主导元素
-        arsort($elements);
-        $dominant = array_key_first($elements);
-        $dominantCount = $elements[$dominant];
-        
-        $result = implode("、", $analysis);
-        $result .= "\n\n牌阵主导元素是【{$dominant}】，";
-        
+
+        $result = implode('、', $analysis);
+        $maxCount = max($elements);
+        $dominantElements = array_keys(array_filter($elements, static fn($count) => $count === $maxCount && $count > 0));
+
         $guidance = [
             '风' => '提示您需要更多理性思考和有效沟通来解决当前问题。',
             '水' => '暗示情感和直觉在当前处境中起主导作用，请倾听内心的声音。',
             '火' => '表明现在是需要行动和决断的时候，用热情和意志克服困难。',
             '土' => '强调物质基础和现实条件的重要性，务实稳健地处理问题。',
         ];
-        
-        $result .= $guidance[$dominant];
-        
-        // 检查元素缺失
-        $missing = array_filter($elements, fn($v) => $v === 0);
+
+        if (count($dominantElements) === 1) {
+            $dominant = $dominantElements[0];
+            $result .= "\n\n牌阵主导元素是【{$dominant}】，" . $guidance[$dominant];
+        } elseif (!empty($dominantElements)) {
+            $combined = implode('、', $dominantElements);
+            $result .= "\n\n牌阵没有单一主导元素，【{$combined}】并列最强。";
+            $result .= '这说明当前议题并非单线推进，而是需要同时兼顾';
+            $result .= implode('、', array_map(fn($element) => $this->getElementAspect($element), $dominantElements));
+            $result .= '等多个层面，不能只抓其中一个切口。';
+        }
+
+        $missing = array_filter($elements, static fn($v) => $v === 0);
         if (!empty($missing)) {
             $missingNames = array_keys($missing);
-            $result .= "\n\n注意：牌阵中缺少" . implode('、', $missingNames) . "元素，";
+            $result .= "\n\n注意：牌阵中缺少" . implode('、', $missingNames) . '元素，';
             $missingGuidance = [
                 '风' => '可能意味着思考不够清晰或沟通存在障碍。',
                 '水' => '可能表示情感被压抑或忽视了直觉的作用。',
@@ -368,7 +370,7 @@ class Tarot extends BaseController
             ];
             $result .= $missingGuidance[$missingNames[0]];
         }
-        
+
         return $result;
     }
     
@@ -381,32 +383,30 @@ class Tarot extends BaseController
         if ($count < 2) {
             return '';
         }
-        
+
         $analysis = [];
-        
-        // 分析第一张和最后一张牌的关系（整体趋势）
+        $positions = $this->getSpreadPositions($count);
+
         $firstCard = $cards[0];
         $lastCard = $cards[$count - 1];
-        
         $analysis[] = "【首尾呼应】从「{$firstCard['name']}」到「{$lastCard['name']}」，";
         $analysis[] = $this->getCardRelationship($firstCard, $lastCard);
-        
-        // 分析相邻牌的关系
-        if ($count >= 3) {
+
+        if ($count === 10) {
+            $analysis[] = $this->analyzeCelticCrossRelationships($cards, $positions);
+        } elseif ($count >= 3) {
             $analysis[] = "\n【牌位流转】";
             for ($i = 0; $i < $count - 1; $i++) {
                 $current = $cards[$i];
                 $next = $cards[$i + 1];
-                $position = $i + 1;
-                $analysis[] = "第{$position}张到第" . ($position + 1) . "张：" . $this->getTransitionDesc($current, $next);
+                $analysis[] = "{$positions[$i]}→{$positions[$i + 1]}：" . $this->getTransitionDesc($current, $next);
             }
         }
-        
-        // 分析元素互补或冲突
+
         $elementPairs = [];
         for ($i = 0; $i < min(3, $count - 1); $i++) {
             $pair = $cards[$i]['element'] . '-' . $cards[$i + 1]['element'];
-            if (!in_array($pair, $elementPairs)) {
+            if (!in_array($pair, $elementPairs, true)) {
                 $elementPairs[] = $pair;
                 $relation = $this->getElementRelation($cards[$i]['element'], $cards[$i + 1]['element']);
                 if ($relation) {
@@ -414,20 +414,58 @@ class Tarot extends BaseController
                 }
             }
         }
-        
-        // 正逆位分析
-        $upright = count(array_filter($cards, fn($c) => !$c['reversed']));
+
+        $upright = count(array_filter($cards, static fn($c) => !$c['reversed']));
         $reversed = $count - $upright;
         $analysis[] = "\n【正逆位分布】正位{$upright}张，逆位{$reversed}张。";
         if ($reversed > $upright) {
-            $analysis[] = "逆位牌较多，提示当前可能存在阻碍或需要更多内省。";
+            $analysis[] = '逆位牌较多，提示当前可能存在阻碍或需要更多内省。';
         } elseif ($upright > $reversed) {
-            $analysis[] = "正位牌较多，整体能量流动较为顺畅。";
+            $analysis[] = '正位牌较多，整体能量流动较为顺畅。';
         } else {
-            $analysis[] = "正逆位平衡，暗示内在外在因素交织影响。";
+            $analysis[] = '正逆位平衡，暗示内在外在因素交织影响。';
         }
-        
-        return implode("", $analysis);
+
+        return implode('', $analysis);
+    }
+
+    /**
+     * 获取当前牌阵的标准牌位名称。
+     */
+    protected function getSpreadPositions(int $count): array
+    {
+        return match($count) {
+            3 => ['过去', '现在', '未来'],
+            10 => ['当前状态', '障碍/挑战', '潜意识/基础', '过去', '目标/理想', '不久的将来', '自我表现', '环境影响', '希望与恐惧', '最终结果'],
+            default => ['过去', '现在', '未来', '原因', '环境', '建议', '结果'],
+        };
+    }
+
+    /**
+     * 凯尔特十字的关键牌位互读。
+     */
+    protected function analyzeCelticCrossRelationships(array $cards, array $positions): string
+    {
+        $pairs = [
+            [0, 1, '核心张力'],
+            [0, 5, '走势推演'],
+            [4, 9, '理想与落点'],
+            [6, 7, '自我与环境'],
+            [8, 9, '希望/恐惧与结果'],
+        ];
+
+        $analysis = ["\n【凯尔特十字交叉解读】"];
+        foreach ($pairs as [$from, $to, $label]) {
+            if (!isset($cards[$from], $cards[$to])) {
+                continue;
+            }
+
+            $left = $cards[$from];
+            $right = $cards[$to];
+            $analysis[] = "{$label}：{$positions[$from]}「{$left['name']}」与{$positions[$to]}「{$right['name']}」——" . $this->getCardRelationship($left, $right);
+        }
+
+        return implode('', $analysis);
     }
     
     /**

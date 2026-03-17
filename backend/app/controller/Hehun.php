@@ -653,28 +653,87 @@ class Hehun extends BaseController
      */
     protected function analyzeWuxingComplement(array $maleBazi, array $femaleBazi): int
     {
-        $score = 10;
-        
-        // 1. 喜用神互补 (核心深度优化)
-        // 如果一方的旺五行是另一方的喜用五行，则大吉
         $maleFav = $maleBazi['strength']['favorite_wuxing'] ?? [];
         $femaleFav = $femaleBazi['strength']['favorite_wuxing'] ?? [];
-        
-        $maleStats = $maleBazi['wuxing_stats'] ?? [];
-        $femaleStats = $femaleBazi['wuxing_stats'] ?? [];
 
-        foreach ($maleStats as $wx => $count) {
-            if ($count >= 3 && in_array($wx, $femaleFav)) {
-                $score += 5; // 男方旺的正是女方喜的
-            }
+        $maleStats = $this->normalizeWuxingDistribution($maleBazi['wuxing_stats'] ?? []);
+        $femaleStats = $this->normalizeWuxingDistribution($femaleBazi['wuxing_stats'] ?? []);
+
+        $score = 6;
+        $score += $this->scorePartnerWuxingSupport($femaleStats, $maleFav);
+        $score += $this->scorePartnerWuxingSupport($maleStats, $femaleFav);
+
+        $maleStrengthScore = (float)($maleBazi['strength']['score'] ?? 50);
+        $femaleStrengthScore = (float)($femaleBazi['strength']['score'] ?? 50);
+        if (abs($maleStrengthScore - $femaleStrengthScore) <= 15) {
+            $score += 2;
         }
-        foreach ($femaleStats as $wx => $count) {
-            if ($count >= 3 && in_array($wx, $maleFav)) {
-                $score += 5; // 女方旺的正是男方喜的
-            }
+
+        $maleDayMaster = $maleBazi['day_master_wuxing'] ?? '';
+        $femaleDayMaster = $femaleBazi['day_master_wuxing'] ?? '';
+        if ($maleDayMaster !== '' && in_array($maleDayMaster, $femaleFav, true)) {
+            $score += 1;
         }
-        
-        return max(0, min(20, $score));
+        if ($femaleDayMaster !== '' && in_array($femaleDayMaster, $maleFav, true)) {
+            $score += 1;
+        }
+
+        return max(0, min(20, (int)round($score)));
+    }
+
+    /**
+     * 规范化五行分布为占比，便于合婚时按权重比较。
+     */
+    protected function normalizeWuxingDistribution(array $stats): array
+    {
+        $normalized = ['金' => 0.0, '木' => 0.0, '水' => 0.0, '火' => 0.0, '土' => 0.0];
+        $total = 0.0;
+
+        foreach ($normalized as $wx => $_) {
+            $value = max(0.0, (float)($stats[$wx] ?? 0));
+            $normalized[$wx] = $value;
+            $total += $value;
+        }
+
+        if ($total <= 0.0001) {
+            return $normalized;
+        }
+
+        foreach ($normalized as $wx => $value) {
+            $normalized[$wx] = round($value / $total, 4);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * 评估伴侣命局对我方喜用五行的支撑力度。
+     */
+    protected function scorePartnerWuxingSupport(array $partnerDistribution, array $favoriteWuxing): int
+    {
+        if (empty($favoriteWuxing)) {
+            return 0;
+        }
+
+        $supportRatio = 0.0;
+        foreach ($favoriteWuxing as $wx) {
+            $supportRatio += (float)($partnerDistribution[$wx] ?? 0);
+        }
+
+        if ($supportRatio >= 0.5) {
+            return 5;
+        }
+        if ($supportRatio >= 0.35) {
+            return 4;
+        }
+        if ($supportRatio >= 0.22) {
+            return 3;
+        }
+        if ($supportRatio >= 0.12) {
+            return 2;
+        }
+
+        return 0;
     }
 
     /**
@@ -1776,75 +1835,94 @@ HTML;
     {
         $maleTs = strtotime($maleBirthDate);
         $femaleTs = strtotime($femaleBirthDate);
-        
-        // 修正：使用立春划分的命理年
-        $maleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $maleTs), (int)date('n', $maleTs), (int)date('j', $maleTs));
-        $femaleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $femaleTs), (int)date('n', $femaleTs), (int)date('j', $femaleTs));
-        
-        // 获取纳音五行
-        $maleNayin = $this->getNayinWuxing($maleBazi['year']['gan'], $maleBazi['year']['zhi']);
-        $femaleNayin = $this->getNayinWuxing($femaleBazi['year']['gan'], $femaleBazi['year']['zhi']);
-        
-        // 判断所属元运
-        $maleYuan = $this->getYuanYun($maleYear);
-        $femaleYuan = $this->getYuanYun($femaleYear);
-        
-        // 分析纳音五行关系
-        $wuxingRelation = $this->getWuxingRelation($maleNayin, $femaleNayin);
-        
-        // 判断是否为"命相生"
-        $isXiangSheng = $wuxingRelation === '生';
-        $isXiangKe = $wuxingRelation === '克';
-        $isBiHe = $wuxingRelation === '比和';
-        
-        // 生成结果
+
+        // 使用立春交节时刻划分命理年，避免同日交节前后落错年命。
+        $maleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $maleTs),
+            (int)date('n', $maleTs),
+            (int)date('j', $maleTs),
+            (int)date('G', $maleTs),
+            (int)date('i', $maleTs)
+        );
+        $femaleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $femaleTs),
+            (int)date('n', $femaleTs),
+            (int)date('j', $femaleTs),
+            (int)date('G', $femaleTs),
+            (int)date('i', $femaleTs)
+        );
+
+        $maleYuanInfo = $this->getYuanYunInfo($maleYear);
+        $femaleYuanInfo = $this->getYuanYunInfo($femaleYear);
+        $yuanYunRelation = $this->analyzeYuanYunRelation($maleYuanInfo, $femaleYuanInfo);
+
+        $maleNayinName = $maleBazi['year']['nayin'] ?? '';
+        $femaleNayinName = $femaleBazi['year']['nayin'] ?? '';
+        $maleNayinElement = $this->getNayinElement($maleNayinName);
+        $femaleNayinElement = $this->getNayinElement($femaleNayinName);
+        $wuxingRelation = $this->getWuxingRelation($maleNayinElement, $femaleNayinElement);
+
+        $relationScoreMap = [
+            '生' => 14,
+            '被生' => 10,
+            '比和' => 8,
+            '无' => 0,
+            '被克' => -8,
+            '克' => -12,
+        ];
+        $totalScore = 60 + ($relationScoreMap[$wuxingRelation] ?? 0) + $yuanYunRelation['score'];
+        $totalScore = max(35, min(95, $totalScore));
+
         $result = [
             'method' => '三元合婚法',
             'male' => [
                 'year' => $maleYear,
-                'yuan' => $maleYuan,
-                'nayin' => $maleNayin,
+                'yuan' => $maleYuanInfo['yuan'],
+                'yun' => $maleYuanInfo['yun_label'],
+                'nayin' => $maleNayinName,
+                'nayin_element' => $maleNayinElement,
             ],
             'female' => [
                 'year' => $femaleYear,
-                'yuan' => $femaleYuan,
-                'nayin' => $femaleNayin,
+                'yuan' => $femaleYuanInfo['yuan'],
+                'yun' => $femaleYuanInfo['yun_label'],
+                'nayin' => $femaleNayinName,
+                'nayin_element' => $femaleNayinElement,
             ],
             'relation' => $wuxingRelation,
+            'yuan_yun_relation' => $yuanYunRelation['type'],
+            'score' => (int)round($totalScore),
             'grade' => '',
             'description' => '',
             'suggestion' => '',
         ];
-        
-        // 判断三元合婚等级
-        if ($isXiangSheng) {
+
+        if ($totalScore >= 82) {
             $result['grade'] = '上等婚';
-            $result['description'] = "男方{$maleNayin}生女方{$femaleNayin}，为命相生之配。";
-            $result['suggestion'] = '此为上等婚配，夫妻恩爱，家道昌隆，子孙兴旺。';
-        } elseif ($isBiHe) {
+            $result['suggestion'] = '三元九运同调，纳音多见相生，比普通年命合婚更稳，适合顺势成家。';
+        } elseif ($totalScore >= 68) {
+            $result['grade'] = '中上婚';
+            $result['suggestion'] = '元运步调基本一致，若现实条件成熟，可优先考虑长期规划与共同目标。';
+        } elseif ($totalScore >= 55) {
             $result['grade'] = '中等婚';
-            $result['description'] = "双方均为{$maleNayin}命，为比和之配。";
-            $result['suggestion'] = '此为中等婚配，夫妻同心，但需注意相互包容。';
-        } elseif ($isXiangKe) {
+            $result['suggestion'] = '年命基础尚可，但仍需依赖性格磨合与现实经营，不宜只看单一歌诀下结论。';
+        } else {
             $result['grade'] = '下等婚';
-            $result['description'] = "男方{$maleNayin}克女方{$femaleNayin}，为命相克之配。";
-            $result['suggestion'] = '此为下等婚配，建议慎重考虑，可通过择吉日、风水调理化解。';
-        } else {
-            $result['grade'] = '中等婚';
-            $result['description'] = "男方{$maleNayin}与女方{$femaleNayin}，五行关系平平。";
-            $result['suggestion'] = '此为中等婚配，婚姻需双方共同经营。';
+            $result['suggestion'] = '三元九运与纳音方向都偏离，若决定继续，宜通过择吉、分工与边界感来减轻冲耗。';
         }
-        
-        // 增加纳音合婚歌诀
-        $result['nayin_gejue'] = $this->getNayinGeJue($maleNayin, $femaleNayin);
-        
-        // 元运分析
-        if ($maleYuan === $femaleYuan) {
-            $result['yuan_analysis'] = "双方同属{$maleYuan}，元运相同，气场相合，有利于婚姻稳定。";
-        } else {
-            $result['yuan_analysis'] = "男方属{$maleYuan}，女方属{$femaleYuan}，元运不同但无明显冲突。";
-        }
-        
+
+        $result['description'] = $this->buildSanYuanDescription(
+            $maleNayinName,
+            $femaleNayinName,
+            $wuxingRelation,
+            $maleYuanInfo,
+            $femaleYuanInfo,
+            $yuanYunRelation
+        );
+
+        $result['nayin_gejue'] = $this->getNayinGeJue($maleNayinElement, $femaleNayinElement);
+        $result['yuan_analysis'] = $yuanYunRelation['description'];
+
         return $result;
     }
     
@@ -1857,9 +1935,21 @@ HTML;
         $maleTs = strtotime($maleBirthDate ?: '1990-01-01');
         $femaleTs = strtotime($femaleBirthDate ?: '1990-01-01');
         
-        // 修正：使用立春划分的命理年
-        $maleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $maleTs), (int)date('n', $maleTs), (int)date('j', $maleTs));
-        $femaleYear = $this->baziCalculationService->getLunarYear((int)date('Y', $femaleTs), (int)date('n', $femaleTs), (int)date('j', $femaleTs));
+        // 修正：使用立春交节时刻划分命理年
+        $maleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $maleTs),
+            (int)date('n', $maleTs),
+            (int)date('j', $maleTs),
+            (int)date('G', $maleTs),
+            (int)date('i', $maleTs)
+        );
+        $femaleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $femaleTs),
+            (int)date('n', $femaleTs),
+            (int)date('j', $femaleTs),
+            (int)date('G', $femaleTs),
+            (int)date('i', $femaleTs)
+        );
         
         // 计算命卦
         $maleGua = $this->calculateMingGua($maleYear, 'male');
@@ -1954,64 +2044,128 @@ HTML;
      */
     protected function getYuanYun(int $year): string
     {
-        // 三元九运划分
-        // 上元：1864-1923，中元：1924-1983，下元：1984-2043
-        // 每元60年，分三个运，每运20年
-        
+        return $this->getYuanYunInfo($year)['yuan'];
+    }
+
+    /**
+     * 获取三元九运明细。
+     */
+    protected function getYuanYunInfo(int $year): array
+    {
         $baseYear = 1864;
-        $cycle = 180; // 三元共180年
-        $relativeYear = ($year - $baseYear) % $cycle;
-        
-        if ($relativeYear < 60) {
-            return '上元';
-        } elseif ($relativeYear < 120) {
-            return '中元';
-        } else {
-            return '下元';
+        $cycle = 180;
+        $relativeYear = (($year - $baseYear) % $cycle + $cycle) % $cycle;
+        $cycleStart = $year - $relativeYear;
+        $yun = (int)floor($relativeYear / 20) + 1;
+        $yuan = $yun <= 3 ? '上元' : ($yun <= 6 ? '中元' : '下元');
+        $yunLabels = [1 => '一运', 2 => '二运', 3 => '三运', 4 => '四运', 5 => '五运', 6 => '六运', 7 => '七运', 8 => '八运', 9 => '九运'];
+        $startYear = $cycleStart + (($yun - 1) * 20);
+
+        return [
+            'yuan' => $yuan,
+            'yun' => $yun,
+            'yun_label' => $yunLabels[$yun] ?? $yun . '运',
+            'start_year' => $startYear,
+            'end_year' => $startYear + 19,
+        ];
+    }
+
+    /**
+     * 三元九运关系分析。
+     */
+    protected function analyzeYuanYunRelation(array $maleInfo, array $femaleInfo): array
+    {
+        if ($maleInfo['yun'] === $femaleInfo['yun']) {
+            return [
+                'type' => '同运同气',
+                'score' => 8,
+                'description' => "双方同属{$maleInfo['yuan']}{$maleInfo['yun_label']}，二十年气运节律一致，婚后目标与节奏更容易同步。",
+            ];
         }
+
+        if ($maleInfo['yuan'] === $femaleInfo['yuan']) {
+            $gap = abs($maleInfo['yun'] - $femaleInfo['yun']);
+            if ($gap === 1) {
+                return [
+                    'type' => '同元相承',
+                    'score' => 5,
+                    'description' => "双方同属{$maleInfo['yuan']}，虽分属{$maleInfo['yun_label']}与{$femaleInfo['yun_label']}，但仍在同一元气脉络内，属于前后承接之象。",
+                ];
+            }
+
+            return [
+                'type' => '同元异运',
+                'score' => 3,
+                'description' => "双方同属{$maleInfo['yuan']}，但处于不同运段，价值取向仍可沟通，只是人生节拍存在先后差。",
+            ];
+        }
+
+        return [
+            'type' => '异元异运',
+            'score' => -2,
+            'description' => "双方分属{$maleInfo['yuan']}与{$femaleInfo['yuan']}，元气阶段不同，若现实目标差异较大，需要额外磨合。",
+        ];
+    }
+
+    /**
+     * 组合三元合婚说明文案。
+     */
+    protected function buildSanYuanDescription(
+        string $maleNayin,
+        string $femaleNayin,
+        string $wuxingRelation,
+        array $maleYuanInfo,
+        array $femaleYuanInfo,
+        array $yuanYunRelation
+    ): string {
+        $nayinDesc = match ($wuxingRelation) {
+            '生' => "男方{$maleNayin}之气生扶女方{$femaleNayin}",
+            '被生' => "女方{$femaleNayin}之气回生男方{$maleNayin}",
+            '比和' => "双方纳音同气，比和相守",
+            '克' => "男方{$maleNayin}对女方{$femaleNayin}形成克制",
+            '被克' => "女方{$femaleNayin}对男方{$maleNayin}形成制约",
+            default => "双方纳音之间无明显生克偏向",
+        };
+
+        return $nayinDesc . '；' . $yuanYunRelation['description'] . " 男方年命落在{$maleYuanInfo['yuan']}{$maleYuanInfo['yun_label']}，女方落在{$femaleYuanInfo['yuan']}{$femaleYuanInfo['yun_label']}。";
     }
     
+    /**
+     * 根据纳音名称获取五行属性。
+     */
+    protected function getNayinElement(string $nayin): string
+    {
+        $nayinElementMap = [
+            '海中金' => '金', '剑锋金' => '金', '白蜡金' => '金', '沙中金' => '金', '金箔金' => '金', '钗钏金' => '金',
+            '石榴木' => '木', '大林木' => '木', '杨柳木' => '木', '松柏木' => '木', '平地木' => '木', '桑柘木' => '木',
+            '长流水' => '水', '天河水' => '水', '涧下水' => '水', '大溪水' => '水', '大海水' => '水', '泉中水' => '水',
+            '炉中火' => '火', '山头火' => '火', '霹雳火' => '火', '山下火' => '火', '覆灯火' => '火', '天上火' => '火',
+            '大驿土' => '土', '城头土' => '土', '屋上土' => '土', '路旁土' => '土', '壁上土' => '土', '沙中土' => '土',
+        ];
+
+        return $nayinElementMap[$nayin] ?? '未知';
+    }
+
     /**
      * 获取纳音五行
      */
     protected function getNayinWuxing(string $gan, string $zhi): string
     {
-        // 纳音五行表（简化版）
         $nayinTable = [
-            '甲子' => '金', '乙丑' => '金',
-            '丙寅' => '火', '丁卯' => '火',
-            '戊辰' => '木', '己巳' => '木',
-            '庚午' => '土', '辛未' => '土',
-            '壬申' => '金', '癸酉' => '金',
-            '甲戌' => '火', '乙亥' => '火',
-            '丙子' => '水', '丁丑' => '水',
-            '戊寅' => '土', '己卯' => '土',
-            '庚辰' => '金', '辛巳' => '金',
-            '壬午' => '木', '癸未' => '木',
-            '甲申' => '水', '乙酉' => '水',
-            '丙戌' => '土', '丁亥' => '土',
-            '戊子' => '火', '己丑' => '火',
-            '庚寅' => '木', '辛卯' => '木',
-            '壬辰' => '水', '癸巳' => '水',
-            '甲午' => '金', '乙未' => '金',
-            '丙申' => '火', '丁酉' => '火',
-            '戊戌' => '木', '己亥' => '木',
-            '庚子' => '土', '辛丑' => '土',
-            '壬寅' => '金', '癸卯' => '金',
-            '甲辰' => '火', '乙巳' => '火',
-            '丙午' => '水', '丁未' => '水',
-            '戊申' => '土', '己酉' => '土',
-            '庚戌' => '金', '辛亥' => '金',
-            '壬子' => '木', '癸丑' => '木',
-            '甲寅' => '水', '乙卯' => '水',
-            '丙辰' => '土', '丁巳' => '土',
-            '戊午' => '火', '己未' => '火',
-            '庚申' => '木', '辛酉' => '木',
-            '壬戌' => '水', '癸亥' => '水',
+            '甲子' => '海中金', '乙丑' => '海中金', '丙寅' => '炉中火', '丁卯' => '炉中火', '戊辰' => '大林木', '己巳' => '大林木',
+            '庚午' => '路旁土', '辛未' => '路旁土', '壬申' => '剑锋金', '癸酉' => '剑锋金', '甲戌' => '山头火', '乙亥' => '山头火',
+            '丙子' => '涧下水', '丁丑' => '涧下水', '戊寅' => '城头土', '己卯' => '城头土', '庚辰' => '白蜡金', '辛巳' => '白蜡金',
+            '壬午' => '杨柳木', '癸未' => '杨柳木', '甲申' => '泉中水', '乙酉' => '泉中水', '丙戌' => '屋上土', '丁亥' => '屋上土',
+            '戊子' => '霹雳火', '己丑' => '霹雳火', '庚寅' => '松柏木', '辛卯' => '松柏木', '壬辰' => '长流水', '癸巳' => '长流水',
+            '甲午' => '沙中金', '乙未' => '沙中金', '丙申' => '山下火', '丁酉' => '山下火', '戊戌' => '平地木', '己亥' => '平地木',
+            '庚子' => '壁上土', '辛丑' => '壁上土', '壬寅' => '金箔金', '癸卯' => '金箔金', '甲辰' => '覆灯火', '乙巳' => '覆灯火',
+            '丙午' => '天河水', '丁未' => '天河水', '戊申' => '大驿土', '己酉' => '大驿土', '庚戌' => '钗钏金', '辛亥' => '钗钏金',
+            '壬子' => '桑柘木', '癸丑' => '桑柘木', '甲寅' => '大溪水', '乙卯' => '大溪水', '丙辰' => '沙中土', '丁巳' => '沙中土',
+            '戊午' => '天上火', '己未' => '天上火', '庚申' => '石榴木', '辛酉' => '石榴木', '壬戌' => '大海水', '癸亥' => '大海水',
         ];
-        
+
         $key = $gan . $zhi;
-        return $nayinTable[$key] ?? '未知';
+        return $this->getNayinElement($nayinTable[$key] ?? '');
     }
     
     /**
@@ -2021,7 +2175,11 @@ HTML;
     {
         $sheng = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
         $ke = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
-        
+
+        if (!isset($sheng[$wuxing1], $sheng[$wuxing2], $ke[$wuxing1], $ke[$wuxing2])) {
+            return '无';
+        }
+
         if ($wuxing1 === $wuxing2) {
             return '比和';
         } elseif ($sheng[$wuxing1] === $wuxing2) {
@@ -2033,7 +2191,7 @@ HTML;
         } elseif ($ke[$wuxing2] === $wuxing1) {
             return '被克';
         }
-        
+
         return '无';
     }
     

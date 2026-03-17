@@ -82,9 +82,31 @@ class BaziCalculationService
     ];
 
     /**
-     * 节气日期计算 (支持20世纪和21世纪寿星公式)
+     * 获取命理计算时区（中国术数以东八区交节时刻为准）
      */
-    protected function getJieQiDate(int $year, string $name): array
+    protected function getMingliTimezone(): \DateTimeZone
+    {
+        return new \DateTimeZone('Asia/Shanghai');
+    }
+
+    /**
+     * 构造出生时刻，未提供时分时默认取中午，避免节气临界日被统一判到凌晨。
+     */
+    protected function buildBirthMoment(int $year, int $month, int $day, ?int $hour = null, ?int $minute = null): \DateTimeImmutable
+    {
+        $hour = $hour ?? 12;
+        $minute = $minute ?? 0;
+
+        return new \DateTimeImmutable(
+            sprintf('%04d-%02d-%02d %02d:%02d:00', $year, $month, $day, $hour, $minute),
+            $this->getMingliTimezone()
+        );
+    }
+
+    /**
+     * 节气时刻计算（支持20世纪和21世纪寿星公式的日级修正，并保留小数部分换算成交节时刻）
+     */
+    protected function getJieQiMoment(int $year, string $name): array
     {
         // 20世纪节气常数 (1900-1999)
         $jieQiConstants20 = [
@@ -108,28 +130,75 @@ class BaziCalculationService
 
         $is21st = ($year >= 2000);
         $constants = $is21st ? $jieQiConstants21 : $jieQiConstants20;
-        
-        if (!isset($constants[$name])) return [0, 0];
-        
-        $month = $constants[$name][0];
-        $C = $constants[$name][1];
+
+        if (!isset($constants[$name])) {
+            return [
+                'month' => 0,
+                'day' => 0,
+                'hour' => 0,
+                'minute' => 0,
+                'timestamp' => 0,
+                'datetime' => '',
+                'moment' => null,
+            ];
+        }
+
+        $month = (int)$constants[$name][0];
+        $C = (float)$constants[$name][1];
         $y = $year % 100;
-        
-        // 寿星公式：[Y*D+C]-L
-        // Y=年份后两位，D=0.2422，C=常数，L=闰年数
-        // 20世纪以1900为基准，21世纪以2000为基准
-        $day = floor($y * 0.2422 + $C) - floor(($y - ($is21st ? 0 : 1)) / 4);
-        
+
+        // 寿星公式：[Y*0.2422 + C] - L
+        $value = $y * 0.2422 + $C - floor(($y - ($is21st ? 0 : 1)) / 4);
+
         // 特殊年份修正
         if ($is21st) {
-            if ($name === '立春' && $year === 2019) $day -= 1;
-            if ($name === '雨水' && $year === 2026) $day -= 1;
+            if ($name === '立春' && $year === 2019) {
+                $value -= 1;
+            }
+            if ($name === '雨水' && $year === 2026) {
+                $value -= 1;
+            }
         } else {
-            if ($name === '立春' && ($year === 1902 || $year === 1918 || $year === 1982)) $day += 1;
-            if ($name === '惊蛰' && $year === 1906) $day += 1;
+            if ($name === '立春' && ($year === 1902 || $year === 1918 || $year === 1982)) {
+                $value += 1;
+            }
+            if ($name === '惊蛰' && $year === 1906) {
+                $value += 1;
+            }
         }
-        
-        return [$month, (int)$day];
+
+        $day = (int)floor($value);
+        $fraction = max(0.0, $value - $day);
+        $seconds = (int)round($fraction * 86400);
+        if ($seconds >= 86400) {
+            $day += 1;
+            $seconds -= 86400;
+        }
+
+        $baseMoment = new \DateTimeImmutable(
+            sprintf('%04d-%02d-%02d 00:00:00', $year, $month, $day),
+            $this->getMingliTimezone()
+        );
+        $moment = $baseMoment->modify("+{$seconds} seconds");
+
+        return [
+            'month' => (int)$moment->format('n'),
+            'day' => (int)$moment->format('j'),
+            'hour' => (int)$moment->format('G'),
+            'minute' => (int)$moment->format('i'),
+            'timestamp' => $moment->getTimestamp(),
+            'datetime' => $moment->format('Y-m-d H:i:s'),
+            'moment' => $moment,
+        ];
+    }
+
+    /**
+     * 节气日期计算（兼容旧接口）
+     */
+    protected function getJieQiDate(int $year, string $name): array
+    {
+        $moment = $this->getJieQiMoment($year, $name);
+        return [$moment['month'], $moment['day']];
     }
 
     /**
@@ -155,6 +224,7 @@ class BaziCalculationService
         $month = (int)date('n', $timestamp);
         $day = (int)date('j', $timestamp);
         $hour = (int)date('G', $timestamp);
+        $minute = (int)date('i', $timestamp);
         $genderLabel = $this->normalizeGenderLabel($gender);
         
         // ===== 核心修复：晚子时(23:00-00:00)日柱切换 =====
@@ -172,14 +242,14 @@ class BaziCalculationService
         $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
         $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
         
-        // 1. 年柱 (基于立春)
-        $lunarYear = $this->getLunarYear($year, $month, $day);
+        // 1. 年柱 (基于立春交节时刻)
+        $lunarYear = $this->getLunarYear($year, $month, $day, $hour, $minute);
         $yearGanIndex = ($lunarYear - 4) % 10;
         $yearZhiIndex = ($lunarYear - 4) % 12;
         $yearGan = $tianGan[$yearGanIndex];
         
-        // 2. 月柱 (基于节气)
-        $monthInfo = $this->getLunarMonth($year, $month, $day);
+        // 2. 月柱 (基于节气交节时刻)
+        $monthInfo = $this->getLunarMonth($year, $month, $day, $hour, $minute);
         $monthZhiIndex = $monthInfo['zhi_index'];
         $monthGanStart = $this->yearGanToMonthGanStart[$yearGan];
         $monthGanIndex = (array_search($monthGanStart, $tianGan) + $monthInfo['month_offset']) % 10;
@@ -250,23 +320,26 @@ class BaziCalculationService
             'xunkong_list' => $dayXunKong,
             'wuxing_stats' => $wuxingStats,
             'strength' => $strength,
-            'qiyun' => $this->calculateQiYun($year, $month, $day, $hour, $genderLabel, $yearGan),
+            'qiyun' => $this->calculateQiYun($year, $month, $day, $hour, $minute, $genderLabel, $yearGan),
             'calculation_note' => $hour >= 23 ? '已处理晚子时：日柱进一日，年柱月柱维持原日' : '正常排盘'
         ]);
     }
 
-    public function getLunarYear(int $year, int $month, int $day): int
+    public function getLunarYear(int $year, int $month, int $day, ?int $hour = null, ?int $minute = null): int
     {
-        $lichun = $this->getJieQiDate($year, '立春');
-        if ($month < $lichun[0] || ($month == $lichun[0] && $day < $lichun[1])) {
+        $birthMoment = $this->buildBirthMoment($year, $month, $day, $hour, $minute);
+        $lichun = $this->getJieQiMoment($year, '立春');
+
+        if ($birthMoment->getTimestamp() < $lichun['timestamp']) {
             return $year - 1;
         }
+
         return $year;
     }
 
-    protected function getLunarMonth(int $year, int $month, int $day): array
+    protected function getLunarMonth(int $year, int $month, int $day, ?int $hour = null, ?int $minute = null): array
     {
-        $birthTs = strtotime(sprintf('%04d-%02d-%02d 12:00:00', $year, $month, $day));
+        $birthTs = $this->buildBirthMoment($year, $month, $day, $hour, $minute)->getTimestamp();
 
         // 以“节”定月：大雪起子月、小寒起丑月、立春起寅月……
         // 补入上一年大雪，避免 1 月上旬误判为丑月。
@@ -288,9 +361,8 @@ class BaziCalculationService
 
         $currentZhiIdx = 0; // 默认上一节大雪起子月
         foreach ($boundaries as $boundary) {
-            [$jqMonth, $jqDay] = $this->getJieQiDate($boundary['year'], $boundary['name']);
-            $jqTs = strtotime(sprintf('%04d-%02d-%02d 12:00:00', $boundary['year'], $jqMonth, $jqDay));
-            if ($birthTs >= $jqTs) {
+            $jqMoment = $this->getJieQiMoment($boundary['year'], $boundary['name']);
+            if ($birthTs >= $jqMoment['timestamp']) {
                 $currentZhiIdx = $boundary['idx'];
                 continue;
             }
@@ -575,32 +647,29 @@ class BaziCalculationService
     /**
      * 计算起运时间 (精确到岁/月/天)
      */
-    public function calculateQiYun(int $year, int $month, int $day, int $hour, string $gender, string $yearGan): array
+    public function calculateQiYun(int $year, int $month, int $day, int $hour, int $minute, string $gender, string $yearGan): array
     {
         // 1. 判定顺逆
         // 阳男阴女顺行，阴男阳女逆行
         $yangGans = ['甲', '丙', '戊', '庚', '壬'];
-        $isYangYear = in_array($yearGan, $yangGans);
+        $isYangYear = in_array($yearGan, $yangGans, true);
         $isForward = ($gender === '男' && $isYangYear) || ($gender === '女' && !$isYangYear);
-        
+
         // 2. 查找相邻节气 (Jie)
         $jieqis = ['立春', '惊蛰', '清明', '立夏', '芒种', '小暑', '立秋', '白露', '寒露', '立冬', '大雪', '小寒'];
-        $birthTs = strtotime("$year-$month-$day $hour:00:00");
-        
-        // 获取当前年份及相邻年份的节气
+        $birthMoment = $this->buildBirthMoment($year, $month, $day, $hour, $minute);
+        $birthTs = $birthMoment->getTimestamp();
+
         $targetJieTs = 0;
-        
-        // 遍历查找最近的一个节气
         $checkYears = [$year - 1, $year, $year + 1];
         $allJieTs = [];
-        foreach ($checkYears as $y) {
-            foreach ($jieqis as $jq) {
-                $date = $this->getJieQiDate($y, $jq);
-                $allJieTs[] = strtotime("$y-{$date[0]}-{$date[1]} 12:00:00"); // 假设正午交节，简化处理
+        foreach ($checkYears as $checkYear) {
+            foreach ($jieqis as $jieqi) {
+                $allJieTs[] = $this->getJieQiMoment($checkYear, $jieqi)['timestamp'];
             }
         }
         sort($allJieTs);
-        
+
         if ($isForward) {
             foreach ($allJieTs as $ts) {
                 if ($ts > $birthTs) {
@@ -616,25 +685,44 @@ class BaziCalculationService
                 }
             }
         }
-        
+
+        if ($targetJieTs === 0) {
+            $targetJieTs = $birthTs;
+        }
+
         // 3. 计算差距
         $diffSeconds = abs($targetJieTs - $birthTs);
         $diffDays = $diffSeconds / 86400;
-        
+
         // 命理换算：3天=1岁，1天=4个月，1小时=5天
-        $qiyunYear = (int)($diffDays / 3);
+        $qiyunYear = (int)floor($diffDays / 3);
         $remainingDays = $diffDays - ($qiyunYear * 3);
-        $qiyunMonth = (int)($remainingDays * 4);
-        $remainingHours = ($remainingDays * 4 - $qiyunMonth) * (30 / 4); // 简化计算：1个月按30天算
-        $qiyunDay = (int)($remainingHours * 5);
-        
+        $qiyunMonth = (int)floor($remainingDays * 4);
+        $remainingMonthFraction = ($remainingDays * 4) - $qiyunMonth;
+        $qiyunDay = (int)round($remainingMonthFraction * 30);
+
+        if ($qiyunDay >= 30) {
+            $qiyunMonth += 1;
+            $qiyunDay -= 30;
+        }
+        if ($qiyunMonth >= 12) {
+            $qiyunYear += (int)floor($qiyunMonth / 12);
+            $qiyunMonth %= 12;
+        }
+
+        $startMoment = $birthMoment
+            ->modify("+{$qiyunYear} years")
+            ->modify("+{$qiyunMonth} months")
+            ->modify("+{$qiyunDay} days");
+
         return [
             'is_forward' => $isForward,
             'years' => $qiyunYear,
             'months' => $qiyunMonth,
             'days' => $qiyunDay,
             'display' => "{$qiyunYear}岁{$qiyunMonth}个月{$qiyunDay}天",
-            'start_date' => date('Y-m-d', strtotime("+$qiyunYear years +$qiyunMonth months +$qiyunDay days", $birthTs))
+            'start_date' => $startMoment->format('Y-m-d'),
+            'target_jieqi_at' => date('Y-m-d H:i:s', $targetJieTs),
         ];
     }
 }

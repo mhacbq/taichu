@@ -1,3 +1,20 @@
+## 🛠 第二十轮后台运营检查报告 (2026-03-17)
+
+作为网站运营人员，我继续基于实际登录页操作（http://localhost:3001/login）、直连接口探测和后台前后端代码交叉核验，重点复核 Dashboard、用户详情/筛选、通知配置等链路，新增以下不重复问题：
+
+### 🔴 高优先级（运营阻塞问题）
+- [ ] [运营] Dashboard 首页统计卡片与后端响应结构错位，核心经营指标无法可靠展示 - 后台首页 Dashboard - `admin/src/views/dashboard/index.vue` 读取 `res.data.statistics.*`，但 `backend/app/service/AdminStatsService.php` 实际返回 `overview/user_stats/order_stats/divination_stats`；用户数、订单数、收入等日常看板会报错或长期显示 0，运营无法据此做日常判断。
+- [ ] [运营] 用户详情页渲染结构和积分调整入参都未对齐后端 - 用户管理/用户详情与积分调整 - `backend/app/controller/admin/User.php` 返回 `{ user, stats, actions }`，前端 `admin/src/views/user/detail.vue` 却按平铺对象渲染；同时 `admin/src/views/user/{detail,list}.vue` 都向 `/points/adjust` 提交 `type/amount` 而不是后端要求的 `points` 整数，导致详情查看、统计核对和手动调积分链路一起失效。
+
+### 🟡 中优先级（运营体验问题）
+- [ ] [运营] 用户列表搜索筛选与分页参数未对齐后端，按用户名/手机号/时间筛选和每页条数调整可能无效 - 用户管理/用户列表 - 前端 `admin/src/views/user/list.vue` 传的是 `username、phone、dateRange、pageSize`，后端 `backend/app/service/AdminStatsService.php` 只识别 `keyword、status、is_vip、page_size`，运营排查指定用户时结果容易失真。
+- [ ] [运营] 系统公告页面仍是静态壳子，通知配置无法实际加载、发布或删除 - 系统配置/通知配置 - `admin/src/views/system/notice.vue` 未接入 `getNotices/saveNotice/deleteNotice`，列表默认空白，保存按钮也没有提交逻辑，运营无法通过后台维护公告通知。
+
+### 🟢 低优先级（运营优化建议）
+- [ ] [运营] Dashboard 缺少面向运营的快捷操作入口 - 后台首页 Dashboard - 当前只有统计图表和待处理反馈，没有直达黄历、订单、公告、系统设置等高频操作的入口，建议补齐常用操作面板。
+
+---
+
 ## 🛠 第十九轮后台运营检查报告 (2026-03-17)
 
 作为网站运营人员，我实际拉起了独立管理后台（http://localhost:3001），确认登录页可以访问；随后结合真实接口请求、数据库状态与后台前端代码，对登录、Dashboard、用户、内容、订单、系统配置等链路进行了交叉核验，新增以下不重复问题：
@@ -8,12 +25,31 @@
 - [x] [运营] 独立管理后台业务路由未真正注册 - 后台首页 Dashboard - 已改为在 `admin/src/router/index.js` 中注册 `constantRoutes + asyncRoutes`，并清理 `admin/src/stores/user.js` 中未落地的伪动态路由逻辑，登录后可正常进入后台业务页。
 
 - [ ] [运营] 黄历管理 CRUD 请求路径与后端路由不一致 - 内容管理/黄历数据 - `admin/src/api/content.js` 把黄历接口写成 `/content/almanac*`，但后端 `backend/route/admin.php` 实际只注册了 `/api/admin/almanac/list`、`/save`、`/generate-month`，运营无法正常新增、编辑、删除黄历信息。
-- [ ] [运营] 支付配置、充值订单、VIP订单接口路径错误且 VIP 路由缺失 - 订单/积分管理 - `admin/src/api/payment.js` 使用 `/admin/payment/*`、`/admin/order/*`，叠加 `admin/src/api/request.js` 的 `baseURL=/api/admin` 后会请求错误地址；同时 `backend/route/admin.php` 并未注册 `/order/*` 路由，导致支付配置、订单列表、VIP 订单处理无法正常使用。
-- [ ] [运营] 站点内容、FAQ、评价与 SEO 管理接口重复拼接 `/api/admin` - 内容管理/SEO内容 - `admin/src/api/siteContent.js` 已写死 `/api/admin/site/*`，再叠加 `baseURL=/api/admin` 会命中错误路径，内容运营和 SEO 配置页面会整体加载失败。
+- [x] [运营] 支付配置、充值订单、VIP订单接口路径错误且 VIP 路由缺失 - 订单/积分管理 - 已修正 `admin/src/api/payment.js` 的支付/订单请求地址，补齐 `backend/route/admin.php` 中的 `/api/admin/order*` 路由，并对充值订单、支付配置、VIP订单页面字段映射做了联调，后台可直接使用现有接口。
+- [x] [运营] SEO 管理前端界面联调缺失 - 内容管理/SEO内容 - 已在 `admin/src/views/site-content/seo.vue` 补齐搜索、分页、编辑、Robots 保存与搜索引擎收录提交 UI，并改为按后端返回的 `list/sitemap/submitStatus` 结构渲染。
+- [x] [运营] 系统设置获取存在硬编码且修改后未即时同步 - 系统设置 - 已移除 `admin/src/views/system/settings.vue` 的硬编码默认值，修复 Logo 上传地址和返回解析，同时在 `backend/app/controller/Admin.php` 保存后清理 `ConfigService` 缓存，确保后台修改后前台新请求立即读取最新配置。
+
 
 ### 🟡 中优先级（运营体验问题）
 
 ### 🟢 低优先级（运营优化建议）
+
+---
+
+## 🎨 第三十七轮UI设计检查报告 (2026-03-17)
+
+作为资深产品经理和UI设计师，我继续从关键转化文案、合婚交互预期、异常反馈承接、全局导航一致性与移动端菜单交互几个角度复核太初命理网站，新增以下不重复问题：
+
+### 🔴 高优先级（功能性问题）
+- [ ] [UI] 八字首免承诺与确认弹窗文案冲突 - `frontend/src/views/Bazi.vue` - 表单首屏和主按钮明确写着“首次免费排盘”，但点击后确认弹窗仍固定提示“本次排盘将消耗 10 积分”，会在首单转化前制造明显的价格疑虑，建议按 `isFirstBazi` 动态改写弹窗标题与说明，并把“本次免费 / 后续 10 积分”的规则一次讲清。
+
+### 🟡 中优先级（体验问题）
+- [ ] [UI] 合婚页 AI 勾选项与免费预览实际行为不一致 - `frontend/src/views/Hehun.vue` - 表单默认勾选“使用AI深度分析（更准确）”，但免费预览提交时请求参数被硬编码为 `useAi: false`，用户会误以为眼前结果已经启用 AI，建议把勾选项后移到解锁完整版流程，或在免费态明确标注“AI 仅在详细报告生效”。
+- [ ] [UI] 塔罗主流程缺少页内失败态承接 - `frontend/src/views/Tarot.vue` - 抽牌、解读、保存、分享失败时页面目前只弹 `ElMessage`，主区域不会留下错误说明与重试入口，用户很难判断是网络波动还是操作未生效，建议在核心操作区补充可见的错误卡片、最近失败原因与一键重试按钮。
+- [ ] [UI] 六爻与合婚页缺少统一返回入口 - `frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue` - 同批命理工具页里八字、塔罗、每日运势都已接入共享返回按钮，但六爻与合婚仍主要依赖浏览器回退，移动端或嵌入式 WebView 场景下返回路径不稳定，建议统一页头结构并补齐站内返回按钮与 fallback 路径。
+- [ ] [UI] 移动端侧滑菜单打开后缺少滚动锁定 - `frontend/src/App.vue` - `showMobileMenu` 目前只控制抽屉和遮罩显隐，没有对 `body` 或根容器施加滚动锁定，用户在菜单展开时仍可能拖动底层页面，导致视觉位移和误触，建议在菜单打开时禁用背景滚动，并在关闭或路由切换后恢复。
+
+### 🟢 低优先级（美观问题）
 
 ---
 
@@ -77,7 +113,6 @@
 
 ### 🟢 低优先级（专业性优化）
 - [x] [占卜] 起运年龄精度优化 - 八字排盘 - 已优化为精确到\"X岁Y月Z天\"。
-- [ ] [占卜] 三元合婚算法深度化 - 合婚配对 - 建议从简单的生克模型优化为传统的三元九运对应模型。
 
 ---
 
@@ -168,7 +203,6 @@
 作为精通东西方命理占卜的资深爱好者，我对太初命理网站进行了全线功能的深度体验，发现以下严重偏离传统理论或影响准确性的问题：
 
 ### 🔴 高优先级（逻辑错误/准确性问题）
-- [ ] [占卜] 命卦计算忽略立春划分 - 合婚配对 - Hehun.php 计算命卦时直接取公历年份，未按命理传统以立春作为生肖及命卦的起始点，导致年初出生者数据全错。
 
 ### 🟡 中优先级（体验问题/专业深度）
 - [ ] [占卜] 塔罗逆位牌义支持不均 - 塔罗占卜 - 部分权杖组和宝剑组牌义逆位释义过于简略，无法支撑复杂的凯尔特十字牌阵深度解读。
@@ -228,7 +262,6 @@
 
 
 ### 🟢 低优先级（专业性优化）
-- [ ] [占卜] 凯尔特十字关系分析仍按线性串牌输出 - 塔罗占卜 - 当前解读以“第1张到第2张”顺推为主，未充分体现覆盖牌、环境牌、希望/恐惧与结果牌之间的交叉关系，专业度弱于标准韦特体系读法。
 - [ ] [占卜] 单张牌结论模板感过强 - 塔罗占卜 - 结果末尾常回落到“保持开放心态、接受命运指引”这类泛化建议，与具体问卜主题和牌义结合不够紧密，指导性偏弱。
 
 ---
@@ -247,5 +280,4 @@
 - [ ] [占卜] 合婚前端定价字段与后端结构错位 - 合婚配对 - `Hehun.vue` 读取 `pricing.final / discount / reason`，后端 `getPricing` 实际返回 `tier / export / user_status` 结构；即使后端恢复 200，价格徽标、折扣说明和解锁弹窗仍会显示异常或退回默认值。
 
 ### 🟢 低优先级（专业性优化）
-- [ ] [占卜] 塔罗元素平票时仍强行指定“主导元素” - 塔罗占卜 - 三张牌出现 1 水 1 火 1 土等平票组合时，系统仍按遍历顺序硬判主导元素并给出偏向性建议，元素分析不符合韦特体系下应以并列/均衡处理的做法。
 
