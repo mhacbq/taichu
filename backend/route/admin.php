@@ -21,7 +21,7 @@ Route::group('api/admin', function () {
 
         Route::get('dashboard/realtime', 'Admin/realtime');
         Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
-        Route::get('dashboard/pending-feedback', 'Admin/pendingFeedback');
+        Route::get('dashboard/pending-feedback', 'admin.Feedback/pendingSummary');
         
         // 用户管理
         Route::get('users', 'admin.User/index');
@@ -84,14 +84,14 @@ Route::group('api/admin', function () {
         Route::get('sms/records', 'admin.Sms/getRecords');
         
         // 反馈管理
-        Route::get('feedback', 'Admin/feedbackList');
-        Route::get('feedback/:id', 'Admin/feedbackDetail');
-        Route::post('feedback/:id/reply', 'Admin/replyFeedback');
-        Route::put('feedback/:id/status', 'Admin/updateFeedbackStatus');
-        Route::delete('feedback/:id', 'Admin/deleteFeedback');
-        Route::get('feedback/categories', 'Admin/feedbackCategories');
-        Route::post('feedback/categories', 'Admin/saveFeedbackCategory');
-        Route::delete('feedback/categories/:id', 'Admin/deleteFeedbackCategory');
+        Route::get('feedback', 'admin.Feedback/index');
+        Route::get('feedback/:id', 'admin.Feedback/detail');
+        Route::post('feedback/:id/reply', 'admin.Feedback/reply');
+        Route::put('feedback/:id/status', 'admin.Feedback/updateStatus');
+        Route::delete('feedback/:id', 'admin.Feedback/delete');
+        Route::get('feedback/categories', 'admin.Feedback/categories');
+        Route::post('feedback/categories', 'admin.Feedback/saveCategory');
+        Route::delete('feedback/categories/:id', 'admin.Feedback/deleteCategory');
         
         // 知识库管理
         Route::get('knowledge/articles', 'admin.Knowledge/articleList');
@@ -118,12 +118,12 @@ Route::group('api/admin', function () {
         // 系统设置
         Route::get('system/settings', 'Admin/getSettings');
         Route::put('system/settings', 'Admin/saveSettings');
-        Route::get('system/sensitive', 'Admin/getSensitiveWords');
-        Route::post('system/sensitive', 'Admin/addSensitiveWord');
-        Route::put('system/sensitive/:id', 'Admin/updateSensitiveWord');
-        Route::delete('system/sensitive/:id', 'Admin/deleteSensitiveWord');
+        Route::get('system/sensitive', 'admin.SensitiveWord/index');
+        Route::post('system/sensitive', 'admin.SensitiveWord/create');
+        Route::put('system/sensitive/:id', 'admin.SensitiveWord/update');
+        Route::delete('system/sensitive/:id', 'admin.SensitiveWord/delete');
 
-        Route::post('system/sensitive/import', 'Admin/importSensitiveWords');
+        Route::post('system/sensitive/import', 'admin.SensitiveWord/import');
         Route::get('system/notices', 'admin.Notice/getNotices');
         Route::post('system/notices', 'admin.Notice/saveNotice');
         Route::delete('system/notices/:id', 'admin.Notice/deleteNotice');

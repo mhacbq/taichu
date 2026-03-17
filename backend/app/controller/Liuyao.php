@@ -190,7 +190,7 @@ class Liuyao extends BaseController
     public function qiGua()
     {
         $data = $this->request->post();
-        $method = $data['method'] ?? 'time';
+        $method = trim((string) ($data['method'] ?? 'time'));
 
         try {
             $result = $this->buildDivinationCore($data);
@@ -200,12 +200,16 @@ class Liuyao extends BaseController
             }
 
             return $this->success($result);
-        } catch (\Throwable $e) {
-            Log::error('六爻起卦失败: ' . $e->getMessage(), [
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondBusinessException($e, '执行六爻起卦', '起卦参数无效', 400, [
                 'method' => $method,
-                'trace' => $e->getTraceAsString(),
+                'user_id' => (int) ($data['user_id'] ?? 0),
             ]);
-            return $this->error('起卦失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('执行六爻起卦', $e, '起卦失败，请稍后重试', [
+                'method' => $method,
+                'user_id' => (int) ($data['user_id'] ?? 0),
+            ]);
         }
     }
     
