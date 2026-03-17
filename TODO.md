@@ -1,9 +1,10 @@
 ## 待处理项目
 
 ### 🔴 高优先级
-- [ ] [运营] 用户列表首屏可正常加载，但按“用户名=用户8001”搜索后会立刻进入“用户列表加载失败”只读态；浏览器网络显示 `GET /api/admin/users?username=...` 已返回 HTTP 200，运营无法通过搜索快速定位目标用户 - 用户管理 / 用户列表搜索 - 需排查筛选态响应结构或前端成功判断，恢复搜索、导出与后续详情跳转链路。
+- [x] [2026-03-18] [运营] 用户列表首屏可正常加载，但按“用户名=用户8001”搜索后会立刻进入“用户列表加载失败”只读态；浏览器网络显示 `GET /api/admin/users?username=...` 已返回 HTTP 200，运营无法通过搜索快速定位目标用户 - 用户管理 / 用户列表搜索 - 已在 `backend/app/service/AdminStatsService.php` 补齐 `username / nickname / phone / id` 兼容搜索，并停止用手机号覆盖真实 `username` 展示；同时列表/详情页调积分提交值统一切回 `sub`，兼容旧运行态只接受 `add/sub` 的接口。
 - [ ] [运营] 用户详情页“手动调积分”弹窗可打开，但提交最小化 `+1` 积分后连续提示“调整积分失败，请稍后重试”；对应 `POST /api/admin/points/adjust` 的 HTTP 请求已成功返回 200，导致人工补偿/扣减积分无法落地 - 用户管理 / 用户详情 / 积分调整 - 需核对业务响应码与前端提交参数/成功判断，确保调账成功后余额和记录即时刷新。
-- [ ] [运营] 黄历管理 `/content/almanac`、SEO 管理 `/site/seo` 与 VIP 订单 `/payment/vip-orders` 页面在真实登录后都会直接进入“加载失败”只读态；相关 GET 请求分别已命中 `/api/admin/content/almanac`、`/api/admin/system/seo/*`、`/api/admin/order` 且 HTTP 状态均为 200，运营无法维护黄历、SEO 或处理 VIP 订单 - 内容管理 / SEO / VIP订单 - 需统一排查这几页的响应结构兼容与失败判定，避免成功请求被误锁成只读。
+- [x] [2026-03-18] [运营] 黄历管理 `/content/almanac`、SEO 管理 `/site/seo` 与 VIP 订单 `/payment/vip-orders` 页面在真实登录后都会直接进入“加载失败”只读态；相关 GET 请求分别已命中 `/api/admin/content/almanac`、`/api/admin/system/seo/*`、`/api/admin/order` 且 HTTP 状态均为 200，运营无法维护黄历、SEO 或处理 VIP 订单 - 内容管理 / SEO / VIP订单 - 已在 `backend/app/controller/admin/Almanac.php` 把读写权限兼容到现有 `content_manage / config_manage` 体系，并在缺表时返回空列表成功结构；`backend/app/controller/admin/Seo.php` 改为基于真实 schema 表名读取 SEO 配置，避免站点地图统计再因表名/未初始化状态直接抛错；同时新增 `database/{20260318_create_almanac_table.sql,20260318_create_seo_tables.sql}` 并挂入 `backend/docker-entrypoint.sh` 自举列表，fresh setup 后黄历与 SEO 依赖表会自动补齐；前端 `admin/src/views/site-content/seo.vue` 与 `admin/src/views/payment/vip-orders.vue` 也同步补齐响应字段归一化和真实权限判断，避免成功响应继续被误锁成只读。
+
 - [x] [2026-03-18] [代码] 前端 `Bazi.vue` 存在未使用的 Vue `h` 导入，`SEOStats.vue` 复核后确认 `RankBadge` 仍实际依赖 `h`，原 TODO 描述过宽 - `frontend/src/views/{Bazi.vue,admin/SEOStats.vue}` - 已移除 `Bazi.vue` 的无效导入，并核销 `SEOStats.vue` 的历史误报，避免继续把正常渲染逻辑当成 lint 问题处理。
 
 
@@ -15,7 +16,7 @@
 
 ### 🟡 中优先级
 - [ ] [运营] 知识库分类列表中文名称显示为 `å…«å—åŸºç¡€` 一类乱码，文章侧虽然能进入，但运营无法辨认真实分类并准确归档文章 - 网站内容 / 知识库文章 / 分类管理 - 建议检查分类名称的存储编码、接口输出与前端解码链路，恢复中文可读性。
-- [ ] [运营] 积分记录页能加载真实记录，但“变动数量 / 变动后余额 / 变动原因”三列大量为空或仅显示 `-`，运营无法核对扣增依据，也难以追溯手工调账结果 - 积分管理 / 积分记录 - 建议补齐后台返回字段映射，并统一展示可审计的数量、余额和原因口径。
+- [x] [2026-03-18] [运营] 积分记录页能加载真实记录，但“变动数量 / 变动后余额 / 变动原因”三列大量为空或仅显示 `-`，运营无法核对扣增依据，也难以追溯手工调账结果 - 积分管理 / 积分记录 - 已重写 `backend/app/controller/Admin.php::pointsRecords()` 的返回映射，按旧 `points/remark` 与新 `amount/balance/reason` 双口径统一补齐三列；同时新增 `database/20260318_add_points_record_audit_fields.sql` 回填审计字段，减少历史记录空列。
 - [x] [运营] 充值订单页 `GET /api/admin/payment/orders` 已能返回列表，但统计接口 `/api/admin/payment/stats` 仍返回 500，页面顶部“支付订单 / 累计实收 / 累计发放积分 / 待支付订单”继续显示默认 0 值，运营容易把异常误判成真实订单表现 - 订单管理 / 充值订单 - 已在 `backend/app/controller/admin/Payment.php` 去掉会触发 ThinkORM `distinct(): Argument #1 ($distinct) must be of type bool, string given` 的用户去重写法，改为兼容旧表结构的 `user_id` 去重统计；同时在 `admin/src/views/payment/orders.vue` 改成列表成功、统计失败时页内告警降级，不再让单个统计接口把整页一起拖进错误态。
 
 
@@ -617,9 +618,37 @@
 ### 🔴 高优先级（功能性问题）
 
 ### 🟡 中优先级（体验问题）
-- [ ] [UI] 合婚历史记录缺少“免费预览 / 完整版”类型标识，点击任意历史都会被包装成“详细合婚报告”，容易误判自己是否已经解锁完整版 - `frontend/src/views/Hehun.vue` 历史列表 / `loadHistoryDetail()` - 在列表上增加类型与 AI 状态标签，并按 `tier` / `is_premium` 分流回放到 `freeResult` 或 `premiumResult`。
+
 
 ### 🟢 低优先级（美观问题）
+
+
+
+
+
+
+
+
+## 🎨 第四十四次UI设计检查报告 (2026-03-18)
+
+作为资深产品经理和UI设计师，我继续从首页承诺可信度、八字隐私与积分反馈、塔罗重置语义、六爻加载状态、合婚历史精度表达与签到月历可读性几个角度复核太初命理网站，确认以下问题尚未在当前 `TODO.md` 与自动化执行记录中重复登记后，新增如下：
+
+### 🔴 高优先级（功能性问题）
+- [ ] [UI] 八字页 AI 流式解盘成功后只写入 `aiAnalysisResult`，没有同步回写 `currentPoints`，用户会继续看到旧积分并误判是否已扣费成功 - `frontend/src/views/Bazi.vue` / `startAiAnalysis()` 流式成功分支 - 在流式结束时同步使用服务端返回的 `remaining_points` 更新余额，若流式协议暂不带余额也应按 `aiAnalysisCost` 做一致扣减并触发全局积分刷新。
+- [ ] [UI] 六爻页定价卡初始把 `pricingLoading` 设为 `true`，但 `loadPricing()` 成功或失败后都没有收口，页面可能永久停留在“正在同步当前占卜价格...”而不给真实价格或失败提示 - `frontend/src/views/Liuyao.vue` 定价区 / `loadPricing()` - 在请求开始、成功、失败、finally 四个阶段明确维护 loading/error 状态，让首免、价格和重试入口能稳定切换。
+- [ ] [UI] 合婚免费预览成功分支调用了未定义的 `clearUnlockFeedback()`，可能出现“结果已算出，但界面被运行时异常打断”的割裂体验 - `frontend/src/views/Hehun.vue` / `calculateFree()` - 补齐该方法或删除无效调用，并把预览成功提示、结果展示、历史刷新收敛到一条稳定成功链路。
+
+### 🟡 中优先级（体验问题）
+- [ ] [UI] 首页主 CTA 固定展示“首测免费”，却没有根据真实首免状态动态变化，老用户回访时也会被继续暗示仍可免费，削弱价格承诺可信度 - `frontend/src/views/Home.vue` Hero 区首屏按钮 - 改为按真实首免/已消费状态展示“首测免费”“查看当前价格”或不展示权益徽标。
+- [ ] [UI] 八字结果分享会直接拼出完整四柱和日主，缺少分享前隐私提醒与简化选项，用户很容易在不自知时泄露敏感命盘信息 - `frontend/src/views/Bazi.vue` / `shareResult()` - 默认改为分享摘要版内容，并在分享前提供“是否包含完整八字信息”的显式确认。
+- [ ] [UI] 八字表单提示“选个大概的时间也可以”，但控件实际仍强制 `datetime` 精确到时分，文案承诺与真实交互能力不一致 - `frontend/src/views/Bazi.vue` 出生时间输入区 - 提供“未知时辰/大概时段”选项，或把提示改成系统真实支持的输入精度。
+- [ ] [UI] 塔罗“重新整理问题/重新占卜”只清空问题文本和结果，没有重置 `selectedTopic`，用户开启下一轮咨询时仍会继承上一轮的话题模板，语境残留明显 - `frontend/src/views/Tarot.vue` / `resetTarot()` - 重置时同步清空 `selectedTopic` 与相关模板高亮，让新一轮咨询从空白状态开始。
+- [ ] [UI] 六爻历史回看场景仍展示“已自动保存到历史记录”，像是在回放旧结果时再次宣告刚刚保存，状态语义会误导用户 - `frontend/src/views/Liuyao.vue` 结果区 `saved-status` - 仅在新起卦成功后的即时结果展示保存提示，历史回放改为“来自历史记录”或直接隐藏该提示。
+- [ ] [UI] 合婚历史回放会把原本只是“估算时段”的输入恢复成具体 `HH:mm`，把模糊信息包装成精确出生时刻，容易夸大结果可信度 - `frontend/src/views/Hehun.vue` / `hydrateBirthState()` 历史回填 - 在记录与回放时保留原始精度等级，时段输入应继续显示为“凌晨/上午/下午”等语义而不是伪精确时间。
+
+### 🟢 低优先级（美观问题）
+- [ ] [UI] 签到卡“本月签到记录”虽然用了 7 列网格，但没有星期标题和月初占位，视觉上更像顺排数字矩阵而不是标准月历，用户不容易快速对齐日期与星期 - `frontend/src/components/CheckinCard.vue` 日历区 - 增加星期标题、首日偏移占位与今天/已签层级样式，提升月历可读性。
+
 
 
 

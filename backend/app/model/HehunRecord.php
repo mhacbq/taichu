@@ -288,12 +288,21 @@ class HehunRecord extends Model
 
         $level = (string)($row['level'] ?? ($result['level'] ?? ''));
         $score = (int)($row['score'] ?? ($result['score'] ?? 0));
+        $pointsCost = $pointsField !== null ? (int)($row[$pointsField] ?? 0) : 0;
+        $maleBirthDate = self::resolveBirthDateValue($row, 'male');
+        $femaleBirthDate = self::resolveBirthDateValue($row, 'female');
+        $hasAiAnalysis = self::resolveAiAnalysisFlag($row);
+        $isPremium = self::resolvePremiumFlag($row, $result, $pointsCost, $hasAiAnalysis);
+        $tier = $isPremium ? ($pointsCost > 0 ? 'premium' : 'vip') : 'free';
+        $createdAt = (string)($row[$createTimeField] ?? '');
 
         return [
             'id' => (int)($row['id'] ?? 0),
             'user_id' => (int)($row['user_id'] ?? 0),
             'male_name' => (string)($row['male_name'] ?? '男方'),
             'female_name' => (string)($row['female_name'] ?? '女方'),
+            'male_birth_date' => $maleBirthDate,
+            'female_birth_date' => $femaleBirthDate,
             'male_bazi' => self::decodeJsonField($row['male_bazi'] ?? null),
             'female_bazi' => self::decodeJsonField($row['female_bazi'] ?? null),
             'result' => $result,
@@ -301,8 +310,12 @@ class HehunRecord extends Model
             'score' => $score,
             'level' => $level,
             'level_text' => self::getLevelText($level),
-            'points_cost' => $pointsField !== null ? (int)($row[$pointsField] ?? 0) : 0,
-            'create_time' => (string)($row[$createTimeField] ?? ''),
+            'is_ai_analysis' => $hasAiAnalysis,
+            'points_cost' => $pointsCost,
+            'is_premium' => $isPremium,
+            'tier' => $tier,
+            'create_time' => $createdAt,
+            'created_at' => $createdAt,
         ];
     }
 
@@ -337,6 +350,54 @@ class HehunRecord extends Model
             'date' => $date,
             'time' => $time,
         ];
+    }
+
+    protected static function resolveBirthDateValue(array $row, string $role): string
+    {
+        $splitField = $role . '_birth_date';
+        if (!empty($row[$splitField])) {
+            return (string)$row[$splitField];
+        }
+
+        $legacyField = $role . '_birth';
+        $legacyValue = trim((string)($row[$legacyField] ?? ''));
+        if ($legacyValue === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', $legacyValue);
+        return (string)($parts[0] ?? $legacyValue);
+    }
+
+    protected static function resolveAiAnalysisFlag(array $row): bool
+    {
+        if (array_key_exists('is_ai_analysis', $row)) {
+            return !empty($row['is_ai_analysis']);
+        }
+
+        return !empty(self::decodeJsonField($row['ai_analysis'] ?? null));
+    }
+
+    protected static function resolvePremiumFlag(array $row, array $result, int $pointsCost, bool $hasAiAnalysis): bool
+    {
+        if (array_key_exists('is_premium', $row)) {
+            return !empty($row['is_premium']);
+        }
+
+        if ($pointsCost > 0 || $hasAiAnalysis) {
+            return true;
+        }
+
+        if (!empty($result['details']) || !empty($result['scores']) || !empty($result['solutions']) || !empty($result['dimension_scores']) || !empty($result['detail_analysis'])) {
+            return true;
+        }
+
+        $analysis = $row['analysis'] ?? null;
+        if (is_array($analysis)) {
+            return !empty($analysis);
+        }
+
+        return is_string($analysis) && trim($analysis) !== '';
     }
 
     /**

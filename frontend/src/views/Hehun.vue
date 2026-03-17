@@ -134,7 +134,7 @@
           <!-- AI分析 -->
           <div class="ai-section" v-if="premiumResult.ai_analysis">
             <h3><el-icon><Cpu /></el-icon> AI深度解读</h3>
-            <div class="ai-content rich-content" v-html="sanitizeHtml(premiumResult.ai_analysis)"></div>
+            <div class="ai-content rich-content" v-html="premiumAiAnalysisHtml"></div>
           </div>
 
           
@@ -385,18 +385,40 @@
           <span>完成一次分析后，这里会展示最近的 5 条记录。</span>
         </div>
         <div v-else class="history-list">
-          <div 
-            v-for="item in history" 
+          <button
+            v-for="item in history"
             :key="item.id"
+            type="button"
             class="history-item"
+            :class="{ 'is-active': activeHistoryId === item.id }"
             @click="loadHistoryDetail(item)"
           >
-            <div class="history-info">
-              <span class="history-names">{{ formatHistoryNames(item) }}</span>
-              <span class="history-date">{{ formatDate(item.created_at) }}</span>
+            <div class="history-main">
+              <div class="history-topline">
+                <span class="history-names">{{ formatHistoryNames(item) }}</span>
+                <div class="history-badges">
+                  <span class="history-badge history-badge--tier" :class="`history-badge--${item.tier}`">
+                    <el-icon><Lock v-if="item.is_premium" /><Unlock v-else /></el-icon>
+                    {{ item.typeLabel }}
+                  </span>
+                  <span class="history-badge history-badge--ai" :class="{ 'history-badge--muted': !item.hasAiAnalysis }">
+                    <el-icon><CircleCheckFilled v-if="item.hasAiAnalysis" /><Cpu v-else /></el-icon>
+                    {{ item.hasAiAnalysis ? '含AI解读' : '未启用AI' }}
+                  </span>
+                </div>
+              </div>
+              <div class="history-meta">
+                <span><el-icon><Calendar /></el-icon>{{ formatDate(item.created_at) }}</span>
+                <span><el-icon><StarFilled /></el-icon>{{ item.score }}分{{ item.level_text ? ` · ${item.level_text}` : '' }}</span>
+                <span>{{ item.accessLabel }}</span>
+              </div>
+              <p class="history-summary">{{ item.summary }}</p>
             </div>
-            <div class="history-score">{{ item.score }}分</div>
-          </div>
+            <span class="history-action">
+              {{ item.ctaLabel }}
+              <el-icon><ArrowRight /></el-icon>
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -407,7 +429,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
-import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled } from '@element-plus/icons-vue'
+import { Male, Female, Unlock, Lock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled, Calendar, ArrowRight, StarFilled, CircleCheckFilled } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 import BackButton from '../components/BackButton.vue'
 
@@ -471,15 +493,21 @@ const history = ref([])
 const historyLoading = ref(false)
 const historyLoaded = ref(false)
 const historyError = ref('')
+const activeHistoryId = ref(null)
 
+const historyTierCopy = {
+  free: { label: '免费预览', cta: '查看基础预览' },
+  premium: { label: '完整版', cta: '查看完整报告' },
+  vip: { label: 'VIP完整版', cta: '查看会员报告' },
+}
 
 // 维度名称映射
 const dimensionNames = {
-  personality: '性格匹配',
+  year: '生肖契合',
+  day: '日柱关系',
   wuxing: '五行互补',
-  shengxiao: '生肖配对',
-  rizhu: '日主关系',
-  liunian: '流年运势',
+  hechong: '干支配合',
+  nayin: '纳音互感',
 }
 
 const getBirthPrecisionLabel = (precision) => {
@@ -710,6 +738,358 @@ const premiumUnlockMessage = computed(() => {
     : `解锁详细报告将消耗 ${points} 积分，是否继续？`
 })
 
+const clearUnlockFeedback = () => {
+  unlockError.value = null
+  unlockLoading.value = false
+}
+
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const hasAiContent = (value) => {
+  if (!value) {
+    return false
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() !== ''
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0
+  }
+
+  if (typeof value === 'object') {
+    return Object.keys(value).length > 0
+  }
+
+  return false
+}
+
+const normalizeObjectField = (value, fallback = {}) => {
+  if (!value) {
+    return fallback
+  }
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  if (typeof value === 'object') {
+    return value
+  }
+
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return fallback
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed)
+    return parsed && typeof parsed === 'object' ? parsed : fallback
+  } catch (error) {
+    return fallback
+  }
+}
+
+const normalizeAiField = (value) => {
+  if (!value) {
+    return null
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return null
+    }
+
+    try {
+      return JSON.parse(trimmed)
+    } catch (error) {
+      return trimmed
+    }
+  }
+
+  if (Array.isArray(value) || typeof value === 'object') {
+    return value
+  }
+
+  return null
+}
+
+const formatAiAnalysisHtml = (analysis) => {
+  const normalized = normalizeAiField(analysis)
+  if (!normalized) {
+    return ''
+  }
+
+  if (typeof normalized === 'string') {
+    return `<p>${escapeHtml(normalized)}</p>`
+  }
+
+  if (Array.isArray(normalized)) {
+    return normalized
+      .filter(Boolean)
+      .map((item) => `<p>${escapeHtml(item)}</p>`)
+      .join('')
+  }
+
+  const sections = []
+
+  if (normalized.summary) {
+    sections.push(`<p>${escapeHtml(normalized.summary)}</p>`)
+  }
+
+  if (normalized.personality_match) {
+    const personality = normalized.personality_match
+    const personalityLines = [
+      personality.male_personality,
+      personality.female_personality,
+      personality.match_analysis,
+    ].filter(Boolean)
+
+    if (personalityLines.length) {
+      sections.push(`
+        <h4>性格匹配</h4>
+        <p>${escapeHtml(personalityLines.join(' '))}</p>
+      `)
+    }
+  }
+
+  if (normalized.marriage_prospect) {
+    sections.push(`<h4>婚姻前景</h4><p>${escapeHtml(normalized.marriage_prospect)}</p>`)
+  }
+
+  if (normalized.career_wealth) {
+    sections.push(`<h4>事业与财运</h4><p>${escapeHtml(normalized.career_wealth)}</p>`)
+  }
+
+  if (normalized.children_fate) {
+    sections.push(`<h4>家庭与子女缘</h4><p>${escapeHtml(normalized.children_fate)}</p>`)
+  }
+
+  if (Array.isArray(normalized.suggestions) && normalized.suggestions.length) {
+    sections.push(`
+      <h4>AI建议</h4>
+      <ul>${normalized.suggestions.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+    `)
+  }
+
+  if (normalized.auspicious_info) {
+    const auspiciousInfo = normalized.auspicious_info
+    const lines = [
+      Array.isArray(auspiciousInfo.best_years) && auspiciousInfo.best_years.length ? `更适合推进关系的年份：${auspiciousInfo.best_years.join('、')}` : '',
+      Array.isArray(auspiciousInfo.auspicious_months) && auspiciousInfo.auspicious_months.length ? `顺势月份：${auspiciousInfo.auspicious_months.join('、')}` : '',
+      auspiciousInfo.notes ? `提醒：${auspiciousInfo.notes}` : '',
+    ].filter(Boolean)
+
+    if (lines.length) {
+      sections.push(`
+        <h4>顺势提醒</h4>
+        <ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+      `)
+    }
+  }
+
+  if (!sections.length) {
+    const fallbackLines = Object.entries(normalized)
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([key, value]) => `${key}：${Array.isArray(value) ? value.join('、') : typeof value === 'object' ? JSON.stringify(value) : value}`)
+
+    return fallbackLines.map((line) => `<p>${escapeHtml(line)}</p>`).join('')
+  }
+
+  return sections.join('')
+}
+
+const hehunDetailSectionLabels = {
+  year: '生肖契合',
+  day: '日柱关系',
+  wuxing: '五行互补',
+  hechong: '干支配合',
+  nayin: '纳音互感',
+}
+
+const buildHehunDetailHtml = (hehun) => {
+  const sections = []
+
+  if (hehun.comment) {
+    sections.push(`<p>${escapeHtml(hehun.comment)}</p>`)
+  }
+
+  const detailEntries = Object.entries(normalizeObjectField(hehun.details, {})).filter(([, value]) => Boolean(value))
+  if (detailEntries.length) {
+    sections.push(`
+      <h4>核心分析</h4>
+      <ul>${detailEntries.map(([key, value]) => `<li><strong>${escapeHtml(hehunDetailSectionLabels[key] || key)}</strong>：${escapeHtml(value)}</li>`).join('')}</ul>
+    `)
+  }
+
+  if (Array.isArray(hehun.highlights) && hehun.highlights.length) {
+    sections.push(`
+      <h4>关系亮点</h4>
+      <ul>${hehun.highlights.map((item) => `<li>${escapeHtml(item?.text || item)}</li>`).join('')}</ul>
+    `)
+  }
+
+  const traditionalMethods = normalizeObjectField(hehun.traditional_methods, {})
+  const traditionalEntries = Object.entries(traditionalMethods).filter(([, value]) => value && typeof value === 'object')
+  if (traditionalEntries.length) {
+    sections.push(`
+      <h4>传统合婚补充</h4>
+      <ul>${traditionalEntries.map(([key, value]) => `<li><strong>${escapeHtml(key === 'sanyuan' ? '三元宫位' : key === 'jiugong' ? '九宫关系' : key)}</strong>：${escapeHtml(value.type || value.meaning || value.description || JSON.stringify(value))}</li>`).join('')}</ul>
+    `)
+  }
+
+  return sections.join('')
+}
+
+const normalizeHehunData = (hehun) => {
+  const normalized = normalizeObjectField(hehun, {})
+  const rawDimensions = normalizeObjectField(normalized.dimensions, {})
+  const rawScores = normalizeObjectField(normalized.scores, {})
+  const solutions = Array.isArray(normalized.solutions) && normalized.solutions.length
+    ? normalized.solutions
+    : Array.isArray(normalized.suggestions)
+      ? normalized.suggestions
+      : []
+
+  return {
+    ...normalized,
+    dimensions: {
+      year: Number(rawDimensions.year ?? rawScores.year ?? 0),
+      day: Number(rawDimensions.day ?? rawScores.day ?? 0),
+      wuxing: Number(rawDimensions.wuxing ?? rawScores.wuxing ?? 0),
+      hechong: Number(rawDimensions.hechong ?? rawScores.hechong ?? 0),
+      nayin: Number(rawDimensions.nayin ?? rawScores.nayin ?? 0),
+    },
+    detail_analysis: normalized.detail_analysis || buildHehunDetailHtml(normalized),
+    solutions,
+    suggestions: solutions,
+  }
+}
+
+const normalizeFreeResultData = (payload = {}) => ({
+  ...payload,
+  tier: payload.tier || 'free',
+  hehun: normalizeHehunData(payload.hehun),
+  male_bazi: normalizeObjectField(payload.male_bazi, {}),
+  female_bazi: normalizeObjectField(payload.female_bazi, {}),
+})
+
+const normalizePremiumResultData = (payload = {}) => ({
+  ...payload,
+  tier: payload.tier || 'premium',
+  hehun: normalizeHehunData(payload.hehun),
+  ai_analysis: normalizeAiField(payload.ai_analysis),
+  male_bazi: normalizeObjectField(payload.male_bazi, {}),
+  female_bazi: normalizeObjectField(payload.female_bazi, {}),
+})
+
+const premiumAiAnalysisHtml = computed(() => sanitizeHtml(formatAiAnalysisHtml(premiumResult.value?.ai_analysis)))
+
+const resolveHistoryTier = (item = {}) => {
+  const explicitTier = typeof item.tier === 'string' ? item.tier.trim().toLowerCase() : ''
+  if (['free', 'premium', 'vip'].includes(explicitTier)) {
+    return explicitTier
+  }
+
+  const isPremium = item.is_premium === true || item.is_premium === 1 || item.is_premium === '1'
+  const isFree = item.is_premium === false || item.is_premium === 0 || item.is_premium === '0'
+
+  if (isFree) {
+    return 'free'
+  }
+
+  const pointsCost = Number(item.points_cost ?? 0)
+  if (isPremium || pointsCost > 0) {
+    return pointsCost > 0 ? 'premium' : 'vip'
+  }
+
+  const resultData = normalizeObjectField(item.result, {})
+  if (item.is_ai_analysis || hasAiContent(item.ai_analysis) || resultData.detail_analysis || resultData.details || resultData.solutions) {
+    return 'vip'
+  }
+
+  return 'free'
+}
+
+const resolveHistoryAccessLabel = (tier, pointsCost) => {
+  if (tier === 'vip') {
+    return '会员权益解锁'
+  }
+
+  if (tier === 'premium') {
+    return pointsCost > 0 ? `${pointsCost} 积分解锁` : '已解锁完整版'
+  }
+
+  return '可继续升级完整版'
+}
+
+const buildHistorySummary = (tier, hasAiAnalysis, pointsCost) => {
+  if (tier === 'free') {
+    return '保留基础匹配分与简评，可继续解锁完整版查看五维分析与化解建议。'
+  }
+
+  const accessCopy = tier === 'vip'
+    ? '会员完整版记录'
+    : pointsCost > 0
+      ? `${pointsCost} 积分解锁记录`
+      : '已解锁完整版记录'
+
+  return `${accessCopy}，${hasAiAnalysis ? '包含 AI 深度解读' : '未启用 AI 扩展'}，点击可回看完整内容。`
+}
+
+const normalizeHistoryItem = (item = {}) => {
+  const tier = resolveHistoryTier(item)
+  const aiAnalysis = normalizeAiField(item.ai_analysis)
+  const resultData = normalizeObjectField(item.result, {})
+  const pointsCost = Number(item.points_cost ?? 0)
+  const createdAt = item.create_time || item.created_at || ''
+  const hasAiAnalysis = Boolean(item.is_ai_analysis) || hasAiContent(aiAnalysis)
+
+  return {
+    ...item,
+    result: resultData,
+    ai_analysis: aiAnalysis,
+    male_bazi: normalizeObjectField(item.male_bazi, {}),
+    female_bazi: normalizeObjectField(item.female_bazi, {}),
+    score: Number(item.score ?? resultData.score ?? 0),
+    level: item.level || resultData.level || '',
+    level_text: item.level_text || resultData.level_text || '',
+    points_cost: pointsCost,
+    tier,
+    is_premium: tier !== 'free',
+    hasAiAnalysis,
+    typeLabel: historyTierCopy[tier]?.label || '历史记录',
+    ctaLabel: historyTierCopy[tier]?.cta || '查看记录',
+    accessLabel: resolveHistoryAccessLabel(tier, pointsCost),
+    summary: buildHistorySummary(tier, hasAiAnalysis, pointsCost),
+    created_at: createdAt,
+    create_time: createdAt,
+  }
+}
+
+const resolveHistoryList = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  if (Array.isArray(payload?.list)) {
+    return payload.list
+  }
+
+  return []
+}
+
 // 获取定价信息
 const loadPricing = async () => {
   pricingLoading.value = true
@@ -811,6 +1191,8 @@ const unlockPremium = async () => {
 const resetForm = () => {
   freeResult.value = null
   premiumResult.value = null
+  activeHistoryId.value = null
+  clearUnlockFeedback()
   form.maleName = ''
   form.maleBirthDate = ''
   form.maleBirthPrecision = 'exact'
@@ -859,9 +1241,12 @@ const loadHistory = async () => {
   historyError.value = ''
 
   try {
-    const response = await getHehunHistory({ page: 1, page_size: 5 })
+    const response = await getHehunHistory({ limit: 5 })
     if (response.code === 200) {
-      history.value = response.data.list || []
+      history.value = resolveHistoryList(response.data).map(normalizeHistoryItem)
+      if (activeHistoryId.value && !history.value.some((item) => item.id === activeHistoryId.value)) {
+        activeHistoryId.value = null
+      }
     } else {
       history.value = []
       historyError.value = response.message || '历史记录加载失败，请稍后重试'
@@ -873,18 +1258,6 @@ const loadHistory = async () => {
   } finally {
     historyLoading.value = false
     historyLoaded.value = true
-  }
-}
-
-// 安全解析JSON
-const safeJsonParse = (jsonStr, defaultVal = null) => {
-
-  if (!jsonStr) return defaultVal
-  try {
-    return JSON.parse(jsonStr)
-  } catch (e) {
-    console.warn('JSON解析失败:', jsonStr, e)
-    return defaultVal
   }
 }
 
@@ -913,46 +1286,70 @@ const formatHistoryNames = (item = {}) => {
   return `${maleLabel} & ${femaleLabel}`
 }
 
+const buildHistoryFreeResult = (item, hehunData, maleBaziData, femaleBaziData) => normalizeFreeResultData({
+  ...item,
+  tier: 'free',
+  hehun: {
+    ...hehunData,
+    suggestions: Array.isArray(hehunData.suggestions) && hehunData.suggestions.length
+      ? hehunData.suggestions
+      : ['可先查看基础匹配趋势，若需要五维分析和 AI 解读，可继续解锁完整版。'],
+  },
+  male_bazi: maleBaziData,
+  female_bazi: femaleBaziData,
+  preview_hint: '这是你之前保存的免费预览记录；如需五维分析和 AI 解读，请重新解锁完整版。',
+})
+
+const buildHistoryPremiumResult = (item, hehunData, aiAnalysisData, maleBaziData, femaleBaziData) => normalizePremiumResultData({
+  id: item.id,
+  tier: item.tier,
+  hehun: hehunData,
+  ai_analysis: aiAnalysisData,
+  male_bazi: maleBaziData,
+  female_bazi: femaleBaziData,
+})
+
 // 加载历史记录详情
-const loadHistoryDetail = async (item) => {
+const loadHistoryDetail = (item) => {
+  const normalizedItem = normalizeHistoryItem(item)
 
   try {
-    // 填充表单
-    form.maleName = item.male_name
-    form.femaleName = item.female_name
+    activeHistoryId.value = normalizedItem.id
 
-    const maleBirthState = hydrateBirthState(item.male_birth_date)
+    // 填充表单
+    form.maleName = normalizedItem.male_name || ''
+    form.femaleName = normalizedItem.female_name || ''
+
+    const maleBirthState = hydrateBirthState(normalizedItem.male_birth_date)
     form.maleBirthDate = maleBirthState.value
     form.maleBirthPrecision = maleBirthState.precision
     form.maleBirthTimeRange = maleBirthState.timeRange
 
-    const femaleBirthState = hydrateBirthState(item.female_birth_date)
+    const femaleBirthState = hydrateBirthState(normalizedItem.female_birth_date)
     form.femaleBirthDate = femaleBirthState.value
     form.femaleBirthPrecision = femaleBirthState.precision
     form.femaleBirthTimeRange = femaleBirthState.timeRange
 
-    // 显示结果 - 使用安全解析，每个字段独立处理
-    const hehunData = safeJsonParse(item.result, {})
+    const hehunData = normalizeHehunData(normalizedItem.result)
+    const aiAnalysisData = normalizeAiField(normalizedItem.ai_analysis)
+    const maleBaziData = normalizeObjectField(normalizedItem.male_bazi, {})
+    const femaleBaziData = normalizeObjectField(normalizedItem.female_bazi, {})
 
-    const aiAnalysisData = safeJsonParse(item.ai_analysis, null)
-    const maleBaziData = safeJsonParse(item.male_bazi, {})
-    const femaleBaziData = safeJsonParse(item.female_bazi, {})
-
-    // 检查必要数据是否存在
     if (!hehunData || Object.keys(hehunData).length === 0) {
       ElMessage.warning('合婚结果数据不完整')
       return
     }
 
-    premiumResult.value = {
-      id: item.id,
-      hehun: hehunData,
-      ai_analysis: aiAnalysisData,
-      male_bazi: maleBaziData,
-      female_bazi: femaleBaziData,
+    if (normalizedItem.tier === 'free' || !normalizedItem.is_premium) {
+      freeResult.value = buildHistoryFreeResult(normalizedItem, hehunData, maleBaziData, femaleBaziData)
+      premiumResult.value = null
+      clearUnlockFeedback()
+      return
     }
 
+    premiumResult.value = buildHistoryPremiumResult(normalizedItem, hehunData, aiAnalysisData, maleBaziData, femaleBaziData)
     freeResult.value = null
+    clearUnlockFeedback()
   } catch (error) {
     console.error('加载历史记录失败:', error)
     ElMessage.error('历史记录数据格式错误，无法加载')
@@ -961,8 +1358,24 @@ const loadHistoryDetail = async (item) => {
 
 // 格式化日期
 const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN')
+  const rawValue = typeof dateStr === 'string' ? dateStr.trim() : ''
+  if (!rawValue) {
+    return '时间待补充'
+  }
+
+  const normalizedValue = rawValue.includes('T') ? rawValue : rawValue.replace(' ', 'T')
+  const date = new Date(normalizedValue)
+  if (Number.isNaN(date.getTime())) {
+    return rawValue
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
 }
 
 // 初始化
@@ -2022,51 +2435,148 @@ onMounted(() => {
 }
 
 .history-list {
-
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.3s;
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  appearance: none;
+  font: inherit;
+  color: inherit;
   border: 1px solid var(--border-light);
+  background: linear-gradient(135deg, var(--bg-card), rgba(var(--primary-rgb), 0.03));
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 
 .history-item:hover {
-  background: var(--bg-secondary);
-  transform: translateX(4px);
+  transform: translateY(-2px);
   border-color: var(--primary-light-30);
   box-shadow: var(--shadow-md);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), var(--bg-card));
 }
 
-.history-info {
+.history-item.is-active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.16), var(--shadow-md);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), var(--bg-card));
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+}
+
+.history-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .history-names {
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.6;
 }
 
-.history-date {
+.history-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.history-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.history-badge--tier {
+  color: var(--text-primary);
+}
+
+.history-badge--free {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: var(--primary-light-20);
+}
+
+.history-badge--premium {
+  background: rgba(230, 162, 60, 0.14);
+  border-color: rgba(230, 162, 60, 0.24);
+}
+
+.history-badge--vip {
+  background: rgba(103, 194, 58, 0.14);
+  border-color: rgba(103, 194, 58, 0.24);
+}
+
+.history-badge--ai {
+  background: var(--bg-secondary);
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+
+.history-badge--muted {
+  opacity: 0.82;
+}
+
+.history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.history-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-summary {
+  margin: 0;
   color: var(--text-tertiary);
   font-size: 13px;
+  line-height: 1.7;
 }
 
-.history-score {
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--star-color);
+.history-action {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 /* 响应式 */
@@ -2171,6 +2681,41 @@ onMounted(() => {
   
   .action-buttons {
     flex-direction: column;
+  }
+
+  .history-item,
+  .history-item.is-active {
+    padding: 16px;
+  }
+
+  .history-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-topline {
+    flex-direction: column;
+  }
+
+  .history-badges {
+    justify-content: flex-start;
+  }
+
+  .history-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-badge {
+    width: 100%;
+    justify-content: center;
   }
 }
 
