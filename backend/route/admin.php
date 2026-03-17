@@ -81,14 +81,15 @@ Route::group('api/admin', function () {
         Route::delete('feedback/categories/:id', 'Admin/deleteFeedbackCategory');
         
         // 知识库管理
-        Route::get('knowledge/articles', 'Admin/articleList');
-        Route::get('knowledge/articles/:id', 'Admin/articleDetail');
-        Route::post('knowledge/articles', 'Admin/saveArticle');
-        Route::put('knowledge/articles/:id', 'Admin/updateArticle');
-        Route::delete('knowledge/articles/:id', 'Admin/deleteArticle');
-        Route::get('knowledge/categories', 'Admin/articleCategories');
-        Route::post('knowledge/categories', 'Admin/saveArticleCategory');
-        Route::delete('knowledge/categories/:id', 'Admin/deleteArticleCategory');
+        Route::get('knowledge/articles', 'admin.Knowledge/articleList');
+        Route::get('knowledge/articles/:id', 'admin.Knowledge/articleDetail');
+        Route::post('knowledge/articles', 'admin.Knowledge/saveArticle');
+        Route::put('knowledge/articles/:id', 'admin.Knowledge/updateArticle');
+        Route::delete('knowledge/articles/:id', 'admin.Knowledge/deleteArticle');
+        Route::get('knowledge/categories', 'admin.Knowledge/articleCategories');
+        Route::post('knowledge/categories', 'admin.Knowledge/saveArticleCategory');
+        Route::delete('knowledge/categories/:id', 'admin.Knowledge/deleteArticleCategory');
+
         
         // 反作弊系统
         Route::get('anticheat/events', 'Admin/riskEvents');

@@ -87,6 +87,7 @@ class SiteContent extends BaseController
     {
         $page = $request->param('page', 'home');
         $key = $request->param('key');
+        $pagination = $this->getPaginationParams('current', 'pageSize', 20, 100);
         
         // 验证page参数格式，防止路径遍历和非法字符
         if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
@@ -100,13 +101,24 @@ class SiteContent extends BaseController
             $key = preg_replace('/[%_\\\\]/', '', $key);
             $query->whereLike('key', '%' . $key . '%');
         }
-        
+
+        $total = $query->count();
         $list = $query->order('sort_order', 'asc')
             ->order('created_at', 'desc')
-            ->select();
+            ->page($pagination['page'], $pagination['pageSize'])
+            ->select()
+            ->toArray();
         
-        return $this->success($list, '获取成功');
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+            'page' => $pagination['page'],
+            'pageSize' => $pagination['pageSize'],
+            'page_key' => $page,
+            'keyword' => $key ?: '',
+        ], '获取成功');
     }
+
     
     /**
      * 更新单条内容（后台）

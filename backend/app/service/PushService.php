@@ -436,8 +436,15 @@ class PushService
      */
     protected static function getProvider(): string
     {
-        return strtolower(trim(self::getEnvValue(['PUSH_PROVIDER', 'push.provider'])));
+        $provider = strtolower(trim(self::getEnvValue(['PUSH_PROVIDER', 'push.provider'])));
+
+        return match ($provider) {
+            'firebase', 'firebase-fcm' => 'fcm',
+            'jiguang', '极光' => 'jpush',
+            default => $provider,
+        };
     }
+
 
     /**
      * 读取环境变量，兼容多种命名

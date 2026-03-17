@@ -1,5 +1,31 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-17 19:22 执行记录（本次）
+
+### 本次完成的5个后端问题
+1. **用户积分手动调账闭环**
+   - 补齐 `admin/User` 详情中的积分流水、VIP订单、充值订单与调账能力标记。
+   - `AdminStatsService::adjustUserPoints` 改为事务化返回余额变化、流水ID，并在提交后触发积分变动通知。
+2. **站点内容后台分页**
+   - `SiteContent::getContentList` 新增 `current/pageSize` 分页参数与 `total` 返回，避免内容项增多时全量拉取。
+3. **独立知识库后台落地**
+   - 新增 `backend/app/controller/admin/Knowledge.php`，把知识库文章/分类接口从大控制器中独立出来。
+   - 新增 `database/20260317_create_knowledge_tables.sql`，提供 `tc_article` / `tc_article_category` 表结构与默认分类种子。
+4. **控制器模块化迁移推进**
+   - `backend/route/admin.php` 已将知识库路由全部切换到 `admin.Knowledge/*`，减少 `Admin.php` 的职责扩散。
+5. **推送集成可落库**
+   - 新增 `database/20260317_create_notification_tables.sql` 与 `20260317_add_points_record_compat_fields.sql`，补齐通知/设备/设置表及积分流水兼容字段。
+   - `PushService` 增加 provider 别名归一化，兼容 JPush/FCM/Webhook 配置写法。
+
+### 验证摘要
+- 已对本轮修改的 PHP/路由文件执行 IDE 诊断检查：0 条问题。
+- 已执行 `git diff --check`（仅限本轮修改文件）：通过。
+- 当前环境未找到可用 `php` CLI，暂未执行 `php -l`。
+
+---
+
+
+
 ## 2026-03-17 20:15 收尾核对记录（本次）
 
 ### 本次核对结论

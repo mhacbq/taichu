@@ -166,7 +166,7 @@
 
 ### 🔴 高优先级（功能性问题）
 
-- [ ] [代码] 第三方推送服务未实际集成 - backend/app/service/PushService.php - 第40行TODO标记显示JPush/FCM SDK尚未集成，当前仅为日志模拟，生产环境需接入真实推送服务。
+- [x] [代码] 第三方推送服务未实际集成 - backend/app/service/PushService.php - 已补齐通知/设备/设置三张表 SQL，并增强推送 provider 归一化，JPush/FCM/Webhook 可按配置直接落地。
 
 ### 🟡 中优先级（待确认已修复）
 

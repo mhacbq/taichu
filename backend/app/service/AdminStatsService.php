@@ -12,6 +12,7 @@ use think\facade\Log;
  */
 class AdminStatsService
 {
+    protected static array $tableColumnCache = [];
     /**
      * 获取Dashboard统计数据
      * 
@@ -427,52 +428,157 @@ class AdminStatsService
     /**
      * 调整用户积分
      */
-    public static function adjustUserPoints(int $userId, int $points, string $reason, int $adminId): bool
+    public static function adjustUserPoints(int $userId, int $points, string $reason, int $adminId): array
     {
-        $user = Db::table('tc_user')->where('id', $userId)->find();
-        if (!$user) {
-            throw new \Exception('用户不存在');
-        }
-        
-        $newPoints = $user['points'] + $points;
-        if ($newPoints < 0) {
-            throw new \Exception('积分不足');
-        }
-        
+        $reason = trim($reason) !== '' ? trim($reason) : '管理员调整';
+
         Db::startTrans();
         try {
-            // 更新用户积分
+            $user = Db::table('tc_user')
+                ->where('id', $userId)
+                ->lock(true)
+                ->find();
+
+            if (!$user) {
+                throw new \Exception('用户不存在');
+            }
+
+            $beforePoints = (int) ($user['points'] ?? 0);
+            $afterPoints = $beforePoints + $points;
+            if ($afterPoints < 0) {
+                throw new \Exception('积分不足');
+            }
+
             Db::table('tc_user')
                 ->where('id', $userId)
-                ->update(['points' => $newPoints]);
-            
-            // 记录积分变动
-            Db::table('tc_points_record')->insert([
-                'user_id' => $userId,
-                'action' => $points > 0 ? '管理员增加' : '管理员扣除',
-                'points' => abs($points),
-                'type' => $points > 0 ? 'income' : 'consume',
-                'description' => $reason,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-            
-            // 记录管理员操作日志
-            Db::table('tc_admin_log')->insert([
+                ->update(['points' => $afterPoints]);
+
+            $recordId = self::insertPointsRecordCompat(
+                $userId,
+                $points,
+                $beforePoints,
+                $afterPoints,
+                $reason,
+                $adminId
+            );
+
+            AdminLog::record([
                 'admin_id' => $adminId,
                 'action' => 'adjust_points',
+                'module' => 'points',
                 'target_type' => 'user',
                 'target_id' => $userId,
-                'content' => "调整用户积分: {$points}, 原因: {$reason}",
-                'created_at' => date('Y-m-d H:i:s'),
+                'detail' => "调整用户积分：{$points}，原因：{$reason}",
+                'before_data' => ['points' => $beforePoints],
+                'after_data' => ['points' => $afterPoints],
+                'status' => 1,
             ]);
-            
+
             Db::commit();
-            return true;
-        } catch (\Exception $e) {
+
+            $notificationSent = false;
+            try {
+                $notificationSent = \app\controller\Notification::sendPointsChangeNotification($userId, $points, $reason);
+            } catch (\Throwable $notifyException) {
+                Log::warning('积分调整通知发送失败', [
+                    'user_id' => $userId,
+                    'admin_id' => $adminId,
+                    'error' => $notifyException->getMessage(),
+                ]);
+            }
+
+            return [
+                'user_id' => $userId,
+                'before_points' => $beforePoints,
+                'after_points' => $afterPoints,
+                'change_points' => $points,
+                'reason' => $reason,
+                'record_id' => $recordId,
+                'notification_sent' => $notificationSent,
+            ];
+        } catch (\Throwable $e) {
             Db::rollback();
             throw $e;
         }
     }
+
+    /**
+     * 兼容不同积分记录表结构写入积分变动
+     */
+    protected static function insertPointsRecordCompat(
+        int $userId,
+        int $points,
+        int $beforePoints,
+        int $afterPoints,
+        string $reason,
+        int $adminId
+    ): int {
+        $columns = self::getTableColumns('tc_points_record');
+        $isIncrease = $points >= 0;
+        $payload = [
+            'user_id' => $userId,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if (isset($columns['action'])) {
+            $payload['action'] = $isIncrease ? '管理员增加' : '管理员扣除';
+        }
+        if (isset($columns['points'])) {
+            $payload['points'] = $points;
+        }
+        if (isset($columns['type'])) {
+            $payload['type'] = $isIncrease ? 'income' : 'consume';
+        }
+        if (isset($columns['related_id'])) {
+            $payload['related_id'] = $adminId;
+        }
+        if (isset($columns['remark'])) {
+            $payload['remark'] = $reason;
+        }
+        if (isset($columns['description'])) {
+            $payload['description'] = $reason;
+        }
+        if (isset($columns['amount'])) {
+            $payload['amount'] = abs($points);
+        }
+        if (isset($columns['balance'])) {
+            $payload['balance'] = $afterPoints;
+        }
+        if (isset($columns['reason'])) {
+            $payload['reason'] = $reason;
+        }
+        if (isset($columns['source_id'])) {
+            $payload['source_id'] = $adminId;
+        }
+        if (isset($columns['source_type'])) {
+            $payload['source_type'] = 'admin_adjust';
+        }
+
+        return (int) Db::table('tc_points_record')->insertGetId($payload);
+    }
+
+    /**
+     * 获取表字段缓存
+     */
+    protected static function getTableColumns(string $table): array
+    {
+        if (isset(self::$tableColumnCache[$table])) {
+            return self::$tableColumnCache[$table];
+        }
+
+        $columns = [];
+        foreach (Db::query('SHOW COLUMNS FROM `' . $table . '`') as $column) {
+            $field = (string) ($column['Field'] ?? '');
+            if ($field !== '') {
+                $columns[$field] = true;
+            }
+        }
+
+        self::$tableColumnCache[$table] = $columns;
+
+        return $columns;
+    }
+
 
     /**
      * 获取订单列表

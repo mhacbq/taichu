@@ -52,24 +52,42 @@ class User extends BaseController
                 return $this->error('用户不存在', 404);
             }
 
+            $pointsRecords = \app\model\PointsRecord::where('user_id', $id)
+                ->order('created_at', 'desc')
+                ->limit(20)
+                ->select()
+                ->toArray();
+
             $stats = [
                 'bazi_count' => \app\model\BaziRecord::where('user_id', $id)->count(),
                 'tarot_count' => \app\model\TarotRecord::where('user_id', $id)->count(),
                 'liuyao_count' => \think\facade\Db::table('tc_liuyao_record')->where('user_id', $id)->count(),
-                'points_records' => \app\model\PointsRecord::where('user_id', $id)
-                    ->order('created_at', 'desc')
-                    ->limit(10)
-                    ->select(),
-                'orders' => \think\facade\Db::table('tc_vip_order')
+                'points_records' => $pointsRecords,
+                'vip_orders' => \think\facade\Db::table('tc_vip_order')
                     ->where('user_id', $id)
                     ->order('created_at', 'desc')
                     ->limit(10)
-                    ->select(),
+                    ->select()
+                    ->toArray(),
+                'recharge_orders' => \think\facade\Db::table('tc_recharge_order')
+                    ->where('user_id', $id)
+                    ->order('created_at', 'desc')
+                    ->limit(10)
+                    ->select()
+                    ->toArray(),
+                'points_summary' => [
+                    'current_balance' => (int) ($user->points ?? 0),
+                    'total_adjust_records' => count($pointsRecords),
+                    'can_adjust' => $this->hasAdminPermission('points_adjust'),
+                ],
             ];
 
             return $this->success([
                 'user' => $user,
                 'stats' => $stats,
+                'actions' => [
+                    'can_adjust_points' => $this->hasAdminPermission('points_adjust'),
+                ],
             ]);
         } catch (\Throwable $e) {
             Log::error('后台获取用户详情失败', [
@@ -81,6 +99,7 @@ class User extends BaseController
         }
     }
 
+
     /**
      * 调整用户积分
      */
@@ -90,32 +109,38 @@ class User extends BaseController
             return $this->error('无权限调整用户积分', 403);
         }
 
+        $data = $this->request->post();
+
         try {
-            $data = $this->request->post();
             $userId = filter_var($data['user_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-            if ($userId === false || !isset($data['points']) || !is_numeric($data['points'])) {
-                return $this->error('参数错误');
+            $points = filter_var($data['points'] ?? null, FILTER_VALIDATE_INT);
+            if ($userId === false || $points === false) {
+                return $this->error('用户ID和积分调整值必须为整数', 400);
+            }
+            if ($points === 0) {
+                return $this->error('积分调整值不能为 0', 400);
             }
 
-            $reason = trim((string) ($data['reason'] ?? '管理员调整')) ?: '管理员调整';
-
-            AdminStatsService::adjustUserPoints(
+            $reason = mb_substr(trim((string) ($data['reason'] ?? '管理员调整')) ?: '管理员调整', 0, 255);
+            $result = AdminStatsService::adjustUserPoints(
                 (int) $userId,
-                (int) $data['points'],
+                (int) $points,
                 $reason,
                 $this->getAdminId()
             );
 
-            return $this->success([], '积分调整成功');
+            return $this->success($result, '积分调整成功');
         } catch (\Throwable $e) {
             Log::error('后台调整用户积分失败', [
                 'admin_id' => $this->getAdminId(),
                 'user_id' => $data['user_id'] ?? null,
+                'points' => $data['points'] ?? null,
                 'error' => $e->getMessage(),
             ]);
-            return $this->error('调整积分失败，请稍后重试', 500);
+            return $this->error(in_array($e->getMessage(), ['用户不存在', '积分不足'], true) ? $e->getMessage() : '调整积分失败，请稍后重试', in_array($e->getMessage(), ['用户不存在'], true) ? 404 : (in_array($e->getMessage(), ['积分不足'], true) ? 400 : 500));
         }
     }
+
 
     /**
      * 禁用/启用用户
