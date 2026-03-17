@@ -674,11 +674,16 @@ class BaziCalculationService
         elseif ($totalScore >= 35) $status = '中和偏弱';
         else $status = '身弱';
         
+        $favoriteWuxing = in_array($status, ['身旺', '中和偏旺'], true)
+            ? $relations[$dmWx]['opposing']
+            : $relations[$dmWx]['supporting'];
+
         return [
             'score' => round($totalScore, 1),
             'status' => $status,
-            'favorite_wuxing' => $totalScore >= 50 ? $relations[$dmWx]['opposing'] : $relations[$dmWx]['supporting'],
+            'favorite_wuxing' => $favoriteWuxing,
             'details' => [
+
                 'gan_support_score' => round($ganScore, 1),
                 'branch_support_score' => round($branchScore, 1),
                 'interaction_score' => round($interaction['score'], 1),

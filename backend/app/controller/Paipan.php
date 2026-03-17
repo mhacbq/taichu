@@ -857,7 +857,7 @@ class Paipan extends BaseController
      * 计算大运
      * 大运根据月柱推算，阳男阴女顺排，阴男阳女逆排
      */
-    protected function calculateDaYun(array $bazi, string $gender, string $birthDate): array
+    public function calculateDaYun(array $bazi, string $gender, string $birthDate): array
     {
         $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
         $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
@@ -899,6 +899,10 @@ class Paipan extends BaseController
             // 计算十神
             $dayGan = $bazi['day']['gan'];
             $shiShen = $this->calculateShiShen($dayGan, $gan);
+            $ageStart = $startAge + $i * 10;
+            $ageEnd = $startAge + ($i + 1) * 10 - 1;
+            $startYear = $birthYear + $ageStart;
+            $endYear = $birthYear + $ageEnd;
             
             $daYun[] = [
                 'gan' => $gan,
@@ -906,15 +910,20 @@ class Paipan extends BaseController
                 'gan_wuxing' => $this->ganWuXing[$gan],
                 'zhi_wuxing' => $this->zhiWuXing[$zhi],
                 'shishen' => $shiShen,
-                'age_start' => $startAge + $i * 10,
-                'age_end' => $startAge + ($i + 1) * 10 - 1,
-                'years' => ($birthYear + $startAge + $i * 10) . '-' . ($birthYear + $startAge + ($i + 1) * 10 - 1),
+                'age_start' => $ageStart,
+                'age_end' => $ageEnd,
+                'start_age' => $ageStart,
+                'end_age' => $ageEnd,
+                'start_year' => $startYear,
+                'end_year' => $endYear,
+                'years' => $startYear . '-' . $endYear,
                 'nayin' => $this->naYin[$gan . $zhi] ?? ''
             ];
         }
         
         return $daYun;
     }
+
     
     /**
      * 计算起运年龄

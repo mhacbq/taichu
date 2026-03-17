@@ -13,7 +13,10 @@ use think\facade\Log;
 
 class Daily extends BaseController
 {
-    protected $middleware = [\app\middleware\Auth::class];
+    protected $middleware = [
+        \app\middleware\Auth::class => ['only' => ['luck', 'checkin', 'checkinStatus']],
+    ];
+
     
     // 签到奖励积分
     const CHECKIN_POINTS = 5;

@@ -443,23 +443,53 @@ class BaziInterpretationService
             $status = $isStrong ? '身强' : '身弱';
         }
 
+        $favoriteCandidates = array_values(array_filter(
+            $strength['favorite_wuxing'] ?? [],
+            static fn($item) => is_string($item) && $item !== ''
+        ));
+
+        if (empty($favoriteCandidates)) {
+            $favoriteCandidates = $isStrong
+                ? [$relations['被克'], $relations['克'], $relations['生']]
+                : [$relations['被生'], $dayMasterWuxing];
+        }
+
+        $favoriteCandidates = array_values(array_unique($favoriteCandidates));
+        $normalizedStats = $this->normalizeWuxingStats($wuxingStats);
+        usort($favoriteCandidates, function (string $left, string $right) use ($normalizedStats, $favoriteCandidates): int {
+            $leftValue = (float) ($normalizedStats[$left] ?? 0);
+            $rightValue = (float) ($normalizedStats[$right] ?? 0);
+            if (abs($leftValue - $rightValue) < 0.0001) {
+                return array_search($left, $favoriteCandidates, true) <=> array_search($right, $favoriteCandidates, true);
+            }
+
+            return $leftValue <=> $rightValue;
+        });
+
+        $primary = $favoriteCandidates[0] ?? $dayMasterWuxing;
+        $secondary = $favoriteCandidates[1] ?? $primary;
+        $favoriteText = implode('、', $favoriteCandidates);
+
         if ($isStrong) {
             $yongshen = [
-                'shen' => $relations['克'],
-                'xi' => $relations['生'],
+                'shen' => $primary,
+                'xi' => $secondary,
                 'type' => '身强',
                 'score' => $score,
-                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。身强宜取我克之{$relations['克']}与我生之{$relations['生']}来疏泄制衡。",
+                'favorable_elements' => $favoriteCandidates,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。依身强取克、泄、耗的常法，应以{$favoriteText}来疏泄制衡，其中当前更急需先借{$primary}发力。",
             ];
         } else {
             $yongshen = [
-                'shen' => $relations['被生'],
-                'xi' => $dayMasterWuxing,
+                'shen' => $primary,
+                'xi' => $secondary,
                 'type' => '身弱',
                 'score' => $score,
-                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。身弱宜取生我之{$relations['被生']}与比助之{$dayMasterWuxing}来扶身。",
+                'favorable_elements' => $favoriteCandidates,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。依身弱取生扶比助的常法，应以{$favoriteText}来扶身培元，其中当前更急需先补{$primary}。",
             ];
         }
+
 
         if (!empty($interactionNotes)) {
             $yongshen['desc'] .= '地支作用要点：' . implode('；', array_slice($interactionNotes, 0, 3)) . '。';

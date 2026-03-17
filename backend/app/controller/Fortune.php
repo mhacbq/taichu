@@ -221,11 +221,12 @@ class Fortune extends BaseController
             ],
         ];
         
-        // 重新计算大运
-        $paipanController = new \app\controller\Paipan();
+        // 重新计算大运（沿用排盘控制器的同源算法与节气口径）
+        $paipanController = new \app\controller\Paipan($this->app);
         $dayuns = $paipanController->calculateDaYun($bazi, $record->gender, $record->birth_date);
         
         if (!isset($dayuns[$dayunIndex])) {
+
             return $this->error('大运索引无效', 400);
         }
         
@@ -289,11 +290,12 @@ class Fortune extends BaseController
             ],
         ];
         
-        // 重新计算大运
-        $paipanController = new \app\controller\Paipan();
+        // 重新计算大运（沿用排盘控制器的同源算法与节气口径）
+        $paipanController = new \app\controller\Paipan($this->app);
         $dayuns = $paipanController->calculateDaYun($bazi, $record->gender, $record->birth_date);
         
         try {
+
             $result = $this->dayunService->getDayunChartData($dayuns, $bazi, $user['sub']);
             
             return $this->success($result);

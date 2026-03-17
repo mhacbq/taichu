@@ -5,7 +5,9 @@ namespace app\service;
 
 use app\model\PointsRecord;
 use think\facade\Config;
+use think\facade\Db;
 use think\facade\Log;
+
 
 /**
  * 流年运势分析服务
@@ -82,11 +84,14 @@ class YearlyFortuneService
             throw $e;
         }
         
+        $userModel->points = max(0, (int) $userModel->points - self::YEARLY_FORTUNE_POINTS_COST);
+
         // 调用AI分析
         $analysis = $this->callAiForYearlyFortune($bazi, $gender, $year);
         
         // 计算运势评分
         $score = $this->calculateYearlyScore($bazi, $year);
+
         
         // 构建结果
         $result = [

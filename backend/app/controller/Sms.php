@@ -79,7 +79,10 @@ class Sms extends BaseController
             return $this->success([
                 'expire' => $result['expire'] ?? 300,
                 'wait' => $result['wait'] ?? 60,
+                'test_mode' => (bool) ($result['test_mode'] ?? false),
+                'test_code' => $result['test_code'] ?? null,
             ], '验证码已发送');
+
         }
         
         // 记录失败次数

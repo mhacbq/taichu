@@ -33,6 +33,25 @@ class SmsService
         if ($todayCount >= 10) {
             return ['success' => false, 'message' => '今日发送次数已达上限，请明天再试'];
         }
+
+        $isLocalTestMode = env('APP_DEBUG', false) || env('SMS_TEST_MODE', false);
+        $testCode = (string) env('SMS_TEST_CODE', '123456');
+        if ($isLocalTestMode) {
+            SmsCode::createCode($phone, $type, $ip, 5);
+            Log::info('短信测试模式验证码已生成', [
+                'phone' => self::maskPhone($phone),
+                'type' => $type,
+                'mode' => 'local_test',
+            ]);
+
+            return [
+                'success' => true,
+                'message' => '测试模式验证码已生成',
+                'expire' => 300,
+                'test_mode' => true,
+                'test_code' => $testCode,
+            ];
+        }
         
         // 获取短信配置
         $config = SmsConfig::getTencentConfig();
@@ -42,6 +61,7 @@ class SmsService
         
         // 生成验证码
         $code = SmsCode::createCode($phone, $type, $ip, 5);
+
         
         // 发送短信
         $result = self::sendTencentSms($phone, $code, $config, $type);

@@ -11,9 +11,11 @@ use app\service\BaziCalculationService;
 use app\service\ConfigService;
 use app\service\DeepSeekService;
 use app\service\LiuyaoService;
+use app\service\SchemaInspector;
 use think\Request;
 use think\facade\Db;
 use think\facade\Log;
+
 
 /**
  * 六爻占卜控制器
@@ -25,6 +27,9 @@ class Liuyao extends BaseController
     private const LIUYAO_POINTS_COST = 15;
     private const VALID_GAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
     private const VALID_ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+    private static ?string $liuyaoRecordTable = null;
+
     /**
      * 获取六爻占卜定价
      */
@@ -123,11 +128,12 @@ class Liuyao extends BaseController
         try {
             $userModel = $this->getCurrentUserModel();
             $pagination = $this->getPaginationParams('page', 'page_size', 20, 100);
-            $query = Db::table('tc_liuyao_record')
-                ->where('status', 1)
-                ->where('user_id', (int) $userModel->id);
+            $query = $this->applyRecordActiveFilter(
+                Db::table($this->resolveLiuyaoRecordTable())
+            )->where('user_id', (int) $userModel->id);
 
             $total = (clone $query)->count();
+
             $records = (clone $query)
                 ->order('created_at', 'desc')
                 ->page($pagination['page'], $pagination['pageSize'])
@@ -169,14 +175,23 @@ class Liuyao extends BaseController
     {
         try {
             $record = $this->findOwnedRecord((int) $this->request->post('id', 0));
-            Db::table('tc_liuyao_record')
-                ->where('id', (int) $record['id'])
-                ->update([
-                    'status' => 0,
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ]);
+            $table = $this->resolveLiuyaoRecordTable();
+
+            if ($table === 'tc_liuyao_record') {
+                Db::table($table)
+                    ->where('id', (int) $record['id'])
+                    ->update([
+                        'status' => 0,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+            } else {
+                Db::table($table)
+                    ->where('id', (int) $record['id'])
+                    ->delete();
+            }
 
             return $this->success(null, '删除成功');
+
         } catch (\InvalidArgumentException $e) {
             return $this->respondBusinessException($e, '删除六爻记录', '记录不存在', 404);
         } catch (\Throwable $e) {
@@ -263,26 +278,27 @@ class Liuyao extends BaseController
     {
         // 验证卦名格式，只允许中文字符
         $pattern = '/^[\x{4e00}-\x{9fa5}]+$/u';
-        if (!preg_match($pattern, $mainGua) || !preg_match($pattern, $bianGua)) {
-            return [
-                'main' => null,
-                'bian' => null,
-            ];
+        $mainInfo = null;
+        $bianInfo = null;
+
+        if ($mainGua !== '' && preg_match($pattern, $mainGua)) {
+            $mainInfo = \think\facade\Db::table('gua_data')
+                ->where('gua_name', $mainGua)
+                ->find();
         }
-        
-        $mainInfo = \think\facade\Db::table('gua_data')
-            ->where('gua_name', $mainGua)
-            ->find();
-        
-        $bianInfo = \think\facade\Db::table('gua_data')
-            ->where('gua_name', $bianGua)
-            ->find();
+
+        if ($bianGua !== '' && preg_match($pattern, $bianGua)) {
+            $bianInfo = \think\facade\Db::table('gua_data')
+                ->where('gua_name', $bianGua)
+                ->find();
+        }
         
         return [
             'main' => $mainInfo,
             'bian' => $bianInfo,
         ];
     }
+
     
 
     /**
@@ -305,13 +321,22 @@ class Liuyao extends BaseController
             
             // 更新记录
             if (!empty($data['record_id'])) {
-                \think\facade\Db::table('tc_liuyao_record')
-                    ->where('id', $data['record_id'])
-                    ->update([
+                $table = $this->resolveLiuyaoRecordTable();
+                $updateData = $table === 'tc_liuyao_record'
+                    ? [
                         'ai_interpretation' => $interpretation,
                         'updated_at' => date('Y-m-d H:i:s'),
-                    ]);
+                    ]
+                    : [
+                        'ai_analysis' => $interpretation,
+                        'is_ai_analysis' => 1,
+                    ];
+
+                \think\facade\Db::table($table)
+                    ->where('id', $data['record_id'])
+                    ->update($updateData);
             }
+
             
             return $this->success(['interpretation' => $interpretation]);
         } catch (\Exception $e) {
@@ -376,8 +401,10 @@ PROMPT;
             $pageSize = $pagination['pageSize'];
             $userId = $this->request->get('user_id');
 
-            $query = \think\facade\Db::table('tc_liuyao_record')
-                ->where('status', 1);
+            $query = $this->applyRecordActiveFilter(
+                \think\facade\Db::table($this->resolveLiuyaoRecordTable())
+            );
+
 
             if ($userId) {
                 $query->where('user_id', $userId);
@@ -407,10 +434,12 @@ PROMPT;
     public function recordDetail(int $id)
     {
         try {
-            $record = \think\facade\Db::table('tc_liuyao_record')
+            $record = $this->applyRecordActiveFilter(
+                \think\facade\Db::table($this->resolveLiuyaoRecordTable())
+            )
                 ->where('id', $id)
-                ->where('status', 1)
                 ->find();
+
             
             if (!$record) {
                 return $this->error('记录不存在', 404);
@@ -656,10 +685,12 @@ PROMPT;
      */
     private function resolvePricing(User $userModel): array
     {
-        $recordCount = (int) Db::table('tc_liuyao_record')
+        $recordCount = (int) $this->applyRecordActiveFilter(
+            Db::table($this->resolveLiuyaoRecordTable())
+        )
             ->where('user_id', (int) $userModel->id)
-            ->where('status', 1)
             ->count();
+
 
         $isFirstFree = $recordCount === 0;
         $isVipFree = !$isFirstFree && !empty($userModel->is_vip);
@@ -767,34 +798,55 @@ PROMPT;
      */
     private function storeDivinationRecord(array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): int
     {
-        $recordData = [
-            'user_id' => (int) ($data['user_id'] ?? 0),
-            'question' => $data['question'] ?? '',
-            'question_type' => $this->getQuestionTypeCode($data['question_type'] ?? '其他'),
-            'method' => $this->getMethodCode($data['method'] ?? 'time'),
-            'input_number' => !empty($data['numbers']) ? implode(',', (array) $data['numbers']) : '',
-            'yao_result' => json_encode($coreResult['yao_result'], JSON_UNESCAPED_UNICODE),
-            'yao_code' => $coreResult['yao_code'],
-            'main_gua_name' => $coreResult['main_gua'],
-            'main_gua_code' => $coreResult['clean_gua_code'] ?? '',
-            'bian_gua_name' => $coreResult['bian_gua']['bian_name'] ?? '',
-            'bian_gua_code' => $coreResult['bian_gua']['bian_code'] ?? '',
-            'hu_gua_name' => $coreResult['hu_gua']['hu_name'] ?? '',
-            'hu_gua_code' => $coreResult['hu_gua']['hu_code'] ?? '',
-            'liuqin' => json_encode($coreResult['liuqin'] ?? [], JSON_UNESCAPED_UNICODE),
-            'liushen' => json_encode($coreResult['liu_shen'] ?? [], JSON_UNESCAPED_UNICODE),
-            'yongshen' => $coreResult['yong_shen']['liuqin'] ?? '',
-            'liunian' => $coreResult['time_info']['ri_zhi'] ?? '',
-            'yuejian' => implode('、', (array) ($coreResult['time_info']['xunkong'] ?? [])),
-            'rigan' => ($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''),
-            'interpretation' => $interpretation,
-            'ai_interpretation' => $aiContent ?? '',
-            'updated_at' => date('Y-m-d H:i:s'),
-            'created_at' => date('Y-m-d H:i:s'),
-        ];
+        $table = $this->resolveLiuyaoRecordTable();
+        $createdAt = date('Y-m-d H:i:s');
 
-        return (int) Db::table('tc_liuyao_record')->insertGetId($recordData);
+        if ($table === 'liuyao_records') {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => $data['question'] ?? '',
+                'yao_result' => $coreResult['yao_code'] ?? json_encode($coreResult['yao_result'], JSON_UNESCAPED_UNICODE),
+                'gua_code' => substr((string) ($coreResult['clean_gua_code'] ?? ''), 0, 2),
+                'gua_name' => $coreResult['main_gua'] ?? '',
+                'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
+                'yao_ci' => '',
+                'interpretation' => $interpretation,
+                'ai_analysis' => $aiContent ?? '',
+                'is_ai_analysis' => $aiContent ? 1 : 0,
+                'consumed_points' => $pointsCost,
+                'created_at' => $createdAt,
+            ];
+        } else {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => $data['question'] ?? '',
+                'question_type' => $this->getQuestionTypeCode($data['question_type'] ?? '其他'),
+                'method' => $this->getMethodCode($data['method'] ?? 'time'),
+                'input_number' => !empty($data['numbers']) ? implode(',', (array) $data['numbers']) : '',
+                'yao_result' => json_encode($coreResult['yao_result'], JSON_UNESCAPED_UNICODE),
+                'yao_code' => $coreResult['yao_code'],
+                'main_gua_name' => $coreResult['main_gua'],
+                'main_gua_code' => $coreResult['clean_gua_code'] ?? '',
+                'bian_gua_name' => $coreResult['bian_gua']['bian_name'] ?? '',
+                'bian_gua_code' => $coreResult['bian_gua']['bian_code'] ?? '',
+                'hu_gua_name' => $coreResult['hu_gua']['hu_name'] ?? '',
+                'hu_gua_code' => $coreResult['hu_gua']['hu_code'] ?? '',
+                'liuqin' => json_encode($coreResult['liuqin'] ?? [], JSON_UNESCAPED_UNICODE),
+                'liushen' => json_encode($coreResult['liu_shen'] ?? [], JSON_UNESCAPED_UNICODE),
+                'yongshen' => $coreResult['yong_shen']['liuqin'] ?? '',
+                'liunian' => $coreResult['time_info']['ri_zhi'] ?? '',
+                'yuejian' => implode('、', (array) ($coreResult['time_info']['xunkong'] ?? [])),
+                'rigan' => ($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''),
+                'interpretation' => $interpretation,
+                'ai_interpretation' => $aiContent ?? '',
+                'updated_at' => $createdAt,
+                'created_at' => $createdAt,
+            ];
+        }
+
+        return (int) Db::table($table)->insertGetId($recordData);
     }
+
 
     /**
      * 兼容旧 saveRecord 调用
@@ -815,26 +867,32 @@ PROMPT;
      */
     private function formatRecordForFrontend(array $record): array
     {
+        $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? '');
+        $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? '');
+        $bianGuaName = (string) ($record['bian_gua_name'] ?? '');
         $yaoResult = $this->normalizeYaoResult($record['yao_result'] ?? '', (string) ($record['yao_code'] ?? ''));
-        $guaInfo = $this->getGuaInfo((string) ($record['main_gua_name'] ?? ''), (string) ($record['bian_gua_name'] ?? ''));
+        $guaInfo = $this->getGuaInfo($mainGuaName, $bianGuaName);
+        $method = $this->resolveMethodByCode((int) ($record['method'] ?? 1));
+        $aiContent = (string) ($record['ai_interpretation'] ?? $record['ai_analysis'] ?? '');
 
         return [
             'id' => (int) ($record['id'] ?? 0),
             'question' => (string) ($record['question'] ?? ''),
-            'method' => $this->resolveMethodByCode((int) ($record['method'] ?? 1)),
-            'method_label' => $this->getMethodLabel($this->resolveMethodByCode((int) ($record['method'] ?? 1))),
+            'method' => $method,
+            'method_label' => $this->getMethodLabel($method),
             'yao_result' => $yaoResult,
             'yao_names' => array_map(fn(int $item) => $this->getYaoName($item), $yaoResult),
-            'gua_name' => (string) ($record['main_gua_name'] ?? ''),
-            'gua_code' => (string) ($record['main_gua_code'] ?? ''),
-            'gua_ci' => (string) ($guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? ''),
+            'gua_name' => $mainGuaName,
+            'gua_code' => $mainGuaCode,
+            'gua_ci' => (string) ($record['gua_ci'] ?? $guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? ''),
             'interpretation' => (string) ($record['interpretation'] ?? ''),
-            'ai_analysis' => !empty($record['ai_interpretation']) ? ['content' => (string) $record['ai_interpretation']] : null,
-            'consumed_points' => 0,
+            'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
+            'consumed_points' => (int) ($record['consumed_points'] ?? 0),
             'created_at' => (string) ($record['created_at'] ?? ''),
             'fushen' => null,
         ];
     }
+
 
     /**
      * 伏神展示结构
@@ -861,8 +919,41 @@ PROMPT;
     }
 
     /**
+     * 解析当前环境可用的六爻记录表。
+     */
+    private function resolveLiuyaoRecordTable(): string
+    {
+        if (self::$liuyaoRecordTable !== null) {
+            return self::$liuyaoRecordTable;
+        }
+
+        foreach (['tc_liuyao_record', 'liuyao_records'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                self::$liuyaoRecordTable = $table;
+                return $table;
+            }
+        }
+
+        self::$liuyaoRecordTable = 'tc_liuyao_record';
+        return self::$liuyaoRecordTable;
+    }
+
+    /**
+     * 仅在新表结构下追加 status=1 过滤。
+     */
+    private function applyRecordActiveFilter($query)
+    {
+        if ($this->resolveLiuyaoRecordTable() === 'tc_liuyao_record') {
+            $query->where('status', 1);
+        }
+
+        return $query;
+    }
+
+    /**
      * 根据代码反解起卦方式
      */
+
     private function resolveMethodByCode(int $methodCode): string
     {
         return [1 => 'time', 2 => 'number', 3 => 'manual'][$methodCode] ?? 'time';
@@ -878,10 +969,11 @@ PROMPT;
         }
 
         $userModel = $this->getCurrentUserModel();
-        $record = Db::table('tc_liuyao_record')
+        $record = $this->applyRecordActiveFilter(
+            Db::table($this->resolveLiuyaoRecordTable())
+        )
             ->where('id', $id)
             ->where('user_id', (int) $userModel->id)
-            ->where('status', 1)
             ->find();
 
         if (!$record) {
@@ -890,6 +982,7 @@ PROMPT;
 
         return $record;
     }
+
 
     /**
      * 转换问事类型为代码

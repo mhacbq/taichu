@@ -127,9 +127,15 @@ const sendCode = async () => {
   try {
     const response = await sendSmsCode({ phone: phoneForm.value.phone })
     if (response.code === 200) {
-      ElMessage.success('验证码已发送')
+      const testCode = response.data?.test_code
+      if (testCode) {
+        ElMessage.success(`测试模式验证码：${testCode}`)
+      } else {
+        ElMessage.success('验证码已发送')
+      }
       startCountdown()
     } else {
+
       ElMessage.error(response.message || '发送失败')
     }
   } catch (error) {
