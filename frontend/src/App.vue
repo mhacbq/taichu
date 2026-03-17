@@ -517,13 +517,16 @@ onMounted(() => {
   top: 0;
   right: -100%;
   width: 80%;
-  max-width: 320px;
+  max-width: 300px;
   height: 100vh;
-  background: var(--bg-secondary);
+  background: rgba(10, 10, 26, 0.98);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   z-index: 1001;
   flex-direction: column;
-  transition: right 0.3s ease;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -15px 0 50px rgba(0, 0, 0, 0.7);
+  border-left: 1px solid rgba(184, 134, 11, 0.2);
 }
 
 .mobile-nav.active {
@@ -534,107 +537,111 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 30px 24px;
   border-bottom: 1px solid var(--border-light);
 }
 
 .mobile-nav-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 2px;
 }
 
 .mobile-nav-close {
-  background: none;
+  background: rgba(255, 255, 255, 0.05);
   border: none;
-  font-size: 20px;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 12px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 50%;
   transition: all 0.3s ease;
 }
 
 .mobile-nav-close:hover {
-  background: var(--bg-tertiary);
+  background: var(--primary-light-20);
   color: var(--text-primary);
+  transform: rotate(90deg);
 }
 
 .mobile-nav-links {
   flex: 1;
-  padding: 10px 0;
+  padding: 20px 0;
   overflow-y: auto;
 }
 
 .mobile-nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 16px 20px;
-  font-size: 15px;
+  padding: 16px 30px;
+  font-size: 16px;
   font-weight: 500;
   transition: all 0.3s ease;
-  border-left: 3px solid transparent;
+  border-left: 4px solid transparent;
 }
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
-  color: var(--primary-color);
-  background: rgba(184, 134, 11, 0.08);
+  color: var(--text-primary);
+  background: linear-gradient(90deg, rgba(184, 134, 11, 0.2), transparent);
   border-left-color: var(--primary-color);
+  padding-left: 36px;
 }
 
 .nav-icon {
   font-size: 20px;
-  width: 28px;
-  text-align: center;
+  color: var(--primary-light);
 }
 
 .mobile-nav-footer {
-  padding: 20px;
+  padding: 30px 24px;
   border-top: 1px solid var(--border-light);
-  background: var(--bg-secondary);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .mobile-user-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .mobile-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--primary-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.4);
 }
 
 .mobile-nickname {
   flex: 1;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
+  font-size: 15px;
 }
 
 .mobile-points {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(184, 134, 11, 0.15);
   padding: 6px 12px;
-  border-radius: 15px;
+  border-radius: 20px;
   color: var(--primary-color);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 .mobile-login-btn,
@@ -642,22 +649,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 25px;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 15px;
   transition: all 0.3s ease;
+  min-height: 48px;
 }
 
 .mobile-login-btn {
   background: var(--primary-gradient);
   color: var(--text-primary);
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.4);
 }
 
 .mobile-logout-btn {
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
@@ -669,10 +678,12 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 999;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.4s ease;
 }
 
 .mobile-overlay.active {

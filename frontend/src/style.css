@@ -27,6 +27,7 @@
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(184, 134, 11, 0.3), 0 0 40px rgba(184, 134, 11, 0.1);
 
   /* 统一圆角变量 */
   --radius-sm: 8px;
@@ -35,13 +36,22 @@
   --radius-xl: 20px;
   --radius-xxl: 30px;
   --radius-btn: 25px;
-  --radius-card: 16px;
+  --radius-card: 20px;
   --radius-round: 50%;
+
+  /* 字体层次 */
+  --font-main: 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800;
 
   /* 统一响应式断点 */
   --breakpoint-sm: 768px;
   --breakpoint-md: 992px;
   --breakpoint-lg: 1200px;
+
 
   /* 五行颜色 */
   --wuxing-jin: #ffd700;
@@ -88,20 +98,21 @@
 }
 
 .card-hover:hover, .card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
-  border-color: rgba(184, 134, 11, 0.4) !important;
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(184, 134, 11, 0.2);
+  border-color: rgba(212, 175, 55, 0.4) !important;
 }
 
 body {
-  font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-main);
   background: var(--bg-secondary);
   min-height: 100vh;
   color: var(--text-primary);
-  line-height: 1.6;
+  line-height: 1.8;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 
 #app {
   min-height: 100vh;
@@ -125,7 +136,7 @@ body {
   border-radius: var(--radius-btn);
   color: var(--text-primary);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
@@ -149,15 +160,16 @@ body {
   border-radius: var(--radius-btn);
   color: var(--primary-color);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
 
 .btn-secondary:hover {
-  background: var(--primary-color);
-  color: var(--text-primary);
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--primary-light);
+  border-color: var(--primary-light);
 }
 
 /* 卡片样式 - 白色风格 */
@@ -182,12 +194,12 @@ body {
 
 /* 标题样式 */
 .section-title {
-  font-size: 32px;
+  font-size: 36px;
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 56px;
   color: var(--text-primary);
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-weight: var(--weight-black);
+  letter-spacing: -1px;
 }
 
 .section-title span {
@@ -195,32 +207,38 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: inline-block;
 }
 
 .section-subtitle {
   font-size: 16px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   text-align: center;
-  margin-top: -30px;
-  margin-bottom: 40px;
+  margin-top: -44px;
+  margin-bottom: 56px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
 }
 
 /* 输入框样式 */
 .input-field {
   width: 100%;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 15px;
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text-primary);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-field:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.12);
+  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.15);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .input-field::placeholder {
@@ -231,63 +249,74 @@ body {
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
+  padding: 6px 16px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-xl);
   font-size: 13px;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--border-light);
 }
 
 .tag-primary {
-  background: rgba(184, 134, 11, 0.1);
-  color: var(--primary-color);
+  background: rgba(184, 134, 11, 0.12);
+  color: var(--primary-light);
+  border-color: rgba(184, 134, 11, 0.2);
 }
 
 /* 分隔线 */
 .divider {
   height: 1px;
-  background: var(--border-color);
-  margin: 24px 0;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: 40px 0;
 }
 
 /* 空状态 */
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 100px 40px;
   color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .empty-state-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  font-size: 72px;
+  margin-bottom: 24px;
+  color: var(--primary-light);
+  opacity: 0.8;
+  filter: drop-shadow(0 0 10px rgba(184, 134, 11, 0.3));
 }
 
 /* 太极加载动画 */
 .loading-taiji {
-  width: 50px;
-  height: 50px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   position: relative;
-  background: linear-gradient(to bottom, #fff 0%, #fff 50%, #000 50%, #000 100%);
-  animation: taiji-spin 1.5s linear infinite;
-  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
-  border: 1px solid var(--primary-color);
+  background: linear-gradient(to bottom, #F7E7C6 0%, #D4AF37 50%, #8B6914 50%, #3D2F0C 100%);
+  animation: taiji-spin 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite, taiji-glow 2s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(184, 134, 11, 0.6), inset 0 0 15px rgba(0, 0, 0, 0.4);
+  border: 2px solid var(--primary-color);
 }
+
 
 .loading-taiji.mini {
   width: 24px;
   height: 24px;
-  box-shadow: 0 0 8px rgba(184, 134, 11, 0.3);
+  box-shadow: 0 0 12px rgba(184, 134, 11, 0.4);
 }
 
 .loading-taiji::before,
 .loading-taiji::after {
   content: '';
   position: absolute;
-  width: 25px;
-  height: 25px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   left: 0;
 }
@@ -299,34 +328,40 @@ body {
 }
 
 .loading-taiji::before {
-  top: 12.5px;
-  background: #fff;
+  top: 16px;
+  background: #F7E7C6;
   z-index: 1;
-  box-shadow: inset 0 0 0 6px #000;
+  box-shadow: inset 0 0 0 10px #3D2F0C, 0 0 5px rgba(247, 231, 198, 0.5);
 }
 
 .loading-taiji.mini::before {
   top: 6px;
-  box-shadow: inset 0 0 0 3px #000;
+  box-shadow: inset 0 0 0 3px #3D2F0C;
 }
 
 .loading-taiji::after {
-  top: 12.5px;
-  left: 25px;
-  background: #000;
+  top: 16px;
+  left: 32px;
+  background: #3D2F0C;
   z-index: 1;
-  box-shadow: inset 0 0 0 6px #fff;
+  box-shadow: inset 0 0 0 10px #F7E7C6, 0 0 5px rgba(61, 47, 12, 0.5);
 }
 
 .loading-taiji.mini::after {
   top: 6px;
   left: 12px;
-  box-shadow: inset 0 0 0 3px #fff;
+  box-shadow: inset 0 0 0 3px #F7E7C6;
 }
+
 
 @keyframes taiji-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes taiji-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(184, 134, 11, 0.4); opacity: 1; transform: scale(1); }
+  50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.7); opacity: 0.95; transform: scale(1.05); }
 }
 
 /* 兼容旧的 loading-spinner 样式 */

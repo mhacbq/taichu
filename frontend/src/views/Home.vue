@@ -235,7 +235,7 @@ const testimonials = ref([
   {
     name: '小雨',
     avatar: '雨',
-    avatarColor: '#B8860B',
+    avatarColor: 'rgba(184, 134, 11, 0.2)',
     rating: 5,
     content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到我的喜用神和适合的发展方向，突然有了方向感，现在已经在准备转行了！',
     service: '八字排盘'
@@ -243,7 +243,7 @@ const testimonials = ref([
   {
     name: '阿杰',
     avatar: '杰',
-    avatarColor: '#409eff',
+    avatarColor: 'rgba(212, 175, 55, 0.2)',
     rating: 5,
     content: '感情遇到瓶颈期，塔罗给了我很大的启发。不是告诉我该怎么做，而是帮我理清了自己真正想要的是什么。现在已经和女友和好了。',
     service: '塔罗占卜'
@@ -251,7 +251,7 @@ const testimonials = ref([
   {
     name: '小陈',
     avatar: '陈',
-    avatarColor: '#67c23a',
+    avatarColor: 'rgba(103, 194, 58, 0.2)',
     rating: 5,
     content: '工作压力很大的时候，每天早上的运势推送成了我的精神支柱。有时候看到"今天适合休息"就会给自己放个假，感觉被理解了。',
     service: '每日运势'
@@ -259,7 +259,7 @@ const testimonials = ref([
   {
     name: '琳琳',
     avatar: '琳',
-    avatarColor: '#e6a23c',
+    avatarColor: 'rgba(230, 162, 60, 0.2)',
     rating: 5,
     content: '作为INFJ，常常陷入自我怀疑。八字分析让我更接纳自己的性格特点，原来我生来就是这样，不是我有问题。',
     service: '八字排盘'
@@ -267,7 +267,7 @@ const testimonials = ref([
   {
     name: '大鹏',
     avatar: '鹏',
-    avatarColor: '#909399',
+    avatarColor: 'rgba(144, 147, 153, 0.2)',
     rating: 5,
     content: '一直纠结要不要跳槽，塔罗占卜给了我很中肯的建议。现在的新工作虽然累但是很开心，很感谢当时的指引。',
     service: '塔罗占卜'
@@ -275,7 +275,7 @@ const testimonials = ref([
   {
     name: '思思',
     avatar: '思',
-    avatarColor: '#b882f0',
+    avatarColor: 'rgba(184, 130, 240, 0.2)',
     rating: 5,
     content: '第一次用的时候还半信半疑，但结果真的挺准的。尤其是大运分析，让我知道未来几年需要注意什么，心里有底多了。',
     service: '八字排盘'
@@ -512,7 +512,7 @@ onMounted(() => {
 }
 
 .welcome-btn.primary {
-  background: linear-gradient(135deg, #D4AF37, #B8860B);
+  background: var(--primary-gradient);
   color: var(--text-primary);
 }
 
@@ -537,7 +537,7 @@ onMounted(() => {
 .feature-tag {
   background: var(--bg-secondary);
   padding: 6px 12px;
-  border-radius: 15px;
+  border-radius: var(--radius-xl);
   font-size: 13px;
   color: var(--text-secondary);
   display: inline-flex;
@@ -549,7 +549,7 @@ onMounted(() => {
   font-size: 56px;
   font-weight: bold;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, var(--text-primary) 0%, #B8860B 50%, #D4AF37 100%);
+  background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -570,10 +570,18 @@ onMounted(() => {
   justify-content: center;
 }
 
+.btn-primary {
+  padding: 12px 32px;
+  min-height: 44px;
+  border-radius: var(--radius-btn);
+  font-weight: 600;
+}
+
 .btn-secondary {
   background: transparent;
   border: 2px solid var(--border-color);
   padding: 12px 32px;
+  min-height: 44px;
   border-radius: var(--radius-btn);
   color: var(--text-primary);
   font-size: 16px;
@@ -582,6 +590,7 @@ onMounted(() => {
   transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -799,13 +808,14 @@ onMounted(() => {
 .testimonial-avatar {
   width: 50px;
   height: 50px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--primary-light);
+  font-weight: bold;
+  border: 2px solid var(--primary-light-20);
 }
 
 .testimonial-info h4 {
@@ -844,7 +854,7 @@ onMounted(() => {
   background: rgba(212, 175, 55, 0.12);
   color: var(--primary-color);
   padding: 4px 12px;
-  border-radius: 15px;
+  border-radius: var(--radius-xl);
   font-size: 12px;
 }
 

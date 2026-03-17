@@ -572,75 +572,150 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  margin-bottom: 24px;
-  border: 1px solid var(--border-light);
+  padding: 40px;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+  border-radius: 20px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.gua-display::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px solid rgba(184, 134, 11, 0.1);
+  border-radius: 15px;
+  pointer-events: none;
+}
+
+/* 装饰角 */
+.gua-display::after {
+  content: '☯';
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  font-size: 100px;
+  color: rgba(184, 134, 11, 0.03);
+  transform: rotate(-15deg);
 }
 
 .gua-info {
   text-align: center;
+  z-index: 1;
 }
 
 .gua-name {
   color: var(--primary-color);
-  font-size: 28px;
-  margin-bottom: 8px;
+  font-size: 36px;
+  margin-bottom: 12px;
+  font-weight: 800;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: 4px;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .gua-code {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
 }
 
 /* 六爻图形 */
 .yao-container {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: column-reverse; /* 从下往上排 */
+  gap: 16px;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 24px 30px;
+  border-radius: 16px;
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .yao-line {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-  border-radius: 12px;
-  transition: all 0.3s;
+  gap: 20px;
+  padding: 6px 16px;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+.yao-line:hover {
+  background: rgba(184, 134, 11, 0.15);
+  transform: translateX(-5px);
+  border-color: rgba(184, 134, 11, 0.2);
 }
 
 .yao-line.moving {
-  background: var(--bg-tertiary);
+  position: relative;
+  background: rgba(184, 134, 11, 0.05);
+}
+
+.yao-line.moving::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  background: var(--primary-gradient);
+  border-radius: 4px;
+  animation: pulse-border 1s ease-in-out infinite;
+  box-shadow: 0 0 10px var(--primary-light);
+}
+
+@keyframes pulse-border {
+  0%, 100% { opacity: 0.4; height: 40%; }
+  50% { opacity: 1; height: 80%; }
 }
 
 .yao-mark {
-  width: 24px;
+  width: 36px;
   text-align: center;
-  font-size: 18px;
-  color: var(--primary-color);
-  font-weight: bold;
+  font-size: 24px;
+  color: var(--primary-light);
+  font-weight: 900;
+  filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.5));
 }
 
 .yao-bar {
-  width: 60px;
-  height: 6px;
-  border-radius: 3px;
+  width: 120px;
+  height: 12px;
+  border-radius: 6px;
   position: relative;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 .yao-line.yang .yao-bar {
-  background: var(--text-primary);
+  background: linear-gradient(90deg, #8B6914 0%, #D4AF37 20%, #F4E4C1 50%, #D4AF37 80%, #8B6914 100%);
+  border: 1px solid rgba(184, 134, 11, 0.4);
 }
 
 .yao-line.yin .yao-bar::before,
 .yao-line.yin .yao-bar::after {
   content: '';
   position: absolute;
-  width: 45%;
+  width: 44%;
   height: 100%;
-  background: var(--text-primary);
-  border-radius: 3px;
+  background: linear-gradient(90deg, #3D2F0C 0%, #8B6914 20%, #B8860B 50%, #8B6914 80%, #3D2F0C 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 .yao-line.yin .yao-bar::after {
@@ -649,9 +724,11 @@ onMounted(() => {
 
 .yao-name {
   color: var(--text-secondary);
-  font-size: 13px;
-  min-width: 50px;
+  font-size: 14px;
+  min-width: 60px;
+  font-weight: 500;
 }
+
 
 /* 卦辞 */
 .gua-ci-section {

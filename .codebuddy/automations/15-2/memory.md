@@ -1,5 +1,45 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 17:20 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **移动端按钮触摸区域优化** (高优先级)
+   - 文件: `frontend/src/style.css`, `frontend/src/views/Home.vue`
+   - 问题: 部分移动端按钮触摸区域小于 44px
+   - 修复: 为 `.btn-primary`, `.btn-secondary`, `.welcome-btn` 等按钮添加 `min-height: 44px` 并统一布局
+
+2. **深色主题文字对比度提升** (高优先级)
+   - 文件: `frontend/src/style.css`
+   - 问题: `var(--text-secondary)` 在深色背景下对比度不足
+   - 修复: 将 `--text-secondary` 的透明度从 0.7 提升至 0.85，同步微调 `--text-tertiary` 和 `--text-muted`
+
+3. **全局 CSS 变量使用统一 (圆角)** (高优先级)
+   - 文件: `frontend/src/style.css`, `frontend/src/views/Home.vue`
+   - 问题: 多处组件存在硬编码的 `border-radius`
+   - 修复: 在 `style.css` 中细化圆角变量，并将 Home.vue 中 10+ 处硬编码圆角替换为 `var(--radius-*)` 变量
+
+4. **首页统计数据视觉设计升级** (中优先级)
+   - 文件: `frontend/src/views/Home.vue`
+   - 问题: 统计数据展示方式传统，缺乏吸引力
+   - 修复: 为统计项添加图标容器，并实现 3D 旋转动画和金色渐变背景效果
+
+5. **八字排盘表单标签层次优化** (中优先级)
+   - 文件: `frontend/src/views/Bazi.vue`
+   - 问题: 表单标签、提示文字、输入框视觉层次不明
+   - 修复: 提升 Label 字重和颜色，优化 `form-hint` 间距，并为排盘模式切换增加背景引导和高亮提示
+
+### Git提交信息
+- 提交时间: 2026-03-17 17:20
+- 提交信息: fix-frontend-ui-accessibility-20260317-1720
+- 状态: 已推送至 origin master
+
+### 修复统计
+- 修复文件数: 3个
+- 修复问题数: 5个
+
+---
+
 ## 2026-03-17 16:45 执行摘要
 
 ### 本次修复的前端问题（共5个）

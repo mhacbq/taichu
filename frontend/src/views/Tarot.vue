@@ -903,9 +903,10 @@ const getCardAdvice = (card) => {
 
 .interpretation {
   background: var(--bg-secondary);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 30px;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
 }
 
 .interpretation-content {
@@ -919,7 +920,7 @@ const getCardAdvice = (card) => {
   width: 100%;
   height: 100%;
   background: var(--bg-tertiary);
-  border-radius: 15px;
+  border-radius: var(--radius-md);
   border: 2px solid rgba(184, 134, 11, 0.25);
   display: flex;
   flex-direction: column;
@@ -933,7 +934,7 @@ const getCardAdvice = (card) => {
 
 .tarot-card:hover .card-inner {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .tarot-card.reversed .card-inner {
@@ -952,7 +953,7 @@ const getCardAdvice = (card) => {
 .card-element {
   font-size: 11px;
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.1);
   margin-top: 8px;
 }
@@ -972,7 +973,7 @@ const getCardAdvice = (card) => {
   color: var(--text-primary);
   font-size: 10px;
   padding: 3px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 /* 操作按钮 */
@@ -982,6 +983,11 @@ const getCardAdvice = (card) => {
   gap: 15px;
   margin-top: 30px;
   flex-wrap: wrap;
+}
+
+.result-actions .el-button {
+  min-height: 44px;
+  padding: 12px 24px;
 }
 
 .result-actions .btn-icon {
