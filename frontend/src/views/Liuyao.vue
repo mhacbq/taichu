@@ -77,8 +77,10 @@
           <div class="points-info">
             <span v-if="result.points_cost > 0">消耗 {{ result.points_cost }} 积分</span>
             <span v-else>本次免费</span>
-            <span>剩余 {{ result.remaining_points }} 积分</span>
+            <span v-if="shouldShowRemainingPoints">剩余 {{ result.remaining_points }} 积分</span>
+            <span v-else-if="result.is_history" class="history-points-note">历史记录不展示剩余积分</span>
           </div>
+
 
           <!-- 操作按钮 -->
           <div class="action-buttons">
@@ -177,7 +179,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
 import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Close } from '@element-plus/icons-vue'
@@ -196,6 +198,22 @@ const pricing = ref(null)
 const history = ref([])
 const showHistory = ref(false)
 
+const reportUiError = (action, error, userMessage = '') => {
+  console.error(`[Liuyao] ${action}`, error)
+  if (userMessage) {
+    ElMessage.error(userMessage)
+  }
+}
+
+const shouldShowRemainingPoints = computed(() => {
+  if (!result.value || result.value.is_history) {
+    return false
+  }
+
+  return result.value.remaining_points !== null && result.value.remaining_points !== undefined
+})
+
+
 // 爻标记
 const getYaoMark = (yao) => {
   if (yao === 0) return '×' // 老阴
@@ -211,8 +229,7 @@ const loadPricing = async () => {
       pricing.value = response.data
     }
   } catch (error) {
-    console.error('获取定价失败:', error)
-    ElMessage.error('获取定价信息失败')
+    reportUiError('获取定价失败', error, '获取定价信息失败')
   }
 }
 
@@ -224,9 +241,10 @@ const loadHistory = async () => {
       history.value = response.data.list || []
     }
   } catch (error) {
-    console.error('获取历史记录失败:', error)
+    reportUiError('获取历史记录失败', error)
   }
 }
+
 
 // 提交占卜
 const submitDivination = async () => {
@@ -253,18 +271,21 @@ const submitDivination = async () => {
     })
 
     if (response.code === 200) {
-
-      result.value = response.data
+      result.value = {
+        ...response.data,
+        is_history: false,
+      }
       loadHistory() // 刷新历史
     } else {
-      ElMessage.error(response.message)
+      ElMessage.error(response.message || '占卜失败，请重试')
     }
   } catch (error) {
-    ElMessage.error('占卜失败，请重试')
+    reportUiError('提交六爻占卜失败', error, '占卜失败，请重试')
   } finally {
     isLoading.value = false
   }
 }
+
 
 // 重置表单
 const resetForm = () => {
@@ -296,8 +317,10 @@ const loadHistoryDetail = (item) => {
     interpretation: item.interpretation,
     ai_analysis: item.ai_analysis,
     points_cost: item.consumed_points,
-    remaining_points: 0, // 历史记录不显示剩余积分
+    remaining_points: null,
+    is_history: true,
   }
+
   showHistory.value = false
 }
 
@@ -319,10 +342,11 @@ const deleteRecord = async (id) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      reportUiError('删除六爻历史记录失败', error, '删除失败')
     }
   }
 }
+
 
 // 格式化日期
 const formatDate = (dateStr) => {
@@ -905,7 +929,12 @@ onMounted(() => {
   border: 1px solid var(--border-light);
 }
 
+.history-points-note {
+  color: var(--text-muted);
+}
+
 /* 操作按钮 */
+
 .action-buttons {
   display: flex;
   gap: 16px;

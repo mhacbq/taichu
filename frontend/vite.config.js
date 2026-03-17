@@ -30,11 +30,19 @@ export default defineConfig({
     // 代码分割
     rollupOptions: {
       output: {
-        manualChunks: {
-          'element-plus': ['element-plus'],
-          'vue-vendor': ['vue', 'vue-router'],
+        manualChunks(id) {
+          if (id.includes('node_modules/element-plus')) {
+            return 'element-plus'
+          }
+
+          if (id.includes('node_modules/vue-router') || id.includes('node_modules/vue')) {
+            return 'vue-vendor'
+          }
+
+          return undefined
         },
       },
     },
+
   },
 })

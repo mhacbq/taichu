@@ -233,22 +233,42 @@ class Notification extends BaseController
             return $this->error('无效的平台类型');
         }
 
-        Db::name('tc_push_device')
-            ->where('device_id', $deviceId)
-            ->delete();
+        try {
+            Db::name('tc_push_device')
+                ->where('device_id', $deviceId)
+                ->delete();
 
-        Db::name('tc_push_device')->insert([
-            'user_id' => $userId,
-            'platform' => $platform,
-            'device_token' => $deviceToken,
-            'device_id' => $deviceId,
-            'is_active' => 1,
-            'last_active_at' => date('Y-m-d H:i:s'),
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+            Db::name('tc_push_device')->insert([
+                'user_id' => $userId,
+                'platform' => $platform,
+                'device_token' => $deviceToken,
+                'device_id' => $deviceId,
+                'is_active' => 1,
+                'last_active_at' => date('Y-m-d H:i:s'),
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
 
-        return $this->success([], '设备注册成功');
+            self::logNotificationEvent('info', '推送设备注册成功', [
+                'user_id' => $userId,
+                'platform' => $platform,
+                'device_id' => $deviceId,
+                'device_token' => $deviceToken,
+            ]);
+
+            return $this->success([], '设备注册成功');
+        } catch (\Throwable $e) {
+            self::logNotificationEvent('error', '推送设备注册失败', [
+                'user_id' => $userId,
+                'platform' => $platform,
+                'device_id' => $deviceId,
+                'device_token' => $deviceToken,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('设备注册失败，请稍后重试', 500);
+        }
     }
+
     
     /**
      * 注销推送设备
@@ -256,20 +276,37 @@ class Notification extends BaseController
     public function unregisterDevice()
     {
         $user = $this->request->user;
-        $userId = $user['sub'];
-        $deviceId = $this->request->post('device_id');
+        $userId = (int) ($user['sub'] ?? 0);
+        $deviceId = trim((string) $this->request->post('device_id', ''));
         
-        if (empty($deviceId)) {
+        if ($deviceId === '') {
             return $this->error('设备ID不能为空');
         }
-        
-        Db::name('tc_push_device')
-            ->where('user_id', $userId)
-            ->where('device_id', $deviceId)
-            ->delete();
-        
-        return $this->success([], '设备注销成功');
+
+        try {
+            $deleted = Db::name('tc_push_device')
+                ->where('user_id', $userId)
+                ->where('device_id', $deviceId)
+                ->delete();
+
+            self::logNotificationEvent($deleted > 0 ? 'info' : 'warning', '推送设备注销结果', [
+                'user_id' => $userId,
+                'device_id' => $deviceId,
+                'deleted' => $deleted,
+            ]);
+
+            return $this->success([], '设备注销成功');
+        } catch (\Throwable $e) {
+            self::logNotificationEvent('error', '推送设备注销失败', [
+                'user_id' => $userId,
+                'device_id' => $deviceId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('设备注销失败，请稍后重试', 500);
+        }
     }
+
     
     /**
      * 发送测试通知（仅用于测试）
@@ -335,6 +372,13 @@ class Notification extends BaseController
 
             $typeField = $typeFieldMap[$type] ?? null;
             if ($typeField !== null && $settings && isset($settings[$typeField]) && !(bool) $settings[$typeField]) {
+                self::logNotificationEvent('info', '通知发送被用户设置拦截', [
+                    'user_id' => $userId,
+                    'type' => $type,
+                    'setting_field' => $typeField,
+                    'data' => $data,
+                ]);
+
                 return [
                     'success' => false,
                     'stored' => false,
@@ -358,6 +402,13 @@ class Notification extends BaseController
 
             $pushEnabled = !($settings && array_key_exists('push_enabled', $settings) && !(bool) $settings['push_enabled']);
             if (!$pushEnabled) {
+                self::logNotificationEvent('info', '通知已保存，设备推送关闭', [
+                    'user_id' => $userId,
+                    'notification_id' => $notificationId,
+                    'type' => $type,
+                    'data' => $data,
+                ]);
+
                 return [
                     'success' => true,
                     'stored' => true,
@@ -368,6 +419,14 @@ class Notification extends BaseController
             }
 
             if ($settings && !self::canSendDuringCurrentTime($settings)) {
+                self::logNotificationEvent('info', '通知已保存，当前命中免打扰时段', [
+                    'user_id' => $userId,
+                    'notification_id' => $notificationId,
+                    'type' => $type,
+                    'quiet_hours_start' => $settings['quiet_hours_start'] ?? null,
+                    'quiet_hours_end' => $settings['quiet_hours_end'] ?? null,
+                ]);
+
                 return [
                     'success' => true,
                     'stored' => true,
@@ -380,14 +439,14 @@ class Notification extends BaseController
             $pushResult = PushService::sendPushDetailed($userId, $title, $content, $data);
             $pushSuccess = (bool) ($pushResult['success'] ?? false);
 
-            if (!$pushSuccess) {
-                Log::warning('通知已入库，但推送通道未成功送达', [
-                    'user_id' => $userId,
-                    'notification_id' => $notificationId,
-                    'type' => $type,
-                    'push_result' => $pushResult,
-                ]);
-            }
+            self::logNotificationEvent($pushSuccess ? 'info' : 'warning', '通知发送结果', [
+                'user_id' => $userId,
+                'notification_id' => $notificationId,
+                'type' => $type,
+                'push_success' => $pushSuccess,
+                'push_result' => $pushResult,
+                'data' => $data,
+            ]);
 
             return [
                 'success' => true,
@@ -398,9 +457,11 @@ class Notification extends BaseController
                 'message' => $pushSuccess ? '通知发送成功' : '通知已保存，但推送未送达',
             ];
         } catch (\Throwable $e) {
-            Log::error('发送通知失败', [
+            self::logNotificationEvent('error', '发送通知失败', [
                 'user_id' => $userId,
                 'type' => $type,
+                'title' => $title,
+                'data' => $data,
                 'error' => $e->getMessage(),
             ]);
 
@@ -411,6 +472,7 @@ class Notification extends BaseController
                 'message' => '发送通知失败，请稍后重试',
             ];
         }
+
     }
 
     /**
@@ -479,10 +541,72 @@ class Notification extends BaseController
 
         return !$inQuietHours;
     }
+
+    /**
+     * 统一记录通知日志
+     */
+    protected static function logNotificationEvent(string $level, string $message, array $context = []): void
+    {
+        $sanitizedContext = self::sanitizeLogContext($context);
+
+        switch ($level) {
+            case 'error':
+                Log::error($message, $sanitizedContext);
+                break;
+            case 'warning':
+                Log::warning($message, $sanitizedContext);
+                break;
+            default:
+                Log::info($message, $sanitizedContext);
+                break;
+        }
+    }
+
+    /**
+     * 递归脱敏日志上下文
+     */
+    protected static function sanitizeLogContext(mixed $value, ?string $field = null): mixed
+    {
+        if (is_array($value)) {
+            $sanitized = [];
+            foreach ($value as $key => $item) {
+                $sanitized[$key] = self::sanitizeLogContext($item, is_string($key) ? $key : $field);
+            }
+
+            return $sanitized;
+        }
+
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        $normalizedField = strtolower((string) $field);
+        foreach (['token', 'device_id', 'registration_id', 'secret'] as $sensitiveField) {
+            if ($normalizedField !== '' && str_contains($normalizedField, $sensitiveField)) {
+                return self::maskLogValue($value);
+            }
+        }
+
+        return mb_strlen($value) > 300 ? mb_substr($value, 0, 300) . '…' : $value;
+    }
+
+    /**
+     * 掩码标识类字符串
+     */
+    protected static function maskLogValue(string $value): string
+    {
+        $length = mb_strlen($value);
+        if ($length <= 8) {
+            return str_repeat('*', $length);
+        }
+
+        return mb_substr($value, 0, 4) . str_repeat('*', max(0, $length - 8)) . mb_substr($value, -4);
+    }
     
     /**
      * 发送每日运势提醒
      */
+
     public static function sendDailyFortuneReminder(int $userId): bool
 
     {

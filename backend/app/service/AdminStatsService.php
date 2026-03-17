@@ -3,6 +3,8 @@
 namespace app\service;
 
 use think\facade\Db;
+use think\facade\Log;
+
 
 /**
  * 后台统计服务类
@@ -541,6 +543,14 @@ class AdminStatsService
         if ($amount > $order['pay_amount']) {
             throw new \Exception('退款金额不能超过支付金额');
         }
+
+        Log::info('后台订单退款开始', [
+            'admin_id' => $adminId,
+            'order_id' => $orderId,
+            'order_no' => self::maskOrderNo((string) ($order['order_no'] ?? '')),
+            'amount' => round($amount, 2),
+            'pay_amount' => round((float) ($order['pay_amount'] ?? 0), 2),
+        ]);
         
         Db::startTrans();
         try {
@@ -582,10 +592,41 @@ class AdminStatsService
             ]);
             
             Db::commit();
+
+            Log::info('后台订单退款成功', [
+                'admin_id' => $adminId,
+                'order_id' => $orderId,
+                'order_no' => self::maskOrderNo((string) ($order['order_no'] ?? '')),
+                'refund_no' => self::maskOrderNo($refundNo),
+                'amount' => round($amount, 2),
+            ]);
+
             return true;
         } catch (\Exception $e) {
             Db::rollback();
+
+            Log::error('后台订单退款失败', [
+                'admin_id' => $adminId,
+                'order_id' => $orderId,
+                'order_no' => self::maskOrderNo((string) ($order['order_no'] ?? '')),
+                'amount' => round($amount, 2),
+                'error' => $e->getMessage(),
+            ]);
+
             throw $e;
         }
+    }
+
+    /**
+     * 脱敏订单号/退款单号
+     */
+    private static function maskOrderNo(string $value): string
+    {
+        $length = strlen($value);
+        if ($length <= 8) {
+            return str_repeat('*', $length);
+        }
+
+        return substr($value, 0, 4) . str_repeat('*', max(0, $length - 8)) . substr($value, -4);
     }
 }

@@ -24,8 +24,9 @@
 
 ### 🟢 低优先级（代码优化）
 
-- [ ] [代码] 未使用的导入检查 - 建议定期运行 ESLint 检查未使用的导入和变量，保持代码整洁。
-- [ ] [代码] 后端日志优化 - 建议在关键业务逻辑中添加更详细的日志记录，便于问题排查。
+- [x] [代码] 未使用的导入检查 - 已清理 `frontend/src/views/Tarot.vue` 的未使用辅助逻辑，并统一塔罗/六爻页面的重复错误处理分支。
+- [x] [代码] 后端日志优化 - 已为 `Notification.php`、`AdminStatsService.php`、`admin/Shensha.php` 补充结构化日志，关键信息已做脱敏。
+
 
 ### 📝 代码质量观察
 
@@ -145,8 +146,9 @@
 ### 🟡 中优先级（待确认已修复）
 
 **以下问题在代码中已找到实现，需验证功能是否正常工作：**
-- [ ] [代码] 神煞管理API - 后端已实现 `app/controller/admin/Shensha.php` 和 `app/model/Shensha.php`，前端 `admin.js` 也已定义API调用，建议测试确认功能正常后可标记为已完成。
-- [ ] [代码] 微信退款接口 - `AdminStatsService.php` 中 `refundOrder` 方法已调用 `WechatPayService::refund`，功能已实现。
+- [x] [代码] 神煞管理API - 已补齐 `app/controller/admin/Shensha.php` 的 `options` 接口，并统一保存/状态更新异常处理与日志输出。
+- [x] [代码] 微信退款接口 - 已复核 `AdminStatsService.php` 退款链路，确认调用 `WechatPayService::refund`，并补充后台退款脱敏日志。
+
 
 
 ### 🟢 低优先级（代码质量观察）
