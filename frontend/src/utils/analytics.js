@@ -3,127 +3,254 @@
  * 支持页面浏览、事件追踪、转化漏斗分析
  */
 
+const SENSITIVE_KEYS = [
+  'password',
+  'pwd',
+  'token',
+  'secret',
+  'authorization',
+  'cookie',
+  'phone',
+  'mobile',
+  'email',
+  'name',
+  'realname',
+  'idcard',
+  'invitecode',
+  'smscode',
+  'code'
+]
+
+const MAX_STRING_LENGTH = 160
+const MAX_OBJECT_KEYS = 20
+const MAX_ARRAY_ITEMS = 10
+
+const normalizeKey = (key = '') => String(key).toLowerCase().replace(/[^a-z0-9]/g, '')
+
+const isSensitiveKey = (key = '') => {
+  const normalized = normalizeKey(key)
+  return SENSITIVE_KEYS.some(item => normalized.includes(item))
+}
+
+const truncateText = (value, maxLength = MAX_STRING_LENGTH) => {
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value
+}
+
+const maskValue = (value) => {
+  if (value == null) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return ''
+    }
+
+    if (trimmed.length <= 6) {
+      return '***'
+    }
+
+    return `${trimmed.slice(0, 2)}***${trimmed.slice(-2)}`
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.length} items]`
+  }
+
+  if (typeof value === 'object') {
+    return '[masked]'
+  }
+
+  return '***'
+}
+
+const sanitizeValue = (key, value, depth = 0) => {
+  if (value == null) {
+    return value
+  }
+
+  if (isSensitiveKey(key)) {
+    return maskValue(value)
+  }
+
+  if (typeof value === 'string') {
+    return truncateText(value)
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    if (depth >= 2) {
+      return `[${value.length} items]`
+    }
+
+    return value.slice(0, MAX_ARRAY_ITEMS).map((item, index) => sanitizeValue(`${key}_${index}`, item, depth + 1))
+  }
+
+  if (typeof value === 'object') {
+    if (depth >= 2) {
+      return '[nested object]'
+    }
+
+    return Object.entries(value)
+      .slice(0, MAX_OBJECT_KEYS)
+      .reduce((acc, [childKey, childValue]) => {
+        acc[childKey] = sanitizeValue(childKey, childValue, depth + 1)
+        return acc
+      }, {})
+  }
+
+  return String(value)
+}
+
+const sanitizeProperties = (properties = {}) => {
+  return Object.entries(properties).reduce((acc, [key, value]) => {
+    acc[key] = sanitizeValue(key, value)
+    return acc
+  }, {})
+}
+
+const extractPathname = (url = '') => {
+  if (!url) {
+    return ''
+  }
+
+  try {
+    return new URL(url, window.location.origin).pathname
+  } catch (error) {
+    return truncateText(String(url).split('?')[0])
+  }
+}
+
+const getReferrerHost = () => {
+  if (!document.referrer) {
+    return ''
+  }
+
+  try {
+    return new URL(document.referrer).hostname
+  } catch (error) {
+    return truncateText(document.referrer)
+  }
+}
+
 class Analytics {
   constructor() {
     this.sessionId = this.generateSessionId()
     this.userId = null
     this.startTime = Date.now()
     this.pageStartTime = null
+    this.currentPage = null
     this.queue = []
     this.isReady = false
+    this.isFlushing = false
+    this.flushTimer = null
     this.config = {
-      endpoint: '/api/analytics/track',
+      endpoint: import.meta.env.VITE_ANALYTICS_ENDPOINT || '/api/analytics/track',
       batchSize: 10,
       flushInterval: 5000,
       enablePerformance: true,
       enableErrorTracking: true
     }
-    
+
     this.init()
   }
 
   init() {
-    // 从localStorage获取用户信息
     const userInfo = localStorage.getItem('userInfo')
     if (userInfo) {
       try {
         const user = JSON.parse(userInfo)
-        this.userId = user.id
-      } catch (e) {}
+        this.userId = user.id || null
+      } catch (error) {
+        this.userId = null
+      }
     }
 
-    // 自动追踪页面浏览
     this.trackPageView()
-    
-    // 监听路由变化
     this.listenRouteChange()
-    
-    // 监听性能指标
+
     if (this.config.enablePerformance) {
       this.trackPerformance()
     }
-    
-    // 监听错误
+
     if (this.config.enableErrorTracking) {
       this.trackErrors()
     }
-    
-    // 定时批量发送
-    setInterval(() => this.flush(), this.config.flushInterval)
-    
-    // 页面关闭前发送剩余数据
-    window.addEventListener('beforeunload', () => this.flush())
-    
+
+    this.flushTimer = window.setInterval(() => {
+      this.flush()
+    }, this.config.flushInterval)
+
+    window.addEventListener('beforeunload', () => {
+      this.flush({ useBeacon: true })
+    })
+
     this.isReady = true
   }
 
   generateSessionId() {
-    return 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
   }
 
-  // 获取设备信息
   getDeviceInfo() {
     return {
-      userAgent: navigator.userAgent,
       platform: navigator.platform,
       language: navigator.language,
       screenSize: `${window.screen.width}x${window.screen.height}`,
       viewport: `${window.innerWidth}x${window.innerHeight}`,
-      referrer: document.referrer
+      referrerHost: getReferrerHost()
     }
   }
 
-  // 获取通用属性
   getCommonProps() {
     return {
       timestamp: Date.now(),
       sessionId: this.sessionId,
       userId: this.userId,
-      url: window.location.href,
       path: window.location.pathname,
       device: this.getDeviceInfo()
     }
   }
 
-  /**
-   * 追踪事件
-   * @param {string} eventName - 事件名称
-   * @param {object} properties - 事件属性
-   * @param {string} eventType - 事件类型: page/click/submit/custom
-   */
   track(eventName, properties = {}, eventType = 'custom') {
     const event = {
       eventName,
       eventType,
-      properties: {
+      properties: sanitizeProperties({
         ...this.getCommonProps(),
         ...properties
-      }
+      })
     }
 
     this.queue.push(event)
-    
-    // 达到批量大小立即发送
+
     if (this.queue.length >= this.config.batchSize) {
       this.flush()
     }
 
-    // 开发环境打印日志
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Analytics]', eventName, properties)
+    if (import.meta.env.DEV) {
+      console.debug('[Analytics]', {
+        eventName,
+        eventType,
+        propertyKeys: Object.keys(event.properties)
+      })
     }
   }
 
-  /**
-   * 页面浏览追踪
-   */
   trackPageView(pageName = null, properties = {}) {
-    // 记录上一页面停留时间
     if (this.pageStartTime) {
       const duration = Date.now() - this.pageStartTime
-      this.track('page_stay_duration', { 
+      this.track('page_stay_duration', {
         page: this.currentPage,
-        duration 
+        duration
       }, 'page')
     }
 
@@ -137,9 +264,6 @@ class Analytics {
     }, 'page')
   }
 
-  /**
-   * 点击事件追踪
-   */
   trackClick(elementName, properties = {}) {
     this.track('element_click', {
       element: elementName,
@@ -147,9 +271,6 @@ class Analytics {
     }, 'click')
   }
 
-  /**
-   * 按钮点击追踪（便捷方法）
-   */
   trackButtonClick(buttonName, properties = {}) {
     this.track('button_click', {
       button: buttonName,
@@ -157,9 +278,6 @@ class Analytics {
     }, 'click')
   }
 
-  /**
-   * 表单提交追踪
-   */
   trackFormSubmit(formName, properties = {}) {
     this.track('form_submit', {
       form: formName,
@@ -167,9 +285,6 @@ class Analytics {
     }, 'submit')
   }
 
-  /**
-   * 转化事件追踪
-   */
   trackConversion(conversionName, value = 0, properties = {}) {
     this.track('conversion', {
       conversion: conversionName,
@@ -178,9 +293,6 @@ class Analytics {
     }, 'conversion')
   }
 
-  /**
-   * 购买事件追踪
-   */
   trackPurchase(orderId, amount, products = [], properties = {}) {
     this.track('purchase', {
       orderId,
@@ -191,38 +303,27 @@ class Analytics {
     }, 'purchase')
   }
 
-  /**
-   * 用户属性设置
-   */
   setUserProperties(properties) {
     this.track('user_properties', properties, 'user')
   }
 
-  /**
-   * 监听路由变化
-   */
   listenRouteChange() {
-    // Vue Router钩子
     if (window.__VUE_ROUTER__) {
       window.__VUE_ROUTER__.afterEach((to) => {
         this.trackPageView(to.name || to.path, {
-          route: to.fullPath,
-          params: to.params,
-          query: to.query
+          route: to.path || extractPathname(to.fullPath),
+          routeParamKeys: Object.keys(to.params || {}),
+          routeQueryKeys: Object.keys(to.query || {})
         })
       })
     }
   }
 
-  /**
-   * 性能指标追踪
-   */
   trackPerformance() {
-    // 等待页面完全加载
     window.addEventListener('load', () => {
-      setTimeout(() => {
+      window.setTimeout(() => {
         const timing = performance.timing
-        
+
         this.track('performance', {
           dnsTime: timing.domainLookupEnd - timing.domainLookupStart,
           tcpTime: timing.connectEnd - timing.connectStart,
@@ -239,75 +340,101 @@ class Analytics {
 
   getFirstPaint() {
     const paints = performance.getEntriesByType('paint')
-    const firstPaint = paints.find(p => p.name === 'first-paint')
+    const firstPaint = paints.find(paint => paint.name === 'first-paint')
     return firstPaint ? firstPaint.startTime : null
   }
 
   getFirstContentfulPaint() {
     const paints = performance.getEntriesByType('paint')
-    const fcp = paints.find(p => p.name === 'first-contentful-paint')
+    const fcp = paints.find(paint => paint.name === 'first-contentful-paint')
     return fcp ? fcp.startTime : null
   }
 
-  /**
-   * 错误追踪
-   */
+  sanitizeStack(stack) {
+    if (!stack) {
+      return ''
+    }
+
+    return truncateText(
+      stack
+        .split('\n')
+        .slice(0, 3)
+        .map(line => line.replace(/https?:\/\/[^\s)]+/g, matched => extractPathname(matched)))
+        .join(' | '),
+      240
+    )
+  }
+
   trackErrors() {
     window.addEventListener('error', (event) => {
       this.track('js_error', {
         message: event.message,
-        filename: event.filename,
+        filename: extractPathname(event.filename),
         lineno: event.lineno,
         colno: event.colno,
-        stack: event.error?.stack
+        stackPreview: this.sanitizeStack(event.error?.stack)
       }, 'error')
     })
 
     window.addEventListener('unhandledrejection', (event) => {
+      const reason = event.reason
       this.track('promise_rejection', {
-        reason: event.reason?.message || String(event.reason),
-        stack: event.reason?.stack
+        reason: reason?.message || truncateText(String(reason)),
+        reasonType: reason?.name || typeof reason,
+        stackPreview: this.sanitizeStack(reason?.stack)
       }, 'error')
     })
   }
 
-  /**
-   * 批量发送数据
-   */
-  async flush() {
-    if (this.queue.length === 0) return
+  async flush(options = {}) {
+    if (this.queue.length === 0 || this.isFlushing || !this.config.endpoint) {
+      return
+    }
 
     const events = [...this.queue]
     this.queue = []
+    this.isFlushing = true
 
     try {
-      // 优先使用sendBeacon（页面关闭时也能发送）
-      if (navigator.sendBeacon) {
+      if (options.useBeacon && navigator.sendBeacon) {
         const blob = new Blob([JSON.stringify({ events })], {
           type: 'application/json'
         })
-        navigator.sendBeacon(this.config.endpoint, blob)
-      } else {
-        // 降级使用fetch
-        await fetch(this.config.endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ events }),
-          keepalive: true
-        })
+
+        const sent = navigator.sendBeacon(this.config.endpoint, blob)
+        if (!sent) {
+          throw new Error('sendBeacon returned false')
+        }
+
+        return
+      }
+
+      const response = await fetch(this.config.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events }),
+        keepalive: true
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
       }
     } catch (error) {
-      console.error('Analytics flush failed:', error)
-      // 发送失败，重新加入队列
+      if (import.meta.env.DEV) {
+        console.warn('[Analytics] flush failed', {
+          message: error?.message || 'unknown error'
+        })
+      }
+
       this.queue.unshift(...events)
+    } finally {
+      this.isFlushing = false
     }
   }
 }
 
-// 创建全局实例
 const analytics = new Analytics()
 
-// Vue指令：自动追踪点击
 export const vTrack = {
   mounted(el, binding) {
     const { event, properties = {} } = binding.value || {}
@@ -317,7 +444,6 @@ export const vTrack = {
   }
 }
 
-// 组合式函数
 export const useAnalytics = () => {
   return {
     track: analytics.track.bind(analytics),

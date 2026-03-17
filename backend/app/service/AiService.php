@@ -8,7 +8,7 @@ use think\facade\Log;
 
 /**
  * AI分析服务
- * 
+ *
  * 支持多种AI模型：DeepSeek、OpenAI、Claude等
  */
 class AiService
@@ -17,19 +17,20 @@ class AiService
     const PROVIDER_DEEPSEEK = 'deepseek';
     const PROVIDER_OPENAI = 'openai';
     const PROVIDER_CLAUDE = 'claude';
-    
+    const SYSTEM_PROMPT = '你是一位资深的八字命理大师，精通子平八字、紫微斗数等传统命理学。你的分析专业、客观、有深度，同时用通俗易懂的语言表达。';
+
     // 默认提供商
     protected $defaultProvider;
-    
+
     // API配置
     protected $config;
-    
+
     public function __construct(string $provider = null)
     {
         $this->defaultProvider = $provider ?? ConfigService::get('ai_provider', self::PROVIDER_DEEPSEEK);
         $this->loadConfig();
     }
-    
+
     /**
      * 加载AI配置
      */
@@ -59,10 +60,10 @@ class AiService
             ],
         ];
     }
-    
+
     /**
      * 八字合婚AI分析
-     * 
+     *
      * @param array $hehunResult 合婚结果
      * @param array $maleBazi 男方八字
      * @param array $femaleBazi 女方八字
@@ -79,25 +80,22 @@ class AiService
     ): ?array {
         try {
             $prompt = $this->buildHehunPrompt($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
-            
             $response = $this->callAiApi($prompt);
-            
+
             if (!$response) {
                 return null;
             }
-            
-            // 解析AI响应
+
             return $this->parseHehunResponse($response);
-            
-        } catch (\Exception $e) {
-            Log::error('AI合婚分析失败: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->logAnalysisFailure('hehun', $e);
             return null;
         }
     }
-    
+
     /**
      * 八字排盘AI解读
-     * 
+     *
      * @param array $bazi 八字数据
      * @param string $gender 性别
      * @return array|null
@@ -106,21 +104,19 @@ class AiService
     {
         try {
             $prompt = $this->buildBaziPrompt($bazi, $gender);
-            
             $response = $this->callAiApi($prompt);
-            
+
             if (!$response) {
                 return null;
             }
-            
+
             return $this->parseBaziResponse($response);
-            
-        } catch (\Exception $e) {
-            Log::error('AI八字解读失败: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->logAnalysisFailure('bazi', $e);
             return null;
         }
     }
-    
+
     /**
      * 构建合婚分析提示词
      */
@@ -133,7 +129,7 @@ class AiService
     ): string {
         $score = $hehunResult['score'];
         $level = $hehunResult['level_text'];
-        
+
         $maleBaziStr = sprintf(
             "%s%s %s%s %s%s %s%s",
             $maleBazi['year']['gan'], $maleBazi['year']['zhi'],
@@ -141,7 +137,7 @@ class AiService
             $maleBazi['day']['gan'], $maleBazi['day']['zhi'],
             $maleBazi['hour']['gan'], $maleBazi['hour']['zhi']
         );
-        
+
         $femaleBaziStr = sprintf(
             "%s%s %s%s %s%s %s%s",
             $femaleBazi['year']['gan'], $femaleBazi['year']['zhi'],
@@ -149,7 +145,7 @@ class AiService
             $femaleBazi['day']['gan'], $femaleBazi['day']['zhi'],
             $femaleBazi['hour']['gan'], $femaleBazi['hour']['zhi']
         );
-        
+
         return <<<PROMPT
 你是一位资深的八字命理大师，拥有30年的命理研究经验。请对以下八字合婚进行专业分析。
 
@@ -213,7 +209,7 @@ class AiService
 }
 PROMPT;
     }
-    
+
     /**
      * 构建八字解读提示词
      */
@@ -227,7 +223,7 @@ PROMPT;
             $bazi['day']['gan'], $bazi['day']['zhi'],
             $bazi['hour']['gan'], $bazi['hour']['zhi']
         );
-        
+
         return <<<PROMPT
 你是一位资深的八字命理大师。请对以下八字进行专业解读。
 
@@ -247,146 +243,146 @@ PROMPT;
 请用通俗易懂的语言，给出具体实用的建议。
 PROMPT;
     }
-    
+
     /**
      * 调用AI API
      */
     protected function callAiApi(string $prompt): ?string
     {
         $config = $this->config[$this->defaultProvider] ?? null;
-        
+
         if (!$config || empty($config['api_key'])) {
-            Log::error('AI配置未找到或API Key为空: ' . $this->defaultProvider);
+            $this->logProviderConfigMissing();
             return null;
         }
-        
-        switch ($this->defaultProvider) {
-            case self::PROVIDER_DEEPSEEK:
-                return $this->callDeepSeekApi($prompt, $config);
-            case self::PROVIDER_OPENAI:
-                return $this->callOpenAiApi($prompt, $config);
-            case self::PROVIDER_CLAUDE:
-                return $this->callClaudeApi($prompt, $config);
-            default:
-                return null;
-        }
+
+        return match ($this->defaultProvider) {
+            self::PROVIDER_DEEPSEEK => $this->sendChatCompletionRequest(
+                self::PROVIDER_DEEPSEEK,
+                rtrim((string) $config['base_url'], '/') . '/chat/completions',
+                [
+                    'Authorization' => 'Bearer ' . $config['api_key'],
+                    'Content-Type' => 'application/json',
+                ],
+                $config,
+                $prompt
+            ),
+            self::PROVIDER_OPENAI => $this->sendChatCompletionRequest(
+                self::PROVIDER_OPENAI,
+                rtrim((string) $config['base_url'], '/') . '/v1/chat/completions',
+                [
+                    'Authorization' => 'Bearer ' . $config['api_key'],
+                    'Content-Type' => 'application/json',
+                ],
+                $config,
+                $prompt
+            ),
+            self::PROVIDER_CLAUDE => $this->sendClaudeMessageRequest($config, $prompt),
+            default => $this->logUnsupportedProvider(),
+        };
     }
-    
+
     /**
-     * 调用DeepSeek API
+     * 统一请求 OpenAI / DeepSeek 兼容的 chat completions 接口
      */
-    protected function callDeepSeekApi(string $prompt, array $config): ?string
-    {
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $config['api_key'],
-                'Content-Type' => 'application/json',
-            ])->post($config['base_url'] . '/chat/completions', [
+    protected function sendChatCompletionRequest(
+        string $provider,
+        string $endpoint,
+        array $headers,
+        array $config,
+        string $prompt
+    ): ?string {
+        return $this->sendRequest(
+            $provider,
+            $endpoint,
+            $headers,
+            [
                 'model' => $config['model'],
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => '你是一位资深的八字命理大师，精通子平八字、紫微斗数等传统命理学。你的分析专业、客观、有深度，同时用通俗易懂的语言表达。'
+                        'content' => self::SYSTEM_PROMPT,
                     ],
                     [
                         'role' => 'user',
-                        'content' => $prompt
-                    ]
-                ],
-                'max_tokens' => $config['max_tokens'],
-                'temperature' => $config['temperature'],
-            ]);
-            
-            if ($response->ok()) {
-                $data = $response->json();
-                return $data['choices'][0]['message']['content'] ?? null;
-            }
-            
-            Log::error('DeepSeek API调用失败: ' . $response->body());
-            return null;
-            
-        } catch (\Exception $e) {
-            Log::error('DeepSeek API异常: ' . $e->getMessage());
-            return null;
-        }
-    }
-    
-    /**
-     * 调用OpenAI API
-     */
-    protected function callOpenAiApi(string $prompt, array $config): ?string
-    {
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $config['api_key'],
-                'Content-Type' => 'application/json',
-            ])->post($config['base_url'] . '/v1/chat/completions', [
-                'model' => $config['model'],
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => '你是一位资深的八字命理大师，精通子平八字、紫微斗数等传统命理学。'
+                        'content' => $prompt,
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt
-                    ]
                 ],
                 'max_tokens' => $config['max_tokens'],
                 'temperature' => $config['temperature'],
-            ]);
-            
-            if ($response->ok()) {
-                $data = $response->json();
+            ],
+            function (array $data): ?string {
                 return $data['choices'][0]['message']['content'] ?? null;
             }
-            
-            Log::error('OpenAI API调用失败: ' . $response->body());
-            return null;
-            
-        } catch (\Exception $e) {
-            Log::error('OpenAI API异常: ' . $e->getMessage());
-            return null;
-        }
+        );
     }
-    
+
     /**
-     * 调用Claude API
+     * 调用 Claude messages 接口
      */
-    protected function callClaudeApi(string $prompt, array $config): ?string
+    protected function sendClaudeMessageRequest(array $config, string $prompt): ?string
     {
-        try {
-            $response = Http::withHeaders([
+        return $this->sendRequest(
+            self::PROVIDER_CLAUDE,
+            rtrim((string) $config['base_url'], '/') . '/v1/messages',
+            [
                 'x-api-key' => $config['api_key'],
                 'Content-Type' => 'application/json',
                 'anthropic-version' => '2023-06-01',
-            ])->post($config['base_url'] . '/v1/messages', [
+            ],
+            [
                 'model' => $config['model'],
                 'max_tokens' => $config['max_tokens'],
                 'temperature' => $config['temperature'],
-                'system' => '你是一位资深的八字命理大师，精通子平八字、紫微斗数等传统命理学。',
+                'system' => self::SYSTEM_PROMPT,
                 'messages' => [
                     [
                         'role' => 'user',
-                        'content' => $prompt
-                    ]
+                        'content' => $prompt,
+                    ],
                 ],
-            ]);
-            
-            if ($response->ok()) {
-                $data = $response->json();
+            ],
+            function (array $data): ?string {
                 return $data['content'][0]['text'] ?? null;
             }
-            
-            Log::error('Claude API调用失败: ' . $response->body());
-            return null;
-            
-        } catch (\Exception $e) {
-            Log::error('Claude API异常: ' . $e->getMessage());
+        );
+    }
+
+    /**
+     * 统一发送第三方请求
+     */
+    protected function sendRequest(
+        string $provider,
+        string $endpoint,
+        array $headers,
+        array $payload,
+        callable $extractor
+    ): ?string {
+        try {
+            $response = Http::withHeaders($headers)->post($endpoint, $payload);
+
+            if (!$response->ok()) {
+                $this->logProviderFailure($provider, $response);
+                return null;
+            }
+
+            $data = $response->json();
+            $content = $extractor(is_array($data) ? $data : []);
+            if (!is_string($content) || trim($content) === '') {
+                Log::warning('AI 提供商返回空内容', [
+                    'provider' => $provider,
+                    'status' => method_exists($response, 'getCode') ? $response->getCode() : null,
+                ]);
+                return null;
+            }
+
+            return $content;
+        } catch (\Throwable $e) {
+            $this->logProviderException($provider, $e);
             return null;
         }
     }
-    
+
     /**
      * 解析合婚AI响应
      */
@@ -396,7 +392,7 @@ PROMPT;
         if (preg_match('/\{[\s\S]*\}/', $response, $matches)) {
             $jsonStr = $matches[0];
             $data = json_decode($jsonStr, true);
-            
+
             if ($data) {
                 return [
                     'summary' => $data['summary'] ?? '',
@@ -411,7 +407,7 @@ PROMPT;
                 ];
             }
         }
-        
+
         // 如果无法解析JSON，返回原始文本
         return [
             'summary' => $response,
@@ -420,7 +416,7 @@ PROMPT;
             'parse_error' => true,
         ];
     }
-    
+
     /**
      * 解析八字解读响应
      */
@@ -432,7 +428,129 @@ PROMPT;
             'is_ai_generated' => true,
         ];
     }
-    
+
+    /**
+     * 记录业务分析失败
+     */
+    protected function logAnalysisFailure(string $scene, \Throwable $e): void
+    {
+        Log::error('AI 业务分析失败', [
+            'scene' => $scene,
+            'provider' => $this->defaultProvider,
+            'exception' => get_class($e),
+            'message' => $this->truncateLogValue($e->getMessage()),
+        ]);
+    }
+
+    /**
+     * 记录配置缺失
+     */
+    protected function logProviderConfigMissing(): void
+    {
+        Log::error('AI 配置缺失或 API Key 为空', [
+            'provider' => $this->defaultProvider,
+        ]);
+    }
+
+    /**
+     * 记录未支持的提供商
+     */
+    protected function logUnsupportedProvider(): ?string
+    {
+        Log::warning('AI 提供商未支持', [
+            'provider' => $this->defaultProvider,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * 记录第三方接口返回失败
+     */
+    protected function logProviderFailure(string $provider, $response): void
+    {
+        $body = (string) $response->body();
+        $data = $response->json();
+        $parsed = is_array($data) ? $data : [];
+
+        Log::error('AI 提供商调用失败', [
+            'provider' => $provider,
+            'status' => method_exists($response, 'getCode') ? $response->getCode() : null,
+            'error_code' => $this->extractProviderErrorCode($parsed),
+            'error_message' => $this->extractProviderErrorMessage($parsed) ?: '第三方接口返回异常',
+            'response_hash' => $body !== '' ? substr(sha1($body), 0, 16) : null,
+        ]);
+    }
+
+    /**
+     * 记录第三方接口异常
+     */
+    protected function logProviderException(string $provider, \Throwable $e): void
+    {
+        Log::error('AI 提供商请求异常', [
+            'provider' => $provider,
+            'exception' => get_class($e),
+            'message' => $this->truncateLogValue($e->getMessage()),
+        ]);
+    }
+
+    /**
+     * 提取第三方错误消息
+     */
+    protected function extractProviderErrorMessage(array $data): string
+    {
+        $candidates = [
+            $data['error']['message'] ?? null,
+            $data['message'] ?? null,
+            $data['msg'] ?? null,
+            is_string($data['error'] ?? null) ? $data['error'] : null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_scalar($candidate) && trim((string) $candidate) !== '') {
+                return $this->truncateLogValue((string) $candidate);
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * 提取第三方错误码
+     */
+    protected function extractProviderErrorCode(array $data): string
+    {
+        $candidates = [
+            $data['error']['code'] ?? null,
+            $data['code'] ?? null,
+            $data['error_code'] ?? null,
+            $data['type'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_scalar($candidate) && trim((string) $candidate) !== '') {
+                return $this->truncateLogValue((string) $candidate, 80);
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * 裁剪日志文本，避免落过长原文
+     */
+    protected function truncateLogValue(string $value, int $limit = 200): string
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        return mb_strlen($trimmed) > $limit
+            ? mb_substr($trimmed, 0, $limit) . '...'
+            : $trimmed;
+    }
+
     /**
      * 检查AI服务是否可用
      */
@@ -441,7 +559,7 @@ PROMPT;
         $config = $this->config[$this->defaultProvider] ?? null;
         return $config && !empty($config['api_key']);
     }
-    
+
     /**
      * 获取当前提供商
      */

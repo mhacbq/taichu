@@ -1,8 +1,92 @@
-# 太初项目统一版 - 2026-03-17 状态概览
+# 太初项目统一版 - 2026-03-18 状态概览
 
 ## 最近更新
 
+### 代码维护批次（automation-2，2026-03-18）
+- 本轮先读取 `.codebuddy/automations/automation-2/memory.md`，随后按代码维护自动化要求处理了 3 个 `[代码]` 优化点，优先覆盖前端工具层 lint / 运行时问题、埋点敏感信息收敛，以及后端 AI 服务日志与重复调用逻辑整理。
+- 关键改动文件：`frontend/src/utils/requestCache.js`、`frontend/src/utils/analytics.js`、`backend/app/service/AiService.php`、`TODO.md`。
+
+#### 本轮完成项
+1. **请求缓存工具修复**
+   - 清理 `requestCache.js` 中未定义 `instance`、未使用导入和调试输出问题。
+   - `preloadAPI()` 现在通过可注入缓存 client 执行，并接入 `requestDeduper` 做重复请求收敛。
+2. **前端埋点脱敏**
+   - `analytics.js` 改为使用 `import.meta.env.DEV` 判断开发环境。
+   - 默认埋点不再上报完整 URL、referrer、query/params 和原始错误栈，开发态只保留摘要级调试信息。
+3. **AI 服务结构化日志**
+   - `AiService.php` 将 DeepSeek / OpenAI / Claude 的调用流程收敛为统一请求 helper。
+   - 第三方失败日志改为记录 `provider / status / error_code / response_hash` 等字段，不再直接写原始响应体。
+4. **任务清单同步**
+   - 已在 `TODO.md` 顶部新增《代码逻辑检查报告 - 第二十五轮 (2026-03-18)》，避免后续自动化重复清理同一批维护项。
+
+#### 验证情况
+- `read_lints`：`frontend/src/utils/requestCache.js`、`frontend/src/utils/analytics.js`、`backend/app/service/AiService.php` 均为 0 条新增诊断。
+- `npm run build --prefix frontend`：通过；仍存在既有大体积 chunk warning，但未阻塞构建。
+- `git diff --check -- frontend/src/utils/requestCache.js frontend/src/utils/analytics.js backend/app/service/AiService.php TODO.md overview.md`：通过。
+- `php -l backend/app/service/AiService.php`：当前环境仍无 `php` 命令，未能执行 CLI 语法检查。
+- 本轮为工具层与服务层维护，暂无新增 UI 截图或录屏。
+
+
+### 后台运营巡检（第二十四轮自动化执行，2026-03-18）
+
+- 本轮先读取自动化历史，再按运营真实路径重测独立后台 `http://localhost:3001`：默认账号 `admin / admin123` 真实登录仍报“管理员账号表不存在”；随后生成与当前运行容器 JWT 密钥匹配的测试 token，进入 Dashboard、用户详情、黄历、SEO、公告、系统配置等页面，并结合接口批量探测核验登录后各模块的真实可用性。
+- 已将 **1 个高优先级问题、2 个中优先级问题** 写入 `TODO.md` 顶部的 **《第二十四轮后台运营检查报告》**；本轮未修改业务代码，仅更新 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`，并在产物目录下新增了两个一次性巡检脚本用于生成 JWT 和批量探测接口。
+
+#### 关键发现
+1. **登录后多个运营页面会用默认空态掩盖真实 403/500**
+   - `system/settings`、`site/seo`、`system/notice` 等页面在接口被拒绝后仍继续渲染 `0`、空表和“暂无数据”，运营表面上还能点“保存配置 / 新增配置 / 发布公告”，但实际上拿到的是无权限或失败状态，极易误判为“配置被清空”。
+2. **角色字段口径不一致，导致 admin 视角下高频入口和订单操作按钮缺失**
+   - `auth/info` 返回的是 `roles: ['admin']`，但 `dashboard/index.vue` 与 `payment/{orders,vip-orders}.vue` 仍使用 `userInfo.role` 判断权限；实测 admin 进入 Dashboard 时只看到运营级快捷入口，SEO/系统设置快捷操作缺失，而订单页的“补单/退款”按钮按当前代码逻辑也不会显示。
+3. **用户详情失败时仍展示伪造占位内容**
+   - `GET /api/admin/users/1` 返回 403，但页面仍渲染空白资料和写死的“登录系统 / 进行八字排盘 / 查看每日运势”时间线，运营无法判断这些内容是否真实，存在明显误导风险。
+
+#### 运行态证据
+- 登录失败截图：
+  ![后台登录页第二十四轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-round24.png)
+- Dashboard 异常截图：
+  ![后台Dashboard第二十四轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-dashboard-round24.png)
+- 用户详情占位截图：
+  ![后台用户详情第二十四轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-user-detail-round24.png)
+- 登录请求实测：浏览器提交 `POST /api/admin/auth/login` 后返回“管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql”。
+- 批量接口探测结果：`auth/info` 返回 `200` 且角色为 `admin`；`dashboard/statistics` / `dashboard/trend` 继续 `500`；`users`、`content/almanac`、`system/settings`、`system/notices`、`system/seo/configs`、`payment/orders`、`order`、`points/records` 等接口统一返回 `403`；`points/stats` 仍返回运行态 `404 方法不存在`。
+
+#### 验证说明
+- 已真实验证：登录页可访问，但账号密码登录继续失败；使用测试 token 可以进入独立后台并复现 Dashboard、用户、内容、订单、系统配置等页面的实际异常状态。
+- 已通过浏览器页面验证：Dashboard 只有运营级快捷入口、黄历/SEO/公告页都呈现空表 + 错误提示、用户详情页展示空白资料与固定活动文案。
+- 已通过接口探测验证：短信配置 `GET /api/admin/sms/config` 与 AI 配置 `GET /api/admin/ai/config` 仍可返回 200，其余多数运营核心接口在当前运行态不可用或权限异常。
+
+### 后台运营巡检（第二十二轮自动化执行，2026-03-17）
+
+- 本轮先读取自动化历史，再按真实运营路径实测默认独立后台 `http://localhost:3001/login`；确认登录页可访问，但点击登录会命中失效的 `8000` 代理端口。随后临时拉起一个直连 `8080` 的后台实例，注入管理员 token 进入 Dashboard，并结合受保护接口批量探测、运行容器代码比对、错误日志交叉核验，继续复查登录、Dashboard、用户/内容/订单、系统配置与权限导航链路。
+- 已将 **1 个高优先级问题、2 个中优先级问题** 写入 `TODO.md` 的 **《第二十二轮后台运营检查报告》**；本轮未修改业务代码，仅更新 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`，并使用了一个临时巡检脚本辅助请求接口后已删除。
+
+#### 关键发现
+1. **当前运行态没有吃到仓库里的最新后台修复**
+   - 运行中容器的 `BaseController.php` 仍缺少 `checkPermission()` 兼容方法，而工作区代码已补齐；错误日志继续命中 `Call to undefined method app\controller\admin\Dashboard::checkPermission()`。
+   - `database/20260317_create_admin_users_table.sql`、`database/20260317_create_shensha_table.sql` 虽已在仓库与 compose 中配置，但当前运行态仍分别表现为“管理员账号表不存在”和神煞接口失败，说明部署/重建链路没有把最新初始化真正落实到现有容器/数据库。
+2. **后台默认本地入口仍存在端口口径错配**
+   - `http://localhost:3001/login` 可打开，但登录提交请求仍走 `3001 -> /api -> localhost:8000`，而当前标准本地健康后端是 `http://localhost:8080/api/health`；运营按文档直接启动独立后台时会被空端口卡住。
+3. **侧边栏权限体验仍然误导运营人员**
+   - `admin/src/layout/components/Sidebar/index.vue` 直接渲染 `asyncRoutes.filter(r => !r.hidden)`，未按 `meta.roles` 过滤；实际页面会展示短信管理、AI管理、系统设置、日志管理、任务调度等管理员专属入口，运营点击后才会被拦截。
+
+#### 运行态证据
+- 登录页截图：
+  ![后台登录页第二十二轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-round22.png)
+- 登录提交后截图：
+  ![后台登录提交后第二十二轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-after-submit-round22.png)
+- Dashboard 截图：
+  ![后台Dashboard第二十二轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-dashboard-round22.png)
+- `curl http://localhost:3001/login` 返回 `HTTP 200`；`curl http://localhost:8000/api/health` 连接失败；`curl http://localhost:8080/api/health` 返回 `{"code":200,...}`。
+- 直连登录接口返回：`{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql"}`。
+- 运行容器错误日志继续命中：`Call to undefined method app\controller\admin\Dashboard::checkPermission()`；同时容器内 `app/BaseController.php` 仅有 `hasAdminPermission()`，没有工作区已补的 `checkPermission()` 兼容方法。
+
+#### 验证说明
+- 已真实验证：默认后台登录页可访问，但真实登录无法完成；直连 8080 的后台页面可以渲染 Dashboard 和快捷入口。
+- 已通过接口探测确认：`auth/info` 可返回，`dashboard/statistics` 与 `dashboard/trend` 继续 500，用户/黄历/知识库/订单/公告/SEO/系统设置等受保护接口继续返回无权限或依赖旧初始化状态不可用。
+- 已通过代码/运行态交叉比对：`admin/vite.config.js`、`admin/src/layout/components/Sidebar/index.vue`、`backend/app/BaseController.php`、容器内 `/var/www/html/app/BaseController.php`、`backend/docker-compose.yml`、`runtime/log/error/20260317.log`。
+
 ### 前端待办修复（第五轮前端修复批次，2026-03-17）
+
 - 本轮按 `TODO.md` 中仍待处理的前端/Vue 问题继续收尾，完成了 **5 个前端修复点**：1) 八字页图标缺失与错误图标导出导致的白屏/构建阻塞；2) 合婚页定价结构归一化；3) 请求层静默错误能力；4) 每日运势签到卡静默降级；5) 每日运势个性化幸运区样式落地与类名隔离。
 - 关键改动文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Daily.vue`、`frontend/src/components/CheckinCard.vue`、`frontend/src/api/request.js`、`frontend/src/api/index.js`、`TODO.md`。
 - 已同步从 `TODO.md` 移除 4 条已修复待办：八字页白屏、合婚前端定价字段错位、每日运势首屏报错、每日运势样式串扰。
