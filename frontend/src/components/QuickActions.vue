@@ -15,7 +15,8 @@
         <div class="action-icon-wrapper">
           <span class="action-icon">
             <el-icon v-if="action.icon === 'calendar'"><Calendar /></el-icon>
-            <el-icon v-else-if="action.icon === 'magic'"><Magic /></el-icon>
+            <el-icon v-else-if="action.icon === 'magic'"><MagicStick /></el-icon>
+
             <el-icon v-else-if="action.icon === 'yinyang'"><YinYangIcon /></el-icon>
             <el-icon v-else-if="action.icon === 'heart'"><HeartFilled /></el-icon>
             <el-icon v-else-if="action.icon === 'star'"><Star /></el-icon>

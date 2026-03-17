@@ -122,7 +122,8 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BackButton from '../components/BackButton.vue'
-import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, CollectionTag, Coin, Lock } from '@element-plus/icons-vue'
+import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, Coin, Lock } from '@element-plus/icons-vue'
+
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -214,8 +215,9 @@ const categories = ref([
   },
   {
     title: '账号安全',
-    icon: 'Lock',
+    icon: Lock,
     items: [
+
       {
         question: '如何修改个人信息？',
         answer: '进入"个人中心"页面，可以查看和修改您的个人信息，包括昵称、头像等。',

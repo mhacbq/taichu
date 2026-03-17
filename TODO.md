@@ -30,7 +30,21 @@
 
 ---
 
+## 🔍 代码逻辑检查报告 - 第二十八轮 (2026-03-18)
+
+作为代码重构与质量维护负责人，我继续聚焦 `TODO.md` 中的 `[代码]` 维护方向，完成以下 5 个不重复的日常优化点：
+
+### 🟡 中优先级
+- [x] [代码] 前端多个页面把 `MagicStick` 图标导入后却仍在模板里写成 `<Magic />`，会制造组件未解析/导入未使用类 lint 噪音 - `frontend/src/components/QuickActions.vue`、`frontend/src/views/NotFound.vue` - 已统一改回 `<MagicStick />`，让图标引用与导入保持一致。
+- [x] [代码] 帮助中心把“账号安全”图标存成字符串 `'Lock'`，同时还残留未使用的 `CollectionTag` 导入，属于低价值冗余逻辑 - `frontend/src/views/Help.vue` - 已移除无效导入，并把动态图标改为真实组件引用 `Lock`，减少运行时解析歧义与 lint 噪音。
+- [x] [代码] 积分扣除/充值控制器异常仍用手写字符串日志，缺少统一脱敏上下文，后续定位具体失败场景不够稳定 - `backend/app/controller/Points.php` - 已统一切换到 `respondSystemException()`，补齐 `user_id/points/action/type/related_id/remark_length` 等结构化上下文。
+- [x] [代码] 微信退款服务异常时会把原始异常文本直接拼回调用方，且 PEM 内容模式生成的临时证书文件没有清理 - `backend/app/service/WechatPayService.php` - 已改为输出脱敏结构化日志，仅返回通用失败文案，并补上退款临时证书/私钥文件清理与订单号脱敏 helper。
+- [x] [代码] 流年 AI 分析失败日志只有一条拼接字符串，回退到本地分析时缺少必要定位信息 - `backend/app/service/YearlyFortuneService.php` - 已改为结构化 warning 日志，补齐 `year/gender/day_master/has_hour_pillar/exception` 等回退上下文。
+
+---
+
 ## 🔍 代码逻辑检查报告 - 第二十七轮 (2026-03-18)
+
 
 作为代码重构与质量维护负责人，我继续聚焦 `TODO.md` 中的 `[代码]` 维护方向，完成以下 5 个不重复的日常优化点：
 

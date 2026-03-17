@@ -203,9 +203,17 @@ class YearlyFortuneService
             return $this->parseTextToAnalysis($response);
             
         } catch (\Exception $e) {
-            Log::error('AI流年分析失败: ' . $e->getMessage());
+            Log::warning('AI流年分析失败，已回退本地分析', [
+                'year' => $year,
+                'gender' => $gender,
+                'day_master' => (string) ($bazi['day']['gan'] ?? ''),
+                'has_hour_pillar' => !empty($bazi['hour']['gan']) && !empty($bazi['hour']['zhi']),
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
             return $this->generateLocalYearlyAnalysis($bazi, $gender, $year);
         }
+
     }
     
     /**

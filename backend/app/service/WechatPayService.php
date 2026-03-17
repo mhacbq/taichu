@@ -56,9 +56,9 @@ class WechatPayService
                 $certPath = runtime_path('temp') . 'wechat_cert_' . md5($certContent) . '.pem';
                 if (!file_exists($certPath)) {
                     file_put_contents($certPath, $certContent);
+                    $tempFiles[] = $certPath;
                 }
                 $cert['cert'] = $certPath;
-                $tempFiles[] = $certPath;
             } else {
                 $cert['cert'] = $certContent;
             }
@@ -68,9 +68,9 @@ class WechatPayService
                 $keyPath = runtime_path('temp') . 'wechat_key_' . md5($keyContent) . '.pem';
                 if (!file_exists($keyPath)) {
                     file_put_contents($keyPath, $keyContent);
+                    $tempFiles[] = $keyPath;
                 }
                 $cert['key'] = $keyPath;
-                $tempFiles[] = $keyPath;
             } else {
                 $cert['key'] = $keyContent;
             }
@@ -81,7 +81,7 @@ class WechatPayService
             $response = self::httpPost('https://api.mch.weixin.qq.com/secapi/pay/refund', $xml, $cert);
             $result = self::xmlToArray($response);
 
-            if ($result['return_code'] === 'SUCCESS' && $result['result_code'] === 'SUCCESS') {
+            if (($result['return_code'] ?? '') === 'SUCCESS' && ($result['result_code'] ?? '') === 'SUCCESS') {
                 return [
                     'success' => true,
                     'refund_id' => $result['refund_id'] ?? '',
@@ -93,12 +93,23 @@ class WechatPayService
                 'success' => false,
                 'message' => $result['err_code_des'] ?? ($result['return_msg'] ?? '退款失败'),
             ];
-        } catch (\Exception $e) {
-            Log::error('微信退款异常: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('微信退款调用异常', [
+                'order_no' => self::maskTradeNo($orderNo),
+                'refund_no' => self::maskTradeNo($refundNo),
+                'total_amount' => round($totalAmount, 2),
+                'refund_amount' => round($refundAmount, 2),
+                'has_reason' => $reason !== '',
+                'cert_mode' => !empty($cert['cert']) && !empty($cert['key']) ? 'mutual_tls' : 'missing_cert',
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
             return [
                 'success' => false,
-                'message' => '网络异常或证书配置错误: ' . $e->getMessage(),
+                'message' => '微信退款处理失败，请稍后重试',
             ];
+        } finally {
+            self::cleanupTempFiles($tempFiles);
         }
     }
 
@@ -190,5 +201,26 @@ class WechatPayService
         }
         
         return $response;
+    }
+
+    private static function cleanupTempFiles(array $tempFiles): void
+    {
+        foreach ($tempFiles as $tempFile) {
+            if (!is_string($tempFile) || $tempFile === '' || !file_exists($tempFile)) {
+                continue;
+            }
+
+            @unlink($tempFile);
+        }
+    }
+
+    private static function maskTradeNo(string $value): string
+    {
+        $length = strlen($value);
+        if ($length <= 8) {
+            return str_repeat('*', $length);
+        }
+
+        return substr($value, 0, 4) . str_repeat('*', max(0, $length - 8)) . substr($value, -4);
     }
 }
