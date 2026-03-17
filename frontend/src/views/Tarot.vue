@@ -110,18 +110,24 @@
         <h3>您的牌阵</h3>
         <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击任意牌查看详细解读</p>
         <div class="cards-display">
-          <TarotCard 
-            v-for="(card, index) in cards" 
-            :key="index"
-            :name="card.name"
-            :emoji="card.emoji"
-            :reversed="card.reversed"
-            :element="card.element"
-            :color="card.color"
-            :index="index"
-            @click="showCardDetail(card)"
-          />
+          <div
+            v-for="(card, index) in cards"
+            :key="`${card.name}-${index}`"
+            class="card-stack"
+          >
+            <TarotCard
+              :name="card.name"
+              :emoji="card.emoji"
+              :reversed="card.reversed"
+              :element="card.element"
+              :color="card.color"
+              :index="index"
+              @click="showCardDetail(card)"
+            />
+            <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(selectedSpread, index) }}</span>
+          </div>
         </div>
+
         
         <div class="interpretation">
           <h3>牌面解读</h3>
@@ -186,7 +192,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
+import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic } from '../api'
+
 import BackButton from '../components/BackButton.vue'
 import TarotCard from '../components/TarotCard.vue'
 import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
@@ -287,8 +294,30 @@ const currentTemplates = computed(() => {
   return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
 })
 
+const spreadPositionLabels = {
+  single: ['今日指引'],
+  three: ['过去', '现在', '未来'],
+  celtic: [
+    '当前状态',
+    '障碍/挑战',
+    '潜意识/基础',
+    '过去影响',
+    '目标可能',
+    '近期发展',
+    '你的态度',
+    '外部环境',
+    '希望/恐惧',
+    '最终走向',
+  ],
+}
+
+const getPositionLabel = (spreadType, index) => {
+  const labels = spreadPositionLabels[spreadType] || []
+  return labels[index] || `第${index + 1}张`
+}
 
 const selectTopic = (topicId) => {
+
   selectedTopic.value = topicId
 }
 
@@ -522,6 +551,26 @@ const saveTarotResult = async () => {
   }
 }
 
+const ensureTarotShareReady = async () => {
+  if (!savedRecordId.value) {
+    return false
+  }
+
+  try {
+    const response = await setTarotPublic({ id: savedRecordId.value, is_public: true })
+    if (response.code === 200) {
+      savedShareCode.value = response.data.share_code || savedShareCode.value
+      return true
+    }
+
+    ElMessage.error(response.message || '分享链接准备失败，请稍后重试')
+  } catch (error) {
+    reportUiError('准备塔罗分享链接失败', error, '分享链接准备失败，请稍后重试')
+  }
+
+  return false
+}
+
 // 分享塔罗结果
 const shareTarotResult = async () => {
   // 如果没有保存过，先保存
@@ -529,7 +578,12 @@ const shareTarotResult = async () => {
     await saveTarotResult()
   }
   
-  if (!savedShareCode.value) {
+  if (!savedRecordId.value) {
+    return
+  }
+
+  const shareReady = await ensureTarotShareReady()
+  if (!shareReady || !savedShareCode.value) {
     return
   }
   
@@ -561,6 +615,7 @@ const shareTarotResult = async () => {
     })
   }
 }
+
 
 
 // 重置占卜
@@ -862,11 +917,19 @@ const getCardAdvice = (card) => {
   margin-bottom: 40px;
 }
 
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
 .tarot-card {
   width: 150px;
   height: 250px;
   perspective: 1000px;
 }
+
 
 .card-inner {
   width: 100%;
@@ -901,10 +964,20 @@ const getCardAdvice = (card) => {
 }
 
 .card-position {
-  margin-top: 15px;
-  font-size: 14px;
-  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
 }
+
 
 .interpretation {
   background: var(--bg-secondary);

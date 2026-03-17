@@ -63,9 +63,11 @@ Route::group('api', function () {
         Route::post('save-record', 'Tarot/saveRecord');
         Route::get('history', 'Tarot/history');
         Route::get('detail', 'Tarot/detail');
+        Route::get('share', 'Tarot/share');
         Route::post('delete-record', 'Tarot/deleteRecord');
         Route::post('set-public', 'Tarot/setPublic');
     });
+
     
     // 每日运势
     Route::group('daily', function () {

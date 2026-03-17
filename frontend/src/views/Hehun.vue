@@ -124,9 +124,10 @@
             <button class="btn-secondary" @click="resetForm">
               <el-icon><RefreshRight /></el-icon> 重新测算
             </button>
-            <button class="btn-primary" @click="exportReport" :disabled="exporting">
+            <button class="btn-primary" @click="exportReport" :disabled="exporting || !canExportReport">
               <el-icon><Document /></el-icon> {{ exporting ? '导出中...' : '导出报告' }}
             </button>
+
           </div>
         </div>
       </div>
@@ -300,6 +301,9 @@ const isFormValid = computed(() => {
   return form.maleBirthDate && form.femaleBirthDate
 })
 
+const canExportReport = computed(() => Boolean(premiumResult.value?.id))
+
+
 // 获取定价信息
 const loadPricing = async () => {
   try {
@@ -398,13 +402,17 @@ const resetForm = () => {
 
 // 导出报告
 const exportReport = async () => {
-  if (!premiumResult.value) return
+  if (!premiumResult.value?.id) {
+    ElMessage.warning('当前历史记录缺少导出标识，请重新加载后再试')
+    return
+  }
   
   exporting.value = true
   try {
     const response = await exportHehunReport({
       record_id: premiumResult.value.id,
     })
+
     
     if (response.code === 200) {
       // 下载PDF
@@ -467,11 +475,13 @@ const loadHistoryDetail = async (item) => {
     }
 
     premiumResult.value = {
+      id: item.id,
       hehun: hehunData,
       ai_analysis: aiAnalysisData,
       male_bazi: maleBaziData,
       female_bazi: femaleBaziData,
     }
+
     freeResult.value = null
   } catch (error) {
     console.error('加载历史记录失败:', error)

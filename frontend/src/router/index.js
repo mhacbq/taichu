@@ -9,8 +9,10 @@ import NotFound from '../views/NotFound.vue'
 // 非首屏页面 - 懒加载
 const Bazi = () => import('../views/Bazi.vue')
 const Tarot = () => import('../views/Tarot.vue')
+const TarotShare = () => import('../views/TarotShare.vue')
 const Daily = () => import('../views/Daily.vue')
 const Profile = () => import('../views/Profile.vue')
+
 const Help = () => import('../views/Help.vue')
 const Recharge = () => import('../views/Recharge.vue')
 const Hehun = () => import('../views/Hehun.vue')
@@ -66,6 +68,20 @@ const routes = [
     }
   },
   {
+    path: '/tarot/share/:code',
+    name: 'TarotShare',
+    component: TarotShare,
+    meta: {
+      public: true,
+      seo: {
+        title: '塔罗分享结果 - 太初命理',
+        description: '查看来自太初命理的塔罗占卜分享结果与详细解读',
+        keywords: '塔罗分享,塔罗占卜,塔罗解读'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '塔罗分享', url: '/tarot/share' }]
+    }
+  },
+  {
     path: '/daily',
     name: 'Daily',
     component: Daily,
@@ -75,6 +91,97 @@ const routes = [
       breadcrumb: [{ name: '首页', url: '/' }, { name: '每日运势', url: '/daily' }]
     }
   },
+  {
+    path: '/admin/config',
+    name: 'AdminConfig',
+    component: AdminConfig,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '系统配置管理 - 太初命理后台',
+        description: '太初命理后台系统配置管理页面',
+        keywords: '后台配置,系统配置,管理后台'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '系统配置', url: '/admin/config' }]
+    }
+  },
+  {
+    path: '/admin/almanac',
+    name: 'AdminAlmanacManage',
+    component: AdminAlmanacManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '黄历管理 - 太初命理后台',
+        description: '太初命理后台黄历内容管理页面',
+        keywords: '黄历管理,后台管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '黄历管理', url: '/admin/almanac' }]
+    }
+  },
+  {
+    path: '/admin/knowledge',
+    name: 'AdminKnowledgeManage',
+    component: AdminKnowledgeManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '知识库管理 - 太初命理后台',
+        description: '太初命理后台知识库管理页面',
+        keywords: '知识库管理,后台管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '知识库管理', url: '/admin/knowledge' }]
+    }
+  },
+  {
+    path: '/admin/seo',
+    name: 'AdminSEOManage',
+    component: AdminSEOManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: 'SEO管理 - 太初命理后台',
+        description: '太初命理后台 SEO 配置管理页面',
+        keywords: 'SEO管理,后台管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: 'SEO管理', url: '/admin/seo' }]
+    }
+  },
+  {
+    path: '/admin/seo/stats',
+    name: 'AdminSEOStats',
+    component: AdminSEOStats,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: 'SEO统计 - 太初命理后台',
+        description: '太初命理后台 SEO 统计页面',
+        keywords: 'SEO统计,后台管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: 'SEO统计', url: '/admin/seo/stats' }]
+    }
+  },
+  {
+    path: '/admin/shensha',
+    name: 'AdminShenshaManage',
+    component: AdminShenshaManage,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      seo: {
+        title: '神煞管理 - 太初命理后台',
+        description: '太初命理后台神煞配置管理页面',
+        keywords: '神煞管理,后台管理'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '神煞管理', url: '/admin/shensha' }]
+    }
+  },
+
   {
     path: '/profile',
     name: 'Profile',

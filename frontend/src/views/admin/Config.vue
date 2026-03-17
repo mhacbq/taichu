@@ -388,7 +388,7 @@ const marketingForm = ref({
 const loadFeatures = async () => {
   try {
     const res = await getFeatureSwitches()
-    if (res.code === 0) {
+    if (res.code === 200) {
       features.value = res.data
     }
   } catch (error) {
@@ -401,7 +401,7 @@ const handleUpdateFeature = async (key, enabled) => {
   savingFeatures.value[key] = true
   try {
     const res = await updateFeature(key, enabled)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('功能开关已更新')
     } else {
       ElMessage.error(res.message)
@@ -439,7 +439,7 @@ const saveAllFeatures = async () => {
   
   try {
     const res = await updateFeatures(featureData)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('所有功能开关已保存')
     } else {
       ElMessage.error(res.message)
@@ -453,7 +453,7 @@ const saveAllFeatures = async () => {
 const loadVipConfig = async () => {
   try {
     const res = await getVipConfig()
-    if (res.code === 0) {
+    if (res.code === 200) {
       Object.assign(vipForm.value, res.data)
     }
   } catch (error) {
@@ -466,7 +466,7 @@ const saveVipConfig = async () => {
   saving.value.vip = true
   try {
     const res = await updateVipConfig(vipForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('VIP配置已保存')
     } else {
       ElMessage.error(res.message)
@@ -482,7 +482,7 @@ const saveVipConfig = async () => {
 const loadPointsConfig = async () => {
   try {
     const res = await getPointsConfig()
-    if (res.code === 0) {
+    if (res.code === 200) {
       pointsForm.value.tasks = res.data.tasks
       pointsForm.value.costs = res.data.costs
     }
@@ -496,7 +496,7 @@ const savePointsConfig = async () => {
   saving.value.points = true
   try {
     const res = await updatePointsConfig(pointsForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('积分配置已保存')
     } else {
       ElMessage.error(res.message)
@@ -512,7 +512,7 @@ const savePointsConfig = async () => {
 const loadMarketingConfig = async () => {
   try {
     const res = await getMarketingConfig()
-    if (res.code === 0) {
+    if (res.code === 200) {
       Object.assign(marketingForm.value, res.data)
     }
   } catch (error) {
@@ -525,7 +525,7 @@ const saveMarketingConfig = async () => {
   saving.value.marketing = true
   try {
     const res = await updateMarketingConfig(marketingForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('营销配置已保存')
     } else {
       ElMessage.error(res.message)
@@ -541,13 +541,14 @@ const saveMarketingConfig = async () => {
 const refreshCache = async () => {
   try {
     const res = await refreshConfigCache()
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('缓存已刷新')
     }
   } catch (error) {
     ElMessage.error('刷新失败')
   }
 }
+
 
 onMounted(() => {
   loadFeatures()
