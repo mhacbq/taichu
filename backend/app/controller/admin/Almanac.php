@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
+use app\service\LunarService;
 use think\Request;
 use think\facade\Db;
 
@@ -490,58 +491,23 @@ class Almanac extends BaseController
     }
 
     /**
-     * 阳历转农历（简化版）
+     * 阳历转农历（统一委托 LunarService）
      */
     private function solarToLunar($year, $month, $day)
     {
-        $gan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
-        $zhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
-        $zhiri = ['建', '除', '满', '平', '定', '执', '破', '危', '成', '收', '开', '闭'];
-
-        $baseDate = strtotime('1900-01-31');
-        $targetDate = strtotime("{$year}-{$month}-{$day}");
-        $daysDiff = floor(($targetDate - $baseDate) / 86400);
-
-        $ganIndex = $daysDiff % 10;
-        $zhiIndex = $daysDiff % 12;
-        $yearGanIndex = ($year - 4) % 10;
-        $yearZhiIndex = ($year - 4) % 12;
-
-        $commonYi = ['祭祀', '祈福', '出行', '结婚', '开业', '动土', '安床', '纳财'];
-        $commonJi = ['安葬', '破土', '开仓', '出货', '词讼', '求医'];
-
-        $dayGan = $gan[$ganIndex];
-        if (in_array($dayGan, ['甲', '乙', '丙', '丁'], true)) {
-            $yi = array_slice($commonYi, 0, 4);
-            $ji = array_slice($commonJi, 0, 2);
-        } else {
-            $yi = array_slice($commonYi, 2, 4);
-            $ji = array_slice($commonJi, 2, 2);
-        }
+        $date = sprintf('%04d-%02d-%02d', (int)$year, (int)$month, (int)$day);
+        $lunar = LunarService::solarToLunar($date);
 
         return [
-            'lunar_date' => '农历' . $month . '月' . $day,
-            'ganzhi' => $gan[$yearGanIndex] . $zhi[$yearZhiIndex] . '年 ' . $gan[$ganIndex] . $zhi[$zhiIndex] . '日',
-            'yi' => $yi,
-            'ji' => $ji,
-            'jishen' => ['天德', '月德'],
-            'xiongsha' => ['五虚', '土符'],
-            'sha' => ['东', '南', '西', '北'][$day % 4],
-            'zhiri' => $zhiri[$day % 12],
-            'shichen' => [
-                ['name' => '子', 'time' => '23:00-01:00', 'type' => 'ji', 'yiji' => '宜祭祀 忌动土'],
-                ['name' => '丑', 'time' => '01:00-03:00', 'type' => 'xiaoJi', 'yiji' => '宜安床 忌出行'],
-                ['name' => '寅', 'time' => '03:00-05:00', 'type' => 'ping', 'yiji' => '平'],
-                ['name' => '卯', 'time' => '05:00-07:00', 'type' => 'ji', 'yiji' => '宜出行 忌动土'],
-                ['name' => '辰', 'time' => '07:00-09:00', 'type' => 'xiong', 'yiji' => '忌出行'],
-                ['name' => '巳', 'time' => '09:00-11:00', 'type' => 'ping', 'yiji' => '平'],
-                ['name' => '午', 'time' => '11:00-13:00', 'type' => 'ji', 'yiji' => '宜会友 忌词讼'],
-                ['name' => '未', 'time' => '13:00-15:00', 'type' => 'xiaoJi', 'yiji' => '宜求财'],
-                ['name' => '申', 'time' => '15:00-17:00', 'type' => 'ping', 'yiji' => '平'],
-                ['name' => '酉', 'time' => '17:00-19:00', 'type' => 'ji', 'yiji' => '宜嫁娶'],
-                ['name' => '戌', 'time' => '19:00-21:00', 'type' => 'xiong', 'yiji' => '忌安床'],
-                ['name' => '亥', 'time' => '21:00-23:00', 'type' => 'ping', 'yiji' => '平'],
-            ],
+            'lunar_date' => $lunar['lunar_text'] ?? '',
+            'ganzhi' => $lunar['ganzhi'] ?? '',
+            'yi' => $lunar['yi'] ?? [],
+            'ji' => $lunar['ji'] ?? [],
+            'jishen' => $lunar['jishen'] ?? [],
+            'xiongsha' => $lunar['xiongsha'] ?? [],
+            'sha' => $lunar['sha'] ?? '',
+            'zhiri' => $lunar['zhiri'] ?? '',
+            'shichen' => $lunar['shichen'] ?? [],
         ];
     }
 }

@@ -278,9 +278,13 @@ class Hehun extends BaseController
         $tier = $data['tier'] ?? self::TIER_PREMIUM; // free 或 premium
         $useAi = $data['useAi'] ?? true;
         
-        // 计算双方八字（免费层也需要）
-        $maleBazi = $this->baziCalculationService->calculateBazi($data['maleBirthDate'], '男');
-        $femaleBazi = $this->baziCalculationService->calculateBazi($data['femaleBirthDate'], '女');
+        // 计算双方八字（免费层也需要），并补齐旧结构可能缺失的索引与五行元数据
+        $maleBazi = $this->baziCalculationService->normalizeBaziStructure(
+            $this->baziCalculationService->calculateBazi($data['maleBirthDate'], '男')
+        );
+        $femaleBazi = $this->baziCalculationService->normalizeBaziStructure(
+            $this->baziCalculationService->calculateBazi($data['femaleBirthDate'], '女')
+        );
         
         // 执行完整合婚分析
         $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);

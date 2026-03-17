@@ -255,9 +255,9 @@ class ConfigService
     /**
      * 计算实际积分消耗
      */
-    public static function calculatePointsCost(string $feature, int $basePoints, bool $isNewUser = false): array
+    public static function calculatePointsCost(string $feature, $basePoints = null, bool $isNewUser = false): array
     {
-        $originalPoints = $basePoints;
+        $originalPoints = self::normalizePointsCostBase($feature, $basePoints);
         $discount = 0;
         $reason = '';
         
@@ -278,14 +278,48 @@ class ConfigService
         }
         
         $finalPoints = (int) ($originalPoints * (100 - $discount) / 100);
-        $finalPoints = max(1, $finalPoints); // 最低1积分
+        if ($originalPoints > 0) {
+            $finalPoints = max(1, $finalPoints); // 非免费项最低 1 积分
+        }
         
         return [
             'original' => $originalPoints,
             'final' => $finalPoints,
             'discount' => $discount,
             'reason' => $reason,
-            'saved' => $originalPoints - $finalPoints,
+            'saved' => max(0, $originalPoints - $finalPoints),
         ];
+    }
+
+    protected static function normalizePointsCostBase(string $feature, $basePoints): int
+    {
+        if (is_numeric($basePoints)) {
+            return max(0, (int) $basePoints);
+        }
+
+        $configKeyMap = [
+            'bazi' => 'points_cost_bazi',
+            'hehun' => 'points_cost_hehun',
+            'tarot' => 'points_cost_tarot',
+            'liuyao' => 'points_cost_liuyao',
+            'daily' => 'points_cost_daily',
+        ];
+        $featureDefaults = [
+            'bazi' => 10,
+            'hehun' => 80,
+            'tarot' => 20,
+            'liuyao' => 20,
+            'daily' => 0,
+        ];
+
+        $configKey = $configKeyMap[$feature] ?? null;
+        if ($configKey !== null) {
+            $configuredValue = self::get($configKey, null);
+            if (is_numeric($configuredValue)) {
+                return max(0, (int) $configuredValue);
+            }
+        }
+
+        return $featureDefaults[$feature] ?? 0;
     }
 }

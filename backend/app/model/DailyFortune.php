@@ -69,10 +69,9 @@ class DailyFortune extends Model
      */
     protected static function generateFortune(string $date): self
     {
-        // 简化的运势生成逻辑
-        $yiList = ['出行', '签约', '搬家', '装修', '结婚', '开业', '祭祀', '祈福'];
-        $jiList = ['动土', '安葬', '行丧', '破土', '开市', '入宅'];
-        
+        $almanac = LunarService::solarToLunar($date);
+        $yi = $almanac['yi'] ?? ['出行', '祈福'];
+        $ji = $almanac['ji'] ?? ['动土'];
         $overallScore = mt_rand(60, 95);
         
         return self::create([
@@ -88,8 +87,8 @@ class DailyFortune extends Model
             'love_desc' => '感情运势' . (mt_rand(0, 1) ? '甜蜜，桃花旺' : '平淡，需要主动'),
             'health_score' => mt_rand(60, 100),
             'health_desc' => '健康状况' . (mt_rand(0, 1) ? '良好' : '一般，注意休息'),
-            'yi' => implode(',', array_slice($yiList, 0, mt_rand(2, 4))),
-            'ji' => implode(',', array_slice($jiList, 0, mt_rand(1, 3))),
+            'yi' => implode(',', $yi),
+            'ji' => implode(',', $ji),
         ]);
     }
     
@@ -99,6 +98,10 @@ class DailyFortune extends Model
     protected static function solarToLunar(string $date): string
     {
         $lunar = LunarService::solarToLunar($date);
+        if (!empty($lunar['lunar_text'])) {
+            return (string) $lunar['lunar_text'];
+        }
+
         $month = self::formatLunarMonth((int)($lunar['lunar_month'] ?? 1), (bool)($lunar['is_leap'] ?? false));
         $day = self::formatLunarDay((int)($lunar['lunar_day'] ?? 1));
         $yearGanZhi = $lunar['year_gan_zhi'] ?? '';

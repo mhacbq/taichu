@@ -5,8 +5,7 @@ namespace app\service;
 
 /**
  * 农历转换工具类
- * 提供公历转农历、干支计算等功能
- * 采用数据驱动，确保起卦、命理计算的准确性
+ * 提供公历转农历、干支计算及黄历辅助信息。
  */
 class LunarService
 {
@@ -19,6 +18,21 @@ class LunarService
      * 地支
      */
     public const DI_ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+    /**
+     * 十二建除
+     */
+    private const ZHIRI_ORDER = ['建', '除', '满', '平', '定', '执', '破', '危', '成', '收', '开', '闭'];
+
+    /**
+     * 时辰序列
+     */
+    private const SHICHEN_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+    /**
+     * 黄黑道十二神
+     */
+    private const SHICHEN_GODS = ['青龙', '明堂', '天刑', '朱雀', '金匮', '天德', '白虎', '玉堂', '天牢', '玄武', '司命', '勾陈'];
 
     /**
      * 农历数据 (2020-2035)
@@ -45,16 +59,16 @@ class LunarService
 
     /**
      * 公历转农历
-     * 
+     *
      * @param string $date 公历日期 Y-m-d
-     * @return array 农历信息 [year_zhi_index, lunar_month, lunar_day, year_gan_zhi]
+     * @return array 农历与黄历信息
      */
     public static function solarToLunar(string $date): array
     {
         $timestamp = strtotime($date);
         $year = (int)date('Y', $timestamp);
-        
-        // 如果日期早于当年的春节，属于上一年
+
+        // 农历年份以春节为界，保持农历年月日显示正确。
         $newYearDate = self::$lunarData[$year][0] ?? null;
         if ($newYearDate && $timestamp < strtotime($newYearDate)) {
             $year--;
@@ -62,23 +76,20 @@ class LunarService
 
         $data = self::$lunarData[$year] ?? null;
         if (!$data) {
-            // 超出范围，回退到简化模拟（实际应提示或扩展数据）
             return self::fallbackSolarToLunar($date);
         }
 
         $baseTimestamp = strtotime($data[0]);
         $offset = (int)(($timestamp - $baseTimestamp) / 86400);
-
-        $leapMonth = $data[1];
-        $monthData = $data[2];
+        $leapMonth = (int)$data[1];
+        $monthData = (int)$data[2];
         $leapMonthDays = $data[3] ? 30 : 29;
 
         $lunarMonth = 1;
         $isLeap = false;
 
         for ($i = 1; $i <= 12; $i++) {
-            // 当前月天数 (1=30, 0=29)
-            $bit = (12 - $i);
+            $bit = 12 - $i;
             $days = (($monthData >> $bit) & 1) ? 30 : 29;
 
             if ($offset < $days) {
@@ -87,8 +98,7 @@ class LunarService
             $offset -= $days;
             $lunarMonth++;
 
-            // 检查闰月
-            if ($i == $leapMonth) {
+            if ($i === $leapMonth) {
                 if ($offset < $leapMonthDays) {
                     $isLeap = true;
                     break;
@@ -98,19 +108,155 @@ class LunarService
         }
 
         $lunarDay = $offset + 1;
-
-        // 计算年支（考虑命理学立春，但梅花易数通常用农历年）
-        // 这里返回农历年的干支
         $yearGanIndex = ($year - 4) % 10;
         $yearZhiIndex = ($year - 4) % 12;
+        $yearGanZhi = self::TIAN_GAN[$yearGanIndex] . self::DI_ZHI[$yearZhiIndex];
+
+        $baziService = new BaziCalculationService();
+        $bazi = $baziService->calculateBazi($date . ' 12:00:00', '男');
+        $monthGanZhi = ($bazi['month']['gan'] ?? '') . ($bazi['month']['zhi'] ?? '');
+        $dayGanZhi = ($bazi['day']['gan'] ?? '') . ($bazi['day']['zhi'] ?? '');
+
+        $almanac = self::buildAlmanacDetail($yearGanZhi, $monthGanZhi, $dayGanZhi);
+        $lunarText = trim($yearGanZhi . '年 ' . self::formatLunarMonth($lunarMonth, $isLeap) . self::formatLunarDay($lunarDay));
 
         return [
-            'year_zhi_index' => $yearZhiIndex + 1, // 1-indexed (子=1)
+            'year_zhi_index' => $yearZhiIndex + 1,
             'lunar_month' => $lunarMonth,
             'lunar_day' => $lunarDay,
             'is_leap' => $isLeap,
-            'year_gan_zhi' => self::TIAN_GAN[$yearGanIndex] . self::DI_ZHI[$yearZhiIndex]
+            'year_gan_zhi' => $yearGanZhi,
+            'month_gan_zhi' => $monthGanZhi,
+            'day_gan_zhi' => $dayGanZhi,
+            'lunar_text' => $lunarText,
+            'ganzhi' => trim($yearGanZhi . '年 ' . $monthGanZhi . '月 ' . $dayGanZhi . '日'),
+            'yi' => $almanac['yi'],
+            'ji' => $almanac['ji'],
+            'jishen' => $almanac['jishen'],
+            'xiongsha' => $almanac['xiongsha'],
+            'sha' => $almanac['sha'],
+            'zhiri' => $almanac['zhiri'],
+            'shichen' => $almanac['shichen'],
         ];
+    }
+
+    /**
+     * 构建黄历辅助信息。
+     */
+    private static function buildAlmanacDetail(string $yearGanZhi, string $monthGanZhi, string $dayGanZhi): array
+    {
+        $monthZhi = mb_substr($monthGanZhi, 1, 1);
+        $dayGan = mb_substr($dayGanZhi, 0, 1);
+        $dayZhi = mb_substr($dayGanZhi, 1, 1);
+
+        $monthZhiIndex = self::getZhiIndex($monthZhi);
+        $dayZhiIndex = self::getZhiIndex($dayZhi);
+        $zhiriIndex = ($dayZhiIndex - $monthZhiIndex + 12) % 12;
+        $zhiri = self::ZHIRI_ORDER[$zhiriIndex] ?? '平';
+
+        $profileMap = self::getZhiriProfileMap();
+        $profile = $profileMap[$zhiri] ?? $profileMap['平'];
+
+        return [
+            'zhiri' => $zhiri,
+            'yi' => $profile['yi'],
+            'ji' => $profile['ji'],
+            'jishen' => $profile['jishen'],
+            'xiongsha' => $profile['xiongsha'],
+            'sha' => self::getShaDirection($dayZhi),
+            'shichen' => self::buildShiChenData($dayGan, $profile['yi'], $profile['ji']),
+        ];
+    }
+
+    /**
+     * 建除十二神的宜忌与吉神凶煞映射。
+     */
+    private static function getZhiriProfileMap(): array
+    {
+        return [
+            '建' => ['yi' => ['出行', '赴任', '祈福', '求嗣'], 'ji' => ['动土', '开仓', '安葬'], 'jishen' => ['天恩', '岁德'], 'xiongsha' => ['土府', '小时']],
+            '除' => ['yi' => ['解除', '扫舍', '沐浴', '求医'], 'ji' => ['嫁娶', '开市', '远行'], 'jishen' => ['天德', '月空'], 'xiongsha' => ['五离', '月害']],
+            '满' => ['yi' => ['祈福', '祭祀', '交易', '纳财'], 'ji' => ['诉讼', '安葬', '远迁'], 'jishen' => ['民日', '三合'], 'xiongsha' => ['天刑', '死气']],
+            '平' => ['yi' => ['修饰', '会友', '安床', '纳畜'], 'ji' => ['嫁娶', '开渠', '破土'], 'jishen' => ['时德', '鸣吠'], 'xiongsha' => ['月厌', '地火']],
+            '定' => ['yi' => ['嫁娶', '订盟', '入学', '立券'], 'ji' => ['诉讼', '出师', '远行'], 'jishen' => ['天喜', '月德合'], 'xiongsha' => ['小耗', '五墓']],
+            '执' => ['yi' => ['捕捉', '纳采', '祭祀', '求财'], 'ji' => ['开市', '移徙', '安床'], 'jishen' => ['解神', '金堂'], 'xiongsha' => ['厌对', '招摇']],
+            '破' => ['yi' => ['求医', '破屋', '治病', '解除'], 'ji' => ['嫁娶', '开市', '签约'], 'jishen' => ['天仓'], 'xiongsha' => ['月破', '大耗']],
+            '危' => ['yi' => ['祭祀', '祈福', '求嗣', '安床'], 'ji' => ['登高', '乘船', '动土'], 'jishen' => ['母仓', '玉宇'], 'xiongsha' => ['天贼', '血支']],
+            '成' => ['yi' => ['嫁娶', '开市', '入宅', '签约'], 'ji' => ['诉讼', '安葬'], 'jishen' => ['三合', '天愿'], 'xiongsha' => ['勾绞', '四击']],
+            '收' => ['yi' => ['纳财', '收账', '祭祀', '捕猎'], 'ji' => ['开业', '置产', '安床'], 'jishen' => ['圣心', '福德'], 'xiongsha' => ['劫煞', '往亡']],
+            '开' => ['yi' => ['开市', '求财', '开张', '出行'], 'ji' => ['安葬', '动土', '针灸'], 'jishen' => ['月恩', '四相'], 'xiongsha' => ['游祸', '五虚']],
+            '闭' => ['yi' => ['祭祀', '修筑', '纳藏', '安门'], 'ji' => ['嫁娶', '开市', '远行'], 'jishen' => ['不将', '续世'], 'xiongsha' => ['月煞', '血忌']],
+        ];
+    }
+
+    /**
+     * 根据日干推演十二时辰黄黑道。
+     */
+    private static function buildShiChenData(string $dayGan, array $yi, array $ji): array
+    {
+        $startOffsetMap = [
+            '甲' => 0, '己' => 0,
+            '乙' => 2, '庚' => 2,
+            '丙' => 4, '辛' => 4,
+            '丁' => 6, '壬' => 6,
+            '戊' => 8, '癸' => 8,
+        ];
+        $auspiciousGods = ['青龙', '明堂', '金匮', '天德', '玉堂', '司命'];
+        $timeRanges = ['23:00-00:59', '01:00-02:59', '03:00-04:59', '05:00-06:59', '07:00-08:59', '09:00-10:59', '11:00-12:59', '13:00-14:59', '15:00-16:59', '17:00-18:59', '19:00-20:59', '21:00-22:59'];
+
+        $startOffset = $startOffsetMap[$dayGan] ?? 0;
+        $result = [];
+        foreach (self::SHICHEN_BRANCHES as $index => $branch) {
+            $god = self::SHICHEN_GODS[($startOffset + $index) % 12];
+            $isAuspicious = in_array($god, $auspiciousGods, true);
+            $result[] = [
+                'name' => $branch,
+                'time' => $timeRanges[$index],
+                'type' => $isAuspicious ? 'ji' : 'xiong',
+                'god' => $god,
+                'yiji' => self::buildShiChenAdvice($isAuspicious, $yi, $ji),
+            ];
+        }
+
+        return $result;
+    }
+
+    private static function buildShiChenAdvice(bool $isAuspicious, array $yi, array $ji): string
+    {
+        $yiText = implode('、', array_slice($yi, 0, 2));
+        $jiText = implode('、', array_slice($ji, 0, 2));
+
+        if ($isAuspicious) {
+            return '宜' . $yiText . '；忌' . $jiText;
+        }
+
+        return '宜静守、复盘；忌' . ($jiText !== '' ? $jiText : '冒进与争执');
+    }
+
+    /**
+     * 获取煞方。
+     */
+    private static function getShaDirection(string $dayZhi): string
+    {
+        if (in_array($dayZhi, ['寅', '午', '戌'], true)) {
+            return '北';
+        }
+        if (in_array($dayZhi, ['亥', '卯', '未'], true)) {
+            return '西';
+        }
+        if (in_array($dayZhi, ['申', '子', '辰'], true)) {
+            return '南';
+        }
+        return '东';
+    }
+
+    /**
+     * 获取地支索引。
+     */
+    private static function getZhiIndex(string $zhi): int
+    {
+        $index = array_search($zhi, self::DI_ZHI, true);
+        return $index === false ? 0 : (int)$index;
     }
 
     /**
@@ -122,14 +268,53 @@ class LunarService
         $year = (int)date('Y', $timestamp);
         $month = (int)date('n', $timestamp);
         $day = (int)date('j', $timestamp);
+        $yearGanZhi = self::TIAN_GAN[($year - 4) % 10] . self::DI_ZHI[($year - 4) % 12];
 
-        // 简化的固定日期模拟
+        $baziService = new BaziCalculationService();
+        $bazi = $baziService->calculateBazi($date . ' 12:00:00', '男');
+        $monthGanZhi = ($bazi['month']['gan'] ?? '') . ($bazi['month']['zhi'] ?? '');
+        $dayGanZhi = ($bazi['day']['gan'] ?? '') . ($bazi['day']['zhi'] ?? '');
+        $almanac = self::buildAlmanacDetail($yearGanZhi, $monthGanZhi, $dayGanZhi);
+        $lunarText = trim($yearGanZhi . '年 ' . self::formatLunarMonth($month, false) . self::formatLunarDay($day));
+
         return [
             'year_zhi_index' => (($year - 4) % 12) + 1,
-            'lunar_month' => $month, // 错误但无奈的回退
+            'lunar_month' => $month,
             'lunar_day' => $day,
             'is_leap' => false,
-            'year_gan_zhi' => self::TIAN_GAN[($year - 4) % 10] . self::DI_ZHI[($year - 4) % 12]
+            'year_gan_zhi' => $yearGanZhi,
+            'month_gan_zhi' => $monthGanZhi,
+            'day_gan_zhi' => $dayGanZhi,
+            'lunar_text' => $lunarText,
+            'ganzhi' => trim($yearGanZhi . '年 ' . $monthGanZhi . '月 ' . $dayGanZhi . '日'),
+            'yi' => $almanac['yi'],
+            'ji' => $almanac['ji'],
+            'jishen' => $almanac['jishen'],
+            'xiongsha' => $almanac['xiongsha'],
+            'sha' => $almanac['sha'],
+            'zhiri' => $almanac['zhiri'],
+            'shichen' => $almanac['shichen'],
         ];
+    }
+
+    private static function formatLunarMonth(int $month, bool $isLeap = false): string
+    {
+        $months = [1 => '正月', 2 => '二月', 3 => '三月', 4 => '四月', 5 => '五月', 6 => '六月', 7 => '七月', 8 => '八月', 9 => '九月', 10 => '十月', 11 => '冬月', 12 => '腊月'];
+        $monthText = $months[$month] ?? ($month . '月');
+        return $isLeap ? '闰' . $monthText : $monthText;
+    }
+
+    private static function formatLunarDay(int $day): string
+    {
+        $days = [
+            1 => '初一', 2 => '初二', 3 => '初三', 4 => '初四', 5 => '初五',
+            6 => '初六', 7 => '初七', 8 => '初八', 9 => '初九', 10 => '初十',
+            11 => '十一', 12 => '十二', 13 => '十三', 14 => '十四', 15 => '十五',
+            16 => '十六', 17 => '十七', 18 => '十八', 19 => '十九', 20 => '二十',
+            21 => '廿一', 22 => '廿二', 23 => '廿三', 24 => '廿四', 25 => '廿五',
+            26 => '廿六', 27 => '廿七', 28 => '廿八', 29 => '廿九', 30 => '三十',
+        ];
+
+        return $days[$day] ?? ((string)$day);
     }
 }

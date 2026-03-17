@@ -344,7 +344,7 @@ class BaziCalculationService
         $wuxingStats = $this->calculateWuxingStats($pillars);
         $strength = $this->analyzeStrength($pillars);
         
-        return array_merge($pillars, [
+        $result = array_merge($pillars, [
             'day_master' => $dayGan,
             'day_master_wuxing' => $this->ganWuXing[$dayGan],
             'xunkong' => $xunkongText,
@@ -354,6 +354,99 @@ class BaziCalculationService
             'qiyun' => $this->calculateQiYun($year, $month, $day, $hour, $minute, $genderLabel, $yearGan),
             'calculation_note' => $hour >= 23 ? '已处理晚子时：日柱进一日，年柱月柱维持原日' : '正常排盘'
         ]);
+
+        return $this->normalizeBaziStructure($result);
+    }
+
+    public function normalizeBaziStructure(array $bazi): array
+    {
+        $positions = ['year', 'month', 'day', 'hour'];
+        $dayGan = $bazi['day']['gan'] ?? null;
+
+        foreach ($positions as $position) {
+            if (isset($bazi[$position]) && is_array($bazi[$position])) {
+                $bazi[$position] = $this->normalizePillar($bazi[$position], $dayGan);
+            }
+        }
+
+        $pillars = [];
+        foreach ($positions as $position) {
+            if (isset($bazi[$position]) && is_array($bazi[$position])) {
+                $pillars[$position] = $bazi[$position];
+            }
+        }
+
+        if (count($pillars) === 4 && isset($pillars['day']['gan'], $pillars['day']['zhi'])) {
+            $dayXunKong = $this->calculateXunKong((string)$pillars['day']['gan'], (string)$pillars['day']['zhi']);
+            $xunkongText = implode('', $dayXunKong);
+
+            foreach ($positions as $position) {
+                $pillars[$position]['xunkong'] = $pillars[$position]['xunkong'] ?? $xunkongText;
+                $pillars[$position]['xunkong_list'] = $pillars[$position]['xunkong_list'] ?? $dayXunKong;
+                $bazi[$position] = array_merge($bazi[$position], $pillars[$position]);
+            }
+
+            $bazi['day_master'] = $bazi['day_master'] ?? $pillars['day']['gan'];
+            $bazi['day_master_wuxing'] = $bazi['day_master_wuxing'] ?? ($this->ganWuXing[$pillars['day']['gan']] ?? '');
+            $bazi['xunkong'] = $bazi['xunkong'] ?? $xunkongText;
+            $bazi['xunkong_list'] = $bazi['xunkong_list'] ?? $dayXunKong;
+            $bazi['wuxing_stats'] = $this->normalizeWuxingStatsPayload($bazi['wuxing_stats'] ?? null, $pillars);
+
+            if (!isset($bazi['strength']) || !is_array($bazi['strength']) || !isset($bazi['strength']['score'])) {
+                $bazi['strength'] = $this->analyzeStrength($pillars);
+            } else {
+                $bazi['strength']['details'] = $bazi['strength']['details'] ?? [];
+                $bazi['strength']['details']['wuxing_stats'] = $bazi['strength']['details']['wuxing_stats'] ?? $bazi['wuxing_stats'];
+            }
+        }
+
+        return $bazi;
+    }
+
+    protected function normalizePillar(array $pillar, ?string $dayGan = null): array
+    {
+        $ganIndexMap = array_flip(['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸']);
+        $zhiIndexMap = array_flip(['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']);
+
+        $gan = (string)($pillar['gan'] ?? '');
+        $zhi = (string)($pillar['zhi'] ?? '');
+
+        if (!isset($pillar['gan_index']) && $gan !== '' && isset($ganIndexMap[$gan])) {
+            $pillar['gan_index'] = $ganIndexMap[$gan];
+        }
+        if (!isset($pillar['zhi_index']) && $zhi !== '' && isset($zhiIndexMap[$zhi])) {
+            $pillar['zhi_index'] = $zhiIndexMap[$zhi];
+        }
+        if (!isset($pillar['gan_wuxing']) && $gan !== '') {
+            $pillar['gan_wuxing'] = $this->ganWuXing[$gan] ?? '';
+        }
+        if (!isset($pillar['zhi_wuxing']) && $zhi !== '') {
+            $pillar['zhi_wuxing'] = $this->zhiWuXing[$zhi] ?? '';
+        }
+        if (!isset($pillar['nayin']) && $gan !== '' && $zhi !== '') {
+            $pillar['nayin'] = $this->naYin[$gan . $zhi] ?? '';
+        }
+        if (!isset($pillar['canggan']) && $zhi !== '') {
+            $pillar['canggan'] = $this->zhiCangGan[$zhi] ?? [];
+        }
+        if (!isset($pillar['shishen']) && $dayGan !== null && $dayGan !== '' && $gan !== '') {
+            $pillar['shishen'] = $this->shiShenTable[$dayGan][$gan] ?? '';
+        }
+
+        return $pillar;
+    }
+
+    protected function normalizeWuxingStatsPayload($stats, array $pillars): array
+    {
+        if (is_array($stats) && !empty($stats)) {
+            $normalized = ['金' => 0.0, '木' => 0.0, '水' => 0.0, '火' => 0.0, '土' => 0.0];
+            foreach ($normalized as $wx => $_) {
+                $normalized[$wx] = round(max(0.0, (float)($stats[$wx] ?? 0)), 2);
+            }
+            return $normalized;
+        }
+
+        return $this->calculateWuxingStats($pillars);
     }
 
     public function getLunarYear(int $year, int $month, int $day, ?int $hour = null, ?int $minute = null): int
@@ -426,14 +519,17 @@ class BaziCalculationService
      */
     public function calculateDayPillar(int $year, int $month, int $day): array
     {
-        // 1900-01-31 是甲子日 (0, 0)
+        // 1900-01-31 为庚子年丁丑月甲辰日，万年历通行口径并非“甲子日”。
+        // 以甲辰作为六十甲子基准，可修正日柱整体偏移 4 支的问题。
         $targetJD = $this->getJulianDay($year, $month, $day);
         $baseJD = $this->getJulianDay(1900, 1, 31);
         $diff = $targetJD - $baseJD;
+        $baseGanIndex = 0; // 甲
+        $baseZhiIndex = 4; // 辰
         
         return [
-            'gan_index' => ($diff % 10 + 10) % 10,
-            'zhi_index' => ($diff % 12 + 12) % 12
+            'gan_index' => (($baseGanIndex + $diff) % 10 + 10) % 10,
+            'zhi_index' => (($baseZhiIndex + $diff) % 12 + 12) % 12
         ];
     }
 

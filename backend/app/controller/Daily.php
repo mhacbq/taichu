@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\DailyFortune;
 use app\model\PointsRecord;
 use app\service\BaziCalculationService;
+use app\service\LunarService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -37,9 +38,10 @@ class Daily extends BaseController
     {
         $user = $this->request->user;
         $fortune = DailyFortune::getToday();
+        $almanac = LunarService::solarToLunar($fortune->date);
         
-        $yi = explode(',', $fortune->yi);
-        $ji = explode(',', $fortune->ji);
+        $yi = !empty($almanac['yi']) ? $almanac['yi'] : array_values(array_filter(explode(',', $fortune->yi)));
+        $ji = !empty($almanac['ji']) ? $almanac['ji'] : array_values(array_filter(explode(',', $fortune->ji)));
         
         // 获取用户八字信息，生成个性化运势
         $personalized = null;
@@ -49,7 +51,8 @@ class Daily extends BaseController
         
         return $this->success([
             'date' => $fortune->date,
-            'lunarDate' => $fortune->lunar_date,
+            'lunarDate' => $almanac['lunar_text'] ?? $fortune->lunar_date,
+            'ganzhi' => $almanac['ganzhi'] ?? '',
             'overallScore' => $fortune->overall_score,
             'summary' => $fortune->summary,
             'aspects' => [
@@ -65,6 +68,16 @@ class Daily extends BaseController
                 'wealth' => $fortune->wealth_desc,
                 'love' => $fortune->love_desc,
                 'health' => $fortune->health_desc,
+            ],
+            'almanac' => [
+                'dayGanzhi' => $almanac['day_gan_zhi'] ?? '',
+                'monthGanzhi' => $almanac['month_gan_zhi'] ?? '',
+                'yearGanzhi' => $almanac['year_gan_zhi'] ?? '',
+                'zhiri' => $almanac['zhiri'] ?? '',
+                'jishen' => $almanac['jishen'] ?? [],
+                'xiongsha' => $almanac['xiongsha'] ?? [],
+                'sha' => $almanac['sha'] ?? '',
+                'shichen' => $almanac['shichen'] ?? [],
             ],
             'personalized' => $personalized,
         ]);
@@ -234,6 +247,7 @@ class Daily extends BaseController
     {
         $user = $this->request->user;
         $fortune = DailyFortune::getToday();
+        $almanac = LunarService::solarToLunar($fortune->date);
         
         $favoriteWuxing = '土'; // 默认
         if ($user) {
@@ -250,9 +264,9 @@ class Daily extends BaseController
         
         return $this->success([
             'date' => $fortune->date,
-            'lunarDate' => $fortune->lunar_date,
-            'yi' => explode(',', $fortune->yi),
-            'ji' => explode(',', $fortune->ji),
+            'lunarDate' => $almanac['lunar_text'] ?? $fortune->lunar_date,
+            'yi' => !empty($almanac['yi']) ? $almanac['yi'] : array_values(array_filter(explode(',', $fortune->yi))),
+            'ji' => !empty($almanac['ji']) ? $almanac['ji'] : array_values(array_filter(explode(',', $fortune->ji))),
             'luckyNumbers' => $this->generateLuckyNumbers($favoriteWuxing, (int)$user['sub']),
             'luckyColors' => $this->generateLuckyColors($favoriteWuxing, (int)$user['sub']),
             'luckyDirections' => $this->generateLuckyDirections($favoriteWuxing, (int)$user['sub']),

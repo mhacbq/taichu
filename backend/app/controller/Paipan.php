@@ -85,8 +85,10 @@ class Paipan extends BaseController
             }
         }
         
-        // 计算八字（使用统一的服务类）
-        $bazi = $this->baziService->calculateBazi($birthDate, $gender);
+        // 计算八字（使用统一的服务类，并补齐旧结构缺失的元数据）
+        $bazi = $this->baziService->normalizeBaziStructure(
+            $this->baziService->calculateBazi($birthDate, $gender)
+        );
         
         // 使用专业解读服务生成分析
         $fullInterpretation = $this->interpretationService->generateFullInterpretation($bazi, $gender);
@@ -831,6 +833,26 @@ class Paipan extends BaseController
         return $this->baziService->calculateBazi($birthDate, $gender);
     }
     
+    protected function resolveGanIndex(array $pillar): int
+    {
+        if (isset($pillar['gan_index']) && is_numeric($pillar['gan_index'])) {
+            return (int)$pillar['gan_index'];
+        }
+
+        $ganMap = ['甲' => 0, '乙' => 1, '丙' => 2, '丁' => 3, '戊' => 4, '己' => 5, '庚' => 6, '辛' => 7, '壬' => 8, '癸' => 9];
+        return $ganMap[$pillar['gan'] ?? '甲'] ?? 0;
+    }
+
+    protected function resolveZhiIndex(array $pillar): int
+    {
+        if (isset($pillar['zhi_index']) && is_numeric($pillar['zhi_index'])) {
+            return (int)$pillar['zhi_index'];
+        }
+
+        $zhiMap = ['子' => 0, '丑' => 1, '寅' => 2, '卯' => 3, '辰' => 4, '巳' => 5, '午' => 6, '未' => 7, '申' => 8, '酉' => 9, '戌' => 10, '亥' => 11];
+        return $zhiMap[$pillar['zhi'] ?? '子'] ?? 0;
+    }
+
     /**
      * 计算大运
      * 大运根据月柱推算，阳男阴女顺排，阴男阳女逆排
@@ -851,9 +873,9 @@ class Paipan extends BaseController
         // 确定大运顺逆：阳男阴女顺排，阴男阳女逆排
         $isForward = ($isYang && $isMale) || (!$isYang && !$isMale);
         
-        // 月柱作为大运起点
-        $monthGanIndex = $bazi['month']['gan_index'];
-        $monthZhiIndex = $bazi['month']['zhi_index'];
+        // 月柱作为大运起点（兼容旧结果缺失索引元数据）
+        $monthGanIndex = $this->resolveGanIndex($bazi['month'] ?? []);
+        $monthZhiIndex = $this->resolveZhiIndex($bazi['month'] ?? []);
         
         // 计算起运年龄（根据出生日期到最近节气的天数）
         $startAge = $this->calculateQiYunAge($birthDate, $isForward);
