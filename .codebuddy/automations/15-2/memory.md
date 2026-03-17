@@ -6,7 +6,9 @@
 - 关键文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Daily.vue`、`frontend/src/components/CheckinCard.vue`、`frontend/src/api/request.js`、`frontend/src/api/index.js`。
 - 已从 `TODO.md` 移除 4 条已完成待办：八字页白屏、合婚前端定价字段错位、每日运势首屏报错、每日运势样式串扰。
 - 验证结果：`npm run build --prefix frontend` 通过，`git diff --check`（上述改动文件 + `TODO.md`）通过，IDE/LSP 未发现新增错误。
-- 备注：本轮未处理六爻路由失配、每日运势黄历字段缺失等跨层问题；提交信息计划使用 `fix-frontend-multiple-issues-20260317-2205`。
+- Git：提交 `7419d29 fix-frontend-multiple-issues-20260317-2205`，已推送到 `origin/master`。
+- 备注：本轮未处理六爻路由失配、每日运势黄历字段缺失等跨层问题，后续如继续前端修复可优先评估六爻链路是否需要联动后端路由兼容。
+
 
 
 
