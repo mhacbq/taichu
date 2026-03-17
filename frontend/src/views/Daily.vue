@@ -407,12 +407,12 @@ onMounted(() => {
 
 .lucky-item.good .lucky-label {
   background: var(--success-color);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .lucky-item.bad .lucky-label {
   background: var(--danger-color);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .lucky-tags {
@@ -551,7 +551,7 @@ onMounted(() => {
   border-radius: 16px;
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .luck-badge.吉 {

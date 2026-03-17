@@ -432,7 +432,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -457,7 +457,7 @@ onMounted(() => {
 
 .login-btn {
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
   padding: 10px 24px;
   border-radius: 25px;
   text-decoration: none;
@@ -618,7 +618,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -652,7 +652,7 @@ onMounted(() => {
 
 .mobile-login-btn {
   background: var(--primary-gradient);
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
 }
 
@@ -794,7 +794,7 @@ onMounted(() => {
 
 .companion-icon {
   font-size: 28px;
-  color: white;
+  color: var(--text-primary);
 }
 
 .companion-pulse {

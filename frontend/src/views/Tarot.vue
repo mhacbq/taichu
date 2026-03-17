@@ -772,7 +772,7 @@ const getCardAdvice = (card) => {
 }
 
 .topic-tab.active .topic-name {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .topic-icon {
@@ -961,7 +961,7 @@ const getCardAdvice = (card) => {
   top: 10px;
   right: 10px;
   background: rgba(184, 134, 11, 0.8);
-  color: #fff;
+  color: var(--text-primary);
   font-size: 10px;
   padding: 3px 8px;
   border-radius: 10px;

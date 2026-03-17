@@ -218,7 +218,7 @@
             @click="submitForm"
             :disabled="isLoading || !isFormValid"
           >
-            <span v-if="isLoading" class="loading"></span>
+            <div v-if="isLoading" class="loading-taiji mini"></div>
             <span v-else><el-icon><Link /></el-icon> 开始合婚分析</span>
           </button>
           
@@ -636,7 +636,7 @@ onMounted(() => {
 
 .discount {
   background: var(--primary-color);
-  color: #fff;
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 12px;
@@ -652,7 +652,7 @@ onMounted(() => {
   width: 100%;
   padding: 16px;
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
   border: none;
   border-radius: 16px;
   font-size: 16px;
@@ -673,19 +673,6 @@ onMounted(() => {
 .btn-submit:not(:disabled):hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
-}
-
-.loading {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .form-hint {
@@ -726,7 +713,7 @@ onMounted(() => {
 
 .premium-badge {
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 12px;
@@ -870,7 +857,7 @@ onMounted(() => {
 .btn-upgrade {
   padding: 14px 32px;
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
   border: none;
   border-radius: 30px;
   font-size: 16px;
@@ -1030,7 +1017,7 @@ onMounted(() => {
 
 .btn-primary {
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .btn-primary:hover:not(:disabled) {

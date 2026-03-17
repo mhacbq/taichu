@@ -577,7 +577,7 @@ const getStatusText = (status) => {
   top: -10px;
   right: -10px;
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-primary);
   font-size: 10px;
   font-weight: bold;
   padding: 4px 8px;

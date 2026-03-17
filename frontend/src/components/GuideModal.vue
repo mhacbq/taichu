@@ -226,8 +226,8 @@ onMounted(() => {
 .guide-dialog :deep(.el-dialog__title) {
   font-size: 22px;
   font-weight: bold;
-  color: #fff;
-  background: linear-gradient(135deg, #fff 0%, #daa520 100%);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--text-primary) 0%, #daa520 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -253,7 +253,7 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-muted);
   transition: all 0.3s ease;
 }
 
@@ -289,20 +289,20 @@ onMounted(() => {
 
 .step-content h3 {
   font-size: 24px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   font-weight: 600;
 }
 
 .warm-text {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: var(--text-secondary) !important;
   line-height: 1.8;
   margin-bottom: 15px;
   font-size: 15px;
 }
 
 .sub-text {
-  color: rgba(184, 134, 11, 0.9) !important;
+  color: var(--primary-light) !important;
   margin-top: 20px;
   font-size: 14px;
 }
@@ -324,7 +324,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   font-size: 14px;
   transition: all 0.3s ease;
 }
@@ -350,11 +350,11 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 15px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   border-radius: 12px;
   padding: 18px;
   text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
@@ -376,13 +376,13 @@ onMounted(() => {
 }
 
 .feature-info h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   margin-bottom: 5px;
 }
 
 .feature-info p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
   line-height: 1.6;
   margin-bottom: 8px;
@@ -391,7 +391,7 @@ onMounted(() => {
 .feature-tag {
   display: inline-block;
   background: rgba(184, 134, 11, 0.2);
-  color: #b8860b;
+  color: var(--primary-color);
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
@@ -399,17 +399,17 @@ onMounted(() => {
 
 .feature-tag.free {
   background: rgba(103, 194, 58, 0.2);
-  color: #67c23a;
+  color: var(--success-color);
 }
 
 /* 积分表格 */
 .points-intro {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
 .points-table {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 20px;
@@ -420,7 +420,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .points-row:last-child {
@@ -428,7 +428,7 @@ onMounted(() => {
 }
 
 .service-name {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 15px;
 }
 
@@ -439,20 +439,20 @@ onMounted(() => {
 
 .points-cost .original {
   text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   margin-right: 8px;
 }
 
 .free-tag {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
-  color: #fff;
+  background: var(--success-gradient);
+  color: var(--text-primary);
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
 }
 
 .points-cost.free {
-  color: #67c23a;
+  color: var(--success-color);
 }
 
 .earn-points {
@@ -464,7 +464,7 @@ onMounted(() => {
 }
 
 .earn-points h4 {
-  color: #67c23a;
+  color: var(--success-color);
   margin-bottom: 12px;
   font-size: 14px;
 }
@@ -474,7 +474,7 @@ onMounted(() => {
 }
 
 .earn-points li {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   padding: 6px 0;
   padding-left: 20px;
   position: relative;
@@ -485,7 +485,7 @@ onMounted(() => {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #67c23a;
+  color: var(--success-color);
   font-weight: bold;
 }
 
@@ -501,7 +501,7 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   border-radius: 10px;
   padding: 15px;
   text-align: left;
@@ -513,14 +513,14 @@ onMounted(() => {
 }
 
 .tip-item p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
 }
 
 .tip-item strong {
-  color: #b8860b;
+  color: var(--primary-color);
 }
 
 .encourage-box {
@@ -532,7 +532,7 @@ onMounted(() => {
 }
 
 .encourage-box p {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
   margin: 0;
   font-style: italic;
@@ -554,6 +554,7 @@ onMounted(() => {
 .footer-btn.primary {
   background: linear-gradient(135deg, #b8860b, #daa520);
   border: none;
+  color: var(--text-primary);
 }
 
 .footer-btn.primary:hover {
@@ -561,7 +562,7 @@ onMounted(() => {
   box-shadow: 0 5px 20px rgba(184, 134, 11, 0.4);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .comfort-cards {
     flex-direction: column;
   }

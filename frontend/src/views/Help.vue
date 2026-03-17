@@ -280,7 +280,7 @@ const goToFeedback = () => {
 }
 
 .search-section h2 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   font-size: 24px;
 }
@@ -291,15 +291,15 @@ const goToFeedback = () => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 25px;
   padding: 5px 15px;
 }
 
 .search-input :deep(.el-input__inner) {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -339,11 +339,11 @@ const goToFeedback = () => {
 }
 
 .faq-collapse :deep(.el-collapse-item__header) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 20px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 10px;
@@ -394,18 +394,18 @@ const goToFeedback = () => {
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
 .question-text {
   flex: 1;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 15px;
 }
 
 .expand-icon {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 12px;
   transition: transform 0.3s ease;
 }
@@ -418,7 +418,7 @@ const goToFeedback = () => {
   display: flex;
   gap: 12px;
   padding: 0 20px 20px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-light);
   margin-top: 0;
   padding-top: 15px;
 }
@@ -433,7 +433,7 @@ const goToFeedback = () => {
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
@@ -453,13 +453,13 @@ const goToFeedback = () => {
 }
 
 .contact-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 22px;
   margin-bottom: 10px;
 }
 
 .contact-section > p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 25px;
 }
 
@@ -483,12 +483,12 @@ const goToFeedback = () => {
 }
 
 .contact-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .contact-value {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
@@ -500,7 +500,7 @@ const goToFeedback = () => {
 }
 
 .quick-links h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 20px;
   margin-bottom: 25px;
 }
@@ -512,8 +512,8 @@ const goToFeedback = () => {
 }
 
 .quick-link {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 15px;
   padding: 25px 15px;
   text-decoration: none;
@@ -535,7 +535,7 @@ const goToFeedback = () => {
 }
 
 .quick-link span:last-child {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
 }
 

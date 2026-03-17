@@ -40,10 +40,15 @@ class Admin extends BaseController
      * 最大分页大小
      */
     protected const MAX_PAGE_SIZE = 100;
+    protected const CATEGORY_POINTS = 'points';
+    protected const CATEGORY_POINTS_COST = 'points_cost';
+    protected const CATEGORY_SENSITIVE_WORDS = 'sensitive_words';
+    protected const CATEGORY_SYSTEM_NOTICE = 'system_notice';
     
     /**
      * 初始化
      */
+
     public function initialize()
     {
         parent::initialize();
@@ -817,9 +822,155 @@ class Admin extends BaseController
     }
 
     /**
+     * 获取积分规则
+     */
+    public function getPointsRules()
+    {
+        if (!$this->checkPermission('points_view')) {
+            return $this->error('无权限查看积分规则', 403);
+        }
+
+        try {
+            $rules = Db::name('system_config')
+                ->whereIn('category', [self::CATEGORY_POINTS, self::CATEGORY_POINTS_COST])
+                ->order('category', 'asc')
+                ->order('sort_order', 'asc')
+                ->select()
+                ->toArray();
+
+            $list = array_map(function (array $rule): array {
+                $points = (int) $rule['config_value'];
+                if ($rule['category'] === self::CATEGORY_POINTS_COST) {
+                    $points = -abs($points);
+                }
+
+                return [
+                    'id' => $rule['id'],
+                    'name' => $rule['description'] ?: $rule['config_key'],
+                    'code' => $rule['config_key'],
+                    'points' => $points,
+                    'description' => $rule['description'] ?: '',
+                    'status' => (int) $rule['is_editable'],
+                    'category' => $rule['category'],
+                    'sort_order' => (int) $rule['sort_order'],
+                    'updated_at' => $rule['updated_at'],
+                ];
+            }, $rules);
+
+            return $this->success([
+                'list' => $list,
+                'total' => count($list),
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取积分规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取积分规则失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 保存积分规则
+     */
+    public function savePointsRules(Request $request)
+    {
+        if (!$this->checkPermission('points_adjust')) {
+            return $this->error('无权限修改积分规则', 403);
+        }
+
+        $data = $request->put();
+        $id = (int) ($data['id'] ?? 0);
+        $name = trim((string) ($data['name'] ?? ''));
+        $code = trim((string) ($data['code'] ?? ''));
+        $description = trim((string) ($data['description'] ?? ''));
+        $points = filter_var($data['points'] ?? null, FILTER_VALIDATE_INT);
+        $status = isset($data['status']) ? (int) $data['status'] : 1;
+        $sortOrder = isset($data['sort_order']) ? max(0, (int) $data['sort_order']) : 0;
+
+        if ($name === '' || $code === '' || $points === false) {
+            return $this->error('规则名称、标识和积分值不能为空', 400);
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $code)) {
+            return $this->error('规则标识只能包含字母、数字和下划线', 400);
+        }
+
+        if (!in_array($status, [0, 1], true)) {
+            return $this->error('状态值无效', 400);
+        }
+
+        $category = $points < 0 ? self::CATEGORY_POINTS_COST : self::CATEGORY_POINTS;
+        $storedPoints = abs((int) $points);
+
+        try {
+            $existing = null;
+            if ($id > 0) {
+                $existing = Db::name('system_config')->where('id', $id)->find();
+                if (!$existing) {
+                    return $this->error('积分规则不存在', 404);
+                }
+            }
+
+            $duplicateQuery = Db::name('system_config')->where('config_key', $code);
+            if ($id > 0) {
+                $duplicateQuery->where('id', '<>', $id);
+            }
+            if ($duplicateQuery->find()) {
+                return $this->error('规则标识已存在', 400);
+            }
+
+            $payload = [
+                'config_key' => $code,
+                'config_value' => (string) $storedPoints,
+                'config_type' => 'int',
+                'description' => $description !== '' ? $description : $name,
+                'category' => $category,
+                'is_editable' => $status,
+                'sort_order' => $sortOrder,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            if ($id > 0) {
+                Db::name('system_config')->where('id', $id)->update($payload);
+            } else {
+                $payload['created_at'] = date('Y-m-d H:i:s');
+                $id = (int) Db::name('system_config')->insertGetId($payload);
+            }
+
+            $after = [
+                'id' => $id,
+                'name' => $name,
+                'code' => $code,
+                'points' => $points,
+                'description' => $description !== '' ? $description : $name,
+                'status' => $status,
+                'category' => $category,
+                'sort_order' => $sortOrder,
+            ];
+
+            $this->logOperation('save_points_rule', 'points', [
+                'target_id' => $id,
+                'target_type' => 'points_rule',
+                'detail' => ($existing ? '更新' : '新增') . '积分规则: ' . $code,
+                'before_data' => $existing ?: [],
+                'after_data' => $after,
+            ]);
+
+            return $this->success($after, '保存成功');
+        } catch (\Exception $e) {
+            Log::error('保存积分规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'code' => $code,
+            ]);
+            return $this->error('保存积分规则失败，请稍后重试', 500);
+        }
+    }
+
+    /**
      * 获取反馈列表
      */
     public function feedbackList(Request $request)
+
     {
         // 检查权限
         if (!$this->checkPermission('feedback_view')) {
@@ -1020,9 +1171,507 @@ class Admin extends BaseController
     }
     
     /**
+     * 获取敏感词列表
+     */
+    public function getSensitiveWords(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限查看敏感词', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $keyword = trim((string) $request->get('keyword', ''));
+
+            $query = Db::name('system_config')
+                ->where('category', self::CATEGORY_SENSITIVE_WORDS)
+                ->order('created_at', 'desc');
+
+            if ($keyword !== '') {
+                $query->whereLike('description', '%' . addcslashes($keyword, '%_\\') . '%');
+            }
+
+            $total = $query->count();
+            $rows = $query->page($page, $pageSize)->select()->toArray();
+            $allRows = Db::name('system_config')
+                ->where('category', self::CATEGORY_SENSITIVE_WORDS)
+                ->select()
+                ->toArray();
+
+            $stats = ['illegal' => 0, 'sensitive' => 0];
+            foreach ($allRows as $row) {
+                $item = $this->decodeConfigJson($row['config_value']);
+                $type = $item['type'] ?? 'sensitive';
+                if ($type === 'illegal') {
+                    $stats['illegal']++;
+                } else {
+                    $stats['sensitive']++;
+                }
+            }
+
+            $list = array_map(function (array $row): array {
+                $item = $this->decodeConfigJson($row['config_value']);
+
+                return [
+                    'id' => $row['id'],
+                    'word' => $item['word'] ?? $row['description'],
+                    'type' => $item['type'] ?? 'sensitive',
+                    'replacement' => $item['replacement'] ?? '',
+                    'remark' => $item['remark'] ?? '',
+                    'created_at' => $row['created_at'],
+                    'updated_at' => $row['updated_at'],
+                ];
+            }, $rows);
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total,
+                'stats' => [
+                    'illegal' => $stats['illegal'],
+                    'sensitive' => $stats['sensitive'],
+                    'total' => $stats['illegal'] + $stats['sensitive'],
+                ],
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取敏感词列表失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取敏感词列表失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 新增敏感词
+     */
+    public function addSensitiveWord(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限添加敏感词', 403);
+        }
+
+        $data = $request->post();
+        $word = trim((string) ($data['word'] ?? ''));
+        $type = trim((string) ($data['type'] ?? 'sensitive'));
+        $replacement = trim((string) ($data['replacement'] ?? ''));
+        $remark = trim((string) ($data['remark'] ?? ''));
+
+        if ($word === '') {
+            return $this->error('敏感词不能为空', 400);
+        }
+        if (!in_array($type, ['illegal', 'sensitive'], true)) {
+            return $this->error('敏感词类型无效', 400);
+        }
+
+        try {
+            if ($this->hasDuplicateSensitiveWord($word)) {
+                return $this->error('敏感词已存在', 400);
+            }
+
+            $payload = [
+                'word' => $word,
+                'type' => $type,
+                'replacement' => $replacement,
+                'remark' => $remark,
+            ];
+
+            $id = (int) Db::name('system_config')->insertGetId([
+                'config_key' => 'sensitive_word_' . uniqid('', true),
+                'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                'config_type' => 'json',
+                'description' => $word,
+                'category' => self::CATEGORY_SENSITIVE_WORDS,
+                'is_editable' => 1,
+                'sort_order' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->logOperation('create_sensitive_word', 'config', [
+                'target_id' => $id,
+                'target_type' => 'sensitive_word',
+                'detail' => '新增敏感词: ' . $word,
+                'after_data' => $payload,
+            ]);
+
+            return $this->success(['id' => $id] + $payload, '添加成功');
+        } catch (\Exception $e) {
+            Log::error('新增敏感词失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'word' => $word,
+            ]);
+            return $this->error('添加敏感词失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 更新敏感词
+     */
+    public function updateSensitiveWord(Request $request, int $id)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限修改敏感词', 403);
+        }
+
+        $data = $request->put();
+        $word = trim((string) ($data['word'] ?? ''));
+        $type = trim((string) ($data['type'] ?? 'sensitive'));
+        $replacement = trim((string) ($data['replacement'] ?? ''));
+        $remark = trim((string) ($data['remark'] ?? ''));
+
+        if ($word === '') {
+            return $this->error('敏感词不能为空', 400);
+        }
+        if (!in_array($type, ['illegal', 'sensitive'], true)) {
+            return $this->error('敏感词类型无效', 400);
+        }
+
+        try {
+            $existing = Db::name('system_config')
+                ->where('id', $id)
+                ->where('category', self::CATEGORY_SENSITIVE_WORDS)
+                ->find();
+            if (!$existing) {
+                return $this->error('敏感词不存在', 404);
+            }
+            if ($this->hasDuplicateSensitiveWord($word, $id)) {
+                return $this->error('敏感词已存在', 400);
+            }
+
+            $payload = [
+                'word' => $word,
+                'type' => $type,
+                'replacement' => $replacement,
+                'remark' => $remark,
+            ];
+
+            Db::name('system_config')
+                ->where('id', $id)
+                ->update([
+                    'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                    'description' => $word,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+            $this->logOperation('update_sensitive_word', 'config', [
+                'target_id' => $id,
+                'target_type' => 'sensitive_word',
+                'detail' => '更新敏感词: ' . $word,
+                'before_data' => $this->decodeConfigJson($existing['config_value']),
+                'after_data' => $payload,
+            ]);
+
+            return $this->success(['id' => $id] + $payload, '更新成功');
+        } catch (\Exception $e) {
+            Log::error('更新敏感词失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('更新敏感词失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 删除敏感词
+     */
+    public function deleteSensitiveWord(int $id)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限删除敏感词', 403);
+        }
+
+        try {
+            $existing = Db::name('system_config')
+                ->where('id', $id)
+                ->where('category', self::CATEGORY_SENSITIVE_WORDS)
+                ->find();
+            if (!$existing) {
+                return $this->error('敏感词不存在', 404);
+            }
+
+            Db::name('system_config')->where('id', $id)->delete();
+
+            $this->logOperation('delete_sensitive_word', 'config', [
+                'target_id' => $id,
+                'target_type' => 'sensitive_word',
+                'detail' => '删除敏感词: ' . $existing['description'],
+                'before_data' => $this->decodeConfigJson($existing['config_value']),
+            ]);
+
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            Log::error('删除敏感词失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('删除敏感词失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 批量导入敏感词
+     */
+    public function importSensitiveWords(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限导入敏感词', 403);
+        }
+
+        $rawWords = trim((string) $request->post('words', ''));
+        if ($rawWords === '') {
+            return $this->error('导入内容不能为空', 400);
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $rawWords) ?: [];
+        $insertData = [];
+        $addedWords = [];
+        $skipped = 0;
+
+        try {
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '') {
+                    continue;
+                }
+
+                [$word, $type, $replacement] = array_pad(explode('|', $line, 3), 3, '');
+                $word = trim($word);
+                $type = trim($type) !== '' ? trim($type) : 'sensitive';
+                $replacement = trim($replacement);
+
+                if ($word === '' || !in_array($type, ['illegal', 'sensitive'], true) || $this->hasDuplicateSensitiveWord($word) || in_array($word, $addedWords, true)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $insertData[] = [
+                    'config_key' => 'sensitive_word_' . uniqid('', true),
+                    'config_value' => json_encode([
+                        'word' => $word,
+                        'type' => $type,
+                        'replacement' => $replacement,
+                        'remark' => '批量导入',
+                    ], JSON_UNESCAPED_UNICODE),
+                    'config_type' => 'json',
+                    'description' => $word,
+                    'category' => self::CATEGORY_SENSITIVE_WORDS,
+                    'is_editable' => 1,
+                    'sort_order' => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ];
+                $addedWords[] = $word;
+            }
+
+            if (!empty($insertData)) {
+                Db::name('system_config')->insertAll($insertData);
+            }
+
+            $this->logOperation('import_sensitive_words', 'config', [
+                'detail' => '批量导入敏感词',
+                'after_data' => [
+                    'imported' => count($insertData),
+                    'skipped' => $skipped,
+                ],
+            ]);
+
+            return $this->success([
+                'imported' => count($insertData),
+                'skipped' => $skipped,
+            ], '导入成功');
+        } catch (\Exception $e) {
+            Log::error('批量导入敏感词失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('导入敏感词失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 获取系统公告列表
+     */
+    public function getNotices(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限查看公告', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $status = $request->get('status', '');
+
+            $query = Db::name('system_config')
+                ->where('category', self::CATEGORY_SYSTEM_NOTICE)
+                ->order('created_at', 'desc');
+
+            $total = $query->count();
+            $rows = $query->page($page, $pageSize)->select()->toArray();
+            $list = [];
+            foreach ($rows as $row) {
+                $item = $this->decodeConfigJson($row['config_value']);
+                $itemStatus = (int) ($item['status'] ?? 0);
+                if ($status !== '' && $itemStatus !== (int) $status) {
+                    continue;
+                }
+                $list[] = [
+                    'id' => $row['id'],
+                    'title' => $item['title'] ?? $row['description'],
+                    'type' => $item['type'] ?? 'normal',
+                    'content' => $item['content'] ?? '',
+                    'status' => $itemStatus,
+                    'created_at' => $row['created_at'],
+                    'updated_at' => $row['updated_at'],
+                ];
+            }
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total,
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取系统公告失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取系统公告失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 保存系统公告
+     */
+    public function saveNotice(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限保存公告', 403);
+        }
+
+        $data = $request->post();
+        $id = (int) ($data['id'] ?? 0);
+        $title = trim((string) ($data['title'] ?? ''));
+        $type = trim((string) ($data['type'] ?? 'normal'));
+        $content = trim((string) ($data['content'] ?? ''));
+        $status = isset($data['status']) ? (int) $data['status'] : 1;
+
+        if ($title === '' || $content === '') {
+            return $this->error('公告标题和内容不能为空', 400);
+        }
+        if (!in_array($type, ['normal', 'important'], true)) {
+            return $this->error('公告类型无效', 400);
+        }
+        if (!in_array($status, [0, 1], true)) {
+            return $this->error('公告状态无效', 400);
+        }
+
+        try {
+            $existing = null;
+            if ($id > 0) {
+                $existing = Db::name('system_config')
+                    ->where('id', $id)
+                    ->where('category', self::CATEGORY_SYSTEM_NOTICE)
+                    ->find();
+                if (!$existing) {
+                    return $this->error('公告不存在', 404);
+                }
+            }
+
+            $payload = [
+                'title' => $title,
+                'type' => $type,
+                'content' => $content,
+                'status' => $status,
+            ];
+
+            $saveData = [
+                'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                'config_type' => 'json',
+                'description' => $title,
+                'category' => self::CATEGORY_SYSTEM_NOTICE,
+                'is_editable' => 1,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            if ($id > 0) {
+                Db::name('system_config')->where('id', $id)->update($saveData);
+            } else {
+                $saveData['config_key'] = 'system_notice_' . uniqid('', true);
+                $saveData['sort_order'] = 0;
+                $saveData['created_at'] = date('Y-m-d H:i:s');
+                $id = (int) Db::name('system_config')->insertGetId($saveData);
+            }
+
+            $this->logOperation('save_notice', 'config', [
+                'target_id' => $id,
+                'target_type' => 'notice',
+                'detail' => ($existing ? '更新' : '新增') . '系统公告: ' . $title,
+                'before_data' => $existing ? $this->decodeConfigJson($existing['config_value']) : [],
+                'after_data' => $payload,
+            ]);
+
+            return $this->success(['id' => $id] + $payload, '保存成功');
+        } catch (\Exception $e) {
+            Log::error('保存系统公告失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('保存系统公告失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 删除系统公告
+     */
+    public function deleteNotice(int $id)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限删除公告', 403);
+        }
+
+        try {
+            $existing = Db::name('system_config')
+                ->where('id', $id)
+                ->where('category', self::CATEGORY_SYSTEM_NOTICE)
+                ->find();
+            if (!$existing) {
+                return $this->error('公告不存在', 404);
+            }
+
+            Db::name('system_config')->where('id', $id)->delete();
+
+            $this->logOperation('delete_notice', 'config', [
+                'target_id' => $id,
+                'target_type' => 'notice',
+                'detail' => '删除系统公告: ' . $existing['description'],
+                'before_data' => $this->decodeConfigJson($existing['config_value']),
+            ]);
+
+            return $this->success(null, '删除成功');
+        } catch (\Exception $e) {
+            Log::error('删除系统公告失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('删除系统公告失败，请稍后重试', 500);
+        }
+    }
+
+    /**
      * 处理配置值根据类型
      */
     protected function processConfigValue($value, string $type): string
+
     {
         switch ($type) {
             case 'json':

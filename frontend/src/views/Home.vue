@@ -774,7 +774,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -836,7 +836,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   .about-stats {
     grid-template-columns: 1fr;
   }

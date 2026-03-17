@@ -41,7 +41,7 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/runtime
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 8080
 
 # 启动Apache
 CMD ["apache2-foreground"]

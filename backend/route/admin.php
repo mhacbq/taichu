@@ -89,7 +89,9 @@ Route::group('api/admin', function () {
         Route::put('system/settings', 'Admin/saveSettings');
         Route::get('system/sensitive', 'Admin/getSensitiveWords');
         Route::post('system/sensitive', 'Admin/addSensitiveWord');
+        Route::put('system/sensitive/:id', 'Admin/updateSensitiveWord');
         Route::delete('system/sensitive/:id', 'Admin/deleteSensitiveWord');
+
         Route::post('system/sensitive/import', 'Admin/importSensitiveWords');
         Route::get('system/notices', 'Admin/getNotices');
         Route::post('system/notices', 'Admin/saveNotice');
