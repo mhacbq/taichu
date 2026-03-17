@@ -51,10 +51,13 @@ Route::group('api/admin', function () {
         Route::post('payment/config', 'AdminPayment/saveConfig');
         Route::get('payment/orders', 'AdminPayment/getOrders');
         Route::get('payment/orders/:id', 'AdminPayment/getOrderDetail');
+        Route::put('payment/orders/:id/status', 'AdminPayment/updateOrderStatus');
+        Route::post('payment/orders/:id/refund', 'AdminPayment/refundOrder');
         Route::post('payment/orders/:id/complete', 'AdminPayment/manualComplete');
         Route::post('payment/orders/:id/cancel', 'AdminPayment/cancelOrder');
         Route::get('payment/stats', 'AdminPayment/getStats');
         Route::get('payment/trend', 'AdminPayment/getTrend');
+
         
         // 短信管理
         Route::get('sms/config', 'AdminSms/getConfig');

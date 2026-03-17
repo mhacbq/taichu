@@ -7,6 +7,9 @@ use app\BaseController;
 use app\model\PaymentConfig;
 use app\model\RechargeOrder;
 use app\model\User;
+use think\Request;
+use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 后台支付管理控制器
@@ -14,6 +17,13 @@ use app\model\User;
 class AdminPayment extends BaseController
 {
     protected $middleware = [\app\middleware\AdminAuth::class];
+
+    protected const ORDER_STATUSES = [
+        RechargeOrder::STATUS_PENDING,
+        RechargeOrder::STATUS_PAID,
+        RechargeOrder::STATUS_CANCELLED,
+        RechargeOrder::STATUS_REFUNDED,
+    ];
     
     /**
      * 获取微信支付配置
@@ -41,11 +51,10 @@ class AdminPayment extends BaseController
     /**
      * 保存微信支付配置
      */
-    public function saveConfig()
+    public function saveConfig(Request $request)
     {
-        $data = $this->request->post();
+        $data = $request->post();
         
-        // 验证必要参数
         if (empty($data['mch_id'])) {
             return $this->error('商户号不能为空');
         }
@@ -55,37 +64,41 @@ class AdminPayment extends BaseController
         if (empty($data['notify_url'])) {
             return $this->error('回调地址不能为空');
         }
-        
-        // API密钥验证
+        if (!filter_var($data['notify_url'], FILTER_VALIDATE_URL)) {
+            return $this->error('回调地址格式无效');
+        }
         if (empty($data['api_key']) && empty($data['api_key_masked'])) {
             return $this->error('API密钥不能为空');
         }
         
         $saveData = [
             'type' => 'wechat_jsapi',
-            'mch_id' => $data['mch_id'],
-            'app_id' => $data['app_id'],
-            'notify_url' => $data['notify_url'],
-            'is_enabled' => $data['is_enabled'] ?? true,
+            'mch_id' => trim((string) $data['mch_id']),
+            'app_id' => trim((string) $data['app_id']),
+            'notify_url' => trim((string) $data['notify_url']),
+            'is_enabled' => !empty($data['is_enabled']),
             'api_key_masked' => !empty($data['api_key_masked']),
         ];
         
-        // 只有提供了新密钥时才更新
         if (!empty($data['api_key'])) {
-            $saveData['api_key'] = $data['api_key'];
+            $saveData['api_key'] = trim((string) $data['api_key']);
             $saveData['api_key_masked'] = false;
         }
-        
-        // 处理证书文件
         if (!empty($data['api_cert'])) {
-            $saveData['api_cert'] = $data['api_cert'];
+            $saveData['api_cert'] = (string) $data['api_cert'];
         }
         if (!empty($data['api_key_pem'])) {
-            $saveData['api_key_pem'] = $data['api_key_pem'];
+            $saveData['api_key_pem'] = (string) $data['api_key_pem'];
         }
         
-        if (PaymentConfig::saveConfig($saveData)) {
-            return $this->success(null, '配置保存成功');
+        try {
+            if (PaymentConfig::saveConfig($saveData)) {
+                return $this->success(null, '配置保存成功');
+            }
+        } catch (\Throwable $e) {
+            Log::error('保存支付配置失败: ' . $e->getMessage(), [
+                'admin_id' => $this->getOperatorId(),
+            ]);
         }
         
         return $this->error('配置保存失败');
@@ -94,44 +107,53 @@ class AdminPayment extends BaseController
     /**
      * 获取充值订单列表
      */
-    public function getOrders()
+    public function getOrders(Request $request)
     {
-        $params = $this->request->get();
-        
-        $page = (int) ($params['page'] ?? 1);
-        $limit = (int) ($params['limit'] ?? 20);
-        $status = $params['status'] ?? '';
-        $keyword = $params['keyword'] ?? '';
-        $startDate = $params['start_date'] ?? '';
-        $endDate = $params['end_date'] ?? '';
+        $pagination = $this->getPaginationParams('page', 'limit', 20, 100);
+        $page = $pagination['page'];
+        $limit = $pagination['pageSize'];
+        $status = trim((string) $request->get('status', ''));
+        $keyword = trim((string) $request->get('keyword', ''));
+        $startDate = trim((string) $request->get('start_date', ''));
+        $endDate = trim((string) $request->get('end_date', ''));
         
         $query = RechargeOrder::with('user');
         
-        // 状态筛选
-        if ($status && in_array($status, ['pending', 'paid', 'cancelled', 'refunded'])) {
+        if ($status !== '') {
+            if (!in_array($status, self::ORDER_STATUSES, true)) {
+                return $this->error('订单状态参数无效');
+            }
             $query->where('status', $status);
         }
-        
-        // 关键词搜索（订单号、用户ID、用户昵称）
-        if ($keyword) {
-            // 净化关键词，防止SQL注入
-            $keyword = preg_replace('/[%_\\]/', '', $keyword);
-            $query->where(function($q) use ($keyword) {
-                $q->whereLike('order_no', "%{$keyword}%")
-                  ->whereOrLike('pay_order_no', "%{$keyword}%")
-                  ->whereOr('user_id', 'in', function($sq) use ($keyword) {
-                      $sq->table('users')
-                         ->whereLike('nickname', "%{$keyword}%")
-                         ->field('id');
-                  });
+
+        if ($keyword !== '') {
+            $keyword = preg_replace('/[%_\\\\]/', '', $keyword) ?: '';
+            $matchedUserIds = User::whereLike('nickname', '%' . $keyword . '%')->column('id');
+
+            $query->where(function ($q) use ($keyword, $matchedUserIds) {
+                $q->whereLike('order_no', '%' . $keyword . '%')
+                    ->whereOrLike('pay_order_no', '%' . $keyword . '%');
+
+                if (ctype_digit($keyword)) {
+                    $q->whereOr('user_id', (int) $keyword);
+                }
+
+                if (!empty($matchedUserIds)) {
+                    $q->whereOrIn('user_id', $matchedUserIds);
+                }
             });
         }
         
-        // 日期范围筛选
-        if ($startDate) {
+        if ($startDate !== '') {
+            if (!$this->isDateOnly($startDate)) {
+                return $this->error('开始日期格式无效');
+            }
             $query->where('created_at', '>=', $startDate . ' 00:00:00');
         }
-        if ($endDate) {
+        if ($endDate !== '') {
+            if (!$this->isDateOnly($endDate)) {
+                return $this->error('结束日期格式无效');
+            }
             $query->where('created_at', '<=', $endDate . ' 23:59:59');
         }
         
@@ -140,7 +162,6 @@ class AdminPayment extends BaseController
             ->page($page, $limit)
             ->select();
         
-        // 格式化数据
         $list = [];
         foreach ($orders as $order) {
             $list[] = [
@@ -152,8 +173,10 @@ class AdminPayment extends BaseController
                 'amount' => $order->amount,
                 'points' => $order->points,
                 'status' => $order->status,
+                'payment_type' => $order->payment_type,
                 'pay_time' => $order->pay_time,
                 'created_at' => $order->created_at,
+                'updated_at' => $order->updated_at,
             ];
         }
         
@@ -168,21 +191,19 @@ class AdminPayment extends BaseController
     /**
      * 获取订单详情
      */
-    public function getOrderDetail()
+    public function getOrderDetail(Request $request, string $id)
     {
-        $id = $this->request->get('id');
-        
-        if (!$id) {
-            return $this->error('订单ID不能为空');
+        $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
+        if ($identifier === '') {
+            return $this->error('订单标识不能为空');
         }
-        
-        $order = RechargeOrder::with('user')->find($id);
-        
+
+        $order = $this->findOrderByIdentifier($identifier);
         if (!$order) {
             return $this->error('订单不存在', 404);
         }
         
-        $data = [
+        return $this->success([
             'id' => $order->id,
             'order_no' => $order->order_no,
             'pay_order_no' => $order->pay_order_no,
@@ -198,24 +219,20 @@ class AdminPayment extends BaseController
             'client_ip' => $order->client_ip,
             'created_at' => $order->created_at,
             'updated_at' => $order->updated_at,
-        ];
-        
-        return $this->success($data);
+        ]);
     }
     
     /**
      * 手动补单（管理员手动标记订单为已支付）
      */
-    public function manualComplete()
+    public function manualComplete(Request $request, string $id)
     {
-        $data = $this->request->post();
-        
-        if (empty($data['id'])) {
-            return $this->error('订单ID不能为空');
+        $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
+        if ($identifier === '') {
+            return $this->error('订单标识不能为空');
         }
-        
-        $order = RechargeOrder::find($data['id']);
-        
+
+        $order = $this->findOrderByIdentifier($identifier);
         if (!$order) {
             return $this->error('订单不存在', 404);
         }
@@ -224,28 +241,34 @@ class AdminPayment extends BaseController
             return $this->error('该订单状态不允许补单');
         }
         
-        $remark = $data['remark'] ?? '管理员手动补单';
-        
-        if ($order->markAsPaid('MANUAL_' . date('YmdHis'), ['remark' => $remark, 'admin_id' => $this->request->user['sub'] ?? 0])) {
-            return $this->success(null, '补单成功');
+        $remark = trim((string) $request->param('remark', '管理员手动补单')) ?: '管理员手动补单';
+        $result = $order->markAsPaid('MANUAL_' . date('YmdHis'), [
+            'remark' => $remark,
+            'admin_id' => $this->getOperatorId(),
+        ]);
+
+        if (($result['success'] ?? false) !== true) {
+            return $this->error($result['message'] ?? '补单失败');
         }
-        
-        return $this->error('补单失败');
+
+        $order->refresh();
+        return $this->success([
+            'order_no' => $order->order_no,
+            'status' => $order->status,
+        ], '补单成功');
     }
     
     /**
      * 取消订单
      */
-    public function cancelOrder()
+    public function cancelOrder(Request $request, string $id)
     {
-        $id = $this->request->post('id');
-        
-        if (!$id) {
-            return $this->error('订单ID不能为空');
+        $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
+        if ($identifier === '') {
+            return $this->error('订单标识不能为空');
         }
-        
-        $order = RechargeOrder::find($id);
-        
+
+        $order = $this->findOrderByIdentifier($identifier);
         if (!$order) {
             return $this->error('订单不存在', 404);
         }
@@ -255,10 +278,76 @@ class AdminPayment extends BaseController
         }
         
         if ($order->cancel()) {
-            return $this->success(null, '订单已取消');
+            return $this->success([
+                'order_no' => $order->order_no,
+                'status' => RechargeOrder::STATUS_CANCELLED,
+            ], '订单已取消');
         }
         
         return $this->error('取消失败');
+    }
+
+    /**
+     * 更新订单状态
+     */
+    public function updateOrderStatus(Request $request, string $id)
+    {
+        $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
+        $status = trim((string) $request->param('status', ''));
+
+        if ($identifier === '') {
+            return $this->error('订单标识不能为空');
+        }
+        if (!in_array($status, self::ORDER_STATUSES, true)) {
+            return $this->error('订单状态参数无效');
+        }
+
+        $order = $this->findOrderByIdentifier($identifier);
+        if (!$order) {
+            return $this->error('订单不存在', 404);
+        }
+
+        if ($order->status === $status) {
+            return $this->success([
+                'order_no' => $order->order_no,
+                'status' => $order->status,
+            ], '订单状态未变化');
+        }
+
+        return match ($status) {
+            RechargeOrder::STATUS_PAID => $this->manualComplete($request, $identifier),
+            RechargeOrder::STATUS_CANCELLED => $this->cancelOrder($request, $identifier),
+            RechargeOrder::STATUS_REFUNDED => $this->refundOrder($request, $identifier),
+            RechargeOrder::STATUS_PENDING => $this->error('不支持手动改回待支付状态'),
+            default => $this->error('订单状态参数无效'),
+        };
+    }
+
+    /**
+     * 订单退款
+     */
+    public function refundOrder(Request $request, string $id)
+    {
+        $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
+        if ($identifier === '') {
+            return $this->error('订单标识不能为空');
+        }
+
+        $order = $this->findOrderByIdentifier($identifier);
+        if (!$order) {
+            return $this->error('订单不存在', 404);
+        }
+
+        $reason = trim((string) $request->param('reason', '管理员手动退款')) ?: '管理员手动退款';
+        $result = $this->performRefund($order, $reason);
+        if (($result['success'] ?? false) !== true) {
+            return $this->error($result['message'] ?? '退款失败');
+        }
+
+        return $this->success([
+            'order_no' => $order->order_no,
+            'status' => $order->status,
+        ], '退款成功');
     }
     
     /**
@@ -270,32 +359,27 @@ class AdminPayment extends BaseController
         $startDate = $params['start_date'] ?? date('Y-m-01');
         $endDate = $params['end_date'] ?? date('Y-m-d');
         
-        // 总充值金额
         $totalAmount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
             ->where('pay_time', '>=', $startDate . ' 00:00:00')
             ->where('pay_time', '<=', $endDate . ' 23:59:59')
             ->sum('amount');
         
-        // 总充值积分
         $totalPoints = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
             ->where('pay_time', '>=', $startDate . ' 00:00:00')
             ->where('pay_time', '<=', $endDate . ' 23:59:59')
             ->sum('points');
         
-        // 充值笔数
         $orderCount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
             ->where('pay_time', '>=', $startDate . ' 00:00:00')
             ->where('pay_time', '<=', $endDate . ' 23:59:59')
             ->count();
         
-        // 充值用户数
         $userCount = RechargeOrder::where('status', RechargeOrder::STATUS_PAID)
             ->where('pay_time', '>=', $startDate . ' 00:00:00')
             ->where('pay_time', '<=', $endDate . ' 23:59:59')
             ->distinct('user_id')
             ->count();
         
-        // 待支付订单数
         $pendingCount = RechargeOrder::where('status', RechargeOrder::STATUS_PENDING)
             ->where('created_at', '>=', $startDate . ' 00:00:00')
             ->where('created_at', '<=', $endDate . ' 23:59:59')
@@ -340,5 +424,122 @@ class AdminPayment extends BaseController
         }
         
         return $this->success($data);
+    }
+
+    /**
+     * 按订单ID或订单号查找订单
+     */
+    protected function findOrderByIdentifier(string $identifier): ?RechargeOrder
+    {
+        if ($identifier === '') {
+            return null;
+        }
+
+        if (ctype_digit($identifier)) {
+            $byId = RechargeOrder::with('user')->find((int) $identifier);
+            if ($byId) {
+                return $byId;
+            }
+        }
+
+        return RechargeOrder::with('user')->where('order_no', $identifier)->find();
+    }
+
+    /**
+     * 执行退款并回退积分
+     */
+    protected function performRefund(RechargeOrder $order, string $reason): array
+    {
+        if ($order->status === RechargeOrder::STATUS_REFUNDED) {
+            return ['success' => true, 'message' => '订单已退款'];
+        }
+
+        if ($order->status !== RechargeOrder::STATUS_PAID) {
+            return ['success' => false, 'message' => '仅已支付订单允许退款'];
+        }
+
+        Db::startTrans();
+        try {
+            $lockedOrder = Db::name('recharge_order')
+                ->where('id', $order->id)
+                ->lock(true)
+                ->find();
+
+            if (!$lockedOrder) {
+                Db::rollback();
+                return ['success' => false, 'message' => '订单不存在'];
+            }
+
+            if (($lockedOrder['status'] ?? '') === RechargeOrder::STATUS_REFUNDED) {
+                Db::commit();
+                $order->refresh();
+                return ['success' => true, 'message' => '订单已退款'];
+            }
+
+            if (($lockedOrder['status'] ?? '') !== RechargeOrder::STATUS_PAID) {
+                Db::rollback();
+                return ['success' => false, 'message' => '当前订单状态不允许退款'];
+            }
+
+            $user = Db::name('user')
+                ->where('id', $order->user_id)
+                ->lock(true)
+                ->find();
+
+            if (!$user) {
+                Db::rollback();
+                return ['success' => false, 'message' => '用户不存在'];
+            }
+
+            $currentPoints = (int) ($user['points'] ?? 0);
+            if ($currentPoints < (int) $order->points) {
+                Db::rollback();
+                return ['success' => false, 'message' => '用户当前积分不足，无法执行退款'];
+            }
+
+            Db::name('user')
+                ->where('id', $order->user_id)
+                ->dec('points', (int) $order->points)
+                ->update();
+
+            Db::name('points_record')->insert([
+                'user_id' => $order->user_id,
+                'action' => '充值退款',
+                'points' => -((int) $order->points),
+                'type' => 'refund',
+                'related_id' => $order->id,
+                'remark' => $reason,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            Db::name('recharge_order')
+                ->where('id', $order->id)
+                ->update([
+                    'status' => RechargeOrder::STATUS_REFUNDED,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+            Db::commit();
+            $order->refresh();
+
+            return ['success' => true, 'message' => '退款成功'];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            Log::error('后台订单退款失败: ' . $e->getMessage(), [
+                'order_id' => $order->id,
+                'order_no' => $order->order_no,
+                'admin_id' => $this->getOperatorId(),
+            ]);
+
+            return ['success' => false, 'message' => '退款失败，请稍后重试'];
+        }
+    }
+
+    /**
+     * 校验 YYYY-MM-DD 日期
+     */
+    protected function isDateOnly(string $value): bool
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1;
     }
 }
