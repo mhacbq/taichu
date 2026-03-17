@@ -62,6 +62,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { adjustPoints } from '@/api/points'
 
 const submitting = ref(false)
 const recentAdjustments = ref([])
@@ -79,6 +80,11 @@ async function handleSubmit() {
     ElMessage.warning('请输入调整原因')
     return
   }
+  
+  if (form.targetType === 'specific' && !form.targets) {
+    ElMessage.warning('请输入调整对象')
+    return
+  }
 
   try {
     await ElMessageBox.confirm('确定要执行该批量操作吗？此操作不可逆！', '高危提示', {
@@ -88,14 +94,32 @@ async function handleSubmit() {
     })
     
     submitting.value = true
-    // TODO: 调用真实API
-    setTimeout(() => {
+    
+    // 构造提交数据
+    const submitData = {
+      target_type: form.targetType,
+      targets: form.targets.split(/[,\n]/).map(t => t.trim()).filter(t => t),
+      type: form.type,
+      amount: form.type === 'add' ? form.amount : -form.amount,
+      reason: form.reason
+    }
+
+    const res = await adjustPoints(submitData)
+    
+    if (res.code === 200) {
       ElMessage.success('批量调整任务已提交后台处理')
-      submitting.value = false
       resetForm()
-    }, 1000)
-  } catch {}
+      // 可以考虑刷新下方的最近调整记录（如果API支持获取列表的话）
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '操作失败')
+    }
+  } finally {
+    submitting.value = false
+  }
 }
+
 
 function resetForm() {
   Object.assign(form, {

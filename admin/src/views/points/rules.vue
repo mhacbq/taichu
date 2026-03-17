@@ -69,14 +69,18 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getPointsRules, savePointsRules } from '@/api/points'
+import { Plus } from '@element-plus/icons-vue'
 
 const loading = ref(false)
 const ruleList = ref([])
 
 const dialog = reactive({
   visible: false,
+  isEdit: false,
   title: '新增规则',
   form: {
+    id: null,
     name: '',
     code: '',
     points: 10,
@@ -91,25 +95,28 @@ onMounted(() => {
 
 async function loadRules() {
   loading.value = true
-  // TODO: 调用真实API
-  setTimeout(() => {
-    ruleList.value = [
-      { id: 1, name: '每日签到', code: 'checkin', points: 5, description: '每日完成签到可获得积分', status: 1 },
-      { id: 2, name: '八字排盘', code: 'bazi', points: -10, description: '进行一次完整八字排盘消耗积分', status: 1 },
-      { id: 3, name: '塔罗占卜', code: 'tarot', points: -5, description: '进行一次塔罗牌占卜消耗积分', status: 1 }
-    ]
+  try {
+    const res = await getPointsRules()
+    if (res.code === 200) {
+      ruleList.value = res.data
+    }
+  } catch (error) {
+    ElMessage.error('加载规则失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 function handleAdd() {
   dialog.title = '新增规则'
-  dialog.form = { name: '', code: '', points: 10, description: '', status: 1 }
+  dialog.isEdit = false
+  dialog.form = { id: null, name: '', code: '', points: 10, description: '', status: 1 }
   dialog.visible = true
 }
 
 function handleEdit(row) {
   dialog.title = '编辑规则'
+  dialog.isEdit = true
   Object.assign(dialog.form, row)
   dialog.visible = true
 }
@@ -117,16 +124,39 @@ function handleEdit(row) {
 async function toggleStatus(row) {
   try {
     await ElMessageBox.confirm(`确定要${row.status === 1 ? '禁用' : '启用'}该规则吗？`, '提示')
-    row.status = row.status === 1 ? 0 : 1
-    ElMessage.success('操作成功')
-  } catch {}
+    const res = await savePointsRules({
+      ...row,
+      status: row.status === 1 ? 0 : 1
+    })
+    if (res.code === 200) {
+      ElMessage.success('操作成功')
+      loadRules()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('操作失败')
+    }
+  }
 }
 
-function submitForm() {
-  ElMessage.success('保存成功')
-  dialog.visible = false
-  loadRules()
+async function submitForm() {
+  if (!dialog.form.name || !dialog.form.code) {
+    ElMessage.warning('请填写规则名称和标识')
+    return
+  }
+  
+  try {
+    const res = await savePointsRules(dialog.form)
+    if (res.code === 200) {
+      ElMessage.success('保存成功')
+      dialog.visible = false
+      loadRules()
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
+
 </script>
 
 <style scoped>

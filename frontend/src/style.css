@@ -129,47 +129,53 @@ body {
   background: var(--primary-gradient);
   border: none;
   padding: 10px 32px;
-  min-height: 44px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-btn);
   color: var(--text-primary);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
   box-sizing: border-box;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(184, 134, 11, 0.45);
+  letter-spacing: 1px;
+}
+
+.btn-primary:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 /* 次要按钮 */
 .btn-secondary {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.03);
   border: 2px solid var(--primary-color);
   padding: 8px 28px;
-  min-height: 44px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-btn);
   color: var(--primary-color);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-sizing: border-box;
 }
 
 .btn-secondary:hover {
-  background: rgba(184, 134, 11, 0.1);
+  background: rgba(184, 134, 11, 0.15);
   color: var(--primary-light);
   border-color: var(--primary-light);
+  transform: translateY(-3px) scale(1.02);
 }
 
 /* 卡片样式 - 白色风格 */
@@ -179,22 +185,23 @@ body {
   padding: 28px;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 /* 玻璃拟态卡片（浅色版） */
 .card-glass {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--radius-xl);
   padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
 
 /* 标题样式 */
 .section-title {
-  font-size: 36px;
+  font-size: clamp(28px, 5vw, 42px);
   text-align: center;
   margin-bottom: 56px;
   color: var(--text-primary);
@@ -208,18 +215,19 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   display: inline-block;
+  filter: drop-shadow(0 2px 10px rgba(184, 134, 11, 0.2));
 }
 
 .section-subtitle {
-  font-size: 16px;
+  font-size: clamp(14px, 2vw, 16px);
   color: var(--text-secondary);
   text-align: center;
   margin-top: -44px;
   margin-bottom: 56px;
-  max-width: 600px;
+  max-width: 650px;
   margin-left: auto;
   margin-right: auto;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* 输入框样式 */
@@ -231,14 +239,15 @@ body {
   font-size: 15px;
   background: rgba(255, 255, 255, 0.03);
   color: var(--text-primary);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-field:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.15);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 4px var(--primary-light-15);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
 }
 
 .input-field::placeholder {
@@ -249,19 +258,26 @@ body {
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 6px 16px;
+  padding: 6px 18px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-xl);
   font-size: 13px;
   color: var(--text-secondary);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.tag:hover {
+  border-color: var(--primary-light-40);
+  background: var(--primary-light-05);
+  color: var(--primary-light);
 }
 
 .tag-primary {
-  background: rgba(184, 134, 11, 0.12);
+  background: var(--primary-light-10);
   color: var(--primary-light);
-  border-color: rgba(184, 134, 11, 0.2);
+  border-color: var(--primary-light-30);
 }
 
 /* 分隔线 */
@@ -269,6 +285,20 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border-color), transparent);
   margin: 40px 0;
+  position: relative;
+}
+
+.divider::after {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--primary-color);
+  background: var(--bg-secondary);
+  padding: 0 10px;
+  font-size: 12px;
+  opacity: 0.6;
 }
 
 /* 空状态 */
@@ -278,10 +308,16 @@ body {
   color: var(--text-tertiary);
   background: rgba(255, 255, 255, 0.015);
   border-radius: var(--radius-xl);
-  border: 1px dashed var(--border-color);
+  border: 1px dashed var(--border-light-20);
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: all 0.4s ease;
+}
+
+.empty-state:hover {
+  border-color: var(--primary-light-40);
+  background: rgba(184, 134, 11, 0.02);
 }
 
 .empty-state-icon {
@@ -289,7 +325,8 @@ body {
   margin-bottom: 24px;
   color: var(--primary-light);
   opacity: 0.8;
-  filter: drop-shadow(0 0 10px rgba(184, 134, 11, 0.3));
+  filter: drop-shadow(0 0 15px rgba(184, 134, 11, 0.4));
+  animation: float 4s ease-in-out infinite;
 }
 
 /* 太极加载动画 */
@@ -383,35 +420,47 @@ body {
 /* 响应式 */
 @media (max-width: 768px) {
   .section-title {
-    font-size: 24px;
+    font-size: 26px;
+    margin-bottom: 40px;
+  }
+  
+  .section-subtitle {
+    margin-top: -30px;
+    margin-bottom: 40px;
   }
   
   .container {
-    padding: 0 16px;
+    padding: 0 20px;
   }
   
   .card {
-    padding: 20px;
+    padding: 24px 20px;
     border-radius: var(--radius-md);
   }
 }
 
 /* 滚动条美化 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-tertiary);
-  border-radius: 4px;
+  background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
-  border-radius: 4px;
+  background: rgba(184, 134, 11, 0.2);
+  border-radius: 5px;
+  border: 2px solid var(--bg-primary);
+  transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background: rgba(184, 134, 11, 0.5);
+  border-color: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-primary);
 }

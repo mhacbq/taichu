@@ -27,3 +27,12 @@ export const saveAlmanac = (data) => request.post('/admin/almanac/save', data)
 export const deleteAlmanac = (date) => request.post('/admin/almanac/delete', { date })
 export const generateAlmanacMonth = (year, month) => request.post('/admin/almanac/generate-month', { year, month })
 export const getAlmanacMonths = () => request.get('/admin/almanac/months')
+
+// SEO管理
+export const getSeoConfigs = () => request.get('/admin/seo/configs')
+export const saveSeoConfig = (data) => request.post('/admin/seo/save', data)
+export const deleteSeoConfig = (route) => request.post('/admin/seo/delete', { route })
+export const getRobotsConfig = () => request.get('/admin/seo/robots')
+export const saveRobotsConfig = (content) => request.post('/admin/seo/robots', { content })
+export const generateSitemap = () => request.post('/admin/seo/sitemap-generate')
+

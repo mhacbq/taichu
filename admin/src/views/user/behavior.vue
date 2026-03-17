@@ -47,6 +47,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getOperationLogs } from '@/api/log'
 
 const route = useRoute()
 const loading = ref(false)
@@ -66,13 +68,25 @@ onMounted(() => {
 
 async function loadLogs() {
   loading.value = true
-  // TODO: 调用真实API
-  setTimeout(() => {
-    logList.value = []
-    total.value = 0
+  try {
+    const params = {
+      user_id: queryForm.userId,
+      type: queryForm.type,
+      page: queryForm.page,
+      limit: queryForm.pageSize
+    }
+    const res = await getOperationLogs(params)
+    if (res.code === 200) {
+      logList.value = res.data.list || []
+      total.value = res.data.total || 0
+    }
+  } catch (error) {
+    ElMessage.error('加载日志失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
+
 
 function handleSearch() {
   queryForm.page = 1

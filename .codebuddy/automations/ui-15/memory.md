@@ -1,28 +1,29 @@
 # Automation Memory - UI Fixes (2026-03-17)
 
 ## Execution History
-- **Task**: Fix 5 UI issues from TODO.md.
-- **Status**: Completed (5 fixes).
+- **Task**: Deep UI/UX optimization and TODO.md cleanup.
+- **Status**: Completed (6+ major enhancements).
 - **Date**: 2026-03-17
 
 ## Major Changes
-1. **App.vue**: 
-   - Enhanced mobile navigation menu with 0.85 opacity overlay and 25px blur.
-   - Refined mobile nav border and background for better premium feel.
-2. **style.css**: 
-   - Upgraded Taiji loading animation with `taiji-glow` pulse and golden gradients.
-   - Enhanced global card hover effects with `translateY(-8px)`, `scale(1.01)`, and golden border-glow.
-3. **EmptyState.vue**: 
-   - Redesigned SVG illustrations (search, error, network, no-data) with refined paths, gradients, and shadows for a warmer aesthetic.
-4. **Liuyao.vue**: 
-   - Significantly improved hexagram visualization with metallic gradients on Yang/Yin bars.
-   - Enhanced moving yao (老阴/老阳) animation with golden pulse border.
-   - Improved hexagram name typography with golden gradients and text-shadow.
+1. **App.vue (Mobile Navigation)**: 
+   - Implemented high-quality `backdrop-filter: blur(15px)` for the mobile drawer.
+   - Increased overlay opacity to 0.8 with `blur(8px)` to ensure perfect text contrast.
+   - Added interactive guide bars and refined font weights for nav links.
+2. **style.css (Core Design System)**: 
+   - Refined the Taiji loading animation with golden gradients and breathe effects.
+   - Enhanced global card hover logic with composite shadows and golden glow.
+   - Established a 8-tier font weight system and optimized global line height.
+3. **Liuyao.vue (Professional Visuals)**: 
+   - Added traditional decorative borders and watermark elements.
+   - Redesigned hexagram bars with metallic gradients and "moving yao" pulse animations.
+   - Reversed hexagram order to follow traditional "bottom-up" divination rules.
+4. **EmptyState.vue (Emotional UI)**: 
+   - Added a breathing golden heart SVG element to the "no-data" state for a warmer user experience.
 
 ## Git Commit
-- `fix-ui-multiple-issues-20260317-1545`
+- `fix_ui_optimization` (c4d9e9a)
 
 ## Next Steps
-- Refine typography hierarchy (font-size/weight) for mobile readability.
-- Check accessibility (WCAG contrast) for new mobile navigation link colors.
-- Add micro-interactions for form input focusing states.
+- Performance monitoring for backdrop-filter on low-end mobile devices.
+- Extend traditional decorative patterns to other core pages (Bazi, Tarot).

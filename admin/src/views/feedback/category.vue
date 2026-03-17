@@ -48,14 +48,17 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getFeedbackCategories, saveFeedbackCategory, deleteFeedbackCategory } from '@/api/feedback'
+import { Plus } from '@element-plus/icons-vue'
 
 const loading = ref(false)
 const categoryList = ref([])
 
 const dialog = reactive({
   visible: false,
+  isEdit: false,
   title: '新增分类',
-  form: { name: '', code: '', sort: 0, description: '' }
+  form: { id: null, name: '', code: '', sort: 0, description: '' }
 })
 
 onMounted(() => {
@@ -64,25 +67,28 @@ onMounted(() => {
 
 async function loadCategories() {
   loading.value = true
-  // TODO: 调用真实API
-  setTimeout(() => {
-    categoryList.value = [
-      { id: 1, name: '功能建议', code: 'suggestion', sort: 1, description: '对网站功能的改进建议' },
-      { id: 2, name: '程序错误', code: 'bug', sort: 2, description: '使用中发现的Bug或报错' },
-      { id: 3, name: '内容纠错', code: 'content', sort: 3, description: '对八字或塔罗内容的质疑' }
-    ]
+  try {
+    const res = await getFeedbackCategories()
+    if (res.code === 200) {
+      categoryList.value = res.data
+    }
+  } catch (error) {
+    ElMessage.error('加载分类失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 function handleAdd() {
   dialog.title = '新增分类'
-  dialog.form = { name: '', code: '', sort: 0, description: '' }
+  dialog.isEdit = false
+  dialog.form = { id: null, name: '', code: '', sort: 0, description: '' }
   dialog.visible = true
 }
 
 function handleEdit(row) {
   dialog.title = '编辑分类'
+  dialog.isEdit = true
   Object.assign(dialog.form, row)
   dialog.visible = true
 }
@@ -90,16 +96,36 @@ function handleEdit(row) {
 async function handleDelete(row) {
   try {
     await ElMessageBox.confirm('确定要删除该分类吗？', '提示', { type: 'warning' })
-    ElMessage.success('删除成功')
-    loadCategories()
-  } catch {}
+    const res = await deleteFeedbackCategory(row.id)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      loadCategories()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 
-function submitForm() {
-  ElMessage.success('保存成功')
-  dialog.visible = false
-  loadCategories()
+async function submitForm() {
+  if (!dialog.form.name || !dialog.form.code) {
+    ElMessage.warning('请填写分类名称和标识')
+    return
+  }
+
+  try {
+    const res = await saveFeedbackCategory(dialog.form)
+    if (res.code === 200) {
+      ElMessage.success('保存成功')
+      dialog.visible = false
+      loadCategories()
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
+
 </script>
 
 <style scoped>

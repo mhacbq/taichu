@@ -283,46 +283,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, View, Refresh, Check } from '@element-plus/icons-vue'
+import { 
+  getSeoConfigs, saveSeoConfig, deleteSeoConfig, 
+  getRobotsConfig, saveRobotsConfig, 
+  generateSitemap as generateSitemapApi 
+} from '../../api/admin'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
 const isEditing = ref(false)
 
 // 页面配置数据
-const pageConfigs = ref([
-  {
-    route: '/',
-    title: '太初命理 - 专业八字排盘_塔罗占卜_每日运势',
-    description: '太初命理是专业的AI智能命理分析平台，提供八字排盘、塔罗占卜、每日运势等服务。',
-    keywords: ['八字排盘', '塔罗占卜', '每日运势', '命理分析'],
-    image: '/images/og-home.jpg',
-    robots: 'index,follow'
-  },
-  {
-    route: '/bazi',
-    title: '免费八字排盘_在线生辰八字测算_专业命理分析',
-    description: '免费在线八字排盘工具，输入出生日期即可生成专业八字命盘。',
-    keywords: ['八字排盘', '免费八字', '生辰八字', '四柱八字'],
-    image: '/images/og-bazi.jpg',
-    robots: 'index,follow'
-  },
-  {
-    route: '/tarot',
-    title: '免费塔罗牌占卜_在线塔罗测试_AI智能解牌',
-    description: '免费在线塔罗牌占卜，涵盖爱情、事业、财运等多个维度。',
-    keywords: ['塔罗占卜', '塔罗牌', '塔罗测试', '免费塔罗'],
-    image: '/images/og-tarot.jpg',
-    robots: 'index,follow'
-  },
-  {
-    route: '/daily',
-    title: '今日运势查询_每日星座运势_黄历宜忌',
-    description: '查看今日运势，包含十二星座每日运势、黄历宜忌、时辰吉凶。',
-    keywords: ['今日运势', '每日运势', '星座运势', '黄历查询'],
-    image: '/images/og-daily.jpg',
-    robots: 'index,follow'
-  }
-])
+const pageConfigs = ref([])
 
 // 表单数据
 const form = ref({
@@ -336,21 +308,14 @@ const form = ref({
 
 // 站点地图信息
 const sitemapInfo = ref({
-  lastModified: '2026-03-15 10:30:00',
-  urlCount: 6,
-  fileSize: '2.4 KB',
+  lastModified: '-',
+  urlCount: 0,
+  fileSize: '0 KB',
   baiduIndexed: false
 })
 
 // Robots内容
-const robotsContent = ref(`# robots.txt for 太初命理
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /profile/
-Disallow: /api/
-Sitemap: https://taichu.chat/sitemap.xml
-`)
+const robotsContent = ref('')
 
 // 提交状态
 const submitStatus = ref({
@@ -359,23 +324,48 @@ const submitStatus = ref({
   '360': { type: 'info', text: '未提交' }
 })
 
+// 加载初始数据
+const loadData = async () => {
+  loading.value = true
+  try {
+    const [seoRes, robotsRes] = await Promise.all([
+      getSeoConfigs(),
+      getRobotsConfig()
+    ])
+    
+    if (seoRes.code === 200) {
+      pageConfigs.value = seoRes.data || []
+    }
+    if (robotsRes.code === 200) {
+      robotsContent.value = robotsRes.data.content || ''
+    }
+  } catch (error) {
+    ElMessage.error('加载SEO配置失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 计算属性
 const averageTitleLength = computed(() => {
-  const total = pageConfigs.value.reduce((sum, p) => sum + p.title.length, 0)
+  if (pageConfigs.value.length === 0) return 0
+  const total = pageConfigs.value.reduce((sum, p) => sum + (p.title?.length || 0), 0)
   return Math.round(total / pageConfigs.value.length)
 })
 
 const averageDescLength = computed(() => {
-  const total = pageConfigs.value.reduce((sum, p) => sum + p.description.length, 0)
+  if (pageConfigs.value.length === 0) return 0
+  const total = pageConfigs.value.reduce((sum, p) => sum + (p.description?.length || 0), 0)
   return Math.round(total / pageConfigs.value.length)
 })
 
 const seoHealthScore = computed(() => {
+  if (pageConfigs.value.length === 0) return 0
   let score = 100
   pageConfigs.value.forEach(p => {
-    if (p.title.length < 20 || p.title.length > 60) score -= 5
-    if (p.description.length < 50 || p.description.length > 200) score -= 5
-    if (p.keywords.length < 3) score -= 3
+    if (!p.title || p.title.length < 20 || p.title.length > 60) score -= 5
+    if (!p.description || p.description.length < 50 || p.description.length > 200) score -= 5
+    if (!p.keywords || p.keywords.length < 3) score -= 3
   })
   return Math.max(0, score)
 })
@@ -388,6 +378,7 @@ const seoHealthColor = computed(() => {
 
 // 方法
 const getTitleLengthType = (title) => {
+  if (!title) return 'danger'
   const len = title.length
   if (len >= 30 && len <= 60) return 'success'
   if (len >= 20 && len <= 70) return 'warning'
@@ -395,6 +386,7 @@ const getTitleLengthType = (title) => {
 }
 
 const getDescLengthType = (desc) => {
+  if (!desc) return 'danger'
   const len = desc.length
   if (len >= 80 && len <= 160) return 'success'
   if (len >= 50 && len <= 200) return 'warning'
@@ -402,6 +394,7 @@ const getDescLengthType = (desc) => {
 }
 
 const truncate = (text, length) => {
+  if (!text) return ''
   return text.length > length ? text.substring(0, length) + '...' : text
 }
 
@@ -430,18 +423,16 @@ const saveConfig = async () => {
     return
   }
 
-  if (isEditing.value) {
-    const index = pageConfigs.value.findIndex(p => p.route === form.value.route)
-    if (index > -1) {
-      pageConfigs.value[index] = { ...form.value }
+  try {
+    const res = await saveSeoConfig(form.value)
+    if (res.code === 200) {
+      ElMessage.success(isEditing.value ? '配置已更新' : '配置已添加')
+      dialogVisible.value = false
+      loadData()
     }
-    ElMessage.success('配置已更新')
-  } else {
-    pageConfigs.value.push({ ...form.value })
-    ElMessage.success('配置已添加')
+  } catch (error) {
+    ElMessage.error('保存失败')
   }
-
-  dialogVisible.value = false
 }
 
 const deleteConfig = async (row) => {
@@ -449,13 +440,13 @@ const deleteConfig = async (row) => {
     await ElMessageBox.confirm('确定要删除这个SEO配置吗？', '确认删除', {
       type: 'warning'
     })
-    const index = pageConfigs.value.findIndex(p => p.route === row.route)
-    if (index > -1) {
-      pageConfigs.value.splice(index, 1)
+    const res = await deleteSeoConfig(row.route)
+    if (res.code === 200) {
+      ElMessage.success('配置已删除')
+      loadData()
     }
-    ElMessage.success('配置已删除')
-  } catch {
-    // 用户取消
+  } catch (error) {
+    // 用户取消或请求失败
   }
 }
 
@@ -465,28 +456,34 @@ const previewSitemap = () => {
 
 const generateSitemap = async () => {
   loading.value = true
-  // 模拟生成
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  sitemapInfo.value.lastModified = new Date().toLocaleString()
-  sitemapInfo.value.urlCount = pageConfigs.value.length
-  loading.value = false
-  ElMessage.success('站点地图已重新生成')
+  try {
+    const res = await generateSitemapApi()
+    if (res.code === 200) {
+      ElMessage.success('站点地图已重新生成')
+      // 更新状态信息
+      sitemapInfo.value.lastModified = new Date().toLocaleString()
+      sitemapInfo.value.urlCount = pageConfigs.value.length
+    }
+  } catch (error) {
+    ElMessage.error('生成失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const saveRobots = async () => {
-  // TODO: 实现真实的robots.txt保存API调用
-  // try {
-  //   await saveRobotsApi({ content: robotsContent.value })
-  //   ElMessage.success('robots.txt 已保存')
-  // } catch (error) {
-  //   ElMessage.error('保存失败：' + error.message)
-  // }
-  await new Promise(resolve => setTimeout(resolve, 500))
-  ElMessage.success('robots.txt 已保存（模拟）')
+  try {
+    const res = await saveRobotsConfig(robotsContent.value)
+    if (res.code === 200) {
+      ElMessage.success('robots.txt 已保存')
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
 
 const handleImageSuccess = (response) => {
-  if (response.code === 0 && response.data?.url) {
+  if (response.code === 200 && response.data?.url) {
     form.value.image = response.data.url
     ElMessage.success('图片上传成功')
   } else {
@@ -515,8 +512,9 @@ const submitTo360 = () => {
 }
 
 onMounted(() => {
-  // 加载数据
+  loadData()
 })
+
 </script>
 
 <style scoped>

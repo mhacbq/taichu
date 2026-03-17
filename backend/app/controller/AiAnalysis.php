@@ -516,9 +516,14 @@ class AiAnalysis extends BaseController
     {
         $config = $request->param();
         
-        // 验证必要字段
         if (empty($config['api_url']) || empty($config['model'])) {
             return $this->error('API地址和模型名称不能为空', 400);
+        }
+
+        try {
+            $config['api_url'] = $this->normalizeExternalApiUrl((string) $config['api_url']);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
         }
         
         // 获取旧配置
@@ -535,8 +540,13 @@ class AiAnalysis extends BaseController
         
         // 保存到配置文件（实际项目中应该保存到数据库或安全存储）
         // 这里简化处理，实际应该使用数据库表来存储
+
+        $responseConfig = $config;
+        if (!empty($responseConfig['api_key'])) {
+            $responseConfig['api_key'] = substr($responseConfig['api_key'], 0, 10) . '****' . substr($responseConfig['api_key'], -4);
+        }
         
-        return $this->success($config, '保存成功');
+        return $this->success($responseConfig, '保存成功');
     }
 
     /**
@@ -547,8 +557,9 @@ class AiAnalysis extends BaseController
         $config = $request->param('config', []);
         
         try {
+            $validatedConfig = $this->validateTestConnectionConfig($config);
             $payload = [
-                'model' => $config['model'] ?? 'DeepSeek-V3.2',
+                'model' => $validatedConfig['model'],
                 'messages' => [
                     [
                         'role' => 'user',
@@ -573,41 +584,159 @@ class AiAnalysis extends BaseController
             ];
 
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $config['api_url']);
+            curl_setopt($ch, CURLOPT_URL, $validatedConfig['api_url']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $config['api_key'],
+                'Authorization: Bearer ' . $validatedConfig['api_key'],
                 'Content-Type: application/json'
             ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
             // 启用SSL验证，防止中间人攻击
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            if (defined('CURLOPT_PROTOCOLS') && defined('CURLPROTO_HTTPS')) {
+                curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+            }
 
             $response = curl_exec($ch);
+            if ($response === false) {
+                $errorMessage = curl_error($ch) ?: '未知网络错误';
+                curl_close($ch);
+                throw new \RuntimeException('AI连接测试请求失败: ' . $errorMessage);
+            }
+
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            if ($httpCode === 200) {
+            if ($httpCode >= 200 && $httpCode < 300) {
                 $data = json_decode($response, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     return $this->success([
-                        'model' => $data['model'] ?? $config['model'],
+                        'model' => $data['model'] ?? $validatedConfig['model'],
                         'status' => 'ok'
                     ], '连接成功');
                 }
             }
 
             return $this->error('连接失败，请检查配置', 500);
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
+        } catch (\Throwable $e) {
             Log::error('测试AI连接失败: ' . $e->getMessage(), [
                 'api_url' => $config['api_url'] ?? '',
-                'trace' => $e->getTraceAsString(),
             ]);
             return $this->error('连接失败，请检查配置后重试', 500);
         }
+    }
 
+    /**
+     * 验证AI连接测试参数
+     */
+    private function validateTestConnectionConfig(mixed $config): array
+    {
+        if (!is_array($config)) {
+            throw new \InvalidArgumentException('测试配置格式无效');
+        }
+
+        $apiUrl = trim((string) ($config['api_url'] ?? ''));
+        $apiKey = trim((string) ($config['api_key'] ?? ''));
+        $model = trim((string) ($config['model'] ?? ''));
+
+        if ($apiUrl === '') {
+            throw new \InvalidArgumentException('API地址不能为空');
+        }
+
+        if ($model === '') {
+            throw new \InvalidArgumentException('模型名称不能为空');
+        }
+
+        if ($apiKey === '') {
+            throw new \InvalidArgumentException('API Key不能为空');
+        }
+
+        return [
+            'api_url' => $this->normalizeExternalApiUrl($apiUrl),
+            'api_key' => $apiKey,
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 规范并校验外部AI接口地址，阻断明显的SSRF目标
+     */
+    private function normalizeExternalApiUrl(string $apiUrl): string
+    {
+        if (!filter_var($apiUrl, FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException('API地址格式无效');
+        }
+
+        $parts = parse_url($apiUrl);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if ($scheme !== 'https') {
+            throw new \InvalidArgumentException('API地址必须使用HTTPS');
+        }
+
+        if ($host === '') {
+            throw new \InvalidArgumentException('API地址缺少主机名');
+        }
+
+        if ($this->isForbiddenAiHost($host)) {
+            throw new \InvalidArgumentException('API地址指向受限主机，请使用公网HTTPS接口');
+        }
+
+        return $apiUrl;
+    }
+
+    /**
+     * 判断主机是否为内网/本机/保留地址
+     */
+    private function isForbiddenAiHost(string $host): bool
+    {
+        $normalizedHost = trim($host, '[]');
+
+        if (in_array($normalizedHost, ['localhost', '0.0.0.0'], true) || str_ends_with($normalizedHost, '.local')) {
+            return true;
+        }
+
+        if (filter_var($normalizedHost, FILTER_VALIDATE_IP)) {
+            return $this->isPrivateOrReservedIp($normalizedHost);
+        }
+
+        foreach ($this->resolveHostIpv4List($normalizedHost) as $ip) {
+            if ($this->isPrivateOrReservedIp($ip)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 解析主机对应的 IPv4 地址列表
+     */
+    private function resolveHostIpv4List(string $host): array
+    {
+        $ips = @gethostbynamel($host);
+        if ($ips === false) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter($ips, static fn ($ip) => is_string($ip) && $ip !== '')));
+    }
+
+    /**
+     * 判断IP是否属于私网或保留地址段
+     */
+    private function isPrivateOrReservedIp(string $ip): bool
+    {
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 }
+

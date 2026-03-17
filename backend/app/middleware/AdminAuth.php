@@ -8,6 +8,7 @@ use Firebase\JWT\Key;
 use think\Request;
 use think\Response;
 use think\facade\Env;
+use think\facade\Log;
 
 /**
  * 后台管理认证中间件
@@ -72,17 +73,10 @@ class AdminAuth
     /**
      * 记录操作日志
      */
-    protected function logOperation(Request $request)
+    protected function logOperation(Request $request): void
     {
-        // 过滤敏感字段
-        $params = $request->param();
-        $sensitiveFields = ['password', 'pwd', 'token', 'secret', 'key', 'authorization'];
-        foreach ($sensitiveFields as $field) {
-            if (isset($params[$field])) {
-                $params[$field] = '***';
-            }
-        }
-        
+        $params = $this->sanitizeParams($request->param());
+
         $data = [
             'admin_id' => $request->adminUser['id'] ?? 0,
             'admin_name' => $request->adminUser['username'] ?? '',
@@ -91,15 +85,63 @@ class AdminAuth
             'method' => $request->method(),
             'url' => $request->url(),
             'ip' => $request->ip(),
-            'params' => json_encode($params),
+            'params' => json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'created_at' => date('Y-m-d H:i:s')
         ];
         
-        // 写入数据库
         try {
             \think\facade\Db::name('admin_log')->insert($data);
         } catch (\Exception $e) {
-            trace('Admin operation log failed: ' . $e->getMessage(), 'error');
+            Log::error('后台操作日志写入失败: ' . $e->getMessage(), [
+                'url' => $request->url(),
+                'method' => $request->method(),
+            ]);
         }
     }
+
+    /**
+     * 递归脱敏请求参数
+     */
+    protected function sanitizeParams(mixed $value, ?string $field = null): mixed
+    {
+        if ($field !== null && $this->isSensitiveField($field)) {
+            return '***';
+        }
+
+        if (is_array($value)) {
+            $sanitized = [];
+            foreach ($value as $key => $item) {
+                $sanitized[$key] = $this->sanitizeParams($item, is_string($key) ? $key : null);
+            }
+            return $sanitized;
+        }
+
+        if (is_object($value)) {
+            return $this->sanitizeParams(get_object_vars($value), $field);
+        }
+
+        return $value;
+    }
+
+    /**
+     * 判断字段名是否包含敏感信息
+     */
+    protected function isSensitiveField(string $field): bool
+    {
+        $normalized = strtolower($field);
+        $compact = preg_replace('/[^a-z0-9]/', '', $normalized) ?: '';
+
+        if (in_array($compact, ['password', 'pwd', 'token', 'secret', 'key', 'authorization'], true)) {
+            return true;
+        }
+
+        foreach (['secret', 'token', 'apikey', 'appkey', 'privatekey', 'publickey', 'accesskey', 'secretid', 'cert', 'pem', 'signature'] as $keyword) {
+            if (str_contains($compact, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
+
