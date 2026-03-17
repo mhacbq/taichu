@@ -3,54 +3,140 @@ declare(strict_types=1);
 
 namespace app\service;
 
-use think\facade\Log;
 use think\facade\Db;
+use think\facade\Env;
+use think\facade\Log;
 
 /**
  * 推送通知服务类
- * 集成第三方推送平台（极光推送 JPush / Firebase FCM）
+ * 支持通过 HTTP 直连 JPush / Firebase FCM / 自定义 Webhook
  */
 class PushService
 {
     /**
-     * 发送推送通知
-     * 
-     * @param int $userId 用户ID
-     * @param string $title 标题
-     * @param string $content 内容
-     * @param array $extra 额外参数
-     * @return bool
+     * 发送推送通知（兼容旧调用，返回是否至少一台设备发送成功）
      */
     public static function sendPush(int $userId, string $title, string $content, array $extra = []): bool
     {
-        // 1. 获取用户活跃设备令牌
+        $result = self::sendPushDetailed($userId, $title, $content, $extra);
+
+        return (bool) ($result['success'] ?? false);
+    }
+
+    /**
+     * 发送推送通知并返回详细结果
+     */
+    public static function sendPushDetailed(int $userId, string $title, string $content, array $extra = []): array
+    {
         $devices = Db::name('tc_push_device')
             ->where('user_id', $userId)
             ->where('is_active', 1)
-            ->select();
-        
-        if ($devices->isEmpty()) {
-            return false;
+            ->select()
+            ->toArray();
+
+        if (empty($devices)) {
+            return [
+                'success' => false,
+                'code' => 'NO_DEVICE',
+                'message' => '没有可用推送设备',
+                'provider' => self::getProvider(),
+                'attempted' => 0,
+                'succeeded' => 0,
+                'failed' => 0,
+                'errors' => [],
+            ];
         }
 
-        $success = true;
+        $provider = self::getProvider();
+        if ($provider === '') {
+            Log::warning('推送发送被跳过：未配置推送服务提供商', [
+                'user_id' => $userId,
+                'device_count' => count($devices),
+            ]);
+
+            return [
+                'success' => false,
+                'code' => 'NO_PROVIDER',
+                'message' => '未配置推送服务提供商',
+                'provider' => '',
+                'attempted' => count($devices),
+                'succeeded' => 0,
+                'failed' => count($devices),
+                'errors' => [[
+                    'message' => '请配置 PUSH_PROVIDER 及对应凭据',
+                ]],
+            ];
+        }
+
+        $attempted = 0;
+        $succeeded = 0;
+        $failed = 0;
+        $errors = [];
+
         foreach ($devices as $device) {
-            $res = false;
-            if ($device['platform'] === 'ios' || $device['platform'] === 'android') {
-                // TODO: 实际集成 JPush 或 FCM SDK
-                // 示例：JPushService::push($device['device_token'], $title, $content, $extra);
-                Log::info("模拟推送消息: [{$device['platform']}] to {$device['device_token']} - Title: {$title}");
-                $res = true; 
-            } elseif ($device['platform'] === 'web') {
-                // Web Push
-                Log::info("模拟Web推送: to {$device['device_token']}");
-                $res = true;
+            $attempted++;
+
+            try {
+                $result = self::dispatchToProvider($provider, $device, $title, $content, $extra);
+                $isSuccess = (bool) ($result['success'] ?? false);
+
+                if ($isSuccess) {
+                    $succeeded++;
+                    continue;
+                }
+
+                $failed++;
+                $errors[] = [
+                    'device_id' => (int) ($device['id'] ?? 0),
+                    'platform' => (string) ($device['platform'] ?? ''),
+                    'message' => (string) ($result['message'] ?? '未知推送错误'),
+                ];
+
+                if (!empty($result['deactivate_device']) && !empty($device['id'])) {
+                    self::deactivateDevice((int) $device['id'], (string) ($result['message'] ?? 'token失效'));
+                }
+            } catch (\Throwable $e) {
+                $failed++;
+                $errors[] = [
+                    'device_id' => (int) ($device['id'] ?? 0),
+                    'platform' => (string) ($device['platform'] ?? ''),
+                    'message' => '推送异常：' . $e->getMessage(),
+                ];
+
+                Log::error('推送发送异常', [
+                    'provider' => $provider,
+                    'user_id' => $userId,
+                    'device_id' => (int) ($device['id'] ?? 0),
+                    'platform' => (string) ($device['platform'] ?? ''),
+                    'token' => self::maskToken((string) ($device['device_token'] ?? '')),
+                    'error' => $e->getMessage(),
+                ]);
             }
-            
-            if (!$res) $success = false;
         }
 
-        return $success;
+        $success = $succeeded > 0;
+        $message = $success
+            ? ($failed > 0 ? '部分设备推送成功' : '推送成功')
+            : '推送失败';
+
+        Log::info('推送发送结果', [
+            'provider' => $provider,
+            'user_id' => $userId,
+            'attempted' => $attempted,
+            'succeeded' => $succeeded,
+            'failed' => $failed,
+        ]);
+
+        return [
+            'success' => $success,
+            'code' => $success ? ($failed > 0 ? 'PARTIAL_SUCCESS' : 'SUCCESS') : 'FAILED',
+            'message' => $message,
+            'provider' => $provider,
+            'attempted' => $attempted,
+            'succeeded' => $succeeded,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
     }
 
     /**
@@ -58,8 +144,318 @@ class PushService
      */
     public static function broadcast(string $title, string $content, array $extra = []): bool
     {
-        Log::info("全员广播推送: {$title}");
-        // 实际逻辑应调用推送平台的 broadcast API
-        return true;
+        $result = self::broadcastDetailed($title, $content, $extra);
+
+        return (bool) ($result['success'] ?? false);
+    }
+
+    /**
+     * 广播通知详细结果
+     */
+    public static function broadcastDetailed(string $title, string $content, array $extra = []): array
+    {
+        $userIds = Db::name('tc_push_device')
+            ->where('is_active', 1)
+            ->distinct(true)
+            ->column('user_id');
+
+        if (empty($userIds)) {
+            return [
+                'success' => false,
+                'message' => '没有可广播的活跃设备',
+                'total_users' => 0,
+                'success_users' => 0,
+                'failed_users' => 0,
+                'details' => [],
+            ];
+        }
+
+        $successUsers = 0;
+        $failedUsers = 0;
+        $details = [];
+
+        foreach ($userIds as $userId) {
+            $result = self::sendPushDetailed((int) $userId, $title, $content, $extra);
+            $details[] = [
+                'user_id' => (int) $userId,
+                'success' => (bool) ($result['success'] ?? false),
+                'message' => (string) ($result['message'] ?? ''),
+            ];
+
+            if (!empty($result['success'])) {
+                $successUsers++;
+            } else {
+                $failedUsers++;
+            }
+        }
+
+        return [
+            'success' => $successUsers > 0,
+            'message' => $successUsers > 0 ? '广播完成' : '广播失败',
+            'total_users' => count($userIds),
+            'success_users' => $successUsers,
+            'failed_users' => $failedUsers,
+            'details' => $details,
+        ];
+    }
+
+    /**
+     * 根据 provider 分发推送
+     */
+    protected static function dispatchToProvider(string $provider, array $device, string $title, string $content, array $extra): array
+    {
+        return match ($provider) {
+            'jpush' => self::sendViaJPush($device, $title, $content, $extra),
+            'fcm' => self::sendViaFcm($device, $title, $content, $extra),
+            'webhook' => self::sendViaWebhook($device, $title, $content, $extra),
+            default => [
+                'success' => false,
+                'message' => '不支持的推送服务提供商：' . $provider,
+            ],
+        };
+    }
+
+    /**
+     * 通过极光推送发送
+     */
+    protected static function sendViaJPush(array $device, string $title, string $content, array $extra): array
+    {
+        $appKey = self::getEnvValue(['PUSH_JPUSH_APP_KEY', 'push.jpush_app_key']);
+        $masterSecret = self::getEnvValue(['PUSH_JPUSH_MASTER_SECRET', 'push.jpush_master_secret']);
+
+        if ($appKey === '' || $masterSecret === '') {
+            return [
+                'success' => false,
+                'message' => '缺少 JPush 配置',
+            ];
+        }
+
+        $payload = [
+            'platform' => [$device['platform'] === 'web' ? 'android' : $device['platform']],
+            'audience' => [
+                'registration_id' => [(string) ($device['device_token'] ?? '')],
+            ],
+            'notification' => [
+                'alert' => $content,
+                'android' => [
+                    'title' => $title,
+                    'extras' => $extra,
+                ],
+                'ios' => [
+                    'alert' => $content,
+                    'sound' => 'default',
+                    'extras' => $extra,
+                ],
+            ],
+            'options' => [
+                'apns_production' => self::getEnvValue(['PUSH_APNS_PRODUCTION', 'push.apns_production'], 'false') === 'true',
+            ],
+        ];
+
+        $response = self::sendHttpJson(
+            'https://api.jpush.cn/v3/push',
+            $payload,
+            [
+                'Content-Type: application/json',
+                'Authorization: Basic ' . base64_encode($appKey . ':' . $masterSecret),
+            ]
+        );
+
+        $body = self::decodeJsonBody($response['body']);
+        $httpCode = (int) ($response['status'] ?? 0);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return ['success' => true, 'message' => 'JPush 发送成功'];
+        }
+
+        $errorMessage = (string) ($body['error']['message'] ?? $body['message'] ?? 'JPush 发送失败');
+        $deactivate = str_contains(strtolower($errorMessage), 'registration') || str_contains(strtolower($errorMessage), 'invalid');
+
+        return [
+            'success' => false,
+            'message' => $errorMessage,
+            'deactivate_device' => $deactivate,
+        ];
+    }
+
+    /**
+     * 通过 Firebase FCM 发送
+     */
+    protected static function sendViaFcm(array $device, string $title, string $content, array $extra): array
+    {
+        $serverKey = self::getEnvValue(['PUSH_FCM_SERVER_KEY', 'push.fcm_server_key']);
+        if ($serverKey === '') {
+            return [
+                'success' => false,
+                'message' => '缺少 FCM Server Key 配置',
+            ];
+        }
+
+        $payload = [
+            'to' => (string) ($device['device_token'] ?? ''),
+            'notification' => [
+                'title' => $title,
+                'body' => $content,
+            ],
+            'data' => $extra,
+        ];
+
+        $response = self::sendHttpJson(
+            'https://fcm.googleapis.com/fcm/send',
+            $payload,
+            [
+                'Content-Type: application/json',
+                'Authorization: key=' . $serverKey,
+            ]
+        );
+
+        $body = self::decodeJsonBody($response['body']);
+        $httpCode = (int) ($response['status'] ?? 0);
+        $resultItem = $body['results'][0] ?? [];
+        $errorCode = (string) ($resultItem['error'] ?? '');
+
+        if ($httpCode >= 200 && $httpCode < 300 && (int) ($body['success'] ?? 0) > 0) {
+            return ['success' => true, 'message' => 'FCM 发送成功'];
+        }
+
+        $invalidErrors = ['NotRegistered', 'InvalidRegistration', 'MismatchSenderId'];
+
+        return [
+            'success' => false,
+            'message' => $errorCode !== '' ? 'FCM 发送失败：' . $errorCode : 'FCM 发送失败',
+            'deactivate_device' => in_array($errorCode, $invalidErrors, true),
+        ];
+    }
+
+    /**
+     * 通过自定义 Webhook 发送
+     */
+    protected static function sendViaWebhook(array $device, string $title, string $content, array $extra): array
+    {
+        $webhookUrl = self::getEnvValue(['PUSH_WEBHOOK_URL', 'push.webhook_url']);
+        if ($webhookUrl === '') {
+            return [
+                'success' => false,
+                'message' => '缺少 Webhook URL 配置',
+            ];
+        }
+
+        $headers = ['Content-Type: application/json'];
+        $bearerToken = self::getEnvValue(['PUSH_WEBHOOK_BEARER', 'push.webhook_bearer']);
+        if ($bearerToken !== '') {
+            $headers[] = 'Authorization: Bearer ' . $bearerToken;
+        }
+
+        $response = self::sendHttpJson($webhookUrl, [
+            'platform' => (string) ($device['platform'] ?? ''),
+            'device_token' => (string) ($device['device_token'] ?? ''),
+            'device_id' => (string) ($device['device_id'] ?? ''),
+            'title' => $title,
+            'content' => $content,
+            'extra' => $extra,
+        ], $headers);
+
+        $httpCode = (int) ($response['status'] ?? 0);
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return ['success' => true, 'message' => 'Webhook 推送成功'];
+        }
+
+        return [
+            'success' => false,
+            'message' => 'Webhook 推送失败，HTTP ' . $httpCode,
+        ];
+    }
+
+    /**
+     * 发送 JSON HTTP 请求
+     */
+    protected static function sendHttpJson(string $url, array $payload, array $headers = []): array
+    {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+        $body = curl_exec($ch);
+        $error = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($body === false) {
+            throw new \RuntimeException('HTTP 请求失败：' . $error);
+        }
+
+        return [
+            'status' => $status,
+            'body' => (string) $body,
+        ];
+    }
+
+    /**
+     * 注销失效设备
+     */
+    protected static function deactivateDevice(int $deviceId, string $reason = ''): void
+    {
+        Db::name('tc_push_device')
+            ->where('id', $deviceId)
+            ->update([
+                'is_active' => 0,
+            ]);
+
+        Log::warning('检测到失效推送设备，已自动停用', [
+            'device_id' => $deviceId,
+            'reason' => $reason,
+        ]);
+    }
+
+    /**
+     * 获取推送提供商
+     */
+    protected static function getProvider(): string
+    {
+        return strtolower(trim(self::getEnvValue(['PUSH_PROVIDER', 'push.provider'])));
+    }
+
+    /**
+     * 读取环境变量，兼容多种命名
+     */
+    protected static function getEnvValue(array $keys, string $default = ''): string
+    {
+        foreach ($keys as $key) {
+            $value = Env::get($key);
+            if ($value !== null && $value !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * 解码 JSON 响应体
+     */
+    protected static function decodeJsonBody(string $body): array
+    {
+        $decoded = json_decode($body, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * 避免日志直接输出完整 token
+     */
+    protected static function maskToken(string $token): string
+    {
+        $length = strlen($token);
+        if ($length <= 8) {
+            return $token;
+        }
+
+        return substr($token, 0, 4) . str_repeat('*', max(0, $length - 8)) . substr($token, -4);
     }
 }

@@ -170,8 +170,7 @@ import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
 import { 
   Calendar, 
-  Magic, 
-  YinYang, 
+  MagicStick, 
   Star, 
   User, 
   SwitchButton, 
@@ -180,8 +179,21 @@ import {
   Collection,
   Sunrise,
   Link,
-  Home
+  House
 } from '@element-plus/icons-vue'
+
+// 自定义太极图标组件
+const YinYang = {
+  render() {
+    return h('svg', { viewBox: '0 0 24 24', width: '1em', height: '1em' }, [
+      h('circle', { cx: '12', cy: '12', r: '10', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5' }),
+      h('path', { d: 'M12 2a10 10 0 0 1 0 20 5 5 0 0 1 0-10 5 5 0 0 0 0-10z', fill: 'currentColor' }),
+      h('circle', { cx: '12', cy: '7', r: '1.5', fill: 'currentColor' }),
+      h('circle', { cx: '12', cy: '17', r: '1.5', fill: 'none', stroke: 'currentColor', 'stroke-width': '1' })
+    ])
+  }
+}
+import { h } from 'vue'
 
 const router = useRouter()
 const route = useRoute()

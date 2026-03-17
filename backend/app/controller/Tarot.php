@@ -504,36 +504,46 @@ class Tarot extends BaseController
     }
     
     /**
-     * 获取元素之间的关系
+     * 获取元素之间的关系 (基于西方传统四元素尊严模型 - Elemental Dignities)
      */
     protected function getElementRelation(string $element1, string $element2): string
     {
         if ($element1 === $element2) {
-            return '同元素强化，能量叠加增强';
+            return '同元素强化，能量高度集中。';
         }
         
-        // 元素相生关系
-        $generating = [
-            '风' => '火',
-            '火' => '土',
-            '土' => '水',
-            '水' => '风',
+        $pair = [$element1, $element2];
+        sort($pair);
+        $pairStr = implode('-', $pair);
+
+        // 友好/强化关系 (Friendly)
+        $friendly = [
+            '火-风' => '风助火势，思维与行动完美结合，能量相互增强。',
+            '水-土' => '水润土沃，情感与现实相互支撑，能量稳定滋养。',
         ];
-        
-        // 元素相克关系
-        $restraining = [
-            '风' => '土',
-            '土' => '水',
-            '水' => '火',
-            '火' => '风',
+
+        // 敌对/冲突关系 (Hostile/Antagonistic)
+        $hostile = [
+            '水-火' => '水火不容，情感与行动发生剧烈冲突，能量相互抵消。',
+            '土-风' => '风土相阻，理想与现实难以调和，存在明显的束缚感。',
         ];
-        
-        if ($generating[$element1] === $element2) {
-            return "{$element1}生{$element2}，能量滋养流动，利于发展";
+
+        // 中性关系 (Neutral)
+        $neutral = [
+            '火-土' => '火土相安，能量流动较为平稳。',
+            '水-风' => '风水相荡，理智与情感保持独立。',
+        ];
+
+        if (isset($friendly[$pairStr])) {
+            return '友好关系：' . $friendly[$pairStr];
         }
-        
-        if ($restraining[$element1] === $element2) {
-            return "{$element1}克{$element2}，存在制约关系，需要调和";
+
+        if (isset($hostile[$pairStr])) {
+            return '冲突关系：' . $hostile[$pairStr];
+        }
+
+        if (isset($neutral[$pairStr])) {
+            return '中性关系：' . $neutral[$pairStr];
         }
         
         return '';

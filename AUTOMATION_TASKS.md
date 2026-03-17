@@ -10,12 +10,13 @@
 
 ### ✅ 启动/暂停所有任务
 ```bash
-# 启动全部9个任务
-workbuddy automation active 15 15-2 ui-15 30-2 20 automation automation-2 30 ui-30 30-3 30-4
+# 启动全部12个任务
+workbuddy automation active 15 15-2 ui-15 30-2 20 automation automation-2 admin 30 ui-30 30-3 30-4
 
-# 暂停全部11个任务
-workbuddy automation pause 15 15-2 ui-15 30-2 20 automation automation-2 30 ui-30 30-3 30-4
+# 暂停全部12个任务
+workbuddy automation pause 15 15-2 ui-15 30-2 20 automation automation-2 admin 30 ui-30 30-3 30-4
 ```
+
 
 ### 🛠️ 分组操作
 ```bash
@@ -32,7 +33,7 @@ workbuddy automation active 30 ui-30 30-3 30-4
 
 ## 📊 任务总览
 
-### 🔧 修复类任务 (ID: 15, 15-2, ui-15, 30-2, 20, automation, automation-2)
+### 🔧 修复类任务 (ID: 15, 15-2, ui-15, 30-2, 20, automation, automation-2, admin)
 | 任务名称 | 频率 | 每次修复 | 负责领域 | 状态 |
 |---------|------|---------|---------|------|
 | **后端修复专家** | 15 min | 5个 | PHP安全/API/数据库 | ACTIVE |
@@ -40,8 +41,10 @@ workbuddy automation active 30 ui-30 30-3 30-4
 | **UI修复专家** | 15 min | 5个 | 主题/样式/图标替换 | ACTIVE |
 | **命理算法专家** | 60 min | 3-5个 | Bazi/Liuyao/Tarot逻辑精度 | ACTIVE |
 | **系统重构专家** | 60 min | 3-5个 | Lint修复/日志优化/重构 | ACTIVE |
+| **管理后台专家** | 30 min | 3-5个 | 运营后台/SEO/VIP管理 | ACTIVE |
 | 待办处理执行器 | 30 min | 5个 | 跨领域综合修复 | ACTIVE |
 | 前端开发修复 | 20 min | 3-5个 | 前端专项修复 | ACTIVE |
+
 
 
 ### 🔍 检查类任务 (ID: 30, ui-30, 30-3, 30-4)

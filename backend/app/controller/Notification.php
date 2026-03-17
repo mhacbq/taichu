@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
+use app\service\PushService;
 use think\facade\Cache;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 推送通知控制器
@@ -212,26 +214,26 @@ class Notification extends BaseController
     public function registerDevice()
     {
         $user = $this->request->user;
-        $userId = $user['sub'];
-        $platform = $this->request->post('platform'); // ios, android, web
-        $deviceToken = $this->request->post('device_token');
-        $deviceId = $this->request->post('device_id');
-        
-        if (empty($platform) || empty($deviceToken)) {
-            return $this->error('平台类型和设备令牌不能为空');
+        $userId = (int) ($user['sub'] ?? 0);
+        $platform = strtolower(trim((string) $this->request->post('platform', ''))); // ios, android, web
+        $deviceToken = trim((string) $this->request->post('device_token', ''));
+        $deviceId = trim((string) $this->request->post('device_id', ''));
+
+        if ($userId <= 0) {
+            return $this->error('用户信息无效', 401);
         }
-        
-        // 验证平台类型
-        if (!in_array($platform, ['ios', 'android', 'web'])) {
+        if ($platform === '' || $deviceToken === '' || $deviceId === '') {
+            return $this->error('平台类型、设备ID和设备令牌不能为空');
+        }
+
+        if (!in_array($platform, ['ios', 'android', 'web'], true)) {
             return $this->error('无效的平台类型');
         }
-        
-        // 删除该设备的旧记录
+
         Db::name('tc_push_device')
             ->where('device_id', $deviceId)
             ->delete();
-        
-        // 插入新记录
+
         Db::name('tc_push_device')->insert([
             'user_id' => $userId,
             'platform' => $platform,
@@ -241,7 +243,7 @@ class Notification extends BaseController
             'last_active_at' => date('Y-m-d H:i:s'),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
-        
+
         return $this->success([], '设备注册成功');
     }
     
@@ -272,22 +274,29 @@ class Notification extends BaseController
     public function sendTestNotification()
     {
         $user = $this->request->user;
-        $userId = $user['sub'];
-        
-        // 创建测试通知
-        $notificationId = Db::name('tc_notification')->insertGetId([
-            'user_id' => $userId,
-            'type' => 'test',
-            'title' => '测试通知',
-            'content' => '这是一条测试通知，用于验证推送功能是否正常工作。',
-            'data' => json_encode(['action' => 'test']),
-            'is_read' => 0,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-        
-        return $this->success([
-            'notification_id' => $notificationId,
-        ], '测试通知已发送');
+        $userId = (int) ($user['sub'] ?? 0);
+
+        if ($userId <= 0) {
+            return $this->error('用户信息无效', 401);
+        }
+
+        $result = self::sendNotificationDetailed(
+            $userId,
+            'system',
+            '测试通知',
+            '这是一条测试通知，用于验证推送功能是否正常工作。',
+            ['action' => 'test', 'source' => 'manual_test']
+        );
+
+        if (!($result['success'] ?? false)) {
+            return $this->error((string) ($result['message'] ?? '测试通知发送失败'), 400, $result);
+        }
+
+        $message = !empty($result['push_success'])
+            ? '测试通知已发送并触达推送通道'
+            : (string) ($result['message'] ?? '测试通知已创建');
+
+        return $this->success($result, $message);
     }
     
     /**
@@ -295,66 +304,107 @@ class Notification extends BaseController
      */
     public static function sendNotification(int $userId, string $type, string $title, string $content, array $data = []): bool
     {
+        $result = self::sendNotificationDetailed($userId, $type, $title, $content, $data);
+
+        return (bool) ($result['success'] ?? false);
+    }
+
+    /**
+     * 发送通知并返回详细结果
+     */
+    public static function sendNotificationDetailed(int $userId, string $type, string $title, string $content, array $data = []): array
+    {
         try {
-            // 检查用户通知设置
             $settings = Db::name('tc_notification_setting')
                 ->where('user_id', $userId)
                 ->find();
-            
-            // 根据类型检查是否允许发送
+
             $typeFieldMap = [
                 'daily_fortune' => 'daily_fortune',
                 'system' => 'system_notice',
                 'activity' => 'activity',
                 'recharge' => 'recharge',
                 'points' => 'points_change',
+                'test' => 'system_notice',
             ];
-            
-            if (isset($typeFieldMap[$type]) && $settings) {
-                if (!$settings[$typeFieldMap[$type]] || !$settings['push_enabled']) {
-                    return false;
-                }
+
+            $typeField = $typeFieldMap[$type] ?? null;
+            if ($typeField !== null && $settings && isset($settings[$typeField]) && !(bool) $settings[$typeField]) {
+                return [
+                    'success' => false,
+                    'stored' => false,
+                    'push_success' => false,
+                    'message' => '用户已关闭该类型通知',
+                ];
             }
-            
-            // 检查免打扰时间
-            if ($settings && $settings['quiet_hours_start'] && $settings['quiet_hours_end']) {
-                $now = date('H:i');
-                $start = $settings['quiet_hours_start'];
-                $end = $settings['quiet_hours_end'];
-                
-                if ($start <= $end) {
-                    if ($now >= $start && $now <= $end) {
-                        return false;
-                    }
-                } else {
-                    if ($now >= $start || $now <= $end) {
-                        return false;
-                    }
-                }
-            }
-            
-            // 保存通知
-            Db::name('tc_notification')->insert([
+
+            $notificationId = (int) Db::name('tc_notification')->insertGetId([
                 'user_id' => $userId,
                 'type' => $type,
                 'title' => $title,
                 'content' => $content,
-                'data' => json_encode($data),
+                'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'is_read' => 0,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
-            
-            // 增加未读计数
+
             $unreadKey = "user:{$userId}:unread_notifications";
-            \think\facade\Cache::inc($unreadKey);
-            
-            // 3. 调用第三方推送服务
-            \app\service\PushService::sendPush($userId, $title, $content, $data);
-            
-            return true;
-        } catch (\Exception $e) {
-            trace('发送通知失败: ' . $e->getMessage(), 'error');
-            return false;
+            Cache::inc($unreadKey);
+
+            $pushEnabled = !($settings && array_key_exists('push_enabled', $settings) && !(bool) $settings['push_enabled']);
+            if (!$pushEnabled) {
+                return [
+                    'success' => true,
+                    'stored' => true,
+                    'notification_id' => $notificationId,
+                    'push_success' => false,
+                    'message' => '通知已保存，用户已关闭设备推送',
+                ];
+            }
+
+            if ($settings && !self::canSendDuringCurrentTime($settings)) {
+                return [
+                    'success' => true,
+                    'stored' => true,
+                    'notification_id' => $notificationId,
+                    'push_success' => false,
+                    'message' => '通知已保存，当前处于免打扰时段',
+                ];
+            }
+
+            $pushResult = PushService::sendPushDetailed($userId, $title, $content, $data);
+            $pushSuccess = (bool) ($pushResult['success'] ?? false);
+
+            if (!$pushSuccess) {
+                Log::warning('通知已入库，但推送通道未成功送达', [
+                    'user_id' => $userId,
+                    'notification_id' => $notificationId,
+                    'type' => $type,
+                    'push_result' => $pushResult,
+                ]);
+            }
+
+            return [
+                'success' => true,
+                'stored' => true,
+                'notification_id' => $notificationId,
+                'push_success' => $pushSuccess,
+                'push' => $pushResult,
+                'message' => $pushSuccess ? '通知发送成功' : '通知已保存，但推送未送达',
+            ];
+        } catch (\Throwable $e) {
+            Log::error('发送通知失败', [
+                'user_id' => $userId,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'stored' => false,
+                'push_success' => false,
+                'message' => '发送通知失败，请稍后重试',
+            ];
         }
     }
     

@@ -675,23 +675,31 @@ class Paipan extends BaseController
     }
     
     /**
-     * 获取节气日期
+     * 节气日期计算 (基于21世纪寿星公式)
      */
-    protected function getJieQiDate(int $year, string $jieQi): array
+    protected function getJieQiDate(int $year, string $name): array
     {
-        // 使用通用数据
-        $commonDates = [
-            '立春' => [2, 4], '惊蛰' => [3, 5], '清明' => [4, 4], '立夏' => [5, 5],
-            '芒种' => [6, 5], '小暑' => [7, 7], '立秋' => [8, 7], '白露' => [9, 7],
-            '寒露' => [10, 8], '立冬' => [11, 7], '大雪' => [12, 7], '小寒' => [1, 5]
+        $jieQiConstants = [
+            '小寒' => [1, 5.4055], '大寒' => [1, 20.12], '立春' => [2, 3.87], '雨水' => [2, 18.73],
+            '惊蛰' => [3, 5.63], '春分' => [3, 20.646], '清明' => [4, 4.81], '谷雨' => [4, 20.1],
+            '立夏' => [5, 5.52], '小满' => [5, 21.04], '芒种' => [6, 5.678], '夏至' => [6, 21.37],
+            '小暑' => [7, 7.108], '大暑' => [7, 22.83], '立秋' => [8, 7.5], '处暑' => [8, 23.13],
+            '白露' => [9, 7.646], '秋分' => [9, 23.042], '寒露' => [10, 8.318], '霜降' => [10, 23.438],
+            '立冬' => [11, 7.438], '小雪' => [11, 22.36], '大雪' => [12, 7.18], '冬至' => [12, 21.94]
         ];
+
+        if (!isset($jieQiConstants[$name])) return [0, 0];
         
-        // 如果有精确数据则使用
-        if (isset($this->jieQiDates[$year][$jieQi])) {
-            return $this->jieQiDates[$year][$jieQi];
-        }
+        $month = $jieQiConstants[$name][0];
+        $C = $jieQiConstants[$name][1];
+        $y = $year % 100;
         
-        return $commonDates[$jieQi] ?? [1, 1];
+        $day = floor($y * 0.2422 + $C) - floor(($y - 1) / 4);
+        
+        if ($name === '立春' && $year === 2019) $day -= 1;
+        if ($name === '雨水' && $year === 2026) $day -= 1;
+        
+        return [$month, (int)$day];
     }
     
     /**

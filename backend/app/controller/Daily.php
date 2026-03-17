@@ -100,6 +100,12 @@ class Daily extends BaseController
         $todayGanWuxing = $ganWuXing[$todayGan];
         $todayZhiWuxing = $zhiWuXing[$todayZhi];
         
+        // 简易强弱判断：月令生扶为强，克泄耗为弱
+        $monthZhi = $baziRecord['month_zhi'] ?? '';
+        $monthWx = $zhiWuXing[$monthZhi] ?? '';
+        $shengMei = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金']; // 生我者
+        $isStrong = ($monthWx === $dayMasterWuxing || $monthWx === $shengMei[$dayMasterWuxing]);
+        
         // 五行关系
         $wuxingShengKe = [
             '金' => ['生' => '水', '克' => '木', '被生' => '土', '被克' => '火'],
@@ -116,24 +122,24 @@ class Daily extends BaseController
         
         if ($todayGanWuxing === $dayMasterWuxing) {
             $relation = '比劫';
-            $luckLevel = '平';
-            $advice = '今日比肩劫财，适合与朋友合作，但需注意财物安全，避免借贷纠纷。';
+            $luckLevel = $isStrong ? '平' : '吉';
+            $advice = $isStrong ? '今日比劫林立，竞争压力较大，需防范同辈竞争，不宜过度自信。' : '今日比劫帮身，贵人缘佳，适合与朋友合作、共谋大计。';
         } elseif ($wuxingShengKe[$dayMasterWuxing]['被生'] === $todayGanWuxing) {
             $relation = '印绶';
-            $luckLevel = '吉';
-            $advice = '今日印绶当令，贵人运佳，适合学习进修、寻求长辈指导，学业事业有进。';
+            $luckLevel = $isStrong ? '平' : '吉';
+            $advice = $isStrong ? '今日印星过旺，容易思虑过多、固执己见，建议放空心态。' : '今日印绶护身，利于学习进修、考证求职，易得长辈提携。';
         } elseif ($wuxingShengKe[$dayMasterWuxing]['生'] === $todayGanWuxing) {
             $relation = '食伤';
-            $luckLevel = '平';
-            $advice = '今日食伤生财，创意灵感丰富，适合艺术创作、表达自我，但要注意言行分寸。';
+            $luckLevel = $isStrong ? '吉' : '平';
+            $advice = $isStrong ? '今日食伤泄秀，才华横溢，创意灵感迸发，事业有望取得新突破。' : '今日精力消耗较快，容易思虑过度，需注意言语分寸，防范口舌。';
         } elseif ($wuxingShengKe[$dayMasterWuxing]['被克'] === $todayGanWuxing) {
             $relation = '官杀';
-            $luckLevel = '凶';
-            $advice = '今日官杀攻身，压力较大，需谨慎行事，避免冲动决策，注意身体健康。';
+            $luckLevel = $isStrong ? '吉' : '凶';
+            $advice = $isStrong ? '今日官杀制身，威望提升，适合处理公职或重要事务，易获领导赏识。' : '今日官杀攻身，压力倍增，需谨慎行事，防范突发状况，注意身体。';
         } else {
             $relation = '财星';
-            $luckLevel = '吉';
-            $advice = '今日财星高照，财运亨通，适合理财投资、商务谈判，有意外收获之机。';
+            $luckLevel = $isStrong ? '吉' : '凶';
+            $advice = $isStrong ? '今日财星高照，财源广进，适合理财投资、商务谈判，有意外收获。' : '今日财多身弱，不宜盲目跟风投资，注意守财，防范因财生事。';
         }
         
         // 根据今日运势基础分和个人关系调整
@@ -240,7 +246,7 @@ class Daily extends BaseController
             
             if ($baziRecord) {
                 // 计算喜用五行 (简化逻辑：身弱取印比，身旺取食财官)
-                $favoriteWuxing = $this->calculateFavoriteWuxing($baziRecord);
+                $favoriteWuxing = $this->calculateFavoriteWuxing($baziRecord, (int)$user['sub']);
             }
         }
         
@@ -249,9 +255,9 @@ class Daily extends BaseController
             'lunarDate' => $fortune->lunar_date,
             'yi' => explode(',', $fortune->yi),
             'ji' => explode(',', $fortune->ji),
-            'luckyNumbers' => $this->generateLuckyNumbers($favoriteWuxing),
-            'luckyColors' => $this->generateLuckyColors($favoriteWuxing),
-            'luckyDirections' => $this->generateLuckyDirections($favoriteWuxing),
+            'luckyNumbers' => $this->generateLuckyNumbers($favoriteWuxing, (int)$user['sub']),
+            'luckyColors' => $this->generateLuckyColors($favoriteWuxing, (int)$user['sub']),
+            'luckyDirections' => $this->generateLuckyDirections($favoriteWuxing, (int)$user['sub']),
             'calculation_method' => '基于八字喜用神推算',
         ]);
     }
@@ -259,7 +265,7 @@ class Daily extends BaseController
     /**
      * 计算喜用五行（简化版）
      */
-    protected function calculateFavoriteWuxing(array $baziRecord): string
+    protected function calculateFavoriteWuxing(array $baziRecord, int $userId): string
     {
         $dayMaster = $baziRecord['day_gan'];
         $ganWuXing = ['甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土', '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'];
@@ -267,19 +273,20 @@ class Daily extends BaseController
 
         // 五行生克关系
         $sheng = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金']; // 被生
-        $ke = ['木' => '金', '火' => '水', '土' => '木', '金' => '火', '水' => '土']; // 被克
 
-        // 简易强弱判断：由于没有完整排盘，我们根据月令简单估算
-        // 如果出生月令是生我或同我之五行，暂定为身旺，否则为身弱
+        // 简易强弱判断
         $monthZhi = $baziRecord['month_zhi'] ?? '';
         $zhiWuXing = ['子' => '水', '丑' => '土', '寅' => '木', '卯' => '木', '辰' => '土', '巳' => '火', '午' => '火', '未' => '土', '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'];
         $monthWx = $zhiWuXing[$monthZhi] ?? '';
 
         $isStrong = ($monthWx === $dmWx || $monthWx === $sheng[$dmWx]);
+        
+        // 使用固定种子，确保结果每日一致且对不同用户唯一
+        $seed = crc32($userId . date('Ymd'));
 
         if (!$isStrong) {
             // 身弱，喜印比 (生我者或同我者)
-            return (mt_rand(0, 1) == 0) ? $dmWx : $sheng[$dmWx];
+            return ($seed % 2 == 0) ? $dmWx : $sheng[$dmWx];
         } else {
             // 身旺，喜食财官 (我生者、我克者、克我者)
             $options = [
@@ -290,14 +297,14 @@ class Daily extends BaseController
                 '水' => ['木', '火', '土'],
             ];
             $choices = $options[$dmWx];
-            return $choices[array_rand($choices)];
+            return $choices[$seed % count($choices)];
         }
     }
     
     /**
-     * 生成幸运数字（基于五行数：水16, 火27, 木38, 金49, 土50）
+     * 生成幸运数字
      */
-    protected function generateLuckyNumbers(string $wuxing): array
+    protected function generateLuckyNumbers(string $wuxing, int $userId): array
     {
         $map = [
             '木' => [3, 8, 13, 18, 23, 28],
@@ -308,8 +315,9 @@ class Daily extends BaseController
         ];
         
         $pool = $map[$wuxing] ?? $map['土'];
-        // 不再随机打乱，而是根据日期确定偏移量
-        $offset = (int)date('j') % count($pool);
+        $seed = crc32($userId . date('Ymd') . 'numbers');
+        $offset = $seed % count($pool);
+        
         $result = [];
         for ($i = 0; $i < 3; $i++) {
             $result[] = $pool[($offset + $i) % count($pool)];
@@ -320,7 +328,7 @@ class Daily extends BaseController
     /**
      * 生成幸运颜色
      */
-    protected function generateLuckyColors(string $wuxing): array
+    protected function generateLuckyColors(string $wuxing, int $userId): array
     {
         $colors = [
             '金' => ['白色', '金色', '银色'],
@@ -331,7 +339,9 @@ class Daily extends BaseController
         ];
         
         $pool = $colors[$wuxing] ?? ['黄色', '棕色'];
-        $offset = (int)date('j') % count($pool);
+        $seed = crc32($userId . date('Ymd') . 'colors');
+        $offset = $seed % count($pool);
+        
         return [
             $pool[$offset],
             $pool[($offset + 1) % count($pool)]
@@ -341,7 +351,7 @@ class Daily extends BaseController
     /**
      * 生成幸运方位
      */
-    protected function generateLuckyDirections(string $wuxing): array
+    protected function generateLuckyDirections(string $wuxing, int $userId): array
     {
         $directions = [
             '金' => ['西方', '西北方'],
@@ -352,7 +362,9 @@ class Daily extends BaseController
         ];
         
         $pool = $directions[$wuxing] ?? ['中央'];
-        $offset = (int)date('j') % count($pool);
+        $seed = crc32($userId . date('Ymd') . 'directions');
+        $offset = $seed % count($pool);
+        
         if (count($pool) == 1) return [$pool[0]];
         return [
             $pool[$offset],
