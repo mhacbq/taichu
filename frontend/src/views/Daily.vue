@@ -710,8 +710,12 @@ onMounted(() => {
     flex-direction: column;
   }
   
-  .lucky-info {
+  .personal-lucky-grid {
     grid-template-columns: 1fr;
+  }
+
+  .personal-lucky-item {
+    flex-direction: column;
   }
 }
 </style>

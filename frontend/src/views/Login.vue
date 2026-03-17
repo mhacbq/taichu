@@ -299,7 +299,8 @@ onUnmounted(() => {
 
 .login-submit-btn {
   width: 100%;
-  height: 50px;
+  min-height: 48px;
+  height: auto;
   font-size: 16px;
 }
 
@@ -311,9 +312,13 @@ onUnmounted(() => {
   .login-box {
     padding: 30px 20px;
   }
+
+  .code-input-row {
+    flex-direction: column;
+  }
   
   .send-code-btn {
-    width: 100px;
+    width: 100%;
     padding: 0 10px;
   }
 }

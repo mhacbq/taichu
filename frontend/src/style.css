@@ -156,12 +156,15 @@
 /* 统一卡片悬停效果 */
 .card-hover,
 .card {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease, background-color 0.35s ease;
+  transition: transform var(--transition-slow), box-shadow var(--transition-base), border-color var(--transition-base), background-color var(--transition-base);
   will-change: transform;
+  transform-origin: center;
 }
 
 .card-hover:hover,
-.card:hover {
+.card:hover,
+.card-hover:focus-within,
+.card:focus-within {
   transform: translateY(-6px);
   box-shadow: var(--shadow-hover);
   border-color: var(--border-primary) !important;
@@ -340,7 +343,7 @@ small {
   background: var(--bg-card);
   color: var(--text-primary);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: all 0.28s ease;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base), transform var(--transition-fast);
 }
 
 .input-field:hover {
@@ -365,32 +368,47 @@ small {
 .el-select__wrapper {
   min-height: 48px;
   padding: 0 14px;
-  background-color: var(--bg-card) !important;
+  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-primary) 100%) !important;
   box-shadow: 0 0 0 1px var(--border-light) inset, 0 1px 2px rgba(15, 23, 42, 0.04) !important;
   border-radius: var(--radius-md) !important;
-  transition: all 0.28s ease !important;
+  transition: box-shadow var(--transition-base), background-color var(--transition-base), transform var(--transition-fast) !important;
 }
 
 .el-textarea__inner {
-  min-height: 120px;
+  min-height: 124px;
   padding: 12px 16px;
-  background-color: var(--bg-card) !important;
+  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-primary) 100%) !important;
   box-shadow: 0 0 0 1px var(--border-light) inset, 0 1px 2px rgba(15, 23, 42, 0.04) !important;
   border-radius: var(--radius-md) !important;
-  transition: all 0.28s ease !important;
+  transition: box-shadow var(--transition-base), background-color var(--transition-base), transform var(--transition-fast) !important;
 }
 
 .el-input__wrapper:hover,
 .el-textarea__inner:hover,
 .el-select__wrapper:hover {
-  box-shadow: 0 0 0 1px var(--primary-light-30) inset, 0 6px 16px rgba(var(--primary-rgb), 0.08) !important;
+  box-shadow: 0 0 0 1px var(--primary-light-30) inset, 0 8px 18px rgba(var(--primary-rgb), 0.08) !important;
 }
 
 .el-input__wrapper.is-focus,
 .el-textarea__inner:focus,
 .el-select__wrapper.is-focused {
   box-shadow: 0 0 0 1px var(--primary-color) inset, var(--focus-ring) !important;
-  background-color: var(--bg-primary) !important;
+  background: var(--bg-primary) !important;
+  transform: translateY(-1px);
+}
+
+.el-input.is-disabled .el-input__wrapper,
+.el-select .el-select__wrapper.is-disabled,
+.el-textarea.is-disabled .el-textarea__inner {
+  background: var(--bg-tertiary) !important;
+  box-shadow: 0 0 0 1px var(--border-light) inset !important;
+  color: var(--text-muted) !important;
+}
+
+.el-form-item.is-error .el-input__wrapper,
+.el-form-item.is-error .el-select__wrapper,
+.el-form-item.is-error .el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--danger-color) inset, 0 0 0 4px rgba(245, 108, 108, 0.08) !important;
 }
 
 .el-input__inner,
@@ -401,6 +419,7 @@ small {
 .el-select__placeholder.is-transparent {
   color: var(--text-primary) !important;
   font-size: var(--font-body) !important;
+  caret-color: var(--primary-color);
 }
 
 .el-input__inner::placeholder,
@@ -414,9 +433,30 @@ small {
   font-size: var(--font-small);
 }
 
-.el-radio-button__inner,
-.el-checkbox__inner,
+.el-form-item__label {
+  color: var(--text-secondary) !important;
+  font-weight: var(--weight-medium);
+}
+
 .el-button {
+  min-height: 44px;
+  border-radius: var(--radius-btn) !important;
+  font-size: var(--font-btn) !important;
+  font-weight: var(--weight-semibold) !important;
+  letter-spacing: var(--tracking-normal);
+  transition: transform var(--transition-base), box-shadow var(--transition-base), filter var(--transition-fast), background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base) !important;
+}
+
+.el-button:hover {
+  transform: translateY(-1px);
+}
+
+.el-button:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.el-radio-button__inner,
+.el-checkbox__inner {
   min-height: 44px;
 }
 

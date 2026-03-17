@@ -167,7 +167,8 @@ onMounted(() => {
 }
 
 .checkin-card.checked {
-  border: 1px solid var(--success-light);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  box-shadow: 0 16px 32px rgba(16, 185, 129, 0.1);
 }
 
 .checkin-header {
