@@ -34,7 +34,8 @@ WORKDIR /var/www/html
 COPY . .
 
 # 安装依赖
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --ignore-platform-req=ext-fileinfo --no-security-blocking --no-dev --optimize-autoloader --no-scripts
+
 
 # 设置权限
 RUN chown -R www-data:www-data /var/www/html \
