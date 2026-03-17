@@ -83,8 +83,9 @@ class Upload extends BaseController
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMime(),
                 'extension' => $file->getExtension(),
-                'uploaded_by' => $request->adminId ?? 0,
+                'uploaded_by' => $this->getOperatorId(),
             ]);
+
             
             return $this->success([
                 'url' => $url,
@@ -94,8 +95,12 @@ class Upload extends BaseController
             ], '上传成功');
             
         } catch (\Exception $e) {
-            return $this->error('上传失败：' . $e->getMessage(), 500);
+            Log::error('上传图片失败: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('上传失败，请稍后重试', 500);
         }
+
     }
 
     /**
@@ -146,7 +151,8 @@ class Upload extends BaseController
                         'file_size' => $file->getSize(),
                         'mime_type' => $file->getMime(),
                         'extension' => $file->getExtension(),
-                        'uploaded_by' => $request->adminId ?? 0,
+                        'uploaded_by' => $this->getOperatorId(),
+
                     ]);
                     
                     $results[] = [
@@ -168,8 +174,12 @@ class Upload extends BaseController
             ], '上传完成');
             
         } catch (\Exception $e) {
-            return $this->error('上传失败：' . $e->getMessage(), 500);
+            Log::error('批量上传图片失败: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('上传失败，请稍后重试', 500);
         }
+
     }
 
     /**
@@ -213,8 +223,9 @@ class Upload extends BaseController
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMime(),
                 'extension' => $file->getExtension(),
-                'uploaded_by' => $request->adminId ?? 0,
+                'uploaded_by' => $this->getOperatorId(),
             ]);
+
             
             return $this->success([
                 'url' => $url,
@@ -223,8 +234,12 @@ class Upload extends BaseController
             ], '上传成功');
             
         } catch (\Exception $e) {
-            return $this->error('上传失败：' . $e->getMessage(), 500);
+            Log::error('上传文件失败: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('上传失败，请稍后重试', 500);
         }
+
     }
 
     /**
@@ -233,9 +248,11 @@ class Upload extends BaseController
     public function gallery(Request $request)
     {
         try {
-            $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', 20);
+            $pagination = $this->getPaginationParams('page', 'pageSize', 20, 100);
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
             $keyword = $request->get('keyword');
+
             
             $query = \app\model\UploadFile::where('type', 'image')
                 ->order('created_at', 'desc');
@@ -292,8 +309,13 @@ class Upload extends BaseController
             return $this->success(null, '删除成功');
             
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            Log::error('删除上传文件失败: ' . $e->getMessage(), [
+                'id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('删除失败，请稍后重试', 500);
         }
+
     }
 
     /**
@@ -461,7 +483,10 @@ class Upload extends BaseController
             \app\model\UploadFile::create($data);
         } catch (\Exception $e) {
             // 记录日志但不影响上传流程
-            trace('保存文件记录失败：' . $e->getMessage(), 'error');
+            Log::error('保存文件记录失败: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
+
     }
 }

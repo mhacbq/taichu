@@ -9,6 +9,8 @@ use app\service\LiuyaoService;
 use app\service\DeepSeekService;
 use think\Request;
 use think\facade\Db;
+use think\facade\Log;
+
 
 /**
  * 六爻占卜控制器
@@ -75,8 +77,13 @@ class Liuyao extends BaseController
             
             return $this->success($result);
         } catch (\Exception $e) {
-            return $this->error('起卦失败：' . $e->getMessage(), 500);
+            Log::error('六爻起卦失败: ' . $e->getMessage(), [
+                'method' => $method,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('起卦失败，请稍后重试', 500);
         }
+
     }
     
     /**
@@ -268,22 +275,23 @@ PROMPT;
     public function records()
     {
         try {
+            $pagination = $this->getPaginationParams('page', 'page_size', 20, 100);
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
             $userId = $this->request->get('user_id');
-            $page = $this->request->get('page', 1);
-            $pageSize = $this->request->get('page_size', 20);
-            
+
             $query = \think\facade\Db::table('tc_liuyao_record')
                 ->where('status', 1);
-            
+
             if ($userId) {
                 $query->where('user_id', $userId);
             }
-            
+
             $total = $query->count();
             $list = $query->page($page, $pageSize)
                 ->order('created_at', 'DESC')
                 ->select();
-            
+
             return $this->success([
                 'total' => $total,
                 'page' => $page,
@@ -291,9 +299,11 @@ PROMPT;
                 'list' => $list,
             ]);
         } catch (\Exception $e) {
-            return $this->error('获取记录失败：' . $e->getMessage());
+            Log::error('获取六爻记录失败: ' . $e->getMessage());
+            return $this->error('获取记录失败，请稍后重试', 500);
         }
     }
+
     
     /**
      * 获取记录详情
@@ -307,18 +317,20 @@ PROMPT;
                 ->find();
             
             if (!$record) {
-                return $this->error('记录不存在');
+                return $this->error('记录不存在', 404);
             }
-            
+
             // 解析JSON字段
             $record['liuqin'] = json_decode($record['liuqin'], true);
             $record['liushen'] = json_decode($record['liushen'], true);
-            
+
             return $this->success($record);
         } catch (\Exception $e) {
-            return $this->error('获取记录详情失败：' . $e->getMessage());
+            Log::error('获取六爻记录详情失败: ' . $e->getMessage());
+            return $this->error('获取记录详情失败，请稍后重试', 500);
         }
     }
+
     
     /**
      * 获取六十四卦列表
@@ -333,9 +345,11 @@ PROMPT;
             
             return $this->success($list);
         } catch (\Exception $e) {
-            return $this->error('获取卦象列表失败：' . $e->getMessage());
+            Log::error('获取卦象列表失败: ' . $e->getMessage());
+            return $this->error('获取卦象列表失败，请稍后重试', 500);
         }
     }
+
     
     /**
      * 获取卦象详情
@@ -348,22 +362,24 @@ PROMPT;
                 ->find();
             
             if (!$gua) {
-                return $this->error('卦象不存在');
+                return $this->error('卦象不存在', 404);
             }
-            
+
             // 获取爻辞
             $yaoCi = \think\facade\Db::table('gua_yao_data')
                 ->where('gua_id', $gua['id'])
                 ->order('yao_position', 'ASC')
                 ->select();
-            
+
             $gua['yao_ci'] = $yaoCi;
-            
+
             return $this->success($gua);
         } catch (\Exception $e) {
-            return $this->error('获取卦象详情失败：' . $e->getMessage());
+            Log::error('获取卦象详情失败: ' . $e->getMessage());
+            return $this->error('获取卦象详情失败，请稍后重试', 500);
         }
     }
+
     
     /**
      * 转换问事类型为代码

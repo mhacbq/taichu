@@ -7,6 +7,8 @@ use app\BaseController;
 use app\model\AiPrompt;
 use think\Request;
 use think\facade\Config;
+use think\facade\Log;
+
 
 /**
  * AI解盘控制器
@@ -35,9 +37,38 @@ class AiAnalysis extends BaseController
     }
 
     /**
+     * 兼容旧版AI解盘路由
+     */
+    public function analyze(Request $request)
+    {
+        return $this->analyzeBazi($request);
+    }
+
+    /**
+     * 兼容旧版流式AI解盘路由
+     */
+    public function analyzeStream(Request $request)
+    {
+        return $this->analyzeBaziStream($request);
+    }
+
+    /**
+     * 获取AI分析历史（兼容旧版接口）
+     */
+    public function history()
+    {
+        return $this->success([
+            'list' => [],
+            'total' => 0,
+        ], '暂无历史记录');
+    }
+
+    /**
      * AI八字解盘
      * 将八字数据发送到AI API进行分析
      */
+
+
     public function analyzeBazi(Request $request)
     {
         $baziData = $request->param('bazi');
@@ -100,8 +131,13 @@ class AiAnalysis extends BaseController
                 'prompt_used' => $prompt ? $prompt->name : 'default'
             ], 'AI解盘成功');
         } catch (\Exception $e) {
-            return $this->error('AI解盘失败：' . $e->getMessage(), 500);
+            Log::error('AI八字解盘失败: ' . $e->getMessage(), [
+                'prompt_key' => $promptKey,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('AI解盘失败，请稍后重试', 500);
         }
+
     }
 
     /**
@@ -156,19 +192,21 @@ class AiAnalysis extends BaseController
             $prompt->incrementUsage();
         }
 
-        // 设置SSE响应头
-        header('Content-Type: text/event-stream');
-        header('Cache-Control: no-cache');
-        header('Connection: keep-alive');
-        header('X-Accel-Buffering: no');
+        $this->prepareSseResponse();
 
         try {
             $this->callAiApiStream($systemPrompt, $userPrompt, $config);
+            $this->emitSseDone();
         } catch (\Exception $e) {
-            echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
+            Log::error('AI流式解盘失败: ' . $e->getMessage(), [
+                'prompt_key' => $promptKey,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $this->emitSseError('AI流式解盘失败，请稍后重试');
         }
 
         exit;
+
     }
 
     /**
@@ -361,37 +399,104 @@ class AiAnalysis extends BaseController
             ]
         ];
 
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        if ($payloadJson === false) {
+            throw new \Exception('流式请求参数编码失败');
+        }
+
+        ignore_user_abort(false);
+        @set_time_limit(0);
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $apiKey,
             'Content-Type: application/json'
         ]);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($ch, CURLOPT_TIMEOUT, 120);
         // 启用SSL验证，防止中间人攻击
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) {
+            if (connection_aborted()) {
+                return 0;
+            }
+
             echo $data;
+            if (function_exists('ob_flush')) {
+                @ob_flush();
+            }
             flush();
             return strlen($data);
         });
 
         curl_exec($ch);
-        
-        if (curl_errno($ch)) {
-            throw new \Exception('请求失败：' . curl_error($ch));
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (connection_aborted()) {
+            curl_close($ch);
+            return;
         }
-        
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new \Exception('请求失败：' . $error);
+        }
+
         curl_close($ch);
+
+        if ($httpCode !== 200) {
+            throw new \Exception('流式API返回错误：HTTP ' . $httpCode);
+        }
+    }
+
+
+    /**
+     * 准备SSE响应头
+     */
+    private function prepareSseResponse(): void
+    {
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, no-transform');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+    }
+
+    /**
+     * 输出SSE错误事件
+     */
+    private function emitSseError(string $message): void
+    {
+        $payload = json_encode(['error' => $message], JSON_UNESCAPED_UNICODE);
+        if ($payload === false) {
+            $payload = '{"error":"AI流式解盘失败，请稍后重试"}';
+        }
+
+        echo "data: {$payload}\n\n";
+        $this->emitSseDone();
+    }
+
+    /**
+     * 输出SSE结束标记
+     */
+    private function emitSseDone(): void
+    {
+        echo "data: [DONE]\n\n";
+        if (function_exists('ob_flush')) {
+            @ob_flush();
+        }
+        flush();
     }
 
     /**
      * 获取AI配置信息（后台使用）
      */
+
     public function getConfig()
     {
         $config = $this->getAiConfig();
@@ -497,7 +602,12 @@ class AiAnalysis extends BaseController
 
             return $this->error('连接失败，请检查配置', 500);
         } catch (\Exception $e) {
-            return $this->error('连接失败：' . $e->getMessage(), 500);
+            Log::error('测试AI连接失败: ' . $e->getMessage(), [
+                'api_url' => $config['api_url'] ?? '',
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('连接失败，请检查配置后重试', 500);
         }
+
     }
 }

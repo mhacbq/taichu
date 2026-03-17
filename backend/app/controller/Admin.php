@@ -468,19 +468,27 @@ class Admin extends BaseController
         }
         
         try {
-            $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
             $userId = $request->get('user_id', '');
 
             $query = TarotRecord::order('id', 'desc');
+
             if ($userId) {
                 $query->where('user_id', $userId);
             }
 
             $total = $query->count();
-            $list = $query->page((int)$page, (int)$pageSize)->select();
+            $list = $query->page($page, $pageSize)->select();
 
             return $this->success([
+
                 'list' => $list,
                 'total' => $total
             ]);
@@ -551,19 +559,27 @@ class Admin extends BaseController
         }
         
         try {
-            $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
             $date = $request->get('date', '');
 
             $query = DailyFortune::order('date', 'desc');
+
             if ($date) {
                 $query->where('date', $date);
             }
 
             $total = $query->count();
-            $list = $query->page((int)$page, (int)$pageSize)->select();
+            $list = $query->page($page, $pageSize)->select();
 
             return $this->success([
+
                 'list' => $list,
                 'total' => $total
             ]);
@@ -673,14 +689,17 @@ class Admin extends BaseController
         }
         
         try {
-            $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
             $userId = $request->get('user_id', '');
             $type = $request->get('type', '');
 
-            // 验证分页参数
-            $page = max(1, intval($page));
-            $pageSize = max(1, min(self::MAX_PAGE_SIZE, intval($pageSize)));
 
             $query = PointsRecord::order('id', 'desc');
             
@@ -808,14 +827,17 @@ class Admin extends BaseController
         }
 
         try {
-            $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
             $type = $request->get('type', '');
             $status = $request->get('status', '');
 
-            // 验证分页参数
-            $page = max(1, intval($page));
-            $pageSize = max(1, min(self::MAX_PAGE_SIZE, intval($pageSize)));
 
             $query = Feedback::order('id', 'desc');
             
@@ -1029,14 +1051,17 @@ class Admin extends BaseController
         
         try {
             $params = $request->get();
-            $page = $request->get('page', 1);
-            $perPage = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
-            
-            // 验证分页参数
-            $page = max(1, intval($page));
-            $perPage = max(1, min(self::MAX_PAGE_SIZE, intval($perPage)));
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $perPage = $pagination['pageSize'];
             
             $result = AdminLog::getLogList($params, $page, $perPage);
+
             
             return $this->success($result, '获取成功');
         } catch (\Exception $e) {
