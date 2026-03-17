@@ -3,20 +3,25 @@ declare(strict_types=1);
 
 namespace app\middleware;
 
+use think\facade\Env;
+
 class Cors
 {
     /**
      * 允许的域名列表
-     * 生产环境应该限制为实际使用的域名
+     * 从环境变量读取，多个域名用逗号分隔
      */
-    protected array $allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:8080',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:8080',
-    ];
+    protected array $allowedOrigins = [];
+    
+    public function __construct()
+    {
+        // 从环境变量读取允许的域名，默认为本地开发地址
+        $origins = Env::get('CORS_ALLOWED_ORIGINS', 
+            'http://localhost:3000,http://localhost:5173,http://localhost:8080,' .
+            'http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8080'
+        );
+        $this->allowedOrigins = array_map('trim', explode(',', $origins));
+    }
     
     public function handle($request, \Closure $next)
     {

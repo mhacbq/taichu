@@ -142,7 +142,7 @@ class RateLimit
     protected function isVipUser($request): bool
     {
         // 检查用户是否已登录
-        if (!$request->user || !isset($request->user['sub'])) {
+        if (!property_exists($request, 'user') || !$request->user || !isset($request->user['sub'])) {
             return false;
         }
         
@@ -179,7 +179,7 @@ class RateLimit
     protected function getClientId($request): string
     {
         // 优先使用用户ID（已登录用户）
-        if ($request->user && isset($request->user['sub'])) {
+        if (property_exists($request, 'user') && $request->user && isset($request->user['sub'])) {
             return 'user_' . $request->user['sub'];
         }
         

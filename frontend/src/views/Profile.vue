@@ -299,7 +299,7 @@ const loadBaziHistory = async () => {
       page: baziCurrentPage.value,
       page_size: baziPageSize.value
     })
-    if (baziRes.code === 0) {
+    if (baziRes.code === 200) {
       baziHistory.value = baziRes.data.list || []
       baziTotal.value = baziRes.data.pagination?.total || 0
     }
@@ -328,7 +328,7 @@ const submitFeedbackForm = async () => {
       contact: feedbackContact.value,
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       ElMessage.success('反馈提交成功，感谢您的建议！')
       feedbackContent.value = ''
       feedbackContact.value = ''

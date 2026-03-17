@@ -74,7 +74,13 @@ class DailyFortuneTemplate extends Model
             $query->where('level', $level);
         }
         
-        return $query->orderRaw('RAND()')->find();
+        // 使用更安全的随机查询方式，避免orderRaw潜在的SQL注入风险
+        $count = $query->count();
+        if ($count === 0) {
+            return null;
+        }
+        $offset = mt_rand(0, $count - 1);
+        return $query->limit($offset, 1)->find();
     }
     
     /**

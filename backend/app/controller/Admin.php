@@ -32,6 +32,16 @@ class Admin extends BaseController
     protected string $adminName = '';
     
     /**
+     * 默认分页大小
+     */
+    protected const DEFAULT_PAGE_SIZE = 20;
+    
+    /**
+     * 最大分页大小
+     */
+    protected const MAX_PAGE_SIZE = 100;
+    
+    /**
      * 初始化
      */
     public function initialize()
@@ -258,9 +268,9 @@ class Admin extends BaseController
 
             // 验证分页参数
             $page = filter_var($page, FILTER_VALIDATE_INT) ?: 1;
-            $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT) ?: 20;
+            $pageSize = filter_var($pageSize, FILTER_VALIDATE_INT) ?: self::DEFAULT_PAGE_SIZE;
             $page = max(1, $page);
-            $pageSize = max(1, min(100, $pageSize)); // 限制最大100条
+            $pageSize = max(1, min(self::MAX_PAGE_SIZE, $pageSize)); // 限制最大分页数
 
             $query = User::order('id', 'desc');
 
@@ -386,8 +396,12 @@ class Admin extends BaseController
         
         try {
             $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', 20);
+            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
             $userId = $request->get('user_id', '');
+
+            // 验证分页参数
+            $page = max(1, intval($page));
+            $pageSize = max(1, min(self::MAX_PAGE_SIZE, intval($pageSize)));
 
             $query = BaziRecord::order('id', 'desc');
             
@@ -456,9 +470,13 @@ class Admin extends BaseController
         
         try {
             $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', 20);
+            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
             $userId = $request->get('user_id', '');
             $type = $request->get('type', '');
+
+            // 验证分页参数
+            $page = max(1, intval($page));
+            $pageSize = max(1, min(self::MAX_PAGE_SIZE, intval($pageSize)));
 
             $query = PointsRecord::order('id', 'desc');
             
@@ -587,9 +605,13 @@ class Admin extends BaseController
 
         try {
             $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', 20);
+            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
             $type = $request->get('type', '');
             $status = $request->get('status', '');
+
+            // 验证分页参数
+            $page = max(1, intval($page));
+            $pageSize = max(1, min(self::MAX_PAGE_SIZE, intval($pageSize)));
 
             $query = Feedback::order('id', 'desc');
             
@@ -804,7 +826,11 @@ class Admin extends BaseController
         try {
             $params = $request->get();
             $page = $request->get('page', 1);
-            $perPage = $request->get('pageSize', 20);
+            $perPage = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
+            
+            // 验证分页参数
+            $page = max(1, intval($page));
+            $perPage = max(1, min(self::MAX_PAGE_SIZE, intval($perPage)));
             
             $result = AdminLog::getLogList($params, $page, $perPage);
             

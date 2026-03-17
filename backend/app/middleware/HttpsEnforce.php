@@ -30,7 +30,7 @@ class HttpsEnforce
         }
         
         // 只在生产环境强制HTTPS
-        if (Env::get('APP_DEBUG') === 'false') {
+        if (!Env::get('APP_DEBUG', false)) {
             // 检查是否使用HTTPS
             $isSecure = $this->isSecureConnection($request);
             

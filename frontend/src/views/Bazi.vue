@@ -989,14 +989,14 @@ const cityOptions = computed(() => {
 const loadPoints = async () => {
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
+    if (response.code === 200) {
       currentPoints.value = response.data.balance
       isFirstBazi.value = response.data.first_bazi !== false
     }
     
     // 获取运势分析积分消耗
     const costResponse = await getFortunePointsCost()
-    if (costResponse.code === 0) {
+    if (costResponse.code === 200) {
       fortunePointsCost.value = costResponse.data
     }
   } catch (error) {
@@ -1369,7 +1369,7 @@ const startAiAnalysis = async () => {
     } else {
       // 非流式响应
       const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
-      if (res.code === 0) {
+      if (res.code === 200) {
         aiAnalysisResult.value = res.data
         currentPoints.value = res.data.remaining_points || currentPoints.value - 30
       } else {

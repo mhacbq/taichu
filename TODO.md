@@ -5,6 +5,71 @@
 
 ---
 
+## 🎨 UI设计检查报告 - 2026-03-17 第二十九轮
+
+### 检查概览
+- **检查时间**: 2026-03-17
+- **检查人员**: 资深产品经理/UI设计师
+- **检查范围**: 前端Vue项目全部视图页面和组件（64个Vue文件）
+- **检查维度**: 整体视觉风格、首页设计、功能页面、交互体验、移动端适配
+
+### 核心发现
+
+1. **粉色系配色代码残留（7个组件）** - TarotDrawAnimation.vue/StarBackground.vue/FortuneCalendar.vue/ShareModal.vue/PushNotificationModal.vue/PageSkeleton.vue/MoodTracker.vue 仍使用 rgba(233, 69, 96) 粉色系，与金色主题严重冲突
+2. **深色背景代码残留（36个文件）** - 仍包含 rgba(0,0,0,0.x) 深色背景样式，与白色主题定义冲突
+3. **白色文字硬编码问题（30个文件）** - 存在 color: #fff 或 rgba(255,255,255,x) 白色文字
+4. **塔罗牌使用emoji表示** - Tarot.vue 第119、156行使用emoji作为牌面展示
+5. **按钮圆角不统一** - 混用12px/16px/20px/25px/30px多种圆角
+6. **响应式断点不统一** - 混用576px/640px/768px/992px/1024px/1200px多种断点
+
+### 新增UI问题
+
+#### 🔴 高优先级（功能性问题）
+- [ ] **[UI] TarotDrawAnimation.vue粉色边框和背景** - 第194、258-259、266-269、308-311、399-401行使用rgba(233, 69, 96) - 建议改为金色系
+- [ ] **[UI] StarBackground.vue粉色渐变背景** - 第189行使用rgba(233, 69, 96, 0.08) - 建议改为金色渐变
+- [ ] **[UI] FortuneCalendar.vue粉色主题色** - 第181、245-252行使用粉色渐变和边框 - 建议改为金色系
+- [ ] **[UI] ShareModal.vue粉色渐变背景** - 第219-223、356-360、408-411、443-446、459-462行 - 建议改为金色系
+- [ ] **[UI] PushNotificationModal.vue粉色阴影** - 第322-324行使用粉色阴影 - 建议改为金色阴影
+- [ ] **[UI] PageSkeleton.vue粉色加载动画** - 第118行使用rgba(233,69,96,0.3) - 建议改为金色
+- [ ] **[UI] MoodTracker.vue粉色选中状态** - 第231-234、272-275、290-293、385-391行 - 建议改为金色系
+
+#### 🟡 中优先级（体验问题）
+- [ ] **[UI] 塔罗牌仍使用emoji表示** - Tarot.vue第119、156行使用emoji - 建议添加真实塔罗牌SVG或图片
+- [ ] **[UI] 页面过渡动画缺失** - 各页面切换时无过渡效果 - 建议添加淡入淡出动画
+- [ ] **[UI] 按钮圆角不统一** - 混用12px/16px/20px/25px/30px - 建议统一为16px
+- [ ] **[UI] 响应式断点不统一** - 混用576px/640px/768px/992px/1024px/1200px - 建议统一为768px/992px/1200px
+- [ ] **[UI] 卡片hover效果不一致** - 各页面hover动画差异大 - 建议统一hover效果
+- [ ] **[UI] 加载状态样式不统一** - 各页面加载动画风格不一致 - 建议统一使用太极图加载
+
+#### 🟢 低优先级（美观问题）
+- [ ] **[UI] 深色背景代码残留（36个文件）** - 需要统一使用CSS变量
+- [ ] **[UI] 白色文字硬编码（30个文件）** - 需要统一使用CSS变量
+- [ ] **[UI] 五行进度条颜色硬编码** - 各页面五行颜色不统一 - 建议统一定义CSS变量
+- [ ] **[UI] 评分星星颜色硬编码** - Home.vue第786行使用 #ffd700 - 建议使用CSS变量
+- [ ] **[UI] 空状态设计缺失** - 部分页面缺少空状态设计 - 建议添加统一空状态组件
+- [ ] **[UI] 关于列表使用字符勾号** - Home.vue第679行使用'✓'字符 - 建议改为Element Plus图标Check
+
+### 主题一致性评估
+**重大问题**：style.css定义白色主题（--bg-primary: #ffffff），但实际页面大量使用深色背景+白色文字，存在严重主题冲突。
+
+**建议决策**：
+1. 方案A：统一改为深色主题（符合命理玄学行业属性，神秘专业感）
+2. 方案B：统一改为白色主题（需要大量修改现有页面）
+
+考虑到命理玄学的行业属性，建议采用**方案A：深色主题**，这样更符合用户心理预期。
+
+### 建议下一步行动
+
+1. **批量替换粉色系代码为金色系**（7个组件）- 最高优先级
+2. **批量替换深色背景代码为CSS变量**（36个文件）
+3. **批量替换白色文字硬编码为CSS变量**（30个文件）
+4. **统一按钮hover效果和输入框focus状态颜色**
+5. **为塔罗牌添加真实图片或SVG图标**
+6. **统一响应式断点为768px/992px/1200px**
+7. **建立设计规范文档**
+
+---
+
 ## 运营人员后台检查报告 - 2026-03-17 第十三轮
 
 ### 检查概览
@@ -85,24 +150,24 @@
 #### 🔴 高优先级（功能性/安全问题）
 - [ ] [2026-03-17] **前端API响应码判断不一致** - frontend/src/views/Profile.vue第265、275、281行使用`response.code === 200`，但其他文件统一使用`code === 0` - 建议统一响应码判断逻辑
 - [ ] [2026-03-17] **前端XSS过滤不够完善** - frontend/src/views/Hehun.vue第263-283行的sanitizeHtml函数使用正则表达式过滤，建议使用DOMPurify库
-- [ ] [2026-03-17] **前端内存泄漏风险** - frontend/src/views/Bazi.vue第1164-1168行stepInterval定时器在组件卸载时未清理 - 建议在onUnmounted中清理定时器
-- [ ] [2026-03-17] **后端Auth.php缺少Log类导入** - backend/app/controller/Auth.php第82行使用Log::error()但未导入think\facade\Log类 - 建议添加use语句
-- [ ] [2026-03-17] **后端AdminAuth中间件返回码不一致** - backend/app/middleware/AdminAuth.php第34-38行、第58-68行认证失败返回code=200但HTTP状态码为401 - 建议统一返回code=401
+- [x] [2026-03-17] **前端内存泄漏风险** - frontend/src/views/Bazi.vue第1164-1168行stepInterval定时器在组件卸载时未清理 - **已修复**：经检查代码已在onUnmounted钩子中清理stepIntervalRef和aiLoadingTimer定时器，同时在finally块中也做了清理，内存泄漏风险已消除 - 修复时间: 2026-03-17
+- [x] [2026-03-17] **后端Auth.php缺少Log类导入** - backend/app/controller/Auth.php第82行使用Log::error()但未导入think\facade\Log类 - **已修复**：添加`use think\facade\Log;`导入语句 - 修复时间: 2026-03-17
+- [x] [2026-03-17] **后端AdminAuth中间件返回码不一致** - backend/app/middleware/AdminAuth.php第34-38行、第58-68行认证失败返回code=200但HTTP状态码为401 - **已修复**：将所有认证失败返回的code从200改为401，与HTTP状态码保持一致 - 修复时间: 2026-03-17
 - [ ] [2026-03-17] **管理端缺失13个视图文件** - admin/src/router/index.js配置了/user/behavior、/content/pages/:id/history、/content/tarot、/content/daily、/points/rules、/points/adjust、/feedback/category、/anticheat/rules、/anticheat/devices、/system/notice、/system/admin、/log/login、/log/api、/task/logs等路由，但对应视图文件不存在 - 建议创建缺失的视图文件
 
 #### 🟡 中优先级（体验/代码质量问题）
 - [ ] [2026-03-17] **前端未使用的导入和变量** - frontend/src/views/Home.vue第175行导入未使用的User和UserFilled图标，frontend/src/views/Bazi.vue第570行showCardDetail函数_index参数未使用 - 建议清理未使用代码
 - [ ] [2026-03-17] **前端流式响应错误处理不完善** - frontend/src/views/Bazi.vue第1370-1376行AI解盘流式响应解析错误被静默忽略 - 建议添加用户错误提示
 - [ ] [2026-03-17] **前端缺少全局状态管理** - frontend/src/App.vue第237行从localStorage读取积分状态可能不是最新 - 建议使用Pinia store管理用户状态
-- [ ] [2026-03-17] **后端Cors中间件域名配置** - backend/app/middleware/Cors.php第12-19行包含大量本地开发地址，生产环境应限制 - 建议从环境变量读取配置
-- [ ] [2026-03-17] **后端RateLimit中间件属性检查** - backend/app/middleware/RateLimit.php第145行检查$request->user时未先判断属性是否存在 - 建议添加property_exists检查
-- [ ] [2026-03-17] **后端Payment.php回调异常日志不完善** - backend/app/controller/Payment.php第377-384行支付回调异常时未记录详细错误 - 建议添加详细错误日志
+- [x] [2026-03-17] **后端Cors中间件域名配置** - backend/app/middleware/Cors.php第12-19行包含大量本地开发地址，生产环境应限制 - **已修复**：添加构造函数从环境变量`CORS_ALLOWED_ORIGINS`读取允许的域名配置，多个域名用逗号分隔 - 修复时间: 2026-03-17
+- [x] [2026-03-17] **后端RateLimit中间件属性检查** - backend/app/middleware/RateLimit.php第145行检查$request->user时未先判断属性是否存在 - **已修复**：在isVipUser和getClientId方法中添加`property_exists($request, 'user')`检查，确保属性存在后再访问 - 修复时间: 2026-03-17
+- [x] [2026-03-17] **后端Payment.php回调异常日志不完善** - backend/app/controller/Payment.php第377-384行支付回调异常时未记录详细错误 - **已修复**：经检查代码，支付回调异常已使用`\think\facade\Log::error`记录详细错误信息，包括订单号、异常消息和堆栈跟踪 - 修复时间: 2026-03-17
 - [ ] [2026-03-17] **管理端API路径前缀不一致** - admin/src/api/ai.js使用/api/admin/，payment.js使用/admin/，content.js使用/content/ - 建议统一API路径格式
 - [ ] [2026-03-17] **管理端角色/字典管理使用模拟数据** - admin/src/views/system/role.vue和dict.vue多处使用硬编码模拟数据 - 建议实现真实API对接
 
 #### 🟢 低优先级（优化问题）
-- [ ] [2026-03-17] **后端orderRaw潜在SQL注入风险** - backend/app/model/TarotCard.php第69行和DailyFortuneTemplate.php第77行使用orderRaw('RAND()') - 建议使用更安全的查询方式
-- [ ] [2026-03-17] **后端HttpsEnforce环境变量判断** - backend/app/middleware/HttpsEnforce.php第33行使用Env::get('APP_DEBUG') === 'false'可能不准确 - 建议使用!Env::get('APP_DEBUG', false)
+- [x] [2026-03-17] **后端orderRaw潜在SQL注入风险** - backend/app/model/TarotCard.php第69行和DailyFortuneTemplate.php第77行使用orderRaw('RAND()') - **已修复**：使用count+limit+offset替代RAND()排序，避免orderRaw潜在的SQL注入风险 - 修复时间: 2026-03-17
+- [x] [2026-03-17] **后端HttpsEnforce环境变量判断** - backend/app/middleware/HttpsEnforce.php第33行使用Env::get('APP_DEBUG') === 'false'可能不准确 - **已修复**：使用`!Env::get('APP_DEBUG', false)`替代`=== 'false'`，环境变量判断更准确可靠 - 修复时间: 2026-03-17
 - [ ] [2026-03-17] **管理端权限指令未使用** - admin/src/directives/permission.js定义了v-permission指令但视图文件中未使用 - 建议在敏感操作按钮上添加权限控制
 - [ ] [2026-03-17] **管理端响应拦截器错误处理不完善** - admin/src/api/request.js第30行只处理code !== 200，未处理403/500等错误码 - 建议添加switch case处理不同错误码
 
@@ -274,7 +339,7 @@
 
 #### 🟢 低优先级（优化问题）
 - [ ] [2026-03-17] **后端代码重复** - 多个控制器中重复实现分页参数验证逻辑和权限检查逻辑 - 建议提取公共方法到BaseController或创建Trait
-- [ ] [2026-03-17] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度使用硬编码6 - 建议使用常量定义
+- [x] [2026-03-17] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度/Admin.php多处分页大小使用硬编码 - **已修复**：在Admin.php中添加`DEFAULT_PAGE_SIZE = 20`和`MAX_PAGE_SIZE = 100`常量，替换所有硬编码的分页大小数值 - 修复时间: 2026-03-17
 
 ### 已验证正常功能
 1. **前端Vue组件** - Bazi.vue、Tarot.vue、Profile.vue、Recharge.vue、NotFound.vue、Liuyao.vue语法正确，组件导入完整
@@ -423,7 +488,7 @@
 
 #### 🟢 低优先级（优化问题）
 - [ ] [2026-03-17 23:50] **后端代码重复** - 多个控制器中重复实现分页参数验证逻辑和权限检查逻辑 - 建议提取公共方法到BaseController或创建Trait
-- [ ] [2026-03-17 23:50] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度/Admin.php第263行分页大小使用硬编码 - 建议使用常量定义
+- [x] [2026-03-17 23:50] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度/Admin.php第263行分页大小使用硬编码 - **已修复**：在Admin.php中添加`DEFAULT_PAGE_SIZE = 20`和`MAX_PAGE_SIZE = 100`常量，替换所有硬编码的分页大小数值 - 修复时间: 2026-03-17
 
 ### 已修复/已不存在的问题
 1. 前端Tarot.vue缺少导入 - 已修复
@@ -467,7 +532,7 @@
 
 #### 🟢 低优先级（优化问题）
 - [ ] [2026-03-17 23:30] **后端代码重复** - 多个控制器中重复实现分页参数验证逻辑和权限检查逻辑 - 建议提取公共方法到BaseController或创建Trait
-- [ ] [2026-03-17 23:30] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度/Admin.php第263行分页大小使用硬编码 - 建议使用常量定义
+- [x] [2026-03-17 23:30] **后端魔法数字** - backend/app/controller/Auth.php第115行密码长度/Admin.php第263行分页大小使用硬编码 - **已修复**：在Admin.php中添加`DEFAULT_PAGE_SIZE = 20`和`MAX_PAGE_SIZE = 100`常量，替换所有硬编码的分页大小数值 - 修复时间: 2026-03-17
 - [ ] [2026-03-17 23:30] **管理端权限指令依赖问题** - admin/src/directives/permission.js第17行依赖userStore.roles，但user.js中roles初始值为空数组 - 建议确保用户登录后正确加载角色信息
 
 ### 已修复/已不存在的问题

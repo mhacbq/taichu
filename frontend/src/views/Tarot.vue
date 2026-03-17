@@ -112,7 +112,7 @@
             :key="index"
             class="tarot-card"
             :class="{ reversed: card.reversed }"
-            @click="showCardDetail(card, index)"
+            @click="showCardDetail(card)"
           >
             <div class="card-inner" :style="getCardStyle(card)">
               <div class="card-number">{{ index + 1 }}</div>
@@ -567,7 +567,7 @@ const resetTarot = () => {
 }
 
 // 显示卡片详情
-const showCardDetail = (card, _index) => {
+const showCardDetail = (card) => {
   selectedCard.value = card
   cardDetailVisible.value = true
 }
