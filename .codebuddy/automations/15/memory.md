@@ -1,6 +1,52 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-17 23:45 管理后台角色/日志/风控修复记录（本次）
+
+- 完成 5 个后台 / 运营类问题：统一独立后台代理端口与文档口径、修复侧边栏按角色过滤与路由守卫、补齐管理员保存/删除与积分统计接口、补齐风控规则更新与日志清理/导出接口、把统计表与反作弊表纳入 fresh setup 初始化链路。
+- 关键代码：`backend/app/controller/Admin.php` 新增 `saveAdminUser()` / `deleteAdminUser()` / `pointsStats()` / `updateRiskRule()` / `clearLogs()` / `exportLogs()`；`admin/src/views/system/admin.vue`、`admin/src/views/anticheat/rules.vue`、`admin/src/views/log/operation.vue` 已接回真实接口；新增 SQL：`database/20260317_create_admin_stats_tables.sql`、`database/20260317_create_anticheat_tables.sql`。
+- 验证：已对本轮改动文件执行 IDE 诊断检查（0 条），执行 `git diff --check` 通过，并完成 `npm --prefix admin run build` 构建验证；仅保留 Sass legacy JS API 与大 chunk 的现有警告，未阻塞构建。
+- Git：本轮提交信息使用 `fix-backend-admin-ops-20260317-2345`。
+
+
+
+## 2026-03-17 22:15 初始化与审计修复记录（本次）
+
+- 完成 5 个后端 / 运营类问题：管理员 bootstrap SQL 纳入容器与手工初始化流程、Dashboard 权限检查兼容、神煞表及种子脚本补齐并接入初始化、后台操作日志字段兼容写入、知识库文章表初始化流程补齐。
+- 新增 SQL：`database/20260317_create_shensha_table.sql`；并更新 `backend/docker-compose.yml`、`database/backup/README.md`、`backend/app/BaseController.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/AdminStatsService.php`、`TODO.md`。
+- 验证：已对本轮 PHP 文件执行 IDE 诊断检查（0 条），并通过 `git diff --cached --check`。
+- Git：已提交 `e62d6aa`，提交信息为 `"fix-backend-init-and-admin-log-20260317-2215"`。
+
+## 2026-03-17 管理后台兼容修复记录（本次）
+
+### 本次完成的后端问题
+1. **管理员登录与后台管理员列表表名兼容**
+   - `backend/app/controller/admin/Auth.php` 已兼容 `tc_admin/admin`，并统一回退 `ADMIN_JWT_SECRET/JWT_SECRET`。
+   - `backend/app/controller/Admin.php` 的 `getAdminUsers` 也补齐了同类兼容，避免登录修好后管理员列表继续依赖硬编码 `admin` 表。
+2. **后台鉴权兜底修复**
+   - `backend/app/middleware/AdminAuth.php` 不再因缺少 `ADMIN_JWT_SECRET` 在构造阶段直接抛异常，改为回退到 `JWT_SECRET`，最后再回退开发默认值并记录 warning。
+3. **Dashboard / 用户详情 / 用户列表兼容层落地**
+   - `backend/app/service/AdminStatsService.php` 补齐 `statistics/user_trend/bazi_trend/tarot_trend` 与用户列表参数别名兼容。
+   - `backend/app/controller/admin/User.php` 同时兼容平铺详情结构与 `points` / `type+amount` 两套积分调整入参。
+4. **黄历 REST 路由与表结构兼容**
+   - `backend/route/admin.php` 已补齐 `/api/admin/content/almanac*` 路由。
+   - `backend/app/controller/Admin.php` 已兼容 `tc_almanac/almanac` 表名、CRUD 与月度生成逻辑。
+5. **管理员初始化 SQL 补齐**
+   - 新增 `database/20260317_create_admin_users_table.sql`，创建 `tc_admin` 主表，并补默认账号 `admin / admin123`、超级管理员角色与角色绑定。
+
+### 验证摘要
+- 已对本轮关键 PHP / 路由 / TODO 文件执行 IDE 诊断检查：0 条问题。
+- 已执行 `git diff --check`（本轮目标文件）：通过。
+- 当前环境未提供 `php` CLI，无法执行 `php -l`。
+
+### Git 提交
+- 提交 ID：`060061d`
+- 提交信息：`"fix-backend-admin-compat-20260317"`
+- 说明：本次仅提交目标后端修复文件，未带入仓库中其他无关改动。
+
+---
+
 ## 2026-03-17 19:22 执行记录（本次）
+
 
 ### 本次完成的5个后端问题
 1. **用户积分手动调账闭环**

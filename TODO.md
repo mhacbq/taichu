@@ -1,13 +1,30 @@
+## 🛠 第二十三轮后台运营检查报告 (2026-03-17)
+
+作为网站运营人员，我继续沿着独立后台 `http://localhost:3001` 的真实使用路径复核管理员管理、风控规则、日志管理与本地 fresh setup 链路，并结合前后端契约、已注册路由与初始化 SQL 再次交叉核验，补充记录以下 5 个已落地修复项：
+
+### 🔴 高优先级（运营阻塞问题）
+- [x] [运营] 管理员管理页只有列表壳子，`/api/admin/system/admins` 的保存/删除接口未实现，新增/编辑/删除管理员链路全部中断 - 系统设置 / 管理员管理 - 已在 `backend/app/controller/Admin.php` 新增 `saveAdminUser()`、`deleteAdminUser()`，补齐角色绑定、用户名唯一性校验、自删保护与操作日志；同时 `admin/src/views/system/admin.vue` 已接回真实接口，支持列表加载、新增、编辑、删除和状态切换。
+- [x] [运营] 积分统计接口 `GET /api/admin/points/stats` 已在路由注册，但控制器缺失实现，后台无法获取独立积分统计快照 - 积分管理 / 统计概览 - 已在 `backend/app/controller/Admin.php` 新增 `pointsStats()`，并为 `backend/app/service/AdminStatsService.php` 增加公开复用入口 `getPointsStatsSnapshot()`；同时补上 `points_balance` 的实时兜底与每日统计写回。
+- [x] [运营] 风控规则更新接口缺失，现有 `tc_anti_cheat_rule.config` JSON 结构与前端 `threshold` 字段也不兼容，新增/编辑规则会直接失败 - 反作弊系统 / 风险规则 - 已在 `backend/app/controller/Admin.php` 补齐 `updateRiskRule()`，并重写规则读写逻辑，统一完成 `threshold <-> config` 映射、规则编码生成、默认动作/状态兜底和审计日志记录；`admin/src/views/anticheat/rules.vue` 也已接回真实接口。
+
+### 🟡 中优先级（运营体验问题）
+- [x] [运营] 日志管理缺少清空/导出后端实现，且前端列表字段与 `tc_admin_log` 原始结构错位，日志筛选、详情和导出都不可用 - 日志管理 / 操作日志 - 已在 `backend/app/controller/Admin.php` 补齐 `clearLogs()`、`exportLogs()`，统一适配 `operator/module/action/dateRange` 查询条件与 `operator/description/request/response` 展示字段；`admin/src/api/log.js` 改为独立 blob 下载，`admin/src/views/log/operation.vue` 已新增导出按钮并接通真实接口。
+- [x] [运营] fresh setup 仍未纳入 `site_daily_stats` 与反作弊相关表，补完接口后首次初始化依然会因为缺表失败 - 本地初始化 / 后台依赖表 - 已新增 `database/20260317_create_admin_stats_tables.sql`、`database/20260317_create_anticheat_tables.sql`（含默认风控规则种子），并把它们挂入 `backend/docker-compose.yml`、`README.md`、`database/backup/README.md` 的初始化链路说明中。
+
+---
+
 ## 🛠 第二十二轮后台运营检查报告 (2026-03-17)
+
 
 作为网站运营人员，我继续按真实运营路径巡检后台：先实测默认独立后台 `http://localhost:3001/login`，确认登录页可打开但提交会命中失效的 `8000` 端口；随后临时拉起直连 `8080` 的后台实例、注入管理员 token 进入 Dashboard，并结合受保护接口实测、运行中容器代码比对与错误日志交叉核验，新增以下不重复问题：
 
 ### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] 当前运行中的后台容器仍在跑旧代码/旧初始化状态，仓库里已补的登录初始化、`checkPermission()` 兼容和神煞建表修复都没有在运行态生效，导致管理员登录继续报“管理员账号表不存在”，Dashboard 统计/趋势继续 500，神煞管理继续报错 - 管理员登录 / Dashboard / 内容管理 - 这不是单点功能问题，而是部署/重建链路没有把最新修复真正发布到当前后台，运营后台现状仍不可用。
+- [x] [运营] 当前运行中的后台容器仍在跑旧代码/旧初始化状态，仓库里已补的登录初始化、`checkPermission()` 兼容和神煞建表修复都没有在运行态生效，导致管理员登录继续报“管理员账号表不存在”，Dashboard 统计/趋势继续 500，神煞管理继续报错 - 管理员登录 / Dashboard / 内容管理 - 已在 `backend/Dockerfile` 安装 `default-mysql-client`，并让 `backend/docker-compose.yml` 把 `database/` 补丁目录挂载进后端容器；`backend/docker-entrypoint.sh` 现会在每次启动时等待数据库就绪后自动补跑 `20260317_create_admin_users_table.sql`、`20260317_create_shensha_table.sql`、`20260317_create_knowledge_tables.sql` 等幂等 SQL，旧数据卷也能补齐后台依赖表；同时根 `README.md` / `本地启用.md` 已统一为 `cd backend && docker compose up -d --build` 口径，避免继续启动旧镜像。
+
 
 ### 🟡 中优先级（运营体验问题）
-- [ ] [运营] 独立后台默认本地运行配置仍把 `/api` 代理到 `http://localhost:8000`，而当前标准本地后端健康地址是 `http://localhost:8080/api/health`，按文档直接打开 `http://localhost:3001/login` 提交登录会打到空端口卡死 - 管理员登录 / 本地联调入口 - 建议统一 `admin/vite.config.js`、启动脚本和本地文档里的后台 API 端口口径。
-- [ ] [运营] 后台侧边栏没有按角色过滤菜单，`admin/src/layout/components/Sidebar/index.vue` 直接把 `asyncRoutes` 全量渲染，运营人员会看到“短信管理 / AI管理 / 系统设置 / 日志管理 / 任务调度”等无权限入口，点进去后才会被拦截 - 后台导航 / 权限体验 - 建议按路由 `meta.roles` 过滤侧边栏，避免误导运营人员进入不可用模块。
+- [x] [运营] 独立后台默认本地运行配置仍把 `/api` 代理到 `http://localhost:8000`，而当前标准本地后端健康地址是 `http://localhost:8080/api/health`，按文档直接打开 `http://localhost:3001/login` 提交登录会打到空端口卡死 - 管理员登录 / 本地联调入口 - 已将 `admin/vite.config.js` 改为默认代理 `http://localhost:8080`，并支持通过 `VITE_PROXY_TARGET` 覆盖；`start-local.ps1` 在拉起后台 dev server 时会显式注入该变量，`README.md`、`本地启用.md`、`database/backup/README.md` 也已统一到 8080 口径。
+- [x] [运营] 后台侧边栏没有按角色过滤菜单，`admin/src/layout/components/Sidebar/index.vue` 直接把 `asyncRoutes` 全量渲染，运营人员会看到“短信管理 / AI管理 / 系统设置 / 日志管理 / 任务调度”等无权限入口，点进去后才会被拦截 - 后台导航 / 权限体验 - 已在 `admin/src/stores/user.js` 增加角色归一化与递归路由过滤逻辑，`Sidebar/index.vue` 改为消费 `accessRoutes`，并同步修正 `admin/src/router/index.js` 的守卫为基于角色数组校验/刷新时自动补拉用户信息，运营侧不会再看到无权限菜单。
 
 ---
 
@@ -187,7 +204,7 @@
 ### 🔴 高优先级
 
 ### 🟡 中优先级
-- [ ] [2026-03-17] 六爻控制器缺少API方法 - `backend/app/controller/Liuyao.php` - 路由定义了 `Liuyao/getPricing` 和 `Liuyao/divination`，但控制器中只有 `qiGua()` 方法，缺少对应的 `getPricing()` 和 `divination()` 方法，导致前端调用 `/api/liuyao/pricing` 和 `/api/liuyao/divination` 时返回404 - 建议在 Liuyao.php 中添加这两个方法，或者修改路由指向现有的 `qiGua()` 方法。
+- [x] [2026-03-17] 六爻控制器缺少API方法 - `backend/app/controller/Liuyao.php` - 本轮复核确认 `getPricing()` 与 `divination()` 已存在且路由已对齐，同时把旧 `qiGua()` 入口改为统一业务/系统异常收口与脱敏日志输出，核销历史误报。
 
 ### 🟢 低优先级
 
@@ -203,7 +220,7 @@
 ### 🟢 低优先级（运营优化建议）
 
 - [x] [运营] Dashboard 实时数据导出 - 首页看板 - 已补齐后台 dashboard/export-realtime 路由，支持实时快照 CSV 导出。
-- [ ] [运营] 控制器代码架构优化 - 后端 Admin.php - 本轮已继续拆出公告、黄历、SEO 模块，但主控制器仍承载较多历史接口，后续仍需继续向模块化控制器（admin/目录）迁移。
+- [x] [运营] 控制器代码架构优化 - 后端 Admin.php - 本轮继续将反馈管理与敏感词管理迁移到 `backend/app/controller/admin/{Feedback,SensitiveWord}.php`，并同步把 Dashboard 待处理反馈摘要路由切到独立控制器，后台历史大控制器进一步瘦身。
 
 
 
@@ -289,7 +306,7 @@
 
 
 ### 🟢 低优先级
-- [ ] [2026-03-17] 后端Admin控制器代码量过大 - backend/app/controller/Admin.php - 本轮已迁出公告、黄历、SEO 模块并删除旧实现，但主控制器仍较大，建议继续向 admin/ 目录迁移剩余历史接口。
+- [x] [2026-03-17] 后端Admin控制器代码量过大 - backend/app/controller/Admin.php - 本轮已继续迁出反馈与敏感词模块，并让相关路由直接落到 `admin/Feedback`、`admin/SensitiveWord`；同时顺手清理 `exportUsers()` 的重复筛选分支和非标准导出日志动作。
 
 
 ---

@@ -329,9 +329,9 @@ class AdminStatsService
     /**
      * 更新每日统计（定时任务调用）
      */
-    public static function updateDailyStats(string $date = null): bool
+    public static function updateDailyStats(?string $date = null): bool
     {
-        $date = $date ?? date('Y-m-d');
+        $date = trim((string) ($date ?? '')) ?: date('Y-m-d');
 
         // 用户统计
 
@@ -388,6 +388,7 @@ class AdminStatsService
             'active_users' => $activeUsers,
             'points_given' => $pointsGiven,
             'points_consumed' => abs($pointsConsumed),
+            'points_balance' => (int) (Db::table('tc_user')->sum('points') ?? 0),
             'bazi_count' => $baziCount,
             'tarot_count' => $tarotCount,
             'liuyao_count' => $liuyaoCount,
@@ -396,6 +397,7 @@ class AdminStatsService
             'paid_count' => $orderStats['paid_count'] ?? 0,
             'paid_amount' => $orderStats['paid_amount'] ?? 0,
         ];
+
         
         $exists = Db::table('site_daily_stats')
             ->where('stat_date', $date)

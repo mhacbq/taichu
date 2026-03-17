@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { hasRoutePermission, normalizeAdminRoles } from '@/utils/admin-permission'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
+
 
 NProgress.configure({ showSpinner: false })
 
@@ -396,31 +398,45 @@ export const asyncRoutes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: constantRoutes,
+  routes: [...constantRoutes, ...asyncRoutes],
   scrollBehavior: () => ({ top: 0 })
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   NProgress.start()
   const userStore = useUserStore()
   
   if (to.path === '/login') {
     next()
-  } else if (!userStore.token) {
-    next('/login')
-  } else {
-    // 检查角色权限
-    const requiredRoles = to.meta?.roles
-    if (requiredRoles && requiredRoles.length > 0) {
-      const userRole = userStore.userInfo?.role || 'operator'
-      if (!requiredRoles.includes(userRole)) {
-        // 无权限访问，重定向到403页面或首页
-        next('/')
-        return
-      }
-    }
-    next()
+    return
   }
+
+  if (!userStore.token) {
+    next('/login')
+    return
+  }
+
+  if (!userStore.userInfo || userStore.roles.length === 0) {
+    try {
+      await userStore.getUserInfo()
+    } catch (error) {
+      userStore.logout()
+      next('/login')
+      return
+    }
+  }
+
+  const requiredRoles = to.meta?.roles || []
+  if (requiredRoles.length > 0) {
+    const currentRoles = normalizeAdminRoles(userStore.roles || userStore.userInfo?.roles || [])
+    if (!hasRoutePermission(currentRoles, requiredRoles)) {
+      next('/')
+      return
+    }
+  }
+
+
+  next()
 })
 
 router.afterEach(() => {

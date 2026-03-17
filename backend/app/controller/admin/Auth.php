@@ -70,7 +70,7 @@ class Auth extends BaseController
                 ->update(['last_login_at' => date('Y-m-d H:i:s')]);
         }
 
-        $roles = $this->fetchAdminRoles((int) $admin['id']);
+        $roles = $this->normalizeClientRoles($this->fetchAdminRoles((int) $admin['id']));
         $payload = [
             'iss' => 'taichu-admin',
             'iat' => time(),
@@ -110,7 +110,7 @@ class Auth extends BaseController
 
         try {
             $decoded = JWT::decode($token, new Key($this->jwtKey, 'HS256'));
-            $roles = is_array($decoded->roles ?? null) ? $decoded->roles : ['admin'];
+            $roles = $this->normalizeClientRoles(is_array($decoded->roles ?? null) ? $decoded->roles : ['admin']);
 
             return $this->success([
                 'id' => (int) $decoded->sub,
@@ -179,6 +179,36 @@ class Auth extends BaseController
         $roles = array_values(array_unique(array_filter(array_map('strval', $rows))));
 
         return $roles ?: ['admin'];
+    }
+
+    /**
+     * 归一化返回给前端的角色编码，统一到 admin / operator 口径
+     */
+    private function normalizeClientRoles(array $roles): array
+    {
+        $normalized = [];
+        foreach ($roles as $role) {
+            $code = $this->mapRoleCodeForClient((string) $role);
+            if ($code !== '' && !in_array($code, $normalized, true)) {
+                $normalized[] = $code;
+            }
+        }
+
+        return $normalized ?: ['admin'];
+    }
+
+    /**
+     * 角色编码映射
+     */
+    private function mapRoleCodeForClient(string $role): string
+    {
+        $role = strtolower(trim($role));
+
+        return match ($role) {
+            'super_admin', 'admin' => 'admin',
+            'operator', 'normal_admin', 'customer_service' => 'operator',
+            default => $role,
+        };
     }
 
     /**

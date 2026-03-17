@@ -96,8 +96,11 @@ mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < 03_insert_basic_data.sql
 
 echo "Bootstrapping admin/content tables..."
 mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_admin_users_table.sql
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_admin_stats_tables.sql
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_anticheat_tables.sql
 mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_shensha_table.sql
 mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_knowledge_tables.sql
+
 
 echo "Inserting test data..."
 mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < 04_insert_test_data.sql
@@ -176,7 +179,7 @@ API_SIGN_KEY = your-api-sign-key
 修改 `frontend/.env` 或 `frontend/.env.local`：
 
 ```ini
-VUE_APP_API_URL = http://localhost:8000/api
+VITE_API_BASE_URL = http://localhost:8080
 ```
 
 ## 常见问题
@@ -197,7 +200,8 @@ DROP DATABASE IF EXISTS taichu;
 
 ### 3. 外键约束错误
 
-确保按顺序执行 SQL 文件，先执行 `02_create_tables.sql` 创建核心表，再执行 `20260317_create_admin_users_table.sql`、`20260317_create_shensha_table.sql`、`20260317_create_knowledge_tables.sql` 补齐后台管理与内容管理所需表。
+确保按顺序执行 SQL 文件，先执行 `02_create_tables.sql` 创建核心表，再执行 `20260317_create_admin_users_table.sql`、`20260317_create_admin_stats_tables.sql`、`20260317_create_anticheat_tables.sql`、`20260317_create_shensha_table.sql`、`20260317_create_knowledge_tables.sql`，补齐后台管理、统计、反作弊与内容管理所需表。
+
 
 ## 技术支持
 

@@ -12,7 +12,9 @@ use app\model\AdminLog;
 use app\model\DailyFortune;
 use app\model\TarotRecord;
 use app\service\AdminAuthService;
+use app\service\AdminStatsService;
 use app\service\ConfigService;
+
 use think\Request;
 use think\facade\Log;
 use think\facade\Db;
@@ -1569,6 +1571,10 @@ class Admin extends BaseController
                 return $this->error('管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql', 500);
             }
 
+            if (!$this->tableExists('tc_admin_role') || !$this->tableExists('tc_admin_user_role')) {
+                return $this->error('管理员角色表不存在，请先执行 database/20260317_create_admin_users_table.sql', 500);
+            }
+
             $columns = $this->getCompatibleTableColumns($adminTable);
             $nicknameField = isset($columns['nickname']) ? 'a.nickname' : "''";
             $statusField = isset($columns['status']) ? 'a.status' : '1';
@@ -1603,13 +1609,14 @@ class Admin extends BaseController
                 $query->where('a.status', (int) $status);
             }
 
-
             $rows = $query->select()->toArray();
             $total = count($rows);
             $list = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
 
             foreach ($list as &$item) {
-                $item['role_name'] = $item['role_name'] ?: '未分配角色';
+                $role = $this->normalizeAdminRoleCode((string) ($item['role_code'] ?? ''));
+                $item['role'] = $role !== '' ? $role : 'operator';
+                $item['role_name'] = $item['role_name'] ?: $this->resolveAdminRoleName($item['role']);
                 $item['role_code'] = $item['role_code'] ?: '';
                 $item['nickname'] = $item['nickname'] ?: $item['username'];
                 $item['status'] = (int) ($item['status'] ?? 0);
@@ -1620,13 +1627,209 @@ class Admin extends BaseController
                 'list' => array_values($list),
                 'total' => $total,
             ], '获取成功');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('获取管理员列表失败: ' . $e->getMessage(), [
                 'admin_id' => $this->adminId,
             ]);
             return $this->error('获取管理员列表失败，请稍后重试', 500);
         }
     }
+
+    /**
+     * 保存管理员
+     */
+    public function saveAdminUser(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限管理管理员账号', 403);
+        }
+
+        $data = $request->post();
+        $id = (int) ($data['id'] ?? 0);
+        $username = trim((string) ($data['username'] ?? ''));
+        $nickname = trim((string) ($data['nickname'] ?? ''));
+        $password = trim((string) ($data['password'] ?? ''));
+        $status = isset($data['status']) ? (int) $data['status'] : 1;
+        $roleCode = trim((string) ($data['role'] ?? 'operator'));
+
+        if ($id <= 0 && $username === '') {
+            return $this->error('用户名不能为空', 422);
+        }
+        if ($id <= 0 && $password === '') {
+            return $this->error('密码不能为空', 422);
+        }
+
+        $adminTable = $this->resolveCompatibleTable(['tc_admin', 'admin'], 'tc_admin');
+        if (!$this->tableExists($adminTable)) {
+            return $this->error('管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql', 500);
+        }
+
+        $role = $this->resolveAdminRoleRecord($roleCode);
+        if ($role === null) {
+            return $this->error('角色不存在，请先初始化管理员角色数据', 422);
+        }
+
+        $columns = $this->getCompatibleTableColumns($adminTable);
+
+        Db::startTrans();
+        try {
+            $existing = null;
+            if ($id > 0) {
+                $existing = Db::table($adminTable)->where('id', $id)->lock(true)->find();
+                if (!$existing) {
+                    Db::rollback();
+                    return $this->error('管理员不存在', 404);
+                }
+            }
+
+            $targetUsername = $id > 0
+                ? trim((string) ($username !== '' ? $username : ($existing['username'] ?? '')))
+                : $username;
+            $targetNickname = $nickname !== '' ? $nickname : $targetUsername;
+
+            $duplicateQuery = Db::table($adminTable)->where('username', $targetUsername);
+            if ($id > 0) {
+                $duplicateQuery->where('id', '<>', $id);
+            }
+            if ($duplicateQuery->find()) {
+                Db::rollback();
+                return $this->error('用户名已存在', 422);
+            }
+
+            $payload = [];
+            if (isset($columns['username'])) {
+                $payload['username'] = $targetUsername;
+            }
+            if (isset($columns['nickname'])) {
+                $payload['nickname'] = $targetNickname;
+            }
+            if (isset($columns['status'])) {
+                $payload['status'] = $status === 1 ? 1 : 0;
+            }
+            if ($password !== '' && isset($columns['password'])) {
+                $payload['password'] = password_hash($password, PASSWORD_DEFAULT);
+            }
+
+            if ($id > 0) {
+                if (!empty($payload)) {
+                    Db::table($adminTable)->where('id', $id)->update($payload);
+                }
+            } else {
+                $id = (int) Db::table($adminTable)->insertGetId($payload);
+            }
+
+            $this->syncAdminRoleBinding($adminTable, $id, (int) $role['id']);
+
+            $this->logOperation($existing ? 'update' : 'create', 'system', [
+                'target_id' => $id,
+                'target_type' => 'admin',
+                'detail' => ($existing ? '更新' : '创建') . '管理员账号：' . $targetUsername,
+                'before_data' => $existing ? [
+                    'username' => $existing['username'] ?? '',
+                    'nickname' => $existing['nickname'] ?? '',
+                    'status' => (int) ($existing['status'] ?? 0),
+                ] : null,
+                'after_data' => [
+                    'username' => $targetUsername,
+                    'nickname' => $targetNickname,
+                    'status' => $payload['status'] ?? (int) ($existing['status'] ?? 1),
+                    'role' => $this->normalizeAdminRoleCode((string) ($role['code'] ?? $roleCode)),
+                ],
+            ]);
+
+            Db::commit();
+            return $this->success(['id' => $id], '保存成功');
+        } catch (\Throwable $e) {
+            Db::rollback();
+            Log::error('保存管理员失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'target_admin_id' => $id,
+            ]);
+            return $this->error('保存管理员失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 删除管理员
+     */
+    public function deleteAdminUser($id)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限删除管理员账号', 403);
+        }
+
+        $id = (int) $id;
+        if ($id <= 0) {
+            return $this->error('管理员ID无效', 422);
+        }
+        if ($id === $this->adminId) {
+            return $this->error('不能删除当前登录管理员', 422);
+        }
+
+        $adminTable = $this->resolveCompatibleTable(['tc_admin', 'admin'], 'tc_admin');
+        if (!$this->tableExists($adminTable)) {
+            return $this->error('管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql', 500);
+        }
+
+        Db::startTrans();
+        try {
+            $admin = Db::table($adminTable)->where('id', $id)->lock(true)->find();
+            if (!$admin) {
+                Db::rollback();
+                return $this->error('管理员不存在', 404);
+            }
+
+            Db::table($adminTable)->where('id', $id)->delete();
+            if ($this->tableExists('tc_admin_user_role')) {
+                Db::table('tc_admin_user_role')->where('admin_id', $id)->delete();
+            }
+            AdminAuthService::clearPermissionCache($id);
+
+            $this->logOperation('delete', 'system', [
+                'target_id' => $id,
+                'target_type' => 'admin',
+                'detail' => '删除管理员账号：' . (string) ($admin['username'] ?? $id),
+                'before_data' => [
+                    'username' => $admin['username'] ?? '',
+                    'nickname' => $admin['nickname'] ?? '',
+                    'status' => (int) ($admin['status'] ?? 0),
+                ],
+            ]);
+
+            Db::commit();
+            return $this->success(null, '删除成功');
+        } catch (\Throwable $e) {
+            Db::rollback();
+            Log::error('删除管理员失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'target_admin_id' => $id,
+            ]);
+            return $this->error('删除管理员失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 获取积分统计
+     */
+    public function pointsStats(Request $request)
+    {
+        if (!$this->checkPermission('points_view')) {
+            return $this->error('无权限查看积分统计', 403);
+        }
+
+        try {
+            $date = trim((string) $request->get('date', ''));
+            $stats = AdminStatsService::getPointsStatsSnapshot($date !== '' ? $date : null);
+            return $this->success($stats, '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('获取积分统计失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'date' => (string) $request->get('date', ''),
+            ]);
+            return $this->error('获取积分统计失败，请稍后重试', 500);
+        }
+    }
+
 
     /**
      * 处理配置值根据类型
@@ -1686,10 +1889,412 @@ class Admin extends BaseController
 
         return false;
     }
+
+    /**
+     * 统一前端使用的管理员角色编码
+     */
+    protected function normalizeAdminRoleCode(string $roleCode): string
+    {
+        $roleCode = strtolower(trim($roleCode));
+
+        return match ($roleCode) {
+            'super_admin', 'admin' => 'admin',
+            'operator', 'normal_admin', 'customer_service' => 'operator',
+            default => $roleCode,
+        };
+    }
+
+    /**
+     * 管理员角色显示名
+     */
+    protected function resolveAdminRoleName(string $roleCode): string
+    {
+        return match ($this->normalizeAdminRoleCode($roleCode)) {
+            'admin' => '超级管理员',
+            'operator' => '运营人员',
+            default => '未分配角色',
+        };
+    }
+
+    /**
+     * 解析管理员角色记录
+     */
+    protected function resolveAdminRoleRecord(string $roleCode): ?array
+    {
+        if (!$this->tableExists('tc_admin_role')) {
+            return null;
+        }
+
+        $normalizedRole = $this->normalizeAdminRoleCode($roleCode);
+        $candidates = match ($normalizedRole) {
+            'admin' => ['super_admin', 'admin'],
+            'operator' => ['operator', 'normal_admin', 'customer_service'],
+            default => [$normalizedRole],
+        };
+
+        $rows = Db::table('tc_admin_role')
+            ->whereIn('code', $candidates)
+            ->select()
+            ->toArray();
+
+        foreach ($candidates as $candidate) {
+            foreach ($rows as $row) {
+                if (($row['code'] ?? '') === $candidate) {
+                    return $row;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 同步管理员角色绑定
+     */
+    protected function syncAdminRoleBinding(string $adminTable, int $adminId, int $roleId): void
+    {
+        if ($adminId <= 0) {
+            return;
+        }
+
+        if ($this->tableExists('tc_admin_user_role')) {
+            Db::table('tc_admin_user_role')->where('admin_id', $adminId)->delete();
+
+            if ($roleId > 0) {
+                $payload = [
+                    'admin_id' => $adminId,
+                    'role_id' => $roleId,
+                ];
+                $rolePivotColumns = $this->getCompatibleTableColumns('tc_admin_user_role');
+                if (isset($rolePivotColumns['created_at'])) {
+                    $payload['created_at'] = date('Y-m-d H:i:s');
+                }
+                Db::table('tc_admin_user_role')->insert($payload);
+            }
+        }
+
+        $adminColumns = $this->getCompatibleTableColumns($adminTable);
+        if (isset($adminColumns['role_id'])) {
+            Db::table($adminTable)
+                ->where('id', $adminId)
+                ->update(['role_id' => $roleId]);
+        }
+
+        AdminAuthService::clearPermissionCache($adminId);
+    }
+
+    /**
+     * 统一查询后台日志列表
+     */
+    protected function listAdminLogs(Request $request, string $type, string $errorMessage): \think\response\Json
+    {
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+
+            $filters = $this->normalizeAdminLogFilters($request->get());
+            $query = $this->buildAdminLogQuery($type, $filters);
+            $countQuery = clone $query;
+            $total = $countQuery->count();
+            $rows = $query
+                ->page($pagination['page'], $pagination['pageSize'])
+                ->select()
+                ->toArray();
+
+            $list = array_map(fn(array $item) => $this->formatAdminLogItem($item), $rows);
+
+            return $this->success([
+                'list' => $list,
+                'total' => $total,
+                'page' => $pagination['page'],
+                'pageSize' => $pagination['pageSize'],
+            ], '获取成功');
+        } catch (\Throwable $e) {
+            Log::error('查询后台日志失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'type' => $type,
+            ]);
+            return $this->error($errorMessage, 500);
+        }
+    }
+
+    /**
+     * 归一化日志筛选条件
+     */
+    protected function normalizeAdminLogFilters(array $params): array
+    {
+        $filters = [];
+        $operator = trim((string) ($params['operator'] ?? ''));
+        if ($operator !== '') {
+            if (ctype_digit($operator)) {
+                $filters['admin_id'] = (int) $operator;
+            } else {
+                $filters['keyword'] = $operator;
+            }
+        }
+
+        if (!empty($params['keyword']) && empty($filters['keyword'])) {
+            $filters['keyword'] = trim((string) $params['keyword']);
+        }
+        if (!empty($params['module'])) {
+            $filters['module'] = trim((string) $params['module']);
+        }
+        if (!empty($params['action'])) {
+            $filters['action'] = trim((string) $params['action']);
+        }
+        if (isset($params['status']) && $params['status'] !== '') {
+            $filters['status'] = (int) $params['status'];
+        }
+
+        $startTime = trim((string) ($params['start_time'] ?? ($params['dateRange'][0] ?? '')));
+        $endTime = trim((string) ($params['end_time'] ?? ($params['dateRange'][1] ?? '')));
+        if ($startTime !== '') {
+            $filters['start_time'] = $startTime;
+        }
+        if ($endTime !== '') {
+            $filters['end_time'] = $endTime;
+        }
+
+        return $filters;
+    }
+
+    /**
+     * 构建后台日志查询
+     */
+    protected function buildAdminLogQuery(string $type, array $filters)
+    {
+        $normalizedType = $this->normalizeAdminLogType($type);
+        if ($normalizedType === '') {
+            throw new \InvalidArgumentException('日志类型无效');
+        }
+
+        $query = AdminLog::order('id', 'desc');
+        switch ($normalizedType) {
+            case 'login':
+                $query->where('action', 'login');
+                break;
+            case 'api':
+                $query->where('module', 'api');
+                break;
+            case 'operation':
+                $query->where('action', '<>', 'login')
+                    ->where('module', '<>', 'api');
+                break;
+        }
+
+        $this->applyAdminLogFilters($query, $filters);
+        return $query;
+    }
+
+    /**
+     * 应用后台日志筛选条件
+     */
+    protected function applyAdminLogFilters($query, array $filters): void
+    {
+        if (!empty($filters['admin_id'])) {
+            $query->where('admin_id', (int) $filters['admin_id']);
+        }
+        if (!empty($filters['action'])) {
+            $query->where('action', (string) $filters['action']);
+        }
+        if (!empty($filters['module'])) {
+            $query->where('module', (string) $filters['module']);
+        }
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $query->where('status', (int) $filters['status']);
+        }
+        if (!empty($filters['start_time'])) {
+            $query->where('created_at', '>=', (string) $filters['start_time']);
+        }
+        if (!empty($filters['end_time'])) {
+            $query->where('created_at', '<=', (string) $filters['end_time']);
+        }
+        if (!empty($filters['keyword'])) {
+            $keyword = addcslashes((string) $filters['keyword'], '%_\\');
+            $query->where(function ($subQuery) use ($keyword) {
+                $subQuery->whereLike('admin_name', '%' . $keyword . '%')
+                    ->whereOrLike('detail', '%' . $keyword . '%');
+            });
+        }
+    }
+
+    /**
+     * 格式化后台日志项，兼容前端展示字段
+     */
+    protected function formatAdminLogItem(array $item): array
+    {
+        $beforeData = $item['before_data'] ?? null;
+        if (is_string($beforeData) && $beforeData !== '') {
+            $decodedBefore = json_decode($beforeData, true);
+            $beforeData = is_array($decodedBefore) ? $decodedBefore : $beforeData;
+        }
+
+        $afterData = $item['after_data'] ?? null;
+        if (is_string($afterData) && $afterData !== '') {
+            $decodedAfter = json_decode($afterData, true);
+            $afterData = is_array($decodedAfter) ? $decodedAfter : $afterData;
+        }
+
+        $duration = 0;
+        if (is_array($afterData) && isset($afterData['duration'])) {
+            $duration = (int) $afterData['duration'];
+        }
+
+        return array_merge($item, [
+            'operator' => (string) ($item['admin_name'] ?? ''),
+            'description' => (string) ($item['detail'] ?? ''),
+            'request' => is_array($beforeData)
+                ? json_encode($beforeData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                : (string) ($beforeData ?? ''),
+            'response' => is_array($afterData)
+                ? json_encode($afterData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                : (string) ($afterData ?? ''),
+            'duration' => $duration,
+            'status' => (int) ($item['status'] ?? 0),
+        ]);
+    }
+
+    /**
+     * 归一化日志类型
+     */
+    protected function normalizeAdminLogType(string $type): string
+    {
+        $type = strtolower(trim($type));
+        return in_array($type, ['operation', 'login', 'api'], true) ? $type : '';
+    }
+
+    /**
+     * 日志类型显示名
+     */
+    protected function resolveAdminLogTypeLabel(string $type): string
+    {
+        return match ($this->normalizeAdminLogType($type)) {
+            'login' => '登录日志',
+            'api' => 'API日志',
+            default => '操作日志',
+        };
+    }
+
+    /**
+     * 构建后台日志导出 CSV
+     */
+    protected function buildAdminLogExportCsv(array $rows): string
+    {
+        $csv = chr(0xEF) . chr(0xBB) . chr(0xBF);
+        $headers = ['日志ID', '操作人', '操作模块', '操作类型', '操作描述', 'IP地址', '状态', '操作时间'];
+        $csv .= implode(',', array_map(fn(string $field) => $this->escapeCsv($field), $headers)) . "\n";
+
+        foreach ($rows as $row) {
+            $item = $this->formatAdminLogItem($row);
+            $csv .= implode(',', [
+                $this->escapeCsv((string) ($item['id'] ?? '')),
+                $this->escapeCsv((string) ($item['operator'] ?? '')),
+                $this->escapeCsv((string) ($item['module'] ?? '')),
+                $this->escapeCsv((string) ($item['action'] ?? '')),
+                $this->escapeCsv((string) ($item['description'] ?? '')),
+                $this->escapeCsv((string) ($item['ip'] ?? '')),
+                $this->escapeCsv((int) ($item['status'] ?? 0) === 1 ? '成功' : '失败'),
+                $this->escapeCsv((string) ($item['created_at'] ?? '')),
+            ]) . "\n";
+        }
+
+        return $csv;
+    }
+
+    /**
+     * 格式化反作弊规则输出
+     */
+    protected function transformRiskRuleRow(array $row): array
+    {
+        $config = $row['config'] ?? [];
+        if (is_string($config) && $config !== '') {
+            $decoded = json_decode($config, true);
+            $config = is_array($decoded) ? $decoded : [];
+        } elseif (!is_array($config)) {
+            $config = [];
+        }
+
+        $threshold = (int) ($config['threshold'] ?? $config['limit'] ?? 0);
+
+        return array_merge($row, [
+            'config' => $config,
+            'threshold' => $threshold,
+            'status' => (int) ($row['status'] ?? 0),
+            'action' => (string) ($row['action'] ?? 'log'),
+            'code' => (string) ($row['code'] ?? ''),
+        ]);
+    }
+
+    /**
+     * 组装反作弊规则写入载荷
+     */
+    protected function buildRiskRulePayload(array $data, array $existing = []): array
+    {
+        $name = trim((string) ($data['name'] ?? ($existing['name'] ?? '')));
+        if ($name === '') {
+            throw new \InvalidArgumentException('规则名称不能为空');
+        }
+
+        $type = trim((string) ($data['type'] ?? ($existing['type'] ?? '')));
+        if ($type === '') {
+            throw new \InvalidArgumentException('检测类型不能为空');
+        }
+
+        $action = trim((string) ($data['action'] ?? ($existing['action'] ?? 'log')));
+        if (!in_array($action, ['log', 'captcha', 'block'], true)) {
+            throw new \InvalidArgumentException('拦截动作无效');
+        }
+
+        $threshold = (int) ($data['threshold'] ?? 0);
+        if ($threshold <= 0) {
+            $existingConfig = $existing['config'] ?? [];
+            if (is_string($existingConfig) && $existingConfig !== '') {
+                $decodedConfig = json_decode($existingConfig, true);
+                $existingConfig = is_array($decodedConfig) ? $decodedConfig : [];
+            }
+            $threshold = (int) ($existingConfig['threshold'] ?? 0);
+        }
+        if ($threshold <= 0) {
+            throw new \InvalidArgumentException('阈值必须大于 0');
+        }
+
+        $config = $data['config'] ?? ($existing['config'] ?? []);
+        if (is_string($config) && $config !== '') {
+            $decodedConfig = json_decode($config, true);
+            $config = is_array($decodedConfig) ? $decodedConfig : [];
+        } elseif (!is_array($config)) {
+            $config = [];
+        }
+        $config['threshold'] = $threshold;
+        $config['window_minutes'] = (int) ($config['window_minutes'] ?? 1);
+
+        $code = trim((string) ($data['code'] ?? ($existing['code'] ?? '')));
+        if ($code === '') {
+            $code = strtolower($type . '_' . substr(md5($name . microtime(true) . mt_rand()), 0, 8));
+        }
+        $code = trim((string) preg_replace('/[^a-z0-9_]+/i', '_', strtolower($code)), '_');
+        if ($code === '') {
+            throw new \InvalidArgumentException('规则编码无效');
+        }
+
+        return [
+            'name' => $name,
+            'code' => $code,
+            'type' => $type,
+            'config' => json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'action' => $action,
+            'status' => (int) (($data['status'] ?? ($existing['status'] ?? 1)) == 1),
+        ];
+    }
     
     /**
      * 获取操作日志列表
      */
+
 
     public function operationLogs(Request $request)
     {
@@ -1959,23 +2564,79 @@ class Admin extends BaseController
         if (!$this->checkPermission('log_view')) {
             return $this->error('无权限查看API日志', 403);
         }
-        
+
+        return $this->listAdminLogs($request, 'api', '获取API日志失败，请稍后重试');
+    }
+
+    /**
+     * 清空日志
+     */
+    public function clearLogs($type)
+    {
+        if (!$this->checkPermission('log_view')) {
+            return $this->error('无权限清空日志', 403);
+        }
+
         try {
-            $pagination = $this->normalizePagination(
-                $request->get('page', 1),
-                $request->get('pageSize', self::DEFAULT_PAGE_SIZE)
-            );
-            
-            $params = $request->get();
-            $params['module'] = 'api';
-            
-            $result = AdminLog::getLogList($params, $pagination['page'], $pagination['pageSize']);
-            return $this->success($result, '获取成功');
-        } catch (\Exception $e) {
-            Log::error('获取API日志失败: ' . $e->getMessage());
-            return $this->error('获取失败', 500);
+            $normalizedType = $this->normalizeAdminLogType((string) $type);
+            if ($normalizedType === '') {
+                return $this->error('日志类型无效', 422);
+            }
+
+            $affected = $this->buildAdminLogQuery($normalizedType, [])->delete();
+            $this->logOperation('delete', 'log', [
+                'detail' => '清空' . $this->resolveAdminLogTypeLabel($normalizedType) . '，共' . $affected . '条',
+                'after_data' => ['type' => $normalizedType, 'count' => $affected],
+            ]);
+
+            return $this->success(['count' => $affected], '清空成功');
+        } catch (\Throwable $e) {
+            Log::error('清空日志失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'type' => (string) $type,
+            ]);
+            return $this->error('清空日志失败，请稍后重试', 500);
         }
     }
+
+    /**
+     * 导出日志
+     */
+    public function exportLogs(Request $request, $type)
+    {
+        if (!$this->checkPermission('log_view')) {
+            return $this->error('无权限导出日志', 403);
+        }
+
+        try {
+            $normalizedType = $this->normalizeAdminLogType((string) $type);
+            if ($normalizedType === '') {
+                return $this->error('日志类型无效', 422);
+            }
+
+            $filters = $this->normalizeAdminLogFilters($request->get());
+            $rows = $this->buildAdminLogQuery($normalizedType, $filters)->select()->toArray();
+            $csv = $this->buildAdminLogExportCsv($rows);
+            $filename = $normalizedType . '_logs_' . date('YmdHis') . '.csv';
+
+            $this->logOperation('export', 'log', [
+                'detail' => '导出' . $this->resolveAdminLogTypeLabel($normalizedType) . '，共' . count($rows) . '条',
+                'after_data' => ['type' => $normalizedType, 'count' => count($rows)],
+            ]);
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('导出日志失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'type' => (string) $type,
+            ]);
+            return $this->error('导出日志失败，请稍后重试', 500);
+        }
+    }
+
 
     /**
      * 获取风险事件列表
@@ -2076,16 +2737,28 @@ class Admin extends BaseController
             return $this->error('无权限查看规则', 403);
         }
 
+        if (!$this->tableExists('tc_anti_cheat_rule')) {
+            return $this->error('反作弊规则表不存在，请先执行 database/20260317_create_anticheat_tables.sql', 500);
+        }
+
         try {
-            $list = Db::name('tc_anti_cheat_rule')->select();
+            $list = Db::name('tc_anti_cheat_rule')
+                ->order('id', 'desc')
+                ->select()
+                ->toArray();
+
+            $list = array_map(fn(array $item) => $this->transformRiskRuleRow($item), $list);
             return $this->success($list, '获取成功');
-        } catch (\Exception $e) {
-            return $this->error('获取规则失败', 500);
+        } catch (\Throwable $e) {
+            Log::error('获取反作弊规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取规则失败，请稍后重试', 500);
         }
     }
 
     /**
-     * 保存/更新反作弊规则
+     * 新增反作弊规则
      */
     public function saveRiskRule(Request $request)
     {
@@ -2093,25 +2766,74 @@ class Admin extends BaseController
             return $this->error('无权限保存规则', 403);
         }
 
+        if (!$this->tableExists('tc_anti_cheat_rule')) {
+            return $this->error('反作弊规则表不存在，请先执行 database/20260317_create_anticheat_tables.sql', 500);
+        }
+
         try {
-            $data = $request->post();
-            $id = $data['id'] ?? 0;
-            unset($data['id']);
+            $payload = $this->buildRiskRulePayload($request->post());
+            $id = (int) Db::name('tc_anti_cheat_rule')->insertGetId($payload);
+            $saved = Db::name('tc_anti_cheat_rule')->where('id', $id)->find();
 
-            if ($id > 0) {
-                Db::name('tc_anti_cheat_rule')->where('id', $id)->update($data);
-            } else {
-                $id = Db::name('tc_anti_cheat_rule')->insertGetId($data);
-            }
-
-            $this->logOperation('save_risk_rule', 'anticheat', [
+            $this->logOperation('create', 'anticheat', [
                 'target_id' => $id,
-                'detail' => "保存/更新反作弊规则: " . ($data['name'] ?? '')
+                'target_type' => 'risk_rule',
+                'detail' => '新增反作弊规则：' . ($payload['name'] ?? ''),
+                'after_data' => $this->transformRiskRuleRow($saved ?: []),
             ]);
 
             return $this->success(['id' => $id], '保存成功');
-        } catch (\Exception $e) {
-            return $this->error('保存失败', 500);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            Log::error('保存反作弊规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('保存失败，请稍后重试', 500);
+        }
+    }
+
+    /**
+     * 更新反作弊规则
+     */
+    public function updateRiskRule(Request $request, $id)
+    {
+        if (!$this->checkPermission('anticheat_manage')) {
+            return $this->error('无权限更新规则', 403);
+        }
+
+        if (!$this->tableExists('tc_anti_cheat_rule')) {
+            return $this->error('反作弊规则表不存在，请先执行 database/20260317_create_anticheat_tables.sql', 500);
+        }
+
+        $id = (int) $id;
+        try {
+            $existing = Db::name('tc_anti_cheat_rule')->where('id', $id)->find();
+            if (!$existing) {
+                return $this->error('规则不存在', 404);
+            }
+
+            $payload = $this->buildRiskRulePayload($request->put(), $existing);
+            Db::name('tc_anti_cheat_rule')->where('id', $id)->update($payload);
+            $saved = Db::name('tc_anti_cheat_rule')->where('id', $id)->find();
+
+            $this->logOperation('update', 'anticheat', [
+                'target_id' => $id,
+                'target_type' => 'risk_rule',
+                'detail' => '更新反作弊规则：' . ($payload['name'] ?? ''),
+                'before_data' => $this->transformRiskRuleRow($existing),
+                'after_data' => $this->transformRiskRuleRow($saved ?: []),
+            ]);
+
+            return $this->success(['id' => $id], '更新成功');
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            Log::error('更新反作弊规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'rule_id' => $id,
+            ]);
+            return $this->error('更新失败，请稍后重试', 500);
         }
     }
 
@@ -2124,13 +2846,35 @@ class Admin extends BaseController
             return $this->error('无权限删除规则', 403);
         }
 
+        if (!$this->tableExists('tc_anti_cheat_rule')) {
+            return $this->error('反作弊规则表不存在，请先执行 database/20260317_create_anticheat_tables.sql', 500);
+        }
+
+        $id = (int) $id;
         try {
+            $existing = Db::name('tc_anti_cheat_rule')->where('id', $id)->find();
+            if (!$existing) {
+                return $this->error('规则不存在', 404);
+            }
+
             Db::name('tc_anti_cheat_rule')->where('id', $id)->delete();
+            $this->logOperation('delete', 'anticheat', [
+                'target_id' => $id,
+                'target_type' => 'risk_rule',
+                'detail' => '删除反作弊规则：' . (string) ($existing['name'] ?? ''),
+                'before_data' => $this->transformRiskRuleRow($existing),
+            ]);
+
             return $this->success(null, '删除成功');
-        } catch (\Exception $e) {
-            return $this->error('删除失败', 500);
+        } catch (\Throwable $e) {
+            Log::error('删除反作弊规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'rule_id' => $id,
+            ]);
+            return $this->error('删除失败，请稍后重试', 500);
         }
     }
+
 
     /**
      * 获取设备指纹列表
@@ -2668,7 +3412,6 @@ class Admin extends BaseController
 
     public function exportUsers(Request $request)
     {
-        // 检查权限
         if (!$this->checkPermission('user_view')) {
             return $this->error('无权限导出用户数据', 403);
         }
@@ -2682,29 +3425,16 @@ class Admin extends BaseController
             $dateRange = $params['dateRange'] ?? [];
             $startDate = trim((string) ($params['startDate'] ?? ((is_array($dateRange) && isset($dateRange[0])) ? $dateRange[0] : '')));
             $endDate = trim((string) ($params['endDate'] ?? ((is_array($dateRange) && isset($dateRange[1])) ? $dateRange[1] : '')));
-            $params['keyword'] = $username;
+
             if ($username !== '') {
                 $safeUsername = preg_replace('/[%_\\]/', '', $username) ?: '';
                 $query->whereLike('username|nickname', '%' . $safeUsername . '%');
-                $username = '';
             }
             if ($phone !== '') {
                 $safePhone = preg_replace('/[%_\\]/', '', $phone) ?: '';
                 $query->whereLike('phone', '%' . $safePhone . '%');
             }
 
-
-
-
-            // 搜索条件
-            if ($username !== '') {
-
-                // 使用参数绑定防止SQL注入
-                $keyword = preg_replace('/[%_\\\\]/', '', $params['keyword']);
-                $query->whereLike('nickname|phone', '%' . $keyword . '%');
-            }
-
-            // 状态筛选
             if ($status !== '') {
                 $status = (int) $status;
                 if (!in_array($status, [0, 1, 2], true)) {
@@ -2713,8 +3443,6 @@ class Admin extends BaseController
                 $query->where('status', $status);
             }
 
-
-            // 时间范围
             if ($startDate !== '') {
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) !== 1) {
                     return $this->error('开始日期格式无效', 400);
@@ -2728,10 +3456,7 @@ class Admin extends BaseController
                 $query->where('created_at', '<=', $endDate . ' 23:59:59');
             }
 
-
             $users = $query->select()->toArray();
-
-            // 生成CSV内容
             $headers = ['ID', '昵称', '手机号', '积分', 'VIP等级', '状态', '注册时间', '最后登录'];
             $csv = implode(',', $headers) . "\n";
 
@@ -2739,25 +3464,31 @@ class Admin extends BaseController
                 $row = [
                     $user['id'],
                     $this->escapeCsv((string) ($user['nickname'] ?? '')),
-
                     $user['phone'] ?? '',
                     $user['points'] ?? 0,
                     $user['vip_level'] ?? 0,
                     (int) ($user['status'] ?? 0) === 1 ? '正常' : ((int) ($user['status'] ?? 0) === 0 ? '禁用' : '待验证'),
                     $user['created_at'] ?? '',
                     $user['last_login_at'] ?? ''
-
                 ];
                 $csv .= implode(',', $row) . "\n";
             }
 
-            // 添加BOM头以支持中文
             $csv = "\xEF\xBB\xBF" . $csv;
 
-            // 记录操作日志
-            $this->logOperation('导出用户数据', 'user', [
+            $this->logOperation('export', 'user', [
                 'target_id' => 0,
-                'detail' => '导出用户数据，共' . count($users) . '条记录'
+                'detail' => '导出用户数据，共' . count($users) . '条记录',
+                'after_data' => [
+                    'count' => count($users),
+                    'filters' => [
+                        'username' => $username,
+                        'phone' => $phone,
+                        'status' => $status,
+                        'startDate' => $startDate,
+                        'endDate' => $endDate,
+                    ],
+                ],
             ]);
 
             return response($csv, 200, [
