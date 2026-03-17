@@ -13,6 +13,7 @@ use think\facade\Cache;
 use think\facade\Config;
 use think\facade\Db;
 use think\facade\Log;
+use think\facade\Log;
 
 class Auth extends BaseController
 {

@@ -257,7 +257,7 @@ const formatDate = (dateStr) => {
 }
 
 .completed {
-  color: #e94560;
+  color: #daa520;
   font-size: 24px;
   font-weight: bold;
 }
@@ -276,7 +276,7 @@ const formatDate = (dateStr) => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: linear-gradient(90deg, #daa520, #ffd700);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
@@ -309,7 +309,7 @@ const formatDate = (dateStr) => {
 }
 
 .category-btn.active {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #daa520, #ffd700);
   border-color: transparent;
   color: #fff;
 }
@@ -415,7 +415,7 @@ const formatDate = (dateStr) => {
 
 .progress-fill-small {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: linear-gradient(90deg, #daa520, #ffd700);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -443,7 +443,7 @@ const formatDate = (dateStr) => {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #e94560;
+  background: #daa520;
   color: #fff;
   font-size: 10px;
   padding: 2px 6px;

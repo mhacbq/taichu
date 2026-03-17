@@ -78,6 +78,12 @@ export const asyncRoutes = [
         meta: { title: '页面历史', hidden: true }
       },
       {
+        path: 'almanac',
+        name: 'AlmanacManager',
+        component: () => import('@/views/content/almanac.vue'),
+        meta: { title: '黄历管理' }
+      },
+      {
         path: 'bazi',
         name: 'BaziRecords',
         component: () => import('@/views/content/bazi.vue'),

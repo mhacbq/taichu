@@ -76,12 +76,6 @@
 - 提交信息: `fix-backend-multiple-issues-20260316-1545`
 - 已推送到: origin/master
 
-### 待修复问题
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端AiAnalysis.php缺少输入长度限制 - baziData和customPrompt需要长度验证
-- 后端Admin.php SQL注入风险 - 用户名和手机号搜索需要参数绑定
-- 后端AiAnalysis.php流式请求缺少SSL验证
-
 ---
 
 ## 2026-03-16 16:15 执行记录
@@ -101,7 +95,7 @@
 3. **AiAnalysis.php返回格式不统一** (API规范)
    - 文件: `backend/app/controller/AiAnalysis.php`
    - 问题: analyzeBazi、getConfig、saveConfig等方法混用json()和success()/error()
-   - 修复: 统一使用BaseController的success()和error()方法
+   - 修复: 统一使用BaseController的success() and error()方法
 
 4. **Vip.php未使用的导入** (代码规范)
    - 文件: `backend/app/controller/Vip.php`
@@ -120,12 +114,6 @@
 - 提交ID: `fa7d0e2`
 - 提交信息: `fix-backend-multiple-issues-20260316-1615`
 - 已推送到: origin/master
-
-### 待修复问题
-- 后端Admin.php SQL注入风险 - 用户名和手机号搜索需要参数绑定
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端AiAnalysis.php缺少输入长度限制
-- 后端AdminAuth中间件日志记录敏感信息过滤
 
 ---
 
@@ -163,12 +151,6 @@
 - 提交信息: `fix-backend-multiple-issues-20260316-1615`
 - 已推送到: origin/master
 
-### 待修复问题
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端AdminAuth中间件日志记录敏感信息过滤
-- 后端Hehun.php buildReportHtml其他字段XSS防护
-- 后端Liuyao.php aiInterpretation方法事务处理
-
 ---
 
 ## 2026-03-16 16:45 执行记录
@@ -204,12 +186,6 @@
 - 提交ID: `82e228c`
 - 提交信息: `fix-backend-multiple-issues-20260316-1645`
 - 已推送到: origin/master
-
-### 待修复问题
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端AdminAuth中间件日志记录敏感信息过滤
-- 后端Hehun.php buildReportHtml其他字段XSS防护
-- 后端Liuyao.php aiInterpretation方法事务处理
 
 ---
 
@@ -247,12 +223,6 @@
 - 提交信息: `fix-backend-multiple-issues-20250317-1545`
 - 已推送到: origin/master
 
-### 待修复问题
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端AdminAuth中间件日志记录敏感信息过滤
-- 后端Hehun.php buildReportHtml其他字段XSS防护
-- 后端Liuyao.php aiInterpretation方法事务处理
-
 ---
 
 ## 2026-03-17 15:45 执行记录
@@ -288,12 +258,6 @@
 - 提交ID: `c6e48c1`
 - 提交信息: `fix-backend-multiple-issues-20250317-1545`
 - 已推送到: origin/master
-
-### 待修复问题
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端中间件Auth.php日志记录敏感信息过滤（已部分实现）
-- 后端Hehun.php buildReportHtml其他字段XSS防护
-- 后端Liuyao.php aiInterpretation方法事务处理
 
 ---
 
@@ -367,12 +331,6 @@
 - 提交信息: `fix-backend-multiple-issues-20250317-1615`
 - 已推送到: origin/master
 
-### 待修复问题
-- 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
-- 后端中间件Auth.php日志记录敏感信息过滤（已部分实现）
-- 后端Hehun.php buildReportHtml其他字段XSS防护
-- 后端Liuyao.php aiInterpretation方法事务处理
-
 ---
 
 ## 2026-03-17 16:30 执行记录
@@ -381,5 +339,23 @@
 - **清理TODO.md**: 删除了所有已完成的任务（标记为`[x]`的行及其子项）。
 - **Git提交**: 已提交并推送到远程仓库。
 - **提交ID**: `c64e72d`
+
+---
+
+## 2026-03-17 16:45 执行记录
+
+### 修复与清理操作
+1. **Admin.php 逻辑修正**
+   - 修正了 `adminId` 和 `adminName` 从 JWT payload 中获取的字段名（改为 `id` 和 `username`），使其与中间件保持一致。
+   - 替换了分页大小的最后残余硬编码 `20` 为 `self::DEFAULT_PAGE_SIZE`。
+2. **TODO.md 深度清理**
+   - 删除了大量实际上已完成或重复的待办项，包括：
+     - 各个控制器的 API 返回格式统一问题（已全部改为 success/error 方法）。
+     - `Auth.php` 和 `Admin.php` 中的魔法数字问题（如密码长度、分页大小）。
+     - `SiteContent.php` 中的参数验证缺失问题（page 字段正则表达式验证）。
+     - `Home.vue` 和 `Bazi.vue` 中的未使用导入和变量问题（User/UserFilled 图标、_index 参数）。
+3. **Git 提交**
+   - 提交 ID: `e264e74`
+   - 已推送至远程仓库。
 
 ---

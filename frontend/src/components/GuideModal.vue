@@ -214,7 +214,7 @@ onMounted(() => {
   font-size: 22px;
   font-weight: bold;
   color: #fff;
-  background: linear-gradient(135deg, #fff 0%, #e94560 100%);
+  background: linear-gradient(135deg, #fff 0%, #daa520 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -245,7 +245,7 @@ onMounted(() => {
 }
 
 .step-dot.active {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #daa520, #ffd700);
   width: 30px;
   border-radius: 5px;
 }

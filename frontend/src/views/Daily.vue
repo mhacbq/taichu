@@ -9,7 +9,7 @@
       <!-- 签到卡片 -->
       <CheckinCard />
 
-      <div class="date-display card">
+      <div class="date-display card card-hover">
         <div class="lunar-date">
           <span class="label">农历</span>
           <span class="value">{{ lunarDate }}</span>
@@ -22,7 +22,7 @@
 
       <div v-if="fortune" class="fortune-content">
         <!-- 个性化运势卡片 -->
-        <div v-if="fortune.personalized && fortune.personalized.hasBazi" class="personalized-fortune card">
+        <div v-if="fortune.personalized && fortune.personalized.hasBazi" class="personalized-fortune card card-hover">
           <h2>
             <el-icon><MagicStick /></el-icon> 您的专属运势
             <el-tooltip content="基于您的八字日主计算的个性化运势分析" placement="top">
@@ -63,7 +63,7 @@
             </div>
             
             <div class="lucky-info">
-              <div class="lucky-item">
+              <div class="lucky-item card-hover">
                 <span class="lucky-label">幸运色</span>
                 <div class="lucky-values">
                   <span v-for="color in fortune.personalized.luckyColors" :key="color" class="lucky-tag color">
@@ -71,7 +71,7 @@
                   </span>
                 </div>
               </div>
-              <div class="lucky-item">
+              <div class="lucky-item card-hover">
                 <span class="lucky-label">幸运方位</span>
                 <div class="lucky-values">
                   <span v-for="dir in fortune.personalized.luckyDirections" :key="dir" class="lucky-tag direction">
@@ -84,7 +84,7 @@
         </div>
         
         <!-- 无八字时的提示 -->
-        <div v-else class="no-bazi-hint card">
+        <div v-else class="no-bazi-hint card card-hover">
           <div class="hint-content">
             <el-icon class="hint-icon" :size="48"><Collection /></el-icon>
             <p>进行八字排盘即可获取您的个性化每日运势</p>
@@ -94,7 +94,7 @@
           </div>
         </div>
 
-        <div class="overall-score card">
+        <div class="overall-score card card-hover">
           <h2>今日综合运势</h2>
           <div class="score-display">
             <div class="score-circle">
@@ -109,7 +109,7 @@
         </div>
 
         <div class="aspect-grid">
-          <div class="aspect-card card" v-for="aspect in fortune.aspects" :key="aspect.name">
+          <div class="aspect-card card card-hover" v-for="aspect in fortune.aspects" :key="aspect.name">
             <div class="aspect-icon">{{ aspect.icon }}</div>
             <h3>{{ aspect.name }}</h3>
             <div class="aspect-score">
@@ -119,7 +119,7 @@
           </div>
         </div>
 
-        <div class="lucky-section card">
+        <div class="lucky-section card card-hover">
           <h3>今日宜忌</h3>
           <div class="lucky-grid">
             <div class="lucky-item good">
@@ -137,7 +137,7 @@
           </div>
         </div>
 
-        <div class="details-section card">
+        <div class="details-section card card-hover">
           <h3>详细运势</h3>
           <el-collapse v-model="activeNames">
             <el-collapse-item title="事业运势" name="career">
@@ -157,13 +157,13 @@
       </div>
 
       <!-- 错误状态 -->
-      <div v-else-if="error" class="error-state card">
+      <div v-else-if="error" class="error-state card card-hover">
         <el-icon class="error-icon" :size="48"><WarningFilled /></el-icon>
         <p class="error-message">{{ errorMessage }}</p>
         <el-button type="primary" @click="loadDailyFortune">重新加载</el-button>
       </div>
 
-      <div v-else class="loading-state card">
+      <div v-else class="loading-state card card-hover">
         <el-skeleton :rows="10" animated />
       </div>
     </div>
@@ -202,7 +202,7 @@ const loadDailyFortune = async () => {
   errorMessage.value = ''
   try {
     const response = await getDailyFortune()
-    if (response.code === 0) {
+    if (response.code === 200) {
       fortune.value = response.data.fortune
       solarDate.value = response.data.solarDate
       lunarDate.value = response.data.lunarDate
@@ -329,7 +329,7 @@ onMounted(() => {
 }
 
 .star.filled {
-  color: #ffd700;
+  color: var(--star-color);
 }
 
 .fortune-summary {
@@ -375,7 +375,7 @@ onMounted(() => {
 }
 
 .lucky-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   text-align: center;
 }
@@ -404,12 +404,12 @@ onMounted(() => {
 }
 
 .lucky-item.good .lucky-label {
-  background: #67C23A;
+  background: var(--success-color);
   color: #fff;
 }
 
 .lucky-item.bad .lucky-label {
-  background: #F56C6C;
+  background: var(--danger-color);
   color: #fff;
 }
 
@@ -420,7 +420,7 @@ onMounted(() => {
 }
 
 .details-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   text-align: center;
 }
@@ -444,7 +444,7 @@ onMounted(() => {
 }
 
 .error-icon {
-  color: #F56C6C;
+  color: var(--danger-color);
   margin-bottom: 20px;
 }
 
@@ -462,7 +462,7 @@ onMounted(() => {
 }
 
 .personalized-fortune h2 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 25px;
   display: flex;
@@ -487,7 +487,7 @@ onMounted(() => {
 }
 
 .master-card, .today-card {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-tertiary);
   border-radius: 15px;
   padding: 20px 30px;
   text-align: center;
@@ -497,7 +497,7 @@ onMounted(() => {
 .master-card .label, .today-card .label {
   display: block;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 8px;
 }
 
@@ -516,20 +516,20 @@ onMounted(() => {
   font-size: 12px;
 }
 
-.wuxing-badge.金 { background: rgba(255, 215, 0, 0.3); color: #ffd700; }
-.wuxing-badge.木 { background: rgba(34, 139, 34, 0.3); color: #90ee90; }
-.wuxing-badge.水 { background: rgba(30, 144, 255, 0.3); color: #87ceeb; }
-.wuxing-badge.火 { background: rgba(255, 69, 0, 0.3); color: #ff6347; }
-.wuxing-badge.土 { background: rgba(139, 69, 19, 0.3); color: #deb887; }
+.wuxing-badge.金 { background: rgba(255, 215, 0, 0.15); color: var(--wuxing-jin); }
+.wuxing-badge.木 { background: rgba(34, 139, 34, 0.15); color: var(--wuxing-mu); }
+.wuxing-badge.水 { background: rgba(30, 144, 255, 0.15); color: var(--wuxing-shui); }
+.wuxing-badge.火 { background: rgba(255, 69, 0, 0.15); color: var(--wuxing-huo); }
+.wuxing-badge.土 { background: rgba(139, 69, 19, 0.15); color: var(--wuxing-tu); }
 
 .wuxing-text {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
 .relation-arrow {
   font-size: 24px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .luck-indicator {
@@ -553,18 +553,18 @@ onMounted(() => {
 }
 
 .luck-badge.吉 {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.3), rgba(103, 194, 58, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.5);
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.2), rgba(103, 194, 58, 0.1));
+  border: 1px solid rgba(103, 194, 58, 0.4);
 }
 
 .luck-badge.凶 {
-  background: linear-gradient(135deg, rgba(245, 108, 108, 0.3), rgba(245, 108, 108, 0.1));
-  border: 1px solid rgba(245, 108, 108, 0.5);
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.2), rgba(245, 108, 108, 0.1));
+  border: 1px solid rgba(245, 108, 108, 0.4);
 }
 
 .luck-badge.平 {
-  background: linear-gradient(135deg, rgba(128, 128, 128, 0.1), rgba(128, 128, 128, 0.05));
-  border: 1px solid rgba(128, 128, 128, 0.2);
+  background: linear-gradient(135deg, rgba(144, 147, 153, 0.1), rgba(144, 147, 153, 0.05));
+  border: 1px solid rgba(144, 147, 153, 0.2);
 }
 
 .luck-level {
@@ -581,7 +581,7 @@ onMounted(() => {
 .score-label {
   display: block;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 5px;
 }
 
@@ -590,9 +590,9 @@ onMounted(() => {
   font-weight: bold;
 }
 
-.score-value.excellent { color: #67c23a; }
-.score-value.good { color: #e6a23c; }
-.score-value.normal { color: #f56c6c; }
+.score-value.excellent { color: var(--success-color); }
+.score-value.good { color: var(--warning-color); }
+.score-value.normal { color: var(--danger-color); }
 
 .personal-advice {
   background: var(--bg-card);
@@ -629,7 +629,7 @@ onMounted(() => {
 
 .lucky-label {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
 
@@ -646,13 +646,13 @@ onMounted(() => {
 }
 
 .lucky-tag.color {
-  background: rgba(184, 134, 11, 0.2);
-  color: #B8860B;
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--primary-color);
 }
 
 .lucky-tag.direction {
-  background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--primary-light);
 }
 
 /* 无八字提示 */

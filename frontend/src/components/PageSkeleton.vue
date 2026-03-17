@@ -36,7 +36,7 @@
 <style scoped>
 .page-skeleton {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: var(--bg-primary);
 }
 
 .skeleton-navbar {
@@ -44,7 +44,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 40px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .skeleton-logo {
@@ -115,7 +116,7 @@
 .skeleton-btn {
   width: 140px;
   height: 48px;
-  background: linear-gradient(90deg, rgba(233,69,96,0.3) 25%, rgba(233,69,96,0.5) 50%, rgba(233,69,96,0.3) 75%);
+  background: linear-gradient(90deg, rgba(255,215,0,0.3) 25%, rgba(255,215,0,0.5) 50%, rgba(255,215,0,0.3) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 24px;

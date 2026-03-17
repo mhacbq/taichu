@@ -98,6 +98,24 @@ Route::group('api/admin', function () {
         Route::post('system/admins', 'Admin/saveAdminUser');
         Route::delete('system/admins/:id', 'Admin/deleteAdminUser');
         
+        // 角色和字典管理
+        Route::get('system/roles', 'admin.System/getRoles');
+        Route::post('system/roles', 'admin.System/createRole');
+        Route::put('system/roles/:id', 'admin.System/updateRole');
+        Route::delete('system/roles/:id', 'admin.System/deleteRole');
+        Route::get('system/permissions', 'admin.System/getPermissions');
+        Route::get('system/roles/:id/permissions', 'admin.System/getRolePermissions');
+        Route::post('system/roles/:id/permissions', 'admin.System/updateRolePermissions');
+        Route::get('system/dict/types', 'admin.System/getDictTypes');
+        Route::post('system/dict/types', 'admin.System/createDictType');
+        Route::put('system/dict/types/:id', 'admin.System/updateDictType');
+        Route::delete('system/dict/types/:id', 'admin.System/deleteDictType');
+        Route::get('system/dict/data', 'admin.System/getDictData');
+        Route::post('system/dict/data', 'admin.System/saveDictData');
+        Route::delete('system/dict/data/:id', 'admin.System/deleteDictData');
+
+
+        
         // 日志管理
         Route::get('logs/operation', 'Admin/operationLogs');
         Route::get('logs/login', 'Admin/loginLogs');

@@ -164,9 +164,11 @@ const copyError = () => {
   justify-content: center;
   padding: 40px 24px;
   text-align: center;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 .error-container.fullscreen {
@@ -174,13 +176,14 @@ const copyError = () => {
   inset: 0;
   border-radius: 0;
   z-index: 9999;
+  background: var(--bg-primary);
 }
 
 .error-icon {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: var(--primary-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,13 +203,13 @@ const copyError = () => {
 .error-title {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .error-desc {
   font-size: 15px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 16px;
   max-width: 400px;
@@ -214,8 +217,8 @@ const copyError = () => {
 
 .error-code {
   font-size: 13px;
-  color: #999;
-  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.05);
   padding: 6px 16px;
   border-radius: 20px;
   margin-bottom: 24px;
@@ -232,7 +235,7 @@ const copyError = () => {
 .btn-primary,
 .btn-secondary {
   padding: 12px 28px;
-  border-radius: 25px;
+  border-radius: var(--radius-xl);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -244,13 +247,13 @@ const copyError = () => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
 }
 
 .btn-primary:disabled {
@@ -259,12 +262,14 @@ const copyError = () => {
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: #e8e8e8;
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .rotating {
@@ -274,12 +279,12 @@ const copyError = () => {
 .error-support {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--border-color);
 }
 
 .error-support p {
   font-size: 13px;
-  color: #999;
+  color: var(--text-tertiary);
   margin-bottom: 12px;
 }
 
@@ -295,7 +300,7 @@ const copyError = () => {
   align-items: center;
   gap: 4px;
   font-size: 14px;
-  color: #667eea;
+  color: var(--primary-light);
   cursor: pointer;
   transition: opacity 0.3s;
 }
@@ -305,7 +310,7 @@ const copyError = () => {
 }
 
 .divider {
-  color: #ddd;
+  color: var(--border-color);
 }
 
 @keyframes shake {
@@ -319,21 +324,5 @@ const copyError = () => {
   to { transform: rotate(360deg); }
 }
 
-/* 暗黑模式 */
-.dark .error-container {
-  background: rgba(30, 30, 40, 0.9);
-}
-
-.dark .error-title {
-  color: #fff;
-}
-
-.dark .error-desc {
-  color: #aaa;
-}
-
-.dark .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-}
+/* 移除重复定义 */
 </style>

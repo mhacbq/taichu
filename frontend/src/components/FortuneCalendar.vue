@@ -178,7 +178,7 @@ watch(() => props.fortuneData, () => {
 }
 
 .nav-btn:hover {
-  background: rgba(233, 69, 96, 0.3);
+  background: rgba(255, 215, 0, 0.3);
   transform: scale(1.1);
 }
 
@@ -242,13 +242,13 @@ watch(() => props.fortuneData, () => {
 }
 
 .calendar-day.today {
-  background: rgba(233, 69, 96, 0.2);
-  border: 1px solid rgba(233, 69, 96, 0.5);
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.5);
 }
 
 .calendar-day.selected {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+  background: linear-gradient(135deg, #ffd700, #ffc107);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
 }
 
 .day-number {

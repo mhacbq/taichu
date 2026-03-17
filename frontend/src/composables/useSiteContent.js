@@ -27,7 +27,7 @@ export function useHomeContent() {
     error.value = null
     try {
       const res = await getHomeContent()
-      if (res.code === 0) {
+      if (res.code === 200) {
         content.value = res.data.content || {}
         testimonials.value = res.data.testimonials || []
       }
@@ -66,7 +66,7 @@ export function usePageContent(page) {
     error.value = null
     try {
       const res = await getPageContent(page)
-      if (res.code === 0) {
+      if (res.code === 200) {
         content.value = res.data || {}
       }
     } catch (err) {
@@ -102,7 +102,7 @@ export function useTestimonials() {
     error.value = null
     try {
       const res = await getTestimonials()
-      if (res.code === 0) {
+      if (res.code === 200) {
         testimonials.value = res.data || []
       }
     } catch (err) {
@@ -139,7 +139,7 @@ export function useFaqs(category = null) {
     error.value = null
     try {
       const res = await getFaqs(category)
-      if (res.code === 0) {
+      if (res.code === 200) {
         faqs.value = res.data || []
       }
     } catch (err) {
@@ -175,7 +175,7 @@ export function useSpreads() {
     error.value = null
     try {
       const res = await getSpreads()
-      if (res.code === 0) {
+      if (res.code === 200) {
         spreads.value = res.data || []
       }
     } catch (err) {
@@ -212,7 +212,7 @@ export function useQuestions(category = null) {
     error.value = null
     try {
       const res = await getQuestions(category)
-      if (res.code === 0) {
+      if (res.code === 200) {
         questions.value = res.data || []
       }
     } catch (err) {

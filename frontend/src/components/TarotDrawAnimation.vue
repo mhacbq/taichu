@@ -17,8 +17,10 @@
             class="deck-card"
             :style="getDeckCardStyle(i)"
           >
-            <div class="card-back">
-              <span class="pattern">☯</span>
+            <div class="card-back-styled">
+              <div class="back-pattern">
+                <span class="pattern-small">☯</span>
+              </div>
             </div>
           </div>
         </div>
@@ -39,26 +41,18 @@
       <!-- 抽牌 -->
       <div class="draw-container" v-else-if="stage === 'draw'">
         <div class="draw-animation">
-          <div 
+          <TarotCard 
             v-for="(card, index) in displayCards" 
             :key="index"
-            class="drawn-card"
-            :class="{ 
-              revealed: card.revealed,
-              reversed: card.reversed 
-            }"
+            :name="card.name"
+            :emoji="card.emoji"
+            :reversed="card.reversed"
+            :revealed="card.revealed"
+            :element="card.element"
+            :color="card.color"
+            class="drawn-card-new"
             :style="getDrawnCardStyle(index)"
-          >
-            <div class="card-inner">
-              <div class="card-front">
-                <span class="card-emoji">{{ card.emoji }}</span>
-                <span class="card-name">{{ card.name }}</span>
-              </div>
-              <div class="card-back">
-                <span class="pattern">☯</span>
-              </div>
-            </div>
-          </div>
+          />
         </div>
         <p class="stage-text">正在揭示...</p>
         <p class="stage-hint">{{ revealedCount }}/{{ totalCards }} 张牌已揭示</p>
@@ -77,6 +71,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import TarotCard from './TarotCard.vue'
 
 const props = defineProps({
   cards: {
@@ -191,7 +186,7 @@ onMounted(() => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.3);
   animation: pulse 3s ease-in-out infinite;
 }
 
@@ -251,21 +246,34 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.card-back {
+.card-back-styled {
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  border: 2px solid #B8860B;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 5px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
-.pattern {
-  font-size: 48px;
-  color: rgba(233, 69, 96, 0.5);
+.back-pattern {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pattern-small {
+  font-size: 32px;
+  color: rgba(184, 134, 11, 0.5);
+}
+
+.drawn-card-new {
+  position: absolute;
+  transition: all 0.6s ease;
 }
 
 .shuffling .deck-card {
@@ -307,7 +315,7 @@ onMounted(() => {
   width: 60px;
   height: 100%;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  border: 2px solid rgba(255, 215, 0, 0.3);
   animation: cut 1s ease-in-out infinite;
 }
 
@@ -396,8 +404,8 @@ onMounted(() => {
 }
 
 .card-front {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.1));
-  border: 2px solid rgba(233, 69, 96, 0.5);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.1));
+  border: 2px solid rgba(255, 215, 0, 0.5);
   transform: rotateY(180deg);
 }
 

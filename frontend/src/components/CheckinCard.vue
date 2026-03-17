@@ -117,7 +117,7 @@ const calendarDays = computed(() => {
 const loadCheckinStatus = async () => {
   try {
     const response = await getCheckinStatus()
-    if (response.code === 0) {
+    if (response.code === 200) {
       hasCheckedIn.value = response.data.checkedIn
       consecutiveDays.value = response.data.consecutiveDays
       todayPoints.value = response.data.todayPoints
@@ -135,7 +135,7 @@ const handleCheckin = async () => {
   loading.value = true
   try {
     const response = await dailyCheckin()
-    if (response.code === 0) {
+    if (response.code === 200) {
       hasCheckedIn.value = true
       consecutiveDays.value = response.data.consecutiveDays
       ElMessage.success(response.data.message)
@@ -183,7 +183,7 @@ onMounted(() => {
 }
 
 .consecutive-days {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   padding: 5px 12px;
   border-radius: 15px;
   font-size: 14px;
@@ -275,7 +275,7 @@ onMounted(() => {
 }
 
 .calendar-day.today {
-  border: 2px solid #e94560;
+  border: 2px solid var(--primary-color);
 }
 
 .calendar-day.today.checked {

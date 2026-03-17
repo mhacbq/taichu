@@ -25,29 +25,13 @@
 ### 新增UI问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] **[UI] TarotDrawAnimation.vue粉色边框和背景** - 第194、258-259、266-269、308-311、399-401行使用rgba(233, 69, 96) - 建议改为金色系
-- [ ] **[UI] StarBackground.vue粉色渐变背景** - 第189行使用rgba(233, 69, 96, 0.08) - 建议改为金色渐变
-- [ ] **[UI] FortuneCalendar.vue粉色主题色** - 第181、245-252行使用粉色渐变和边框 - 建议改为金色系
-- [ ] **[UI] ShareModal.vue粉色渐变背景** - 第219-223、356-360、408-411、443-446、459-462行 - 建议改为金色系
-- [ ] **[UI] PushNotificationModal.vue粉色阴影** - 第322-324行使用粉色阴影 - 建议改为金色阴影
-- [ ] **[UI] PageSkeleton.vue粉色加载动画** - 第118行使用rgba(233,69,96,0.3) - 建议改为金色
-- [ ] **[UI] MoodTracker.vue粉色选中状态** - 第231-234、272-275、290-293、385-391行 - 建议改为金色系
 
 #### 🟡 中优先级（体验问题）
-- [ ] **[UI] 塔罗牌仍使用emoji表示** - Tarot.vue第119、156行使用emoji - 建议添加真实塔罗牌SVG或图片
-- [ ] **[UI] 页面过渡动画缺失** - 各页面切换时无过渡效果 - 建议添加淡入淡出动画
-- [ ] **[UI] 按钮圆角不统一** - 混用12px/16px/20px/25px/30px - 建议统一为16px
-- [ ] **[UI] 响应式断点不统一** - 混用576px/640px/768px/992px/1024px/1200px - 建议统一为768px/992px/1200px
-- [ ] **[UI] 卡片hover效果不一致** - 各页面hover动画差异大 - 建议统一hover效果
-- [ ] **[UI] 加载状态样式不统一** - 各页面加载动画风格不一致 - 建议统一使用太极图加载
+- [ ] **[UI] 空状态设计缺失** - 部分页面缺少空状态设计 - 建议添加统一空状态组件
+
 
 #### 🟢 低优先级（美观问题）
-- [ ] **[UI] 深色背景代码残留（36个文件）** - 需要统一使用CSS变量
-- [ ] **[UI] 白色文字硬编码（30个文件）** - 需要统一使用CSS变量
-- [ ] **[UI] 五行进度条颜色硬编码** - 各页面五行颜色不统一 - 建议统一定义CSS变量
-- [ ] **[UI] 评分星星颜色硬编码** - Home.vue第786行使用 #ffd700 - 建议使用CSS变量
-- [ ] **[UI] 空状态设计缺失** - 部分页面缺少空状态设计 - 建议添加统一空状态组件
-- [ ] **[UI] 关于列表使用字符勾号** - Home.vue第679行使用'✓'字符 - 建议改为Element Plus图标Check
+
 
 ### 主题一致性评估
 **重大问题**：style.css定义白色主题（--bg-primary: #ffffff），但实际页面大量使用深色背景+白色文字，存在严重主题冲突。
@@ -95,25 +79,9 @@
 
 #### 🔴 高优先级（运营阻塞问题）
 
-- [ ] **[运营] 黄历管理页面缺失** - admin项目缺少黄历管理页面，后端已实现接口(/api/admin/almanac/*)，但前端无对应页面 - 影响黄历数据运营维护
-- [ ] **[运营] 每日运势管理页面缺失** - admin/src/views/content/daily.vue路由配置但文件不存在 - 影响每日运势内容管理
-- [ ] **[运营] 塔罗记录管理页面缺失** - admin/src/views/content/tarot.vue路由配置但文件不存在 - 影响塔罗占卜记录查看
 
 #### 🟡 中优先级（运营体验问题）
 
-- [ ] **[运营] 用户行为日志页面缺失** - /user/behavior路由配置但admin/src/views/user/behavior.vue不存在 - 影响用户行为分析
-- [ ] **[运营] 积分规则管理页面缺失** - /points/rules路由配置但admin/src/views/points/rules.vue不存在 - 影响积分规则配置
-- [ ] **[运营] 积分调整页面缺失** - /points/adjust路由配置但admin/src/views/points/adjust.vue不存在 - 影响批量积分调整
-- [ ] **[运营] 反馈分类管理页面缺失** - /feedback/category路由配置但admin/src/views/feedback/category.vue不存在 - 影响反馈分类管理
-- [ ] **[运营] 反作弊规则页面缺失** - /anticheat/rules路由配置但admin/src/views/anticheat/rules.vue不存在
-- [ ] **[运营] 反作弊设备指纹页面缺失** - /anticheat/devices路由配置但admin/src/views/anticheat/devices.vue不存在
-- [ ] **[运营] 系统公告管理页面缺失** - /system/notice路由配置但admin/src/views/system/notice.vue不存在 - 影响公告发布
-- [ ] **[运营] 管理员管理页面缺失** - /system/admin路由配置但admin/src/views/system/admin.vue不存在 - 影响子账号管理
-- [ ] **[运营] 登录日志页面缺失** - /log/login路由配置但admin/src/views/log/login.vue不存在
-- [ ] **[运营] API日志页面缺失** - /log/api路由配置但admin/src/views/log/api.vue不存在
-- [ ] **[运营] 任务执行日志页面缺失** - /task/logs路由配置但admin/src/views/task/logs.vue不存在
-- [ ] **[运营] 角色管理使用模拟数据** - admin/src/views/system/role.vue使用硬编码模拟数据，未调用真实API
-- [ ] **[运营] 字典管理使用模拟数据** - admin/src/views/system/dict.vue使用硬编码模拟数据，未调用真实API
 
 #### 🟢 低优先级（运营优化建议）
 
@@ -148,9 +116,7 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性/安全问题）
-- [ ] [2026-03-17] **前端API响应码判断不一致** - frontend/src/views/Profile.vue第265、275、281行使用`response.code === 200`，但其他文件统一使用`code === 0` - 建议统一响应码判断逻辑
 - [ ] [2026-03-17] **前端XSS过滤不够完善** - frontend/src/views/Hehun.vue第263-283行的sanitizeHtml函数使用正则表达式过滤，建议使用DOMPurify库
-- [ ] [2026-03-17] **管理端缺失13个视图文件** - admin/src/router/index.js配置了/user/behavior、/content/pages/:id/history、/content/tarot、/content/daily、/points/rules、/points/adjust、/feedback/category、/anticheat/rules、/anticheat/devices、/system/notice、/system/admin、/log/login、/log/api、/task/logs等路由，但对应视图文件不存在 - 建议创建缺失的视图文件
 
 #### 🟡 中优先级（体验/代码质量问题）
 - [ ] [2026-03-17] **前端流式响应错误处理不完善** - frontend/src/views/Bazi.vue第1370-1376行AI解盘流式响应解析错误被静默忽略 - 建议添加用户错误提示
@@ -190,14 +156,6 @@
 ### 新增UI问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] **[UI] AchievementSystem.vue粉色动画效果** - 第360-361行使用 rgba(233, 69, 96, 0.4) - 建议改为金色系动画
-- [ ] **[UI] BaziLoading.vue粉色阴影效果** - 第146、249行使用 rgba(233, 69, 96, 0.5) - 建议改为金色阴影
-- [ ] **[UI] GuideModal.vue多处粉色样式** - 第292、307-309、320、350、356、378-381、514-516、547-548行 - 建议批量替换为金色系
-- [ ] **[UI] FortuneCalendar.vue粉色主题色** - 第181、245-252行使用粉色渐变和边框 - 建议改为金色系
-- [ ] **[UI] TarotDrawAnimation.vue粉色边框和背景** - 第194、258-259、266-269、308-311、399-401行 - 建议改为金色系
-- [ ] **[UI] MoodTracker.vue粉色选中状态** - 第231-234、272-275、290-293、385-391行 - 建议改为金色系
-- [ ] **[UI] ShareModal.vue粉色渐变背景** - 第219-223、356-360、408-411、443-446、459-462行 - 建议改为金色系
-- [ ] **[UI] PushNotificationModal.vue粉色阴影** - 第322-324行使用粉色阴影 - 建议改为金色阴影
 
 #### 🟡 中优先级（体验问题）
 - [ ] **[UI] 塔罗牌仍使用emoji表示** - Tarot.vue第119、156行使用emoji - 建议添加真实塔罗牌SVG或图片

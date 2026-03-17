@@ -150,7 +150,7 @@ const handleLater = () => {
 .push-modal :deep(.el-dialog__title) {
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .push-content {
@@ -163,12 +163,12 @@ const handleLater = () => {
 }
 
 .phone-preview {
-  background: #1a1a2e;
+  background: var(--bg-primary);
   border-radius: 20px;
   padding: 15px;
   max-width: 280px;
   margin: 0 auto;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--border-color);
 }
 
 .phone-header {
@@ -178,11 +178,11 @@ const handleLater = () => {
 
 .time {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
 }
 
 .notification-preview {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -192,7 +192,7 @@ const handleLater = () => {
 .app-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #ffd700, #ffc107);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -208,20 +208,20 @@ const handleLater = () => {
 
 .app-name {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 2px;
 }
 
 .notification-title {
   font-size: 14px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .notification-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -232,14 +232,14 @@ const handleLater = () => {
 
 /* 功能说明 */
 .features-section {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
 }
 
 .features-section h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   margin-bottom: 15px;
 }
@@ -269,12 +269,12 @@ const handleLater = () => {
 }
 
 .feature-text strong {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .feature-text span {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -315,19 +315,19 @@ const handleLater = () => {
 }
 
 .footer-btn.primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #ffd700, #ffc107);
   border: none;
 }
 
 .footer-btn.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
 }
 
 .footer-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 @media (max-width: 480px) {

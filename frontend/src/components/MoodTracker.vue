@@ -167,11 +167,11 @@ const getMoodEmoji = (mood) => {
 
 <style scoped>
 .mood-tracker {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .mood-header {
@@ -179,7 +179,7 @@ const getMoodEmoji = (mood) => {
 }
 
 .title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 18px;
   margin: 0 0 4px 0;
   display: flex;
@@ -192,12 +192,12 @@ const getMoodEmoji = (mood) => {
 }
 
 .subtitle {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
 .mood-question {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   margin-bottom: 16px;
 }
@@ -229,8 +229,8 @@ const getMoodEmoji = (mood) => {
 }
 
 .mood-btn.selected {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
 }
 
 .mood-emoji {
@@ -271,13 +271,13 @@ const getMoodEmoji = (mood) => {
 
 .mood-note textarea:focus {
   outline: none;
-  border-color: rgba(233, 69, 96, 0.5);
+  border-color: rgba(255, 215, 0, 0.5);
 }
 
 .save-btn {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #ffd700, #ffc107);
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -289,7 +289,7 @@ const getMoodEmoji = (mood) => {
 
 .save-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
 }
 
 .save-btn:disabled {
@@ -328,7 +328,7 @@ const getMoodEmoji = (mood) => {
 
 .bar-fill {
   width: 36px;
-  background: linear-gradient(to top, #e94560, #ff6b6b);
+  background: linear-gradient(to top, #ffd700, #ffc107);
   border-radius: 8px 8px 0 0;
   min-height: 4px;
   position: relative;
@@ -384,9 +384,9 @@ const getMoodEmoji = (mood) => {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 193, 7, 0.1));
   border-radius: 12px;
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .link-icon {
@@ -404,7 +404,7 @@ const getMoodEmoji = (mood) => {
 }
 
 .link-btn {
-  color: #e94560;
+  color: #ffd700;
   font-size: 13px;
   text-decoration: none;
   font-weight: 500;

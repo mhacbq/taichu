@@ -12,7 +12,7 @@
 
       <!-- 免费预览结果 -->
       <div v-if="freeResult" class="result-section">
-        <div class="result-card">
+        <div class="result-card card-hover">
           <div class="result-header">
             <h2>合婚基础分析</h2>
             <div class="score-display">
@@ -69,7 +69,7 @@
 
       <!-- 付费详细结果 -->
       <div v-else-if="premiumResult" class="result-section">
-        <div class="result-card premium">
+        <div class="result-card premium card-hover">
           <div class="result-header">
             <h2>详细合婚报告</h2>
             <div class="premium-badge">完整版</div>
@@ -133,11 +133,11 @@
 
       <!-- 输入表单 -->
       <div v-else class="form-section">
-        <div class="form-card">
+        <div class="form-card card-hover">
           <h2>输入双方出生信息</h2>
           
           <!-- 男方信息 -->
-          <div class="person-section">
+          <div class="person-section card-hover">
             <h3 class="person-title">
               <el-icon class="gender-icon"><Male /></el-icon>
               男方信息
@@ -253,33 +253,20 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import DOMPurify from 'dompurify'
 import { Male, Female, Unlock, Link, RefreshRight, Document, Collection, Present, Cpu, Lightbulb } from '@element-plus/icons-vue'
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 
 /**
  * HTML净化函数 - 防止XSS攻击
- * 只允许安全的HTML标签
+ * 使用DOMPurify库进行专业清理
  */
 const sanitizeHtml = (html) => {
   if (!html) return ''
-  // 只允许白名单内的安全标签
-  const allowedTags = ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li']
-  const allowedAttributes = ['class', 'style']
-  
-  // 移除所有script标签及其内容
-  let sanitized = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-  // 移除所有事件处理器
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*"[^"]*"/gi, '')
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*'[^']*'/gi, '')
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]+/gi, '')
-  // 移除javascript:伪协议
-  sanitized = sanitized.replace(/javascript:/gi, '')
-  // 移除data:伪协议
-  sanitized = sanitized.replace(/data:/gi, '')
-  // 移除vbscript:伪协议
-  sanitized = sanitized.replace(/vbscript:/gi, '')
-  
-  return sanitized
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: ['class', 'style']
+  })
 }
 
 // 表单数据
@@ -317,7 +304,7 @@ const isFormValid = computed(() => {
 const loadPricing = async () => {
   try {
     const response = await getHehunPricing()
-    if (response.code === 0) {
+    if (response.code === 200) {
       pricing.value = response.data
     }
   } catch (error) {
@@ -343,7 +330,7 @@ const submitForm = async () => {
       useAi: false,
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       freeResult.value = response.data
       loadHistory() // 刷新历史记录
     } else {
@@ -379,7 +366,7 @@ const unlockPremium = async () => {
       useAi: form.useAi,
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       freeResult.value = null
       premiumResult.value = response.data
       ElMessage.success('解锁成功！')
@@ -419,7 +406,7 @@ const exportReport = async () => {
       record_id: premiumResult.value.id,
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       // 下载PDF
       const link = document.createElement('a')
       link.href = response.data.download_url
@@ -440,7 +427,7 @@ const exportReport = async () => {
 const loadHistory = async () => {
   try {
     const response = await getHehunHistory({ page: 1, page_size: 5 })
-    if (response.code === 0) {
+    if (response.code === 200) {
       history.value = response.data.list || []
     }
   } catch (error) {
@@ -536,17 +523,17 @@ onMounted(() => {
 }
 
 .page-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
 /* 表单样式 */
 .form-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .form-card h2 {
@@ -563,7 +550,7 @@ onMounted(() => {
 }
 
 .person-title {
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 10px;

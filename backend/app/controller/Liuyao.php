@@ -49,6 +49,14 @@ class Liuyao extends BaseController
             
             $result['liu_shen'] = LiuyaoService::getLiuShen($riGan);
             
+            // 计算卦宫、六亲和世应
+            $guaInfo = LiuyaoService::getGuaInfo($result['yao_code']);
+            $result['gong'] = $guaInfo['gong'];
+            $result['shi_ying'] = LiuyaoService::getShiYing($result['main_gua'], $result['yao_code']);
+            
+            $gongWuxing = LiuyaoService::BA_GUA_WUXING[$guaInfo['gong']] ?? '金';
+            $result['liuqin'] = LiuyaoService::getLiuQin($result['main_gua'], $gongWuxing, $result['yao_code']);
+            
             // 判断用神
             $questionType = $data['question_type'] ?? '其他';
             $result['yong_shen'] = LiuyaoService::getYongShen($questionType);

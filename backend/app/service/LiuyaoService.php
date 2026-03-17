@@ -144,21 +144,17 @@ class LiuyaoService
      * @param string $gongWuxing 卦宫五行
      * @return array 六亲信息
      */
-    public static function getLiuQin(string $guaName, string $gongWuxing): array
+    public static function getLiuQin(string $guaName, string $gongWuxing, string $yaoCode): array
     {
-        // 六爻地支（从初爻到上爻）- 需要根据日辰推算
-        // 简化版本：使用固定对应关系
-        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        // 六爻地支（从初爻到上爻）
         $diZhiWuxing = [
             '子' => '水', '丑' => '土', '寅' => '木', '卯' => '木',
             '辰' => '土', '巳' => '火', '午' => '火', '未' => '土',
             '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水',
         ];
         
-        // 生克关系确定六亲
-        // 生我者为父母，我生者为子孙，克我者为官鬼，我克者为妻财，比和者为兄弟
         $liuQin = [];
-        $yaoDiZhi = self::getYaoDiZhi($guaName);
+        $yaoDiZhi = self::getYaoDiZhi($guaName, $yaoCode);
         
         foreach ($yaoDiZhi as $position => $zhi) {
             $zhiWuxing = $diZhiWuxing[$zhi] ?? '';
@@ -198,18 +194,110 @@ class LiuyaoService
     }
 
     /**
-     * 获取六爻地支（简化版）
-     * 实际应根据日辰和卦宫推算
+     * 八卦纳甲地支
      */
-    private static function getYaoDiZhi(string $guaName): array
+    const NA_JIA = [
+        '乾' => ['inner' => ['子', '寅', '辰'], 'outer' => ['午', '申', '戌']],
+        '震' => ['inner' => ['子', '寅', '辰'], 'outer' => ['午', '申', '戌']],
+        '坎' => ['inner' => ['寅', '辰', '午'], 'outer' => ['申', '戌', '子']],
+        '艮' => ['inner' => ['辰', '午', '申'], 'outer' => ['戌', '子', '寅']],
+        '坤' => ['inner' => ['未', '巳', '卯'], 'outer' => ['丑', '亥', '酉']],
+        '巽' => ['inner' => ['丑', '亥', '酉'], 'outer' => ['未', '巳', '卯']],
+        '离' => ['inner' => ['卯', '丑', '亥'], 'outer' => ['酉', '未', '巳']],
+        '兑' => ['inner' => ['巳', '卯', '丑'], 'outer' => ['亥', '酉', '未']],
+    ];
+
+    /**
+     * 六十四卦详细属性 (卦宫、世位、应位)
+     * 这里仅展示部分核心逻辑映射，实际可扩展为完整映射
+     */
+    protected static $guaProperties = [
+        // 乾宫
+        '乾为天' => ['gong' => '乾', 'shi' => 6, 'ying' => 3],
+        '天风姤' => ['gong' => '乾', 'shi' => 1, 'ying' => 4],
+        '天山遁' => ['gong' => '乾', 'shi' => 2, 'ying' => 5],
+        '天地否' => ['gong' => '乾', 'shi' => 3, 'ying' => 6],
+        '风地观' => ['gong' => '乾', 'shi' => 4, 'ying' => 1],
+        '山地剥' => ['gong' => '乾', 'shi' => 5, 'ying' => 2],
+        '火地晋' => ['gong' => '乾', 'shi' => 4, 'ying' => 1], // 游魂
+        '火天大有' => ['gong' => '乾', 'shi' => 3, 'ying' => 6], // 归魂
+        // ... 其他56卦以此类推，建议使用算法动态计算
+    ];
+
+    /**
+     * 获取六爻地支 (纳甲法)
+     */
+    private static function getYaoDiZhi(string $guaName, string $yaoCode): array
     {
-        // 简化示例，实际需要复杂的纳甲计算
-        $defaultZhi = ['子', '寅', '辰', '午', '申', '戌'];
+        $yaoArray = str_split($yaoCode);
+        // 下卦代码
+        $xiaCode = substr($yaoCode, 0, 3);
+        $shangCode = substr($yaoCode, 3, 3);
+        
+        $xiaGua = self::BA_GUA[$xiaCode];
+        $shangGua = self::BA_GUA[$shangCode];
+        
         $result = [];
-        foreach ($defaultZhi as $index => $zhi) {
-            $result[$index + 1] = $zhi;
+        $innerZhi = self::NA_JIA[$xiaGua]['inner'];
+        $outerZhi = self::NA_JIA[$shangGua]['outer'];
+        
+        for ($i = 0; $i < 3; $i++) {
+            $result[$i + 1] = $innerZhi[$i];
+            $result[$i + 4] = $outerZhi[$i];
         }
+        
         return $result;
+    }
+
+    /**
+     * 动态计算卦宫和世应 (寻宫认世法)
+     */
+    public static function getGuaInfo(string $yaoCode): array
+    {
+        $xiaCode = substr($yaoCode, 0, 3);
+        $shangCode = substr($yaoCode, 3, 3);
+        
+        $xia = bindec($xiaCode);
+        $shang = bindec($shangCode);
+        $xor = $xia ^ $shang;
+        
+        $shi = 1;
+        $type = '一世';
+        
+        switch ($xor) {
+            case 0: $shi = 6; $type = '八纯'; break;
+            case 1: $shi = 1; $type = '一世'; break;
+            case 3: $shi = 2; $type = '二世'; break;
+            case 7: $shi = 3; $type = '三世'; break;
+            case 6: $shi = 4; $type = '四世'; break;
+            case 4: $shi = 5; $type = '五世'; break;
+            case 2: $shi = 4; $type = '游魂'; break;
+        }
+        
+        // 特殊处理归魂卦：下卦变回原来的样子，即 XOR 为 0 但不是纯卦
+        // 实际上归魂卦的特征是前五爻变完后，下卦变回来
+        // 这里简化：如果 XOR 为 0 且不是纯卦（即上下卦代码一致），其实就是纯卦
+        // 真正的归魂卦逻辑是：上下卦的前两爻一致，第三爻不一致
+        if (($xia & 3) == ($shang & 3) && ($xia & 4) != ($shang & 4)) {
+            $shi = 3;
+            $type = '归魂';
+        }
+
+        $ying = ($shi > 3) ? ($shi - 3) : ($shi + 3);
+        
+        // 确定卦宫
+        $gong = self::BA_GUA[$shangCode];
+        if ($type == '游魂' || $type == '归魂' || $shi == 4 || $shi == 5) {
+             // 复杂的寻宫逻辑，此处返回上卦所属宫
+             $gong = self::BA_GUA[$shangCode];
+        }
+        
+        return [
+            'gong' => $gong,
+            'shi' => $shi,
+            'ying' => $ying,
+            'type' => $type
+        ];
     }
 
     /**
@@ -251,31 +339,10 @@ class LiuyaoService
      * @param string $guaName 卦名
      * @return array 世应信息
      */
-    public static function getShiYing(string $guaName): array
+    public static function getShiYing(string $guaName, string $yaoCode): array
     {
-        // 世应规则：八纯卦世在上六，应在三爻
-        // 一世卦世在初爻，应在四爻
-        // 二世卦世在二爻，应在五爻
-        // 三世卦世在三爻，应在上六
-        // 四世卦世在四爻，应在初爻
-        // 五世卦世在五爻，应在二爻
-        // 游魂卦世在四爻，应在初爻
-        // 归魂卦世在三爻，应在上六
-        
-        $shiYingMap = [
-            // 八纯卦
-            '乾' => ['shi' => 6, 'ying' => 3],
-            '坤' => ['shi' => 6, 'ying' => 3],
-            '震' => ['shi' => 6, 'ying' => 3],
-            '巽' => ['shi' => 6, 'ying' => 3],
-            '坎' => ['shi' => 6, 'ying' => 3],
-            '离' => ['shi' => 6, 'ying' => 3],
-            '艮' => ['shi' => 6, 'ying' => 3],
-            '兑' => ['shi' => 6, 'ying' => 3],
-        ];
-        
-        // 简化处理，实际需要根据卦宫推算
-        return $shiYingMap[$guaName] ?? ['shi' => 1, 'ying' => 4];
+        $info = self::getGuaInfo($yaoCode);
+        return ['shi' => $info['shi'], 'ying' => $info['ying']];
     }
 
     /**

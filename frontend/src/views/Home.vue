@@ -78,37 +78,37 @@
       <div class="container">
         <h2 class="section-title">我们的服务</h2>
         <div class="features-grid">
-          <div class="feature-card">
+          <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
             <h3>八字分析</h3>
             <p>基于传统文化的性格分析，了解您的个性特点、发展方向、人际关系</p>
             <router-link to="/bazi" class="feature-link">立即体验 →</router-link>
           </div>
-          <div class="feature-card">
+          <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
             <h3>塔罗测试</h3>
             <p>趣味塔罗牌阵探索，为您的困惑提供思考角度，发现内心可能</p>
             <router-link to="/tarot" class="feature-link">立即体验 →</router-link>
           </div>
-          <div class="feature-card">
+          <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Switch /></el-icon></div>
             <h3>六爻占卜</h3>
             <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
             <router-link to="/liuyao" class="feature-link">立即体验 →</router-link>
           </div>
-          <div class="feature-card">
+          <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Link /></el-icon></div>
             <h3>八字合婚</h3>
             <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
             <router-link to="/hehun" class="feature-link">立即体验 →</router-link>
           </div>
-          <div class="feature-card">
+          <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Star /></el-icon></div>
             <h3>每日指南</h3>
             <p>基于出生日期的每日幸运指数，生活参考，娱乐消遣</p>
             <router-link to="/daily" class="feature-link">立即体验 →</router-link>
           </div>
-          <div class="feature-card">
+          <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Aim /></el-icon></div>
             <h3>更多功能</h3>
             <p>取名建议、吉日查询等更多命理功能，满足您的不同需求</p>
@@ -123,7 +123,7 @@
       <div class="container">
         <h2 class="section-title">用户心声</h2>
         <div class="testimonials-grid">
-          <div class="testimonial-card" v-for="(item, index) in testimonials" :key="index">
+          <div class="testimonial-card card-hover" v-for="(item, index) in testimonials" :key="index">
             <div class="testimonial-header">
               <div class="testimonial-avatar" :style="{ backgroundColor: item.avatarColor }">{{ item.avatar }}</div>
               <div class="testimonial-info">
@@ -150,10 +150,10 @@
             <h2 class="section-title">关于太初文化</h2>
             <p>太初文化是一款结合传统文化与人工智能技术的趣味探索平台。我们致力于：</p>
             <ul class="about-list">
-              <li>传承中华传统历法文化</li>
-              <li>运用AI技术提供趣味分析</li>
-              <li>为用户提供个性化的性格参考</li>
-              <li>让传统文化探索更加有趣、便捷</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 传承中华传统历法文化</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 运用AI技术提供趣味分析</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 为用户提供个性化的性格参考</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 让传统文化探索更加有趣、便捷</li>
             </ul>
           </div>
           <div class="about-stats">
@@ -172,7 +172,7 @@
 import { ref, onMounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
-import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link } from '@element-plus/icons-vue'
+import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check } from '@element-plus/icons-vue'
 
 const stats = ref([
   { number: '加载中...', label: '服务用户' },
@@ -268,7 +268,7 @@ const testimonials = ref([
 const loadStats = async () => {
   try {
     const response = await getHomeStats()
-    if (response.code === 0) {
+    if (response.code === 200) {
       stats.value = response.data.stats
       userCount.value = response.data.userCount || 12000
     }
@@ -287,7 +287,7 @@ const loadUserPoints = async () => {
   isLoggedIn.value = true
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
+    if (response.code === 200) {
       userPoints.value = response.data.balance
     }
   } catch (error) {
@@ -312,8 +312,8 @@ onMounted(() => {
 .warm-greeting {
   max-width: 600px;
   margin: 0 auto 20px;
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.15), rgba(133, 206, 97, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.3);
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
+  border: 1px solid rgba(103, 194, 58, 0.2);
   border-radius: 16px;
   padding: 20px 25px;
   backdrop-filter: blur(10px);
@@ -671,14 +671,12 @@ onMounted(() => {
 .about-list li {
   color: var(--text-primary);
   padding: 10px 0;
-  padding-left: 25px;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.about-list li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
+.about-icon {
   color: var(--primary-color);
   font-weight: bold;
 }
@@ -702,7 +700,7 @@ onMounted(() => {
   display: block;
   font-size: 36px;
   font-weight: bold;
-  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -783,7 +781,7 @@ onMounted(() => {
 }
 
 .testimonial-rating .star.filled {
-  color: #ffd700;
+  color: var(--star-color);
 }
 
 .testimonial-content {

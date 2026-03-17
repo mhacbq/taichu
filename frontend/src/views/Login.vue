@@ -117,7 +117,7 @@ const sendCode = async () => {
   
   try {
     const response = await sendSmsCode({ phone: phoneForm.value.phone })
-    if (response.code === 0) {
+    if (response.code === 200) {
       ElMessage.success('验证码已发送')
       startCountdown()
     } else {
@@ -158,7 +158,7 @@ const handlePhoneLogin = async () => {
       code: phoneForm.value.code
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('userInfo', JSON.stringify(response.data.user))
       ElMessage.success('登录成功！')

@@ -11,7 +11,7 @@
 
       <div class="profile-grid">
         <!-- 用户信息卡片 -->
-        <div class="user-info card">
+        <div class="user-info card card-hover">
           <div class="avatar-section">
             <div class="avatar">
               <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="头像">
@@ -37,7 +37,7 @@
         </div>
 
         <!-- 积分明细 -->
-        <div class="points-section card">
+        <div class="points-section card card-hover">
           <h3>积分明细</h3>
           <div class="points-list" v-if="pointsHistory.length > 0">
             <div v-for="record in pointsHistory" :key="record.id" class="points-item">
@@ -54,7 +54,7 @@
         </div>
 
         <!-- 排盘历史 -->
-        <div class="history-section card">
+        <div class="history-section card card-hover">
           <h3>排盘历史</h3>
           <div class="history-list" v-if="baziHistory.length > 0">
             <div v-for="record in baziHistory" :key="record.id" class="history-item">
@@ -84,7 +84,7 @@
         </div>
 
         <!-- 塔罗历史 -->
-        <div class="history-section card">
+        <div class="history-section card card-hover">
           <h3>塔罗占卜历史</h3>
           <div class="history-list" v-if="tarotHistory.length > 0">
             <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
@@ -105,10 +105,10 @@
         </div>
 
         <!-- 积分获取攻略 -->
-        <div class="points-guide-section card">
+        <div class="points-guide-section card card-hover">
           <h3><el-icon><Coin /></el-icon> 积分获取攻略</h3>
           <div class="points-methods">
-            <div class="method-item" v-for="method in pointsMethods" :key="method.id">
+            <div class="method-item card-hover" v-for="method in pointsMethods" :key="method.id">
               <div class="method-icon">
                 <el-icon v-if="method.icon === 'calendar'"><Calendar /></el-icon>
                 <el-icon v-else-if="method.icon === 'present'"><Present /></el-icon>
@@ -135,7 +135,7 @@
         </div>
 
         <!-- 邀请好友 -->
-        <div class="invite-section card">
+        <div class="invite-section card card-hover">
           <h3><el-icon><Present /></el-icon> 邀请好友赚积分</h3>
           <div class="invite-content">
             <p class="invite-desc">每邀请一位好友注册，您和好友各获得 <strong>20积分</strong></p>
@@ -166,18 +166,18 @@
             
             <!-- 邀请统计 -->
             <div class="invite-stats">
-              <div class="stat-card">
+              <div class="stat-card card-hover">
                 <span class="stat-value">{{ inviteCount }}</span>
                 <span class="stat-label">已邀请</span>
               </div>
-              <div class="stat-card">
+              <div class="stat-card card-hover">
                 <span class="stat-value">{{ invitePoints }}</span>
                 <span class="stat-label">获得积分</span>
               </div>
             </div>
             
             <!-- 邀请规则 -->
-            <div class="invite-rules">
+            <div class="invite-rules card-hover">
               <h4><el-icon><List /></el-icon> 邀请规则</h4>
               <ul>
                 <li>好友通过您的邀请码注册，双方各得20积分</li>
@@ -189,7 +189,7 @@
         </div>
 
         <!-- 反馈建议 -->
-        <div class="feedback-section card">
+        <div class="feedback-section card card-hover">
           <h3>反馈建议</h3>
           <div class="feedback-form">
             <el-input
@@ -461,7 +461,7 @@ onMounted(() => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
+  background: var(--primary-gradient);
   margin: 0 auto 15px;
   display: flex;
   justify-content: center;
@@ -469,6 +469,7 @@ onMounted(() => {
   font-size: 36px;
   color: #fff;
   overflow: hidden;
+  box-shadow: var(--shadow-md);
 }
 
 .avatar img {
@@ -478,12 +479,12 @@ onMounted(() => {
 }
 
 .avatar-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .user-id {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
 }
 
@@ -491,7 +492,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-light);
 }
 
 .stat {
@@ -502,12 +503,12 @@ onMounted(() => {
   display: block;
   font-size: 24px;
   font-weight: bold;
-  color: #B8860B;
+  color: var(--primary-color);
 }
 
 .stat-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
 }
 
 .points-section,
@@ -519,7 +520,7 @@ onMounted(() => {
 .points-section h3,
 .history-section h3,
 .feedback-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -533,7 +534,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .points-item:last-child {
@@ -546,12 +547,12 @@ onMounted(() => {
 }
 
 .points-action {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .points-time {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -561,11 +562,11 @@ onMounted(() => {
 }
 
 .points-change.positive {
-  color: #67C23A;
+  color: var(--success-color);
 }
 
 .points-change.negative {
-  color: #F56C6C;
+  color: var(--danger-color);
 }
 
 .history-list {
@@ -578,7 +579,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-light);
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -593,12 +594,13 @@ onMounted(() => {
 }
 
 .history-date {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .history-gender {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -609,11 +611,11 @@ onMounted(() => {
 }
 
 .bazi-pillar {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .bazi-pillar.highlight {
-  color: #B8860B;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
@@ -638,7 +640,7 @@ onMounted(() => {
 
 .history-birth {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -649,7 +651,7 @@ onMounted(() => {
 
 .history-question {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
   max-width: 200px;
   overflow: hidden;
@@ -670,7 +672,7 @@ onMounted(() => {
 
 .tarot-mini small {
   font-size: 8px;
-  color: #B8860B;
+  color: var(--primary-color);
   position: absolute;
   bottom: -5px;
   right: -5px;
@@ -678,7 +680,7 @@ onMounted(() => {
 
 .more-cards {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-left: 5px;
 }
 
@@ -691,25 +693,25 @@ onMounted(() => {
 
 :deep(.el-pagination) {
   --el-pagination-bg-color: transparent;
-  --el-pagination-hover-color: var(--primary-color, #B8860B);
-  --el-pagination-button-color: rgba(255, 255, 255, 0.8);
+  --el-pagination-hover-color: var(--primary-color);
+  --el-pagination-button-color: var(--text-secondary);
 }
 
 :deep(.el-pagination .btn-prev),
 :deep(.el-pagination .btn-next),
 :deep(.el-pagination .number) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   border-radius: 6px;
 }
 
 :deep(.el-pagination .number.active) {
-  background: var(--primary-color, #B8860B);
+  background: var(--primary-color);
   color: #fff;
 }
 
 /* 积分获取攻略 */
 .points-guide-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -724,13 +726,14 @@ onMounted(() => {
   align-items: center;
   gap: 15px;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-secondary);
   border-radius: 10px;
   transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
 }
 
 .method-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-tertiary);
 }
 
 .method-icon {
@@ -742,6 +745,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--primary-color);
 }
 
 .method-info {
@@ -749,30 +753,30 @@ onMounted(() => {
 }
 
 .method-info h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   margin-bottom: 4px;
 }
 
 .method-info p {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
 .method-reward {
-  color: #ffd700;
+  color: var(--wuxing-jin);
   font-weight: bold;
   font-size: 16px;
 }
 
 .completed-badge {
-  color: #67C23A;
+  color: var(--success-color);
   font-size: 18px;
 }
 
 /* 邀请好友 */
 .invite-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -781,14 +785,14 @@ onMounted(() => {
 }
 
 .invite-desc {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   margin-bottom: 25px;
   font-size: 15px;
 }
 
 .invite-code-box {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(218, 165, 32, 0.1));
-  border: 2px dashed rgba(184, 134, 11, 0.5);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.05), rgba(212, 175, 55, 0.05));
+  border: 2px dashed rgba(184, 134, 11, 0.3);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -796,7 +800,7 @@ onMounted(() => {
 
 .code-label {
   display: block;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -810,7 +814,7 @@ onMounted(() => {
 }
 
 .code-value {
-  color: #B8860B;
+  color: var(--primary-color);
   font-size: 28px;
   font-weight: bold;
   letter-spacing: 3px;
@@ -822,7 +826,7 @@ onMounted(() => {
 }
 
 .share-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -845,24 +849,25 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-tertiary);
   border-radius: 12px;
   padding: 15px 30px;
   text-align: center;
   min-width: 100px;
+  border: 1px solid var(--border-light);
 }
 
 .stat-card .stat-value {
   display: block;
   font-size: 28px;
   font-weight: bold;
-  color: var(--primary-color, #B8860B);
+  color: var(--primary-color);
 }
 
 .stat-card .stat-label {
   display: block;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -871,10 +876,11 @@ onMounted(() => {
   border-radius: 10px;
   padding: 15px;
   text-align: left;
+  border: 1px solid var(--border-light);
 }
 
 .invite-rules h4 {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -885,7 +891,7 @@ onMounted(() => {
 }
 
 .invite-rules li {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
   margin-bottom: 5px;
 }

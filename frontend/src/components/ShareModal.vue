@@ -218,8 +218,8 @@ const copyText = async () => {
 
 /* 奖励提示 */
 .reward-banner {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.1));
+  border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 12px;
   padding: 15px 20px;
   display: flex;
@@ -268,7 +268,7 @@ const copyText = async () => {
 
 .logo-icon {
   font-size: 28px;
-  color: #e94560;
+  color: #ffd700;
 }
 
 .logo-text {
@@ -354,8 +354,8 @@ const copyText = async () => {
 }
 
 .share-btn:hover {
-  background: rgba(233, 69, 96, 0.1);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.3);
   transform: translateY(-3px);
 }
 
@@ -395,7 +395,7 @@ const copyText = async () => {
 
 .copy-btn {
   padding: 12px 20px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #ffd700, #ffc107);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -407,7 +407,7 @@ const copyText = async () => {
 
 .copy-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
 }
 
 .copy-btn.copied {
@@ -442,7 +442,7 @@ const copyText = async () => {
 
 .share-textarea:focus {
   outline: none;
-  border-color: rgba(233, 69, 96, 0.5);
+  border-color: rgba(255, 215, 0, 0.5);
 }
 
 .copy-text-btn {
@@ -457,8 +457,8 @@ const copyText = async () => {
 }
 
 .copy-text-btn:hover {
-  background: rgba(233, 69, 96, 0.2);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: rgba(255, 215, 0, 0.2);
+  border-color: rgba(255, 215, 0, 0.3);
 }
 
 @media (max-width: 480px) {

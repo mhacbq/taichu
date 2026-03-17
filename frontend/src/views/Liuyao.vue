@@ -184,7 +184,7 @@ const getYaoMark = (yao) => {
 const loadPricing = async () => {
   try {
     const response = await getLiuyaoPricing()
-    if (response.code === 0) {
+    if (response.code === 200) {
       pricing.value = response.data
     }
   } catch (error) {
@@ -196,7 +196,7 @@ const loadPricing = async () => {
 const loadHistory = async () => {
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 50 })
-    if (response.code === 0) {
+    if (response.code === 200) {
       history.value = response.data.list || []
     }
   } catch (error) {
@@ -223,7 +223,7 @@ const submitDivination = async () => {
       useAi: form.useAi,
     })
 
-    if (response.code === 0) {
+    if (response.code === 200) {
       result.value = response.data
       loadHistory() // 刷新历史
     } else {
@@ -281,7 +281,7 @@ const deleteRecord = async (id) => {
     })
 
     const response = await deleteLiuyaoRecord({ id })
-    if (response.code === 0) {
+    if (response.code === 200) {
       ElMessage.success('删除成功')
       loadHistory()
     } else {

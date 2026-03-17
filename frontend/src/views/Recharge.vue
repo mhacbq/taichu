@@ -210,7 +210,7 @@ const loadPointsBalance = async () => {
 const loadRechargeOptions = async () => {
   try {
     const res = await getRechargeOptions()
-    if (res.code === 0) {
+    if (res.code === 200) {
       rechargeOptions.value = res.data.options
       // 默认选中第一个
       if (rechargeOptions.value.length > 0) {
@@ -226,7 +226,7 @@ const loadRechargeOptions = async () => {
 const loadRechargeHistory = async () => {
   try {
     const res = await getRechargeHistory()
-    if (res.code === 0) {
+    if (res.code === 200) {
       rechargeHistory.value = res.data || []
     }
   } catch (error) {
@@ -254,7 +254,7 @@ const handleRecharge = async () => {
         amount: selectedAmount.value
       })
 
-      if (res.code === 0) {
+      if (res.code === 200) {
         currentOrderNo.value = res.data.order_no
         
         // 如果在微信浏览器中，直接调起微信支付
@@ -276,7 +276,7 @@ const handleRecharge = async () => {
         amount: selectedAmount.value
       })
 
-      if (res.code === 0) {
+      if (res.code === 200) {
         currentOrderNo.value = res.data.order_no
         
         if (res.data.pay_form) {
@@ -318,7 +318,7 @@ const generateQRCode = async () => {
     
     if (res.ok) {
       const data = await res.json()
-      if (data.code === 0 && data.data.qr_url) {
+      if (data.code === 200 && data.data.qr_url) {
         qrCodeUrl.value = data.data.qr_url
       } else {
         // 如果后端没有二维码接口，使用二维码生成API
@@ -416,7 +416,7 @@ const checkPayStatus = async (silent = false) => {
   try {
     const res = await queryRechargeOrder({ order_no: currentOrderNo.value })
     
-    if (res.code === 0) {
+    if (res.code === 200) {
       if (res.data.status === 'paid') {
         stopQueryTimer()
         payDialogVisible.value = false
@@ -505,11 +505,11 @@ const getStatusText = (status) => {
   display: block;
   font-size: 48px;
   font-weight: bold;
-  color: #ffd700;
+  color: var(--primary-light);
 }
 
 .points-tip {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin: 0;
 }
@@ -519,7 +519,7 @@ const getStatusText = (status) => {
 }
 
 .recharge-options h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -530,9 +530,9 @@ const getStatusText = (status) => {
 }
 
 .option-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border: 2px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px 15px;
   text-align: center;
   cursor: pointer;
@@ -541,34 +541,34 @@ const getStatusText = (status) => {
 }
 
 .option-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-2px);
 }
 
 .option-item.active {
-  border-color: #b8860b;
+  border-color: var(--primary-color);
   background: rgba(184, 134, 11, 0.1);
 }
 
 .option-item.hot {
-  border-color: #ffd700;
+  border-color: var(--primary-light);
 }
 
 .option-item .amount {
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .option-item .points {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .option-item .bonus {
   font-size: 12px;
-  color: #ffd700;
+  color: var(--primary-light);
   margin-top: 5px;
 }
 
@@ -576,7 +576,7 @@ const getStatusText = (status) => {
   position: absolute;
   top: -10px;
   right: -10px;
-  background: linear-gradient(135deg, #ffd700, #ff6b6b);
+  background: var(--primary-gradient);
   color: #fff;
   font-size: 10px;
   font-weight: bold;
@@ -589,7 +589,7 @@ const getStatusText = (status) => {
 }
 
 .payment-info h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -598,8 +598,8 @@ const getStatusText = (status) => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 .info-row.total {
@@ -609,12 +609,12 @@ const getStatusText = (status) => {
 }
 
 .info-row .highlight {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .info-row .total-amount {
-  color: #B8860B;
+  color: var(--primary-color);
   font-size: 24px;
 }
 
@@ -625,7 +625,7 @@ const getStatusText = (status) => {
 
 .payment-label {
   display: block;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 12px;
 }
@@ -642,20 +642,20 @@ const getStatusText = (status) => {
   justify-content: center;
   gap: 8px;
   padding: 15px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .payment-option:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .payment-option.active {
-  border-color: var(--primary-color, #B8860B);
+  border-color: var(--primary-color);
   background: rgba(184, 134, 11, 0.1);
 }
 
@@ -672,7 +672,7 @@ const getStatusText = (status) => {
 
 .pay-tip {
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 13px;
   margin-top: 15px;
   display: flex;
@@ -686,7 +686,7 @@ const getStatusText = (status) => {
 }
 
 .recharge-history h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -700,7 +700,7 @@ const getStatusText = (status) => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .history-item:last-child {
@@ -714,18 +714,18 @@ const getStatusText = (status) => {
 }
 
 .history-amount {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
   font-size: 16px;
 }
 
 .history-points {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 14px;
 }
 
 .history-time {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 12px;
 }
 

@@ -101,7 +101,11 @@
     </nav>
     
     <main class="main-content">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
     
     <footer class="footer">
@@ -256,7 +260,7 @@ const checkLoginStatus = () => {
 const refreshPoints = async () => {
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
+    if (response.code === 200) {
       userPoints.value = response.data.balance
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
       userInfo.points = response.data.balance
@@ -314,16 +318,16 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* 导航栏 - 白色风格 */
+/* 导航栏 - 深色风格 */
 .navbar {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(10, 10, 26, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
 }
 
@@ -515,11 +519,11 @@ onMounted(() => {
   width: 80%;
   max-width: 320px;
   height: 100vh;
-  background: white;
+  background: var(--bg-secondary);
   z-index: 1001;
   flex-direction: column;
   transition: right 0.3s ease;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-nav.active {
@@ -681,11 +685,11 @@ onMounted(() => {
   flex: 1;
 }
 
-/* 页脚 - 白色风格 */
+/* 页脚 - 深色风格 */
 .footer {
-  background: white;
+  background: var(--bg-primary);
   padding: 60px 0 30px;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--border-color);
 }
 
 .footer-content {
@@ -817,12 +821,13 @@ onMounted(() => {
   bottom: 70px;
   right: 0;
   width: 300px;
-  background: white;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 24px;
   box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-color);
 }
 
 @keyframes slideUp {
@@ -908,6 +913,17 @@ onMounted(() => {
   background: rgba(212, 175, 55, 0.1);
   color: var(--primary-color);
   transform: translateX(5px);
+}
+
+/* 页面过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* 响应式 */

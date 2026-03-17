@@ -7,23 +7,23 @@
       </div>
 
       <!-- 积分提示 -->
-      <div class="points-hint card">
+      <div class="points-hint card card-hover">
         <el-icon class="hint-icon"><Diamond /></el-icon>
         <span>本次占卜将消耗 <strong>5 积分</strong></span>
         <span class="current-points">当前积分: {{ currentPoints }}</span>
       </div>
 
-      <div v-if="currentPoints < 5" class="insufficient-points card">
+      <div v-if="currentPoints < 5" class="insufficient-points card card-hover">
         <p><el-icon><Magic /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
       </div>
 
-      <div class="tarot-intro card">
+      <div class="tarot-intro card card-hover">
         <h2>选择您的牌阵</h2>
         <div class="spread-options">
           <div 
             v-for="spread in spreads" 
             :key="spread.id"
-            class="spread-card"
+            class="spread-card card-hover"
             :class="{ active: selectedSpread === spread.id }"
             @click="selectedSpread = spread.id"
           >
@@ -39,7 +39,7 @@
       </div>
 
       <!-- 问题引导区域 -->
-      <div class="question-guide card" v-if="!question && cards.length === 0">
+      <div class="question-guide card card-hover" v-if="!question && cards.length === 0">
         <h3>
           <el-icon class="guide-icon"><ChatDotRound /></el-icon>
           不知道问什么？选择一个你关心的话题
@@ -48,7 +48,7 @@
           <div 
             v-for="topic in questionTopics" 
             :key="topic.id"
-            class="topic-tab"
+            class="topic-tab card-hover"
             :class="{ active: selectedTopic === topic.id }"
             @click="selectTopic(topic.id)"
           >
@@ -68,7 +68,7 @@
             <div 
               v-for="(template, index) in currentTemplates" 
               :key="index"
-              class="template-item"
+              class="template-item card-hover"
               @click="selectQuestion(template)"
             >
               <span class="template-bullet">•</span>
@@ -78,7 +78,7 @@
         </div>
       </div>
 
-      <div class="question-section card">
+      <div class="question-section card card-hover">
         <h3>您想咨询的问题</h3>
         <el-input
           v-model="question"
@@ -103,26 +103,21 @@
         </el-button>
       </div>
 
-      <div v-if="cards.length > 0" class="cards-result card">
+      <div v-if="cards.length > 0" class="cards-result card card-hover">
         <h3>您的牌阵</h3>
         <p class="cards-hint"><el-icon><Magic /></el-icon> 点击任意牌查看详细解读</p>
         <div class="cards-display">
-          <div 
+          <TarotCard 
             v-for="(card, index) in cards" 
             :key="index"
-            class="tarot-card"
-            :class="{ reversed: card.reversed }"
+            :name="card.name"
+            :emoji="card.emoji"
+            :reversed="card.reversed"
+            :element="card.element"
+            :color="card.color"
+            :index="index"
             @click="showCardDetail(card)"
-          >
-            <div class="card-inner" :style="getCardStyle(card)">
-              <div class="card-number">{{ index + 1 }}</div>
-              <div class="card-emoji">{{ card.emoji }}</div>
-              <div class="card-name">{{ card.name }}</div>
-              <div class="card-position">{{ getPositionName(index) }}</div>
-              <div class="card-element" :class="card.element">{{ card.element }}</div>
-              <div v-if="card.reversed" class="reversed-badge">逆位</div>
-            </div>
-          </div>
+          />
         </div>
         
         <div class="interpretation">
@@ -152,9 +147,15 @@
         class="card-detail-dialog"
       >
         <div v-if="selectedCard" class="card-detail">
-          <div class="detail-header" :style="getCardStyle(selectedCard)">
-            <span class="detail-emoji">{{ selectedCard.emoji }}</span>
-            <span class="detail-element" :class="selectedCard.element">{{ selectedCard.element }}</span>
+          <div class="detail-header-new">
+            <TarotCard 
+              :name="selectedCard.name"
+              :emoji="selectedCard.emoji"
+              :reversed="selectedCard.reversed"
+              :element="selectedCard.element"
+              :color="selectedCard.color"
+              class="detail-card"
+            />
           </div>
           <div class="detail-content">
             <h4>牌面含义</h4>
@@ -183,6 +184,7 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
 import BackButton from '../components/BackButton.vue'
+import TarotCard from '../components/TarotCard.vue'
 import { Diamond, Magic, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight } from '@element-plus/icons-vue'
 
 const spreads = [
@@ -382,7 +384,7 @@ const cardDetailedMeanings = {
 const loadPoints = async () => {
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
+    if (response.code === 200) {
       currentPoints.value = response.data.balance
     }
   } catch (error) {
@@ -400,7 +402,7 @@ const showConfirm = async () => {
   // 重新获取最新积分，避免竞态条件
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
+    if (response.code === 200) {
       currentPoints.value = response.data.balance
     }
   } catch (error) {
@@ -445,7 +447,7 @@ const drawCards = async () => {
       question: question.value,
     })
 
-    if (drawResponse.code === 0) {
+    if (drawResponse.code === 200) {
       cards.value = drawResponse.data.cards
       currentPoints.value = drawResponse.data.remaining_points
 
@@ -454,7 +456,7 @@ const drawCards = async () => {
         question: question.value,
       })
 
-      if (interpretResponse.code === 0) {
+      if (interpretResponse.code === 200) {
         interpretation.value = interpretResponse.data.interpretation
         ElMessage.success('抽牌成功')
       } else {
@@ -509,7 +511,7 @@ const saveTarotResult = async () => {
       ai_analysis: ''
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       savedRecordId.value = response.data.record_id
       savedShareCode.value = response.data.share_code
       ElMessage.success('保存成功，可在个人中心查看历史记录')
@@ -610,7 +612,7 @@ const getCardAdvice = (card) => {
   align-items: center;
   gap: 10px;
   padding: 15px 20px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .hint-icon {
@@ -619,7 +621,7 @@ const getCardAdvice = (card) => {
 
 .current-points {
   margin-left: auto;
-  color: #ffd700;
+  color: var(--wuxing-jin);
   font-weight: 500;
 }
 
@@ -631,7 +633,7 @@ const getCardAdvice = (card) => {
 }
 
 .insufficient-points a {
-  color: #B8860B;
+  color: var(--primary-color);
   text-decoration: underline;
 }
 
@@ -658,9 +660,8 @@ const getCardAdvice = (card) => {
   padding: 25px;
   text-align: center;
   cursor: pointer;
-  border: 2px solid var(--border-light);
+  border: 2px solid var(--border-color);
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
 }
 
 .spread-card:hover,
@@ -673,6 +674,7 @@ const getCardAdvice = (card) => {
 .spread-icon {
   font-size: 36px;
   margin-bottom: 15px;
+  color: var(--primary-color);
 }
 
 .spread-card h3 {
@@ -692,7 +694,7 @@ const getCardAdvice = (card) => {
 
 .question-section h3 {
   margin-bottom: 20px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .question-hint {
@@ -701,15 +703,16 @@ const getCardAdvice = (card) => {
   gap: 8px;
   margin-top: 12px;
   padding: 12px 15px;
-  background: rgba(103, 194, 58, 0.1);
-  border: 1px solid rgba(103, 194, 58, 0.2);
+  background: rgba(103, 194, 58, 0.05);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .hint-icon {
   font-size: 16px;
+  color: var(--success-color);
 }
 
 .draw-btn {
@@ -728,7 +731,7 @@ const getCardAdvice = (card) => {
 }
 
 .question-guide h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
@@ -751,8 +754,8 @@ const getCardAdvice = (card) => {
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 25px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -773,18 +776,18 @@ const getCardAdvice = (card) => {
 }
 
 .topic-name {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .question-templates {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
 }
 
 .template-hint {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
   margin-bottom: 15px;
 }
@@ -831,7 +834,7 @@ const getCardAdvice = (card) => {
 .cards-result h3 {
   text-align: center;
   margin-bottom: 30px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .cards-display {
@@ -851,7 +854,7 @@ const getCardAdvice = (card) => {
 .card-inner {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #FAFBFC 0%, #F5F7FA 100%);
+  background: var(--bg-tertiary);
   border-radius: 15px;
   border: 2px solid rgba(184, 134, 11, 0.3);
   display: flex;
@@ -869,21 +872,21 @@ const getCardAdvice = (card) => {
 
 .card-number {
   font-size: 24px;
-  color: #B8860B;
+  color: var(--primary-color);
   font-weight: bold;
   margin-bottom: 20px;
 }
 
 .card-name {
   font-size: 18px;
-  color: #1A1A2E;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .card-position {
   margin-top: 15px;
   font-size: 14px;
-  color: rgba(26, 26, 46, 0.6);
+  color: var(--text-secondary);
 }
 
 .interpretation {
@@ -894,7 +897,7 @@ const getCardAdvice = (card) => {
 }
 
 .interpretation-content {
-  color: rgba(26, 26, 46, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-line;
 }
@@ -903,7 +906,7 @@ const getCardAdvice = (card) => {
 .card-inner-alt {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #FFFFFF 0%, #FAFBFC 100%);
+  background: var(--bg-tertiary);
   border-radius: 15px;
   border: 2px solid rgba(184, 134, 11, 0.25);
   display: flex;
@@ -990,7 +993,7 @@ const getCardAdvice = (card) => {
 }
 
 .card-detail-dialog :deep(.el-dialog__title) {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 20px;
 }
 
@@ -998,25 +1001,18 @@ const getCardAdvice = (card) => {
   text-align: center;
 }
 
-.detail-header {
-  padding: 30px;
-  border-radius: 15px;
+.detail-header-new {
+  display: flex;
+  justify-content: center;
   margin-bottom: 25px;
-  position: relative;
 }
 
-.detail-emoji {
-  font-size: 80px;
+.detail-card {
+  transform: scale(1.1);
 }
 
-.detail-element {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  padding: 5px 12px;
-  border-radius: 15px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, 0.2);
+.detail-card:hover {
+  transform: scale(1.1) translateY(-5px);
 }
 
 .detail-content {
@@ -1024,19 +1020,19 @@ const getCardAdvice = (card) => {
 }
 
 .detail-content h4 {
-  color: #B8860B;
+  color: var(--primary-color);
   font-size: 16px;
   margin-bottom: 10px;
 }
 
 .detail-meaning {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   line-height: 1.8;
   margin-bottom: 20px;
 }
 
 .detail-interpretation {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
 }
@@ -1050,13 +1046,13 @@ const getCardAdvice = (card) => {
 }
 
 .interp-section h5 {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .interp-section p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 

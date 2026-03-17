@@ -361,7 +361,7 @@
 
           <!-- 详细解读卡片网格 -->
           <div class="reading-cards-grid">
-            <div class="reading-card" v-if="result.fullInterpretation.personality">
+            <div class="reading-card card-hover" v-if="result.fullInterpretation.personality">
               <div class="rc-header">
                 <span class="rc-icon">🎭</span>
                 <h4>性格详解</h4>
@@ -369,7 +369,7 @@
               <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
             </div>
             
-            <div class="reading-card" v-if="result.fullInterpretation.career">
+            <div class="reading-card card-hover" v-if="result.fullInterpretation.career">
               <div class="rc-header">
                 <span class="rc-icon">💼</span>
                 <h4>事业财运</h4>
@@ -377,7 +377,7 @@
               <p class="rc-content">{{ result.fullInterpretation.career }}</p>
             </div>
             
-            <div class="reading-card" v-if="result.fullInterpretation.wealth">
+            <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth">
               <div class="rc-header">
                 <span class="rc-icon">💰</span>
                 <h4>财富分析</h4>
@@ -385,7 +385,7 @@
               <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
             </div>
             
-            <div class="reading-card" v-if="result.fullInterpretation.relationship">
+            <div class="reading-card card-hover" v-if="result.fullInterpretation.relationship">
               <div class="rc-header">
                 <el-icon class="rc-icon"><UserFilled /></el-icon>
                 <h4>感情婚姻</h4>
@@ -393,7 +393,7 @@
               <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
             </div>
             
-            <div class="reading-card" v-if="result.fullInterpretation.health">
+            <div class="reading-card card-hover" v-if="result.fullInterpretation.health">
               <div class="rc-header">
                 <span class="rc-icon">🏃</span>
                 <h4>健康提醒</h4>
@@ -401,7 +401,7 @@
               <p class="rc-content">{{ result.fullInterpretation.health }}</p>
             </div>
             
-            <div class="reading-card advice-card" v-if="result.fullInterpretation.advice">
+            <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice">
               <div class="rc-header">
                 <el-icon class="rc-icon"><Lightbulb /></el-icon>
                 <h4>开运建议</h4>
@@ -419,28 +419,28 @@
             <span class="section-subtitle">通俗解读</span>
           </h3>
           <div class="interpretation-cards">
-            <div class="interp-card personality">
+            <div class="interp-card personality card-hover">
               <div class="interp-header">
                 <span class="interp-icon">🎭</span>
                 <h4>我的性格特点</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
             </div>
-            <div class="interp-card career">
+            <div class="interp-card career card-hover">
               <div class="interp-header">
                 <span class="interp-icon">💼</span>
                 <h4>适合的发展方向</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
             </div>
-            <div class="interp-card relationship">
+            <div class="interp-card relationship card-hover">
               <div class="interp-header">
                 <el-icon class="interp-icon"><UserFilled /></el-icon>
                 <h4>人际关系建议</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
             </div>
-            <div class="interp-card advice">
+            <div class="interp-card advice card-hover">
               <div class="interp-header">
                 <el-icon class="interp-icon"><StarFilled /></el-icon>
                 <h4>给你的建议</h4>
@@ -1050,7 +1050,7 @@ const getYearlyFortuneAnalysis = async () => {
       year: selectedYear.value
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       yearlyFortuneResult.value = response.data
       currentPoints.value = response.data.remaining_points
       ElMessage.success('流年运势分析完成！')
@@ -1076,7 +1076,7 @@ const getDayunFortuneAnalysis = async () => {
       dayun_index: selectedDayunIndex.value
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       dayunAnalysisResult.value = response.data
       currentPoints.value = response.data.remaining_points
       ElMessage.success('大运运势分析完成！')
@@ -1101,7 +1101,7 @@ const getDayunChartData = async () => {
       bazi_id: result.value.id
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       dayunChartData.value = response.data
       currentPoints.value = response.data.remaining_points
       ElMessage.success('运势K线图生成完成！')
@@ -1183,7 +1183,7 @@ const calculateBazi = async () => {
     // 延迟一下让用户看到完成状态
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       result.value = response.data
       currentPoints.value = response.data.remaining_points
       isFirstBazi.value = false
@@ -1866,7 +1866,7 @@ const formatAiContent = (content) => {
 }
 
 .form-hint {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 12px;
   margin-top: 8px;
 }
@@ -1887,10 +1887,11 @@ const formatAiContent = (content) => {
 }
 
 .bazi-paipan {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-card);
   border-radius: 15px;
   padding: 30px;
   margin-bottom: 30px;
+  border: 1px solid var(--border-color);
 }
 
 .paipan-row {
@@ -1914,7 +1915,7 @@ const formatAiContent = (content) => {
 
 .paipan-cell.header {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-weight: normal;
 }
 
@@ -1970,7 +1971,7 @@ const formatAiContent = (content) => {
 }
 
 .tip-desc {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -1979,12 +1980,13 @@ const formatAiContent = (content) => {
   margin-bottom: 25px;
   text-align: center;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 12px;
+  border: 1px solid var(--border-light);
 }
 
 .toggle-label {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-right: 10px;
   font-size: 14px;
 }
@@ -2000,7 +2002,7 @@ const formatAiContent = (content) => {
 }
 
 .version-hint {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 13px;
   margin-top: 10px;
 }
@@ -2246,7 +2248,7 @@ const formatAiContent = (content) => {
 
 .section-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-weight: normal;
 }
 
@@ -2257,7 +2259,7 @@ const formatAiContent = (content) => {
 }
 
 .interp-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s ease;
@@ -2265,7 +2267,7 @@ const formatAiContent = (content) => {
 
 .interp-card:hover {
   transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-light);
 }
 
 .interp-header {
@@ -2285,13 +2287,13 @@ const formatAiContent = (content) => {
 }
 
 .interp-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
 
 .interp-card.personality {
-  border-left: 3px solid var(--primary-color, #B8860B);
+  border-left: 3px solid var(--primary-color);
 }
 
 .interp-card.career {
@@ -2299,11 +2301,11 @@ const formatAiContent = (content) => {
 }
 
 .interp-card.relationship {
-  border-left: 3px solid #e6a23c;
+  border-left: 3px solid var(--warning-color);
 }
 
 .interp-card.advice {
-  border-left: 3px solid #67c23a;
+  border-left: 3px solid var(--success-color);
 }
 
 @media (max-width: 768px) {
@@ -2320,8 +2322,8 @@ const formatAiContent = (content) => {
 }
 
 .day-master-card {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.2), rgba(212, 175, 55, 0.2));
-  border: 2px solid rgba(184, 134, 11, 0.5);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
+  border: 2px solid rgba(184, 134, 11, 0.3);
   border-radius: 15px;
   padding: 20px 40px;
   display: flex;
@@ -2331,17 +2333,17 @@ const formatAiContent = (content) => {
 
 .day-master-card .label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .day-master-card .value {
   font-size: 36px;
   font-weight: bold;
-  color: #B8860B;
+  color: var(--primary-color);
 }
 
 .day-master-card .wuxing {
-  background: rgba(184, 134, 11, 0.3);
+  background: rgba(184, 134, 11, 0.2);
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 14px;
@@ -2355,7 +2357,7 @@ const formatAiContent = (content) => {
   padding: 15px 10px;
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2365,13 +2367,13 @@ const formatAiContent = (content) => {
 
 .paipan-cell.header {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-weight: normal;
   padding: 10px;
 }
 
 .paipan-cell.highlight {
-  background: rgba(184, 134, 11, 0.1);
+  background: rgba(184, 134, 11, 0.08);
   border-radius: 10px;
 }
 
@@ -2383,15 +2385,15 @@ const formatAiContent = (content) => {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   font-weight: normal;
 }
 
-.wuxing-badge.金 { background: rgba(255, 215, 0, 0.3); color: #ffd700; }
-.wuxing-badge.木 { background: rgba(34, 139, 34, 0.3); color: #90ee90; }
-.wuxing-badge.水 { background: rgba(30, 144, 255, 0.3); color: #87ceeb; }
-.wuxing-badge.火 { background: rgba(255, 69, 0, 0.3); color: #ff6347; }
-.wuxing-badge.土 { background: rgba(139, 69, 19, 0.3); color: #deb887; }
+.wuxing-badge.金 { background: rgba(255, 215, 0, 0.15); color: var(--wuxing-jin); }
+.wuxing-badge.木 { background: rgba(34, 139, 34, 0.15); color: var(--wuxing-mu); }
+.wuxing-badge.水 { background: rgba(30, 144, 255, 0.15); color: var(--wuxing-shui); }
+.wuxing-badge.火 { background: rgba(255, 69, 0, 0.15); color: var(--wuxing-huo); }
+.wuxing-badge.土 { background: rgba(139, 69, 19, 0.15); color: var(--wuxing-tu); }
 
 .wuxing-badge.zhi {
   opacity: 0.8;
@@ -2399,7 +2401,7 @@ const formatAiContent = (content) => {
 
 .rizhu-tag {
   font-size: 10px;
-  background: #B8860B;
+  background: var(--primary-color);
   color: #fff;
   padding: 2px 6px;
   border-radius: 4px;
@@ -2410,14 +2412,14 @@ const formatAiContent = (content) => {
 
 /* 十神行 */
 .shishen-row {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 8px;
   margin: 5px 0;
 }
 
 .shishen-cell {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   padding: 8px;
 }
 
@@ -2439,11 +2441,11 @@ const formatAiContent = (content) => {
 }
 
 .canggan-item {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 .canggan-item small {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 10px;
   margin-left: 2px;
 }
@@ -2457,22 +2459,23 @@ const formatAiContent = (content) => {
 
 .nayin-cell {
   font-size: 12px;
-  color: rgba(255, 215, 0, 0.9);
+  color: var(--primary-light);
   padding: 8px;
 }
 
 /* 五行统计 */
 .wuxing-stats {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 15px;
   padding: 25px;
   margin: 30px 0;
+  border: 1px solid var(--border-light);
 }
 
 .wuxing-stats h3 {
   text-align: center;
   margin-bottom: 20px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .wuxing-bars {
@@ -2496,7 +2499,7 @@ const formatAiContent = (content) => {
 .wuxing-bar {
   flex: 1;
   height: 20px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -2507,16 +2510,16 @@ const formatAiContent = (content) => {
   transition: width 0.5s ease;
 }
 
-.wuxing-fill.金 { background: linear-gradient(90deg, #ffd700, #ffec8b); }
-.wuxing-fill.木 { background: linear-gradient(90deg, #228b22, #90ee90); }
-.wuxing-fill.水 { background: linear-gradient(90deg, #1e90ff, #87ceeb); }
-.wuxing-fill.火 { background: linear-gradient(90deg, #ff4500, #ff6347); }
-.wuxing-fill.土 { background: linear-gradient(90deg, #8b4513, #deb887); }
+.wuxing-fill.金 { background: linear-gradient(90deg, var(--wuxing-jin), #ffec8b); }
+.wuxing-fill.木 { background: linear-gradient(90deg, var(--wuxing-mu), #90ee90); }
+.wuxing-fill.水 { background: linear-gradient(90deg, var(--wuxing-shui), #87ceeb); }
+.wuxing-fill.火 { background: linear-gradient(90deg, var(--wuxing-huo), #ff6347); }
+.wuxing-fill.土 { background: linear-gradient(90deg, var(--wuxing-tu), #deb887); }
 
 .wuxing-count {
   width: 30px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 /* 操作按钮 */
@@ -2783,7 +2786,7 @@ const formatAiContent = (content) => {
 }
 
 .selector-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   white-space: nowrap;
 }
@@ -2793,7 +2796,7 @@ const formatAiContent = (content) => {
 }
 
 .selected-year {
-  color: #ff6b6b;
+  color: var(--primary-color);
   font-size: 18px;
   font-weight: bold;
   min-width: 70px;
@@ -2810,7 +2813,7 @@ const formatAiContent = (content) => {
   align-items: center;
   margin-bottom: 25px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--bg-tertiary);
   border-radius: 16px;
 }
 
@@ -2823,17 +2826,17 @@ const formatAiContent = (content) => {
 .year-number {
   font-size: 36px;
   font-weight: bold;
-  color: #ff6b6b;
+  color: var(--primary-color);
 }
 
 .year-ganzhi {
   font-size: 20px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .year-nayin {
   font-size: 14px;
-  color: rgba(255, 215, 0, 0.9);
+  color: var(--primary-light);
 }
 
 .score-display {
