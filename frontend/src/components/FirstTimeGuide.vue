@@ -268,7 +268,7 @@ export default {
 
 .guide-highlight {
   position: absolute;
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
   z-index: 1;
   transition: all 0.3s ease;
@@ -277,8 +277,8 @@ export default {
 .guide-spotlight {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  border: 2px solid #8B5CF6;
+  border-radius: 16px;
+  border: 2px solid var(--info-color);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -343,7 +343,7 @@ export default {
 
 .guide-image {
   margin: 16px 0;
-  border-radius: 8px;
+  border-radius: 16px;
   overflow: hidden;
 }
 
@@ -361,7 +361,7 @@ export default {
 .guide-btn {
   flex: 1;
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: 16px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -417,7 +417,7 @@ export default {
   text-align: center;
   background: white;
   padding: 48px 40px;
-  border-radius: 24px;
+  border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   z-index: 2;
   max-width: 360px;
