@@ -1001,13 +1001,13 @@ class Admin extends BaseController
             return $this->error('无权限查看黄历', 403);
         }
 
-        $year = $request->get('year', date('Y'));
-        $month = $request->get('month', date('m'));
+        $year = filter_var($request->get('year', date('Y')), FILTER_VALIDATE_INT) ?: (int)date('Y');
+        $month = filter_var($request->get('month', date('m')), FILTER_VALIDATE_INT) ?: (int)date('m');
 
         try {
             $list = Db::name('almanac')
-                ->whereYear('solar_date', $year)
-                ->whereMonth('solar_date', $month)
+                ->where('solar_date', '>=', "$year-$month-01")
+                ->where('solar_date', '<=', "$year-$month-" . cal_days_in_month(CAL_GREGORIAN, $month, $year))
                 ->order('solar_date', 'asc')
                 ->select()
                 ->toArray();

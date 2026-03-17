@@ -21,7 +21,7 @@
       <div class="card-back">
         <div class="back-pattern">
           <div class="inner-border"></div>
-          <span class="center-icon">☯</span>
+          <el-icon class="center-icon"><YinYang /></el-icon>
           <div class="corner-decoration top-left"></div>
           <div class="corner-decoration top-right"></div>
           <div class="corner-decoration bottom-left"></div>
@@ -34,6 +34,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { YinYang } from '@element-plus/icons-vue'
 
 const props = defineProps({
   name: String,

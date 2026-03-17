@@ -320,7 +320,7 @@ onMounted(() => {
 
 /* 导航栏 - 深色风格 */
 .navbar {
-  background: rgba(10, 10, 26, 0.95);
+  background: var(--bg-primary);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 0;

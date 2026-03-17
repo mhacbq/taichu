@@ -78,6 +78,8 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+  --radius-btn: 25px;
+  --radius-card: 16px;
   --radius-full: 9999px;
   
   /* ========== 过渡动画 ========== */
@@ -138,7 +140,7 @@ body {
   color: var(--text-inverse);
   border: none;
   padding: 10px 24px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-btn);
   font-weight: 500;
   box-shadow: var(--shadow-gold);
   transition: all var(--transition-base);
@@ -155,7 +157,7 @@ body {
   border: 1px solid var(--border-gold);
   color: var(--text-gold);
   padding: 6px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-btn);
   font-weight: 600;
 }
 
@@ -166,7 +168,7 @@ body {
 /* 卡片通用样式 */
 .card {
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-light);
   transition: all var(--transition-base);
@@ -183,7 +185,7 @@ body {
   color: var(--text-inverse);
   border: none;
   padding: 12px 28px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-btn);
   font-weight: 600;
   box-shadow: var(--shadow-gold);
   transition: all var(--transition-base);
@@ -200,7 +202,7 @@ body {
   color: var(--text-primary);
   border: 1px solid var(--border-medium);
   padding: 12px 28px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-btn);
   font-weight: 500;
   transition: all var(--transition-base);
 }

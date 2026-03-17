@@ -54,7 +54,7 @@
           >
             <span class="topic-icon">
               <el-icon v-if="topic.icon === 'briefcase'"><Briefcase /></el-icon>
-              <el-icon v-else-if="topic.icon === 'heart'"><StarFilled /></el-icon>
+              <el-icon v-else-if="topic.icon === 'heart'"><Sugar /></el-icon>
               <el-icon v-else-if="topic.icon === 'star'"><StarFilled /></el-icon>
               <el-icon v-else-if="topic.icon === 'question'"><QuestionFilled /></el-icon>
               <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
@@ -703,7 +703,7 @@ const getCardAdvice = (card) => {
   gap: 8px;
   margin-top: 12px;
   padding: 12px 15px;
-  background: rgba(103, 194, 58, 0.05);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-secondary);
@@ -762,13 +762,17 @@ const getCardAdvice = (card) => {
 }
 
 .topic-tab:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(184, 134, 11, 0.3);
+  background: var(--bg-secondary);
+  border-color: var(--primary-light);
 }
 
 .topic-tab.active {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.3), rgba(218, 165, 32, 0.3));
-  border-color: #b8860b;
+  background: var(--primary-gradient);
+  border-color: var(--primary-color);
+}
+
+.topic-tab.active .topic-name {
+  color: #fff;
 }
 
 .topic-icon {
@@ -803,25 +807,25 @@ const getCardAdvice = (card) => {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 15px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .template-item:hover {
-  background: rgba(184, 134, 11, 0.1);
-  border: 1px solid rgba(184, 134, 11, 0.3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--primary-light);
   transform: translateX(5px);
 }
 
 .template-bullet {
-  color: #B8860B;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
 .template-text {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -890,10 +894,10 @@ const getCardAdvice = (card) => {
 }
 
 .interpretation {
-  background: rgba(184, 134, 11, 0.08);
-  border-radius: 15px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
   padding: 30px;
-  border: 1px solid rgba(184, 134, 11, 0.15);
+  border: 1px solid var(--border-color);
 }
 
 .interpretation-content {
@@ -978,7 +982,7 @@ const getCardAdvice = (card) => {
 
 .cards-hint {
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 20px;
 }

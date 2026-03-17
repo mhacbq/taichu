@@ -319,7 +319,7 @@
         <!-- 专业解读卡片 -->
         <div class="professional-reading" v-if="result.fullInterpretation">
           <h3>
-            <span class="section-icon">📜</span>
+            <el-icon class="section-icon"><Document /></el-icon>
             命盘精解
             <span class="section-badge">专业版</span>
           </h3>
@@ -363,7 +363,7 @@
           <div class="reading-cards-grid">
             <div class="reading-card card-hover" v-if="result.fullInterpretation.personality">
               <div class="rc-header">
-                <span class="rc-icon">🎭</span>
+                <el-icon class="rc-icon"><UserFilled /></el-icon>
                 <h4>性格详解</h4>
               </div>
               <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
@@ -371,7 +371,7 @@
             
             <div class="reading-card card-hover" v-if="result.fullInterpretation.career">
               <div class="rc-header">
-                <span class="rc-icon">💼</span>
+                <el-icon class="rc-icon"><Briefcase /></el-icon>
                 <h4>事业财运</h4>
               </div>
               <p class="rc-content">{{ result.fullInterpretation.career }}</p>
@@ -379,7 +379,7 @@
             
             <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth">
               <div class="rc-header">
-                <span class="rc-icon">💰</span>
+                <el-icon class="rc-icon"><Money /></el-icon>
                 <h4>财富分析</h4>
               </div>
               <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
@@ -395,7 +395,7 @@
             
             <div class="reading-card card-hover" v-if="result.fullInterpretation.health">
               <div class="rc-header">
-                <span class="rc-icon">🏃</span>
+                <el-icon class="rc-icon"><Aim /></el-icon>
                 <h4>健康提醒</h4>
               </div>
               <p class="rc-content">{{ result.fullInterpretation.health }}</p>
@@ -421,14 +421,14 @@
           <div class="interpretation-cards">
             <div class="interp-card personality card-hover">
               <div class="interp-header">
-                <span class="interp-icon">🎭</span>
+                <el-icon class="interp-icon"><UserFilled /></el-icon>
                 <h4>我的性格特点</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
             </div>
             <div class="interp-card career card-hover">
               <div class="interp-header">
-                <span class="interp-icon">💼</span>
+                <el-icon class="interp-icon"><Briefcase /></el-icon>
                 <h4>适合的发展方向</h4>
               </div>
               <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
@@ -601,7 +601,7 @@
                   </div>
                 </div>
                 <div class="lucky-section">
-                  <h5>🎨 幸运颜色</h5>
+                  <h5><el-icon><Brush /></el-icon> 幸运颜色</h5>
                   <div class="lucky-tags">
                     <span v-for="color in yearlyFortuneResult.lucky_colors" :key="color" class="lucky-tag color">
                       {{ color }}
@@ -609,7 +609,7 @@
                   </div>
                 </div>
                 <div class="lucky-section">
-                  <h5>🔢 幸运数字</h5>
+                  <h5><el-icon><Menu /></el-icon> 幸运数字</h5>
                   <div class="lucky-tags">
                     <span v-for="num in yearlyFortuneResult.lucky_numbers" :key="num" class="lucky-tag number">
                       {{ num }}
@@ -750,7 +750,7 @@
               :disabled="currentPoints < fortunePointsCost.dayun_analysis"
               @click="showPointsConfirm('dayun')"
             >
-              <span class="btn-icon">📊</span>
+              <el-icon class="btn-icon"><TrendCharts /></el-icon>
               {{ currentPoints < fortunePointsCost.dayun_analysis ? '积分不足' : '开始大运评分' }}
             </el-button>
           </div>
@@ -905,7 +905,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Download, RefreshRight, Cpu, Share } from '@element-plus/icons-vue'
+import { CircleClose, HeartFilled, Diamond, Magic, QuestionFilled, Present, Lightning, StarFilled, Lightbulb, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Download, RefreshRight, Cpu, Share, Document, Brush, User } from '@element-plus/icons-vue'
 import { 
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -2157,17 +2157,17 @@ const formatAiContent = (content) => {
 }
 
 .reading-card {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-tertiary);
   border-radius: 14px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .reading-card:hover {
   transform: translateY(-5px);
   background: var(--bg-secondary);
-  border-color: rgba(184, 134, 11, 0.3);
+  border-color: var(--primary-color);
 }
 
 .reading-card.advice-card {
@@ -2193,7 +2193,7 @@ const formatAiContent = (content) => {
 }
 
 .rc-content {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -3145,9 +3145,14 @@ const formatAiContent = (content) => {
 }
 
 .key-suggestions li::before {
-  content: '💡';
+  content: '';
   position: absolute;
   left: 0;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color);
+  border-radius: 50%;
 }
 
 /* 运势K线图 */

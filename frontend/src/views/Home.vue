@@ -82,37 +82,49 @@
             <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
             <h3>八字分析</h3>
             <p>基于传统文化的性格分析，了解您的个性特点、发展方向、人际关系</p>
-            <router-link to="/bazi" class="feature-link">立即体验 →</router-link>
+            <router-link to="/bazi" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
             <h3>塔罗测试</h3>
             <p>趣味塔罗牌阵探索，为您的困惑提供思考角度，发现内心可能</p>
-            <router-link to="/tarot" class="feature-link">立即体验 →</router-link>
+            <router-link to="/tarot" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Switch /></el-icon></div>
             <h3>六爻占卜</h3>
             <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
-            <router-link to="/liuyao" class="feature-link">立即体验 →</router-link>
+            <router-link to="/liuyao" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Link /></el-icon></div>
             <h3>八字合婚</h3>
             <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
-            <router-link to="/hehun" class="feature-link">立即体验 →</router-link>
+            <router-link to="/hehun" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Star /></el-icon></div>
             <h3>每日指南</h3>
             <p>基于出生日期的每日幸运指数，生活参考，娱乐消遣</p>
-            <router-link to="/daily" class="feature-link">立即体验 →</router-link>
+            <router-link to="/daily" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Aim /></el-icon></div>
             <h3>更多功能</h3>
             <p>取名建议、吉日查询等更多命理功能，满足您的不同需求</p>
-            <router-link to="/profile" class="feature-link">探索更多 →</router-link>
+            <router-link to="/profile" class="feature-link">
+              探索更多 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
         </div>
       </div>
@@ -129,7 +141,9 @@
               <div class="testimonial-info">
                 <h4>{{ item.name }}</h4>
                 <div class="testimonial-rating">
-                  <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= item.rating }">★</span>
+                  <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= item.rating }">
+                    <StarFilled />
+                  </el-icon>
                 </div>
               </div>
             </div>

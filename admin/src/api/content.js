@@ -77,3 +77,35 @@ export function deleteDailyFortune(id) {
     method: 'delete'
   })
 }
+
+// 黄历管理
+export function getAlmanacList(params) {
+  return request({
+    url: '/content/almanac',
+    method: 'get',
+    params
+  })
+}
+
+export function createAlmanac(data) {
+  return request({
+    url: '/content/almanac',
+    method: 'post',
+    data
+  })
+}
+
+export function updateAlmanac(id, data) {
+  return request({
+    url: `/content/almanac/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+export function deleteAlmanac(id) {
+  return request({
+    url: `/content/almanac/${id}`,
+    method: 'delete'
+  })
+}

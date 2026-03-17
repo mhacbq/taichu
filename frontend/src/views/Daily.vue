@@ -173,7 +173,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection, WarningFilled } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Lightbulb } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
