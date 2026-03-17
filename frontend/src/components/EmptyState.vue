@@ -28,8 +28,10 @@
         <svg v-else-if="type === 'no-data'" viewBox="0 0 200 200" fill="none" class="empty-svg">
           <rect x="55" y="35" width="90" height="110" rx="6" stroke="var(--primary-light)" stroke-width="2" opacity="0.3"/>
           <path d="M75 65h50M75 85h50M75 105h30" stroke="var(--primary-color)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
-          <circle cx="140" cy="150" r="35" fill="var(--bg-tertiary)" stroke="var(--primary-light)" stroke-width="1" opacity="0.4"/>
-          <path d="M130 150h20M140 140v20" stroke="var(--primary-light)" stroke-width="5" stroke-linecap="round"/>
+          <path d="M145 145c-5-5-13-5-18 0l-2 2-2-2c-5-5-13-5-18 0-5 5-5 13 0 18l20 20 20-20c5-5 5-13 0-18z" fill="var(--primary-color)" opacity="0.4">
+            <animate attributeName="opacity" values="0.2;0.5;0.2" dur="3s" repeatCount="indefinite" />
+          </path>
+          <circle cx="140" cy="150" r="35" fill="var(--bg-tertiary)" stroke="var(--primary-light)" stroke-width="1" opacity="0.2"/>
         </svg>
         <svg v-else viewBox="0 0 200 200" fill="none" class="empty-svg">
           <circle cx="100" cy="100" r="75" stroke="var(--primary-light)" stroke-width="1" stroke-dasharray="8 4" opacity="0.2"/>
