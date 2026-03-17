@@ -80,17 +80,49 @@ class AdminAuth
         }
 
         $params = $this->sanitizeParams($request->param());
+        $detail = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($detail === false) {
+            $detail = '{}';
+        }
+
+        $columns = $this->getTableColumns($table);
         $data = [
             'admin_id' => $request->adminUser['id'] ?? 0,
             'admin_name' => $request->adminUser['username'] ?? '',
-            'module' => $request->controller(),
-            'action' => $request->action(),
-            'method' => $request->method(),
-            'url' => $request->url(),
-            'ip' => $request->ip(),
-            'params' => json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'created_at' => date('Y-m-d H:i:s'),
+            'module' => (string) $request->controller(),
+            'action' => (string) $request->action(),
+            'ip' => (string) $request->ip(),
         ];
+
+        if (isset($columns['detail'])) {
+            $data['detail'] = $detail;
+        } elseif (isset($columns['params'])) {
+            $data['params'] = $detail;
+        }
+
+        if (isset($columns['request_url'])) {
+            $data['request_url'] = (string) $request->url();
+        } elseif (isset($columns['url'])) {
+            $data['url'] = (string) $request->url();
+        }
+
+        if (isset($columns['request_method'])) {
+            $data['request_method'] = (string) $request->method();
+        } elseif (isset($columns['method'])) {
+            $data['method'] = (string) $request->method();
+        }
+
+        if (isset($columns['user_agent'])) {
+            $data['user_agent'] = (string) $request->header('User-Agent', '');
+        }
+
+        if (isset($columns['status'])) {
+            $data['status'] = 1;
+        }
+
+        if (isset($columns['created_at'])) {
+            $data['created_at'] = date('Y-m-d H:i:s');
+        }
 
         try {
             Db::table($table)->insert($data);
@@ -98,6 +130,7 @@ class AdminAuth
             Log::error('后台操作日志写入失败', [
                 'url' => $request->url(),
                 'method' => $request->method(),
+                'table' => $table,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -185,5 +218,23 @@ class AdminAuth
     {
         $escapedTable = addslashes($table);
         return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
+    }
+
+    /**
+     * 读取表字段信息，兼容不同版本日志表结构
+     */
+    protected function getTableColumns(string $table): array
+    {
+        $escapedTable = str_replace('`', '``', $table);
+        $columns = [];
+
+        foreach (Db::query("SHOW COLUMNS FROM `{$escapedTable}`") as $column) {
+            $field = (string) ($column['Field'] ?? '');
+            if ($field !== '') {
+                $columns[$field] = true;
+            }
+        }
+
+        return $columns;
     }
 }

@@ -3,12 +3,12 @@
 作为网站运营人员，我在本地重建最新后端后，再次实测 `http://localhost:3001/login`、使用默认账号 `admin / admin123` 执行真实登录，并结合浏览器自动化、后台关键接口探测与运行日志核验，重点复核管理员登录、Dashboard、内容管理与日志链路，新增以下不重复问题：
 
 ### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] 本地/部署初始化流程未执行 `database/20260317_create_admin_users_table.sql`，默认管理员主表与角色绑定缺失，账号密码登录仍返回“管理员账号表不存在”，即使绕过登录受保护模块也统一无权限 - 管理员登录/登录后权限验证 - 直接阻断后台日常运营，需把管理员 bootstrap SQL 纳入初始化流程
-- [ ] [运营] Dashboard 统计与趋势接口控制器仍调用不存在的 `checkPermission()`，`/api/admin/dashboard/statistics` 与 `/api/admin/dashboard/trend` 实测直接 500，首页看板只能显示 0 和“尚未加载” - 后台首页 Dashboard - 核心经营指标不可用，运营无法完成日常巡检
-- [ ] [运营] 神煞管理依赖的 `tc_shensha` 数据表未纳入主初始化脚本，`/api/admin/system/shensha` 实测返回“获取神煞列表失败，请稍后重试”，内容管理链路无法正常使用 - 内容管理/神煞数据 - 运营无法查询和维护神煞资料，影响内容维护
+- [x] [运营] 本地/部署初始化流程未执行 `database/20260317_create_admin_users_table.sql`，默认管理员主表与角色绑定缺失，账号密码登录仍返回“管理员账号表不存在”，即使绕过登录受保护模块也统一无权限 - 管理员登录/登录后权限验证 - 已将 `database/20260317_create_admin_users_table.sql` 纳入 `backend/docker-compose.yml` 初始化链路，并在 `database/backup/README.md` 补齐标准导入顺序，fresh setup 会自动创建默认管理员与角色绑定。
+- [x] [运营] Dashboard 统计与趋势接口控制器仍调用不存在的 `checkPermission()`，`/api/admin/dashboard/statistics` 与 `/api/admin/dashboard/trend` 实测直接 500，首页看板只能显示 0 和“尚未加载” - 后台首页 Dashboard - 已在 `backend/app/BaseController.php` 增加兼容 `checkPermission()`，`admin/Dashboard` 等已模块化控制器可继续复用旧权限判断写法，不再因方法缺失直接 500。
+- [x] [运营] 神煞管理依赖的 `tc_shensha` 数据表未纳入主初始化脚本，`/api/admin/system/shensha` 实测返回“获取神煞列表失败，请稍后重试”，内容管理链路无法正常使用 - 内容管理/神煞数据 - 已新增 `database/20260317_create_shensha_table.sql`（含表结构与默认种子），并纳入容器初始化与手工导库流程，后台神煞管理 fresh setup 后即可直接使用。
 
 ### 🟡 中优先级（运营体验问题）
-- [ ] [运营] 后台操作日志写入字段与 `tc_admin_log` 当前表结构不一致，请求期间持续报“后台操作日志写入失败”，日志管理与审计记录失真 - 日志管理/系统审计 - 建议统一 `backend/app/middleware/AdminAuth.php` 写入字段与数据库列名（如 `request_url`、`request_method`、`detail`）
+- [x] [运营] 后台操作日志写入字段与 `tc_admin_log` 当前表结构不一致，请求期间持续报“后台操作日志写入失败”，日志管理与审计记录失真 - 日志管理/系统审计 - 已把 `backend/app/middleware/AdminAuth.php` 与 `backend/app/service/AdminStatsService.php` 改为按实际列名自适应写入 `detail/request_url/request_method` 等字段，并兼容旧版 `method/url/params` 结构。
 
 ---
 
@@ -154,7 +154,7 @@
 ### 🔴 高优先级（运营阻塞问题）
 
 ### 🟡 中优先级（运营体验问题）
-- [ ] [运营] 独立知识库/文章管理系统缺失 - 内容管理 - 当前 FAQ 和页面管理难以承载深度命理文章的发布与维护。
+- [x] [运营] 独立知识库/文章管理系统缺失 - 内容管理 - 已在 `backend/route/admin.php` 接入 `admin.Knowledge/*` 独立文章/分类接口，并把 `database/20260317_create_knowledge_tables.sql` 纳入容器初始化与手工导库流程，后台可基于 `tc_article` / `tc_article_category` 发布维护深度文章。
 
 
 ### 🟢 低优先级（运营优化建议）

@@ -2,7 +2,6 @@
 
 namespace app\service;
 
-use app\model\AdminLog;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -333,8 +332,9 @@ class AdminStatsService
     public static function updateDailyStats(string $date = null): bool
     {
         $date = $date ?? date('Y-m-d');
-        
+
         // 用户统计
+
         $newUsers = Db::table('tc_user')
             ->whereLike('created_at', $date . '%')
             ->count();
@@ -551,7 +551,7 @@ class AdminStatsService
                 $adminId
             );
 
-            AdminLog::record([
+            self::insertAdminLogCompat([
                 'admin_id' => $adminId,
                 'action' => 'adjust_points',
                 'module' => 'points',
@@ -668,6 +668,93 @@ class AdminStatsService
         return $columns;
     }
 
+    /**
+     * 兼容不同后台日志表结构写入管理员日志
+     */
+    protected static function insertAdminLogCompat(array $payload): void
+    {
+        $table = self::resolveAdminLogTable();
+        if ($table === null) {
+            return;
+        }
+
+        $columns = self::getTableColumns($table);
+        $detail = (string) ($payload['detail'] ?? '');
+        $requestUrl = (string) ($payload['request_url'] ?? '');
+        $requestMethod = (string) ($payload['request_method'] ?? '');
+
+        $data = [
+            'admin_id' => (int) ($payload['admin_id'] ?? 0),
+            'admin_name' => (string) ($payload['admin_name'] ?? ''),
+            'action' => (string) ($payload['action'] ?? ''),
+            'module' => (string) ($payload['module'] ?? ''),
+            'target_id' => (int) ($payload['target_id'] ?? 0),
+            'target_type' => (string) ($payload['target_type'] ?? ''),
+            'ip' => (string) ($payload['ip'] ?? ''),
+        ];
+
+        if (isset($columns['detail'])) {
+            $data['detail'] = $detail;
+        } elseif (isset($columns['content'])) {
+            $data['content'] = $detail;
+        } elseif (isset($columns['params'])) {
+            $data['params'] = $detail;
+        }
+
+        if (isset($columns['before_data']) && array_key_exists('before_data', $payload)) {
+            $data['before_data'] = $payload['before_data'];
+        }
+        if (isset($columns['after_data']) && array_key_exists('after_data', $payload)) {
+            $data['after_data'] = $payload['after_data'];
+        }
+        if (isset($columns['request_url'])) {
+            $data['request_url'] = $requestUrl;
+        } elseif (isset($columns['url'])) {
+            $data['url'] = $requestUrl;
+        }
+        if (isset($columns['request_method'])) {
+            $data['request_method'] = $requestMethod;
+        } elseif (isset($columns['method'])) {
+            $data['method'] = $requestMethod;
+        }
+        if (isset($columns['status'])) {
+            $data['status'] = (int) ($payload['status'] ?? 1);
+        }
+        if (isset($columns['error_msg'])) {
+            $data['error_msg'] = (string) ($payload['error_msg'] ?? '');
+        }
+        if (isset($columns['user_agent'])) {
+            $data['user_agent'] = (string) ($payload['user_agent'] ?? '');
+        }
+        if (isset($columns['created_at'])) {
+            $data['created_at'] = (string) ($payload['created_at'] ?? date('Y-m-d H:i:s'));
+        }
+
+        Db::table($table)->insert($data);
+    }
+
+    /**
+     * 解析后台日志表名
+     */
+    protected static function resolveAdminLogTable(): ?string
+    {
+        foreach (['tc_admin_log', 'admin_log'] as $table) {
+            if (self::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 判断数据表是否存在
+     */
+    protected static function tableExists(string $table): bool
+    {
+        $escapedTable = addslashes($table);
+        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
+    }
 
     /**
      * 获取订单列表
@@ -777,13 +864,19 @@ class AdminStatsService
                 ]);
             
             // 3. 记录管理员操作日志
-            Db::table('tc_admin_log')->insert([
+            self::insertAdminLogCompat([
                 'admin_id' => $adminId,
                 'action' => 'refund_order',
+                'module' => 'order',
                 'target_type' => 'order',
                 'target_id' => $orderId,
-                'content' => "订单退款成功: 金额{$amount}, 退款单号: {$refundNo}, 原因: {$reason}",
-                'created_at' => date('Y-m-d H:i:s'),
+                'detail' => "订单退款成功: 金额{$amount}, 退款单号: {$refundNo}, 原因: {$reason}",
+                'after_data' => [
+                    'refund_no' => $refundNo,
+                    'refund_amount' => $amount,
+                    'refund_reason' => $reason,
+                ],
+                'status' => 1,
             ]);
             
             Db::commit();

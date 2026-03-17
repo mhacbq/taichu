@@ -9,8 +9,11 @@
 | 文件名 | 说明 | 是否必需 |
 |-------|------|---------|
 | `01_create_database.sql` | 创建数据库 | 是 |
-| `02_create_tables.sql` | 创建所有数据表 | 是 |
+| `02_create_tables.sql` | 创建核心数据表 | 是 |
 | `03_insert_basic_data.sql` | 插入基础配置数据 | 是 |
+| `../20260317_create_admin_users_table.sql` | 创建管理员主表、默认角色与默认管理员 | 是 |
+| `../20260317_create_shensha_table.sql` | 创建神煞表并写入默认神煞种子 | 是 |
+| `../20260317_create_knowledge_tables.sql` | 创建后台知识库文章/分类表并写入默认分类 | 是 |
 | `04_insert_test_data.sql` | 插入测试数据（可选） | 否 |
 
 ## 导入步骤
@@ -24,10 +27,13 @@
 
 2. **执行 SQL 文件（按顺序）**
    ```bash
-   # 创建数据库和表结构
+   # 创建数据库和核心表结构
    mysql -u root -p < 01_create_database.sql
    mysql -u root -p taichu < 02_create_tables.sql
    mysql -u root -p taichu < 03_insert_basic_data.sql
+   mysql -u root -p taichu < ../20260317_create_admin_users_table.sql
+   mysql -u root -p taichu < ../20260317_create_shensha_table.sql
+   mysql -u root -p taichu < ../20260317_create_knowledge_tables.sql
    
    # 可选：导入测试数据
    mysql -u root -p taichu < 04_insert_test_data.sql
@@ -60,6 +66,11 @@ mysql -u%MYSQL_USER% -p%MYSQL_PASSWORD% %DATABASE_NAME% < 02_create_tables.sql
 echo Inserting basic data...
 mysql -u%MYSQL_USER% -p%MYSQL_PASSWORD% %DATABASE_NAME% < 03_insert_basic_data.sql
 
+echo Bootstrapping admin/content tables...
+mysql -u%MYSQL_USER% -p%MYSQL_PASSWORD% %DATABASE_NAME% < ..\20260317_create_admin_users_table.sql
+mysql -u%MYSQL_USER% -p%MYSQL_PASSWORD% %DATABASE_NAME% < ..\20260317_create_shensha_table.sql
+mysql -u%MYSQL_USER% -p%MYSQL_PASSWORD% %DATABASE_NAME% < ..\20260317_create_knowledge_tables.sql
+
 echo Inserting test data...
 mysql -u%MYSQL_USER% -p%MYSQL_PASSWORD% %DATABASE_NAME% < 04_insert_test_data.sql
 
@@ -82,6 +93,11 @@ mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < 02_create_tables.sql
 
 echo "Inserting basic data..."
 mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < 03_insert_basic_data.sql
+
+echo "Bootstrapping admin/content tables..."
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_admin_users_table.sql
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_shensha_table.sql
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < ../20260317_create_knowledge_tables.sql
 
 echo "Inserting test data..."
 mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $DATABASE_NAME < 04_insert_test_data.sql
@@ -181,7 +197,7 @@ DROP DATABASE IF EXISTS taichu;
 
 ### 3. 外键约束错误
 
-确保按顺序执行 SQL 文件，先执行 `02_create_tables.sql` 创建所有表。
+确保按顺序执行 SQL 文件，先执行 `02_create_tables.sql` 创建核心表，再执行 `20260317_create_admin_users_table.sql`、`20260317_create_shensha_table.sql`、`20260317_create_knowledge_tables.sql` 补齐后台管理与内容管理所需表。
 
 ## 技术支持
 

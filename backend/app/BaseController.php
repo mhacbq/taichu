@@ -156,6 +156,14 @@ abstract class BaseController
     }
 
     /**
+     * 兼容旧控制器的权限检查调用
+     */
+    protected function checkPermission(string $permissionCode): bool
+    {
+        return $this->hasAdminPermission($permissionCode);
+    }
+
+    /**
      * 判断当前后台管理员是否拥有任一权限
      */
     protected function hasAnyAdminPermission(array $permissionCodes): bool

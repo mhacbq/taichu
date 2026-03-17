@@ -14,6 +14,9 @@ services:
     volumes:
       - taichu_mysql_data:/var/lib/mysql
       - ./database.sql:/docker-entrypoint-initdb.d/01_database.sql:ro
+      - ../database/20260317_create_admin_users_table.sql:/docker-entrypoint-initdb.d/02_create_admin_users_table.sql:ro
+      - ../database/20260317_create_shensha_table.sql:/docker-entrypoint-initdb.d/03_create_shensha_table.sql:ro
+      - ../database/20260317_create_knowledge_tables.sql:/docker-entrypoint-initdb.d/04_create_knowledge_tables.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
       interval: 5s
