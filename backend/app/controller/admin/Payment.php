@@ -26,10 +26,35 @@ class Payment extends BaseController
         RechargeOrder::STATUS_CANCELLED,
         RechargeOrder::STATUS_REFUNDED,
     ];
+
+    /**
+     * 读取支付查看权限
+     */
+    protected function requirePaymentViewPermission(string $message)
+    {
+        if (!$this->hasAnyAdminPermission(['stats_view', 'config_manage'])) {
+            return $this->error($message, 403);
+        }
+
+        return null;
+    }
+
+    /**
+     * 读取支付管理权限
+     */
+    protected function requirePaymentManagePermission(string $message)
+    {
+        if (!$this->hasAdminPermission('config_manage')) {
+            return $this->error($message, 403);
+        }
+
+        return null;
+    }
     
     /**
      * 获取微信支付配置
      */
+
     public function getConfig()
     {
         if ($response = $this->requirePaymentManagePermission('无权限查看支付配置')) {
@@ -179,6 +204,7 @@ class Payment extends BaseController
                 'id' => $order->id,
                 'order_no' => $order->order_no,
                 'pay_order_no' => $order->pay_order_no,
+                'refund_no' => $order->refund_no,
                 'user_id' => $order->user_id,
                 'user_nickname' => $order->user ? $order->user->nickname : '未知用户',
                 'amount' => $order->amount,
@@ -186,6 +212,8 @@ class Payment extends BaseController
                 'status' => $order->status,
                 'payment_type' => $order->payment_type,
                 'pay_time' => $order->pay_time,
+                'refund_amount' => $order->refund_amount,
+                'refund_time' => $order->refund_time,
                 'created_at' => $order->created_at,
                 'updated_at' => $order->updated_at,
             ];
@@ -254,12 +282,13 @@ class Payment extends BaseController
             }
 
             $orders = $query->order('created_at', 'desc')->select();
-            $csv = "\xEF\xBB\xBF" . implode(',', ['订单号', '支付单号', '用户ID', '用户昵称', '金额', '积分', '状态', '支付方式', '支付时间', '创建时间']) . "\n";
+            $csv = "\xEF\xBB\xBF" . implode(',', ['订单号', '支付单号', '退款单号', '用户ID', '用户昵称', '金额', '积分', '状态', '支付方式', '支付时间', '退款金额', '退款时间', '创建时间']) . "\n";
 
             foreach ($orders as $order) {
                 $row = [
                     $this->escapeCsv((string) $order->order_no),
                     $this->escapeCsv((string) ($order->pay_order_no ?? '')),
+                    $this->escapeCsv((string) ($order->refund_no ?? '')),
                     (string) $order->user_id,
                     $this->escapeCsv((string) ($order->user ? $order->user->nickname : '未知用户')),
                     (string) $order->amount,
@@ -267,8 +296,11 @@ class Payment extends BaseController
                     $this->escapeCsv((string) $order->status),
                     $this->escapeCsv((string) $order->payment_type),
                     (string) ($order->pay_time ?? ''),
+                    (string) ($order->refund_amount ?? ''),
+                    (string) ($order->refund_time ?? ''),
                     (string) ($order->created_at ?? ''),
                 ];
+
                 $csv .= implode(',', $row) . "\n";
             }
 
@@ -309,6 +341,8 @@ class Payment extends BaseController
             'id' => $order->id,
             'order_no' => $order->order_no,
             'pay_order_no' => $order->pay_order_no,
+            'refund_no' => $order->refund_no,
+            'wechat_refund_id' => $order->wechat_refund_id,
             'user_id' => $order->user_id,
             'user_nickname' => $order->user ? $order->user->nickname : '未知用户',
             'user_phone' => $order->user ? $order->user->phone : '',
@@ -317,6 +351,10 @@ class Payment extends BaseController
             'status' => $order->status,
             'payment_type' => $order->payment_type,
             'pay_time' => $order->pay_time,
+            'refund_amount' => $order->refund_amount,
+            'refund_time' => $order->refund_time,
+            'refund_reason' => $order->refund_reason,
+            'refund_response' => $order->refund_response,
             'expire_time' => $order->expire_time,
             'client_ip' => $order->client_ip,
             'created_at' => $order->created_at,
@@ -342,22 +380,13 @@ class Payment extends BaseController
         if (!$order) {
             return $this->error('订单不存在', 404);
         }
-        
-        if ($order->status !== RechargeOrder::STATUS_PENDING) {
-            return $this->error('该订单状态不允许补单');
-        }
-        
-        $remark = trim((string) $request->param('remark', '管理员手动补单')) ?: '管理员手动补单';
-        $result = $order->markAsPaid('MANUAL_' . date('YmdHis'), [
-            'remark' => $remark,
-            'admin_id' => $this->getOperatorId(),
-        ]);
 
+        $remark = trim((string) $request->param('remark', '管理员手动补单')) ?: '管理员手动补单';
+        $result = $this->applyStatusTransition($order, RechargeOrder::STATUS_PAID, $remark);
         if (($result['success'] ?? false) !== true) {
             return $this->error($result['message'] ?? '补单失败');
         }
 
-        $order->refresh();
         return $this->success([
             'order_no' => $order->order_no,
             'status' => $order->status,
@@ -369,6 +398,10 @@ class Payment extends BaseController
      */
     public function cancelOrder(Request $request, string $id)
     {
+        if ($response = $this->requirePaymentManagePermission('无权限取消订单')) {
+            return $response;
+        }
+
         $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
         if ($identifier === '') {
             return $this->error('订单标识不能为空');
@@ -378,19 +411,100 @@ class Payment extends BaseController
         if (!$order) {
             return $this->error('订单不存在', 404);
         }
-        
-        if ($order->status !== RechargeOrder::STATUS_PENDING) {
-            return $this->error('该订单状态不允许取消');
+
+        $remark = trim((string) $request->param('remark', '管理员取消订单')) ?: '管理员取消订单';
+        $result = $this->applyStatusTransition($order, RechargeOrder::STATUS_CANCELLED, $remark);
+        if (($result['success'] ?? false) !== true) {
+            return $this->error($result['message'] ?? '取消失败');
         }
-        
-        if ($order->cancel()) {
-            return $this->success([
+
+        return $this->success([
+            'order_no' => $order->order_no,
+            'status' => $order->status,
+        ], $result['message'] ?? '订单已取消');
+    }
+
+    /**
+     * 批量更新订单状态
+     */
+    public function batchUpdateStatus(Request $request)
+    {
+        if ($response = $this->requirePaymentManagePermission('无权限批量更新充值订单')) {
+            return $response;
+        }
+
+        $ids = $request->param('ids', []);
+        if (is_string($ids)) {
+            $ids = preg_split('/[\s,]+/', $ids, -1, PREG_SPLIT_NO_EMPTY);
+        }
+        if (!is_array($ids) || empty($ids)) {
+            return $this->error('订单标识列表不能为空');
+        }
+
+        $status = trim((string) $request->param('status', ''));
+        if (!in_array($status, self::ORDER_STATUSES, true) || $status === RechargeOrder::STATUS_PENDING) {
+            return $this->error('批量状态参数无效');
+        }
+
+        $reason = trim((string) $request->param('reason', '管理员批量更新订单状态')) ?: '管理员批量更新订单状态';
+        $identifiers = array_values(array_unique(array_filter(array_map(static fn ($value) => trim((string) $value), $ids))));
+        if (empty($identifiers)) {
+            return $this->error('订单标识列表无效');
+        }
+
+        $successItems = [];
+        $failedItems = [];
+        foreach ($identifiers as $identifier) {
+            $order = $this->findOrderByIdentifier($identifier);
+            if (!$order) {
+                $failedItems[] = [
+                    'identifier' => $identifier,
+                    'message' => '订单不存在',
+                ];
+                continue;
+            }
+
+            $result = $this->applyStatusTransition($order, $status, $reason);
+            if (($result['success'] ?? false) === true) {
+                $successItems[] = [
+                    'identifier' => $identifier,
+                    'order_no' => $order->order_no,
+                    'status' => $order->status,
+                ];
+                continue;
+            }
+
+            $failedItems[] = [
+                'identifier' => $identifier,
                 'order_no' => $order->order_no,
-                'status' => RechargeOrder::STATUS_CANCELLED,
-            ], '订单已取消');
+                'message' => $result['message'] ?? '更新失败',
+            ];
         }
-        
-        return $this->error('取消失败');
+
+        $this->logOperation('batch_update_recharge_order_status', 'recharge_order', [
+            'detail' => sprintf('批量更新充值订单状态为 %s，成功 %d，失败 %d', $status, count($successItems), count($failedItems)),
+            'after_data' => [
+                'status' => $status,
+                'success' => $successItems,
+                'failed' => $failedItems,
+            ],
+        ]);
+
+        if (empty($successItems)) {
+            return $this->error('批量更新失败', 400, [
+                'success_count' => 0,
+                'failed_count' => count($failedItems),
+                'failed' => $failedItems,
+            ]);
+        }
+
+        return $this->success([
+            'status' => $status,
+            'success_count' => count($successItems),
+            'failed_count' => count($failedItems),
+            'success_list' => $successItems,
+            'failed_list' => $failedItems,
+        ], empty($failedItems) ? '批量更新成功' : '批量更新已完成，部分订单处理失败');
     }
 
     /**
@@ -398,6 +512,10 @@ class Payment extends BaseController
      */
     public function updateOrderStatus(Request $request, string $id)
     {
+        if ($response = $this->requirePaymentManagePermission('无权限更新订单状态')) {
+            return $response;
+        }
+
         $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
         $status = trim((string) $request->param('status', ''));
 
@@ -407,26 +525,25 @@ class Payment extends BaseController
         if (!in_array($status, self::ORDER_STATUSES, true)) {
             return $this->error('订单状态参数无效');
         }
+        if ($status === RechargeOrder::STATUS_PENDING) {
+            return $this->error('不支持手动改回待支付状态');
+        }
 
         $order = $this->findOrderByIdentifier($identifier);
         if (!$order) {
             return $this->error('订单不存在', 404);
         }
 
-        if ($order->status === $status) {
-            return $this->success([
-                'order_no' => $order->order_no,
-                'status' => $order->status,
-            ], '订单状态未变化');
+        $remark = trim((string) $request->param('remark', $request->param('reason', '管理员更新订单状态'))) ?: '管理员更新订单状态';
+        $result = $this->applyStatusTransition($order, $status, $remark);
+        if (($result['success'] ?? false) !== true) {
+            return $this->error($result['message'] ?? '更新订单状态失败');
         }
 
-        return match ($status) {
-            RechargeOrder::STATUS_PAID => $this->manualComplete($request, $identifier),
-            RechargeOrder::STATUS_CANCELLED => $this->cancelOrder($request, $identifier),
-            RechargeOrder::STATUS_REFUNDED => $this->refundOrder($request, $identifier),
-            RechargeOrder::STATUS_PENDING => $this->error('不支持手动改回待支付状态'),
-            default => $this->error('订单状态参数无效'),
-        };
+        return $this->success([
+            'order_no' => $order->order_no,
+            'status' => $order->status,
+        ], $result['message'] ?? '订单状态更新成功');
     }
 
     /**
@@ -434,6 +551,10 @@ class Payment extends BaseController
      */
     public function refundOrder(Request $request, string $id)
     {
+        if ($response = $this->requirePaymentManagePermission('无权限执行退款')) {
+            return $response;
+        }
+
         $identifier = trim($id !== '' ? $id : (string) $request->param('id', ''));
         if ($identifier === '') {
             return $this->error('订单标识不能为空');
@@ -445,7 +566,7 @@ class Payment extends BaseController
         }
 
         $reason = trim((string) $request->param('reason', '管理员手动退款')) ?: '管理员手动退款';
-        $result = $this->performRefund($order, $reason);
+        $result = $this->applyStatusTransition($order, RechargeOrder::STATUS_REFUNDED, $reason);
         if (($result['success'] ?? false) !== true) {
             return $this->error($result['message'] ?? '退款失败');
         }
@@ -453,8 +574,10 @@ class Payment extends BaseController
         return $this->success([
             'order_no' => $order->order_no,
             'status' => $order->status,
+            'refund_no' => $order->refund_no,
         ], '退款成功');
     }
+
     
     /**
      * 获取充值统计
@@ -542,7 +665,7 @@ class Payment extends BaseController
     }
 
     /**
-     * 按订单ID或订单号查找订单
+     * 按订单ID、订单号或支付单号查找订单
      */
     protected function findOrderByIdentifier(string $identifier): ?RechargeOrder
     {
@@ -550,14 +673,108 @@ class Payment extends BaseController
             return null;
         }
 
+        $query = RechargeOrder::with('user');
         if (ctype_digit($identifier)) {
-            $byId = RechargeOrder::with('user')->find((int) $identifier);
+            $byId = $query->find((int) $identifier);
             if ($byId) {
                 return $byId;
             }
         }
 
-        return RechargeOrder::with('user')->where('order_no', $identifier)->find();
+        return RechargeOrder::with('user')
+            ->where(function ($query) use ($identifier) {
+                $query->where('order_no', $identifier)
+                    ->whereOr('pay_order_no', $identifier)
+                    ->whereOr('refund_no', $identifier);
+            })
+            ->find();
+    }
+
+    /**
+     * 统一处理订单状态流转
+     */
+    protected function applyStatusTransition(RechargeOrder $order, string $targetStatus, string $remark = ''): array
+    {
+        if (!in_array($targetStatus, self::ORDER_STATUSES, true)) {
+            return ['success' => false, 'message' => '订单状态参数无效'];
+        }
+
+        if ($targetStatus === RechargeOrder::STATUS_PENDING) {
+            return ['success' => false, 'message' => '不支持手动改回待支付状态'];
+        }
+
+        if ($order->status === $targetStatus) {
+            $order->refresh();
+            return ['success' => true, 'message' => '订单状态未变化'];
+        }
+
+        return match ($targetStatus) {
+            RechargeOrder::STATUS_PAID => $this->performManualComplete($order, $remark),
+            RechargeOrder::STATUS_CANCELLED => $this->performCancel($order, $remark),
+            RechargeOrder::STATUS_REFUNDED => $this->performRefund($order, $remark),
+            default => ['success' => false, 'message' => '订单状态参数无效'],
+        };
+    }
+
+    /**
+     * 执行手动补单
+     */
+    protected function performManualComplete(RechargeOrder $order, string $remark): array
+    {
+        if ($order->status !== RechargeOrder::STATUS_PENDING) {
+            return ['success' => false, 'message' => '该订单状态不允许补单'];
+        }
+
+        $result = $order->markAsPaid($this->buildManualPayOrderNo($order), [
+            'remark' => $remark,
+            'admin_id' => $this->getOperatorId(),
+        ]);
+
+        if (($result['success'] ?? false) !== true) {
+            return ['success' => false, 'message' => $result['message'] ?? '补单失败'];
+        }
+
+        $order->refresh();
+        return ['success' => true, 'message' => '补单成功'];
+    }
+
+    /**
+     * 执行取消订单
+     */
+    protected function performCancel(RechargeOrder $order, string $remark): array
+    {
+        if ($order->status === RechargeOrder::STATUS_CANCELLED) {
+            $order->refresh();
+            return ['success' => true, 'message' => '订单已取消'];
+        }
+
+        if ($order->status !== RechargeOrder::STATUS_PENDING) {
+            return ['success' => false, 'message' => '该订单状态不允许取消'];
+        }
+
+        if (!$order->cancel()) {
+            return ['success' => false, 'message' => '取消失败'];
+        }
+
+        $this->logOperation('cancel_recharge_order', 'recharge_order', [
+            'target_id' => $order->id,
+            'detail' => '取消充值订单：' . $order->order_no,
+            'after_data' => [
+                'status' => RechargeOrder::STATUS_CANCELLED,
+                'remark' => $remark,
+            ],
+        ]);
+
+        $order->refresh();
+        return ['success' => true, 'message' => '订单已取消'];
+    }
+
+    /**
+     * 生成手动补单用的支付流水号
+     */
+    protected function buildManualPayOrderNo(RechargeOrder $order): string
+    {
+        return 'MANUAL_' . date('YmdHis') . '_' . str_pad((string) $order->id, 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -565,7 +782,10 @@ class Payment extends BaseController
      */
     protected function performRefund(RechargeOrder $order, string $reason): array
     {
+        $reason = trim($reason) ?: '管理员手动退款';
+
         if ($order->status === RechargeOrder::STATUS_REFUNDED) {
+            $order->refresh();
             return ['success' => true, 'message' => '订单已退款'];
         }
 
@@ -575,7 +795,7 @@ class Payment extends BaseController
 
         Db::startTrans();
         try {
-            $lockedOrder = Db::name('recharge_order')
+            $lockedOrder = Db::table('tc_recharge_order')
                 ->where('id', $order->id)
                 ->lock(true)
                 ->find();
@@ -596,7 +816,31 @@ class Payment extends BaseController
                 return ['success' => false, 'message' => '当前订单状态不允许退款'];
             }
 
-            $user = Db::name('user')
+            $refundAmount = round((float) ($lockedOrder['amount'] ?? $order->amount), 2);
+            if ($refundAmount <= 0) {
+                Db::rollback();
+                return ['success' => false, 'message' => '退款金额无效'];
+            }
+
+            $refundNo = trim((string) ($lockedOrder['refund_no'] ?? ''));
+            if ($refundNo === '') {
+                $refundNo = 'RFD' . date('YmdHis') . str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            }
+
+            $refundResult = WechatPayService::refund(
+                (string) ($lockedOrder['order_no'] ?? $order->order_no),
+                $refundNo,
+                (float) ($lockedOrder['amount'] ?? $order->amount),
+                $refundAmount,
+                $reason
+            );
+
+            if (($refundResult['success'] ?? false) !== true) {
+                Db::rollback();
+                return ['success' => false, 'message' => (string) ($refundResult['message'] ?? '微信退款失败')];
+            }
+
+            $user = Db::table('tc_user')
                 ->where('id', $order->user_id)
                 ->lock(true)
                 ->find();
@@ -612,12 +856,12 @@ class Payment extends BaseController
                 return ['success' => false, 'message' => '用户当前积分不足，无法执行退款'];
             }
 
-            Db::name('user')
+            Db::table('tc_user')
                 ->where('id', $order->user_id)
                 ->dec('points', (int) $order->points)
                 ->update();
 
-            Db::name('points_record')->insert([
+            Db::table('tc_points_record')->insert([
                 'user_id' => $order->user_id,
                 'action' => '充值退款',
                 'points' => -((int) $order->points),
@@ -627,17 +871,38 @@ class Payment extends BaseController
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
 
-            Db::name('recharge_order')
+            $refundTime = date('Y-m-d H:i:s');
+            Db::table('tc_recharge_order')
                 ->where('id', $order->id)
                 ->update([
                     'status' => RechargeOrder::STATUS_REFUNDED,
-                    'updated_at' => date('Y-m-d H:i:s'),
+                    'refund_no' => $refundNo,
+                    'refund_amount' => $refundAmount,
+                    'refund_time' => $refundTime,
+                    'refund_reason' => $reason,
+                    'wechat_refund_id' => (string) ($refundResult['refund_id'] ?? ''),
+                    'refund_response' => json_encode($refundResult, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'updated_at' => $refundTime,
                 ]);
+
+            $this->logOperation('refund_recharge_order', 'recharge_order', [
+                'target_id' => $order->id,
+                'detail' => sprintf('充值订单退款成功：%s，退款金额 %.2f', $order->order_no, $refundAmount),
+                'after_data' => [
+                    'refund_no' => $refundNo,
+                    'refund_amount' => $refundAmount,
+                    'refund_reason' => $reason,
+                ],
+            ]);
 
             Db::commit();
             $order->refresh();
 
-            return ['success' => true, 'message' => '退款成功'];
+            return [
+                'success' => true,
+                'message' => '退款成功',
+                'refund_no' => $refundNo,
+            ];
         } catch (\Throwable $e) {
             Db::rollback();
             Log::error('后台订单退款失败: ' . $e->getMessage(), [
@@ -649,6 +914,7 @@ class Payment extends BaseController
             return ['success' => false, 'message' => '退款失败，请稍后重试'];
         }
     }
+
 
     /**
      * 校验 YYYY-MM-DD 日期

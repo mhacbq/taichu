@@ -44,9 +44,9 @@ class Hehun extends BaseController
      */
     protected $baziCalculationService;
     
-    public function __construct()
+    public function __construct(\think\App $app)
     {
-        parent::__construct();
+        parent::__construct($app);
         $this->baziCalculationService = new BaziCalculationService();
     }
     

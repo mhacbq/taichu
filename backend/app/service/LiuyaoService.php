@@ -392,6 +392,11 @@ class LiuyaoService
             $targetLiuqin = ($gender === '女') ? '官鬼' : '妻财';
         }
         
+        $xunkong = [];
+        if (!empty($timeInfo) && isset($timeInfo['ri_gan']) && isset($timeInfo['ri_zhi'])) {
+            $xunkong = self::calculateXunKong($timeInfo['ri_gan'], $timeInfo['ri_zhi']);
+        }
+
         // 特殊处理：如果用神是“世爻”，直接指向世位
         if ($targetLiuqin === '世爻') {
             $position = $shiYing['shi'];
@@ -404,20 +409,33 @@ class LiuyaoService
                     $positions[] = $pos;
                 }
             }
-            
+
+
             // 如果没找到用神，则需寻找“伏神”
             if (empty($positions)) {
                 $info = self::getGuaInfo($yaoCode);
                 $fushen = self::getFuShen($info['gong'], $targetLiuqin);
                 if ($fushen) {
+                    $fushenStatus = ['伏藏'];
+                    if (!empty($xunkong) && in_array($fushen['di_zhi'], $xunkong, true)) {
+                        $fushenStatus[] = '旬空';
+                    }
+
+                    $hostLineLiuQin = $liuqin[$fushen['position']] ?? '未知';
+
                     return [
                         'liuqin' => $targetLiuqin,
                         'position' => $fushen['position'],
+                        'di_zhi' => $fushen['di_zhi'],
                         'is_moving' => false,
                         'is_fushen' => true,
-                        'fushen_info' => $fushen,
-                        'status' => '伏藏',
-                        'description' => "用神【{$targetLiuqin}】不现，伏于第{$fushen['position']}爻【{$liuqin[$fushen['position']]}】之下。"
+                        'fushen_info' => array_merge($fushen, [
+                            'host_line_liuqin' => $hostLineLiuQin,
+                            'xunkong' => $xunkong,
+                        ]),
+                        'xunkong' => $xunkong,
+                        'status' => implode('、', $fushenStatus),
+                        'description' => "用神【{$targetLiuqin}】不现，按卦宫伏神法取第{$fushen['position']}爻地支【{$fushen['di_zhi']}】，伏于本爻【{$hostLineLiuQin}】之下。状态：" . implode('、', $fushenStatus)
                     ];
                 }
             }
@@ -434,13 +452,12 @@ class LiuyaoService
         if ($position === $shiYing['shi']) $status[] = '持世';
         if ($position === $shiYing['ying']) $status[] = '在应位';
         if ($isMoving) $status[] = '发动';
-        
-        // 3. 结合时令 (月破/旬空)
+
+        $currentZhi = '';
         if (!empty($timeInfo) && isset($timeInfo['ri_gan']) && isset($timeInfo['ri_zhi'])) {
-            $xunkong = self::calculateXunKong($timeInfo['ri_gan'], $timeInfo['ri_zhi']);
             $yaoDiZhi = self::getYaoDiZhi(self::getGuaName($yaoCode), $yaoCode);
             $currentZhi = $yaoDiZhi[$position] ?? '';
-            if (in_array($currentZhi, $xunkong)) {
+            if ($currentZhi !== '' && in_array($currentZhi, $xunkong, true)) {
                 $status[] = '旬空';
             }
         }
@@ -448,8 +465,10 @@ class LiuyaoService
         return [
             'liuqin' => $targetLiuqin,
             'position' => $position,
+            'di_zhi' => $currentZhi,
             'is_moving' => $isMoving,
             'is_fushen' => false,
+            'xunkong' => $xunkong,
             'status' => implode('、', $status),
             'description' => "以第{$position}爻【{$targetLiuqin}】为用神。状态： " . (implode('、', $status) ?: '安静')
         ];

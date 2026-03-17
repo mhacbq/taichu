@@ -4,7 +4,7 @@
       <!-- 页面标题 -->
       <div class="page-header">
         <h1 class="page-title">
-          <el-icon class="title-icon"><Magic /></el-icon>
+          <el-icon class="title-icon"><MagicStick /></el-icon>
           六爻占卜
         </h1>
         <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
@@ -27,7 +27,7 @@
           <!-- 卦象展示 -->
           <div class="gua-display">
             <div class="gua-decoration">
-              <el-icon><Magic /></el-icon>
+              <el-icon><MagicStick /></el-icon>
             </div>
             <div class="gua-info">
               <h3 class="gua-name">{{ result.gua.name }}</h3>
@@ -180,7 +180,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Magic, Close } from '@element-plus/icons-vue'
+import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Close } from '@element-plus/icons-vue'
 
 
 // 表单数据

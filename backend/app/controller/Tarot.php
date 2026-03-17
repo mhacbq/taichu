@@ -514,41 +514,41 @@ class Tarot extends BaseController
     protected function getElementRelation(string $element1, string $element2): string
     {
         if ($element1 === $element2) {
-            return '同元素强化，能量高度集中。';
+            return '同元素（Mutual Dignity）：主题被持续放大，牌阵焦点十分明确。';
         }
         
         $pair = [$element1, $element2];
         sort($pair);
         $pairStr = implode('-', $pair);
 
-        // 友好/强化关系 (Friendly)
+        // 友方元素 (Friendly Dignity)
         $friendly = [
-            '火-风' => '风助火势，思维与行动完美结合，能量相互增强。',
-            '水-土' => '水润土沃，情感与现实相互支撑，能量稳定滋养。',
+            '火-风' => '火与风形成 Friendly Dignity，意志得到思想鼓动，行动更容易迅速展开。',
+            '水-土' => '水与土形成 Friendly Dignity，情绪获得承载，现实层面更容易稳步落地。',
         ];
 
-        // 敌对/冲突关系 (Hostile/Antagonistic)
+        // 敌对元素 (Enemy Dignity)
         $hostile = [
-            '水-火' => '水火不容，情感与行动发生剧烈冲突，能量相互抵消。',
-            '土-风' => '风土相阻，理想与现实难以调和，存在明显的束缚感。',
+            '水-火' => '水与火形成 Enemy Dignity，感受与行动互相牵制，局势容易出现内耗。',
+            '土-风' => '土与风形成 Enemy Dignity，理念表达受现实框架压制，推进阻力较大。',
         ];
 
-        // 中性关系 (Neutral)
+        // 中性元素 (Neutral Dignity)
         $neutral = [
-            '火-土' => '火土相安，能量流动较为平稳。',
-            '水-风' => '风水相荡，理智与情感保持独立。',
+            '火-土' => '火与土属于 Neutral Dignity，行动有落点，但速度会被现实节奏放缓。',
+            '水-风' => '水与风属于 Neutral Dignity，理性与感受并行，需要额外整合后才能形成结论。',
         ];
 
         if (isset($friendly[$pairStr])) {
-            return '友好关系：' . $friendly[$pairStr];
+            return '友方元素：' . $friendly[$pairStr];
         }
 
         if (isset($hostile[$pairStr])) {
-            return '冲突关系：' . $hostile[$pairStr];
+            return '敌对元素：' . $hostile[$pairStr];
         }
 
         if (isset($neutral[$pairStr])) {
-            return '中性关系：' . $neutral[$pairStr];
+            return '中性元素：' . $neutral[$pairStr];
         }
         
         return '';

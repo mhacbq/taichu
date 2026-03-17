@@ -337,19 +337,17 @@ class BaziCalculationService
             '戌' => ['戊' => 60, '辛' => 30, '丁' => 10],
             '亥' => ['壬' => 70, '甲' => 30]
         ];
-        
-        $totalScore = 0;
-        
-        // 2. 计算天干得分 (年、月、时各10分)
+
+        $ganScore = 0;
         foreach (['year', 'month', 'hour'] as $key) {
-            if (in_array($pillars[$key]['gan_wuxing'], $supporting)) {
-                $totalScore += 10;
+            if (in_array($pillars[$key]['gan_wuxing'], $supporting, true)) {
+                $ganScore += 10;
             }
         }
         
-        // 3. 计算地支得分 (包含藏干权重)
+        $branchScore = 0;
         $branchPositions = [
-            'month' => 40, // 月令权重最高
+            'month' => 40,
             'day' => 10,
             'hour' => 10,
             'year' => 10
@@ -357,16 +355,18 @@ class BaziCalculationService
         
         foreach ($branchPositions as $pos => $maxWeight) {
             $zhi = $pillars[$pos]['zhi'];
-            $cangGans = $branchWeights[$zhi];
+            $cangGans = $branchWeights[$zhi] ?? [];
             foreach ($cangGans as $gan => $percent) {
                 $wx = $this->ganWuXing[$gan];
-                if (in_array($wx, $supporting)) {
-                    $totalScore += ($maxWeight * $percent / 100);
+                if (in_array($wx, $supporting, true)) {
+                    $branchScore += ($maxWeight * $percent / 100);
                 }
             }
         }
+
+        $interaction = $this->calculateBranchInteractionScore($pillars, $supporting, $branchWeights);
+        $totalScore = max(0, min(100, $ganScore + $branchScore + $interaction['score']));
         
-        // 判定结果
         $status = '中和';
         if ($totalScore >= 55) $status = '身旺';
         elseif ($totalScore >= 45) $status = '中和偏旺';
@@ -376,9 +376,97 @@ class BaziCalculationService
         return [
             'score' => round($totalScore, 1),
             'status' => $status,
-            'favorite_wuxing' => $totalScore >= 50 ? $relations[$dmWx]['opposing'] : $relations[$dmWx]['supporting']
+            'favorite_wuxing' => $totalScore >= 50 ? $relations[$dmWx]['opposing'] : $relations[$dmWx]['supporting'],
+            'details' => [
+                'gan_support_score' => round($ganScore, 1),
+                'branch_support_score' => round($branchScore, 1),
+                'interaction_score' => round($interaction['score'], 1),
+                'branch_interactions' => $interaction['notes'],
+            ],
         ];
     }
+
+    /**
+     * 计算地支冲合对日主力量的修正
+     */
+    protected function calculateBranchInteractionScore(array $pillars, array $supporting, array $branchWeights): array
+    {
+        $score = 0;
+        $notes = [];
+        $branchMap = [
+            'year' => $pillars['year']['zhi'],
+            'month' => $pillars['month']['zhi'],
+            'day' => $pillars['day']['zhi'],
+            'hour' => $pillars['hour']['zhi'],
+        ];
+
+        $liuchong = [
+            ['子', '午'], ['丑', '未'], ['寅', '申'],
+            ['卯', '酉'], ['辰', '戌'], ['巳', '亥'],
+        ];
+        foreach ($liuchong as [$left, $right]) {
+            if (in_array($left, $branchMap, true) && in_array($right, $branchMap, true)) {
+                $impact = 2 + ($this->getBranchSupportRatio($left, $supporting, $branchWeights) * 2) + ($this->getBranchSupportRatio($right, $supporting, $branchWeights) * 2);
+                $score -= $impact;
+                $notes[] = "{$left}{$right}六冲，根气受扰，扣" . round($impact, 1) . '分';
+            }
+        }
+
+        $liuhe = [
+            ['branches' => ['子', '丑'], 'element' => '土'],
+            ['branches' => ['寅', '亥'], 'element' => '木'],
+            ['branches' => ['卯', '戌'], 'element' => '火'],
+            ['branches' => ['辰', '酉'], 'element' => '金'],
+            ['branches' => ['巳', '申'], 'element' => '水'],
+            ['branches' => ['午', '未'], 'element' => '火'],
+        ];
+        foreach ($liuhe as $combo) {
+            [$left, $right] = $combo['branches'];
+            if (in_array($left, $branchMap, true) && in_array($right, $branchMap, true)) {
+                $effect = in_array($combo['element'], $supporting, true) ? 4 : -3;
+                $score += $effect;
+                $notes[] = "{$left}{$right}六合化{$combo['element']}，" . ($effect > 0 ? '助身' : '泄身') . abs($effect) . '分';
+            }
+        }
+
+        $sanhe = [
+            ['branches' => ['申', '子', '辰'], 'element' => '水'],
+            ['branches' => ['亥', '卯', '未'], 'element' => '木'],
+            ['branches' => ['寅', '午', '戌'], 'element' => '火'],
+            ['branches' => ['巳', '酉', '丑'], 'element' => '金'],
+        ];
+        foreach ($sanhe as $combo) {
+            if (count(array_intersect($combo['branches'], array_values($branchMap))) === 3) {
+                $effect = in_array($combo['element'], $supporting, true) ? 6 : -4;
+                $score += $effect;
+                $notes[] = implode('', $combo['branches']) . "三合{$combo['element']}局，" . ($effect > 0 ? '成局助身' : '成局泄身') . abs($effect) . '分';
+            }
+        }
+
+        return [
+            'score' => round($score, 1),
+            'notes' => $notes,
+        ];
+    }
+
+    /**
+     * 获取单个地支对日主的助扶比例
+     */
+    protected function getBranchSupportRatio(string $zhi, array $supporting, array $branchWeights): float
+    {
+        $cangGans = $branchWeights[$zhi] ?? [];
+        $ratio = 0;
+
+        foreach ($cangGans as $gan => $percent) {
+            $wx = $this->ganWuXing[$gan] ?? '';
+            if (in_array($wx, $supporting, true)) {
+                $ratio += $percent / 100;
+            }
+        }
+
+        return min(1, $ratio);
+    }
+
     /**
      * 计算起运时间 (精确到岁/月/天)
      */

@@ -8,27 +8,41 @@
   /* 高级深色主题 - 金色系 */
   --primary-color: #B8860B;
   --primary-light: #D4AF37;
+  --primary-dark: #8B6914;
+  --primary-rgb: 184, 134, 11;
+  --primary-light-rgb: 212, 175, 55;
   --primary-gradient: linear-gradient(135deg, #D4AF37 0%, #B8860B 50%, #8B6914 100%);
   
   --bg-primary: #0a0a1a;
   --bg-secondary: #111122;
   --bg-tertiary: #16162e;
   --bg-card: var(--white-05);
+  --bg-hover: var(--white-08);
+  --bg-main: var(--text-primary);
+  --surface-raised: var(--white-03);
+  --surface-hover: var(--white-08);
+  --surface-strong: var(--white-10);
   
   --text-primary: #ffffff;
   --text-secondary: var(--white-90);
   --text-tertiary: var(--white-60);
-
   --text-muted: var(--white-40);
+  --text-inverse: #ffffff;
+  --text-accent-contrast: #2b1900;
   
   --border-color: var(--white-10);
   --border-light: var(--white-05);
+  --border-light-20: var(--white-20);
+  --border-primary: var(--primary-light-30);
   
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
   --shadow-glow: 0 0 20px rgba(184, 134, 11, 0.3), 0 0 40px rgba(184, 134, 11, 0.1);
+  --shadow-card: 0 12px 30px rgba(0, 0, 0, 0.12);
+  --shadow-hover: 0 18px 40px rgba(0, 0, 0, 0.16), 0 10px 24px rgba(var(--primary-rgb), 0.14);
+  --focus-ring: 0 0 0 3px var(--primary-light-15);
 
   /* 统一圆角变量 */
   --radius-sm: 8px;
@@ -45,9 +59,20 @@
   --font-h1: clamp(32px, 6vw, 48px);
   --font-h2: clamp(24px, 4vw, 32px);
   --font-h3: clamp(20px, 3vw, 24px);
+  --font-h4: clamp(18px, 2.4vw, 20px);
+  --font-h5: 16px;
+  --font-h6: 14px;
+  --font-body-lg: 18px;
   --font-body: 16px;
   --font-small: 14px;
+  --font-caption: 13px;
   --font-tiny: 12px;
+  --font-btn: 15px;
+  --line-height-tight: 1.3;
+  --line-height-base: 1.7;
+  --line-height-relaxed: 1.85;
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0.01em;
   
   --weight-regular: 400;
   --weight-medium: 500;
@@ -60,13 +85,17 @@
   --breakpoint-md: 992px;
   --breakpoint-lg: 1200px;
 
-
   /* 五行颜色 */
   --wuxing-jin: #ffd700;
+  --wuxing-jin-rgb: 255, 215, 0;
   --wuxing-mu: #228b22;
+  --wuxing-mu-rgb: 34, 139, 34;
   --wuxing-shui: #1e90ff;
+  --wuxing-shui-rgb: 30, 144, 255;
   --wuxing-huo: #ff4500;
+  --wuxing-huo-rgb: 255, 69, 0;
   --wuxing-tu: #8b4513;
+  --wuxing-tu-rgb: 139, 69, 19;
 
   /* 功能颜色 */
   --star-color: #ffd700;
@@ -97,10 +126,6 @@
   --warning-light: rgba(230, 162, 60, 0.2);
   --danger-light: rgba(245, 108, 108, 0.2);
   --info-light: rgba(144, 147, 153, 0.2);
-  
-  --bg-hover: var(--white-08);
-  --border-light-20: var(--white-20);
-  --border-primary: var(--primary-light-30);
 
   /* 透明度变量系统 */
   --white-01: rgba(255, 255, 255, 0.01);

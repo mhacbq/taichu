@@ -107,8 +107,21 @@ Route::group('api', function () {
         Route::get('query-order', 'Payment/queryOrder');
         Route::get('history', 'Payment/getUserRechargeHistory');
     });
+
+    // 通知与推送
+    Route::group('notifications', function () {
+        Route::get('', 'Notification/getNotifications');
+        Route::post('read', 'Notification/markAsRead');
+        Route::post('delete', 'Notification/deleteNotification');
+        Route::get('settings', 'Notification/getSettings');
+        Route::put('settings', 'Notification/updateSettings');
+        Route::post('devices/register', 'Notification/registerDevice');
+        Route::post('devices/unregister', 'Notification/unregisterDevice');
+        Route::post('test', 'Notification/sendTestNotification');
+    });
     
     // 系统配置（公开接口）
+
     Route::group('config', function () {
         Route::get('client', 'Config/clientConfig');
         Route::get('features', 'Config/featureSwitches');
@@ -198,6 +211,7 @@ Route::group('api/admin', function () {
         Route::get('statistics', 'Admin/dashboard');
         Route::get('trend', 'Admin/dashboardTrend');
         Route::get('realtime', 'Admin/realtime');
+        Route::get('export-realtime', 'Admin/exportRealtime');
         Route::get('chart/:type', 'Admin/chartData');
         Route::get('pending-feedback', 'Admin/pendingFeedback');
     });

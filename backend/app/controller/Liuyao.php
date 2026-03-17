@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
+use app\service\BaziCalculationService;
 use app\service\LiuyaoService;
 use app\service\DeepSeekService;
 use think\Request;
@@ -40,15 +41,39 @@ class Liuyao extends BaseController
             // 获取卦辞信息
             $result['gua_info'] = $this->getGuaInfo($result['main_gua'], $result['bian_gua']['bian_name']);
             
-            // 计算六亲六神（需要日辰信息）
-            $riGan = $data['ri_gan'] ?? '甲';
-            
-            // 验证日辰天干是否有效
+            // 计算六亲六神（需要完整日辰信息）
             $validGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+            $validZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+            $riGan = $data['ri_gan'] ?? '';
+            $riZhi = $data['ri_zhi'] ?? '';
+
+            if ($riGan === '' || $riZhi === '') {
+                $today = new \DateTime();
+                $pillar = (new BaziCalculationService())->calculateDayPillar(
+                    (int)$today->format('Y'),
+                    (int)$today->format('n'),
+                    (int)$today->format('j')
+                );
+                $tianGan = $validGan;
+                $diZhi = $validZhi;
+                $riGan = $riGan !== '' ? $riGan : $tianGan[$pillar['gan_index']];
+                $riZhi = $riZhi !== '' ? $riZhi : $diZhi[$pillar['zhi_index']];
+            }
+
             if (!in_array($riGan, $validGan, true)) {
                 return $this->error('日辰天干参数无效，必须是甲-癸之一', 400);
             }
-            
+            if (!in_array($riZhi, $validZhi, true)) {
+                return $this->error('日辰地支参数无效，必须是子-亥之一', 400);
+            }
+
+            $timeInfo = [
+                'ri_gan' => $riGan,
+                'ri_zhi' => $riZhi,
+                'xunkong' => LiuyaoService::calculateXunKong($riGan, $riZhi),
+            ];
+
+            $result['time_info'] = $timeInfo;
             $result['liu_shen'] = LiuyaoService::getLiuShen($riGan);
             
             // 计算卦宫、六亲和世应
@@ -67,7 +92,8 @@ class Liuyao extends BaseController
                 $result['liuqin'], 
                 $result['shi_ying'], 
                 $result['yao_code'],
-                $gender
+                $gender,
+                $timeInfo
             );
             
             // 保存记录（使用事务）

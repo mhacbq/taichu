@@ -38,9 +38,9 @@ class Paipan extends BaseController
      */
     protected $fortuneAnalysisService;
     
-    public function __construct()
+    public function __construct(\think\App $app)
     {
-        parent::__construct();
+        parent::__construct($app);
         $this->baziService = new BaziCalculationService();
         $this->interpretationService = new BaziInterpretationService();
         $this->fortuneAnalysisService = new FortuneAnalysisService();
@@ -675,11 +675,20 @@ class Paipan extends BaseController
     }
     
     /**
-     * 节气日期计算 (基于21世纪寿星公式)
+     * 节气日期计算（统一为 20/21 世纪寿星公式）
      */
     protected function getJieQiDate(int $year, string $name): array
     {
-        $jieQiConstants = [
+        $jieQiConstants20 = [
+            '小寒' => [1, 6.11], '大寒' => [1, 20.84], '立春' => [2, 4.6298], '雨水' => [2, 19.46],
+            '惊蛰' => [3, 6.3826], '春分' => [3, 21.415], '清明' => [4, 5.59], '谷雨' => [4, 20.888],
+            '立夏' => [5, 6.318], '小满' => [5, 21.86], '芒种' => [6, 6.5], '夏至' => [6, 22.2],
+            '小暑' => [7, 7.928], '大暑' => [7, 23.65], '立秋' => [8, 8.35], '处暑' => [8, 23.95],
+            '白露' => [9, 8.44], '秋分' => [9, 23.822], '寒露' => [10, 9.098], '霜降' => [10, 24.218],
+            '立冬' => [11, 8.218], '小雪' => [11, 23.08], '大雪' => [12, 7.9], '冬至' => [12, 22.6]
+        ];
+
+        $jieQiConstants21 = [
             '小寒' => [1, 5.4055], '大寒' => [1, 20.12], '立春' => [2, 3.87], '雨水' => [2, 18.73],
             '惊蛰' => [3, 5.63], '春分' => [3, 20.646], '清明' => [4, 4.81], '谷雨' => [4, 20.1],
             '立夏' => [5, 5.52], '小满' => [5, 21.04], '芒种' => [6, 5.678], '夏至' => [6, 21.37],
@@ -688,17 +697,24 @@ class Paipan extends BaseController
             '立冬' => [11, 7.438], '小雪' => [11, 22.36], '大雪' => [12, 7.18], '冬至' => [12, 21.94]
         ];
 
-        if (!isset($jieQiConstants[$name])) return [0, 0];
-        
-        $month = $jieQiConstants[$name][0];
-        $C = $jieQiConstants[$name][1];
+        $is21st = $year >= 2000;
+        $constants = $is21st ? $jieQiConstants21 : $jieQiConstants20;
+
+        if (!isset($constants[$name])) return [0, 0];
+
+        $month = $constants[$name][0];
+        $C = $constants[$name][1];
         $y = $year % 100;
-        
-        $day = floor($y * 0.2422 + $C) - floor(($y - 1) / 4);
-        
-        if ($name === '立春' && $year === 2019) $day -= 1;
-        if ($name === '雨水' && $year === 2026) $day -= 1;
-        
+        $day = floor($y * 0.2422 + $C) - floor(($y - ($is21st ? 0 : 1)) / 4);
+
+        if ($is21st) {
+            if ($name === '立春' && $year === 2019) $day -= 1;
+            if ($name === '雨水' && $year === 2026) $day -= 1;
+        } else {
+            if ($name === '立春' && ($year === 1902 || $year === 1918 || $year === 1982)) $day += 1;
+            if ($name === '惊蛰' && $year === 1906) $day += 1;
+        }
+
         return [$month, (int)$day];
     }
     
@@ -764,33 +780,11 @@ class Paipan extends BaseController
     }
     
     /**
-     * 计算日柱 - 使用精确的基准日推算
-     * 基准：1995年9月25日 = 己未日（己=5, 未=7）
+     * 计算日柱（统一委托核心服务）
      */
     protected function calculateDayPillar(int $year, int $month, int $day): array
     {
-        // 使用已知的基准日：1995年9月25日是己未日
-        $baseDate = new \DateTime('1995-09-25');
-        $baseGanIndex = 5; // 己
-        $baseZhiIndex = 7; // 未
-        
-        $targetDate = new \DateTime("$year-$month-$day");
-        $diff = $baseDate->diff($targetDate);
-        $days = $diff->days;
-        
-        // 如果是过去日期，需要取负数
-        if ($targetDate < $baseDate) {
-            $days = -$days;
-        }
-        
-        // 计算干支索引
-        $ganIndex = (($baseGanIndex + $days) % 10 + 10) % 10;
-        $zhiIndex = (($baseZhiIndex + $days) % 12 + 12) % 12;
-        
-        return [
-            'gan_index' => $ganIndex,
-            'zhi_index' => $zhiIndex
-        ];
+        return $this->baziService->calculateDayPillar($year, $month, $day);
     }
     
     /**
@@ -799,138 +793,7 @@ class Paipan extends BaseController
      */
     public function calculateBazi(string $birthDate): array
     {
-        $timestamp = strtotime($birthDate);
-        $year = (int)date('Y', $timestamp);
-        $month = (int)date('n', $timestamp);
-        $day = (int)date('j', $timestamp);
-        $hour = (int)date('G', $timestamp);
-        
-        // 晚子时处理：23:00-00:00 属于次日的子时，日柱需进一日
-        $calcTimestamp = $timestamp;
-        if ($hour == 23) {
-            $calcTimestamp += 3600; // 增加1小时进入次日
-        }
-        
-        $calcYear = (int)date('Y', $calcTimestamp);
-        $calcMonth = (int)date('n', $calcTimestamp);
-        $calcDay = (int)date('j', $calcTimestamp);
-        
-        // 天干
-        $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
-        // 地支
-        $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
-        
-        // ===== 年柱计算 =====
-        $lunarYear = $this->getLunarYear($calcYear, $calcMonth, $calcDay);
-        $yearGanIndex = ($lunarYear - 4) % 10;
-        $yearZhiIndex = ($lunarYear - 4) % 12;
-        
-        // ===== 月柱计算 =====
-        $lunarMonthInfo = $this->getLunarMonth($calcYear, $calcMonth, $calcDay);
-        $monthZhiIndex = $lunarMonthInfo['zhi_index'];
-        
-        // 月干：五虎遁月法
-        $yearGan = $tianGan[$yearGanIndex];
-        $monthGanStart = $this->yearGanToMonthGanStart[$yearGan];
-        $monthGanIndex = array_search($monthGanStart, $tianGan);
-        $monthGanIndex = ($monthGanIndex + $lunarMonthInfo['month'] - 1) % 10;
-        
-        // ===== 日柱计算 =====
-        $dayPillar = $this->calculateDayPillar($calcYear, $calcMonth, $calcDay);
-        $dayGanIndex = $dayPillar['gan_index'];
-        $dayZhiIndex = $dayPillar['zhi_index'];
-        $dayGan = $tianGan[$dayGanIndex];
-        
-        // ===== 时柱计算 =====
-        // 时辰划分：23-1子, 1-3丑, 3-5寅, 5-7卯, 7-9辰, 9-11巳
-        // 11-13午, 13-15未, 15-17申, 17-19酉, 19-21戌, 21-23亥
-        if ($hour == 23) {
-            $shiZhiIndex = 0; // 子
-        } else {
-            $shiZhiIndex = (int)(($hour + 1) / 2) % 12;
-        }
-        
-        // 时干：根据日干推算（日上起时法）
-        // 甲己日起甲子，乙庚日起丙子，丙辛日起戊子，丁壬日起庚子，戊癸日起壬子
-        $dayGanHourStart = [
-            '甲' => '甲', '己' => '甲',
-            '乙' => '丙', '庚' => '丙',
-            '丙' => '戊', '辛' => '戊',
-            '丁' => '庚', '壬' => '庚',
-            '戊' => '壬', '癸' => '壬'
-        ];
-        $hourGanStart = $dayGanHourStart[$dayGan];
-        $shiGanIndex = (array_search($hourGanStart, $tianGan) + $shiZhiIndex) % 10;
-        
-        // 构建四柱数据
-        $pillars = [
-            'year' => [
-                'gan' => $tianGan[$yearGanIndex],
-                'zhi' => $diZhi[$yearZhiIndex],
-                'gan_index' => $yearGanIndex,
-                'zhi_index' => $yearZhiIndex
-            ],
-            'month' => [
-                'gan' => $tianGan[$monthGanIndex],
-                'zhi' => $diZhi[$monthZhiIndex],
-                'gan_index' => $monthGanIndex,
-                'zhi_index' => $monthZhiIndex
-            ],
-            'day' => [
-                'gan' => $dayGan,
-                'zhi' => $diZhi[$dayZhiIndex],
-                'gan_index' => $dayGanIndex,
-                'zhi_index' => $dayZhiIndex
-            ],
-            'hour' => [
-                'gan' => $tianGan[$shiGanIndex],
-                'zhi' => $diZhi[$shiZhiIndex],
-                'gan_index' => $shiGanIndex,
-                'zhi_index' => $shiZhiIndex
-            ]
-        ];
-        
-        // 为每个柱添加专业信息
-        foreach ($pillars as $key => &$pillar) {
-            $gan = $pillar['gan'];
-            $zhi = $pillar['zhi'];
-            
-            // 五行属性
-            $pillar['gan_wuxing'] = $this->ganWuXing[$gan];
-            $pillar['zhi_wuxing'] = $this->zhiWuXing[$zhi];
-            
-            // 十神（以日干为基准）
-            $pillar['shishen'] = $this->calculateShiShen($dayGan, $gan);
-            
-            // 地支藏干
-            $pillar['canggan'] = $this->zhiCangGan[$zhi];
-            
-            // 藏干十神
-            $pillar['canggan_shishen'] = array_map(function($cg) use ($dayGan) {
-                return $this->calculateShiShen($dayGan, $cg);
-            }, $pillar['canggan']);
-            
-            // 纳音
-            $pillar['nayin'] = $this->naYin[$gan . $zhi] ?? '';
-        }
-        
-        // 计算五行统计
-        $wuxingCount = ['金' => 0, '木' => 0, '水' => 0, '火' => 0, '土' => 0];
-        foreach ($pillars as $pillar) {
-            $wuxingCount[$pillar['gan_wuxing']]++;
-            $wuxingCount[$pillar['zhi_wuxing']]++;
-        }
-        
-        return [
-            'year' => $pillars['year'],
-            'month' => $pillars['month'],
-            'day' => $pillars['day'],
-            'hour' => $pillars['hour'],
-            'wuxing_stats' => $wuxingCount,
-            'day_master' => $dayGan,
-            'day_master_wuxing' => $this->ganWuXing[$dayGan],
-            'calculation_note' => '已优化：考虑节气、日上起时法'
-        ];
+        return $this->baziService->calculateBazi($birthDate);
     }
     
     /**

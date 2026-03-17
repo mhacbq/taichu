@@ -87,7 +87,7 @@
           placeholder="描述你的困惑，越具体越好。比如：'我应该接受这份新工作吗？'"
         />
         <div class="question-hint" v-if="question">
-          <el-icon class="hint-icon"><Magic /></el-icon>
+          <el-icon class="hint-icon"><MagicStick /></el-icon>
           <span>好的问题通常是开放性的，以"我应该..."或"我该如何..."开头</span>
         </div>
         <el-button

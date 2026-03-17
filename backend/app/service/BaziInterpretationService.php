@@ -230,8 +230,15 @@ class BaziInterpretationService
      */
     public function generateFullInterpretation(array $bazi, string $gender): array
     {
-        $dayMaster = $bazi['day']['gan'];
-        $wuxingStats = $bazi['wuxing_stats'];
+        $dayMaster = $bazi['day']['gan'] ?? '甲';
+        if (!isset($this->ganCharacteristics[$dayMaster])) {
+            $dayMaster = '甲';
+        }
+
+        $dayMasterWuxing = $bazi['day']['gan_wuxing'] ?? ($this->ganWuXing[$dayMaster] ?? '木');
+        $bazi['day']['gan_wuxing'] = $dayMasterWuxing;
+
+        $wuxingStats = $this->normalizeWuxingStats($bazi['wuxing_stats'] ?? []);
         
         // 分析五行强弱
         $wuxingAnalysis = $this->analyzeWuxingStrength($wuxingStats);
@@ -277,16 +284,36 @@ class BaziInterpretationService
     }
 
     /**
+     * 归一化五行统计，确保始终包含金木水火土五个键
+     */
+    protected function normalizeWuxingStats(array $wuxingStats): array
+    {
+        $normalized = [
+            '金' => 0,
+            '木' => 0,
+            '水' => 0,
+            '火' => 0,
+            '土' => 0,
+        ];
+
+        foreach ($normalized as $wx => $defaultValue) {
+            $normalized[$wx] = isset($wuxingStats[$wx]) ? max(0, (int)$wuxingStats[$wx]) : $defaultValue;
+        }
+
+        return $normalized;
+    }
+
+    /**
      * 分析五行强弱
      */
     protected function analyzeWuxingStrength(array $wuxingStats): array
     {
+        $wuxingStats = $this->normalizeWuxingStats($wuxingStats);
         $total = array_sum($wuxingStats);
-        $average = $total / 5;
         
         $analysis = [];
         foreach ($wuxingStats as $wx => $count) {
-            $percentage = ($count / $total) * 100;
+            $percentage = $total > 0 ? ($count / $total) * 100 : 0;
             if ($count >= 3) {
                 $strength = '旺';
                 $desc = '过旺';
@@ -327,6 +354,7 @@ class BaziInterpretationService
      */
     protected function calculateBalanceScore(array $wuxingStats): int
     {
+        $wuxingStats = $this->normalizeWuxingStats($wuxingStats);
         $values = array_values($wuxingStats);
         $max = max($values);
         $min = min($values);
@@ -340,65 +368,45 @@ class BaziInterpretationService
     }
 
     /**
-     * 确定喜用神 - 采用“得令、得地、得势”三维度分析
+     * 确定喜用神 - 复用核心强弱评分，并纳入地支冲合结果
      */
     protected function determineYongshen(array $bazi, array $wuxingStats): array
     {
-        $dayMaster = $bazi['day']['gan'];
-        $dayMasterWuxing = $bazi['day']['gan_wuxing'];
-        
-        $yongshen = [];
-        $relations = $this->wuxingRelations[$dayMasterWuxing];
-        
-        // 计算日主强度得分 (总分约100)
-        $score = 0;
-        
-        // 1. 得令分析 (月令支持)
-        $monthZhi = $bazi['month']['zhi'];
-        $monthCangGan = $this->zhiCharacteristics[$monthZhi]['藏干'] ?? [];
-        $monthMainWuxing = $this->ganWuXing[$monthCangGan[0]] ?? ''; // 需要映射
-        
-        // 简单处理：如果月支藏干第一个(主气)生助日主
-        if ($monthCangGan[0] == $dayMaster || in_array($dayMaster, $monthCangGan)) {
-             $score += 30; // 得令
-        }
-        
-        // 2. 得地分析 (地支根气)
-        foreach (['year', 'month', 'day', 'hour'] as $p) {
-            $zhi = $bazi[$p]['zhi'];
-            $cangGan = $this->zhiCharacteristics[$zhi]['藏干'] ?? [];
-            if (in_array($dayMaster, $cangGan)) {
-                $score += 15; // 有根
-            }
-        }
-        
-        // 3. 得势分析 (天干生助)
-        foreach (['year', 'month', 'hour'] as $p) {
-            $gan = $bazi[$p]['gan'];
-            $ganWuxing = $bazi[$p]['gan_wuxing'];
-            if ($ganWuxing == $dayMasterWuxing || $ganWuxing == $relations['被生']) {
-                $score += 10;
-            }
+        $dayMasterWuxing = $bazi['day']['gan_wuxing'] ?? ($this->ganWuXing[$bazi['day']['gan'] ?? '甲'] ?? '木');
+        $relations = $this->wuxingRelations[$dayMasterWuxing] ?? $this->wuxingRelations['木'];
+        $strength = $bazi['strength'] ?? [];
+        $score = (float)($strength['score'] ?? 0);
+        $status = $strength['status'] ?? '';
+        $interactionNotes = $strength['details']['branch_interactions'] ?? [];
+
+        $isStrong = in_array($status, ['身旺', '中和偏旺'], true);
+        if ($status === '') {
+            $isStrong = $score >= 45;
+            $status = $isStrong ? '身强' : '身弱';
         }
 
-        // 综合判断
-        $isStrong = $score >= 45;
-        
         if ($isStrong) {
-            $yongshen['shen'] = $relations['克'];
-            $yongshen['xi'] = $relations['生'];
-            $yongshen['type'] = '身强';
-            $yongshen['score'] = $score;
-            $yongshen['desc'] = "经过得令、得地、得势综合分析，你的得分为{$score}，属于身强格。喜用神为克我之{$relations['克']}和泄我之{$relations['生']}。";
+            $yongshen = [
+                'shen' => $relations['克'],
+                'xi' => $relations['生'],
+                'type' => '身强',
+                'score' => $score,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。身强宜取我克之{$relations['克']}与我生之{$relations['生']}来疏泄制衡。",
+            ];
         } else {
-            $yongshen['shen'] = $relations['被生'];
-            $yongshen['xi'] = $dayMasterWuxing;
-            $yongshen['type'] = '身弱';
-            $yongshen['score'] = $score;
-            $yongshen['desc'] = "经过分析，你的命局强度得分为{$score}，属于身弱格。喜用神为生我之{$relations['被生']}和助我之{$dayMasterWuxing}。";
+            $yongshen = [
+                'shen' => $relations['被生'],
+                'xi' => $dayMasterWuxing,
+                'type' => '身弱',
+                'score' => $score,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。身弱宜取生我之{$relations['被生']}与比助之{$dayMasterWuxing}来扶身。",
+            ];
+        }
+
+        if (!empty($interactionNotes)) {
+            $yongshen['desc'] .= '地支作用要点：' . implode('；', array_slice($interactionNotes, 0, 3)) . '。';
         }
         
-        // 缺失五行补充
         foreach ($wuxingStats as $wx => $count) {
             if ($count == 0) {
                 $yongshen['que'] = $wx;

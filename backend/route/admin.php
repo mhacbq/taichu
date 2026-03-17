@@ -5,25 +5,27 @@ use think\facade\Route;
 // 后台管理API路由组
 Route::group('api/admin', function () {
     // 认证相关（无需登录）
-    Route::post('auth/login', 'AdminAuth/login');
+    Route::post('auth/login', 'admin.Auth/login');
     
     // 需要登录验证的路由组
     Route::group('', function () {
         // 认证
-        Route::get('auth/info', 'AdminAuth/info');
-        Route::post('auth/logout', 'AdminAuth/logout');
+        Route::get('auth/info', 'admin.Auth/info');
+        Route::post('auth/logout', 'admin.Auth/logout');
         
         // 仪表盘
         Route::get('dashboard/statistics', 'admin.Dashboard/index');
         Route::get('dashboard/trend', 'admin.Dashboard/trend');
         Route::get('dashboard/chart/:type', 'Admin/chartData');
         Route::get('dashboard/realtime', 'Admin/realtime');
+        Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
         Route::get('dashboard/pending-feedback', 'Admin/pendingFeedback');
         
         // 用户管理
         Route::get('users', 'admin.User/index');
         Route::get('users/:id', 'admin.User/detail');
         Route::put('users/:id/status', 'admin.User/toggleStatus');
+        Route::put('users/batch-status', 'Admin/batchUpdateUserStatus');
         Route::get('users/behavior', 'Admin/userBehavior');
         Route::get('users/export', 'Admin/exportUsers');
         
@@ -50,7 +52,9 @@ Route::group('api/admin', function () {
         Route::get('payment/config', 'admin.Payment/getConfig');
         Route::post('payment/config', 'admin.Payment/saveConfig');
         Route::get('payment/orders', 'admin.Payment/getOrders');
+        Route::get('payment/orders/export', 'admin.Payment/exportOrders');
         Route::get('payment/orders/:id', 'admin.Payment/getOrderDetail');
+        Route::put('payment/orders/batch-status', 'admin.Payment/batchUpdateStatus');
         Route::put('payment/orders/:id/status', 'admin.Payment/updateOrderStatus');
         Route::post('payment/orders/:id/refund', 'admin.Payment/refundOrder');
         Route::post('payment/orders/:id/complete', 'admin.Payment/manualComplete');
