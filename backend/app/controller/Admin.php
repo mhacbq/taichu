@@ -50,8 +50,8 @@ class Admin extends BaseController
         
         // 从JWT token中获取管理员信息（后台管理使用adminUser）
         $adminUser = $this->request->adminUser ?? [];
-        $this->adminId = $adminUser['sub'] ?? 0;
-        $this->adminName = $adminUser['nickname'] ?? 'Unknown';
+        $this->adminId = $adminUser['id'] ?? 0;
+        $this->adminName = $adminUser['username'] ?? 'Unknown';
     }
     
     /**
@@ -261,7 +261,7 @@ class Admin extends BaseController
         
         try {
             $page = $request->get('page', 1);
-            $pageSize = $request->get('pageSize', 20);
+            $pageSize = $request->get('pageSize', self::DEFAULT_PAGE_SIZE);
             $username = $request->get('username', '');
             $phone = $request->get('phone', '');
             $status = $request->get('status', '');

@@ -303,7 +303,7 @@
 
 1. **SiteContent.php返回格式不统一** (API规范)
    - 文件: `backend/app/controller/SiteContent.php`
-   - 问题: getSpreadList、getSpreads、getQuestionList、getQuestions、getFortuneTemplateList等方法混用`json()`和`$this->success()`，返回code不一致（0或200）
+   - 问题: getSpreadList、getSpreads、getQuestionList、getQuestions、getFortuneTemplateList等方法混用`json()` and `$this->success()`，返回code不一致（0或200）
    - 修复: 将所有`json(['code' => 0])`改为`$this->success()`，统一返回code=200
 
 2. **Auth.php魔法数字问题** (代码规范)
@@ -331,11 +331,55 @@
 - 提交信息: `fix-backend-multiple-issues-20250317-1545`
 - 已推送到: origin/master
 
+---
+
+## 2026-03-17 16:15 执行记录（本次）
+
+### 本次修复的5个后端问题
+
+1. **HttpsEnforce.php环境变量判断问题** (安全)
+   - 文件: `backend/app/middleware/HttpsEnforce.php`
+   - 问题: `Env::get('APP_DEBUG') === 'false'`判断可能不准确，字符串比较存在风险
+   - 修复: 使用`!Env::get('APP_DEBUG', false)`替代，环境变量判断更准确可靠
+
+2. **TarotCard.php orderRaw SQL注入风险** (安全)
+   - 文件: `backend/app/model/TarotCard.php`
+   - 问题: 使用`orderRaw('RAND()')`存在潜在的SQL注入风险
+   - 修复: 使用count+limit+offset替代RAND()排序，更安全
+
+3. **DailyFortuneTemplate.php orderRaw SQL注入风险** (安全)
+   - 文件: `backend/app/model/DailyFortuneTemplate.php`
+   - 问题: 使用`orderRaw('RAND()')`存在潜在的SQL注入风险
+   - 修复: 使用count+limit+offset替代RAND()排序，更安全
+
+4. **Admin.php分页大小硬编码问题** (代码规范)
+   - 文件: `backend/app/controller/Admin.php`
+   - 问题: 多处使用硬编码20作为分页大小，不利于统一维护
+   - 修复: 添加`DEFAULT_PAGE_SIZE = 20`和`MAX_PAGE_SIZE = 100`常量，替换所有硬编码值
+
+5. **Payment.php回调异常日志已完善** (代码规范)
+   - 文件: `backend/app/controller/Payment.php`
+   - 问题: 支付回调异常时未记录详细错误（实际已完善）
+   - 确认: 代码已使用`\think\facade\Log::error`记录详细错误信息，包括订单号、异常消息和堆栈跟踪
+
+### Git提交
+- 提交ID: `6437225`
+- 提交信息: `fix-backend-multiple-issues-20250317-1615`
+- 已推送到: origin/master
+
 ### 待修复问题
 - 后端Content.php XSS风险 - title字段需要添加strip_tags过滤
 - 后端中间件Auth.php日志记录敏感信息过滤（已部分实现）
 - 后端Hehun.php buildReportHtml其他字段XSS防护
 - 后端Liuyao.php aiInterpretation方法事务处理
-- 后端Admin.php分页大小硬编码问题
+
+---
+
+## 2026-03-17 16:30 执行记录
+
+### 操作内容
+- **清理TODO.md**: 删除了所有已完成的任务（标记为`[x]`的行及其子项）。
+- **Git提交**: 已提交并推送到远程仓库。
+- **提交ID**: `c64e72d`
 
 ---

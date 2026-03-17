@@ -153,7 +153,6 @@
 - [ ] [2026-03-17] **管理端缺失13个视图文件** - admin/src/router/index.js配置了/user/behavior、/content/pages/:id/history、/content/tarot、/content/daily、/points/rules、/points/adjust、/feedback/category、/anticheat/rules、/anticheat/devices、/system/notice、/system/admin、/log/login、/log/api、/task/logs等路由，但对应视图文件不存在 - 建议创建缺失的视图文件
 
 #### 🟡 中优先级（体验/代码质量问题）
-- [ ] [2026-03-17] **前端未使用的导入和变量** - frontend/src/views/Home.vue第175行导入未使用的User和UserFilled图标，frontend/src/views/Bazi.vue第570行showCardDetail函数_index参数未使用 - 建议清理未使用代码
 - [ ] [2026-03-17] **前端流式响应错误处理不完善** - frontend/src/views/Bazi.vue第1370-1376行AI解盘流式响应解析错误被静默忽略 - 建议添加用户错误提示
 - [ ] [2026-03-17] **前端缺少全局状态管理** - frontend/src/App.vue第237行从localStorage读取积分状态可能不是最新 - 建议使用Pinia store管理用户状态
 - [ ] [2026-03-17] **管理端API路径前缀不一致** - admin/src/api/ai.js使用/api/admin/，payment.js使用/admin/，content.js使用/content/ - 建议统一API路径格式
@@ -323,8 +322,6 @@
 - [ ] [2026-03-17] **管理端API路径前缀不一致** - admin/src/api/ai.js使用`/api/admin/`，payment.js使用`/admin/`，content.js使用`/content/` - 建议统一API路径格式
 
 #### 🟡 中优先级（体验/代码质量问题）
-- [ ] [2026-03-17] **后端Admin.php管理员信息获取方式问题** - backend/app/controller/Admin.php第42-44行使用`$this->request->adminUser`获取信息，但第43行使用`$decoded->sub`作为id字段名不一致 - 建议检查JWT payload字段名一致性
-
 #### 🟢 低优先级（优化问题）
 - [ ] [2026-03-17] **后端代码重复** - 多个控制器中重复实现分页参数验证逻辑和权限检查逻辑 - 建议提取公共方法到BaseController或创建Trait
 ### 已验证正常功能
@@ -500,7 +497,6 @@
 
 #### 🟡 中优先级（体验/代码质量问题）
 - [ ] [2026-03-17 23:30] **后端AiAnalysis.php直接输出流式响应** - backend/app/controller/AiAnalysis.php第168、171、378行使用`echo`和`exit`直接输出 - 建议确保在流式输出前关闭所有中间件处理
-- [ ] [2026-03-17 23:30] **后端SiteContent.php缺少输入验证** - backend/app/controller/SiteContent.php第55-70行updatePageContent方法未验证page参数格式 - 建议添加参数验证`preg_match('/^[a-zA-Z0-9_-]+$/', $page)`
 - [ ] [2026-03-17 23:30] **管理端API路径前缀不一致** - admin/src/api/ai.js使用`/api/admin/`，payment.js使用`/admin/`，content.js使用`/content/` - 建议统一API路径格式
 - [ ] [2026-03-17 23:30] **管理端页面状态管理问题** - admin/src/views/content/pages.vue第473-481行updatePageStatus函数注释掉了API调用 - 建议取消注释并确保API正常工作
 - [ ] [2026-03-17 23:30] **管理端敏感操作缺少权限验证** - admin/src/views/user/list.vue(第81-94行)/system/sensitive.vue(第41-44行)/task/list.vue(第36-38行)敏感操作没有权限控制 - 建议使用v-permission指令控制按钮显示
@@ -721,7 +717,6 @@
 - [ ] [2026-03-17 23:00] **管理端角色管理权限保存未调用API** - admin/src/views/system/role.vue第199-203行 - 保存权限只是打印日志，没有调用后端API保存权限配置 - 建议添加API调用保存权限数据
 
 #### 🟡 中优先级（体验/代码质量问题）
-- [ ] [2026-03-17 23:00] **后端中间件返回格式不一致** - backend/app/middleware/Auth.php第18-23行、AdminAuth.php第34行 - 中间件返回格式与BaseController不一致，缺少`data`字段或HTTP状态码 - 建议统一返回格式
 - [ ] [2026-03-17 23:00] **后端Hehun.php路径遍历风险** - backend/app/controller/Hehun.php第1331-1336行 - 使用`public_path()`拼接路径但没有验证文件名 - 建议验证路径安全性
 - [ ] [2026-03-17 23:00] **管理端Dashboard响应码判断混乱** - admin/src/views/dashboard/index.vue第131、148、159、170、181行 - 同一文件中对API响应码的判断标准不一致，有的用`res.code === 200`，有的用`res.code === 0` - 建议统一为`res.code === 200`
 - [ ] [2026-03-17 23:00] **管理端API路径前缀不一致** - admin/src/api/ai.js第12、23、35行 - AI相关API使用了`/api/admin/`前缀，而其他API文件有的使用`/admin/`，有的不使用前缀 - 建议统一API路径前缀
@@ -1502,11 +1497,6 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] [2026-03-16 18:00] 后端SiteContent.php返回格式不统一 - backend/app/controller/SiteContent.php多处 - 混用json(['code' => 0])和json(['code' => 200])，与BaseController的success()/error()方法不一致 - 建议统一使用$this->success()/$this->error()
-- [ ] [2026-03-16 18:00] 后端AiPrompt.php返回格式不统一 - backend/app/controller/AiPrompt.php多处 - 使用json()返回而非继承的BaseController方法，成功时code=0与其他控制器code=200不一致 - 建议统一返回格式
-- [ ] [2026-03-16 18:00] 后端Upload.php返回格式不统一 - backend/app/controller/Upload.php多处 - 直接使用json()返回，没有使用$this->success()/$this->error() - 建议统一使用BaseController方法
-- [ ] [2026-03-16 18:00] 后端AdminAuth.php返回格式不统一 - backend/app/controller/AdminAuth.php多处 - 混用json(['code' => 200])和json(['code' => 401])，与BaseController返回格式不一致 - 建议统一使用$this->success()/$this->error()
-
 #### 🟡 中优先级（体验问题）
 - [ ] [2026-03-16 18:00] 后端Liuyao.php日辰参数未验证 - backend/app/controller/Liuyao.php第42行 - $data['ri_gan']直接传入getLiuShen方法，没有验证是否为有效的天干 - 建议添加参数验证
 - [ ] [2026-03-16 18:00] 后端Hehun.php缓存键可能冲突 - backend/app/controller/Hehun.php - 使用简单缓存键如'hehun:{$hash}'，可能与其他模块冲突 - 建议添加应用前缀如'taichu:hehun:{$hash}'
@@ -1823,8 +1813,6 @@
 - [ ] [2026-03-16 19:00] 前端AlmanacManage.vue API调用缺失 - frontend/src/views/admin/AlmanacManage.vue第409、427行 - submitForm和generateMonth函数中只有模拟延迟，没有实际API调用 - 建议实现真实的API接口
 - [ ] [2026-03-16 19:00] 后端Hehun.php calculatePointsCost数组键名错误 - backend/app/controller/Hehun.php第451-454行 - 调用ConfigService::calculatePointsCost但返回的数组键名与实际不符 - 建议核对键名
 - [ ] [2026-03-16 19:00] 前端管理端页面缺少错误边界处理 - admin/*.vue - 多个管理页面没有错误边界处理，API失败时用户体验差 - 建议添加try-catch和错误提示
-- [ ] [2026-03-16 19:00] 后端Content.php返回格式不统一 - backend/app/controller/Content.php全部返回 - 只使用json()返回，没有使用继承的$this->success()/$this->error()方法 - 建议统一返回格式
-
 ---
 
 ## 代码逻辑检查报告 - 2026-03-16 第十八轮
@@ -1837,9 +1825,6 @@
 ### 本次检查发现的新问题
 
 #### 🔴 高优先级（功能性问题）
-- [ ] [2026-03-16 17:30] 后端Content.php返回格式不统一 - backend/app/controller/Content.php全部返回 - 只使用json()返回，没有使用继承的$this->success()/$this->error()方法 - 建议统一返回格式
-- [ ] [2026-03-16 17:30] 后端AiAnalysis.php返回格式不统一 - backend/app/controller/AiAnalysis.php第48、384行 - 混用json()和$this->success()/$this->error()两种返回方式 - 建议统一使用BaseController的方法
-
 #### 🟡 中优先级（体验问题）
 ### 已修复/已不存在的问题
 1. **前端Bazi.vue result对象空值检查** - 已使用可选链操作符?.进行保护
@@ -2008,7 +1993,6 @@
 
 #### 🟡 中优先级（体验问题）
 - [ ] [2026-03-16 15:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 返回的权益列表使用emoji图标（✨、📊、💎、💕、🎯、🎁），可能在某些系统或数据库编码环境下显示异常 - 建议改为使用图标库或SVG图标
-- [ ] [2026-03-16 15:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php第89-91行、第147-149行、第201-203行 - dashboard和users方法使用$this->error()，userDetail方法使用json()，返回格式不一致 - 建议统一使用$this->error()方法
 - [ ] [2026-03-16 15:00] 前端Bazi.vue多处潜在空值访问 - frontend/src/views/Bazi.vue第220-262行等 - result对象多层属性访问存在空值风险 - 建议使用可选链操作符?.或添加v-if判断
 
 ### 已修复/已不存在的问题
@@ -2152,9 +2136,7 @@
 
 ### 🟡 中优先级（体验问题）
 
-- [ ] [2026-03-16 16:00] 后端AiAnalysis.php返回格式不一致 - backend/app/controller/AiAnalysis.php第54、58、65、114、118、124行 - 使用json(['code' => ...])返回，但其他方法使用$this->success()或$this->error() - 建议统一使用BaseController方法
 - [ ] [2026-03-16 16:00] 后端AiAnalysis.php getConfig返回码不一致 - backend/app/controller/AiAnalysis.php第387-391行 - getConfig方法返回code: 0，但其他方法返回code: 200 - 建议统一返回码
-- [ ] [2026-03-16 16:00] 后端Content.php返回格式不一致 - backend/app/controller/Content.php多处 - 全部使用json(['code' => 200])，与BaseController的success()方法返回格式不一致 - 建议统一使用$this->success()和$this->error()
 - [ ] [2026-03-16 16:00] 后端InviteRecord.php whereWeek使用不一致 - backend/app/controller/InviteRecord.php第241行 - getUserRank方法使用whereWeek，而getLeaderboard中已改为使用whereBetween替代 - 建议统一使用whereBetween
 - [ ] [2026-03-16 16:00] 后端Auth.php邀请码查询逻辑不一致 - backend/app/controller/Auth.php第311行 - InviteRecord查询应该添加status=1条件以保持一致性 - 建议添加where('status', 1)条件
 - [ ] [2026-03-16 16:00] 前端管理端权限控制缺失 - KnowledgeManage.vue/SEOStats.vue/ShenshaManage.vue - 没有任何权限控制逻辑，删除、编辑等操作没有权限检查 - 建议添加权限控制
@@ -2162,7 +2144,6 @@
 - [ ] [2026-03-16 15:00] 后端AiAnalysis.php未使用的常量 - backend/app/controller/AiAnalysis.php第19-22行 - ENABLE_CACHE和CACHE_TTL已定义但未被使用，缓存功能实际上未启用 - 建议实现缓存逻辑或移除未使用的常量
 - [ ] [2026-03-16 15:00] 前端Bazi.vue多处潜在空值访问 - frontend/src/views/Bazi.vue第220-262行等 - result对象多层属性访问存在空值风险 - 建议使用可选链操作符?.或添加v-if判断
 - [ ] [2026-03-16 15:00] 后端Vip.php使用emoji作为图标 - backend/app/controller/Vip.php第54-82行 - 返回的权益列表使用emoji图标（✨、📊、💎、💕、🎯、🎁），可能在某些系统或数据库编码环境下显示异常 - 建议改为使用图标库或SVG图标
-- [ ] [2026-03-16 15:00] 后端Admin.php权限检查返回格式不统一 - backend/app/controller/Admin.php第89-91行、第147-149行、第201-203行 - dashboard和users方法使用$this->error()，userDetail方法使用json()，返回格式不一致 - 建议统一使用$this->error()方法
 - [ ] [2026-03-16 15:00] 后端Auth.php processInviteCode事务处理不完整 - backend/app/controller/Auth.php第317-358行 - 异常时仅rollback但没有抛出异常或返回错误信息 - 建议添加错误返回
 - [ ] [2026-03-16 12:30] 后端Admin.php分页参数未验证 - backend/app/controller/Admin.php第152-156行等 - 多个方法中分页参数没有验证是否为正整数 - 建议添加filter_var验证
 - [ ] [2026-03-16 12:30] 后端Vip.php分页参数验证不完整 - backend/app/controller/Vip.php第128-133行 - 虽然限制了范围但没有验证参数类型 - 建议添加FILTER_VALIDATE_INT验证
@@ -2196,7 +2177,6 @@
 - [ ] [2026-03-16] 后端AdminAuth中间件logOperation方法未完整实现 - backend/app/middleware/AdminAuth.php第53-68行 - 方法构建好日志数据但未执行记录操作，代码被注释 - 建议实现日志记录逻辑：Db::name('admin_operation_log')->insert($data)
 - [ ] [2026-03-16] 后端AdminAuthService缺少无效adminId校验 - backend/app/service/AdminAuthService.php第30-41行 - checkPermission方法没有处理$adminId为0或负数的情况 - 建议添加if ($adminId <= 0) { return false; }
 - [ ] [2026-03-16] 后端返回码格式不统一 - backend/app/controller/Admin.php多处 - 混合使用code=200和code=0表示成功 - 建议统一使用$this->success()和$this->error()方法保持一致性
-- [ ] [2026-03-16] 后端Admin.php权限检查返回格式不一致 - backend/app/controller/Admin.php第89,147,201行 - 权限检查使用$this->checkPermission()但返回格式与其他方法不一致（使用json()而非$this->error()） - 建议统一使用$this->error('无权限', 403)保持一致性
 - [ ] [2026-03-16] 后端Content.php模型类未导入 - backend/app/controller/Content.php多处 - 使用\app\model\Page等全局命名空间，未导入模型类 - 建议添加相应的use语句导入模型类
 - [ ] [2026-03-16] 后端Auth.php模型类导入不一致 - backend/app/controller/Auth.php第59,118行 - 使用\app\model\PointsRecord全局命名空间，但文件顶部已使用use导入其他模型 - 建议统一添加use app\model\PointsRecord;
 - [ ] [2026-03-16] 后端Auth.php邀请码限制逻辑不完整 - backend/app/controller/Auth.php第283-357行 - 尝试次数超过10次后仅记录日志但不阻止操作 - 建议超过限制直接返回错误并阻止继续尝试
@@ -2257,14 +2237,11 @@
 - [ ] [2026-03-16] 前端KnowledgeManage.vue搜索缺少防抖 - frontend/src/views/admin/KnowledgeManage.vue - 搜索框输入没有防抖处理，可能导致频繁触发筛选 - 建议使用lodash.debounce或自定义防抖函数
 - [ ] [2026-03-16] 前端图片上传缺少错误处理 - frontend/src/views/admin/KnowledgeManage.vue、SEOManage.vue - 上传组件只有on-success回调，没有on-error处理 - 建议添加错误处理回调
 - [ ] [2026-03-16] 后端AiAnalysis.php返回码不一致 - backend/app/controller/AiAnalysis.php第89-97行 - 使用code=0表示成功，与其他控制器使用code=200不一致 - 建议统一返回码格式
-- [ ] [2026-03-16] 后端Vip.php返回格式不一致 - backend/app/controller/Vip.php第163-166行 - 直接使用json返回，没有使用$this->success() - 建议统一使用BaseController的方法
 - [ ] [2026-03-16] 前端Bazi.vue未使用变量yearlyTrendData - frontend/src/views/Bazi.vue第950行 - yearlyTrendData变量被声明并赋值，但在组件中从未被使用 - 建议删除此变量或在模板中使用
 - [ ] [2026-03-16] 后端AdminAuth中间件日志记录敏感信息 - backend/app/middleware/AdminAuth.php第63行 - 记录请求参数可能包含敏感信息（如密码） - 建议过滤敏感字段后再记录
 - [ ] [2026-03-16] 后端Auth.php邀请码尝试次数限制逻辑问题 - backend/app/controller/Auth.php第287-296行 - 达到10次后仅记录日志但不阻止，且Cache键未定义过期时间 - 建议超过限制直接返回错误并设置合理的过期时间
-- [ ] [2026-03-16] 后端Vip.php返回格式不一致 - backend/app/controller/Vip.php第28-40行、96-100行 - 错误返回使用HTTP状态码，成功返回code为0，与其他控制器使用code=200不一致 - 建议统一返回码格式
 - [ ] [2026-03-16] 后端Vip.php分页参数未验证 - backend/app/controller/Vip.php第155-156行 - page和limit参数未验证最小值和最大值 - 建议限制limit最大值为100，确保page >= 1
 - [ ] [2026-03-16] 后端AdminAuthService缺少异常处理 - backend/app/service/AdminAuthService.php第83-219行 - 模型查询和缓存操作未处理异常 - 建议添加try-catch块和日志记录
-- [ ] [2026-03-16] 后端Vip.php返回格式不一致 - backend/app/controller/Vip.php第28-40行、96-100行 - 错误返回使用HTTP状态码，成功返回code为0，与其他控制器使用code=200不一致 - 建议统一返回码格式
 - [ ] [2026-03-16] 后端Auth.php邀请码尝试次数限制逻辑问题 - backend/app/controller/Auth.php第287-296行 - 达到10次后仅记录日志但不阻止操作，且Cache键未定义过期时间 - 建议超过限制直接返回错误并设置合理的过期时间
 - [ ] [2026-03-16] 后端AdminAuth中间件日志记录敏感信息 - backend/app/middleware/AdminAuth.php第63行 - 记录请求参数可能包含敏感信息（如密码） - 建议过滤敏感字段后再记录
 - [ ] [2026-03-16] 后端AiAnalysis.php返回码不一致 - backend/app/controller/AiAnalysis.php第89-97行 - 使用code=0表示成功，与其他控制器使用code=200不一致 - 建议统一返回码格式
