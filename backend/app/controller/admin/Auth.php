@@ -4,8 +4,9 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
+use app\service\AdminAuthService;
+use app\service\SchemaInspector;
 use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use think\facade\Db;
 use think\facade\Env;
 use think\facade\Log;
@@ -32,6 +33,10 @@ class Auth extends BaseController
      */
     public function login(Request $request)
     {
+        if ($this->jwtKey === '') {
+            return $this->error('后台登录配置缺失，请联系管理员', 500);
+        }
+
         $username = trim((string) $request->post('username', ''));
         $password = (string) $request->post('password', '');
 
@@ -39,7 +44,7 @@ class Auth extends BaseController
             return $this->error('用户名和密码不能为空', 422);
         }
 
-        $adminTable = $this->resolveAdminTable();
+        $adminTable = AdminAuthService::resolveAdminTable();
         if ($adminTable === null) {
             Log::error('后台登录失败：管理员账号表不存在', [
                 'username' => $username,
@@ -63,14 +68,21 @@ class Auth extends BaseController
                 ->update(['password' => password_hash($password, PASSWORD_DEFAULT)]);
         }
 
-        $columns = $this->getTableColumns($adminTable);
+        $columns = SchemaInspector::getTableColumns($adminTable);
+        $updatePayload = [];
         if (isset($columns['last_login_at'])) {
+            $updatePayload['last_login_at'] = date('Y-m-d H:i:s');
+        }
+        if (isset($columns['last_login_ip'])) {
+            $updatePayload['last_login_ip'] = (string) $request->ip();
+        }
+        if (!empty($updatePayload)) {
             Db::table($adminTable)
                 ->where('id', (int) $admin['id'])
-                ->update(['last_login_at' => date('Y-m-d H:i:s')]);
+                ->update($updatePayload);
         }
 
-        $roles = $this->normalizeClientRoles($this->fetchAdminRoles((int) $admin['id']));
+        $roles = $this->normalizeClientRoles(AdminAuthService::getAdminRoleCodes((int) $admin['id']));
         $payload = [
             'iss' => 'taichu-admin',
             'iat' => time(),
@@ -91,6 +103,7 @@ class Auth extends BaseController
                 'username' => (string) ($admin['username'] ?? $username),
                 'nickname' => (string) (($admin['nickname'] ?? '') ?: ($admin['username'] ?? $username)),
                 'roles' => $roles,
+                'role' => $roles[0] ?? '',
             ],
         ], '登录成功');
     }
@@ -100,28 +113,30 @@ class Auth extends BaseController
      */
     public function info(Request $request)
     {
-        $authHeader = $request->header('Authorization');
-
-        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+        $adminUser = $request->adminUser ?? [];
+        $adminId = isset($adminUser['id']) ? (int) $adminUser['id'] : 0;
+        if ($adminId <= 0) {
             return $this->error('未授权', 401);
         }
 
-        $token = substr($authHeader, 7);
-
-        try {
-            $decoded = JWT::decode($token, new Key($this->jwtKey, 'HS256'));
-            $roles = $this->normalizeClientRoles(is_array($decoded->roles ?? null) ? $decoded->roles : ['admin']);
-
-            return $this->success([
-                'id' => (int) $decoded->sub,
-                'username' => (string) $decoded->username,
-                'avatar' => '',
-                'roles' => $roles,
-                'permissions' => ['*'],
-            ], '获取成功');
-        } catch (\Exception $e) {
-            return $this->error('Token无效', 401);
+        $admin = AdminAuthService::findActiveAdmin($adminId);
+        if (!$admin) {
+            return $this->error('管理员账号不存在或已停用', 401);
         }
+
+        $roles = $this->normalizeClientRoles(AdminAuthService::getAdminRoleCodes($adminId));
+        $permissions = AdminAuthService::getAdminPermissions($adminId);
+
+        return $this->success([
+            'id' => $adminId,
+            'username' => (string) (($admin['username'] ?? '') ?: ($adminUser['username'] ?? '')),
+            'nickname' => (string) (($admin['nickname'] ?? '') ?: ($admin['username'] ?? '') ?: ($adminUser['username'] ?? '')),
+            'avatar' => (string) ($admin['avatar'] ?? ''),
+            'roles' => $roles,
+            'role' => $roles[0] ?? '',
+            'permissions' => $permissions,
+            'status' => (int) ($admin['status'] ?? 1),
+        ], '获取成功');
     }
 
     /**
@@ -144,41 +159,8 @@ class Auth extends BaseController
             }
         }
 
-        return 'taichu_admin_default_secret_2024';
-    }
-
-    /**
-     * 解析管理员表名
-     */
-    private function resolveAdminTable(): ?string
-    {
-        foreach (['tc_admin', 'admin'] as $table) {
-            if ($this->tableExists($table)) {
-                return $table;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * 查询管理员角色
-     */
-    private function fetchAdminRoles(int $adminId): array
-    {
-        if ($adminId <= 0 || !$this->tableExists('tc_admin_user_role') || !$this->tableExists('tc_admin_role')) {
-            return ['admin'];
-        }
-
-        $rows = Db::table('tc_admin_user_role')
-            ->alias('aur')
-            ->leftJoin('tc_admin_role ar', 'ar.id = aur.role_id')
-            ->where('aur.admin_id', $adminId)
-            ->column('ar.code');
-
-        $roles = array_values(array_unique(array_filter(array_map('strval', $rows))));
-
-        return $roles ?: ['admin'];
+        Log::error('后台登录缺少 JWT 密钥配置，请设置 ADMIN_JWT_SECRET 或 JWT_SECRET');
+        return '';
     }
 
     /**
@@ -194,7 +176,7 @@ class Auth extends BaseController
             }
         }
 
-        return $normalized ?: ['admin'];
+        return $normalized;
     }
 
     /**
@@ -209,32 +191,5 @@ class Auth extends BaseController
             'operator', 'normal_admin', 'customer_service' => 'operator',
             default => $role,
         };
-    }
-
-    /**
-     * 判断表是否存在
-     */
-    private function tableExists(string $table): bool
-    {
-        $escapedTable = addslashes($table);
-        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
-    }
-
-    /**
-     * 读取表字段
-     */
-    private function getTableColumns(string $table): array
-    {
-        $escapedTable = str_replace('`', '``', $table);
-        $columns = [];
-
-        foreach (Db::query("SHOW COLUMNS FROM `{$escapedTable}`") as $column) {
-            $field = (string) ($column['Field'] ?? '');
-            if ($field !== '') {
-                $columns[$field] = true;
-            }
-        }
-
-        return $columns;
     }
 }

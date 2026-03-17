@@ -20,11 +20,33 @@ class System extends BaseController
     protected const TABLE_ADMIN_DICT_DATA = 'tc_admin_dict_data';
     protected const STATUS_VALUES = [0, 1];
 
+    protected function ensureSystemReadAccess()
+    {
+        if ($this->checkPermission('config_manage')) {
+            return null;
+        }
+
+        return $this->error('无权限查看系统管理配置', 403);
+    }
+
+    protected function ensureSystemWriteAccess(string $message)
+    {
+        if ($this->checkPermission('config_manage')) {
+            return null;
+        }
+
+        return $this->error($message, 403);
+    }
+
     /**
      * 获取角色列表
      */
     public function getRoles()
     {
+        if ($response = $this->ensureSystemReadAccess()) {
+            return $response;
+        }
+
         $list = Db::table(self::TABLE_ADMIN_ROLE)
             ->order('id', 'asc')
             ->select()
@@ -33,14 +55,20 @@ class System extends BaseController
         return $this->success($list);
     }
 
+
     /**
      * 创建角色
      */
     public function createRole()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限创建角色')) {
+            return $response;
+        }
+
         try {
             $payload = $this->validateRolePayload($this->request->post());
             $this->assertRoleCodeUnique($payload['code']);
+
 
             $id = Db::table(self::TABLE_ADMIN_ROLE)->insertGetId([
                 'name' => $payload['name'],
@@ -69,6 +97,10 @@ class System extends BaseController
      */
     public function updateRole()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限修改角色')) {
+            return $response;
+        }
+
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '角色ID');
             $payload = $this->validateRolePayload($this->request->put());
@@ -109,8 +141,13 @@ class System extends BaseController
      */
     public function deleteRole()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限删除角色')) {
+            return $response;
+        }
+
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '角色ID');
+
             $role = Db::table(self::TABLE_ADMIN_ROLE)->where('id', $id)->find();
             if (!$role) {
                 return $this->error('角色不存在', 404);
@@ -147,11 +184,16 @@ class System extends BaseController
      */
     public function getPermissions()
     {
+        if ($response = $this->ensureSystemReadAccess()) {
+            return $response;
+        }
+
         $permissions = Db::table(self::TABLE_ADMIN_PERMISSION)
             ->order('module', 'asc')
             ->order('id', 'asc')
             ->select()
             ->toArray();
+
         
         $modules = [];
         foreach ($permissions as $permission) {
@@ -195,6 +237,10 @@ class System extends BaseController
      */
     public function getRolePermissions()
     {
+        if ($response = $this->ensureSystemReadAccess()) {
+            return $response;
+        }
+
         try {
             $roleId = $this->requirePositiveId($this->request->param('id'), '角色ID');
             $role = Db::table(self::TABLE_ADMIN_ROLE)->where('id', $roleId)->find();
@@ -219,8 +265,13 @@ class System extends BaseController
      */
     public function updateRolePermissions()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限修改角色权限')) {
+            return $response;
+        }
+
         try {
             $roleId = $this->requirePositiveId($this->request->param('id'), '角色ID');
+
             $role = Db::table(self::TABLE_ADMIN_ROLE)->where('id', $roleId)->find();
             if (!$role) {
                 return $this->error('角色不存在', 404);
@@ -276,10 +327,15 @@ class System extends BaseController
      */
     public function getDictTypes()
     {
+        if ($response = $this->ensureSystemReadAccess()) {
+            return $response;
+        }
+
         $list = Db::table(self::TABLE_ADMIN_DICT_TYPE)
             ->order('id', 'asc')
             ->select()
             ->toArray();
+
 
         return $this->success($list);
     }
@@ -289,6 +345,10 @@ class System extends BaseController
      */
     public function createDictType()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限创建字典类型')) {
+            return $response;
+        }
+
         try {
             $payload = $this->validateDictTypePayload($this->request->post());
             $this->assertDictTypeUnique($payload['type']);
@@ -320,8 +380,13 @@ class System extends BaseController
      */
     public function updateDictType()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限修改字典类型')) {
+            return $response;
+        }
+
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '字典类型ID');
+
             $payload = $this->validateDictTypePayload($this->request->put());
             $dictType = Db::table(self::TABLE_ADMIN_DICT_TYPE)->where('id', $id)->find();
             if (!$dictType) {
@@ -370,6 +435,10 @@ class System extends BaseController
      */
     public function deleteDictType()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限删除字典类型')) {
+            return $response;
+        }
+
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '字典类型ID');
             $dictType = Db::table(self::TABLE_ADMIN_DICT_TYPE)->where('id', $id)->find();
@@ -401,6 +470,10 @@ class System extends BaseController
      */
     public function getDictData()
     {
+        if ($response = $this->ensureSystemReadAccess()) {
+            return $response;
+        }
+
         $dictType = trim((string) $this->request->param('type'));
         if ($dictType === '') {
             return $this->error('字典类型不能为空');
@@ -421,8 +494,13 @@ class System extends BaseController
      */
     public function saveDictData()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限保存字典数据')) {
+            return $response;
+        }
+
         try {
             $payload = $this->validateDictDataPayload($this->request->post());
+
             $recordId = isset($payload['id']) ? $this->requirePositiveId($payload['id'], '字典数据ID') : 0;
 
             $dictType = Db::table(self::TABLE_ADMIN_DICT_TYPE)
@@ -486,8 +564,13 @@ class System extends BaseController
      */
     public function deleteDictData()
     {
+        if ($response = $this->ensureSystemWriteAccess('无权限删除字典数据')) {
+            return $response;
+        }
+
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '字典数据ID');
+
             $exists = Db::table(self::TABLE_ADMIN_DICT_DATA)->where('id', $id)->find();
             if (!$exists) {
                 return $this->error('字典数据不存在', 404);

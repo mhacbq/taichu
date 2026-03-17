@@ -657,14 +657,7 @@ class AdminStatsService
             return self::$tableColumnCache[$table];
         }
 
-        $columns = [];
-        foreach (Db::query('SHOW COLUMNS FROM `' . $table . '`') as $column) {
-            $field = (string) ($column['Field'] ?? '');
-            if ($field !== '') {
-                $columns[$field] = true;
-            }
-        }
-
+        $columns = SchemaInspector::getTableColumns($table);
         self::$tableColumnCache[$table] = $columns;
 
         return $columns;
@@ -754,8 +747,7 @@ class AdminStatsService
      */
     protected static function tableExists(string $table): bool
     {
-        $escapedTable = addslashes($table);
-        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
+        return SchemaInspector::tableExists($table);
     }
 
     /**

@@ -1,6 +1,14 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 00:30 后台鉴权与系统权限边界修复记录（本次）
+
+- 完成 5 个后台 / 运营类问题：移除后台 JWT 固定默认密钥回退、补齐管理员 Token 声明与启用状态校验、为 `auth/info` 返回真实角色/权限/状态、收紧系统角色/权限/字典接口的 `config_manage` 权限边界、统一以 `SchemaInspector` 替代 MySQL `SHOW TABLES / SHOW COLUMNS` 探测。
+- 关键代码：新增 `backend/app/service/SchemaInspector.php`；更新 `backend/app/controller/admin/Auth.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/AdminAuthService.php`、`backend/app/service/AdminStatsService.php`、`backend/app/controller/admin/System.php`，并已在 `TODO.md` 回写第二十四轮完成项。
+- 验证：已对 `backend/app/controller/admin/{Auth,System}.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/{AdminAuthService,AdminStatsService,SchemaInspector}.php` 执行 IDE 诊断检查，结果均为 0 条；待提交前继续执行 `git diff --check` 做补丁格式校验。
+- Git：本轮提交信息使用 `fix-backend-admin-auth-hardening-20260318-0030`。
+
 ## 2026-03-17 23:45 管理后台角色/日志/风控修复记录（本次）
+
 
 - 完成 5 个后台 / 运营类问题：统一独立后台代理端口与文档口径、修复侧边栏按角色过滤与路由守卫、补齐管理员保存/删除与积分统计接口、补齐风控规则更新与日志清理/导出接口、把统计表与反作弊表纳入 fresh setup 初始化链路。
 - 关键代码：`backend/app/controller/Admin.php` 新增 `saveAdminUser()` / `deleteAdminUser()` / `pointsStats()` / `updateRiskRule()` / `clearLogs()` / `exportLogs()`；`admin/src/views/system/admin.vue`、`admin/src/views/anticheat/rules.vue`、`admin/src/views/log/operation.vue` 已接回真实接口；新增 SQL：`database/20260317_create_admin_stats_tables.sql`、`database/20260317_create_anticheat_tables.sql`。

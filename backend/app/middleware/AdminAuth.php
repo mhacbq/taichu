@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace app\middleware;
 
+use app\service\AdminAuthService;
+use app\service\SchemaInspector;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use think\facade\Db;
@@ -35,15 +37,45 @@ class AdminAuth
             ], 401);
         }
 
+        if ($this->jwtKey === '') {
+            return json([
+                'code' => 500,
+                'message' => '后台鉴权配置缺失，请联系管理员',
+                'data' => null,
+            ], 500);
+        }
+
         $token = substr($authHeader, 7);
 
         try {
             $decoded = JWT::decode($token, new Key($this->jwtKey, 'HS256'));
+            $adminId = isset($decoded->sub) ? (int) $decoded->sub : 0;
+            $issuer = trim((string) ($decoded->iss ?? ''));
+            $isAdmin = (bool) ($decoded->is_admin ?? false);
+
+            if ($adminId <= 0 || $issuer !== 'taichu-admin' || !$isAdmin) {
+                throw new \UnexpectedValueException('后台 Token 声明无效');
+            }
+
+            $admin = AdminAuthService::findActiveAdmin($adminId);
+            if (!$admin) {
+                return json([
+                    'code' => 401,
+                    'message' => '管理员账号不存在或已停用',
+                    'data' => null,
+                ], 401);
+            }
+
+            $roles = $this->normalizeClientRoles(AdminAuthService::getAdminRoleCodes($adminId));
+            $permissions = AdminAuthService::getAdminPermissions($adminId);
 
             $request->adminUser = [
-                'id' => (int) $decoded->sub,
-                'username' => (string) $decoded->username,
-                'roles' => is_array($decoded->roles ?? null) ? $decoded->roles : ['admin'],
+                'id' => $adminId,
+                'username' => (string) (($admin['username'] ?? '') ?: ($decoded->username ?? '')),
+                'nickname' => (string) (($admin['nickname'] ?? '') ?: ($admin['username'] ?? '') ?: ($decoded->username ?? '')),
+                'roles' => $roles,
+                'role' => $roles[0] ?? '',
+                'permissions' => $permissions,
             ];
 
             $this->logOperation($request);
@@ -85,7 +117,7 @@ class AdminAuth
             $detail = '{}';
         }
 
-        $columns = $this->getTableColumns($table);
+        $columns = SchemaInspector::getTableColumns($table);
         $data = [
             'admin_id' => $request->adminUser['id'] ?? 0,
             'admin_name' => $request->adminUser['username'] ?? '',
@@ -193,8 +225,8 @@ class AdminAuth
             }
         }
 
-        Log::warning('后台鉴权未配置独立 JWT 密钥，已回退到开发默认值');
-        return 'taichu_admin_default_secret_2024';
+        Log::error('后台鉴权缺少 JWT 密钥配置，请设置 ADMIN_JWT_SECRET 或 JWT_SECRET');
+        return '';
     }
 
     /**
@@ -203,7 +235,7 @@ class AdminAuth
     protected function resolveAdminLogTable(): ?string
     {
         foreach (['tc_admin_log', 'admin_log'] as $table) {
-            if ($this->tableExists($table)) {
+            if (SchemaInspector::tableExists($table)) {
                 return $table;
             }
         }
@@ -212,29 +244,23 @@ class AdminAuth
     }
 
     /**
-     * 判断表是否存在
+     * 统一对外角色编码，兼容 super_admin / normal_admin / customer_service 等历史值
      */
-    protected function tableExists(string $table): bool
+    protected function normalizeClientRoles(array $roles): array
     {
-        $escapedTable = addslashes($table);
-        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
-    }
+        $normalized = [];
+        foreach ($roles as $role) {
+            $code = match (strtolower(trim((string) $role))) {
+                'super_admin', 'admin' => 'admin',
+                'normal_admin', 'operator', 'customer_service' => 'operator',
+                default => strtolower(trim((string) $role)),
+            };
 
-    /**
-     * 读取表字段信息，兼容不同版本日志表结构
-     */
-    protected function getTableColumns(string $table): array
-    {
-        $escapedTable = str_replace('`', '``', $table);
-        $columns = [];
-
-        foreach (Db::query("SHOW COLUMNS FROM `{$escapedTable}`") as $column) {
-            $field = (string) ($column['Field'] ?? '');
-            if ($field !== '') {
-                $columns[$field] = true;
+            if ($code !== '' && !in_array($code, $normalized, true)) {
+                $normalized[] = $code;
             }
         }
 
-        return $columns;
+        return $normalized;
     }
 }

@@ -1,12 +1,33 @@
+## 🛠 第二十四轮后台运营检查报告 (2026-03-18)
+
+作为网站运营人员，我按真实运营路径再次实测独立后台 `http://localhost:3001`：先用默认账号尝试登录，确认账号密码登录仍返回“管理员账号表不存在”；随后使用可通过 `auth/info` 的测试 token 进入 Dashboard、用户、黄历、SEO、公告、系统设置等页面，并结合接口探测与前端逻辑交叉核验。以下仅记录本轮新增且未与 `TODO.md` 现有问题重复的项：
+
+### 🔴 高优先级（运营阻塞问题）
+- [ ] [运营] 基础配置、SEO 管理、系统公告等页面在接口返回 403 时仍继续渲染默认 0 值或“暂无数据”，运营无法区分“真的没数据”和“其实无权限/加载失败”，继续保存还可能误把默认空配置覆盖到线上 - 系统配置 / SEO / 通知配置 - 建议统一接入显式错误态与只读保护，接口失败时禁用保存、新增、删除等操作。
+
+### 🟡 中优先级（运营体验问题）
+- [x] [运营] `auth/info` 返回的是 `roles` 数组，但 Dashboard 快捷操作与充值/VIP订单页仍读取 `userInfo.role` 单值判断权限，实测 admin 进入首页时看不到 SEO/系统设置快捷入口，订单页后续即便有数据也不会显示“补单/退款”等处理按钮 - 后台首页 / 订单管理 - 已在 `backend/app/controller/admin/Auth.php` 与 `backend/app/middleware/AdminAuth.php` 改为实时查库返回 `roles + role + permissions + status`，并统一基于有效管理员账号状态回填角色，后台仍读取单值 `role` 的页面也能正确识别管理员权限。
+- [ ] [运营] 用户详情接口加载失败时，页面仍展示空白基础资料和写死的“登录系统 / 进行八字排盘 / 查看每日运势”最近活动，占位内容与真实用户行为无法区分，容易误导运营做出错误判断 - 用户管理 / 用户详情 - 建议接口失败时展示明确错误态，移除 mock 活动数据并禁止继续调积分。
+
+### 🟢 低优先级（运营优化建议）
+
+---
+
 ## 🔍 代码逻辑检查报告 - 第二十四轮 (2026-03-18)
+
 
 作为代码审查专家，我对太初命理网站的代码进行了全面检查，发现以下问题：
 
 ### 🔴 高优先级
+- [x] [代码] 后台 JWT 鉴权仍会回退固定默认密钥，环境变量缺失时后台接口会落到已知密钥上运行 - `backend/app/middleware/AdminAuth.php`、`backend/app/controller/admin/Auth.php` - 已移除固定默认密钥回退，统一改为仅接受 `ADMIN_JWT_SECRET / JWT_SECRET` 的真实配置，缺失时返回明确配置错误并写入告警日志。
+- [x] [代码] 后台鉴权中间件只要能解开 JWT 就放行，未校验 `iss / is_admin`，也不会回查管理员状态，普通用户 token 或已停用管理员会话存在误入后台风险 - `backend/app/middleware/AdminAuth.php`、`backend/app/service/AdminAuthService.php` - 已增加 `taichu-admin` 签发者与 `is_admin=true` 校验，并在每次请求时实时检查管理员账号是否存在且启用，再按数据库角色回填 `roles / role / permissions`。
 
 ### 🟡 中优先级
+- [x] [代码] 系统角色、权限、字典接口此前只有 `AdminAuth`，缺少 `config_manage` 级别门禁，任意已登录后台账号都可能越权查看或修改系统配置 - `backend/app/controller/admin/System.php` - 已补统一 `ensureSystemReadAccess()` / `ensureSystemWriteAccess()`，为角色、权限、字典的读写接口统一加上权限校验。
+- [x] [代码] 后台统计/鉴权链路多处直接写死 MySQL `SHOW TABLES / SHOW COLUMNS` 探测表结构，数据库驱动兼容性和可维护性都偏弱 - `backend/app/service/SchemaInspector.php`、`backend/app/service/AdminStatsService.php`、`backend/app/controller/admin/Auth.php`、`backend/app/middleware/AdminAuth.php` - 已收敛为统一的 schema 探测服务，改用 ThinkORM 的表字段信息能力读取表/字段存在性。
 
 ### 🟢 低优先级
+- [x] [代码] `auth/info` 之前直接回 token 内角色并写死 `permissions=['*']`，角色调整后前端展示与实际权限容易长期不一致 - `backend/app/controller/admin/Auth.php` - 已改为基于中间件注入的有效管理员身份实时查库，返回真实 `roles / role / permissions / status`，减少后台权限展示与实际授权脱节。
 
 代码整体质量观察：
 
@@ -428,8 +449,6 @@
 ### 🔴 高优先级（功能性问题）
 
 ### 🟡 中优先级（体验问题）
-- [ ] [UI] 首页“用户心声”整组五星评价与案例文案全部前端硬编码，未区分示例故事与真实评价，社会证明区的可信度偏弱 - 首页用户评价区（`frontend/src/views/Home.vue`） - 建议接入真实评价数据，或明确标注为“体验故事 / 示例反馈”，并在版式上拉开评分、服务类型与正文层级。
 
 
 ### 🟢 低优先级（美观问题）
-- [ ] [UI] 首页首屏同时叠放问候卡 / 积分卡 / 欢迎卡与 Hero 主文案，白底长页进入后主标题和主按钮容易被下压，首屏视觉重心不够集中 - 首页首屏布局（`frontend/src/views/Home.vue`） - 建议将登录态卡片收敛为单一信息层，优先保证主标题、核心卖点与主按钮在首屏完整露出。
