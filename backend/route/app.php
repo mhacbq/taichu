@@ -28,7 +28,7 @@ Route::group('api', function () {
     // 健康检查
     Route::get('health', function() {
         return json([
-            'code' => 0,
+            'code' => 200,
             'message' => 'success',
             'data' => [
                 'status' => 'ok',
@@ -235,6 +235,8 @@ Route::options('api/admin/:any', function() {
         ->header('Access-Control-Max-Age', '86400');
 });
 
+
+
 Route::group('api/admin', function () {
     // 仪表盘
     Route::group('dashboard', function () {
@@ -244,7 +246,7 @@ Route::group('api/admin', function () {
         Route::get('chart/:type', 'admin.Dashboard/chart');
         Route::get('pending-feedback', 'admin.Dashboard/pendingFeedback');
     });
-    
+
     // 配置管理
     Route::group('config', function () {
         Route::get('', 'admin.Config/index');
@@ -261,11 +263,10 @@ Route::group('api/admin', function () {
         Route::post('update-marketing', 'admin.Config/updateMarketing');
         Route::post('refresh-cache', 'admin.Config/refreshCache');
     });
-    
 })->middleware([
     \app\middleware\HttpsEnforce::class,
     \app\middleware\Cors::class,
-    \app\middleware\Auth::class,  // 需要管理员认证
+    \app\middleware\AdminAuth::class,
 ]);
 
 // 404处理

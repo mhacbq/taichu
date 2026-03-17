@@ -13,6 +13,7 @@ use app\model\QuestionTemplate;
 use app\model\DailyFortuneTemplate;
 use think\Request;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 网站内容管理控制器
@@ -52,7 +53,7 @@ class SiteContent extends BaseController
      */
     public function updatePageContent(Request $request)
     {
-        $userId = $request->userId ?? 0;
+        $operatorId = $this->getOperatorId();
         $page = $request->param('page', 'home');
         $contents = $request->param('contents', []);
         
@@ -66,11 +67,16 @@ class SiteContent extends BaseController
         }
         
         try {
-            SiteContentModel::batchUpdate($contents, $page, $userId);
+            SiteContentModel::batchUpdate($contents, $page, $operatorId);
             
             return $this->success(null, '更新成功');
         } catch (\Exception $e) {
-            return $this->error('更新失败：' . $e->getMessage(), 500);
+            Log::error('批量更新站点内容失败', [
+                'page' => $page,
+                'operator_id' => $operatorId,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('更新失败，请稍后重试', 500);
         }
     }
     
@@ -108,8 +114,9 @@ class SiteContent extends BaseController
     public function updateContent(Request $request)
     {
         $id = $request->param('id');
+        $operatorId = $this->getOperatorId();
         $data = $request->only(['key', 'page', 'value', 'description', 'is_enabled', 'sort_order']);
-        $data['updated_by'] = $request->userId ?? 0;
+        $data['updated_by'] = $operatorId;
         
         try {
             if ($id) {
@@ -119,13 +126,18 @@ class SiteContent extends BaseController
                 }
                 $content->save($data);
             } else {
-                $data['created_by'] = $request->userId ?? 0;
+                $data['created_by'] = $operatorId;
                 SiteContentModel::create($data);
             }
             
             return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return $this->error('保存失败：' . $e->getMessage(), 500);
+            Log::error('保存站点内容失败', [
+                'content_id' => $id,
+                'operator_id' => $operatorId,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -427,7 +439,11 @@ class SiteContent extends BaseController
             
             return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return $this->error('保存失败：' . $e->getMessage(), 500);
+            Log::error('保存牌阵失败', [
+                'spread_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     

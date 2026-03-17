@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\DailyFortune;
 use app\model\PointsRecord;
 use think\facade\Db;
+use think\facade\Log;
 
 class Daily extends BaseController
 {
@@ -288,8 +289,12 @@ class Daily extends BaseController
      */
     public function checkin()
     {
-        $user = $this->request->user;
-        $userId = $user['sub'];
+        $user = $this->request->user ?? [];
+        $userId = isset($user['sub']) ? (int) $user['sub'] : 0;
+        if ($userId <= 0) {
+            return $this->error('请先登录', 401);
+        }
+
         $today = date('Y-m-d');
         
         // 检查今天是否已签到
@@ -309,7 +314,7 @@ class Daily extends BaseController
             ->where('date', $yesterday)
             ->find();
         
-        $consecutiveDays = $yesterdayCheckin ? ($yesterdayCheckin['consecutive_days'] + 1) : 1;
+        $consecutiveDays = $yesterdayCheckin ? ((int) $yesterdayCheckin['consecutive_days'] + 1) : 1;
         
         // 计算奖励
         $basePoints = self::CHECKIN_POINTS;
@@ -325,7 +330,7 @@ class Daily extends BaseController
         
         Db::startTrans();
         try {
-            // 记录签到
+            // 记录签到，依赖(user_id, date)唯一索引兜底并发重复请求
             Db::name('checkin_record')->insert([
                 'user_id' => $userId,
                 'date' => $today,
@@ -336,6 +341,10 @@ class Daily extends BaseController
             
             // 增加积分
             $userModel = \app\model\User::find($userId);
+            if (!$userModel) {
+                throw new \RuntimeException('签到用户不存在');
+            }
+
             $userModel->addPoints($totalPoints);
             
             // 记录积分变动
@@ -364,12 +373,36 @@ class Daily extends BaseController
                     ? "签到成功！获得{$basePoints}积分，连续{$consecutiveDays}天额外奖励{$bonusPoints}积分！"
                     : "签到成功！获得{$basePoints}积分！",
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
-            return $this->error('签到失败: ' . $e->getMessage());
+
+            if ($this->isDuplicateCheckinException($e)) {
+                return $this->error('您今天已经签到过了，明天再来吧！', 400);
+            }
+
+            Log::error('每日签到失败', [
+                'user_id' => $userId,
+                'date' => $today,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('签到失败，请稍后重试', 500);
         }
     }
     
+    /**
+     * 判断是否为重复签到异常
+     */
+    protected function isDuplicateCheckinException(\Throwable $e): bool
+    {
+        $errorCode = (string) $e->getCode();
+        $message = strtolower($e->getMessage());
+
+        return in_array($errorCode, ['1062', '23000'], true)
+            || str_contains($message, 'duplicate')
+            || str_contains($message, 'uk_user_date');
+    }
+
     /**
      * 获取签到状态
      */

@@ -16,11 +16,23 @@ use think\facade\Log;
 
 class Auth extends BaseController
 {
+    protected array $middleware = [
+        \app\middleware\Auth::class => ['only' => ['userinfo', 'updateProfile', 'myInvites']],
+    ];
+
     // 常量定义
     protected const MIN_PASSWORD_LENGTH = 6;
     protected const MAX_NICKNAME_LENGTH = 50;
     protected const REGISTER_POINTS = 100;
     
+    /**
+     * 兼容旧版登录接口
+     */
+    public function login()
+    {
+        return $this->phoneLogin();
+    }
+
     /**
      * 手机号登录/注册
      */
@@ -320,13 +332,33 @@ class Auth extends BaseController
             Db::rollback();
         }
     }
+
+    /**
+     * 获取当前登录用户载荷
+     */
+    protected function getAuthenticatedUserPayload(): ?array
+    {
+        $user = $this->request->user ?? null;
+
+        if (!is_array($user) || empty($user['sub']) || !is_numeric($user['sub'])) {
+            return null;
+        }
+
+        $user['sub'] = (int) $user['sub'];
+
+        return $user;
+    }
     
     /**
      * 获取用户信息
      */
     public function userinfo()
     {
-        $user = $this->request->user;
+        $user = $this->getAuthenticatedUserPayload();
+        if (!$user) {
+            return $this->error('请先登录', 401);
+        }
+
         $userInfo = User::find($user['sub']);
         
         if (!$userInfo) {
@@ -355,9 +387,12 @@ class Auth extends BaseController
      */
     public function updateProfile()
     {
-        $user = $this->request->user;
+        $user = $this->getAuthenticatedUserPayload();
+        if (!$user) {
+            return $this->error('请先登录', 401);
+        }
+
         $data = $this->request->post();
-        
         $userInfo = User::find($user['sub']);
         
         if (!$userInfo) {
@@ -368,26 +403,35 @@ class Auth extends BaseController
         $updateData = [];
         
         foreach ($allowFields as $field) {
-            if (isset($data[$field])) {
-                $value = $data[$field];
-                
-                // 对昵称进行XSS过滤
-                if ($field === 'nickname') {
-                    $value = $this->filterXss($value);
-                }
-                
-                // 对头像URL进行过滤
-                if ($field === 'avatar') {
-                    $value = $this->filterUrl($value);
-                }
-                
-                // 验证性别范围
-                if ($field === 'gender') {
-                    $value = in_array($value, [0, 1, 2]) ? $value : 0;
-                }
-                
-                $updateData[$field] = $value;
+            if (!isset($data[$field])) {
+                continue;
             }
+
+            $value = $data[$field];
+
+            if ($field === 'nickname') {
+                $value = $this->filterXss(trim((string) $value));
+                if ($value === '') {
+                    return $this->error('昵称不能为空');
+                }
+            }
+
+            if ($field === 'avatar') {
+                $value = $this->filterUrl((string) $value);
+            }
+
+            if ($field === 'gender') {
+                $value = in_array((int) $value, [0, 1, 2], true) ? (int) $value : 0;
+            }
+
+            if ($field === 'phone') {
+                $value = trim((string) $value);
+                if (!preg_match('/^1[3-9]\d{9}$/', $value)) {
+                    return $this->error('手机号格式不正确');
+                }
+            }
+                
+            $updateData[$field] = $value;
         }
         
         if (empty($updateData)) {
@@ -438,26 +482,38 @@ class Auth extends BaseController
      */
     public function myInvites()
     {
-        $user = $this->request->user;
-        $page = (int)$this->request->get('page', 1);
-        $limit = (int)$this->request->get('limit', 10);
-        
-        $offset = ($page - 1) * $limit;
+        $user = $this->getAuthenticatedUserPayload();
+        if (!$user) {
+            return $this->error('请先登录', 401);
+        }
+
+        $pagination = $this->normalizePagination(
+            $this->request->get('page', 1),
+            $this->request->get('limit', 10),
+            10,
+            50
+        );
+        $page = $pagination['page'];
+        $limit = $pagination['pageSize'];
         
         // 获取邀请记录
         $invites = InviteRecord::where('inviter_id', $user['sub'])
             ->where('status', 1)
             ->order('created_at', 'desc')
-            ->limit($offset, $limit)
+            ->page($page, $limit)
             ->select();
-        
-        // 获取被邀请人信息
-        $inviteeIds = array_column($invites->toArray(), 'invitee_id');
-        $inviteeInfos = User::whereIn('id', $inviteeIds)
-            ->column('nickname,avatar,created_at', 'id');
+
+        $inviteList = $invites->toArray();
+        $inviteeIds = array_values(array_unique(array_filter(array_column($inviteList, 'invitee_id'))));
+        $inviteeInfos = [];
+
+        if (!empty($inviteeIds)) {
+            $inviteeInfos = User::whereIn('id', $inviteeIds)
+                ->column('nickname,avatar,created_at', 'id');
+        }
         
         $result = [];
-        foreach ($invites as $invite) {
+        foreach ($inviteList as $invite) {
             $inviteeInfo = $inviteeInfos[$invite['invitee_id']] ?? [];
             $result[] = [
                 'invitee_id' => $invite['invitee_id'],
@@ -475,10 +531,10 @@ class Auth extends BaseController
         
         return $this->success([
             'list' => $result,
-            'total' => $total,
+            'total' => (int) $total,
             'page' => $page,
             'limit' => $limit,
-            'total_pages' => ceil($total / $limit),
+            'total_pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
         ]);
     }
 }
