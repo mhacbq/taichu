@@ -268,7 +268,7 @@ onUnmounted(() => {
 }
 
 .offer-banner {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: var(--primary-gradient);
   border-radius: 16px;
   padding: 16px 20px;
   display: flex;
@@ -276,24 +276,24 @@ onUnmounted(() => {
   gap: 16px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 20px rgba(238, 90, 111, 0.3);
+  box-shadow: 0 4px 20px rgba(184, 134, 11, 0.3);
 }
 
 .offer-banner:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(238, 90, 111, 0.4);
+  box-shadow: 0 8px 30px rgba(184, 134, 11, 0.4);
 }
 
 .limited-offer.is-ending .offer-banner {
-  animation: pulse-red 1.5s infinite;
+  animation: pulse-gold 1.5s infinite;
 }
 
-@keyframes pulse-red {
+@keyframes pulse-gold {
   0%, 100% {
-    box-shadow: 0 4px 20px rgba(238, 90, 111, 0.3);
+    box-shadow: 0 4px 20px rgba(184, 134, 11, 0.3);
   }
   50% {
-    box-shadow: 0 4px 30px rgba(238, 90, 111, 0.6);
+    box-shadow: 0 4px 30px rgba(184, 134, 11, 0.6);
   }
 }
 
@@ -380,7 +380,7 @@ onUnmounted(() => {
 .detail-countdown {
   text-align: center;
   padding: 20px;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: var(--primary-gradient);
   border-radius: 16px;
   margin-bottom: 24px;
   color: white;
@@ -458,17 +458,17 @@ onUnmounted(() => {
 
 .current-price .price-label {
   font-size: 12px;
-  color: #ee5a6f;
+  color: var(--primary-color);
 }
 
 .current-price .price-value {
   font-size: 36px;
   font-weight: 700;
-  color: #ee5a6f;
+  color: var(--primary-color);
 }
 
 .discount-badge {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: var(--primary-gradient);
   color: white;
   padding: 6px 14px;
   border-radius: 20px;
@@ -497,7 +497,7 @@ onUnmounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: var(--primary-gradient);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
@@ -509,7 +509,7 @@ onUnmounted(() => {
 .benefits-section h4 {
   font-size: 16px;
   margin-bottom: 12px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .benefits-list {
@@ -523,7 +523,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .offer-actions {
@@ -534,7 +534,7 @@ onUnmounted(() => {
   width: 100%;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: var(--primary-gradient);
   border: none;
 }
 

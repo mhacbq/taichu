@@ -453,7 +453,7 @@ onMounted(() => {
 .btn-submit {
   width: 100%;
   padding: 18px;
-  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  background: var(--primary-gradient);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -753,7 +753,7 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  background: var(--primary-gradient);
   color: #fff;
 }
 

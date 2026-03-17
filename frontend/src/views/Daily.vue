@@ -293,7 +293,7 @@ onMounted(() => {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
+  background: var(--primary-gradient);
   display: flex;
   flex-direction: column;
   justify-content: center;

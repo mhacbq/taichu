@@ -719,11 +719,12 @@ onMounted(() => {
 .footer-quote {
   margin-bottom: 30px;
   padding: 20px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(184, 134, 11, 0.05));
+  background: rgba(184, 134, 11, 0.05);
   border-radius: 12px;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+  border: 1px solid rgba(184, 134, 11, 0.1);
 }
 
 .footer-quote p {
