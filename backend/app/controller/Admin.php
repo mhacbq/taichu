@@ -1513,12 +1513,11 @@ class Admin extends BaseController
             $pageSize = $pagination['pageSize'];
             $status = $request->get('status', '');
 
-            $query = Db::name('system_config')
+            $rows = Db::name('system_config')
                 ->where('category', self::CATEGORY_SYSTEM_NOTICE)
-                ->order('created_at', 'desc');
-
-            $total = $query->count();
-            $rows = $query->page($page, $pageSize)->select()->toArray();
+                ->order('created_at', 'desc')
+                ->select()
+                ->toArray();
             $list = [];
             foreach ($rows as $row) {
                 $item = $this->decodeConfigJson($row['config_value']);
@@ -1537,10 +1536,14 @@ class Admin extends BaseController
                 ];
             }
 
+            $total = count($list);
+            $list = array_slice($list, ($page - 1) * $pageSize, $pageSize);
+
             return $this->success([
-                'list' => $list,
+                'list' => array_values($list),
                 'total' => $total,
             ], '获取成功');
+
         } catch (\Exception $e) {
             Log::error('获取系统公告失败: ' . $e->getMessage(), [
                 'admin_id' => $this->adminId,
@@ -1668,14 +1671,75 @@ class Admin extends BaseController
     }
 
     /**
+     * 获取管理员列表
+     */
+    public function getAdminUsers(Request $request)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限查看管理员列表', 403);
+        }
+
+        try {
+            $pagination = $this->normalizePagination(
+                $request->get('page', 1),
+                $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
+                self::DEFAULT_PAGE_SIZE,
+                self::MAX_PAGE_SIZE
+            );
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $keyword = trim((string) $request->get('keyword', ''));
+            $status = $request->get('status', '');
+
+            $query = Db::name('admin')
+                ->alias('a')
+                ->leftJoin('tc_admin_user_role aur', 'aur.admin_id = a.id')
+                ->leftJoin('tc_admin_role r', 'r.id = aur.role_id')
+                ->field('a.id,a.username,a.nickname,a.status,a.last_login_at,r.name as role_name,r.code as role_code')
+                ->group('a.id')
+                ->order('a.id', 'desc');
+
+            if ($keyword !== '') {
+                $query->whereLike('a.username|a.nickname', '%' . addcslashes($keyword, '%_\\') . '%');
+            }
+            if ($status !== '') {
+                $query->where('a.status', (int) $status);
+            }
+
+            $rows = $query->select()->toArray();
+            $total = count($rows);
+            $list = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
+
+            foreach ($list as &$item) {
+                $item['role_name'] = $item['role_name'] ?: '未分配角色';
+                $item['role_code'] = $item['role_code'] ?: '';
+                $item['nickname'] = $item['nickname'] ?: $item['username'];
+                $item['status'] = (int) ($item['status'] ?? 0);
+            }
+            unset($item);
+
+            return $this->success([
+                'list' => array_values($list),
+                'total' => $total,
+            ], '获取成功');
+        } catch (\Exception $e) {
+            Log::error('获取管理员列表失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+            ]);
+            return $this->error('获取管理员列表失败，请稍后重试', 500);
+        }
+    }
+
+    /**
      * 处理配置值根据类型
      */
     protected function processConfigValue($value, string $type): string
 
+
     {
         switch ($type) {
             case 'json':
-                return is_array($value) ? json_encode($value) : (string)$value;
+                return is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string)$value;
             case 'bool':
                 return $value ? '1' : '0';
             case 'int':
@@ -1687,10 +1751,48 @@ class Admin extends BaseController
                 return (string)$value;
         }
     }
+
+    /**
+     * 解析配置中的JSON值
+     */
+    protected function decodeConfigJson(?string $value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * 检查敏感词是否重复
+     */
+    protected function hasDuplicateSensitiveWord(string $word, int $excludeId = 0): bool
+    {
+        $rows = Db::name('system_config')
+            ->where('category', self::CATEGORY_SENSITIVE_WORDS)
+            ->select()
+            ->toArray();
+
+        foreach ($rows as $row) {
+            if ($excludeId > 0 && (int) $row['id'] === $excludeId) {
+                continue;
+            }
+
+            $item = $this->decodeConfigJson($row['config_value']);
+            if (($item['word'] ?? '') === $word) {
+                return true;
+            }
+        }
+
+        return false;
+    }
     
     /**
      * 获取操作日志列表
      */
+
     public function operationLogs(Request $request)
     {
         // 检查权限

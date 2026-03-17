@@ -45,7 +45,8 @@
 ## 💻 后端逻辑与系统安全
 
 ### 🔴 高优先级
-- [ ] **修复Auth.php重复导入** - `backend/app/controller/Auth.php` 第15-16行重复导入 `use think\facade\Log;`，删除其中一行
+- [x] **修复Auth.php重复导入** - `backend/app/controller/Auth.php` 中重复导入 `use think\facade\Log;` 的问题已清理完成。
+
 - [ ] **安全风险修复**：
     - 修复 `Admin.php` 和 `Content.php` 中的 SQL 注入隐患，使用参数绑定替代字符串拼接。
     - [x] 移除 `AdminAuth.php` 中的硬编码管理员凭据，对接数据库验证。(已完成)
@@ -123,13 +124,15 @@
 ### 2026-03-17 第十四轮检查报告
 
 #### 🔴 高优先级（运营阻塞问题）
-- [ ] [运营] 后端控制器方法缺失 - 系统管理/用户管理/积分管理/反馈管理 - `backend/route/admin.php` 中定义的数十个路由（如 `userBehavior`, `getPointsRules`, `getSensitiveWords`, `getNotices`, `getAdminUsers`, `riskEvents`, `task*` 等）在 `Admin.php` 控制器中均未实现，导致前端对应页面无法正常工作。
+- [ ] [运营] 后端控制器方法缺失 - 系统管理/用户管理/积分管理/反馈管理 - `backend/route/admin.php` 中仍有部分路由未实现（如 `userBehavior`, `riskEvents`, `task*` 等）；本轮已补齐 `getPointsRules` / `savePointsRules`、敏感词管理、系统公告、`getAdminUsers` 等关键接口。
+
 - [ ] [运营] 神煞数据管理功能缺失 - 内容管理 - 后端未定义相关路由和控制器方法，前端也缺少管理界面，无法维护命理核心数据。
 - [ ] [运营] SEO内容管理功能缺失 - 系统配置 - 后端缺少SEO专用的元数据管理接口（TDK配置等），影响网站搜索引擎优化运营。
 
 #### 🟡 中优先级（运营体验问题）
 - [ ] [运营] 知识库管理功能不完整 - 内容管理 - 当前仅有 `FAQ` 管理，缺少完整的知识库文章（Blog/Articles）发布和分类管理功能。
-- [ ] [运营] 权限验证不一致 - 站点内容管理 - `backend/route/sitecontent.php` 使用 `Auth` 中间件，而其他管理路由使用 `AdminAuth`，可能导致管理员权限越权或普通用户访问管理接口。
+- [x] [运营] 权限验证不一致 - 站点内容管理 - `backend/route/sitecontent.php` 已统一为 `AdminAuth` 中间件，避免普通用户访问管理接口。
+
 - [ ] [运营] 字典管理数据模拟 - 系统管理 - `admin/src/views/system/dict.vue` 及相关组件仍在使用部分模拟逻辑，需确保完全对接后端 `System.php` 的字典接口。
 
 #### 🟢 低优先级（运营优化建议）

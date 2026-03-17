@@ -38,7 +38,7 @@ const goBack = () => {
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  border-radius: 16px;
   color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
   cursor: pointer;
@@ -46,8 +46,8 @@ const goBack = () => {
 }
 
 .back-button:hover {
-  background: rgba(184, 134, 11, 0.2);
-  border-color: rgba(184, 134, 11, 0.5);
+  background: var(--primary-light-10);
+  border-color: var(--primary-light-30);
   transform: translateX(-3px);
 }
 
