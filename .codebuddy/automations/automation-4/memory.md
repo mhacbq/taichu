@@ -1,5 +1,49 @@
 # 待办处理执行器 - 执行记录
 
+## 2026-03-17 执行记录（第二十次）
+
+### 本次处理任务
+- **任务**: 修复后端Content.php SQL注入风险
+- **优先级**: 高优先级（安全问题）
+
+### 修复内容
+**问题**: backend/app/controller/Content.php第342-346行 - keyword参数使用字符串拼接而非参数绑定，存在SQL注入风险。
+
+**修复的文件**:
+1. **backend/app/controller/Content.php**
+   - 将`where('title|page_id', 'like', '%' . $keyword . '%')`改为`whereLike('title|page_id', '%' . $keyword . '%')`
+   - ThinkPHP的whereLike方法会自动处理参数绑定，防止SQL注入攻击
+   - 保留了原有的特殊字符过滤作为额外安全措施
+
+**修改前**:
+```php
+if ($keyword) {
+    // 使用ThinkPHP参数绑定，防止SQL注入
+    $keyword = preg_replace('/[%_\\\\]/', '', $keyword);
+    $query->where('title|page_id', 'like', '%' . $keyword . '%');
+}
+```
+
+**修改后**:
+```php
+if ($keyword) {
+    // 使用ThinkPHP参数绑定，防止SQL注入
+    $keyword = preg_replace('/[%_\\\\]/', '', $keyword);
+    $query->whereLike('title|page_id', '%' . $keyword . '%');
+}
+```
+
+### 验证结果
+- 后端代码语法正确
+- 使用ThinkPHP的whereLike方法更安全，自动处理参数绑定
+- 保留了特殊字符过滤作为额外安全措施
+
+### 待办状态更新
+- 已将后端Content.php SQL注入风险从"待处理项目"移到"已完成项目"
+- 更新了TODO.md文件
+
+---
+
 ## 2026-03-17 执行记录（第十九次）
 
 ### 本次处理任务

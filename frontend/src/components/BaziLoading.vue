@@ -138,12 +138,12 @@ onUnmounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(to bottom, #e94560 50%, #16213e 50%);
+  background: linear-gradient(to bottom, #b8860b 50%, #16213e 50%);
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 30px rgba(184, 134, 11, 0.5);
 }
 
 .yin-yang::before,
@@ -156,7 +156,7 @@ onUnmounted(() => {
 }
 
 .yin-yang::before {
-  background: #e94560;
+  background: #b8860b;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
@@ -180,7 +180,7 @@ onUnmounted(() => {
   position: absolute;
   width: 4px;
   height: 20px;
-  background: linear-gradient(to bottom, #e94560, #ff6b6b);
+  background: linear-gradient(to bottom, #b8860b, #daa520);
   border-radius: 2px;
   top: 50%;
   left: 50%;
@@ -243,10 +243,10 @@ onUnmounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: linear-gradient(90deg, #b8860b, #daa520);
   border-radius: 4px;
   transition: width 0.1s ease;
-  box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 10px rgba(184, 134, 11, 0.5);
 }
 
 .progress-text {

@@ -289,7 +289,7 @@ onMounted(() => {
 }
 
 .sub-text {
-  color: rgba(233, 69, 96, 0.9) !important;
+  color: rgba(184, 134, 11, 0.9) !important;
   margin-top: 20px;
   font-size: 14px;
 }
@@ -304,8 +304,8 @@ onMounted(() => {
 }
 
 .comfort-item {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.15), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(218, 165, 32, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.2);
   border-radius: 12px;
   padding: 15px 20px;
   display: flex;
@@ -318,7 +318,7 @@ onMounted(() => {
 
 .comfort-item:hover {
   transform: translateY(-3px);
-  border-color: rgba(233, 69, 96, 0.4);
+  border-color: rgba(184, 134, 11, 0.4);
 }
 
 .comfort-icon {
@@ -347,13 +347,13 @@ onMounted(() => {
 
 .feature-item:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(233, 69, 96, 0.3);
+  border-color: rgba(184, 134, 11, 0.3);
 }
 
 .feature-icon-bg {
   width: 45px;
   height: 45px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.3));
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.3), rgba(218, 165, 32, 0.3));
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -377,8 +377,8 @@ onMounted(() => {
 
 .feature-tag {
   display: inline-block;
-  background: rgba(233, 69, 96, 0.2);
-  color: #e94560;
+  background: rgba(184, 134, 11, 0.2);
+  color: #b8860b;
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
@@ -507,12 +507,12 @@ onMounted(() => {
 }
 
 .tip-item strong {
-  color: #e94560;
+  color: #b8860b;
 }
 
 .encourage-box {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.15), rgba(255, 107, 107, 0.15));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(218, 165, 32, 0.15));
+  border: 1px solid rgba(184, 134, 11, 0.3);
   border-radius: 12px;
   padding: 18px;
   margin-top: 20px;
@@ -539,13 +539,13 @@ onMounted(() => {
 }
 
 .footer-btn.primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #b8860b, #daa520);
   border: none;
 }
 
 .footer-btn.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 5px 20px rgba(184, 134, 11, 0.4);
 }
 
 @media (max-width: 480px) {

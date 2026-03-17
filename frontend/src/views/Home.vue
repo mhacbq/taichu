@@ -172,7 +172,7 @@
 import { ref, onMounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
-import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, User, UserFilled, Present, Switch, Link } from '@element-plus/icons-vue'
+import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link } from '@element-plus/icons-vue'
 
 const stats = ref([
   { number: '加载中...', label: '服务用户' },

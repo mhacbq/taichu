@@ -342,7 +342,7 @@ class Content extends BaseController
             if ($keyword) {
                 // 使用ThinkPHP参数绑定，防止SQL注入
                 $keyword = preg_replace('/[%_\\\\]/', '', $keyword);
-                $query->where('title|page_id', 'like', '%' . $keyword . '%');
+                $query->whereLike('title|page_id', '%' . $keyword . '%');
             }
             
             $pages = $query->page($page, $pageSize)->select();

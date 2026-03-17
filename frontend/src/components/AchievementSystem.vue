@@ -357,8 +357,8 @@ const formatDate = (dateStr) => {
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(233, 69, 96, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(184, 134, 11, 0); }
 }
 
 .achievement-icon {

@@ -929,6 +929,7 @@ const saving = ref(false)
 const versionMode = ref('simple') // 'simple' or 'pro'
 const isFirstBazi = ref(true) // 是否首次排盘
 const loadingStep = ref(1) // 加载步骤
+const stepIntervalRef = ref(null) // 步骤动画定时器引用
 
 // AI解盘相关
 const aiPrompt = ref('')
@@ -1161,7 +1162,7 @@ const calculateBazi = async () => {
   loadingStep.value = 1
   
   // 模拟步骤动画
-  const stepInterval = setInterval(() => {
+  stepIntervalRef.value = setInterval(() => {
     if (loadingStep.value < 4) {
       loadingStep.value++
     }
@@ -1175,7 +1176,8 @@ const calculateBazi = async () => {
       mode: versionMode.value,
     })
     
-    clearInterval(stepInterval)
+    clearInterval(stepIntervalRef.value)
+    stepIntervalRef.value = null
     loadingStep.value = 4
     
     // 延迟一下让用户看到完成状态
@@ -1197,7 +1199,10 @@ const calculateBazi = async () => {
     ElMessage.error('网络错误，请稍后重试')
     console.error(error)
   } finally {
-    clearInterval(stepInterval)
+    if (stepIntervalRef.value) {
+      clearInterval(stepIntervalRef.value)
+      stepIntervalRef.value = null
+    }
     loading.value = false
     loadingStep.value = 1
   }
@@ -1212,6 +1217,10 @@ onUnmounted(() => {
   if (aiLoadingTimer.value) {
     clearInterval(aiLoadingTimer.value)
     aiLoadingTimer.value = null
+  }
+  if (stepIntervalRef.value) {
+    clearInterval(stepIntervalRef.value)
+    stepIntervalRef.value = null
   }
 })
 
