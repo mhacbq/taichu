@@ -1,4 +1,18 @@
+## 🛠 第二十二轮后台运营检查报告 (2026-03-17)
+
+作为网站运营人员，我继续按真实运营路径巡检后台：先实测默认独立后台 `http://localhost:3001/login`，确认登录页可打开但提交会命中失效的 `8000` 端口；随后临时拉起直连 `8080` 的后台实例、注入管理员 token 进入 Dashboard，并结合受保护接口实测、运行中容器代码比对与错误日志交叉核验，新增以下不重复问题：
+
+### 🔴 高优先级（运营阻塞问题）
+- [ ] [运营] 当前运行中的后台容器仍在跑旧代码/旧初始化状态，仓库里已补的登录初始化、`checkPermission()` 兼容和神煞建表修复都没有在运行态生效，导致管理员登录继续报“管理员账号表不存在”，Dashboard 统计/趋势继续 500，神煞管理继续报错 - 管理员登录 / Dashboard / 内容管理 - 这不是单点功能问题，而是部署/重建链路没有把最新修复真正发布到当前后台，运营后台现状仍不可用。
+
+### 🟡 中优先级（运营体验问题）
+- [ ] [运营] 独立后台默认本地运行配置仍把 `/api` 代理到 `http://localhost:8000`，而当前标准本地后端健康地址是 `http://localhost:8080/api/health`，按文档直接打开 `http://localhost:3001/login` 提交登录会打到空端口卡死 - 管理员登录 / 本地联调入口 - 建议统一 `admin/vite.config.js`、启动脚本和本地文档里的后台 API 端口口径。
+- [ ] [运营] 后台侧边栏没有按角色过滤菜单，`admin/src/layout/components/Sidebar/index.vue` 直接把 `asyncRoutes` 全量渲染，运营人员会看到“短信管理 / AI管理 / 系统设置 / 日志管理 / 任务调度”等无权限入口，点进去后才会被拦截 - 后台导航 / 权限体验 - 建议按路由 `meta.roles` 过滤侧边栏，避免误导运营人员进入不可用模块。
+
+---
+
 ## 🛠 第二十一轮后台运营检查报告 (2026-03-17)
+
 
 作为网站运营人员，我在本地重建最新后端后，再次实测 `http://localhost:3001/login`、使用默认账号 `admin / admin123` 执行真实登录，并结合浏览器自动化、后台关键接口探测与运行日志核验，重点复核管理员登录、Dashboard、内容管理与日志链路，新增以下不重复问题：
 
@@ -166,19 +180,17 @@
 
 
 
-## 🔍 第三轮代码逻辑检查报告 (2026-03-17)
+## 🔍 代码逻辑检查报告 (2026-03-17)
 
 作为代码审查专家，我对太初命理网站的代码进行了全面检查，发现以下问题：
 
 ### 🔴 高优先级
-- [x] [2026-03-17] 后端管理路由配置不完整 - backend/route/{app,admin}.php - 已移除 `app.php` 中重复后台路由，并将 Almanac / Notice / SEO 后台入口统一收口到 `backend/route/admin.php`。
-- [ ] [2026-03-17] 后端异常信息泄露风险 - backend/app/controller/{Alipay,AiPrompt,AiAnalysis,Feedback,Hehun,Task}.php - `Admin.php` 与 `app/controller/admin/User.php` 已完成统一异常返回和脱敏日志收口，剩余公开业务控制器仍需继续清理直接输出 `$e->getMessage()` 的遗留点。
-
-- [x] [2026-03-17] 后端 Admin.php 控制器过于臃肿 - backend/app/controller/Admin.php - 本轮已将公告、黄历、SEO 继续拆分至 `app/controller/admin/{Notice,Almanac,Seo}.php`，并删除旧控制器中的重复实现。
-
 
 ### 🟡 中优先级
-- [ ] [2026-03-17] 管理后台权限控制粒度不足 - backend/app/middleware/AdminAuth.php - 建议实现基于操作的 RBAC 权限校验
+- [ ] [2026-03-17] 六爻控制器缺少API方法 - `backend/app/controller/Liuyao.php` - 路由定义了 `Liuyao/getPricing` 和 `Liuyao/divination`，但控制器中只有 `qiGua()` 方法，缺少对应的 `getPricing()` 和 `divination()` 方法，导致前端调用 `/api/liuyao/pricing` 和 `/api/liuyao/divination` 时返回404 - 建议在 Liuyao.php 中添加这两个方法，或者修改路由指向现有的 `qiGua()` 方法。
+
+### 🟢 低优先级
+
 
 
 作为网站运营人员，我对太初命理网站后台管理系统进行了全流程检查，发现以下影响业务运营的问题：
@@ -336,13 +348,9 @@
 作为资深产品经理和UI设计师，我继续从首页登录态可信度、八字结果归属、塔罗积分首屏反馈、合婚输入门槛与每日运势错误承接几个角度复核太初命理网站，确认以下问题尚未在当前 `TODO.md` 中登记后，新增如下：
 
 ### 🔴 高优先级（功能性问题）
-- [ ] [UI] 首页登录态积分卡在余额接口失败时直接展示“0分”，容易制造积分丢失错觉 - `frontend/src/views/Home.vue` - 为积分卡增加 loading/error 状态，失败时显示“积分暂未同步 / 重新登录 / 重试”而不是默认 0 分。
-- [ ] [UI] 八字页重新排盘后，上一次流年/大运/AI 解盘结果会残留到新的命盘上下文 - `frontend/src/views/Bazi.vue` - 在重新排盘和排盘成功后统一重置 `yearlyFortuneResult / dayunAnalysisResult / dayunChartData / aiAnalysisResult` 等派生状态，并按 `result.id` 绑定分析结果归属。
-- [ ] [UI] 八字页“保存结果，可在个人中心查看”与实际仅写入本地浏览器存储不一致，容易引发跨设备找不到记录的投诉 - `frontend/src/views/Bazi.vue` - 若短期仅支持本地存储，应改成“保存到本机”；若承诺个人中心可查看，则接入服务端历史记录与可达入口。
 - [ ] [UI] 合婚页把双方精确出生时间设为硬门槛，没有“未知时辰 / 仅生日 / 大概时间段”入口，容易逼用户随便填时间后得到伪精确结论 - `frontend/src/views/Hehun.vue` - 增加时辰精度选项，并在低精度场景明确提示结果可信度下降。
 
 ### 🟡 中优先级（体验问题）
-- [ ] [UI] 塔罗页积分尚未加载完成前就先显示“积分不足”并禁用主按钮，弱网下会误伤首屏转化 - `frontend/src/views/Tarot.vue` - 将积分初始值改为未就绪态，加载完成前展示“积分同步中”占位而不是不足提示。
-- [ ] [UI] 每日运势首次自动加载失败时同时弹 toast 和页内错误卡，负面反馈叠加过重 - `frontend/src/views/Daily.vue` - 区分自动加载与用户主动重试，自动失败仅保留页内错误态，重试失败再使用 toast。
+
 
 ### 🟢 低优先级（美观问题）

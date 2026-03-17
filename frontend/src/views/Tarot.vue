@@ -319,22 +319,33 @@ const reportUiError = (action, error, userMessage = '') => {
 }
 
 const refreshPoints = async ({ silent = false } = {}) => {
+  pointsLoading.value = true
+  pointsError.value = false
+
   try {
     const response = await getPointsBalance()
     if (response.code === 200) {
       currentPoints.value = response.data.balance
+      pointsError.value = false
       return true
     }
 
+    currentPoints.value = null
+    pointsError.value = true
     if (!silent) {
       ElMessage.warning(response.message || '获取积分失败，请稍后重试')
     }
   } catch (error) {
+    currentPoints.value = null
+    pointsError.value = true
     reportUiError('获取积分失败', error, silent ? '' : '获取积分失败，请稍后重试')
+  } finally {
+    pointsLoading.value = false
   }
 
   return false
 }
+
 
 const currentTemplates = computed(() => {
   return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
@@ -1246,7 +1257,17 @@ const getCardAdvice = (card) => {
 }
 
 @media (max-width: 768px) {
+  .points-hint {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .current-points {
+    margin-left: 0;
+  }
+
   .spread-options {
+
     grid-template-columns: 1fr;
   }
 

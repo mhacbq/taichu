@@ -174,7 +174,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { 
@@ -248,8 +249,8 @@ const loadData = async () => {
 }
 
 // 监听筛选条件变化
-import { watch } from 'vue'
 watch([searchKeyword, filterType, filterCategory], () => {
+
   page.value = 1
   loadData()
 })

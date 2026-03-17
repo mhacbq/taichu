@@ -1085,6 +1085,17 @@ onMounted(() => {
     align-items: center;
   }
   
+  .user-points-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .points-inline-actions,
+  .points-actions {
+    justify-content: flex-start;
+  }
+
   .welcome-actions {
     flex-direction: column;
   }
@@ -1094,5 +1105,6 @@ onMounted(() => {
     text-align: center;
   }
 }
+
 
 </style>

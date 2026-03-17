@@ -1,6 +1,16 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 22:40 执行摘要
+
+- 本轮围绕六爻主链路与前端体验问题完成一组连续修复，覆盖 `frontend/src/views/Liuyao.vue`、`backend/app/controller/Liuyao.php`、`frontend/src/views/Home.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/views/Daily.vue`、`frontend/src/views/admin/ShenshaManage.vue`。
+- 六爻部分：补齐前端实际依赖的 `getPricing/divination/history/detail/delete` 兼容接口，前端新增多起卦方式与专业参数后继续收尾结果归一化，补回历史记录 `created_at` 字段，避免历史详情与列表时间显示丢失。
+- 额外完成 5 个前端问题修复：神煞管理重复导入、首页积分卡失败态误显示 0 分、八字页重新排盘残留派生结果、八字页本地保存文案误导、塔罗页积分未加载先判不足、每日运势自动加载失败重复负反馈。
+- 已同步清理 `TODO.md` 中本轮已完成项，并删除 1 条已经在代码里落地但未及时核销的每日运势样式待办。
+- 验证结果：`npm run build --prefix frontend` 通过，`npm run build --prefix admin` 通过，`git diff --check`（本轮关键文件）通过；本机仍未提供 `php` 命令，无法执行 `php -l`。
+- Git：本轮修复按 `fix-frontend-multiple-issues-20260317-2240` 提交并推送到 `origin/master`。
+
 ## 2026-03-17 22:05 执行摘要
+
 
 - 本轮完成 5 个前端修复点：八字页图标缺失/错误导出、合婚页定价结构错位、请求层静默错误能力、每日运势签到卡降级、每日运势个性化幸运区样式落地。
 - 关键文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Daily.vue`、`frontend/src/components/CheckinCard.vue`、`frontend/src/api/request.js`、`frontend/src/api/index.js`。

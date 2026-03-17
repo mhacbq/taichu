@@ -202,7 +202,7 @@ const getScoreClass = (score) => {
   return 'normal'
 }
 
-const loadDailyFortune = async () => {
+const loadDailyFortune = async ({ userInitiated = false } = {}) => {
   error.value = false
   errorMessage.value = ''
   try {
@@ -221,14 +221,20 @@ const loadDailyFortune = async () => {
       lunarDate.value = data.lunarDate || ''
       error.value = false
     } else {
+      fortune.value = null
       error.value = true
       errorMessage.value = response.message || '获取运势失败'
-      ElMessage.error(errorMessage.value)
+      if (userInitiated) {
+        ElMessage.error(errorMessage.value)
+      }
     }
   } catch (err) {
+    fortune.value = null
     error.value = true
     errorMessage.value = '网络错误，请稍后重试'
-    ElMessage.error(errorMessage.value)
+    if (userInitiated) {
+      ElMessage.error(errorMessage.value)
+    }
     console.error(err)
   }
 }
@@ -237,6 +243,7 @@ const loadDailyFortune = async () => {
 onMounted(() => {
   loadDailyFortune()
 })
+
 </script>
 
 <style scoped>

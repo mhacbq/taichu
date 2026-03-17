@@ -1038,12 +1038,43 @@ const pointsConfirmVisible = ref(false)
 const pointsConfirmType = ref('') // 'yearly', 'dayun', 'chart'
 const pointsConfirmData = ref({})
 
+const resetDerivedAnalysisState = () => {
+  yearlyFortuneResult.value = null
+  dayunAnalysisResult.value = null
+  dayunChartData.value = null
+  aiAnalysisResult.value = null
+  aiStreamContent.value = ''
+  aiPrompt.value = ''
+  selectedYear.value = new Date().getFullYear()
+  selectedDayunIndex.value = 0
+  activeNames.value = ['basic']
+
+  if (aiAbortController.value) {
+    aiAbortController.value.abort()
+  }
+
+  if (aiLoadingTimer.value) {
+    clearInterval(aiLoadingTimer.value)
+    aiLoadingTimer.value = null
+  }
+
+  aiAnalyzing.value = false
+  aiLoadingTime.value = 0
+  aiAbortController.value = null
+}
+
+const resetCurrentResult = () => {
+  resetDerivedAnalysisState()
+  result.value = null
+}
+
 // 版本提示
 const versionHint = computed(() => {
   return versionMode.value === 'simple' 
     ? '简化版：适合新手，只看核心信息，不用填出生地'
     : '专业版：适合进阶，包含真太阳时、大运流年等详细分析'
 })
+
 
 const cityOptions = computed(() => {
   return CHINA_CITIES.map(city => ({

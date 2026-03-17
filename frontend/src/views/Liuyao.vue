@@ -3,11 +3,14 @@
     <div class="container">
       <!-- 页面标题 -->
       <div class="page-header">
-        <h1 class="page-title">
-          <el-icon class="title-icon"><MagicStick /></el-icon>
-          六爻占卜
-        </h1>
-        <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
+        <BackButton fallback="/" />
+        <div class="page-header-content">
+          <h1 class="page-title">
+            <el-icon class="title-icon"><MagicStick /></el-icon>
+            六爻占卜
+          </h1>
+          <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
+        </div>
       </div>
 
       <!-- 占卜结果 -->
@@ -36,8 +39,12 @@
 
             <!-- 六爻图形 -->
             <div class="yao-container">
-              <div v-for="(yao, index) in result.yao_result" :key="index" class="yao-line"
-                :class="{ 'moving': yao == 0 || yao == 3, 'yang': yao >= 2, 'yin': yao <= 1 }">
+              <div
+                v-for="(yao, index) in result.yao_result"
+                :key="index"
+                class="yao-line"
+                :class="{ moving: isMovingYao(yao), yang: isYangYao(yao), yin: !isYangYao(yao) }"
+              >
                 <!-- 伏神显示 -->
                 <div v-if="result.fushen && result.fushen[index]" class="fushen-box">
                    <span class="fushen-label">伏</span>
@@ -116,6 +123,83 @@
             />
           </div>
 
+          <div class="form-group">
+            <label>起卦方式</label>
+            <el-radio-group v-model="form.method" class="method-group">
+              <el-radio-button v-for="option in methodOptions" :key="option.value" :label="option.value">
+                {{ option.label }}
+              </el-radio-button>
+            </el-radio-group>
+            <p class="form-helper">{{ currentMethodDescription }}</p>
+          </div>
+
+          <div v-if="form.method === 'time'" class="helper-card">
+            <p class="helper-card__title">时间起卦</p>
+            <p class="helper-card__desc">将按当前北京时间 {{ currentBeijingTime }} 自动起卦，无需额外输入数字或摇卦结果。</p>
+          </div>
+
+          <div v-else-if="form.method === 'number'" class="helper-card">
+            <p class="helper-card__title">数字起卦</p>
+            <p class="helper-card__desc">请输入 1-999 的数字。单数字可只填第一个，双数字会按上下卦分别计算。</p>
+            <div class="input-grid input-grid--double">
+              <div class="input-grid__item">
+                <label>第一个数字</label>
+                <el-input-number v-model="form.numbers[0]" :min="1" :max="999" :step="1" :precision="0" controls-position="right" class="full-width" />
+              </div>
+              <div class="input-grid__item">
+                <label>第二个数字（可选）</label>
+                <el-input-number v-model="form.numbers[1]" :min="1" :max="999" :step="1" :precision="0" controls-position="right" class="full-width" />
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="helper-card">
+            <p class="helper-card__title">手动摇卦</p>
+            <p class="helper-card__desc">请按从初爻到上爻的顺序，依次录入 6 次摇卦结果。</p>
+            <div class="manual-grid">
+              <div v-for="(label, index) in yaoLineLabels" :key="label" class="manual-grid__item">
+                <label>{{ label }}</label>
+                <el-select v-model="form.yaoResults[index]" placeholder="请选择爻象" class="full-width">
+                  <el-option v-for="option in yaoValueOptions" :key="option.value" :label="option.label" :value="option.value" />
+                </el-select>
+              </div>
+            </div>
+          </div>
+
+          <div class="advanced-card">
+            <div class="advanced-card__header">
+              <h3>专业参数</h3>
+              <p>补齐问事类型、性别与日辰信息，让六爻结果更贴近真实问卦流程。</p>
+            </div>
+            <div class="advanced-grid">
+              <div class="form-group">
+                <label>问事类型</label>
+                <el-select v-model="form.questionType" class="full-width">
+                  <el-option v-for="option in questionTypeOptions" :key="option" :label="option" :value="option" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label>求测者性别</label>
+                <el-radio-group v-model="form.gender">
+                  <el-radio-button label="男" />
+                  <el-radio-button label="女" />
+                </el-radio-group>
+              </div>
+              <div class="form-group">
+                <label>日辰天干（可选）</label>
+                <el-select v-model="form.riGan" clearable placeholder="默认自动推算" class="full-width">
+                  <el-option v-for="option in tianGanOptions" :key="option" :label="option" :value="option" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label>日辰地支（可选）</label>
+                <el-select v-model="form.riZhi" clearable placeholder="默认自动推算" class="full-width">
+                  <el-option v-for="option in diZhiOptions" :key="option" :label="option" :value="option" />
+                </el-select>
+              </div>
+            </div>
+          </div>
+
           <div class="options-section">
             <el-checkbox v-model="form.useAi" label="使用AI深度分析（更准确、更详细）" />
           </div>
@@ -131,14 +215,15 @@
             <div v-else class="pricing-normal">
               <span>本次消耗 {{ pricing.cost }} 积分</span>
             </div>
+            <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
           </div>
 
-          <el-button 
-            type="primary" 
-            size="large" 
-            class="btn-submit" 
-            @click="submitDivination" 
-            :disabled="isLoading || !form.question.trim()"
+          <el-button
+            type="primary"
+            size="large"
+            class="btn-submit"
+            @click="submitDivination"
+            :disabled="isLoading || !canSubmit"
             :loading="isLoading"
           >
             <template #icon v-if="!isLoading">
@@ -146,7 +231,6 @@
             </template>
             {{ isLoading ? '正在占卜...' : '开始占卜' }}
           </el-button>
-
 
           <div class="history-link" v-if="history.length > 0">
             <a @click="showHistory = true">查看历史记录 ({{ history.length }}条)</a>
@@ -167,7 +251,7 @@
             <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
               <div class="history-main">
                 <p class="history-question">{{ item.question }}</p>
-                <p class="history-gua">{{ item.gua_name }} · {{ formatDate(item.created_at) }}</p>
+                <p class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</p>
               </div>
               <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
                 <el-icon><Delete /></el-icon>
@@ -189,12 +273,38 @@ import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecor
 import { RefreshRight, Download, Delete, MagicStick, Present, Trophy, Close } from '@element-plus/icons-vue'
 import BackButton from '../components/BackButton.vue'
 
+const methodOptions = [
+  { label: '时间起卦', value: 'time', description: '按当前北京时间起卦，适合快速问事。' },
+  { label: '数字起卦', value: 'number', description: '通过数字拆分上下卦，适合已有灵感数字时使用。' },
+  { label: '手动摇卦', value: 'manual', description: '录入 6 次摇卦结果，满足标准六爻问卦流程。' },
+]
 
-// 表单数据
-const form = reactive({
+const questionTypeOptions = ['求财', '感情', '事业', '健康', '学业', '出行', '其他']
+const yaoLineLabels = ['初爻（下）', '二爻', '三爻', '四爻', '五爻', '上爻（上）']
+const yaoValueOptions = [
+  { label: '老阴（6）', value: 6 },
+  { label: '少阳（7）', value: 7 },
+  { label: '少阴（8）', value: 8 },
+  { label: '老阳（9）', value: 9 },
+]
+const tianGanOptions = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸']
+const diZhiOptions = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+const yaoNameMap = ['老阴', '少阳', '少阴', '老阳']
+
+const createDefaultForm = () => ({
   question: '',
   useAi: true,
+  method: 'time',
+  questionType: '其他',
+  gender: '男',
+  numbers: [null, null],
+  yaoResults: [null, null, null, null, null, null],
+  riGan: '',
+  riZhi: '',
 })
+
+// 表单数据
+const form = reactive(createDefaultForm())
 
 // 状态
 const isLoading = ref(false)
@@ -203,12 +313,36 @@ const pricing = ref(null)
 const history = ref([])
 const showHistory = ref(false)
 
-const reportUiError = (action, error, userMessage = '') => {
-  console.error(`[Liuyao] ${action}`, error)
-  if (userMessage) {
-    ElMessage.error(userMessage)
+const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+}).format(new Date()))
+
+const currentMethodDescription = computed(() => {
+  return methodOptions.find((item) => item.value === form.method)?.description || ''
+})
+
+const canSubmit = computed(() => {
+  if (!form.question.trim()) {
+    return false
   }
-}
+
+  if (form.method === 'number') {
+    return Number.isFinite(form.numbers[0])
+  }
+
+  if (form.method === 'manual') {
+    return form.yaoResults.every((item) => Number.isFinite(item))
+  }
+
+  return true
+})
 
 const shouldShowRemainingPoints = computed(() => {
   if (!result.value || result.value.is_history) {
@@ -218,12 +352,127 @@ const shouldShowRemainingPoints = computed(() => {
   return result.value.remaining_points !== null && result.value.remaining_points !== undefined
 })
 
+const reportUiError = (action, error, userMessage = '') => {
+  console.error(`[Liuyao] ${action}`, error)
+  if (userMessage) {
+    ElMessage.error(userMessage)
+  }
+}
+
+const isMovingYao = (yao) => Number(yao) === 0 || Number(yao) === 3
+const isYangYao = (yao) => Number(yao) === 1 || Number(yao) === 3
+
+const getYaoName = (yao) => {
+  const value = Number(yao)
+  return yaoNameMap[value] || '未知'
+}
 
 // 爻标记
 const getYaoMark = (yao) => {
-  if (yao === 0) return '×' // 老阴
-  if (yao === 3) return '○' // 老阳
+  const value = Number(yao)
+  if (value === 0) return '×' // 老阴
+  if (value === 3) return '○' // 老阳
   return '' // 少阴少阳
+}
+
+const parseYaoResult = (value, fallback = '') => {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeYaoCode(item))
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const trimmed = value.trim()
+    const parsed = safeJsonParse(trimmed, null)
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => normalizeYaoCode(item))
+    }
+
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map((item) => normalizeYaoCode(item))
+    }
+
+    if (/^[0-3]{6}$/.test(trimmed) || /^[6-9]{6}$/.test(trimmed)) {
+      return trimmed.split('').map((item) => normalizeYaoCode(item))
+    }
+  }
+
+  if (typeof fallback === 'string' && /^[0-3]{6}$/.test(fallback)) {
+    return fallback.split('').map((item) => normalizeYaoCode(item))
+  }
+
+  return []
+}
+
+const normalizeYaoCode = (value) => {
+  const numeric = Number(value)
+  if (Number.isNaN(numeric)) {
+    return 1
+  }
+
+  if (numeric >= 0 && numeric <= 3) {
+    return numeric
+  }
+
+  return ({ 6: 0, 7: 1, 8: 2, 9: 3 })[numeric] ?? 1
+}
+
+const safeJsonParse = (value, fallback = null) => {
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+const normalizeAiAnalysis = (value) => {
+  if (!value) {
+    return null
+  }
+
+  if (typeof value === 'string') {
+    return { content: value }
+  }
+
+  if (typeof value === 'object' && value.content) {
+    return value
+  }
+
+  return null
+}
+
+const normalizeResult = (data = {}, isHistory = false) => {
+  const gua = data.gua || {}
+  const yaoResult = parseYaoResult(data.yao_result ?? data.yao_results, data.yao_code || gua.code || '')
+
+  return {
+    id: data.id,
+    question: data.question || '',
+    method: data.method || '',
+    method_label: data.method_label || '',
+    time_info: data.time_info || null,
+    created_at: data.created_at || data.createdAt || '',
+    yao_result: yaoResult,
+
+    yao_names: Array.isArray(data.yao_names) && data.yao_names.length === yaoResult.length
+      ? data.yao_names
+      : yaoResult.map((item) => getYaoName(item)),
+    gua: {
+      name: gua.name || data.gua_name || data.main_gua || '',
+      code: gua.code || data.gua_code || data.clean_gua_code || data.yao_code || '',
+      gua_ci: gua.gua_ci || data.gua_ci || data.gua_info?.main?.gua_ci || data.gua_info?.main?.general_meaning || '',
+    },
+    interpretation: data.interpretation || '',
+    ai_analysis: normalizeAiAnalysis(data.ai_analysis || data.ai_interpretation),
+    points_cost: Number(data.points_cost ?? data.consumed_points ?? 0) || 0,
+    remaining_points: data.remaining_points ?? null,
+    is_first: Boolean(data.is_first),
+    is_history: isHistory,
+    fushen: data.fushen || null,
+  }
 }
 
 // 获取定价
@@ -231,7 +480,7 @@ const loadPricing = async () => {
   try {
     const response = await getLiuyaoPricing()
     if (response.code === 200) {
-      pricing.value = response.data
+      pricing.value = response.data || null
     }
   } catch (error) {
     reportUiError('获取定价失败', error, '获取定价信息失败')
@@ -243,13 +492,40 @@ const loadHistory = async () => {
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 50 })
     if (response.code === 200) {
-      history.value = response.data.list || []
+      history.value = (response.data.list || []).map((item) => normalizeResult(item, true))
     }
   } catch (error) {
     reportUiError('获取历史记录失败', error)
   }
 }
 
+const buildDivinationPayload = () => {
+  const payload = {
+    question: form.question.trim(),
+    useAi: form.useAi,
+    method: form.method,
+    question_type: form.questionType,
+    gender: form.gender,
+  }
+
+  if (form.riGan) {
+    payload.ri_gan = form.riGan
+  }
+
+  if (form.riZhi) {
+    payload.ri_zhi = form.riZhi
+  }
+
+  if (form.method === 'number') {
+    payload.numbers = form.numbers.filter((item) => Number.isFinite(item))
+  }
+
+  if (form.method === 'manual') {
+    payload.yao_results = [...form.yaoResults]
+  }
+
+  return payload
+}
 
 // 提交占卜
 const submitDivination = async () => {
@@ -258,29 +534,29 @@ const submitDivination = async () => {
     return
   }
 
-  if (form.question.length < 2) {
+  if (form.question.trim().length < 2) {
     ElMessage.warning('问题太短了，请详细描述您的问题')
+    return
+  }
+
+  if (form.method === 'number' && !Number.isFinite(form.numbers[0])) {
+    ElMessage.warning('数字起卦至少需要填写第一个数字')
+    return
+  }
+
+  if (form.method === 'manual' && form.yaoResults.some((item) => !Number.isFinite(item))) {
+    ElMessage.warning('请完整填写 6 次摇卦结果')
     return
   }
 
   isLoading.value = true
   try {
-    const response = await liuyaoDivination({
-      question: form.question.trim(),
-      useAi: form.useAi,
-      context: {
-        current_time: new Date().toISOString(),
-        location: 'China', // 默认时区参考
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      }
-    })
+    const response = await liuyaoDivination(buildDivinationPayload())
 
     if (response.code === 200) {
-      result.value = {
-        ...response.data,
-        is_history: false,
-      }
-      loadHistory() // 刷新历史
+      result.value = normalizeResult(response.data, false)
+      await loadHistory()
+      await loadPricing()
     } else {
       ElMessage.error(response.message || '占卜失败，请重试')
     }
@@ -291,12 +567,11 @@ const submitDivination = async () => {
   }
 }
 
-
 // 重置表单
 const resetForm = () => {
+  Object.assign(form, createDefaultForm())
   result.value = null
-  form.question = ''
-  loadPricing() // 重新获取定价（可能是首次了）
+  loadPricing()
 }
 
 // 保存结果
@@ -306,26 +581,7 @@ const saveResult = () => {
 
 // 加载历史记录详情
 const loadHistoryDetail = (item) => {
-  result.value = {
-    id: item.id,
-    question: item.question,
-    yao_result: item.yao_result,
-    yao_names: (item.yao_result || []).map(yao => {
-      const names = ['老阴', '少阴', '少阳', '老阳']
-      return names[yao]
-    }),
-    gua: {
-      name: item.gua_name,
-      code: item.gua_code,
-      gua_ci: item.gua_ci,
-    },
-    interpretation: item.interpretation,
-    ai_analysis: item.ai_analysis,
-    points_cost: item.consumed_points,
-    remaining_points: null,
-    is_history: true,
-  }
-
+  result.value = normalizeResult(item, true)
   showHistory.value = false
 }
 
@@ -341,7 +597,11 @@ const deleteRecord = async (id) => {
     const response = await deleteLiuyaoRecord({ id })
     if (response.code === 200) {
       ElMessage.success('删除成功')
-      loadHistory()
+      await loadHistory()
+      if (result.value?.id === id) {
+        result.value = null
+      }
+      await loadPricing()
     } else {
       ElMessage.error(response.message)
     }
@@ -352,10 +612,12 @@ const deleteRecord = async (id) => {
   }
 }
 
-
 // 格式化日期
 const formatDate = (dateStr) => {
   const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) {
+    return dateStr || '--'
+  }
   return date.toLocaleDateString('zh-CN')
 }
 
@@ -477,22 +739,84 @@ onMounted(() => {
   margin-top: 6px;
 }
 
+.full-width {
+  width: 100%;
+}
+
+.method-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-helper {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.helper-card,
+.advanced-card {
+  padding: 18px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.helper-card__title {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.helper-card__desc,
+.advanced-card__header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.advanced-card__header {
+  margin-bottom: 18px;
+}
+
+.advanced-card__header h3 {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.input-grid,
+.advanced-grid,
+.manual-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.input-grid--double,
+.advanced-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.input-grid__item label,
+.manual-grid__item label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.manual-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
 .options-section {
   margin: 20px 0;
-}
-
-.option-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.option-item input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary-color);
 }
 
 .pricing-info {
@@ -502,6 +826,12 @@ onMounted(() => {
   border-radius: 16px;
   margin: 20px 0;
   border: 1px solid var(--border-light);
+}
+
+.pricing-reason {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .pricing-free,
@@ -1137,6 +1467,10 @@ onMounted(() => {
 /* 响应式 */
 
 @media (max-width: 768px) {
+  .page-header {
+    align-items: stretch;
+  }
+
   .page-title {
     font-size: 28px;
   }
@@ -1144,6 +1478,12 @@ onMounted(() => {
   .form-card,
   .result-card {
     padding: 24px;
+  }
+
+  .input-grid--double,
+  .advanced-grid,
+  .manual-grid {
+    grid-template-columns: 1fr;
   }
 
   .gua-display {
