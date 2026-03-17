@@ -171,7 +171,10 @@
             </ul>
           </div>
           <div class="about-stats">
-            <div class="stat-item" v-for="stat in stats" :key="stat.label">
+            <div class="stat-item card-hover" v-for="stat in stats" :key="stat.label">
+              <div class="stat-icon-wrapper">
+                <el-icon class="stat-icon"><component :is="stat.icon" /></el-icon>
+              </div>
               <span class="stat-number">{{ stat.number }}</span>
               <span class="stat-label">{{ stat.label }}</span>
             </div>
@@ -186,12 +189,12 @@
 import { ref, onMounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
-import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check } from '@element-plus/icons-vue'
+import { Sunrise, Sunny, Moon, Diamond, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
 
 const stats = ref([
-  { number: '加载中...', label: '服务用户' },
-  { number: '加载中...', label: '分析次数' },
-  { number: '98%', label: '好评率' },
+  { number: '加载中...', label: '服务用户', icon: 'UserFilled' },
+  { number: '加载中...', label: '分析次数', icon: 'DataLine' },
+  { number: '98%', label: '好评率', icon: 'ChatLineRound' },
 ])
 
 const isLoggedIn = ref(false)
@@ -328,7 +331,7 @@ onMounted(() => {
   margin: 0 auto 20px;
   background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
   border: 1px solid rgba(103, 194, 58, 0.2);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 20px 25px;
   backdrop-filter: blur(10px);
   animation: fadeInDown 0.6s ease;
@@ -384,7 +387,7 @@ onMounted(() => {
   margin: 0 auto 40px;
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(184, 134, 11, 0.15));
   border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 25px;
   display: flex;
   justify-content: space-between;
@@ -413,7 +416,7 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-.points-value {
+.points-info .points-value {
   font-size: 28px;
   font-weight: bold;
   color: var(--primary-color);
@@ -427,7 +430,7 @@ onMounted(() => {
 
 .points-btn {
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   text-decoration: none;
   font-size: 13px;
   transition: all 0.3s ease;
@@ -456,7 +459,7 @@ onMounted(() => {
   margin: 0 auto 40px;
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(184, 134, 11, 0.12));
   border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 30px;
   backdrop-filter: blur(10px);
 }
@@ -496,11 +499,16 @@ onMounted(() => {
 }
 
 .welcome-btn {
-  padding: 12px 30px;
-  border-radius: 25px;
+  padding: 10px 30px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-btn);
   text-decoration: none;
   font-size: 16px;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .welcome-btn.primary {
@@ -566,7 +574,7 @@ onMounted(() => {
   background: transparent;
   border: 2px solid var(--border-color);
   padding: 12px 32px;
-  border-radius: 25px;
+  border-radius: var(--radius-btn);
   color: var(--text-primary);
   font-size: 16px;
   cursor: pointer;
@@ -617,7 +625,7 @@ onMounted(() => {
 .feature-card {
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 40px 30px;
   text-align: center;
   border: 1px solid var(--border-light);
@@ -703,11 +711,33 @@ onMounted(() => {
 
 .stat-item {
   text-align: center;
-  padding: 30px;
+  padding: 30px 20px;
   background: var(--bg-card);
-  border-radius: 15px;
+  border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  perspective: 1000px;
+}
+
+.stat-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  background: rgba(184, 134, 11, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: var(--primary-color);
+  font-size: 28px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-item:hover .stat-icon-wrapper {
+  background: var(--primary-color);
+  color: #fff;
+  transform: rotateY(360deg);
 }
 
 .stat-number {
@@ -746,7 +776,7 @@ onMounted(() => {
 .testimonial-card {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 25px;
   transition: all 0.3s ease;
   box-shadow: var(--shadow-sm);

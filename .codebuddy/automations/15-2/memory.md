@@ -1,5 +1,45 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-17 16:45 执行摘要
+
+### 本次修复的前端问题（共5个）
+
+1. **管理后台 Dashboard 字段名对接** (高优先级)
+   - 文件: admin/src/views/dashboard/index.vue
+   - 问题: 字段名与 API 返回不匹配（如 totalUsers vs total_users）
+   - 修复: 统一对接后端 snake_case 命名，并扩展了八字和塔罗的趋势图表展示
+
+2. **Bazi.vue 白色文字硬编码清理** (高优先级)
+   - 文件: frontend/src/views/Bazi.vue
+   - 问题: 存在多处 `color: #fff` 硬编码，影响深色主题兼容性
+   - 修复: 将 `.section-badge`, `.rizhu-tag`, `.liunian-pillar`, `.points-title`, `.score-value`, `.rating-badge`, `.dayun-level-badge` 等处的硬编码替换为 `var(--text-primary)`
+
+3. **内容管理 - 神煞管理页面实现** (高优先级)
+   - 文件: admin/src/api/content.js, admin/src/views/content/shensha.vue
+   - 问题: 神煞管理功能仅后端有接口，前端缺失管理页面
+   - 修复: 在 content.js 中添加神煞 CRUD 接口，创建 `shensha.vue` 实现完整的管理功能（列表、搜索、增删改、状态切换）
+
+4. **神煞管理路由注册** (高优先级)
+   - 文件: admin/src/router/index.js
+   - 问题: 新建的神煞管理页面未注册路由
+   - 修复: 在 `asyncRoutes` 的内容管理组下注册 `/content/shensha` 路由，并配置权限控制
+
+5. **优化 Bazi.vue 和 Liuyao.vue 的错误处理** (中优先级)
+   - 文件: frontend/src/views/Bazi.vue, frontend/src/views/Liuyao.vue
+   - 问题: 某些 API 调用失败时仅在控制台报错，用户无感知
+   - 修复: 在积分获取、定价获取、历史加载等 `catch` 块中添加 `ElMessage.error` 提示
+
+### Git提交信息
+- 提交时间: 2026-03-17 16:45
+- 提交信息: fix-frontend-multiple-issues-20260317-1645
+
+### 修复统计
+- 修复文件数: 6个
+- 修复问题数: 5个
+- 高优先级: 4个
+
+---
+
 ## 2026-03-17 16:30 执行摘要
 6:
 7:### 本次修复的前端问题（共5个）

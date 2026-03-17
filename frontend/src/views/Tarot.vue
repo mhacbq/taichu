@@ -657,7 +657,7 @@ const getCardAdvice = (card) => {
 
 .spread-card {
   background: var(--bg-card);
-  border-radius: 15px;
+  border-radius: var(--radius-md);
   padding: 25px;
   text-align: center;
   cursor: pointer;
@@ -670,6 +670,7 @@ const getCardAdvice = (card) => {
   border-color: var(--primary-color);
   background: var(--bg-secondary);
   box-shadow: var(--shadow-md);
+  transform: translateY(-5px);
 }
 
 .spread-icon {
@@ -706,7 +707,7 @@ const getCardAdvice = (card) => {
   padding: 12px 15px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 13px;
 }
@@ -719,6 +720,7 @@ const getCardAdvice = (card) => {
 .draw-btn {
   margin-top: 20px;
   width: 100%;
+  min-height: 48px;
 }
 
 .btn-icon {
@@ -755,9 +757,10 @@ const getCardAdvice = (card) => {
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
+  min-height: 40px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 25px;
+  border-radius: var(--radius-btn);
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -770,6 +773,7 @@ const getCardAdvice = (card) => {
 .topic-tab.active {
   background: var(--primary-gradient);
   border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .topic-tab.active .topic-name {
@@ -787,7 +791,7 @@ const getCardAdvice = (card) => {
 
 .question-templates {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px;
 }
 
@@ -808,16 +812,19 @@ const getCardAdvice = (card) => {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 15px;
+  min-height: 44px;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
 }
 
 .template-item:hover {
   background: var(--bg-tertiary);
-  border: 1px solid var(--primary-light);
+  border-color: var(--primary-light);
   transform: translateX(5px);
+  box-shadow: var(--shadow-sm);
 }
 
 .template-bullet {

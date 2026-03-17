@@ -1,5 +1,37 @@
 # 网站逻辑检查任务 - 执行历史
 
+## 2026-03-17 00:20 执行记录 (第34轮)
+
+### 检查范围
+1. 前端逻辑检查 (frontend/src目录)
+2. 管理端逻辑检查 (admin/src/views目录)
+3. 后台逻辑检查 (backend/app/controller目录)
+
+### 本次检查发现的新问题
+
+#### 🔴 高优先级（功能性/安全问题）
+1. **前端响应码判断不一致** - frontend/src/views/admin/Config.vue使用`res.code === 0`，但后端BaseController统一返回`code=200`，导致功能开关/VIP配置/积分配置等保存操作成功时无正确提示
+2. **后端异常信息泄露风险** - backend/app/controller/*.php中发现30处直接返回`$e->getMessage()`的地方，如Admin.php第623行、Feedback.php第48行、Daily.php第369行等
+
+#### 🟡 中优先级（体验/代码质量问题）
+（无新问题）
+
+#### 🟢 低优先级（优化问题）
+（无新问题）
+
+### 验证结果
+1. **后端返回格式统一** - Config.php、Content.php、Fortune.php、Vip.php等控制器正确使用`$this->success()`和`$this->error()`方法
+2. **BaseController定义** - success()方法返回code=200，error()方法默认code=400
+3. **admin项目代码正确** - admin/src/views下使用`res.code === 200`，与后端一致
+4. **frontend/admin代码问题** - frontend/src/views/admin/Config.vue使用错误的响应码判断
+
+### 待处理统计
+- 高优先级: 2个新问题
+- 中优先级: 0个新问题
+- 低优先级: 0个新问题
+
+---
+
 ## 2026-03-17 23:50 执行记录 (第33轮)
 
 ### 检查范围

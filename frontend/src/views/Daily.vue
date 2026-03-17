@@ -102,7 +102,9 @@
               <span class="score-label">分</span>
             </div>
             <div class="score-stars">
-              <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= Math.round(fortune.overallScore / 20) }">★</span>
+              <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= Math.round(fortune.overallScore / 20) }">
+                <StarFilled />
+              </el-icon>
             </div>
           </div>
           <p class="fortune-summary">{{ fortune.summary }}</p>
@@ -326,7 +328,7 @@ onMounted(() => {
 }
 
 .star {
-  font-size: 24px;
+  font-size: 20px;
   color: var(--text-tertiary);
 }
 

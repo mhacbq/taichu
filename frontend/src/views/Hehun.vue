@@ -531,9 +531,10 @@ onMounted(() => {
 .form-card {
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 40px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 .form-card h2 {
@@ -546,7 +547,14 @@ onMounted(() => {
   margin-bottom: 30px;
   padding: 24px;
   background: var(--primary-light-05);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.person-section:hover {
+  background: var(--primary-light-10);
+  border-color: var(--primary-light-20);
 }
 
 .person-title {
@@ -577,9 +585,10 @@ onMounted(() => {
 .form-group input {
   width: 100%;
   padding: 14px 16px;
+  min-height: 44px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 15px;
   transition: all 0.3s;
@@ -588,6 +597,7 @@ onMounted(() => {
 .form-group input:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light-10);
 }
 
 .required {
@@ -616,8 +626,9 @@ onMounted(() => {
   text-align: center;
   padding: 16px;
   background: var(--primary-light-10);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   margin: 20px 0;
+  border: 1px solid var(--primary-light-20);
 }
 
 .pricing-row {
@@ -638,7 +649,7 @@ onMounted(() => {
   background: var(--primary-color);
   color: var(--text-primary);
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 12px;
 }
 
@@ -651,10 +662,11 @@ onMounted(() => {
 .btn-submit {
   width: 100%;
   padding: 16px;
+  min-height: 48px;
   background: var(--primary-gradient);
   color: var(--text-primary);
   border: none;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -663,6 +675,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: var(--shadow-md);
 }
 
 .btn-submit:disabled {
@@ -690,13 +703,15 @@ onMounted(() => {
 .result-card {
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 32px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 .result-card.premium {
   border-color: var(--primary-light-30);
+  background: linear-gradient(135deg, var(--bg-card), rgba(184, 134, 11, 0.05));
 }
 
 .result-header {
@@ -715,7 +730,7 @@ onMounted(() => {
   background: var(--primary-gradient);
   color: var(--text-primary);
   padding: 6px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 12px;
   font-weight: 600;
 }
@@ -740,7 +755,7 @@ onMounted(() => {
 .result-level {
   text-align: center;
   padding: 12px 24px;
-  border-radius: 30px;
+  border-radius: var(--radius-xl);
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 20px;
@@ -782,8 +797,9 @@ onMounted(() => {
   gap: 30px;
   padding: 24px;
   background: var(--bg-tertiary);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .bazi-side {
@@ -805,9 +821,10 @@ onMounted(() => {
 .pillar {
   padding: 8px 12px;
   background: var(--bg-card);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-weight: 500;
+  border: 1px solid var(--border-light);
 }
 
 .day-master {
@@ -825,7 +842,7 @@ onMounted(() => {
   background: var(--success-light);
   border-left: 4px solid var(--success-color);
   padding: 16px 20px;
-  border-radius: 0 16px 16px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   margin-bottom: 24px;
 }
 
@@ -845,7 +862,7 @@ onMounted(() => {
   text-align: center;
   padding: 24px;
   background: linear-gradient(135deg, var(--primary-light-10), var(--primary-light-05));
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   border: 1px dashed var(--primary-light-30);
 }
 
@@ -856,10 +873,11 @@ onMounted(() => {
 
 .btn-upgrade {
   padding: 14px 32px;
+  min-height: 44px;
   background: var(--primary-gradient);
   color: var(--text-primary);
   border: none;
-  border-radius: 30px;
+  border-radius: var(--radius-btn);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -867,6 +885,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   transition: all 0.3s;
+  box-shadow: var(--shadow-md);
 }
 
 .btn-upgrade:hover {
@@ -877,7 +896,7 @@ onMounted(() => {
 .points-tag {
   background: rgba(255, 255, 255, 0.2);
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 12px;
 }
 
@@ -888,8 +907,9 @@ onMounted(() => {
   gap: 40px;
   padding: 24px;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .main-score {
@@ -905,7 +925,7 @@ onMounted(() => {
 .main-score .score-level {
   display: inline-block;
   padding: 8px 20px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 16px;
   font-weight: 600;
   margin-top: 12px;
@@ -925,7 +945,7 @@ onMounted(() => {
 
 .dim-name {
   width: 80px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -1003,13 +1023,15 @@ onMounted(() => {
 
 .btn-primary,
 .btn-secondary {
-  padding: 14px 32px;
-  border-radius: 12px;
+  padding: 12px 32px;
+  min-height: 44px;
+  border-radius: var(--radius-md);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   transition: all 0.3s;
   border: none;
@@ -1018,6 +1040,7 @@ onMounted(() => {
 .btn-primary {
   background: var(--primary-gradient);
   color: var(--text-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -1038,6 +1061,7 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background: var(--bg-hover);
+  border-color: var(--primary-color);
 }
 
 /* 历史记录 */
@@ -1062,14 +1086,17 @@ onMounted(() => {
   align-items: center;
   padding: 16px 20px;
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s;
+  border: 1px solid var(--border-light);
 }
 
 .history-item:hover {
   background: var(--bg-secondary);
   transform: translateX(4px);
+  border-color: var(--primary-light-30);
+  box-shadow: var(--shadow-md);
 }
 
 .history-info {
@@ -1092,6 +1119,41 @@ onMounted(() => {
   font-size: 20px;
   font-weight: bold;
   color: var(--star-color);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 28px;
+  }
+  
+  .form-card {
+    padding: 24px;
+  }
+  
+  .bazi-compare {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .bazi-divider {
+    transform: rotate(90deg);
+  }
+  
+  .score-section {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .main-score {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 24px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
 }
 
 /* 响应式 */
