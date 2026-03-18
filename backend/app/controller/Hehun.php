@@ -615,12 +615,14 @@ class Hehun extends BaseController
         $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
         $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
         
-        $traditionalScore = 0;
-        if ($jiugongAnalysis['grade'] === '上等婚') $traditionalScore += 10;
-        elseif ($jiugongAnalysis['grade'] === '中等婚') $traditionalScore += 5;
-        
-        $scores['traditional'] = $traditionalScore;
-        $details['traditional'] = $jiugongAnalysis['description'] . ' ' . $jiugongAnalysis['suggestion'];
+        $sanyuanScoreMap = ['上等婚' => 5, '中上婚' => 4, '中等婚' => 2, '下等婚' => 0];
+        $jiugongScoreMap = ['上等婚' => 5, '中等婚' => 2, '下等婚' => 0];
+        $traditionalScore = ($sanyuanScoreMap[$sanyuanAnalysis['grade'] ?? ''] ?? 1)
+            + ($jiugongScoreMap[$jiugongAnalysis['grade'] ?? ''] ?? 1);
+
+        $scores['traditional'] = min(10, $traditionalScore);
+        $details['traditional'] = '三元：' . $sanyuanAnalysis['description'] . ' ' . $sanyuanAnalysis['suggestion']
+            . ' 九宫：' . $jiugongAnalysis['description'] . ' ' . $jiugongAnalysis['suggestion'];
         
         // 计算总分
         $totalScore = min(100, array_sum($scores));
@@ -722,12 +724,10 @@ class Hehun extends BaseController
         
         // 天干合化（如甲己合）
         $maleRelation = $this->dayMasterRelations[$maleDayGan] ?? null;
-        if ($maleRelation) {
-            if ($femaleDayGan === $maleRelation['合']) {
-                $score += 15; // 天干相合
-            } elseif ($femaleDayGan === $maleRelation['冲']) {
-                $score -= 5; // 天干相冲
-            }
+        if ($maleRelation && $femaleDayGan === $maleRelation['合']) {
+            $score += 15; // 天干五合
+        } elseif ($maleDayGan === $femaleDayGan) {
+            $score += 4; // 同气相求
         }
         
         // 地支六合
@@ -763,7 +763,7 @@ class Hehun extends BaseController
         if ($score >= 20) return '日主相生，性格互补，感情融洽，婚姻稳定。';
         if ($score >= 15) return '日主无明显冲突，需相互包容理解。';
         if ($score >= 10) return '日主略有冲克，需注意沟通方式，避免争执。';
-        return '日主相冲，婚姻需格外用心经营，建议晚婚或找化解之法。';
+        return '日柱冲克偏重，婚姻需格外用心经营，建议晚婚或找化解之法。';
     }
     
     /**
@@ -1325,13 +1325,26 @@ PROMPT;
     {
         $relation = $this->dayMasterRelations[$male] ?? null;
         if (!$relation) return '双方性格需要相互了解磨合。';
-        
+
         if ($female === $relation['合']) {
-            return '男方日主与女方日主相合，性格互补性强，相处融洽，能够相互理解和包容。';
-        } elseif ($female === $relation['冲']) {
-            return '男方日主与女方日主相冲，性格差异较大，需要更多沟通和包容。';
+            return '男方日主与女方日主成五合，性格互补性较强，相处时更容易彼此体谅。';
         }
-        
+        if ($female === $male) {
+            return '双方日主同气相求，价值观与做事节奏较接近，但也要注意避免彼此固执。';
+        }
+
+        $maleWuxing = $this->ganWuXing[$male] ?? '';
+        $femaleWuxing = $this->ganWuXing[$female] ?? '';
+        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
+        if ($maleWuxing !== '' && $femaleWuxing !== '') {
+            if (($shengRelation[$maleWuxing] ?? '') === $femaleWuxing) {
+                return '男方日主之气能生扶女方，互动中更容易形成照顾与带动关系。';
+            }
+            if (($shengRelation[$femaleWuxing] ?? '') === $maleWuxing) {
+                return '女方日主之气能生扶男方，彼此之间更容易形成支持与补位。';
+            }
+        }
+
         return '双方性格有一定差异，但只要互相尊重、理解包容，也能相处融洽。';
     }
     

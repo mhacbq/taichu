@@ -547,12 +547,21 @@ class BaziInterpretationService
         }
 
         $profile = $this->buildWuxingProfile($wuxingStats);
-        if (!empty($profile['lack'])) {
-            $yongshen['que'] = $profile['lack'][0];
-            $yongshen['desc'] .= "另外，命局中{$profile['lack'][0]}明显不足，建议在日常生活中适当补充相关元素。";
+        $priorityElements = array_slice($favoriteCandidates, 0, 2);
+        $priorityLack = array_values(array_intersect($profile['lack'], $priorityElements));
+        $priorityWeak = array_values(array_intersect($profile['weak'], $priorityElements));
+        if (!empty($priorityLack)) {
+            $yongshen['que'] = $priorityLack[0];
+            $yongshen['desc'] .= "其中{$priorityLack[0]}既属喜用又明显不足，调理时可优先围绕该五行展开。";
+        } elseif (!empty($priorityWeak)) {
+            $yongshen['weak'] = $priorityWeak[0];
+            $yongshen['desc'] .= "其中{$priorityWeak[0]}既属喜用又偏弱，可作为后续调衡的重点。";
+        } elseif (!empty($profile['lack'])) {
+            $yongshen['imbalance_hint'] = $profile['lack'][0];
+            $yongshen['desc'] .= "命局另见{$profile['lack'][0]}不足，但是否取补仍应以扶抑取用次序为先，不宜脱离喜用神机械补缺。";
         } elseif (!empty($profile['weak'])) {
-            $yongshen['weak'] = $profile['weak'][0];
-            $yongshen['desc'] .= "另外，命局中{$profile['weak'][0]}偏弱，可作为调和时的重点参考。";
+            $yongshen['imbalance_hint'] = $profile['weak'][0];
+            $yongshen['desc'] .= "命局另见{$profile['weak'][0]}偏弱，可作结构参考，但调理仍以喜用神先后为主。";
         }
 
         return $yongshen;
@@ -853,12 +862,25 @@ class BaziInterpretationService
         }
 
         $profile = $this->buildWuxingProfile($wuxingStats);
-        if (!empty($profile['lack'])) {
-            $advice .= '另外，你的命局中' . implode('、', $profile['lack']) . '明显不足';
-            $advice .= '，可以通过佩戴相应饰品、选择对应颜色或环境气场来适当补充。';
+        $focusElements = array_values(array_filter($yongshen['favorable_elements'] ?? [], static fn($item): bool => is_string($item) && $item !== ''));
+        if (empty($focusElements) && isset($yongshen['shen'])) {
+            $focusElements[] = $yongshen['shen'];
+        }
+        $focusElements = array_slice($focusElements, 0, 2);
+        if (!empty($focusElements)) {
+            $advice .= '实际调理宜先围绕' . implode('、', $focusElements) . '展开，以扶抑用神次序为主。';
+        }
+
+        $priorityLack = array_values(array_intersect($profile['lack'], $focusElements));
+        $priorityWeak = array_values(array_intersect($profile['weak'], $focusElements));
+        if (!empty($priorityLack)) {
+            $advice .= '其中' . $priorityLack[0] . '恰属喜用且明显不足，可优先从作息、环境与颜色上补其气。';
+        } elseif (!empty($priorityWeak)) {
+            $advice .= '其中' . $priorityWeak[0] . '恰属喜用而偏弱，可作为后续调衡的重点。';
+        } elseif (!empty($profile['lack'])) {
+            $advice .= '命局虽见' . implode('、', $profile['lack']) . '不足，但不必脱离喜用神顺序单独追补。';
         } elseif (!empty($profile['weak'])) {
-            $advice .= '另外，你的命局中' . implode('、', $profile['weak']) . '偏弱';
-            $advice .= '，平时可优先围绕这些五行做作息、颜色和空间取向上的调和。';
+            $advice .= '命局另有' . implode('、', $profile['weak']) . '偏弱，可作为结构参考，但仍以喜用神为先。';
         }
 
         return $advice;
