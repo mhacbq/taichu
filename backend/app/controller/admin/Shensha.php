@@ -113,8 +113,12 @@ class Shensha extends BaseController
         }
 
         try {
-            $data = $this->request->post();
+            $data = $this->request->isPut() ? $this->request->put() : $this->request->post();
+            if (!is_array($data)) {
+                $data = [];
+            }
             $id = (int) ($data['id'] ?? $this->request->param('id', 0));
+
             $isUpdate = $id > 0;
             $nameProvided = array_key_exists('name', $data);
             $name = trim((string) ($data['name'] ?? ''));
@@ -138,6 +142,14 @@ class Shensha extends BaseController
                 $data['category'] = trim((string) $data['category']);
             }
 
+            if (array_key_exists('description', $data)) {
+                $data['description'] = trim((string) $data['description']);
+            }
+
+            if (array_key_exists('effect', $data)) {
+                $data['effect'] = trim((string) $data['effect']);
+            }
+
             if (array_key_exists('status', $data)) {
                 $status = (int) $data['status'];
                 if (!in_array($status, [0, 1], true)) {
@@ -146,7 +158,23 @@ class Shensha extends BaseController
                 $data['status'] = $status;
             }
 
+            $fallbackCheckRule = $this->buildFallbackCheckRule(
+                $name,
+                (string) ($data['description'] ?? ''),
+                (string) ($data['effect'] ?? '')
+            );
+            if (array_key_exists('check_rule', $data)) {
+                $data['check_rule'] = $this->normalizeOptionalTextField($data['check_rule'], $fallbackCheckRule);
+            } elseif (!$isUpdate) {
+                $data['check_rule'] = $fallbackCheckRule;
+            }
+
+            if (array_key_exists('check_code', $data)) {
+                $data['check_code'] = $this->normalizeOptionalTextField($data['check_code']);
+            }
+
             $data['id'] = $id;
+
 
             if ($isUpdate) {
                 $model = ShenshaModel::find($id);
@@ -252,11 +280,30 @@ class Shensha extends BaseController
         }
     }
 
+    protected function buildFallbackCheckRule(string $name, string $description = '', string $effect = ''): string
+    {
+        foreach ([$description, $effect] as $candidate) {
+            $normalized = trim($candidate);
+            if ($normalized !== '') {
+                return $normalized;
+            }
+        }
+
+        return $name !== '' ? sprintf('%s 的查法规则待补充', $name) : '查法规则待补充';
+    }
+
+    protected function normalizeOptionalTextField(mixed $value, string $fallback = ''): string
+    {
+        $normalized = trim((string) $value);
+        return $normalized !== '' ? $normalized : $fallback;
+    }
+
     /**
      * 解析 JSON 字段
      */
     protected function decodeJsonField(mixed $value, string $field): ?array
     {
+
         if ($value === null || $value === '') {
             return null;
         }

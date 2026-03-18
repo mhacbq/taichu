@@ -176,8 +176,18 @@ class Seo extends BaseController
         }
 
         try {
-            $configTable = $this->resolveSeoTable('config') ?? 'tc_seo_config';
-            $duplicateQuery = Db::table($configTable)->where('route', $route);
+            $configTable = $this->resolveSeoTable('config');
+            if ($configTable === null) {
+                return $this->error('SEO配置表不存在，请先执行 database/20260318_create_seo_tables.sql', 500);
+            }
+
+            $columns = $this->getSeoTableColumns($configTable);
+            $routeColumn = $this->resolveSeoConfigColumn($columns, ['route', 'page_route', 'path']);
+            if ($routeColumn === null) {
+                return $this->error('SEO配置表缺少页面路由字段，无法保存', 500);
+            }
+
+            $duplicateQuery = Db::table($configTable)->where($routeColumn, $route);
             if ($id > 0) {
                 $duplicateQuery->where('id', '<>', $id);
             }
@@ -190,12 +200,11 @@ class Seo extends BaseController
                 return $this->error('SEO配置不存在', 404);
             }
 
-
-            $payload = [
+            $payload = $this->buildSeoConfigPayload([
                 'route' => $route,
                 'title' => $title,
                 'description' => $description,
-                'keywords' => json_encode($keywords, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'keywords' => $keywords,
                 'image' => $image,
                 'robots' => $robots,
                 'og_type' => $ogType === '' ? 'website' : $ogType,
@@ -203,13 +212,15 @@ class Seo extends BaseController
                 'priority' => $priority,
                 'changefreq' => $changefreq,
                 'is_active' => $isActive,
-                'updated_at' => date('Y-m-d H:i:s'),
-            ];
+            ], $columns, $existing === null);
+
+            if (empty($payload)) {
+                return $this->error('SEO配置表字段不兼容，无法保存当前数据', 500);
+            }
 
             if ($existing) {
                 Db::table($configTable)->where('id', $id)->update($payload);
             } else {
-                $payload['created_at'] = date('Y-m-d H:i:s');
                 $id = (int) Db::table($configTable)->insertGetId($payload);
             }
 
@@ -227,6 +238,7 @@ class Seo extends BaseController
 
             return $this->success($afterData, '保存成功');
         } catch (\Throwable $e) {
+
             return $this->respondSystemException('seo_config_save', $e, '保存SEO配置失败，请稍后重试', [
                 'id' => $id,
                 'route' => $route,
@@ -589,14 +601,15 @@ class Seo extends BaseController
     protected function resolveSeoTable(string $type): ?string
     {
         return match ($type) {
-            'config' => $this->resolveFirstExistingTable(['seo_config', 'tc_seo_config']),
-            'keywords' => $this->resolveFirstExistingTable(['seo_keywords', 'tc_seo_keywords']),
-            'indexed_pages' => $this->resolveFirstExistingTable(['seo_indexed_pages', 'tc_seo_indexed_pages']),
-            'submissions' => $this->resolveFirstExistingTable(['seo_submissions', 'tc_seo_submissions']),
-            'traffic_daily' => $this->resolveFirstExistingTable(['seo_traffic_daily', 'tc_seo_traffic_daily']),
-            'robots' => $this->resolveFirstExistingTable(['seo_robots', 'tc_seo_robots']),
+            'config' => $this->resolveFirstExistingTable(['tc_seo_config', 'seo_config']),
+            'keywords' => $this->resolveFirstExistingTable(['tc_seo_keywords', 'seo_keywords']),
+            'indexed_pages' => $this->resolveFirstExistingTable(['tc_seo_indexed_pages', 'seo_indexed_pages']),
+            'submissions' => $this->resolveFirstExistingTable(['tc_seo_submissions', 'seo_submissions']),
+            'traffic_daily' => $this->resolveFirstExistingTable(['tc_seo_traffic_daily', 'seo_traffic_daily']),
+            'robots' => $this->resolveFirstExistingTable(['tc_seo_robots', 'seo_robots']),
             default => null,
         };
+
     }
 
     /**
@@ -613,28 +626,96 @@ class Seo extends BaseController
         return null;
     }
 
+    protected function getSeoTableColumns(string $table): array
+    {
+        return SchemaInspector::getTableColumns($table);
+    }
+
+    protected function resolveSeoConfigColumn(array $columns, array $candidates): ?string
+    {
+        foreach ($candidates as $column) {
+            if (isset($columns[$column])) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
+    protected function assignSeoConfigValue(array &$payload, array $columns, array $candidates, mixed $value): void
+    {
+        $column = $this->resolveSeoConfigColumn($columns, $candidates);
+        if ($column !== null) {
+            $payload[$column] = $value;
+        }
+    }
+
+    protected function buildSeoConfigPayload(array $data, array $columns, bool $isCreate): array
+    {
+        $payload = [];
+        $now = date('Y-m-d H:i:s');
+
+        $this->assignSeoConfigValue($payload, $columns, ['route', 'page_route', 'path'], (string) ($data['route'] ?? ''));
+        $this->assignSeoConfigValue($payload, $columns, ['title'], (string) ($data['title'] ?? ''));
+        $this->assignSeoConfigValue($payload, $columns, ['description', 'desc'], (string) ($data['description'] ?? ''));
+        $this->assignSeoConfigValue($payload, $columns, ['keywords', 'keyword', 'meta_keywords'], $this->encodeSeoKeywordsForStorage($data['keywords'] ?? [], $columns));
+        $this->assignSeoConfigValue($payload, $columns, ['image', 'share_image', 'og_image'], (string) ($data['image'] ?? ''));
+        $this->assignSeoConfigValue($payload, $columns, ['robots'], (string) ($data['robots'] ?? 'index,follow'));
+        $this->assignSeoConfigValue($payload, $columns, ['og_type', 'ogType'], (string) ($data['og_type'] ?? 'website'));
+        $this->assignSeoConfigValue($payload, $columns, ['canonical', 'canonical_url'], (string) ($data['canonical'] ?? ''));
+        $this->assignSeoConfigValue($payload, $columns, ['priority'], (float) ($data['priority'] ?? 0.5));
+        $this->assignSeoConfigValue($payload, $columns, ['changefreq', 'change_freq'], (string) ($data['changefreq'] ?? 'weekly'));
+        $this->assignSeoConfigValue($payload, $columns, ['is_active', 'status'], (int) ($data['is_active'] ?? 1));
+        $this->assignSeoConfigValue($payload, $columns, ['updated_at', 'update_time'], $now);
+        if ($isCreate) {
+            $this->assignSeoConfigValue($payload, $columns, ['created_at', 'create_time'], $now);
+        }
+
+        return $payload;
+    }
+
+    protected function encodeSeoKeywordsForStorage(array $keywords, array $columns): string
+    {
+        $keywords = $this->normalizeSeoKeywords($keywords);
+        if (isset($columns['keyword']) || isset($columns['meta_keywords'])) {
+            return implode(',', $keywords);
+        }
+
+        $encoded = json_encode($keywords, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $encoded === false ? '[]' : $encoded;
+    }
+
     /**
      * 格式化 SEO 配置行数据
      */
+
     protected function formatSeoConfigRow(array $row): array
     {
+        $keywords = $row['keywords'] ?? ($row['keyword'] ?? ($row['meta_keywords'] ?? ''));
+        $image = $row['image'] ?? ($row['share_image'] ?? ($row['og_image'] ?? ''));
+        $canonical = $row['canonical'] ?? ($row['canonical_url'] ?? '');
+        $changefreq = $row['changefreq'] ?? ($row['change_freq'] ?? 'weekly');
+        $updatedAt = $row['updated_at'] ?? ($row['update_time'] ?? ($row['created_at'] ?? ($row['create_time'] ?? '')));
+        $normalizedActive = (int) ($row['is_active'] ?? ($row['status'] ?? 1));
 
         return [
             'id' => (int) ($row['id'] ?? 0),
-            'route' => $row['route'] ?? '',
+            'route' => $row['route'] ?? ($row['page_route'] ?? ($row['path'] ?? '')),
             'title' => $row['title'] ?? '',
-            'description' => $row['description'] ?? '',
-            'keywords' => $this->normalizeSeoKeywords($row['keywords'] ?? ''),
-            'image' => $row['image'] ?? '',
+            'description' => $row['description'] ?? ($row['desc'] ?? ''),
+            'keywords' => $this->normalizeSeoKeywords($keywords),
+            'image' => $image,
             'robots' => $row['robots'] ?? 'index,follow',
-            'ogType' => $row['og_type'] ?? 'website',
-            'canonical' => $row['canonical'] ?? '',
+            'ogType' => $row['og_type'] ?? ($row['ogType'] ?? 'website'),
+            'canonical' => $canonical,
             'priority' => isset($row['priority']) ? (float) $row['priority'] : 0.5,
-            'changefreq' => $row['changefreq'] ?? 'weekly',
-            'isActive' => (int) ($row['is_active'] ?? 1),
-            'updated_at' => $row['updated_at'] ?? '',
+            'changefreq' => $changefreq,
+            'isActive' => $normalizedActive,
+            'is_active' => $normalizedActive,
+            'updated_at' => $updatedAt,
         ];
     }
+
 
     /**
      * 格式化 SEO 关键词数据

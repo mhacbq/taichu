@@ -54,6 +54,8 @@ class User extends BaseController
             }
 
             $userData = $user->toArray();
+            $displayUsername = $this->resolveDisplayUsername($userData, $id);
+            $normalizedUserData = $this->normalizeDetailUserData($userData, $displayUsername, $id);
             $pointsRecords = SchemaInspector::tableExists('tc_points_record')
                 ? \app\model\PointsRecord::where('user_id', $id)
                     ->order('created_at', 'desc')
@@ -61,6 +63,7 @@ class User extends BaseController
                     ->select()
                     ->toArray()
                 : [];
+
 
             $liuyaoTable = $this->resolveFirstExistingTable(['tc_liuyao_record', 'liuyao_records']);
             $vipOrderTable = $this->resolveFirstExistingTable(['tc_vip_order', 'vip_orders']);
@@ -92,15 +95,15 @@ class User extends BaseController
                 'vip_orders' => $vipOrders,
                 'recharge_orders' => $rechargeOrders,
                 'points_summary' => [
-                    'current_balance' => (int) ($userData['points'] ?? 0),
+                    'current_balance' => (int) ($normalizedUserData['points'] ?? 0),
                     'total_adjust_records' => count($pointsRecords),
                     'can_adjust' => $canAdjustPoints,
                 ],
             ];
 
-            $payload = array_merge($userData, [
-                'username' => $this->resolveDisplayUsername($userData, $id),
-                'email' => (string) ($userData['email'] ?? ''),
+            $payload = array_merge($normalizedUserData, [
+                'username' => $displayUsername,
+                'email' => (string) ($normalizedUserData['email'] ?? ''),
                 'bazi_count' => $baziCount,
                 'tarot_count' => $tarotCount,
                 'liuyao_count' => $liuyaoCount,
@@ -108,12 +111,13 @@ class User extends BaseController
                 'vip_orders' => $vipOrders,
                 'recharge_orders' => $rechargeOrders,
                 'can_adjust_points' => $canAdjustPoints,
-                'user' => $userData,
+                'user' => $normalizedUserData,
                 'stats' => $stats,
                 'actions' => [
                     'can_adjust_points' => $canAdjustPoints,
                 ],
             ]);
+
 
             return $this->success($payload);
         } catch (\Throwable $e) {
@@ -317,15 +321,30 @@ class User extends BaseController
             return $username;
         }
 
-        if ($nickname !== '') {
+        if ($nickname !== '' && !$this->isPhoneLikeUsername($nickname, $phone)) {
             return $nickname;
         }
 
         return '用户#' . $userId;
     }
 
+    protected function normalizeDetailUserData(array $userData, string $displayUsername, int $userId): array
+    {
+        $phone = trim((string) ($userData['phone'] ?? ''));
+        $nickname = trim((string) ($userData['nickname'] ?? ''));
+        if ($nickname === '' || $this->isPhoneLikeUsername($nickname, $phone)) {
+            $nickname = $displayUsername !== '' ? $displayUsername : ('用户#' . $userId);
+        }
+
+        $userData['username'] = $displayUsername !== '' ? $displayUsername : ('用户#' . $userId);
+        $userData['nickname'] = $nickname;
+
+        return $userData;
+    }
+
     protected function isPhoneLikeUsername(string $username, string $phone = ''): bool
     {
+
         $normalizedUsername = trim($username);
         if ($normalizedUsername === '') {
             return false;

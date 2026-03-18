@@ -1,6 +1,14 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 12:30 用户详情 / 调积分 / 黄历 / 神煞 / SEO 修复记录（本次）
+
+- 本轮直接处理 `TODO.md` 顶部最新 5 个后台运营阻塞项：用户详情用户名仍回填手机号、手动调积分业务码 500、黄历首屏列表失败、神煞新增失败、SEO 配置新增失败。
+- 关键代码：`backend/app/controller/admin/User.php` 统一详情 `username` / `nickname` 口径，并同步清洗嵌套 `user` 对象；`backend/app/service/AdminStatsService.php` 修复管理员日志 `params` JSON 兼容写入，并让日志失败不再回滚积分事务；`backend/app/controller/admin/Almanac.php` 改为用 `date('t')` 计算月底，移除 `calendar` 扩展依赖；`backend/app/controller/admin/Shensha.php` 兼容 PUT 请求体并为缺失的 `check_rule` / `check_code` 提供默认值；`backend/app/controller/admin/Seo.php` 优先落到 `tc_seo_*` 标准表，并按实际 schema 动态组装保存 payload。
+- 验证：已对上述 5 个 PHP 文件执行 IDE 诊断检查（均 0 条）；`git diff --check -- backend/app/controller/admin/User.php backend/app/service/AdminStatsService.php backend/app/controller/admin/Almanac.php backend/app/controller/admin/Shensha.php backend/app/controller/admin/Seo.php` 通过；`docker exec taichu-app php -l` 对 5 个目标文件均返回语法通过。
+- TODO：已把本轮 5 个运营问题回写为完成状态；Git 提交待本轮收尾统一执行。
+
 ## 2026-03-18 03:45 支付统计 / 退款兼容修复记录（本次）
+
 
 - 本轮继续围绕后台支付主链路收口 5 类后端问题：充值统计表名硬编码、趋势接口表名硬编码、订单状态筛选固定 schema、退款流程写死订单/用户表、退款积分流水写死 `tc_points_record` 且字段兼容性不足。
 - 关键代码：`backend/app/controller/admin/Payment.php` 新增充值订单/用户/积分记录动态表解析；`getStats()` 与 `getTrend()` 缺表降级；`performRefund()` 兼容 `status/pay_status` 与退款字段差异，并补齐退款积分流水兼容写入。

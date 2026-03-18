@@ -962,9 +962,38 @@ class AdminStatsService
         });
     }
 
+    private static function resolveDisplayUserName(string $username, string $nickname, string $phone, int $userId): string
+    {
+        if ($username !== '' && !self::isPhoneLikeUserName($username, $phone)) {
+            return $username;
+        }
+
+        if ($nickname !== '' && !self::isPhoneLikeUserName($nickname, $phone)) {
+            return $nickname;
+        }
+
+        return '用户#' . $userId;
+    }
+
+    private static function isPhoneLikeUserName(string $value, string $phone = ''): bool
+    {
+        $normalizedValue = trim($value);
+        if ($normalizedValue === '') {
+            return false;
+        }
+
+        $normalizedPhone = trim($phone);
+        if ($normalizedPhone !== '' && $normalizedValue === $normalizedPhone) {
+            return true;
+        }
+
+        return (bool) preg_match('/^1[3-9]\d{9}$/', $normalizedValue);
+    }
+
     /**
      * 获取用户列表（带筛选）
      */
+
 
     public static function getUserList(array $params = []): array
     {
@@ -1058,10 +1087,7 @@ class AdminStatsService
             $rawUsername = trim((string) ($item['username'] ?? ''));
             $rawNickname = trim((string) ($item['nickname'] ?? ''));
             $rawPhone = trim((string) ($item['phone'] ?? ''));
-            $displayName = $rawUsername !== ''
-                ? $rawUsername
-                : ($rawNickname !== '' ? $rawNickname : ('用户#' . $userId));
-
+            $displayName = self::resolveDisplayUserName($rawUsername, $rawNickname, $rawPhone, $userId);
 
             $item['status'] = (int) ($item['status'] ?? 0);
             $item['points'] = (int) ($item['points'] ?? 0);
@@ -1069,11 +1095,14 @@ class AdminStatsService
             $item['tarot_count'] = (int) ($tarotCountMap[$userId] ?? 0);
             $item['is_vip'] = (int) ($vipStatus['is_vip'] ?? 0);
             $item['vip_end_time'] = $vipStatus['vip_end_time'] ?? null;
-            $item['username'] = $rawUsername !== '' ? $rawUsername : $displayName;
+            $item['username'] = $displayName;
             $item['avatar'] = (string) ($item['avatar'] ?? '');
-            $item['nickname'] = $rawNickname !== '' ? $rawNickname : $displayName;
+            $item['nickname'] = $rawNickname !== '' && !self::isPhoneLikeUserName($rawNickname, $rawPhone)
+                ? $rawNickname
+                : $displayName;
             $item['phone'] = $rawPhone;
         }
+
 
         unset($item);
 
@@ -1124,19 +1153,28 @@ class AdminStatsService
                 $adminId
             );
 
-            self::insertAdminLogCompat([
-                'admin_id' => $adminId,
-                'action' => 'adjust_points',
-                'module' => 'points',
-                'target_type' => 'user',
-                'target_id' => $userId,
-                'detail' => "调整用户积分：{$points}，原因：{$reason}",
-                'before_data' => ['points' => $beforePoints],
-                'after_data' => ['points' => $afterPoints],
-                'status' => 1,
-            ]);
+            try {
+                self::insertAdminLogCompat([
+                    'admin_id' => $adminId,
+                    'action' => 'adjust_points',
+                    'module' => 'points',
+                    'target_type' => 'user',
+                    'target_id' => $userId,
+                    'detail' => "调整用户积分：{$points}，原因：{$reason}",
+                    'before_data' => ['points' => $beforePoints],
+                    'after_data' => ['points' => $afterPoints],
+                    'status' => 1,
+                ]);
+            } catch (\Throwable $logException) {
+                Log::warning('积分调整管理员日志写入失败，已跳过不阻塞主流程', [
+                    'user_id' => $userId,
+                    'admin_id' => $adminId,
+                    'error' => $logException->getMessage(),
+                ]);
+            }
 
             Db::commit();
+
 
             $notificationSent = false;
             try {
@@ -1263,9 +1301,12 @@ class AdminStatsService
             $data['detail'] = $detail;
         } elseif (isset($columns['content'])) {
             $data['content'] = $detail;
-        } elseif (isset($columns['params'])) {
-            $data['params'] = $detail;
         }
+
+        if (isset($columns['params'])) {
+            $data['params'] = self::normalizeParamsLogValue($payload, $detail);
+        }
+
 
         if (isset($columns['before_data']) && array_key_exists('before_data', $payload)) {
             $data['before_data'] = self::normalizeStructuredLogValue($payload['before_data']);
@@ -1317,9 +1358,40 @@ class AdminStatsService
         return $encoded === false ? '{}' : $encoded;
     }
 
+    protected static function normalizeParamsLogValue(array $payload, string $detail): string
+    {
+        $params = [
+            'detail' => $detail,
+            'action' => (string) ($payload['action'] ?? ''),
+            'module' => (string) ($payload['module'] ?? ''),
+            'target_id' => (int) ($payload['target_id'] ?? 0),
+            'target_type' => (string) ($payload['target_type'] ?? ''),
+        ];
+
+        if (array_key_exists('before_data', $payload)) {
+            $params['before_data'] = $payload['before_data'];
+        }
+        if (array_key_exists('after_data', $payload)) {
+            $params['after_data'] = $payload['after_data'];
+        }
+        if (!empty($payload['request_url'])) {
+            $params['request_url'] = (string) $payload['request_url'];
+        }
+        if (!empty($payload['request_method'])) {
+            $params['request_method'] = (string) $payload['request_method'];
+        }
+        if (array_key_exists('status', $payload)) {
+            $params['status'] = (int) $payload['status'];
+        }
+
+        $encoded = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $encoded === false ? '{}' : $encoded;
+    }
+
     /**
      * 解析后台日志表名
      */
+
     protected static function resolveAdminLogTable(): ?string
 
     {

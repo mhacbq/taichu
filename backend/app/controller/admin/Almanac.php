@@ -89,10 +89,11 @@ class Almanac extends BaseController
                 $query->where($dateColumn, $date);
             } else {
                 $startDate = sprintf('%04d-%02d-01', $year, $month);
-                $endDate = sprintf('%04d-%02d-%02d', $year, $month, cal_days_in_month(CAL_GREGORIAN, $month, $year));
+                $endDate = sprintf('%04d-%02d-%02d', $year, $month, $this->resolveDaysInMonth($year, $month));
                 $query->where($dateColumn, '>=', $startDate)
                     ->where($dateColumn, '<=', $endDate);
             }
+
 
             $total = $query->count();
             $list = $query->page($pagination['page'], $pagination['pageSize'])->select()->toArray();
@@ -214,8 +215,9 @@ class Almanac extends BaseController
                 return $this->error('黄历数据表缺少日期字段', 500);
             }
 
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, (int) $month, (int) $year);
+            $daysInMonth = $this->resolveDaysInMonth((int) $year, (int) $month);
             $insertData = [];
+
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
                 $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
@@ -480,9 +482,19 @@ class Almanac extends BaseController
         return null;
     }
 
+    protected function resolveDaysInMonth(int $year, int $month): int
+    {
+        $year = max(1970, $year);
+        $month = max(1, min(12, $month));
+        $date = sprintf('%04d-%02d-01', $year, $month);
+
+        return (int) date('t', strtotime($date));
+    }
+
     /**
      * 判断是否为 JSON 字段
      */
+
     protected function isJsonColumn(array $columns, string $field): bool
     {
         return isset($columns[$field]) && str_contains($columns[$field], 'json');

@@ -2,7 +2,31 @@
 
 ## 最近更新
 
+### 后台运营修复（后端修复专家，2026-03-18 12:30）
+
+- 本轮直接修复了 `TODO.md` 顶部的 5 个后台运营阻塞项：1) 用户详情用户名仍回填手机号；2) 手动调积分 `HTTP 200 + code 500`；3) 黄历列表首屏失败；4) 神煞新增失败；5) SEO 配置新增失败。
+- 主要改动文件：
+  - `backend/app/controller/admin/User.php`
+  - `backend/app/service/AdminStatsService.php`
+  - `backend/app/controller/admin/Almanac.php`
+  - `backend/app/controller/admin/Shensha.php`
+  - `backend/app/controller/admin/Seo.php`
+  - `TODO.md`
+- 关键修复点：
+  1. 用户详情接口现在会同时清洗顶层字段与嵌套 `user` 对象里的 `username` / `nickname`，避免手机号继续覆盖展示名。
+  2. 积分调整服务改为兼容旧版 `tc_admin_log.params JSON` 写法，并把管理员日志降级为“失败不阻塞主事务”，恢复人工调积分主链路。
+  3. 黄历列表与月度生成改为使用 `date('t')` 计算月底，不再依赖 PHP `calendar` 扩展。
+  4. 神煞保存接口兼容 `PUT` 请求体，并为前端未提交的 `check_rule` / `check_code` 提供后端兜底默认值。
+  5. SEO 配置保存改为优先写标准 `tc_seo_*` 表，并按实际表结构动态映射字段，兼容旧表字段差异。
+
+#### 验证情况
+- `read_lints`：上述 5 个 PHP 文件均为 **0 条新增诊断**。
+- `git diff --check -- backend/app/controller/admin/User.php backend/app/service/AdminStatsService.php backend/app/controller/admin/Almanac.php backend/app/controller/admin/Shensha.php backend/app/controller/admin/Seo.php`：通过。
+- `docker exec taichu-app php -l`：`User.php`、`AdminStatsService.php`、`Almanac.php`、`Shensha.php`、`Seo.php` 均返回 **No syntax errors detected**。
+- 截图 / 录屏：本轮为后端兼容与业务链路修复，未新增 UI 截图或录屏。
+
 ### UI 修复批次（ui-15 自动化执行，2026-03-18 13:42）
+
 
 - 本轮先读取 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，随后针对剩余 `[UI]` 待办完成了 **5 个前台 UI/UX 修复**：1) `Bazi.vue` 新增“精确到分钟 / 大概时段”双入口，并在估算模式下展示降级提示；2) `Bazi.vue` 结果头部补齐排盘模式、时间精度、出生地 / 默认北京时间等上下文标签；3) `Bazi.vue` 简化版结果自动隐藏“大运与流年走势 / 深度预测工具”等进阶模块，同时把流年年份选择器改成更适合移动端的上下布局；4) `Home.vue` 登录态积分卡正文改为按积分与首测资格动态渲染，不再写死乐观文案；5) `Home.vue` 问候语改为按整点和页面可见性自动刷新，避免长驻页面后时段提示失真。
 - 已同步从 `TODO.md` 删除本轮完成的 5 条 `[UI]` 待办，避免后续自动化重复返工。
@@ -13,7 +37,8 @@
 - `git diff --stat -- frontend/src/views/Bazi.vue frontend/src/views/Home.vue TODO.md`：确认本轮仅涉及 3 个目标文件。
 - `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`：命令已执行，但当前本机 Node 运行时仍报 `SyntaxError: Unexpected token '??='`，与前几轮一致，未定位到由本轮改动新增的编译错误。
 - 截图 / 录屏：本轮未新增视觉截图；当前环境受本机 Node 版本限制，未补跑前台本地预览。
-- Git：计划按 `fix-ui-multiple-issues-20260318-1342` 提交并推送到 `origin/master`。
+- Git：已提交并推送 `79b12c4`（`"fix-ui-multiple-issues-20260318-1342"`）到 `origin/master`。
+
 
 
 
