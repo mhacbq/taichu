@@ -340,8 +340,51 @@ const toggleMobileMenu = () => {
   openMobileMenu()
 }
 
+const truncateAppShellMessage = (value, maxLength = 160) => {
+  const text = typeof value === 'string' ? value.trim() : ''
+  if (!text) {
+    return ''
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+}
+
+const logAppShellError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[AppShell]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateAppShellMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')) || 'unknown',
+    ...extra
+  })
+}
+
+const readStoredUserInfo = () => {
+  const rawValue = localStorage.getItem('userInfo')
+  if (!rawValue) {
+    return null
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue)
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : null
+  } catch (error) {
+    logAppShellError('parse_user_info_failed', error)
+    return null
+  }
+}
+
+const clearStoredUserSession = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+}
+
 // 检查登录状态
 const checkLoginStatus = () => {
+
   const token = localStorage.getItem('token')
   const userInfo = localStorage.getItem('userInfo')
   
@@ -374,14 +417,15 @@ const refreshPoints = async () => {
     const response = await getPointsBalance()
     if (response.code === 200) {
       userPoints.value = response.data.balance
-      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      const userInfo = readStoredUserInfo() || {}
       userInfo.points = response.data.balance
       localStorage.setItem('userInfo', JSON.stringify(userInfo))
     }
   } catch (error) {
-    console.error('刷新积分失败:', error)
+    logAppShellError('refresh_points_failed', error)
   }
 }
+
 
 // 处理下拉菜单命令
 const handleCommand = (command) => {
@@ -394,13 +438,13 @@ const handleCommand = (command) => {
 
 // 退出登录
 const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
+  clearStoredUserSession()
   isLoggedIn.value = false
   ElMessage.success('已退出登录')
   router.push('/')
   closeMobileMenu()
 }
+
 
 // 显示反馈
 const showFeedback = () => {

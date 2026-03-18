@@ -7,17 +7,22 @@ use app\service\LogService;
 use think\exception\Handle;
 use think\exception\HttpException;
 use think\exception\ValidateException;
+use think\facade\Request as RequestFacade;
 use think\Response;
 use Throwable;
+
 
 /**
  * 全局异常处理类
  */
 class Handler extends Handle
 {
+    protected ?string $requestId = null;
+
     /**
      * 不需要记录信息（日志）的异常类列表
      */
+
     protected $ignoreReport = [
         HttpException::class,
         ValidateException::class,

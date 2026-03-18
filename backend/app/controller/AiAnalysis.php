@@ -155,12 +155,17 @@ class AiAnalysis extends BaseController
                 'prompt_used' => $prompt ? $prompt->name : 'default'
             ], 'AI解盘成功');
         } catch (\Exception $e) {
-            Log::error('AI八字解盘失败: ' . $e->getMessage(), [
-                'prompt_key' => $promptKey,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return $this->error('AI解盘失败，请稍后重试', 500);
+            return $this->respondSystemException(
+                'ai_bazi_analyze',
+                $e,
+                'AI解盘失败，请稍后重试',
+                $this->buildAiAnalysisLogContext($baziData, $promptKey, $customPrompt, $config, [
+                    'mode' => 'sync',
+                    'prompt_source' => $prompt ? 'preset' : 'default',
+                ])
+            );
         }
+
 
     }
 

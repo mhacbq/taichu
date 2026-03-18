@@ -254,7 +254,79 @@ const inviteCount = ref(0)
 const invitePoints = ref(0)
 const inviteLink = ref('')
 
+const truncateClientMessage = (value, maxLength = 160) => {
+  const text = typeof value === 'string' ? value.trim() : ''
+  if (!text) {
+    return ''
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+}
+
+const sanitizeProfileErrorMessage = (error) => {
+  const message = typeof error?.message === 'string' ? error.message : String(error ?? '')
+  return truncateClientMessage(message) || 'unknown'
+}
+
+const reportProfileError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[Profile]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: sanitizeProfileErrorMessage(error),
+    ...extra
+  })
+}
+
+const safeReadArrayFromStorage = (key) => {
+  try {
+    const rawValue = localStorage.getItem(key)
+    if (!rawValue) {
+      return []
+    }
+
+    const parsedValue = JSON.parse(rawValue)
+    return Array.isArray(parsedValue) ? parsedValue : []
+  } catch (error) {
+    reportProfileError('read_storage_failed', error, { storage_key: key })
+    return []
+  }
+}
+
+const normalizeTarotCard = (card) => {
+  const source = card && typeof card === 'object' ? card : {}
+
+  return {
+    ...source,
+    name: typeof source.name === 'string' && source.name.trim() ? source.name.trim() : '未知牌',
+    reversed: Boolean(source.reversed),
+    emoji: typeof source.emoji === 'string' && source.emoji.trim() ? source.emoji : '🃏'
+  }
+}
+
+const normalizeTarotRecord = (record, index = 0) => {
+  const source = record && typeof record === 'object' ? record : {}
+  const cards = Array.isArray(source.cards) ? source.cards.map(normalizeTarotCard) : []
+
+  return {
+    ...source,
+    question: typeof source.question === 'string' && source.question.trim()
+      ? source.question.trim()
+      : `塔罗记录 ${index + 1}`,
+    cards,
+    date: source.date || ''
+  }
+}
+
+const getTarotCards = (record) => {
+  return Array.isArray(record?.cards) ? record.cards : []
+}
+
 const loadUserData = async () => {
+
   try {
     const [userRes, pointsRes, historyRes] = await Promise.all([
       getUserInfo(),
