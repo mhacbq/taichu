@@ -181,11 +181,26 @@
           </div>
 
           <div class="advanced-card">
-            <div class="advanced-card__header">
-              <h3>专业参数</h3>
-              <p>补齐问事类型、性别与日辰信息，让六爻结果更贴近真实问卦流程。</p>
-            </div>
-            <div class="advanced-grid">
+            <button
+              type="button"
+              class="advanced-toggle"
+              :aria-expanded="showAdvancedSettings"
+              aria-controls="liuyao-advanced-grid"
+              @click="showAdvancedSettings = !showAdvancedSettings"
+            >
+              <div class="advanced-card__header">
+                <h3>进阶设置</h3>
+                <p>问事类型、性别与日辰信息可按需补充；第一次起卦也可以先跳过。</p>
+              </div>
+              <span class="advanced-toggle__action">
+                {{ showAdvancedSettings ? '收起' : '展开' }}
+                <el-icon>
+                  <ArrowUp v-if="showAdvancedSettings" />
+                  <ArrowDown v-else />
+                </el-icon>
+              </span>
+            </button>
+            <div v-show="showAdvancedSettings" id="liuyao-advanced-grid" class="advanced-grid">
               <div class="form-group">
                 <label>问事类型</label>
                 <el-select v-model="form.questionType" class="full-width">
@@ -213,6 +228,7 @@
               </div>
             </div>
           </div>
+
 
           <div class="options-section">
             <el-checkbox v-model="form.useAi" label="使用AI深度分析（更准确、更详细）" />
@@ -319,7 +335,8 @@
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { RefreshRight, Delete, MagicStick, Present, Trophy, CircleCheckFilled, Collection } from '@element-plus/icons-vue'
+import { RefreshRight, Delete, MagicStick, Present, Trophy, CircleCheckFilled, Collection, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+
 import BackButton from '../components/BackButton.vue'
 
 
@@ -368,8 +385,10 @@ const historyLoaded = ref(false)
 const historyError = ref('')
 const submitError = ref('')
 const showHistory = ref(false)
+const showAdvancedSettings = ref(false)
 const historyListRef = ref(null)
 const currentBeijingTimestamp = ref(Date.now())
+
 let beijingTimer = null
 let historyTriggerEl = null
 
@@ -996,11 +1015,37 @@ onUnmounted(() => {
   line-height: 1.7;
 }
 
+.advanced-toggle {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.advanced-toggle__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .advanced-card__header {
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .advanced-card__header h3 {
+
   margin: 0 0 6px;
   color: var(--text-primary);
   font-size: 18px;
@@ -1009,6 +1054,7 @@ onUnmounted(() => {
 .input-grid,
 .advanced-grid,
 .manual-grid {
+
   display: grid;
   gap: 16px;
 }
@@ -1017,6 +1063,11 @@ onUnmounted(() => {
 .advanced-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+.advanced-grid {
+  margin-top: 18px;
+}
+
 
 .input-grid__item label,
 .manual-grid__item label {
@@ -1708,10 +1759,14 @@ onUnmounted(() => {
   color: var(--text-primary);
   margin: 0 0 6px 0;
   font-size: 14px;
-  white-space: nowrap;
+  line-height: 1.6;
+  min-height: calc(1.6em * 2);
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
+
 
 .history-gua {
   color: var(--text-secondary);
@@ -1796,12 +1851,22 @@ onUnmounted(() => {
     justify-content: space-between;
   }
 
+  .advanced-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .advanced-toggle__action {
+    margin-top: 0;
+  }
+
   .input-grid--double,
 
   .advanced-grid,
   .manual-grid {
     grid-template-columns: 1fr;
   }
+
 
   .gua-display {
     flex-direction: column;

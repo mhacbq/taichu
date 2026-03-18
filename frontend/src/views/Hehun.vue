@@ -89,6 +89,12 @@
             </button>
           </div>
 
+          <div class="action-buttons action-buttons--free">
+            <el-button plain @click="returnToForm">返回修改</el-button>
+            <el-button @click="resetForm">重新测算（清空）</el-button>
+          </div>
+
+
         </div>
       </div>
 
@@ -165,14 +171,15 @@
           
           <!-- 操作按钮 -->
           <div class="action-buttons">
-            <button class="btn-secondary" @click="resetForm">
-              <el-icon><RefreshRight /></el-icon> 重新测算
-            </button>
-            <button class="btn-primary" @click="exportReport" :disabled="exporting || !canExportReport">
+            <el-button plain @click="returnToForm">返回修改</el-button>
+            <el-button @click="resetForm">
+              <el-icon><RefreshRight /></el-icon> 重新测算（清空）
+            </el-button>
+            <el-button type="primary" @click="exportReport" :disabled="exporting || !canExportReport">
               <el-icon><Document /></el-icon> {{ exporting ? '导出中...' : '导出报告' }}
-            </button>
-
+            </el-button>
           </div>
+
         </div>
       </div>
 
@@ -1436,6 +1443,12 @@ const unlockPremium = async () => {
 }
 
 
+const returnToForm = () => {
+  freeResult.value = null
+  premiumResult.value = null
+  clearUnlockFeedback()
+}
+
 // 重置表单
 const resetForm = () => {
   freeResult.value = null
@@ -1451,6 +1464,7 @@ const resetForm = () => {
   form.femaleBirthPrecision = 'exact'
   form.femaleBirthTimeRange = ''
 }
+
 
 
 
@@ -2729,11 +2743,22 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   justify-content: center;
+  flex-wrap: wrap;
   margin-top: 32px;
+}
+
+.action-buttons :deep(.el-button) {
+  min-height: 48px;
+  padding: 12px 24px;
+}
+
+.action-buttons--free {
+  margin-top: 20px;
 }
 
 .btn-primary,
 .btn-secondary {
+
   padding: 12px 32px;
   min-height: 48px;
   border-radius: var(--radius-btn);

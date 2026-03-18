@@ -129,6 +129,11 @@ class AiService
     ): string {
         $score = $hehunResult['score'];
         $level = $hehunResult['level_text'];
+        $scores = $hehunResult['scores'] ?? [];
+        $traditionalMethods = $hehunResult['traditional_methods'] ?? [];
+        $traditionalRisk = $hehunResult['traditional_risk'] ?? [];
+        $sanyuan = is_array($traditionalMethods['sanyuan'] ?? null) ? $traditionalMethods['sanyuan'] : [];
+        $jiugong = is_array($traditionalMethods['jiugong'] ?? null) ? $traditionalMethods['jiugong'] : [];
 
         $maleBaziStr = sprintf(
             "%s%s %s%s %s%s %s%s",
@@ -146,6 +151,9 @@ class AiService
             $femaleBazi['hour']['gan'], $femaleBazi['hour']['zhi']
         );
 
+        $traditionalWarning = (string)($traditionalRisk['warning'] ?? '无明显传统凶象，可结合常规分项综合判断。');
+        $jiugongRelation = (string)($jiugong['relation']['type'] ?? ($jiugong['grade'] ?? '未提供'));
+
         return <<<PROMPT
 你是一位资深的八字命理大师，拥有30年的命理研究经验。请对以下八字合婚进行专业分析。
 
@@ -162,12 +170,21 @@ class AiService
 合婚总分：{$score}/100
 合婚等级：{$level}
 
-五维度评分：
-- 生肖配对：{$hehunResult['scores']['year']}/15
-- 日主配合：{$hehunResult['scores']['day']}/30
-- 五行互补：{$hehunResult['scores']['wuxing']}/20
-- 干支合冲：{$hehunResult['scores']['hechong']}/20
-- 纳音五行：{$hehunResult['scores']['nayin']}/15
+核心评分：
+- 生肖配对：{$scores['year']}/15
+- 日主配合：{$scores['day']}/25
+- 五行互补：{$scores['wuxing']}/20
+- 干支合冲：{$scores['hechong']}/15
+- 纳音五行：{$scores['nayin']}/15
+- 神煞互补：{$scores['shensha']}/10
+- 传统合婚：{$scores['traditional']}/10
+
+【传统合婚校正】
+三元：{$sanyuan['grade']}，{$sanyuan['description']} {$sanyuan['suggestion']}
+九宫：{$jiugongRelation}，{$jiugong['description']} {$jiugong['suggestion']}
+传统风险提示：{$traditionalWarning}
+
+请注意：若三元/九宫出现五鬼、绝命、祸害、六煞等凶象，结论必须明确说明风险，不可只顺着总分给出过度乐观的判断。
 
 请从以下方面进行详细分析，用专业但通俗的语言：
 
@@ -175,7 +192,7 @@ class AiService
 分析双方性格特点、相处模式、潜在冲突点
 
 2. 【婚姻前景预测】
-根据八字配合情况，预测婚姻稳定性、可能面临的挑战
+根据八字配合情况，预测婚姻稳定性、可能面临的挑战；若传统凶象明显，要说明为何系统做了降权。
 
 3. 【事业财运配合】
 分析双方事业发展的互补性、财运配合度
@@ -556,6 +573,11 @@ PROMPT;
      */
     public function isAvailable(): bool
     {
+        $featureEnabled = ConfigService::get('feature_ai_analysis_enabled', ConfigService::get('enable_ai_analysis', true));
+        if (!$featureEnabled) {
+            return false;
+        }
+
         $config = $this->config[$this->defaultProvider] ?? null;
         return $config && !empty($config['api_key']);
     }

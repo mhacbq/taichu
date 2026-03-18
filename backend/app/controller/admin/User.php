@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
+use app\model\BaziRecord;
+use app\model\PointsRecord;
+use app\model\TarotRecord;
+use app\model\User as UserModel;
 use app\service\AdminStatsService;
 use app\service\SchemaInspector;
 use think\Request;
 use think\facade\Db;
-
 
 /**
  * 后台用户管理控制器
@@ -48,36 +51,35 @@ class User extends BaseController
         }
 
         try {
-            $user = \app\model\User::find($id);
+            $user = UserModel::find($id);
             if (!$user) {
                 return $this->error('用户不存在', 404);
             }
 
-            $userData = $user->toArray();
+            $userData = $this->mergeUserProfileData($user->toArray(), $id);
             $displayUsername = $this->resolveDisplayUsername($userData, $id);
             $normalizedUserData = $this->normalizeDetailUserData($userData, $displayUsername, $id);
             $pointsRecords = [];
             if (SchemaInspector::tableExists('tc_points_record')) {
-                $pointsRecordRows = \app\model\PointsRecord::where('user_id', $id)
+                $pointsRecordRows = PointsRecord::where('user_id', $id)
                     ->order('created_at', 'desc')
                     ->limit(20)
                     ->select()
                     ->toArray();
-                $pointsRecords = \app\model\PointsRecord::normalizeRecordList($pointsRecordRows, [
+                $pointsRecords = PointsRecord::normalizeRecordList($pointsRecordRows, [
                     $id => (int) ($normalizedUserData['points'] ?? 0),
                 ]);
             }
-
 
             $liuyaoTable = $this->resolveFirstExistingTable(['tc_liuyao_record', 'liuyao_records']);
             $vipOrderTable = $this->resolveFirstExistingTable(['tc_vip_order', 'vip_orders']);
             $rechargeOrderTable = $this->resolveFirstExistingTable(['tc_recharge_order']);
 
             $baziCount = SchemaInspector::tableExists('tc_bazi_record')
-                ? \app\model\BaziRecord::where('user_id', $id)->count()
+                ? BaziRecord::where('user_id', $id)->count()
                 : 0;
             $tarotCount = SchemaInspector::tableExists('tc_tarot_record')
-                ? \app\model\TarotRecord::where('user_id', $id)->count()
+                ? TarotRecord::where('user_id', $id)->count()
                 : 0;
             $liuyaoCount = $liuyaoTable !== null
                 ? Db::table($liuyaoTable)->where('user_id', $id)->count()
@@ -89,7 +91,7 @@ class User extends BaseController
                 ? Db::table($rechargeOrderTable)->where('user_id', $id)->order('created_at', 'desc')->limit(10)->select()->toArray()
                 : [];
             $canAdjustPoints = $this->hasAdminPermission('points_adjust');
-
+            $canEditProfile = $this->hasAdminPermission('user_edit');
 
             $stats = [
                 'bazi_count' => $baziCount,
@@ -115,18 +117,150 @@ class User extends BaseController
                 'vip_orders' => $vipOrders,
                 'recharge_orders' => $rechargeOrders,
                 'can_adjust_points' => $canAdjustPoints,
+                'can_edit_profile' => $canEditProfile,
                 'user' => $normalizedUserData,
                 'stats' => $stats,
                 'actions' => [
                     'can_adjust_points' => $canAdjustPoints,
+                    'can_edit_profile' => $canEditProfile,
                 ],
             ]);
-
 
             return $this->success($payload);
         } catch (\Throwable $e) {
             return $this->respondSystemException('admin_user_detail', $e, '获取用户详情失败，请稍后重试', [
                 'user_id' => $id,
+            ]);
+        }
+    }
+
+    /**
+     * 编辑用户资料
+     */
+    public function updateProfile(int $id)
+    {
+        if (!$this->hasAdminPermission('user_edit')) {
+            return $this->error('无权限编辑用户资料', 403);
+        }
+
+        $data = $this->request->isPut() ? $this->request->put() : $this->request->post();
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        try {
+            $user = UserModel::find($id);
+            if (!$user) {
+                return $this->error('用户不存在', 404);
+            }
+
+            $userColumns = SchemaInspector::tableExists('tc_user')
+                ? SchemaInspector::getTableColumns('tc_user')
+                : [];
+            $profileColumns = SchemaInspector::tableExists('tc_user_profile')
+                ? SchemaInspector::getTableColumns('tc_user_profile')
+                : [];
+            $currentUserData = $user->toArray();
+            $currentProfileData = $this->loadProfileData($id);
+            $sanitizedData = $this->sanitizeEditableProfileData($data);
+
+            if (empty($sanitizedData)) {
+                return $this->error('没有可更新的资料字段', 400);
+            }
+
+            if (array_key_exists('email', $sanitizedData)
+                && !isset($userColumns['email'])
+                && !isset($profileColumns['email'])) {
+                return $this->error('当前环境尚未初始化邮箱字段，请先执行数据库脚本', 500);
+            }
+
+            $userUpdate = [];
+            foreach (['nickname', 'avatar', 'gender', 'phone'] as $field) {
+                if (array_key_exists($field, $sanitizedData) && isset($userColumns[$field])) {
+                    $userUpdate[$field] = $sanitizedData[$field];
+                }
+            }
+            if (array_key_exists('email', $sanitizedData) && isset($userColumns['email'])) {
+                $userUpdate['email'] = $sanitizedData['email'];
+            }
+            if (!empty($userUpdate) && isset($userColumns['updated_at'])) {
+                $userUpdate['updated_at'] = date('Y-m-d H:i:s');
+            }
+
+            $profileUpdate = [];
+            if (array_key_exists('email', $sanitizedData) && isset($profileColumns['email'])) {
+                $profileUpdate['email'] = $sanitizedData['email'];
+            }
+            if (!empty($profileUpdate) && isset($profileColumns['updated_at'])) {
+                $profileUpdate['updated_at'] = date('Y-m-d H:i:s');
+            }
+
+            if (empty($userUpdate) && empty($profileUpdate)) {
+                return $this->error('当前环境没有可写入的资料字段，请先执行数据库脚本', 500);
+            }
+
+            $beforeData = [
+                'nickname' => (string) ($currentUserData['nickname'] ?? ''),
+                'avatar' => (string) ($currentUserData['avatar'] ?? ''),
+                'gender' => (int) ($currentUserData['gender'] ?? 0),
+                'phone' => (string) ($currentUserData['phone'] ?? ''),
+                'email' => (string) (($currentUserData['email'] ?? '') ?: ($currentProfileData['email'] ?? '')),
+            ];
+
+            Db::startTrans();
+            if (!empty($userUpdate)) {
+                Db::table('tc_user')->where('id', $id)->update($userUpdate);
+            }
+
+            if (!empty($profileUpdate) && !empty($profileColumns)) {
+                $existingProfile = empty($currentProfileData)
+                    ? null
+                    : Db::table('tc_user_profile')->where('user_id', $id)->find();
+
+                if ($existingProfile) {
+                    Db::table('tc_user_profile')->where('user_id', $id)->update($profileUpdate);
+                } else {
+                    $insertData = ['user_id' => $id] + $profileUpdate;
+                    if (isset($profileColumns['created_at'])) {
+                        $insertData['created_at'] = date('Y-m-d H:i:s');
+                    }
+                    if (isset($profileColumns['updated_at'])) {
+                        $insertData['updated_at'] = date('Y-m-d H:i:s');
+                    }
+                    Db::table('tc_user_profile')->insert($insertData);
+                }
+            }
+            Db::commit();
+
+            $freshUser = UserModel::find($id);
+            $afterMerged = $freshUser ? $this->mergeUserProfileData($freshUser->toArray(), $id) : [];
+            $afterData = [
+                'nickname' => (string) ($afterMerged['nickname'] ?? ''),
+                'avatar' => (string) ($afterMerged['avatar'] ?? ''),
+                'gender' => (int) ($afterMerged['gender'] ?? 0),
+                'phone' => (string) ($afterMerged['phone'] ?? ''),
+                'email' => (string) ($afterMerged['email'] ?? ''),
+            ];
+
+            $this->logOperation('update_user_profile', 'user', [
+                'target_id' => $id,
+                'target_type' => 'user',
+                'detail' => '更新用户资料',
+                'before_data' => $beforeData,
+                'after_data' => $afterData,
+            ]);
+
+            return $this->success($afterData, '用户资料更新成功');
+        } catch (\InvalidArgumentException $e) {
+            Db::rollback();
+            return $this->respondBusinessException($e, 'admin_update_user_profile_validation', $e->getMessage(), 400, [
+                'user_id' => $id,
+            ]);
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return $this->respondSystemException('admin_update_user_profile', $e, '更新用户资料失败，请稍后重试', [
+                'user_id' => $id,
+                'fields' => array_keys($data),
             ]);
         }
     }
@@ -193,7 +327,7 @@ class User extends BaseController
         }
 
         try {
-            $user = \app\model\User::find($id);
+            $user = UserModel::find($id);
             if (!$user) {
                 return $this->error('用户不存在', 404);
             }
@@ -254,12 +388,12 @@ class User extends BaseController
                 return $this->error('用户ID列表无效', 400);
             }
 
-            $existingCount = \app\model\User::whereIn('id', $userIds)->count();
+            $existingCount = UserModel::whereIn('id', $userIds)->count();
             if ($existingCount === 0) {
                 return $this->error('未找到可更新的用户', 404);
             }
 
-            \app\model\User::whereIn('id', $userIds)->update(['status' => $status]);
+            UserModel::whereIn('id', $userIds)->update(['status' => $status]);
 
             $this->logOperation('batch_update_status', 'user', [
                 'detail' => '批量更新用户状态为: ' . $status,
@@ -286,7 +420,6 @@ class User extends BaseController
     /**
      * 兼容 points 与 type/amount 两套积分调整入参
      */
-
     protected function resolvePointsDelta(array $data): ?int
     {
         $directPoints = filter_var($data['points'] ?? null, FILTER_VALIDATE_INT);
@@ -342,13 +475,106 @@ class User extends BaseController
 
         $userData['username'] = $displayUsername !== '' ? $displayUsername : ('用户#' . $userId);
         $userData['nickname'] = $nickname;
+        $userData['email'] = trim((string) ($userData['email'] ?? ''));
 
         return $userData;
     }
 
+    protected function mergeUserProfileData(array $userData, int $userId): array
+    {
+        $profileData = $this->loadProfileData($userId);
+        if (empty($profileData)) {
+            return $userData;
+        }
+
+        if (($userData['email'] ?? '') === '' && ($profileData['email'] ?? '') !== '') {
+            $userData['email'] = (string) $profileData['email'];
+        }
+
+        if (($userData['nickname'] ?? '') === '' && ($profileData['real_name'] ?? '') !== '') {
+            $userData['nickname'] = (string) $profileData['real_name'];
+        }
+
+        return $userData;
+    }
+
+    protected function loadProfileData(int $userId): array
+    {
+        if (!SchemaInspector::tableExists('tc_user_profile')) {
+            return [];
+        }
+
+        $profile = Db::table('tc_user_profile')->where('user_id', $userId)->find();
+        return is_array($profile) ? $profile : [];
+    }
+
+    protected function sanitizeEditableProfileData(array $data): array
+    {
+        $result = [];
+
+        if (array_key_exists('nickname', $data)) {
+            $nickname = $this->sanitizeNickname((string) $data['nickname']);
+            if ($nickname === '') {
+                throw new \InvalidArgumentException('昵称不能为空');
+            }
+            $result['nickname'] = $nickname;
+        }
+
+        if (array_key_exists('avatar', $data)) {
+            $result['avatar'] = $this->sanitizeAvatarUrl((string) $data['avatar']);
+        }
+
+        if (array_key_exists('gender', $data)) {
+            $gender = (int) $data['gender'];
+            if (!in_array($gender, [0, 1, 2], true)) {
+                throw new \InvalidArgumentException('性别值无效');
+            }
+            $result['gender'] = $gender;
+        }
+
+        if (array_key_exists('phone', $data)) {
+            $phone = trim((string) $data['phone']);
+            if ($phone !== '' && preg_match('/^1[3-9]\d{9}$/', $phone) !== 1) {
+                throw new \InvalidArgumentException('手机号格式不正确');
+            }
+            $result['phone'] = $phone;
+        }
+
+        if (array_key_exists('email', $data)) {
+            $email = trim((string) $data['email']);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                throw new \InvalidArgumentException('邮箱格式不正确');
+            }
+            $result['email'] = mb_substr($email, 0, 100);
+        }
+
+        return $result;
+    }
+
+    protected function sanitizeNickname(string $nickname): string
+    {
+        $nickname = strip_tags($nickname);
+        $nickname = htmlspecialchars(trim($nickname), ENT_QUOTES, 'UTF-8');
+        return mb_substr($nickname, 0, 50);
+    }
+
+    protected function sanitizeAvatarUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        $parsed = parse_url($url);
+        if (!isset($parsed['scheme']) || !in_array(strtolower((string) $parsed['scheme']), ['http', 'https'], true)) {
+            throw new \InvalidArgumentException('头像地址必须为 http/https 链接');
+        }
+
+        return $url;
+    }
+
     protected function isPhoneLikeUsername(string $username, string $phone = ''): bool
     {
-
         $normalizedUsername = trim($username);
         if ($normalizedUsername === '') {
             return false;
@@ -359,9 +585,8 @@ class User extends BaseController
             return true;
         }
 
-        return (bool) preg_match('/^1[3-9]\d{9}$/', $normalizedUsername);
+        return preg_match('/^1[3-9]\d{9}$/', $normalizedUsername) === 1;
     }
-
 
     /**
      * 返回首个存在的数据表名
@@ -377,4 +602,3 @@ class User extends BaseController
         return null;
     }
 }
-

@@ -5,6 +5,7 @@ namespace app\middleware;
 
 use app\service\AdminAuthService;
 use app\service\SchemaInspector;
+use app\service\SensitiveDataSanitizer;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use think\facade\Db;
@@ -12,6 +13,7 @@ use think\facade\Env;
 use think\facade\Log;
 use think\Request;
 use think\Response;
+
 
 /**
  * 后台管理认证中间件
@@ -111,8 +113,9 @@ class AdminAuth
             return;
         }
 
-        $params = $this->sanitizeParams($request->param());
+        $params = SensitiveDataSanitizer::getFilteredRequestParams($request);
         $detail = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
         if ($detail === false) {
             $detail = '{}';
         }

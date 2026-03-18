@@ -28,6 +28,19 @@ class PushService
      */
     public static function sendPushDetailed(int $userId, string $title, string $content, array $extra = []): array
     {
+        if (!SchemaInspector::tableExists('tc_push_device')) {
+            return [
+                'success' => false,
+                'code' => 'NO_DEVICE_TABLE',
+                'message' => '推送设备表不存在',
+                'provider' => self::getProvider(),
+                'attempted' => 0,
+                'succeeded' => 0,
+                'failed' => 0,
+                'errors' => [],
+            ];
+        }
+
         $devices = Db::name('tc_push_device')
             ->where('user_id', $userId)
             ->where('is_active', 1)
@@ -75,6 +88,24 @@ class PushService
 
         foreach ($devices as $device) {
             $attempted++;
+            $device = self::normalizePushDeviceRow($device);
+            $token = (string) ($device['device_token'] ?? '');
+
+            if ($token === '') {
+                $failed++;
+                $errors[] = [
+                    'device_id' => (int) ($device['id'] ?? 0),
+                    'platform' => (string) ($device['platform'] ?? ''),
+                    'message' => '推送设备缺少可用令牌',
+                ];
+
+                Log::warning('推送设备缺少可用令牌', [
+                    'user_id' => $userId,
+                    'device_id' => (int) ($device['id'] ?? 0),
+                    'platform' => (string) ($device['platform'] ?? ''),
+                ]);
+                continue;
+            }
 
             try {
                 $result = self::dispatchToProvider($provider, $device, $title, $content, $extra);
@@ -154,6 +185,17 @@ class PushService
      */
     public static function broadcastDetailed(string $title, string $content, array $extra = []): array
     {
+        if (!SchemaInspector::tableExists('tc_push_device')) {
+            return [
+                'success' => false,
+                'message' => '推送设备表不存在',
+                'total_users' => 0,
+                'success_users' => 0,
+                'failed_users' => 0,
+                'details' => [],
+            ];
+        }
+
         $userIds = Db::name('tc_push_device')
             ->where('is_active', 1)
             ->distinct(true)
@@ -415,10 +457,44 @@ class PushService
     }
 
     /**
+     * 归一化推送设备记录，兼容 token/device_token 等新旧字段
+     */
+    protected static function normalizePushDeviceRow(array $device): array
+    {
+        $device['device_token'] = self::extractDeviceToken($device);
+
+        if (!isset($device['last_active_at']) && isset($device['last_used_at'])) {
+            $device['last_active_at'] = $device['last_used_at'];
+        }
+        if (!isset($device['last_used_at']) && isset($device['last_active_at'])) {
+            $device['last_used_at'] = $device['last_active_at'];
+        }
+
+        return $device;
+    }
+
+    /**
+     * 提取设备令牌
+     */
+    protected static function extractDeviceToken(array $device): string
+    {
+        $token = trim((string) ($device['device_token'] ?? ''));
+        if ($token !== '') {
+            return $token;
+        }
+
+        return trim((string) ($device['token'] ?? ''));
+    }
+
+    /**
      * 注销失效设备
      */
     protected static function deactivateDevice(int $deviceId, string $reason = ''): void
     {
+        if (!SchemaInspector::tableExists('tc_push_device')) {
+            return;
+        }
+
         Db::name('tc_push_device')
             ->where('id', $deviceId)
             ->update([

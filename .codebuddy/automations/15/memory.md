@@ -1,6 +1,14 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 积分 / 敏感配置 / 索引修复记录（本次）
+
+- 本轮完成 5 个后端相关问题收口：积分记录接口字段归一化、支付配置敏感字段加密、短信配置敏感字段加密、高频查询与清理索引补齐、短信验证码过期物理清理；同时补充了后端轻量测试入口与两组单元测试。
+- 关键代码：`backend/app/model/PointsRecord.php` 新增统一展示归一化能力并修复空字符串导致 `reason/remark/action` 回退失效的问题；新增 `backend/app/service/SensitiveConfigCrypt.php`，为 `PaymentConfig.php`、`SmsConfig.php` 提供 AES-256-GCM 字段级加密/解密；`SmsCode.php` 新增 `purgeExpired(7)` 并由 `DailyTask.php` 接入；数据库脚本 `database/20260318_add_points_recharge_sms_indexes.sql` 已接入 `20260318_master_migration.sql`。
+- 验证：`docker exec taichu-app php /var/www/html/tests/run.php` 已通过，输出 `[PASS] tests\\Unit\\SensitiveConfigCryptTest`、`[PASS] tests\\Unit\\PointsRecordNormalizationTest`；`docker exec taichu-app php -l /var/www/html/app/model/PointsRecord.php` 语法通过；`git diff --check -- TODO.md backend/app/command/DailyTask.php backend/app/controller/Admin.php backend/app/controller/Points.php backend/app/controller/admin/User.php backend/app/model/PaymentConfig.php backend/app/model/PointsRecord.php backend/app/model/SmsCode.php backend/app/model/SmsConfig.php backend/app/service/SensitiveConfigCrypt.php backend/tests/TestCase.php backend/tests/Unit/SensitiveConfigCryptTest.php backend/tests/Unit/PointsRecordNormalizationTest.php backend/tests/run.php database/20260318_master_migration.sql database/20260318_add_points_recharge_sms_indexes.sql` 通过。
+- Git：已提交 `d13eb5b`，提交信息为 `"fix-backend-points-security-indexes-20260318"`；提交仅包含本轮后端修复目标文件，工作区内其余前端/自动化文件改动保持未纳入。
+
 ## 2026-03-18 12:30 用户详情 / 调积分 / 黄历 / 神煞 / SEO 修复记录（本次）
+
 
 - 本轮直接处理 `TODO.md` 顶部最新 5 个后台运营阻塞项：用户详情用户名仍回填手机号、手动调积分业务码 500、黄历首屏列表失败、神煞新增失败、SEO 配置新增失败。
 - 关键代码：`backend/app/controller/admin/User.php` 统一详情 `username` / `nickname` 口径，并同步清洗嵌套 `user` 对象；`backend/app/service/AdminStatsService.php` 修复管理员日志 `params` JSON 兼容写入，并让日志失败不再回滚积分事务；`backend/app/controller/admin/Almanac.php` 改为用 `date('t')` 计算月底，移除 `calendar` 扩展依赖；`backend/app/controller/admin/Shensha.php` 兼容 PUT 请求体并为缺失的 `check_rule` / `check_code` 提供默认值；`backend/app/controller/admin/Seo.php` 优先落到 `tc_seo_*` 标准表，并按实际 schema 动态组装保存 payload。

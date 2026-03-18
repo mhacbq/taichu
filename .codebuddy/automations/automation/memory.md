@@ -129,6 +129,32 @@
 - **验证摘要**: `Hehun.php`、`BaziInterpretationService.php`、`LiuyaoService.php`、`LunarService.php` IDE 诊断均为 0；在运行中的 `taichu-app` 容器内对 `Hehun.php` 与 `BaziInterpretationService.php` 执行 `php -l` 均通过；本机仍未找到可直接使用的 PHP CLI。
 - **状态**: 本轮代码修复、验证与 Git 提交已完成（`1d1f032`）。
 
+## 2026-03-18 继续收口运行态占卜问题
+- **任务目标**: 收掉 `TODO.md` 中新增的 4 条 `[占卜]` 运行态问题，重点打通六爻起卦/历史、塔罗正式解读与合婚摘要口径，并同步清理待办。
+- **执行摘要**:
+    1. `Daily.php` 维持控制器级 Bearer Token 兜底与 `BaziRecord` 统一取数，作为“登录后 personalized 仍为 null”的修复基线。
+    2. `LiuyaoService::getYaoDiZhi()` 改为先把 `0/1/2/3` 四态爻码归一成纯阴阳码，再做八卦与纳甲映射，避免老阴/老阳直接查 `BA_GUA` 造成起卦链路异常。
+    3. `Liuyao.php` 新增 `gua_data / liuyao_gua`、`tc_liuyao_record / liuyao_records` 的动态探测与字段映射；起卦落盘、AI 回写、历史读取、软删过滤都改为按实际列存在与否执行，兼容两套历史 schema。
+    4. `Tarot.php` 补上 `Log` 导入，并把 `TarotElementService` 调用改成全限定类名；`interpret()` 也补了统一异常收口，避免解释阶段继续直接炸成 HTTP 500。
+    5. `Hehun::generateAiSummary()` 改为显式读取 `traditional_risk`，遇到 `五鬼 / 绝命` 等高风险时先输出传统警示，不再让规则摘要维持“高分=直接乐观”的口径。
+    6. 已从 `TODO.md` 删除这 4 条已修复的 `[占卜]` 待办。
+- **验证摘要**: `read_lints` 对 `LiuyaoService.php`、`Liuyao.php`、`Tarot.php`、`Hehun.php` 返回 0 diagnostics；本机仍未找到 `php` CLI，容器内代码目录与工作区未完全同构，因此本轮未追加容器语法校验。
+- **状态**: 代码修复与 TODO 清理已完成，尚未 Git 提交。
+
+## 2026-03-18 命理算法边界收口
+- **任务目标**: 在 `TODO.md` 已无残留 `[占卜]` 项的前提下，继续深挖 `backend/app/service/`，重点收口节气、六爻性别取用、五行评分与塔罗元素映射的边界误差。
+- **执行摘要**:
+    1. `BaziCalculationService` 修正寿星公式在 1900/2000 这类世纪尾数 `00` 年份对 `floor((Y-1)/4)` 的错误截断，年初节气不再整体错一天。
+    2. `LiuyaoService` 为感情占补齐 `male/female` 到 `男/女` 的归一化，女命不再误取妻财。
+    3. `BaziInterpretationService` 去掉五行平衡分的 20 分硬下限，并把最旺/最弱元素平票改为显式“并列”输出。
+    4. `TarotElementService` 新增英文大阿卡纳牌名与 `name_en/title/title_en/arcana_name` 解析，元素尊严链路不再因字段口径不同而掉空。
+    5. 复查 `TODO.md` 后 `[占卜]` 搜索结果仍为 0，本轮无需额外删除待办条目。
+- **验证摘要**: 4 个服务文件 `read_lints` 均为 0；容器内 `php -l` 全部通过；一次性回归脚本验证了 `2000-02-04` 立春、六爻女命感情取官鬼、极端偏枯命局平衡分、五行并列最旺与塔罗英文牌名映射，6 项全部通过。
+- **状态**: 已完成并提交 Git（`705aa47`）。
+
+
+
+
 
 
 

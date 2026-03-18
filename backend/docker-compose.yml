@@ -35,9 +35,11 @@ services:
     ports:
       - "8080:80"
     volumes:
+      - ./:/var/www/html
       - ../database:/var/www/bootstrap-sql:ro
     environment:
       DB_HOST: mysql
+
       DB_PORT: 3306
       DB_NAME: taichu
       DB_USER: taichu

@@ -5,11 +5,14 @@ require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/TestCase.php';
 require __DIR__ . '/Unit/SensitiveConfigCryptTest.php';
 require __DIR__ . '/Unit/PointsRecordNormalizationTest.php';
+require __DIR__ . '/Unit/DisplayTextRepairServiceTest.php';
 
 $tests = [
     tests\Unit\SensitiveConfigCryptTest::class,
     tests\Unit\PointsRecordNormalizationTest::class,
+    tests\Unit\DisplayTextRepairServiceTest::class,
 ];
+
 
 $failures = [];
 foreach ($tests as $testClass) {

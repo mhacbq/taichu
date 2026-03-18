@@ -28,13 +28,18 @@ class Feedback extends BaseController
             $pagination = $this->getPaginationParams('page', 'pageSize', 20, 100);
             $type = trim((string) $request->get('type', ''));
             $status = trim((string) $request->get('status', ''));
+            $normalizedStatus = FeedbackModel::normalizeStatusValue($status);
 
             $query = FeedbackModel::order('id', 'desc');
             if ($type !== '') {
                 $query->where('type', $type);
             }
-            if ($status !== '') {
-                $query->where('status', $status);
+            if ($status !== '' && $normalizedStatus !== null) {
+                $statusCode = FeedbackModel::normalizeStatusCode($normalizedStatus);
+                $query->where(function ($subQuery) use ($normalizedStatus, $statusCode) {
+                    $subQuery->where('status', $normalizedStatus)
+                        ->whereOr('status', $statusCode);
+                });
             }
 
             $total = (clone $query)->count();
@@ -87,7 +92,8 @@ class Feedback extends BaseController
         }
 
         $reply = trim((string) $request->post('reply', ''));
-        $status = trim((string) $request->post('status', 'resolved')) ?: 'resolved';
+        $statusCode = trim((string) $request->post('status', 'resolved')) ?: 'resolved';
+        $status = FeedbackModel::normalizeStatusValue($statusCode, FeedbackModel::STATUS_RESOLVED);
 
         try {
             $feedback = FeedbackModel::find($id);
@@ -127,9 +133,14 @@ class Feedback extends BaseController
             return $this->error('无权限修改反馈状态', 403);
         }
 
-        $status = trim((string) $request->put('status', ''));
-        if ($status === '') {
+        $statusInput = $request->put('status', '');
+        if ($statusInput === '') {
             return $this->error('反馈状态不能为空', 422);
+        }
+
+        $status = FeedbackModel::normalizeStatusValue($statusInput);
+        if ($status === null) {
+            return $this->error('反馈状态无效', 422);
         }
 
         try {
@@ -365,8 +376,8 @@ class Feedback extends BaseController
     protected function buildPendingFeedbackQuery()
     {
         return FeedbackModel::where(function ($query) {
-            $query->where('status', 0)
-                ->whereOr('status', 'pending');
+            $query->where('status', FeedbackModel::STATUS_PENDING)
+                ->whereOr('status', FeedbackModel::normalizeStatusCode(FeedbackModel::STATUS_PENDING));
         });
     }
 
@@ -377,6 +388,8 @@ class Feedback extends BaseController
     {
         $images = $this->normalizeImages($row['images'] ?? []);
 
+        $statusValue = FeedbackModel::normalizeStatusValue($row['status'] ?? null, FeedbackModel::STATUS_PENDING);
+
         return [
             'id' => (int) ($row['id'] ?? 0),
             'user_id' => (int) ($row['user_id'] ?? 0),
@@ -385,7 +398,8 @@ class Feedback extends BaseController
             'content' => trim((string) ($row['content'] ?? '')),
             'contact' => (string) ($row['contact'] ?? ''),
             'images' => $images,
-            'status' => (string) ($row['status'] ?? ''),
+            'status' => FeedbackModel::normalizeStatusCode($statusValue),
+            'status_value' => $statusValue,
             'reply' => (string) ($row['reply'] ?? ''),
             'replied_at' => $row['replied_at'] ?? null,
             'created_at' => (string) ($row['created_at'] ?? ''),

@@ -5,6 +5,7 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\service\AdminAuthService;
+use app\service\SchemaInspector;
 use think\facade\Db;
 
 
@@ -47,10 +48,13 @@ class System extends BaseController
             return $response;
         }
 
+        $columns = $this->getRoleColumns();
         $list = Db::table(self::TABLE_ADMIN_ROLE)
             ->order('id', 'asc')
             ->select()
             ->toArray();
+
+        $list = array_map(fn (array $row): array => $this->normalizeRoleRow($row, $columns), $list);
 
         return $this->success($list);
     }
@@ -67,16 +71,12 @@ class System extends BaseController
 
         try {
             $payload = $this->validateRolePayload($this->request->post());
-            $this->assertRoleCodeUnique($payload['code']);
+            $columns = $this->getRoleColumns();
+            $this->assertRoleCodeUnique($payload['code'], 0, $columns);
 
-
-            $id = Db::table(self::TABLE_ADMIN_ROLE)->insertGetId([
-                'name' => $payload['name'],
-                'code' => $payload['code'],
-                'description' => $payload['description'],
-                'status' => $payload['status'],
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            $id = Db::table(self::TABLE_ADMIN_ROLE)->insertGetId(
+                $this->buildRoleSaveData($payload, $columns, true)
+            );
 
             return $this->success(['id' => $id], '创建成功');
         } catch (\InvalidArgumentException $e) {
@@ -104,21 +104,17 @@ class System extends BaseController
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '角色ID');
             $payload = $this->validateRolePayload($this->request->put());
+            $columns = $this->getRoleColumns();
             $role = Db::table(self::TABLE_ADMIN_ROLE)->where('id', $id)->find();
             if (!$role) {
                 return $this->error('角色不存在', 404);
             }
 
-            $this->assertRoleCodeUnique($payload['code'], $id);
+            $this->assertRoleCodeUnique($payload['code'], $id, $columns);
 
             Db::table(self::TABLE_ADMIN_ROLE)
                 ->where('id', $id)
-                ->update([
-                    'name' => $payload['name'],
-                    'code' => $payload['code'],
-                    'description' => $payload['description'],
-                    'status' => $payload['status'],
-                ]);
+                ->update($this->buildRoleSaveData($payload, $columns, false, $role));
 
             return $this->success([], '更新成功');
         } catch (\InvalidArgumentException $e) {
@@ -147,12 +143,13 @@ class System extends BaseController
 
         try {
             $id = $this->requirePositiveId($this->request->param('id'), '角色ID');
+            $columns = $this->getRoleColumns();
 
             $role = Db::table(self::TABLE_ADMIN_ROLE)->where('id', $id)->find();
             if (!$role) {
                 return $this->error('角色不存在', 404);
             }
-            if (!empty($role['is_super'])) {
+            if ($this->isSuperRole($role, $columns)) {
                 return $this->error('超级管理员角色不能删除');
             }
 
@@ -177,6 +174,96 @@ class System extends BaseController
                 'id' => $this->request->param('id'),
             ]);
         }
+    }
+
+    /**
+     * 获取角色表字段信息
+     */
+    protected function getRoleColumns(): array
+    {
+        return SchemaInspector::getTableColumns(self::TABLE_ADMIN_ROLE);
+    }
+
+    /**
+     * 解析角色名称字段
+     */
+    protected function resolveRoleNameColumn(array $columns): string
+    {
+        return isset($columns['role_name']) ? 'role_name' : 'name';
+    }
+
+    /**
+     * 解析角色编码字段
+     */
+    protected function resolveRoleCodeColumn(array $columns): string
+    {
+        return isset($columns['role_code']) ? 'role_code' : 'code';
+    }
+
+    /**
+     * 统一角色记录输出结构
+     */
+    protected function normalizeRoleRow(array $row, ?array $columns = null): array
+    {
+        $columns ??= $this->getRoleColumns();
+        $nameColumn = $this->resolveRoleNameColumn($columns);
+        $codeColumn = $this->resolveRoleCodeColumn($columns);
+        $status = isset($columns['status'])
+            ? $this->normalizeStatus($row['status'] ?? 1)
+            : 1;
+
+        return array_merge($row, [
+            'name' => trim((string) ($row[$nameColumn] ?? $row['name'] ?? '')),
+            'code' => trim((string) ($row[$codeColumn] ?? $row['code'] ?? '')),
+            'status' => $status,
+            'is_super' => $this->isSuperRole($row, $columns) ? 1 : 0,
+        ]);
+    }
+
+    /**
+     * 构建角色写入数据
+     */
+    protected function buildRoleSaveData(array $payload, array $columns, bool $isCreate, ?array $existing = null): array
+    {
+        $saveData = [
+            $this->resolveRoleNameColumn($columns) => $payload['name'],
+            $this->resolveRoleCodeColumn($columns) => $payload['code'],
+            'description' => $payload['description'],
+        ];
+
+        if (isset($columns['status'])) {
+            $saveData['status'] = $payload['status'];
+        }
+        if (!$isCreate && isset($columns['updated_at'])) {
+            $saveData['updated_at'] = date('Y-m-d H:i:s');
+        }
+        if ($isCreate && isset($columns['created_at'])) {
+            $saveData['created_at'] = date('Y-m-d H:i:s');
+        }
+        if ($isCreate && isset($columns['updated_at']) && !isset($saveData['updated_at'])) {
+            $saveData['updated_at'] = date('Y-m-d H:i:s');
+        }
+        if (isset($columns['is_super']) && $existing && array_key_exists('is_super', $existing)) {
+            $saveData['is_super'] = (int) $existing['is_super'];
+        }
+
+        return $saveData;
+    }
+
+    /**
+     * 判断是否为超级管理员角色
+     */
+    protected function isSuperRole(array $role, ?array $columns = null): bool
+    {
+        $columns ??= $this->getRoleColumns();
+        if (isset($columns['is_super']) && !empty($role['is_super'])) {
+            return true;
+        }
+
+        $codeColumn = $this->resolveRoleCodeColumn($columns);
+        $code = strtolower(trim((string) ($role[$codeColumn] ?? $role['code'] ?? '')));
+
+        return $code === 'super_admin';
     }
 
     /**
@@ -688,9 +775,12 @@ class System extends BaseController
     /**
      * 校验角色编码唯一性
      */
-    protected function assertRoleCodeUnique(string $code, int $excludeId = 0): void
+    protected function assertRoleCodeUnique(string $code, int $excludeId = 0, ?array $columns = null): void
     {
-        $query = Db::table(self::TABLE_ADMIN_ROLE)->where('code', $code);
+        $columns ??= $this->getRoleColumns();
+        $codeColumn = $this->resolveRoleCodeColumn($columns);
+
+        $query = Db::table(self::TABLE_ADMIN_ROLE)->where($codeColumn, $code);
         if ($excludeId > 0) {
             $query->where('id', '<>', $excludeId);
         }

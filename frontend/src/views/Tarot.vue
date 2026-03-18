@@ -548,7 +548,47 @@ const getCurrentTarotQuestion = () => submittedQuestion.value || question.value.
 const getCurrentTarotSpread = () => submittedSpread.value || selectedSpread.value
 const getCurrentCardNamesText = () => cards.value.map((card) => `${card.name}${card.reversed ? '(逆位)' : '(正位)'}`).join('、')
 
+const buildTarotShareSummary = (shareUrl) => {
+  const spreadName = getSpreadName(getCurrentTarotSpread())
+  return `我在太初命理完成了一次${spreadName}塔罗占卜\n` +
+    '这次先分享摘要与链接，问题全文和牌面详情未写入消息正文\n' +
+    `查看详情：${shareUrl}`
+}
+
+const buildTarotShareDetailText = (shareUrl) => {
+  const cardNames = getCurrentCardNamesText()
+  return `我在太初命理进行了塔罗占卜\n` +
+    `问题：${getCurrentTarotQuestion()}\n` +
+    `抽到的牌：${cardNames}\n` +
+    `查看详情：${shareUrl}`
+}
+
+const resolveTarotShareText = async (shareUrl) => {
+  try {
+    await ElMessageBox.confirm(
+      '默认只分享摘要与链接。若你确实需要把“问题全文 + 牌面详情”一起发出，请再次确认。',
+      '是否附带详细内容',
+      {
+        confirmButtonText: '附带问题与牌面',
+        cancelButtonText: '仅分享摘要',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+
+    return buildTarotShareDetailText(shareUrl)
+  } catch (actionOrError) {
+    if (actionOrError === 'cancel' || actionOrError === 'close' || actionOrError?.name === 'AbortError') {
+      return buildTarotShareSummary(shareUrl)
+    }
+
+    ElMessage.error('分享内容设置失败，请稍后重试')
+    return null
+  }
+}
+
 const getCardDetailAriaLabel = (card, index) => {
+
   const positionLabel = getPositionLabel(displayedSpread.value, index)
   const directionLabel = card.reversed ? '逆位' : '正位'
   return `查看${positionLabel}${card.name}${directionLabel}的详细解读`
@@ -957,14 +997,16 @@ const shareTarotResult = async () => {
 
   // 生成分享链接
   const shareUrl = `${window.location.origin}/tarot/share/${savedShareCode.value}`
-  const cardNames = getCurrentCardNamesText()
-  const shareText = `我在太初命理进行了塔罗占卜\n` +
-    `问题：${getCurrentTarotQuestion()}\n` +
-    `抽到的牌：${cardNames}\n` +
-    `查看详情：${shareUrl}`
+  const shareText = await resolveTarotShareText(shareUrl)
+  if (!shareText) {
+    if (exposedNow) {
+      await updateTarotShareVisibility(false)
+    }
+    return
+  }
 
-  
   if (navigator.share) {
+
     try {
       await navigator.share({
         title: '我的塔罗占卜结果',

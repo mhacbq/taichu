@@ -424,7 +424,11 @@ class Auth extends BaseController
             return $this->error('请先登录', 401);
         }
 
-        $data = $this->request->post();
+        $data = $this->request->isPut() ? $this->request->put() : $this->request->post();
+        if (!is_array($data)) {
+            $data = [];
+        }
+
         $userInfo = User::find($user['sub']);
         
         if (!$userInfo) {

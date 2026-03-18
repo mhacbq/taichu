@@ -291,8 +291,10 @@ class HehunRecord extends Model
         $pointsCost = $pointsField !== null ? (int)($row[$pointsField] ?? 0) : 0;
         $maleBirthState = self::resolveBirthState($row, 'male', $result);
         $femaleBirthState = self::resolveBirthState($row, 'female', $result);
-        $hasAiAnalysis = self::resolveAiAnalysisFlag($row);
-        $isPremium = self::resolvePremiumFlag($row, $result, $pointsCost, $hasAiAnalysis);
+        $aiAnalysis = self::decodeJsonField($row['ai_analysis'] ?? null);
+        $analysisMeta = self::resolveAnalysisMeta($row, $result, $aiAnalysis);
+        $hasAnalysisContent = !empty($analysisMeta['ai_requested']) || !empty($aiAnalysis);
+        $isPremium = self::resolvePremiumFlag($row, $result, $pointsCost, $hasAnalysisContent);
         $tier = $isPremium ? ($pointsCost > 0 ? 'premium' : 'vip') : 'free';
         $createdAt = (string)($row[$createTimeField] ?? '');
 
@@ -312,11 +314,12 @@ class HehunRecord extends Model
             'male_bazi' => self::decodeJsonField($row['male_bazi'] ?? null),
             'female_bazi' => self::decodeJsonField($row['female_bazi'] ?? null),
             'result' => $result,
-            'ai_analysis' => self::decodeJsonField($row['ai_analysis'] ?? null),
+            'ai_analysis' => $aiAnalysis,
+            'analysis_meta' => $analysisMeta,
             'score' => $score,
             'level' => $level,
             'level_text' => self::getLevelText($level),
-            'is_ai_analysis' => $hasAiAnalysis,
+            'is_ai_analysis' => $analysisMeta['is_ai_generated'],
             'points_cost' => $pointsCost,
             'is_premium' => $isPremium,
             'tier' => $tier,
@@ -472,13 +475,43 @@ class HehunRecord extends Model
         ];
     }
 
-    protected static function resolveAiAnalysisFlag(array $row): bool
+    protected static function resolveAnalysisMeta(array $row, array $result, $aiAnalysis = null): array
     {
-        if (array_key_exists('is_ai_analysis', $row)) {
-            return !empty($row['is_ai_analysis']);
+        $storedMeta = is_array($result['analysis_meta'] ?? null) ? $result['analysis_meta'] : [];
+        if ($aiAnalysis === null) {
+            $aiAnalysis = self::decodeJsonField($row['ai_analysis'] ?? null);
         }
 
-        return !empty(self::decodeJsonField($row['ai_analysis'] ?? null));
+        $actualAiFlag = array_key_exists('is_ai_generated', $storedMeta)
+            ? !empty($storedMeta['is_ai_generated'])
+            : (is_array($aiAnalysis) && array_key_exists('is_ai_generated', $aiAnalysis) ? !empty($aiAnalysis['is_ai_generated']) : false);
+
+        $requestedFlag = array_key_exists('ai_requested', $storedMeta)
+            ? !empty($storedMeta['ai_requested'])
+            : (array_key_exists('is_ai_analysis', $row) ? !empty($row['is_ai_analysis']) : ($actualAiFlag || !empty($aiAnalysis)));
+
+        $engine = (string)($storedMeta['analysis_engine'] ?? '');
+        if (!in_array($engine, ['none', 'ai', 'rules'], true)) {
+            $engine = !$requestedFlag ? 'none' : ($actualAiFlag ? 'ai' : 'rules');
+        }
+
+        return [
+            'ai_requested' => $requestedFlag,
+            'is_ai_generated' => $actualAiFlag,
+            'analysis_engine' => $engine,
+            'provider' => $actualAiFlag
+                ? (string)($storedMeta['provider'] ?? (is_array($aiAnalysis) ? ($aiAnalysis['provider'] ?? '') : ''))
+                : '',
+            'fallback_note' => !$requestedFlag || $actualAiFlag
+                ? ''
+                : (string)($storedMeta['fallback_note'] ?? (is_array($aiAnalysis) ? ($aiAnalysis['note'] ?? '') : '')),
+        ];
+    }
+
+    protected static function resolveAiAnalysisFlag(array $row, array $result = []): bool
+    {
+        $analysisMeta = self::resolveAnalysisMeta($row, $result);
+        return !empty($analysisMeta['is_ai_generated']);
     }
 
     protected static function resolvePremiumFlag(array $row, array $result, int $pointsCost, bool $hasAiAnalysis): bool

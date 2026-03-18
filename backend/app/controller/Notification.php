@@ -5,6 +5,7 @@ namespace app\controller;
 
 use app\BaseController;
 use app\service\PushService;
+use app\service\SchemaInspector;
 use think\facade\Cache;
 use think\facade\Db;
 use think\facade\Log;
@@ -15,6 +16,19 @@ use think\facade\Log;
 class Notification extends BaseController
 {
     protected $middleware = [\app\middleware\Auth::class];
+
+    protected const SETTING_BOOLEAN_FIELDS = [
+        'daily_fortune',
+        'system_notice',
+        'activity',
+        'recharge',
+        'points_change',
+        'push_enabled',
+        'sound_enabled',
+        'vibration_enabled',
+    ];
+
+    protected const SETTING_TIME_FIELDS = ['quiet_hours_start', 'quiet_hours_end'];
     
     /**
      * 获取用户通知列表
@@ -136,11 +150,9 @@ class Notification extends BaseController
             return $this->error('用户信息无效', 401);
         }
 
-        $settings = Db::name('tc_notification_setting')
-            ->where('user_id', $userId)
-            ->find();
+        $settings = self::loadUserSettings($userId);
 
-        return $this->success(self::buildSettingsPayload($settings ?: []));
+        return $this->success($settings);
     }
     
     /**
@@ -150,33 +162,27 @@ class Notification extends BaseController
     {
         $user = $this->request->user;
         $userId = (int) ($user['sub'] ?? 0);
-        $data = $this->request->post();
+        $data = $this->request->isPut() ? $this->request->put() : $this->request->post();
 
         if ($userId <= 0) {
             return $this->error('用户信息无效', 401);
         }
-        
-        $booleanFields = [
-            'daily_fortune',
-            'system_notice',
-            'activity',
-            'recharge',
-            'points_change',
-            'push_enabled',
-            'sound_enabled',
-            'vibration_enabled',
-        ];
-        $timeFields = ['quiet_hours_start', 'quiet_hours_end'];
-        $allowedFields = array_merge($booleanFields, $timeFields);
-        
-        $updateData = [];
-        foreach ($allowedFields as $field) {
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        $columns = self::getNotificationSettingColumns();
+        $booleanUpdateData = [];
+        foreach (self::SETTING_BOOLEAN_FIELDS as $field) {
             if (!array_key_exists($field, $data)) {
                 continue;
             }
+            $booleanUpdateData[$field] = self::normalizeBoolFlag($data[$field]);
+        }
 
-            if (in_array($field, $booleanFields, true)) {
-                $updateData[$field] = self::normalizeBoolFlag($data[$field]);
+        $timeUpdateData = [];
+        foreach (self::SETTING_TIME_FIELDS as $field) {
+            if (!array_key_exists($field, $data)) {
                 continue;
             }
 
@@ -184,30 +190,74 @@ class Notification extends BaseController
             if (!self::isValidHourMinute($timeValue)) {
                 return $this->error('免打扰时间格式无效，请使用 HH:MM');
             }
-            $updateData[$field] = $timeValue;
+            $timeUpdateData[$field] = $timeValue;
         }
-        
-        if (empty($updateData)) {
+
+        if (empty($booleanUpdateData) && empty($timeUpdateData)) {
             return $this->error('没有可更新的设置');
         }
-        
-        $updateData['updated_at'] = date('Y-m-d H:i:s');
-        
+
+        if (self::usesNarrowNotificationSettingTable($columns)) {
+            if (!empty($booleanUpdateData)) {
+                $now = date('Y-m-d H:i:s');
+                Db::startTrans();
+                try {
+                    foreach ($booleanUpdateData as $type => $enabled) {
+                        $query = Db::name('tc_notification_setting')
+                            ->where('user_id', $userId)
+                            ->where('type', $type);
+                        $existing = $query->find();
+                        if ($existing) {
+                            $query->update([
+                                'enabled' => $enabled,
+                                'updated_at' => $now,
+                            ]);
+                        } else {
+                            Db::name('tc_notification_setting')->insert([
+                                'user_id' => $userId,
+                                'type' => $type,
+                                'enabled' => $enabled,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ]);
+                        }
+                    }
+                    Db::commit();
+                } catch (\Throwable $e) {
+                    Db::rollback();
+                    throw $e;
+                }
+            }
+
+            $message = empty($timeUpdateData)
+                ? '设置更新成功'
+                : '开关设置已更新，当前数据表暂不支持免打扰时间持久化';
+
+            return $this->success(self::loadUserSettings($userId), $message);
+        }
+
+        $updateData = $booleanUpdateData + $timeUpdateData;
+        $saveData = self::filterWideNotificationSettingPayload($updateData, $columns);
+        if (empty($saveData)) {
+            return $this->error('当前通知设置表缺少可写字段');
+        }
+
+        $saveData['updated_at'] = date('Y-m-d H:i:s');
         $exists = Db::name('tc_notification_setting')
             ->where('user_id', $userId)
             ->find();
-        
+
         if ($exists) {
             Db::name('tc_notification_setting')
                 ->where('user_id', $userId)
-                ->update($updateData);
+                ->update($saveData);
         } else {
-            $updateData['user_id'] = $userId;
-            $updateData['created_at'] = date('Y-m-d H:i:s');
-            Db::name('tc_notification_setting')->insert($updateData);
+            $saveData['user_id'] = $userId;
+            $saveData['created_at'] = date('Y-m-d H:i:s');
+            Db::name('tc_notification_setting')->insert($saveData);
         }
-        
-        return $this->success(self::buildSettingsPayload(array_merge($exists ?: [], $updateData)), '设置更新成功');
+
+        return $this->success(self::loadUserSettings($userId), '设置更新成功');
     }
 
     
@@ -219,7 +269,7 @@ class Notification extends BaseController
         $user = $this->request->user;
         $userId = (int) ($user['sub'] ?? 0);
         $platform = strtolower(trim((string) $this->request->post('platform', ''))); // ios, android, web
-        $deviceToken = trim((string) $this->request->post('device_token', ''));
+        $deviceToken = trim((string) ($this->request->post('device_token', '') ?: $this->request->post('token', '')));
         $deviceId = trim((string) $this->request->post('device_id', ''));
 
         if ($userId <= 0) {
@@ -233,20 +283,18 @@ class Notification extends BaseController
             return $this->error('无效的平台类型');
         }
 
+        $columns = self::getPushDeviceColumns();
+        if (empty($columns)) {
+            return $this->error('推送设备表不存在，请先初始化通知相关数据表', 500);
+        }
+
         try {
             Db::name('tc_push_device')
                 ->where('device_id', $deviceId)
                 ->delete();
 
-            Db::name('tc_push_device')->insert([
-                'user_id' => $userId,
-                'platform' => $platform,
-                'device_token' => $deviceToken,
-                'device_id' => $deviceId,
-                'is_active' => 1,
-                'last_active_at' => date('Y-m-d H:i:s'),
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            $payload = self::buildPushDevicePayload($userId, $platform, $deviceToken, $deviceId, $columns);
+            Db::name('tc_push_device')->insert($payload);
 
             self::logNotificationEvent('info', '推送设备注册成功', [
                 'user_id' => $userId,
@@ -355,11 +403,7 @@ class Notification extends BaseController
     public static function sendNotificationDetailed(int $userId, string $type, string $title, string $content, array $data = []): array
     {
         try {
-            $rawSettings = Db::name('tc_notification_setting')
-                ->where('user_id', $userId)
-                ->find();
-            $settings = $rawSettings ? self::buildSettingsPayload($rawSettings) : [];
-
+            $settings = self::loadUserSettings($userId);
 
             $typeFieldMap = [
                 'daily_fortune' => 'daily_fortune',
@@ -476,10 +520,158 @@ class Notification extends BaseController
     }
 
     /**
+     * 读取用户通知设置（兼容宽表/按 type 分行两种结构）
+     */
+    protected static function loadUserSettings(int $userId): array
+    {
+        $columns = self::getNotificationSettingColumns();
+        if (empty($columns)) {
+            return self::buildSettingsPayload([]);
+        }
+
+        if (self::usesNarrowNotificationSettingTable($columns)) {
+            $rows = Db::name('tc_notification_setting')
+                ->where('user_id', $userId)
+                ->select()
+                ->toArray();
+
+            return self::buildSettingsPayload($rows);
+        }
+
+        $row = Db::name('tc_notification_setting')
+            ->where('user_id', $userId)
+            ->find();
+
+        return self::buildSettingsPayload($row ?: []);
+    }
+
+    /**
+     * 获取通知设置表字段
+     */
+    protected static function getNotificationSettingColumns(): array
+    {
+        return SchemaInspector::getTableColumns('tc_notification_setting');
+    }
+
+    /**
+     * 判断是否为按 type + enabled 分行存储的窄表
+     */
+    protected static function usesNarrowNotificationSettingTable(array $columns): bool
+    {
+        if (!isset($columns['type']) || !isset($columns['enabled'])) {
+            return false;
+        }
+
+        foreach (array_merge(self::SETTING_BOOLEAN_FIELDS, self::SETTING_TIME_FIELDS) as $field) {
+            if (isset($columns[$field])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 过滤宽表可写字段
+     */
+    protected static function filterWideNotificationSettingPayload(array $payload, array $columns): array
+    {
+        $filtered = [];
+        foreach (array_merge(self::SETTING_BOOLEAN_FIELDS, self::SETTING_TIME_FIELDS) as $field) {
+            if (isset($columns[$field]) && array_key_exists($field, $payload)) {
+                $filtered[$field] = $payload[$field];
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * 获取推送设备表字段
+     */
+    protected static function getPushDeviceColumns(): array
+    {
+        return SchemaInspector::getTableColumns('tc_push_device');
+    }
+
+    /**
+     * 构建设备注册写入数据
+     */
+    protected static function buildPushDevicePayload(int $userId, string $platform, string $deviceToken, string $deviceId, array $columns): array
+    {
+        $now = date('Y-m-d H:i:s');
+        $payload = [
+            'user_id' => $userId,
+            'platform' => $platform,
+            'device_id' => $deviceId,
+        ];
+
+        if (isset($columns['device_token'])) {
+            $payload['device_token'] = $deviceToken;
+        }
+        if (isset($columns['token'])) {
+            $payload['token'] = $deviceToken;
+        }
+        if (isset($columns['is_active'])) {
+            $payload['is_active'] = 1;
+        }
+        if (isset($columns['last_active_at'])) {
+            $payload['last_active_at'] = $now;
+        }
+        if (isset($columns['last_used_at'])) {
+            $payload['last_used_at'] = $now;
+        }
+        if (isset($columns['created_at'])) {
+            $payload['created_at'] = $now;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * 判断数组是否为顺序列表
+     */
+    protected static function isListArray(array $value): bool
+    {
+        if ($value === []) {
+            return true;
+        }
+
+        return array_keys($value) === range(0, count($value) - 1);
+    }
+
+    /**
      * 构建标准化通知设置
      */
     protected static function buildSettingsPayload(array $settings): array
     {
+        if (self::isListArray($settings)) {
+            $rowMap = [];
+            foreach ($settings as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $type = trim((string) ($row['type'] ?? ''));
+                if ($type === '') {
+                    continue;
+                }
+                $rowMap[$type] = self::normalizeBoolFlag($row['enabled'] ?? 1);
+            }
+
+            return [
+                'daily_fortune' => $rowMap['daily_fortune'] ?? 1,
+                'system_notice' => $rowMap['system_notice'] ?? 1,
+                'activity' => $rowMap['activity'] ?? 1,
+                'recharge' => $rowMap['recharge'] ?? 1,
+                'points_change' => $rowMap['points_change'] ?? 1,
+                'push_enabled' => $rowMap['push_enabled'] ?? 1,
+                'sound_enabled' => $rowMap['sound_enabled'] ?? 1,
+                'vibration_enabled' => $rowMap['vibration_enabled'] ?? 1,
+                'quiet_hours_start' => '22:00',
+                'quiet_hours_end' => '08:00',
+            ];
+        }
+
         return [
             'daily_fortune' => self::normalizeBoolFlag($settings['daily_fortune'] ?? 1),
             'system_notice' => self::normalizeBoolFlag($settings['system_notice'] ?? 1),
@@ -547,9 +739,10 @@ class Notification extends BaseController
      */
     protected static function logNotificationEvent(string $level, string $message, array $context = []): void
     {
-        $sanitizedContext = self::sanitizeLogContext($context);
+        $sanitizedContext = self::sanitizeNotificationLogContext($context);
 
         switch ($level) {
+
             case 'error':
                 Log::error($message, $sanitizedContext);
                 break;
@@ -565,13 +758,14 @@ class Notification extends BaseController
     /**
      * 递归脱敏日志上下文
      */
-    protected static function sanitizeLogContext(mixed $value, ?string $field = null): mixed
+    protected static function sanitizeNotificationLogContext(mixed $value, ?string $field = null): mixed
     {
         if (is_array($value)) {
             $sanitized = [];
             foreach ($value as $key => $item) {
-                $sanitized[$key] = self::sanitizeLogContext($item, is_string($key) ? $key : $field);
+                $sanitized[$key] = self::sanitizeNotificationLogContext($item, is_string($key) ? $key : $field);
             }
+
 
             return $sanitized;
         }

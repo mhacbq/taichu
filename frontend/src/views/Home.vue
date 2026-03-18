@@ -192,12 +192,12 @@
         <div class="section-heading">
           <div>
             <p class="section-eyebrow">体验故事</p>
-            <h2 class="section-title">用户心声</h2>
-            <p class="section-description">以下内容为整理后的体验故事示例，用来展示不同服务适合解决的困惑类型，并不代表对个人结果的直接承诺。</p>
+            <h2 class="section-title">体验案例</h2>
+            <p class="section-description">以下内容为整理后的体验案例，用来展示不同服务更适合帮助梳理哪类困惑，并不代表对个人结果的直接承诺。</p>
           </div>
           <div class="testimonials-summary card">
             <span class="testimonials-summary-label">说明</span>
-            <p>我们把示例反馈、服务类型与场景阶段拆开展示，避免把前端示例文案误读成实时真人评价。</p>
+            <p>示例内容按服务场景整理展示，不使用实时评分、具体昵称或头像式背书，重点只放在“这类问题更适合怎么用”。</p>
           </div>
         </div>
         <div class="testimonials-grid">
@@ -207,23 +207,20 @@
               <span class="service-tag">{{ item.service }}</span>
             </div>
             <div class="testimonial-header">
-              <div class="testimonial-avatar" :style="{ backgroundColor: item.avatarColor }">{{ item.avatar }}</div>
-              <div class="testimonial-info">
-                <h4>{{ item.name }}</h4>
-                <p class="testimonial-persona">{{ item.persona }}</p>
-                <div class="testimonial-rating">
-                  <span class="testimonial-score">{{ item.ratingLabel.split(' · ')[0] }}</span>
-                  <span class="testimonial-rating-text">{{ item.ratingLabel.split(' · ')[1] || '示例反馈' }}</span>
-                </div>
+              <div class="testimonial-scene">
+                <span class="testimonial-scene-label">适用场景</span>
+                <h4>{{ item.persona }}</h4>
               </div>
+              <span class="testimonial-note">{{ item.note }}</span>
             </div>
             <p class="testimonial-content">{{ item.content }}</p>
             <div class="testimonial-footer">
               <span class="testimonial-outcome">{{ item.outcome }}</span>
-              <span class="testimonial-note">{{ item.note }}</span>
+              <span class="testimonial-service-copy">适合先从 {{ item.service }} 入手</span>
             </div>
           </article>
         </div>
+
       </div>
     </section>
 
@@ -1592,69 +1589,31 @@ onUnmounted(() => {
 
 .testimonial-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 14px;
 }
 
-.testimonial-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: var(--primary-light);
-  font-weight: var(--weight-bold);
-  border: 1px solid var(--primary-light-20);
-  flex-shrink: 0;
-}
-
-.testimonial-info {
+.testimonial-scene {
   display: grid;
   gap: 6px;
 }
 
-.testimonial-info h4 {
+.testimonial-scene-label {
+  color: var(--text-tertiary);
+  font-size: var(--font-tiny);
+  letter-spacing: 0.04em;
+}
+
+.testimonial-scene h4 {
   margin: 0;
   color: var(--text-primary);
   font-size: var(--font-body);
   font-weight: var(--weight-semibold);
 }
 
-.testimonial-persona {
-  margin: 0;
-  color: var(--text-tertiary);
-  font-size: var(--font-caption);
-}
-
-.testimonial-rating {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.testimonial-score {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.14);
-  border: 1px solid rgba(var(--primary-rgb), 0.24);
-  color: var(--text-primary);
-  font-size: var(--font-tiny);
-  font-weight: var(--weight-semibold);
-}
-
-.testimonial-rating-text {
-  color: var(--text-tertiary);
-  font-size: var(--font-tiny);
-}
-
-
 .testimonial-content {
+
   margin: 0;
   color: var(--text-secondary);
   line-height: var(--line-height-base);
@@ -1684,9 +1643,16 @@ onUnmounted(() => {
   border: 1px solid var(--border-light);
   color: var(--text-tertiary);
   font-size: var(--font-tiny);
+  white-space: nowrap;
+}
+
+.testimonial-service-copy {
+  color: var(--primary-light);
+  font-size: var(--font-tiny);
 }
 
 .service-tag {
+
   min-height: 30px;
   padding: 6px 12px;
   border-radius: 999px;

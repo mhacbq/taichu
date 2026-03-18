@@ -1,6 +1,9 @@
 # admin 自动化执行记忆
 
+- 2026-03-18：本轮继续处理 `TODO.md` 顶部 4 条高优先级 `[运营]` 阻塞项，已确认根因不是仓库缺修补，而是本地 `backend` 容器仍跑旧代码；同时新增修复 `backend/app/middleware/AdminAuth.php`（缺失 `sanitizeParams` 导致所有已登录请求都可能 500）与 `backend/app/controller/Notification.php`（静态方法签名冲突导致调积分通知阶段致命错误），并在 `backend/docker-compose.yml` 为 backend 服务补上源码挂载 `./:/var/www/html`，随后 `docker compose up -d --build backend` 重建容器；真实运行态冒烟已通过：admin 登录、用户列表、手动调积分 `+1/-1`、黄历列表、神煞新增/删除、SEO 新增/删除 全部恢复，`TODO.md` 与 `overview.md` 已同步更新。
+
 - 2026-03-18：本轮继续核查 `TODO.md` 中的 `[运营]` 项，已确认当前不存在未勾选的 `[运营]` 待办；同时更新 `overview.md`，把“手动调积分未闭环”的旧描述改为已由 `database/20260318_fix_admin_role_permissions.sql` 权限补丁闭环，后续如继续推进应转向 `TODO.md` 的 `[UI]` 项。
+
 
 
 

@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { ref, onErrorCaptured, onMounted, onUnmounted } from 'vue'
+import * as Vue from 'vue'
 import EmptyState from './EmptyState.vue'
 
 export default {
@@ -59,13 +59,13 @@ export default {
   },
   emits: ['error', 'retry'],
   setup(props, { emit }) {
-    const hasError = ref(false)
-    const error = ref(null)
-    const errorInfo = ref('')
-    const isDev = ref(import.meta.env.DEV)
+    const hasError = Vue.ref(false)
+    const error = Vue.ref(null)
+    const errorInfo = Vue.ref('')
+    const isDev = Vue.ref(import.meta.env.DEV)
 
-    const errorTitle = ref(props.title)
-    const errorDescription = ref(props.description)
+    const errorTitle = Vue.ref(props.title)
+    const errorDescription = Vue.ref(props.description)
 
     const truncateText = (value, maxLength = 200) => {
       const text = typeof value === 'string' ? value.trim() : ''
@@ -114,7 +114,7 @@ export default {
       }
     }
 
-    onErrorCaptured((err, instance, info) => {
+    Vue.onErrorCaptured((err, instance, info) => {
       const summary = getErrorSummary(err)
 
       hasError.value = true
@@ -161,12 +161,12 @@ export default {
     }
 
     // 全局错误监听
-    onMounted(() => {
+    Vue.onMounted(() => {
       window.addEventListener('error', handleGlobalError)
       window.addEventListener('unhandledrejection', handleUnhandledRejection)
     })
 
-    onUnmounted(() => {
+    Vue.onUnmounted(() => {
       window.removeEventListener('error', handleGlobalError)
       window.removeEventListener('unhandledrejection', handleUnhandledRejection)
     })

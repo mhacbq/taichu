@@ -624,7 +624,10 @@
               <!-- 年份选择 -->
               <div class="year-selector">
                 <div class="year-selector__header">
-                  <span class="selector-label">选择年份</span>
+                  <div class="year-selector__meta">
+                    <span class="selector-label">{{ isCompactViewport ? '年份' : '选择年份' }}</span>
+                    <span class="selector-hint">拖动滑块切换当前流年分析年份</span>
+                  </div>
                   <span class="selected-year">{{ selectedYear }}年</span>
                 </div>
                 <el-slider
@@ -632,10 +635,11 @@
                   :min="new Date().getFullYear() - 3"
                   :max="new Date().getFullYear() + 7"
                   :step="1"
-                  show-stops
+                  :show-stops="!isCompactViewport"
                   class="year-slider"
                 />
               </div>
+
               
               <!-- 流年分析结果 -->
               <div v-if="yearlyFortuneResult" class="yearly-result">
@@ -1127,6 +1131,12 @@ const selectedYear = ref(new Date().getFullYear())
 const yearlyFortuneResult = ref(null)
 const yearlyFortuneLoading = ref(false)
 const lastAnalyzedYear = ref(null)
+const isCompactViewport = ref(false)
+
+const updateViewportState = () => {
+  isCompactViewport.value = window.innerWidth <= 520
+}
+
 
 // 大运分析相关
 const selectedDayunIndex = ref(0)
@@ -1800,11 +1810,15 @@ const calculateBazi = async () => {
 }
 
 onMounted(() => {
+  updateViewportState()
+  window.addEventListener('resize', updateViewportState)
   loadPoints({ silent: true })
 })
 
 // 组件卸载时清理定时器
 onUnmounted(() => {
+  window.removeEventListener('resize', updateViewportState)
+
   if (aiLoadingTimer.value) {
     clearInterval(aiLoadingTimer.value)
     aiLoadingTimer.value = null
@@ -3823,10 +3837,23 @@ const formatAiContent = (content) => {
   gap: 12px;
 }
 
+.year-selector__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .selector-label {
   color: var(--text-secondary);
   font-size: 14px;
   white-space: nowrap;
+}
+
+.selector-hint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .year-slider {
@@ -3840,6 +3867,7 @@ const formatAiContent = (content) => {
   min-width: 70px;
   text-align: right;
 }
+
 
 /* 流年分析结果 */
 .yearly-result {
@@ -4493,6 +4521,12 @@ const formatAiContent = (content) => {
     align-items: flex-start;
   }
 
+  .year-selector {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .year-selector__meta,
   .time-accuracy-group,
   .estimate-birth-grid {
     width: 100%;
@@ -4504,7 +4538,13 @@ const formatAiContent = (content) => {
 
   .selected-year {
     text-align: left;
+    min-width: auto;
   }
+
+  .selector-hint {
+    font-size: 11px;
+  }
+
 
   .wuxing-bar-item {
     grid-template-columns: 1fr;

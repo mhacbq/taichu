@@ -2,7 +2,33 @@
 
 ## 最近更新
 
+### 后台运营巡检（第三十三轮自动化执行，2026-03-18 14:57）
+
+- 本轮先读取 `.codebuddy/automations/30-3/memory.md` 与 `TODO.md`，随后重新访问后台登录页 `http://localhost:3001/login`，并用默认管理员 `admin / admin123` 直连当前运行中的后台接口做最小化真机冒烟；巡检覆盖登录、Dashboard、用户、黄历、知识库、神煞、SEO、订单、积分记录、系统设置与系统公告。
+- 本轮未修改业务代码；仅更新了 `TODO.md`、`.codebuddy/automations/30-3/memory.md` 与 `overview.md`。巡检中临时生成的脚本与结果文件已删除，未留下测试工具残留；黄历、知识库、神煞、SEO、公告的测试数据也都已回滚清理。
+
+#### 关键发现
+1. **大部分核心运营链路当前已恢复可用**
+   - 登录页可正常访问，账号密码登录成功，`/auth/info` 返回角色 `admin` 与全量权限。
+   - Dashboard 的统计、趋势、实时动态、待处理反馈、刷新接口全部返回 `HTTP 200 + code 200`。
+   - 用户列表、搜索、详情、手动调积分 `+1/-1` 回滚、积分记录查询均已打通；知识库文章 CRUD、黄历 CRUD、神煞 CRUD、SEO CRUD/Robots、系统公告发布/删除也都能闭环。
+2. **仍有 2 个运营问题需要继续盯**
+   - 系统设置里的功能开关保存不生效：本轮把 `enable_feedback` 从开启切到关闭后立即回读，值仍保持 `true`，说明配置接口返回成功但未真正落库/生效。
+   - 后台仍缺独立“通知配置 / 测试通知”页面；虽然 `backend/app/controller/Notification.php` 已存在 `getSettings / updateSettings / sendTestNotification` 能力，但 `admin/src` 里没有对应入口，运营侧无法直接配置通知。
+3. **内容与订单侧还有两个非阻塞现状**
+   - 神煞历史数据乱码仍存在，多条名称/描述/作用显示为 `??` / `????`，但新增、编辑、删除链路本轮已恢复。
+   - VIP 订单与充值订单接口、列表、统计页都能打开，但当前本地样本仍是 `0` 条，状态流转/退款动作本轮无法继续实测。
+
+#### 验证情况
+- 登录与鉴权：`GET /login`、`POST /api/admin/auth/login`、`GET /api/admin/auth/info` 全部成功。
+- Dashboard：`/dashboard/statistics`、`/trend`、`/realtime`、`/chart/feature_usage`、`/pending-feedback`、`/refresh-stats` 全部成功。
+- 用户与积分：`/users` 列表/搜索、`/users/{id}` 详情、`/points/adjust` 加减回滚、`/points/records` 抽样均成功；用户详情用户名口径正常，但前端仍无编辑入口。
+- 内容管理：黄历、知识库、神煞、SEO 均完成真实新增/编辑/删除回滚；知识库分类与 SEO 中文显示已恢复，神煞历史乱码仍在。
+- 订单与系统：`/order`、`/payment/orders`、`/payment/stats`、`/system/settings`、`/system/notices`、`/ai/config` 均返回成功；仅 `system/settings` 的功能开关回读验证失败。
+- 截图 / 录屏：本轮未新增 UI 截图，主要以真实接口回读与回滚结果作为运行态证据。
+
 ### UI 修复批次（ui-15 自动化执行，2026-03-18 继续修复）
+
 
 - 本轮先复查 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，随后继续收口剩余 `[UI]` 待办，围绕塔罗、六爻、合婚与八字结果态一致性完成了 **5 个前台 UI/UX 修复**。
 - 已同步从 `TODO.md` 删除本轮完成的 5 条 `[UI]` 待办，并补写本轮自动化记忆与状态概览。
