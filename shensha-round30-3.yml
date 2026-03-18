@@ -1,0 +1,532 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - link "太初管理后台" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - menubar [ref=e10]:
+      - menuitem "仪表盘" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 仪表盘
+      - menuitem "用户管理" [ref=e18]:
+        - generic [ref=e19] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e23]: 用户管理
+          - img [ref=e25]
+      - menuitem "内容管理" [ref=e28]:
+        - generic [ref=e29] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: 内容管理
+          - img [ref=e35]
+      - menuitem "网站内容" [ref=e38]:
+        - generic [ref=e39] [cursor=pointer]:
+          - img [ref=e41]
+          - generic [ref=e43]: 网站内容
+          - img [ref=e45]
+      - menuitem "编辑页面" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 编辑页面
+      - menuitem "积分管理" [ref=e51]:
+        - generic [ref=e52] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e58]: 积分管理
+          - img [ref=e60]
+      - menuitem "支付管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e70]: 支付管理
+          - img [ref=e72]
+      - menuitem "短信管理" [ref=e75]:
+        - generic [ref=e76] [cursor=pointer]:
+          - img [ref=e78]
+          - generic [ref=e81]: 短信管理
+          - img [ref=e83]
+      - menuitem "反馈管理" [ref=e86]:
+        - generic [ref=e87] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]: 反馈管理
+          - img [ref=e94]
+      - menuitem "反作弊系统" [ref=e97]:
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e102]: 反作弊系统
+          - img [ref=e104]
+      - menuitem "AI管理" [ref=e107]:
+        - generic [ref=e108] [cursor=pointer]:
+          - img [ref=e110]
+          - generic [ref=e113]: AI管理
+          - img [ref=e115]
+      - menuitem "系统设置" [ref=e118]:
+        - generic [ref=e119] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e123]: 系统设置
+          - img [ref=e125]
+      - menuitem "日志管理" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 日志管理
+          - img [ref=e135]
+      - menuitem "任务调度" [ref=e138]:
+        - generic [ref=e139] [cursor=pointer]:
+          - img [ref=e141]
+          - generic [ref=e145]: 任务调度
+          - img [ref=e147]
+  - generic [ref=e149]:
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153] [cursor=pointer]:
+            - img
+          - navigation "面包屑" [ref=e155]:
+            - generic [ref=e156]:
+              - link "仪表盘" [ref=e157]
+              - text: /
+            - generic [ref=e158]:
+              - link "内容管理" [ref=e159]
+              - text: /
+            - link "神煞管理" [ref=e161]
+        - generic [ref=e162]:
+          - generic [ref=e163] [cursor=pointer]:
+            - img
+          - button "admin" [ref=e166] [cursor=pointer]:
+            - generic [ref=e168]: admin
+            - img [ref=e170]
+      - link "神煞管理" [ref=e176] [cursor=pointer]:
+        - /url: /content/shensha
+        - text: 神煞管理
+        - img [ref=e178]
+    - generic [ref=e181]:
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - generic [ref=e186]: 名称
+          - textbox "名称" [ref=e190]:
+            - /placeholder: 搜索名称/描述/作用
+        - generic [ref=e191]:
+          - generic [ref=e192]: 类型
+          - generic [ref=e195] [cursor=pointer]:
+            - generic:
+              - combobox "类型" [ref=e197]
+              - generic [ref=e198]: 选择类型
+            - img [ref=e201]
+        - generic [ref=e203]:
+          - generic [ref=e204]: 分类
+          - generic [ref=e207] [cursor=pointer]:
+            - generic:
+              - combobox "分类" [ref=e209]
+              - generic [ref=e210]: 选择分类
+            - img [ref=e213]
+        - generic [ref=e215]:
+          - generic [ref=e216]: 状态
+          - generic [ref=e219] [cursor=pointer]:
+            - generic:
+              - combobox "状态" [ref=e221]
+              - generic [ref=e222]: 选择状态
+            - img [ref=e225]
+        - generic [ref=e228]:
+          - button "搜索" [ref=e229] [cursor=pointer]:
+            - generic [ref=e230]: 搜索
+          - button "新增神煞" [ref=e231] [cursor=pointer]:
+            - generic [ref=e232]: 新增神煞
+      - generic [ref=e234]:
+        - generic [ref=e235]:
+          - generic [ref=e236]:
+            - table [ref=e238]:
+              - rowgroup [ref=e249]:
+                - row "ID 名称 类型 分类 描述 作用 状态 排序 操作" [ref=e250]:
+                  - columnheader "ID" [ref=e251]:
+                    - generic [ref=e252]: ID
+                  - columnheader "名称" [ref=e253]:
+                    - generic [ref=e254]: 名称
+                  - columnheader "类型" [ref=e255]:
+                    - generic [ref=e256]: 类型
+                  - columnheader "分类" [ref=e257]:
+                    - generic [ref=e258]: 分类
+                  - columnheader "描述" [ref=e259]:
+                    - generic [ref=e260]: 描述
+                  - columnheader "作用" [ref=e261]:
+                    - generic [ref=e262]: 作用
+                  - columnheader "状态" [ref=e263]:
+                    - generic [ref=e264]: 状态
+                  - columnheader "排序" [ref=e265]:
+                    - generic [ref=e266]: 排序
+                  - columnheader "操作" [ref=e267]:
+                    - generic [ref=e268]: 操作
+            - table [ref=e273]:
+              - rowgroup [ref=e284]:
+                - row "1 天乙贵人 大吉 贵人 最吉之神，命中逢之，遇事有人帮，遇危难有人救 遇难成祥，逢凶化吉，人缘极佳，易得他人帮助 1 编辑 删除" [ref=e285]:
+                  - cell "1" [ref=e286]:
+                    - generic [ref=e287]: "1"
+                  - cell "天乙贵人" [ref=e288]:
+                    - generic [ref=e289]: 天乙贵人
+                  - cell "大吉" [ref=e290]:
+                    - generic [ref=e293]: 大吉
+                  - cell "贵人" [ref=e294]:
+                    - generic [ref=e295]: 贵人
+                  - cell "最吉之神，命中逢之，遇事有人帮，遇危难有人救" [ref=e296]:
+                    - generic [ref=e297]: 最吉之神，命中逢之，遇事有人帮，遇危难有人救
+                  - cell "遇难成祥，逢凶化吉，人缘极佳，易得他人帮助" [ref=e298]:
+                    - generic [ref=e299]: 遇难成祥，逢凶化吉，人缘极佳，易得他人帮助
+                  - cell [ref=e300]:
+                    - generic [ref=e302]:
+                      - switch [checked]
+                  - cell "1" [ref=e305]:
+                    - generic [ref=e306]: "1"
+                  - cell "编辑 删除" [ref=e307]:
+                    - generic [ref=e308]:
+                      - button "编辑" [ref=e309] [cursor=pointer]:
+                        - generic [ref=e310]: 编辑
+                      - button "删除" [ref=e311] [cursor=pointer]:
+                        - generic [ref=e312]: 删除
+                - row "2 文昌贵人 吉 学业 主聪明好学，利文途考学 聪明过人，学业有成，考试顺利，利于文职 2 编辑 删除" [ref=e313]:
+                  - cell "2" [ref=e314]:
+                    - generic [ref=e315]: "2"
+                  - cell "文昌贵人" [ref=e316]:
+                    - generic [ref=e317]: 文昌贵人
+                  - cell "吉" [ref=e318]:
+                    - generic [ref=e321]: 吉
+                  - cell "学业" [ref=e322]:
+                    - generic [ref=e323]: 学业
+                  - cell "主聪明好学，利文途考学" [ref=e324]:
+                    - generic [ref=e325]: 主聪明好学，利文途考学
+                  - cell "聪明过人，学业有成，考试顺利，利于文职" [ref=e326]:
+                    - generic [ref=e327]: 聪明过人，学业有成，考试顺利，利于文职
+                  - cell [ref=e328]:
+                    - generic [ref=e330]:
+                      - switch [checked]
+                  - cell "2" [ref=e333]:
+                    - generic [ref=e334]: "2"
+                  - cell "编辑 删除" [ref=e335]:
+                    - generic [ref=e336]:
+                      - button "编辑" [ref=e337] [cursor=pointer]:
+                        - generic [ref=e338]: 编辑
+                      - button "删除" [ref=e339] [cursor=pointer]:
+                        - generic [ref=e340]: 删除
+                - row "3 太极贵人 吉 贵人 主人聪明好学，喜神秘文化 悟性高，对命理、宗教、玄学有兴趣，逢凶化吉 3 编辑 删除" [ref=e341]:
+                  - cell "3" [ref=e342]:
+                    - generic [ref=e343]: "3"
+                  - cell "太极贵人" [ref=e344]:
+                    - generic [ref=e345]: 太极贵人
+                  - cell "吉" [ref=e346]:
+                    - generic [ref=e349]: 吉
+                  - cell "贵人" [ref=e350]:
+                    - generic [ref=e351]: 贵人
+                  - cell "主人聪明好学，喜神秘文化" [ref=e352]:
+                    - generic [ref=e353]: 主人聪明好学，喜神秘文化
+                  - cell "悟性高，对命理、宗教、玄学有兴趣，逢凶化吉" [ref=e354]:
+                    - generic [ref=e355]: 悟性高，对命理、宗教、玄学有兴趣，逢凶化吉
+                  - cell [ref=e356]:
+                    - generic [ref=e358]:
+                      - switch [checked]
+                  - cell "3" [ref=e361]:
+                    - generic [ref=e362]: "3"
+                  - cell "编辑 删除" [ref=e363]:
+                    - generic [ref=e364]:
+                      - button "编辑" [ref=e365] [cursor=pointer]:
+                        - generic [ref=e366]: 编辑
+                      - button "删除" [ref=e367] [cursor=pointer]:
+                        - generic [ref=e368]: 删除
+                - row "4 天德贵人 大吉 贵人 天地德秀之气，逢凶化吉之神 一生安逸，不犯刑律，不遇凶祸，福气好 4 编辑 删除" [ref=e369]:
+                  - cell "4" [ref=e370]:
+                    - generic [ref=e371]: "4"
+                  - cell "天德贵人" [ref=e372]:
+                    - generic [ref=e373]: 天德贵人
+                  - cell "大吉" [ref=e374]:
+                    - generic [ref=e377]: 大吉
+                  - cell "贵人" [ref=e378]:
+                    - generic [ref=e379]: 贵人
+                  - cell "天地德秀之气，逢凶化吉之神" [ref=e380]:
+                    - generic [ref=e381]: 天地德秀之气，逢凶化吉之神
+                  - cell "一生安逸，不犯刑律，不遇凶祸，福气好" [ref=e382]:
+                    - generic [ref=e383]: 一生安逸，不犯刑律，不遇凶祸，福气好
+                  - cell [ref=e384]:
+                    - generic [ref=e386]:
+                      - switch [checked]
+                  - cell "4" [ref=e389]:
+                    - generic [ref=e390]: "4"
+                  - cell "编辑 删除" [ref=e391]:
+                    - generic [ref=e392]:
+                      - button "编辑" [ref=e393] [cursor=pointer]:
+                        - generic [ref=e394]: 编辑
+                      - button "删除" [ref=e395] [cursor=pointer]:
+                        - generic [ref=e396]: 删除
+                - row "5 月德贵人 大吉 贵人 乃太阴之德，功能与天德略同而稍逊 逢凶化吉，灾少福多，一生少病痛 5 编辑 删除" [ref=e397]:
+                  - cell "5" [ref=e398]:
+                    - generic [ref=e399]: "5"
+                  - cell "月德贵人" [ref=e400]:
+                    - generic [ref=e401]: 月德贵人
+                  - cell "大吉" [ref=e402]:
+                    - generic [ref=e405]: 大吉
+                  - cell "贵人" [ref=e406]:
+                    - generic [ref=e407]: 贵人
+                  - cell "乃太阴之德，功能与天德略同而稍逊" [ref=e408]:
+                    - generic [ref=e409]: 乃太阴之德，功能与天德略同而稍逊
+                  - cell "逢凶化吉，灾少福多，一生少病痛" [ref=e410]:
+                    - generic [ref=e411]: 逢凶化吉，灾少福多，一生少病痛
+                  - cell [ref=e412]:
+                    - generic [ref=e414]:
+                      - switch [checked]
+                  - cell "5" [ref=e417]:
+                    - generic [ref=e418]: "5"
+                  - cell "编辑 删除" [ref=e419]:
+                    - generic [ref=e420]:
+                      - button "编辑" [ref=e421] [cursor=pointer]:
+                        - generic [ref=e422]: 编辑
+                      - button "删除" [ref=e423] [cursor=pointer]:
+                        - generic [ref=e424]: 删除
+                - row "6 福星贵人 吉 贵人 主人一生福禄无缺，格局配合得当，必然多福多寿 一生福禄无缺，享福深厚，平安幸福 6 编辑 删除" [ref=e425]:
+                  - cell "6" [ref=e426]:
+                    - generic [ref=e427]: "6"
+                  - cell "福星贵人" [ref=e428]:
+                    - generic [ref=e429]: 福星贵人
+                  - cell "吉" [ref=e430]:
+                    - generic [ref=e433]: 吉
+                  - cell "贵人" [ref=e434]:
+                    - generic [ref=e435]: 贵人
+                  - cell "主人一生福禄无缺，格局配合得当，必然多福多寿" [ref=e436]:
+                    - generic [ref=e437]: 主人一生福禄无缺，格局配合得当，必然多福多寿
+                  - cell "一生福禄无缺，享福深厚，平安幸福" [ref=e438]:
+                    - generic [ref=e439]: 一生福禄无缺，享福深厚，平安幸福
+                  - cell [ref=e440]:
+                    - generic [ref=e442]:
+                      - switch [checked]
+                  - cell "6" [ref=e445]:
+                    - generic [ref=e446]: "6"
+                  - cell "编辑 删除" [ref=e447]:
+                    - generic [ref=e448]:
+                      - button "编辑" [ref=e449] [cursor=pointer]:
+                        - generic [ref=e450]: 编辑
+                      - button "删除" [ref=e451] [cursor=pointer]:
+                        - generic [ref=e452]: 删除
+                - row "7 桃花 平 感情 主人漂亮多情，风流潇洒 人缘好，异性缘佳，感情丰富，但可能感情复杂 7 编辑 删除" [ref=e453]:
+                  - cell "7" [ref=e454]:
+                    - generic [ref=e455]: "7"
+                  - cell "桃花" [ref=e456]:
+                    - generic [ref=e457]: 桃花
+                  - cell "平" [ref=e458]:
+                    - generic [ref=e461]: 平
+                  - cell "感情" [ref=e462]:
+                    - generic [ref=e463]: 感情
+                  - cell "主人漂亮多情，风流潇洒" [ref=e464]:
+                    - generic [ref=e465]: 主人漂亮多情，风流潇洒
+                  - cell "人缘好，异性缘佳，感情丰富，但可能感情复杂" [ref=e466]:
+                    - generic [ref=e467]: 人缘好，异性缘佳，感情丰富，但可能感情复杂
+                  - cell [ref=e468]:
+                    - generic [ref=e470]:
+                      - switch [checked]
+                  - cell "7" [ref=e473]:
+                    - generic [ref=e474]: "7"
+                  - cell "编辑 删除" [ref=e475]:
+                    - generic [ref=e476]:
+                      - button "编辑" [ref=e477] [cursor=pointer]:
+                        - generic [ref=e478]: 编辑
+                      - button "删除" [ref=e479] [cursor=pointer]:
+                        - generic [ref=e480]: 删除
+                - row "8 羊刃 凶 健康 司刑之星，性情刚强 性格刚烈，易有刀伤手术，但也代表能力强 8 编辑 删除" [ref=e481]:
+                  - cell "8" [ref=e482]:
+                    - generic [ref=e483]: "8"
+                  - cell "羊刃" [ref=e484]:
+                    - generic [ref=e485]: 羊刃
+                  - cell "凶" [ref=e486]:
+                    - generic [ref=e489]: 凶
+                  - cell "健康" [ref=e490]:
+                    - generic [ref=e491]: 健康
+                  - cell "司刑之星，性情刚强" [ref=e492]:
+                    - generic [ref=e493]: 司刑之星，性情刚强
+                  - cell "性格刚烈，易有刀伤手术，但也代表能力强" [ref=e494]:
+                    - generic [ref=e495]: 性格刚烈，易有刀伤手术，但也代表能力强
+                  - cell [ref=e496]:
+                    - generic [ref=e498]:
+                      - switch [checked]
+                  - cell "8" [ref=e501]:
+                    - generic [ref=e502]: "8"
+                  - cell "编辑 删除" [ref=e503]:
+                    - generic [ref=e504]:
+                      - button "编辑" [ref=e505] [cursor=pointer]:
+                        - generic [ref=e506]: 编辑
+                      - button "删除" [ref=e507] [cursor=pointer]:
+                        - generic [ref=e508]: 删除
+                - row "9 劫煞 凶 财运 主破财、阻碍 破财、阻碍、是非、意外 9 编辑 删除" [ref=e509]:
+                  - cell "9" [ref=e510]:
+                    - generic [ref=e511]: "9"
+                  - cell "劫煞" [ref=e512]:
+                    - generic [ref=e513]: 劫煞
+                  - cell "凶" [ref=e514]:
+                    - generic [ref=e517]: 凶
+                  - cell "财运" [ref=e518]:
+                    - generic [ref=e519]: 财运
+                  - cell "主破财、阻碍" [ref=e520]:
+                    - generic [ref=e521]: 主破财、阻碍
+                  - cell "破财、阻碍、是非、意外" [ref=e522]:
+                    - generic [ref=e523]: 破财、阻碍、是非、意外
+                  - cell [ref=e524]:
+                    - generic [ref=e526]:
+                      - switch [checked]
+                  - cell "9" [ref=e529]:
+                    - generic [ref=e530]: "9"
+                  - cell "编辑 删除" [ref=e531]:
+                    - generic [ref=e532]:
+                      - button "编辑" [ref=e533] [cursor=pointer]:
+                        - generic [ref=e534]: 编辑
+                      - button "删除" [ref=e535] [cursor=pointer]:
+                        - generic [ref=e536]: 删除
+                - row "10 孤辰 凶 感情 主孤独，不利婚姻 孤独，少依靠，婚姻不顺，与亲人缘薄 10 编辑 删除" [ref=e537]:
+                  - cell "10" [ref=e538]:
+                    - generic [ref=e539]: "10"
+                  - cell "孤辰" [ref=e540]:
+                    - generic [ref=e541]: 孤辰
+                  - cell "凶" [ref=e542]:
+                    - generic [ref=e545]: 凶
+                  - cell "感情" [ref=e546]:
+                    - generic [ref=e547]: 感情
+                  - cell "主孤独，不利婚姻" [ref=e548]:
+                    - generic [ref=e549]: 主孤独，不利婚姻
+                  - cell "孤独，少依靠，婚姻不顺，与亲人缘薄" [ref=e550]:
+                    - generic [ref=e551]: 孤独，少依靠，婚姻不顺，与亲人缘薄
+                  - cell [ref=e552]:
+                    - generic [ref=e554]:
+                      - switch [checked]
+                  - cell "10" [ref=e557]:
+                    - generic [ref=e558]: "10"
+                  - cell "编辑 删除" [ref=e559]:
+                    - generic [ref=e560]:
+                      - button "编辑" [ref=e561] [cursor=pointer]:
+                        - generic [ref=e562]: 编辑
+                      - button "删除" [ref=e563] [cursor=pointer]:
+                        - generic [ref=e564]: 删除
+                - row "11 寡宿 凶 感情 主孤独，不利婚姻 孤独，婚姻不顺，女命尤其注意 11 编辑 删除" [ref=e565]:
+                  - cell "11" [ref=e566]:
+                    - generic [ref=e567]: "11"
+                  - cell "寡宿" [ref=e568]:
+                    - generic [ref=e569]: 寡宿
+                  - cell "凶" [ref=e570]:
+                    - generic [ref=e573]: 凶
+                  - cell "感情" [ref=e574]:
+                    - generic [ref=e575]: 感情
+                  - cell "主孤独，不利婚姻" [ref=e576]:
+                    - generic [ref=e577]: 主孤独，不利婚姻
+                  - cell "孤独，婚姻不顺，女命尤其注意" [ref=e578]:
+                    - generic [ref=e579]: 孤独，婚姻不顺，女命尤其注意
+                  - cell [ref=e580]:
+                    - generic [ref=e582]:
+                      - switch [checked]
+                  - cell "11" [ref=e585]:
+                    - generic [ref=e586]: "11"
+                  - cell "编辑 删除" [ref=e587]:
+                    - generic [ref=e588]:
+                      - button "编辑" [ref=e589] [cursor=pointer]:
+                        - generic [ref=e590]: 编辑
+                      - button "删除" [ref=e591] [cursor=pointer]:
+                        - generic [ref=e592]: 删除
+                - row "12 阴差阳错 凶 感情 主婚姻不顺 婚姻不利，夫妻不和，男克妻女克夫 12 编辑 删除" [ref=e593]:
+                  - cell "12" [ref=e594]:
+                    - generic [ref=e595]: "12"
+                  - cell "阴差阳错" [ref=e596]:
+                    - generic [ref=e597]: 阴差阳错
+                  - cell "凶" [ref=e598]:
+                    - generic [ref=e601]: 凶
+                  - cell "感情" [ref=e602]:
+                    - generic [ref=e603]: 感情
+                  - cell "主婚姻不顺" [ref=e604]:
+                    - generic [ref=e605]: 主婚姻不顺
+                  - cell "婚姻不利，夫妻不和，男克妻女克夫" [ref=e606]:
+                    - generic [ref=e607]: 婚姻不利，夫妻不和，男克妻女克夫
+                  - cell [ref=e608]:
+                    - generic [ref=e610]:
+                      - switch [checked]
+                  - cell "12" [ref=e613]:
+                    - generic [ref=e614]: "12"
+                  - cell "编辑 删除" [ref=e615]:
+                    - generic [ref=e616]:
+                      - button "编辑" [ref=e617] [cursor=pointer]:
+                        - generic [ref=e618]: 编辑
+                      - button "删除" [ref=e619] [cursor=pointer]:
+                        - generic [ref=e620]: 删除
+                - row "13 十恶大败 凶 财运 主不善理财，花钱大手大脚 不善理财，花钱如流水，难以积蓄 13 编辑 删除" [ref=e621]:
+                  - cell "13" [ref=e622]:
+                    - generic [ref=e623]: "13"
+                  - cell "十恶大败" [ref=e624]:
+                    - generic [ref=e625]: 十恶大败
+                  - cell "凶" [ref=e626]:
+                    - generic [ref=e629]: 凶
+                  - cell "财运" [ref=e630]:
+                    - generic [ref=e631]: 财运
+                  - cell "主不善理财，花钱大手大脚" [ref=e632]:
+                    - generic [ref=e633]: 主不善理财，花钱大手大脚
+                  - cell "不善理财，花钱如流水，难以积蓄" [ref=e634]:
+                    - generic [ref=e635]: 不善理财，花钱如流水，难以积蓄
+                  - cell [ref=e636]:
+                    - generic [ref=e638]:
+                      - switch [checked]
+                  - cell "13" [ref=e641]:
+                    - generic [ref=e642]: "13"
+                  - cell "编辑 删除" [ref=e643]:
+                    - generic [ref=e644]:
+                      - button "编辑" [ref=e645] [cursor=pointer]:
+                        - generic [ref=e646]: 编辑
+                      - button "删除" [ref=e647] [cursor=pointer]:
+                        - generic [ref=e648]: 删除
+                - row "14 金舆 吉 财运 主富贵，聪明富贵 聪明富贵，性柔貌愿，举止温和 14 编辑 删除" [ref=e649]:
+                  - cell "14" [ref=e650]:
+                    - generic [ref=e651]: "14"
+                  - cell "金舆" [ref=e652]:
+                    - generic [ref=e653]: 金舆
+                  - cell "吉" [ref=e654]:
+                    - generic [ref=e657]: 吉
+                  - cell "财运" [ref=e658]:
+                    - generic [ref=e659]: 财运
+                  - cell "主富贵，聪明富贵" [ref=e660]:
+                    - generic [ref=e661]: 主富贵，聪明富贵
+                  - cell "聪明富贵，性柔貌愿，举止温和" [ref=e662]:
+                    - generic [ref=e663]: 聪明富贵，性柔貌愿，举止温和
+                  - cell [ref=e664]:
+                    - generic [ref=e666]:
+                      - switch [checked]
+                  - cell "14" [ref=e669]:
+                    - generic [ref=e670]: "14"
+                  - cell "编辑 删除" [ref=e671]:
+                    - generic [ref=e672]:
+                      - button "编辑" [ref=e673] [cursor=pointer]:
+                        - generic [ref=e674]: 编辑
+                      - button "删除" [ref=e675] [cursor=pointer]:
+                        - generic [ref=e676]: 删除
+                - row "15 华盖 平 贵人 主聪明好学，喜艺术、宗教 聪明好学，喜艺术、玄学、宗教，有出世思想 15 编辑 删除" [ref=e677]:
+                  - cell "15" [ref=e678]:
+                    - generic [ref=e679]: "15"
+                  - cell "华盖" [ref=e680]:
+                    - generic [ref=e681]: 华盖
+                  - cell "平" [ref=e682]:
+                    - generic [ref=e685]: 平
+                  - cell "贵人" [ref=e686]:
+                    - generic [ref=e687]: 贵人
+                  - cell "主聪明好学，喜艺术、宗教" [ref=e688]:
+                    - generic [ref=e689]: 主聪明好学，喜艺术、宗教
+                  - cell "聪明好学，喜艺术、玄学、宗教，有出世思想" [ref=e690]:
+                    - generic [ref=e691]: 聪明好学，喜艺术、玄学、宗教，有出世思想
+                  - cell [ref=e692]:
+                    - generic [ref=e694]:
+                      - switch [checked]
+                  - cell "15" [ref=e697]:
+                    - generic [ref=e698]: "15"
+                  - cell "编辑 删除" [ref=e699]:
+                    - generic [ref=e700]:
+                      - button "编辑" [ref=e701] [cursor=pointer]:
+                        - generic [ref=e702]: 编辑
+                      - button "删除" [ref=e703] [cursor=pointer]:
+                        - generic [ref=e704]: 删除
+          - tooltip "主人聪明好学，喜神秘文化" [ref=e705]: 主人聪明好学，喜神秘文化
+        - generic [ref=e708]:
+          - generic [ref=e709]: 共 15 条
+          - generic [ref=e712] [cursor=pointer]:
+            - generic:
+              - combobox [ref=e714]
+              - generic [ref=e715]: 20条/页
+            - img [ref=e718]
+          - button "上一页" [disabled] [ref=e720]:
+            - generic:
+              - img
+          - list [ref=e721]:
+            - listitem "第 1 页" [ref=e722]: "1"
+          - button "下一页" [disabled] [ref=e723]:
+            - generic:
+              - img
+          - generic [ref=e724]:
+            - generic [ref=e725]: 前往
+            - spinbutton "页" [ref=e728]: "1"
+            - generic [ref=e729]: 页

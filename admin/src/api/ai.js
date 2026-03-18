@@ -7,10 +7,11 @@ import request from './request'
 /**
  * 获取AI配置
  */
-export function getAiConfig() {
+export function getAiConfig(options = {}) {
   return request({
-    url: '/api/admin/ai/config',
-    method: 'get'
+    url: '/ai/config',
+    method: 'get',
+    ...options
   })
 }
 
@@ -18,22 +19,25 @@ export function getAiConfig() {
  * 保存AI配置
  * @param {Object} data - AI配置数据
  */
-export function saveAiConfig(data) {
+export function saveAiConfig(data, options = {}) {
   return request({
-    url: '/api/admin/ai/config',
+    url: '/ai/config',
     method: 'post',
-    data
+    data,
+    ...options
   })
 }
+
 
 /**
  * 测试AI连接
  * @param {Object} config - AI配置
  */
-export function testAiConnection(config) {
+export function testAiConnection(config, options = {}) {
   return request({
-    url: '/api/admin/ai/test',
+    url: '/ai/test',
     method: 'post',
-    data: { config }
+    data: { config },
+    ...options
   })
 }

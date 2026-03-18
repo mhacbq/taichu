@@ -5,6 +5,7 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\service\LunarService;
+use app\service\SchemaInspector;
 use think\Request;
 use think\facade\Db;
 
@@ -18,36 +19,67 @@ class Almanac extends BaseController
     protected const DEFAULT_PAGE_SIZE = 20;
     protected const MAX_PAGE_SIZE = 100;
 
+    protected function canReadAlmanac(): bool
+    {
+        return $this->hasAnyAdminPermission(['almanac_view', 'content_manage', 'config_manage']);
+    }
+
+    protected function canWriteAlmanac(): bool
+    {
+        return $this->hasAnyAdminPermission(['almanac_edit', 'content_manage', 'config_manage']);
+    }
+
     /**
      * 黄历列表
      */
+
     public function almanacList(Request $request)
     {
-        if (!$this->hasAdminPermission('almanac_view')) {
+        if (!$this->canReadAlmanac()) {
             return $this->error('无权限查看黄历', 403);
         }
+
+        $year = filter_var($request->get('year', date('Y')), FILTER_VALIDATE_INT) ?: (int) date('Y');
+        $month = filter_var($request->get('month', date('m')), FILTER_VALIDATE_INT) ?: (int) date('m');
+        $pagination = $this->normalizePagination(
+            $request->get('page', 1),
+            $request->get('limit', $request->get('pageSize', self::DEFAULT_PAGE_SIZE)),
+            self::DEFAULT_PAGE_SIZE,
+            self::MAX_PAGE_SIZE
+        );
 
         try {
             $table = $this->resolveCompatibleTable(['tc_almanac', 'almanac'], 'tc_almanac');
             if (!$this->tableExists($table)) {
-                return $this->error('黄历数据表不存在，请先初始化黄历表', 500);
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                    'year' => $year,
+                    'month' => $month,
+                    'page' => $pagination['page'],
+                    'limit' => $pagination['pageSize'],
+                    'pageSize' => $pagination['pageSize'],
+                    'bootstrap_required' => true,
+                ]);
             }
 
             $columns = $this->getCompatibleTableColumns($table);
             $dateColumn = $this->resolveAlmanacDateColumn($columns);
             if ($dateColumn === null) {
-                return $this->error('黄历数据表缺少日期字段', 500);
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                    'year' => $year,
+                    'month' => $month,
+                    'page' => $pagination['page'],
+                    'limit' => $pagination['pageSize'],
+                    'pageSize' => $pagination['pageSize'],
+                    'bootstrap_required' => true,
+                ]);
             }
 
             $date = trim((string) $request->get('date', ''));
-            $year = filter_var($request->get('year', date('Y')), FILTER_VALIDATE_INT) ?: (int) date('Y');
-            $month = filter_var($request->get('month', date('m')), FILTER_VALIDATE_INT) ?: (int) date('m');
-            $pagination = $this->normalizePagination(
-                $request->get('page', 1),
-                $request->get('limit', $request->get('pageSize', self::DEFAULT_PAGE_SIZE)),
-                self::DEFAULT_PAGE_SIZE,
-                self::MAX_PAGE_SIZE
-            );
+
 
             $query = Db::table($table)->order($dateColumn, 'desc');
             if ($date !== '') {
@@ -86,9 +118,10 @@ class Almanac extends BaseController
      */
     public function saveAlmanac(Request $request)
     {
-        if (!$this->hasAdminPermission('almanac_edit')) {
+        if (!$this->canWriteAlmanac()) {
             return $this->error('无权限编辑黄历', 403);
         }
+
 
         return $this->persistAlmanacRecord($request->post(), (int) $request->post('id', 0));
     }
@@ -98,9 +131,10 @@ class Almanac extends BaseController
      */
     public function updateAlmanac(Request $request, int $id)
     {
-        if (!$this->hasAdminPermission('almanac_edit')) {
+        if (!$this->canWriteAlmanac()) {
             return $this->error('无权限编辑黄历', 403);
         }
+
 
         $payload = $request->put();
         if (!is_array($payload)) {
@@ -116,9 +150,10 @@ class Almanac extends BaseController
      */
     public function deleteAlmanac(int $id)
     {
-        if (!$this->hasAdminPermission('almanac_edit')) {
+        if (!$this->canWriteAlmanac()) {
             return $this->error('无权限删除黄历', 403);
         }
+
 
         try {
             $table = $this->resolveCompatibleTable(['tc_almanac', 'almanac'], 'tc_almanac');
@@ -152,9 +187,10 @@ class Almanac extends BaseController
      */
     public function generateAlmanacMonth(Request $request)
     {
-        if (!$this->hasAdminPermission('almanac_edit')) {
+        if (!$this->canWriteAlmanac()) {
             return $this->error('无权限生成黄历', 403);
         }
+
 
         $year = $request->post('year', date('Y'));
         $month = $request->post('month', date('m'));
@@ -468,14 +504,9 @@ class Almanac extends BaseController
      */
     protected function getCompatibleTableColumns(string $table): array
     {
-        $escapedTable = str_replace('`', '``', $table);
         $columns = [];
-
-        foreach (Db::query("SHOW COLUMNS FROM `{$escapedTable}`") as $column) {
-            $field = (string) ($column['Field'] ?? '');
-            if ($field !== '') {
-                $columns[$field] = strtolower((string) ($column['Type'] ?? ''));
-            }
+        foreach (SchemaInspector::getTableColumns($table) as $field => $_) {
+            $columns[$field] = in_array($field, ['yi', 'ji', 'jishen', 'xiongsha', 'shichen'], true) ? 'json' : 'string';
         }
 
         return $columns;
@@ -486,9 +517,9 @@ class Almanac extends BaseController
      */
     protected function tableExists(string $table): bool
     {
-        $escapedTable = addslashes($table);
-        return !empty(Db::query("SHOW TABLES LIKE '{$escapedTable}'"));
+        return SchemaInspector::tableExists($table);
     }
+
 
     /**
      * 阳历转农历（统一委托 LunarService）

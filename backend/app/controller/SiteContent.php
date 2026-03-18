@@ -518,9 +518,16 @@ class SiteContent extends BaseController
             }
             
             return $this->success(null, '保存成功');
-        } catch (\Exception $e) {
-            return $this->error('保存失败：' . $e->getMessage(), 500);
+        } catch (\Throwable $e) {
+            Log::error('保存问题模板失败', [
+                'template_id' => $id ? (int) $id : null,
+                'category' => $data['category'] ?? '',
+                'operator_id' => $this->getOperatorId(),
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('保存问题模板失败，请稍后重试', 500);
         }
+
     }
     
     // ==================== 每日运势模板管理 ====================

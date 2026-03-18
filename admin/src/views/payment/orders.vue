@@ -38,7 +38,17 @@
         </el-col>
       </el-row>
 
+      <el-alert
+        v-if="statsError"
+        class="stats-alert"
+        type="warning"
+        show-icon
+        :closable="false"
+        :title="statsError"
+      />
+
       <el-card class="search-form" shadow="never">
+
         <el-form :model="queryForm" inline>
           <el-form-item label="订单号 / 支付单号">
             <el-input v-model="queryForm.order_no" placeholder="请输入订单号或支付单号" clearable />
@@ -230,8 +240,10 @@ const detailVisible = ref(false)
 const refundVisible = ref(false)
 const refunding = ref(false)
 const pageError = ref(null)
+const statsError = ref('')
 
 const stats = reactive(createInitialStats())
+
 
 const queryForm = reactive({
   order_no: '',
@@ -262,8 +274,10 @@ function createInitialStats() {
 function resetPageState() {
   orderList.value = []
   total.value = 0
+  statsError.value = ''
   Object.assign(stats, createInitialStats())
 }
+
 
 function ensureWritable(message) {
   if (!readonlyMode.value) {
@@ -360,8 +374,21 @@ async function loadStats() {
 
 async function refreshPage() {
   try {
-    await Promise.all([loadOrders(), loadStats()])
+    const [ordersResult, statsResult] = await Promise.allSettled([loadOrders(), loadStats()])
+
+    if (ordersResult.status === 'rejected') {
+      throw ordersResult.reason
+    }
+
     pageError.value = null
+
+    if (statsResult.status === 'rejected') {
+      Object.assign(stats, createInitialStats())
+      statsError.value = statsResult.reason?.message || '充值统计加载失败，当前仅展示订单列表数据'
+      return
+    }
+
+    statsError.value = ''
   } catch (error) {
     resetPageState()
     detailVisible.value = false
@@ -369,6 +396,7 @@ async function refreshPage() {
     pageError.value = createReadonlyErrorState(error, '充值订单', 'stats_view / config_manage')
   }
 }
+
 
 function handleSearch() {
   queryForm.page = 1
@@ -480,7 +508,12 @@ async function confirmRefund() {
   margin-bottom: 20px;
 }
 
+.stats-alert {
+  margin-bottom: 20px;
+}
+
 .stats-card {
+
   height: 100%;
 }
 

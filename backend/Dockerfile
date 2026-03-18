@@ -3,12 +3,13 @@ FROM php:8.2-apache
 # 启用Apache重写模块
 RUN a2enmod rewrite
 
-# 安装PHP扩展
+# 安装PHP扩展与 MySQL 客户端（容器启动时需要补跑幂等 SQL 修复脚本）
 RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libpng-dev \
     libzip-dev \
+    default-mysql-client \
     unzip \
     git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \

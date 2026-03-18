@@ -112,9 +112,9 @@ if ($WithAdmin) {
     Start-Process powershell -ArgumentList @(
         '-NoExit',
         '-Command',
-        "Set-Location '$adminDir'; npm install; npm run dev"
+        "Set-Location '$adminDir'; `$env:VITE_PROXY_TARGET='http://localhost:8080'; npm install; npm run dev"
     ) | Out-Null
-    Write-Host '      Admin started in a new PowerShell window.' -ForegroundColor Green
+    Write-Host '      Admin started in a new PowerShell window (proxy -> http://localhost:8080).' -ForegroundColor Green
 }
 
 Write-Host '[4/4] Done.' -ForegroundColor Cyan

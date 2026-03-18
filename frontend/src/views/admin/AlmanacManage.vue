@@ -408,8 +408,9 @@ const submitForm = async () => {
   try {
     // 调用API保存
     const res = await saveAlmanac(form.value)
-    if (res.code === 200 || res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('保存成功')
+
       dialogVisible.value = false
       loadMonthData()
     } else {
@@ -434,8 +435,9 @@ const generateMonth = async () => {
     // 调用API自动生成黄历数据
     const [year, month] = selectedMonth.value.split('-')
     const res = await generateAlmanacMonth(parseInt(year), parseInt(month))
-    if (res.code === 200 || res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success(`已成功生成 ${year}年${month}月 的黄历数据`)
+
       loadMonthData()
     } else {
       ElMessage.error(res.message || '生成失败')

@@ -10,7 +10,7 @@ import request from './request'
  */
 export function getPromptList(params) {
   return request({
-    url: '/api/admin/ai-prompts/list',
+    url: '/ai-prompts/list',
     method: 'get',
     params
   })
@@ -22,7 +22,7 @@ export function getPromptList(params) {
  */
 export function getPromptDetail(id) {
   return request({
-    url: `/api/admin/ai-prompts/detail/${id}`,
+    url: `/ai-prompts/detail/${id}`,
     method: 'get'
   })
 }
@@ -33,7 +33,7 @@ export function getPromptDetail(id) {
  */
 export function savePrompt(data) {
   return request({
-    url: '/api/admin/ai-prompts/save',
+    url: '/ai-prompts/save',
     method: 'post',
     data
   })
@@ -45,7 +45,7 @@ export function savePrompt(data) {
  */
 export function deletePrompt(id) {
   return request({
-    url: `/api/admin/ai-prompts/${id}`,
+    url: `/ai-prompts/${id}`,
     method: 'delete'
   })
 }
@@ -56,7 +56,7 @@ export function deletePrompt(id) {
  */
 export function setDefaultPrompt(id) {
   return request({
-    url: `/api/admin/ai-prompts/${id}/default`,
+    url: `/ai-prompts/${id}/default`,
     method: 'post'
   })
 }
@@ -68,7 +68,7 @@ export function setDefaultPrompt(id) {
  */
 export function previewPrompt(id, variables = {}) {
   return request({
-    url: `/api/admin/ai-prompts/${id}/preview`,
+    url: `/ai-prompts/${id}/preview`,
     method: 'post',
     data: { variables }
   })
@@ -80,7 +80,7 @@ export function previewPrompt(id, variables = {}) {
  */
 export function duplicatePrompt(id) {
   return request({
-    url: `/api/admin/ai-prompts/${id}/duplicate`,
+    url: `/ai-prompts/${id}/duplicate`,
     method: 'post'
   })
 }
@@ -90,7 +90,7 @@ export function duplicatePrompt(id) {
  */
 export function getPromptTypes() {
   return request({
-    url: '/api/admin/ai-prompts/types',
+    url: '/ai-prompts/types',
     method: 'get'
   })
 }

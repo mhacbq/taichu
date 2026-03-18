@@ -592,12 +592,71 @@ class AdminStatsService
     }
 
     /**
+     * 解析用户主表
+     */
+    private static function resolveUserTable(): ?string
+    {
+        return self::resolveFirstExistingTable('user', ['tc_user', 'user']);
+    }
+
+    /**
+     * 归一化 VIP 订单状态
+     */
+    private static function normalizeVipOrderStatus(mixed $status): int
+    {
+        if (is_numeric($status)) {
+            return (int) $status;
+        }
+
+        $normalized = strtolower(trim((string) $status));
+        return match ($normalized) {
+            'paid', 'success', 'completed' => 1,
+            'cancelled', 'canceled', 'closed' => 2,
+            'refunded' => 3,
+            default => 0,
+        };
+    }
+
+    /**
+     * 归一化 VIP 订单输出字段
+     */
+    private static function normalizeVipOrderRow(array $row): array
+    {
+        $amount = isset($row['pay_amount']) ? $row['pay_amount'] : ($row['amount'] ?? 0);
+        $packagePrice = isset($row['package_price']) ? $row['package_price'] : ($row['amount'] ?? 0);
+        $packageName = trim((string) ($row['package_name'] ?? ''));
+
+        if ($packageName === '' && isset($row['duration']) && (int) $row['duration'] > 0) {
+            $packageName = (int) $row['duration'] . '天VIP';
+        }
+
+        return array_merge($row, [
+            'order_no' => (string) ($row['order_no'] ?? ''),
+            'user_id' => (int) ($row['user_id'] ?? 0),
+            'nickname' => (string) ($row['nickname'] ?? ''),
+            'phone' => (string) ($row['phone'] ?? ''),
+            'package_name' => $packageName,
+            'package_price' => round((float) $packagePrice, 2),
+            'pay_amount' => round((float) $amount, 2),
+            'status' => self::normalizeVipOrderStatus($row['status'] ?? 0),
+            'pay_time' => (string) ($row['pay_time'] ?? ''),
+            'refund_time' => (string) ($row['refund_time'] ?? ''),
+            'refund_no' => (string) ($row['refund_no'] ?? ''),
+            'refund_amount' => round((float) ($row['refund_amount'] ?? 0), 2),
+            'refund_reason' => (string) ($row['refund_reason'] ?? ''),
+            'transaction_id' => (string) (($row['transaction_id'] ?? '') ?: ($row['pay_trade_no'] ?? '')),
+            'platform' => (string) (($row['platform'] ?? '') ?: ($row['pay_type'] ?? 'wechat')),
+        ]);
+    }
+
+    /**
      * 解析六爻记录表
      */
     private static function resolveLiuyaoRecordTable(): ?string
     {
         return self::resolveFirstExistingTable('liuyao_record', ['tc_liuyao_record', 'liuyao_records']);
     }
+
 
     /**
      * 返回首个存在的数据表
@@ -779,8 +838,86 @@ class AdminStatsService
     }
 
     /**
+     * 按 user_id 批量统计关联记录数
+     */
+    private static function buildUserRelationCountMap(?string $table, array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), static fn (int $id): bool => $id > 0)));
+        if (empty($userIds)
+            || $table === null
+            || !self::tableExists($table)
+            || !self::tableHasColumn($table, 'user_id')) {
+            return [];
+        }
+
+        $rows = Db::table($table)
+            ->whereIn('user_id', $userIds)
+            ->field('user_id, COUNT(*) as total')
+            ->group('user_id')
+            ->select()
+            ->toArray();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) ($row['user_id'] ?? 0)] = (int) ($row['total'] ?? 0);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 批量解析用户 VIP 状态与到期时间
+     */
+    private static function buildUserVipStatusMap(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), static fn (int $id): bool => $id > 0)));
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $vipTable = self::resolveVipUserTable();
+        if ($vipTable === null || !self::tableHasColumn($vipTable, 'user_id')) {
+            return [];
+        }
+
+        $query = Db::table($vipTable)->whereIn('user_id', $userIds);
+        if (self::tableHasColumn($vipTable, 'status')) {
+            $query->where('status', 1);
+        } elseif (self::tableHasColumn($vipTable, 'is_active')) {
+            $query->where('is_active', 1);
+        }
+
+        $hasVipEndTime = self::tableHasColumn($vipTable, 'end_time');
+        if ($hasVipEndTime) {
+            $query->where('end_time', '>', date('Y-m-d H:i:s'));
+        }
+
+        $rows = $query
+            ->field($hasVipEndTime ? 'user_id, MAX(end_time) as vip_end_time' : 'user_id')
+            ->group('user_id')
+            ->select()
+            ->toArray();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $userId = (int) ($row['user_id'] ?? 0);
+            if ($userId <= 0) {
+                continue;
+            }
+
+            $result[$userId] = [
+                'is_vip' => 1,
+                'vip_end_time' => $hasVipEndTime ? ($row['vip_end_time'] ?? null) : null,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * 获取用户列表（带筛选）
      */
+
     public static function getUserList(array $params = []): array
     {
         if (!self::tableExists('tc_user')) {
@@ -812,6 +949,7 @@ class AdminStatsService
 
         $fields = [
             'u.id',
+            self::tableHasColumn('tc_user', 'username') ? 'u.username' : "'' as username",
             self::tableHasColumn('tc_user', 'nickname') ? 'u.nickname' : "'' as nickname",
             self::tableHasColumn('tc_user', 'avatar') ? 'u.avatar' : "'' as avatar",
             self::tableHasColumn('tc_user', 'phone') ? 'u.phone' : "'' as phone",
@@ -819,26 +957,89 @@ class AdminStatsService
             self::tableHasColumn('tc_user', 'created_at') ? 'u.created_at' : 'NULL as created_at',
             self::tableHasColumn('tc_user', 'last_login_at') ? 'u.last_login_at' : 'NULL as last_login_at',
             self::tableHasColumn('tc_user', 'status') ? 'u.status' : '1 as status',
-            self::buildUserRelationCountField('tc_bazi_record', 'bazi_count'),
-            self::buildUserRelationCountField('tc_tarot_record', 'tarot_count'),
         ];
-
-        $fields = array_merge($fields, self::buildUserVipFields());
 
         $query = Db::table('tc_user')->alias('u')->field($fields);
 
         if ($username !== '') {
             $escapedUsername = addcslashes($username, '%_\\');
-            $query->whereLike('u.nickname', '%' . $escapedUsername . '%');
+            $query->where(function ($q) use ($escapedUsername, $username) {
+                $hasCondition = false;
+                if (self::tableHasColumn('tc_user', 'username')) {
+                    $q->whereLike('u.username', '%' . $escapedUsername . '%');
+                    $hasCondition = true;
+                }
+                if (self::tableHasColumn('tc_user', 'nickname')) {
+                    if ($hasCondition) {
+                        $q->whereLike('u.nickname', '%' . $escapedUsername . '%', 'OR');
+                    } else {
+                        $q->whereLike('u.nickname', '%' . $escapedUsername . '%');
+                        $hasCondition = true;
+                    }
+                }
+                if (self::tableHasColumn('tc_user', 'phone')) {
+                    if ($hasCondition) {
+                        $q->whereLike('u.phone', '%' . $escapedUsername . '%', 'OR');
+                    } else {
+                        $q->whereLike('u.phone', '%' . $escapedUsername . '%');
+                        $hasCondition = true;
+                    }
+                }
+
+                if (preg_match('/^\d+$/', $username)) {
+                    if ($hasCondition) {
+                        $q->whereOr('u.id', (int) $username);
+                    } else {
+                        $q->where('u.id', (int) $username);
+                        $hasCondition = true;
+                    }
+                }
+                if (!$hasCondition) {
+                    $q->whereRaw('1 = 0');
+                }
+            });
         } elseif ($keyword !== '') {
+
             $escapedKeyword = addcslashes($keyword, '%_\\');
-            $query->where(function ($q) use ($escapedKeyword) {
-                $q->whereLike('u.nickname', '%' . $escapedKeyword . '%')
-                    ->whereOrLike('u.phone', '%' . $escapedKeyword . '%');
+            $query->where(function ($q) use ($escapedKeyword, $keyword) {
+                $hasCondition = false;
+                if (self::tableHasColumn('tc_user', 'username')) {
+                    $q->whereLike('u.username', '%' . $escapedKeyword . '%');
+                    $hasCondition = true;
+                }
+                if (self::tableHasColumn('tc_user', 'nickname')) {
+                    if ($hasCondition) {
+                        $q->whereLike('u.nickname', '%' . $escapedKeyword . '%', 'OR');
+                    } else {
+                        $q->whereLike('u.nickname', '%' . $escapedKeyword . '%');
+                        $hasCondition = true;
+                    }
+                }
+                if (self::tableHasColumn('tc_user', 'phone')) {
+                    if ($hasCondition) {
+                        $q->whereLike('u.phone', '%' . $escapedKeyword . '%', 'OR');
+                    } else {
+                        $q->whereLike('u.phone', '%' . $escapedKeyword . '%');
+                        $hasCondition = true;
+                    }
+                }
+
+                if (preg_match('/^\d+$/', $keyword)) {
+                    if ($hasCondition) {
+                        $q->whereOr('u.id', (int) $keyword);
+                    } else {
+                        $q->where('u.id', (int) $keyword);
+                        $hasCondition = true;
+                    }
+                }
+                if (!$hasCondition) {
+                    $q->whereRaw('1 = 0');
+                }
             });
         }
 
-        if ($phone !== '') {
+
+        if ($phone !== '' && self::tableHasColumn('tc_user', 'phone')) {
             $escapedPhone = addcslashes($phone, '%_\\');
             $query->whereLike('u.phone', '%' . $escapedPhone . '%');
         }
@@ -865,20 +1066,35 @@ class AdminStatsService
         $orderSort = strtoupper((string) ($params['order_sort'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
         $query->order('u.' . $orderBy, $orderSort);
 
-        $total = (int) (clone $query)->count('u.id');
+        $total = (int) (clone $query)->count();
         $list = $query->page($page, $pageSize)->select()->toArray();
+        $userIds = array_values(array_unique(array_filter(array_map('intval', array_column($list, 'id')), static fn (int $id): bool => $id > 0)));
+        $baziCountMap = self::buildUserRelationCountMap('tc_bazi_record', $userIds);
+        $tarotCountMap = self::buildUserRelationCountMap('tc_tarot_record', $userIds);
+        $vipStatusMap = self::buildUserVipStatusMap($userIds);
 
         foreach ($list as &$item) {
+            $userId = (int) ($item['id'] ?? 0);
+            $vipStatus = $vipStatusMap[$userId] ?? ['is_vip' => 0, 'vip_end_time' => null];
+            $rawUsername = trim((string) ($item['username'] ?? ''));
+            $rawNickname = trim((string) ($item['nickname'] ?? ''));
+            $rawPhone = trim((string) ($item['phone'] ?? ''));
+            $displayName = $rawUsername !== ''
+                ? $rawUsername
+                : ($rawNickname !== '' ? $rawNickname : ($rawPhone !== '' ? $rawPhone : ('用户#' . $userId)));
+
             $item['status'] = (int) ($item['status'] ?? 0);
             $item['points'] = (int) ($item['points'] ?? 0);
-            $item['bazi_count'] = (int) ($item['bazi_count'] ?? 0);
-            $item['tarot_count'] = (int) ($item['tarot_count'] ?? 0);
-            $item['is_vip'] = (int) ($item['is_vip'] ?? 0);
-            $item['username'] = (string) (($item['phone'] ?? '') ?: ('用户#' . (int) ($item['id'] ?? 0)));
+            $item['bazi_count'] = (int) ($baziCountMap[$userId] ?? 0);
+            $item['tarot_count'] = (int) ($tarotCountMap[$userId] ?? 0);
+            $item['is_vip'] = (int) ($vipStatus['is_vip'] ?? 0);
+            $item['vip_end_time'] = $vipStatus['vip_end_time'] ?? null;
+            $item['username'] = $rawUsername !== '' ? $rawUsername : $displayName;
             $item['avatar'] = (string) ($item['avatar'] ?? '');
-            $item['nickname'] = (string) ($item['nickname'] ?? $item['username']);
-            $item['phone'] = (string) ($item['phone'] ?? '');
+            $item['nickname'] = $rawNickname !== '' ? $rawNickname : $displayName;
+            $item['phone'] = $rawPhone;
         }
+
         unset($item);
 
         return [
@@ -889,6 +1105,7 @@ class AdminStatsService
             'list' => $list,
         ];
     }
+
 
     /**
      * 调整用户积分
@@ -1129,45 +1346,61 @@ class AdminStatsService
      */
     public static function getOrderList(array $params = []): array
     {
-        $query = Db::table('tc_vip_order')->alias('o')
-            ->leftJoin('tc_user u', 'o.user_id = u.id')
-            ->field([
-                'o.*',
-                'u.nickname',
-                'u.phone',
-            ]);
-        
-        // 筛选条件
-        if (!empty($params['order_no'])) {
-            $query->whereLike('o.order_no', '%' . $params['order_no'] . '%');
+        $orderTable = self::resolveVipOrderTable();
+        if ($orderTable === null) {
+            return [
+                'total' => 0,
+                'page' => 1,
+                'page_size' => 20,
+                'list' => [],
+            ];
         }
-        
-        if (!empty($params['user_id'])) {
-            $query->where('o.user_id', $params['user_id']);
+
+        $userTable = self::resolveUserTable();
+        $query = Db::table($orderTable)->alias('o');
+        if ($userTable !== null && self::tableHasColumn($userTable, 'id')) {
+            $query->leftJoin($userTable . ' u', 'o.user_id = u.id');
         }
-        
-        if (isset($params['status'])) {
+
+        $fields = ['o.*'];
+        $fields[] = $userTable !== null && self::tableHasColumn($userTable, 'nickname') ? 'u.nickname' : "'' as nickname";
+        $fields[] = $userTable !== null && self::tableHasColumn($userTable, 'phone') ? 'u.phone' : "'' as phone";
+        $query->field($fields);
+
+        if (!empty($params['order_no']) && self::tableHasColumn($orderTable, 'order_no')) {
+            $escapedOrderNo = addcslashes((string) $params['order_no'], '%_\\');
+            $query->whereLike('o.order_no', '%' . $escapedOrderNo . '%');
+        }
+
+        if (!empty($params['user_id']) && self::tableHasColumn($orderTable, 'user_id')) {
+            $query->where('o.user_id', (int) $params['user_id']);
+        }
+
+        if (isset($params['status']) && $params['status'] !== '' && self::tableHasColumn($orderTable, 'status')) {
             $query->where('o.status', $params['status']);
         }
-        
-        if (!empty($params['date_start'])) {
+
+        if (!empty($params['date_start']) && self::tableHasColumn($orderTable, 'created_at')) {
             $query->where('o.created_at', '>=', $params['date_start']);
         }
-        
-        if (!empty($params['date_end'])) {
+
+        if (!empty($params['date_end']) && self::tableHasColumn($orderTable, 'created_at')) {
             $query->where('o.created_at', '<=', $params['date_end']);
         }
-        
-        // 排序
-        $query->order('o.created_at', 'DESC');
-        
-        // 分页
-        $page = $params['page'] ?? 1;
-        $pageSize = $params['page_size'] ?? 20;
-        
-        $total = $query->count();
-        $list = $query->page($page, $pageSize)->select();
-        
+
+        if (self::tableHasColumn($orderTable, 'created_at')) {
+            $query->order('o.created_at', 'DESC');
+        } else {
+            $query->order('o.id', 'DESC');
+        }
+
+        $page = max(1, (int) ($params['page'] ?? 1));
+        $pageSize = max(1, min(100, (int) ($params['page_size'] ?? 20)));
+
+        $total = (int) (clone $query)->count();
+        $rows = $query->page($page, $pageSize)->select()->toArray();
+        $list = array_map([self::class, 'normalizeVipOrderRow'], $rows);
+
         return [
             'total' => $total,
             'page' => $page,
@@ -1176,21 +1409,28 @@ class AdminStatsService
         ];
     }
 
+
     /**
      * 处理退款
      */
     public static function refundOrder(int $orderId, float $amount, string $reason, int $adminId): bool
     {
-        $order = Db::table('tc_vip_order')->where('id', $orderId)->find();
+        $orderTable = self::resolveVipOrderTable();
+        if ($orderTable === null) {
+            throw new \Exception('订单表不存在');
+        }
+
+        $order = Db::table($orderTable)->where('id', $orderId)->find();
         if (!$order) {
             throw new \Exception('订单不存在');
         }
-        
-        if ($order['status'] != 1) {
+
+        if (self::normalizeVipOrderStatus($order['status'] ?? 0) !== 1) {
             throw new \Exception('订单未支付，无法退款');
         }
-        
-        if ($amount > $order['pay_amount']) {
+
+        $payAmount = (float) ($order['pay_amount'] ?? ($order['amount'] ?? 0));
+        if ($amount > $payAmount) {
             throw new \Exception('退款金额不能超过支付金额');
         }
 
@@ -1199,19 +1439,16 @@ class AdminStatsService
             'order_id' => $orderId,
             'order_no' => self::maskOrderNo((string) ($order['order_no'] ?? '')),
             'amount' => round($amount, 2),
-            'pay_amount' => round((float) ($order['pay_amount'] ?? 0), 2),
+            'pay_amount' => round($payAmount, 2),
         ]);
-        
+
         Db::startTrans();
         try {
-            // 生成退款单号
             $refundNo = 'REF' . date('YmdHis') . mt_rand(1000, 9999);
-            
-            // 1. 调用微信支付退款接口
             $refundResult = WechatPayService::refund(
-                $order['order_no'],
+                (string) ($order['order_no'] ?? ''),
                 $refundNo,
-                (float)$order['pay_amount'],
+                $payAmount,
                 $amount,
                 $reason
             );
@@ -1220,18 +1457,25 @@ class AdminStatsService
                 throw new \Exception('微信退款失败: ' . $refundResult['message']);
             }
 
-            // 2. 更新订单状态
-            Db::table('tc_vip_order')
+            $updateData = ['status' => 3];
+            $columns = self::getTableColumns($orderTable);
+            if (isset($columns['refund_no'])) {
+                $updateData['refund_no'] = $refundNo;
+            }
+            if (isset($columns['refund_amount'])) {
+                $updateData['refund_amount'] = $amount;
+            }
+            if (isset($columns['refund_time'])) {
+                $updateData['refund_time'] = date('Y-m-d H:i:s');
+            }
+            if (isset($columns['refund_reason'])) {
+                $updateData['refund_reason'] = $reason;
+            }
+
+            Db::table($orderTable)
                 ->where('id', $orderId)
-                ->update([
-                    'status' => 3,  // 已退款
-                    'refund_no' => $refundNo,
-                    'refund_amount' => $amount,
-                    'refund_time' => date('Y-m-d H:i:s'),
-                    'refund_reason' => $reason,
-                ]);
-            
-            // 3. 记录管理员操作日志
+                ->update($updateData);
+
             self::insertAdminLogCompat([
                 'admin_id' => $adminId,
                 'action' => 'refund_order',
@@ -1246,7 +1490,7 @@ class AdminStatsService
                 ],
                 'status' => 1,
             ]);
-            
+
             Db::commit();
 
             Log::info('后台订单退款成功', [
@@ -1272,6 +1516,7 @@ class AdminStatsService
             throw $e;
         }
     }
+
 
     /**
      * 脱敏订单号/退款单号

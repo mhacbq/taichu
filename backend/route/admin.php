@@ -24,12 +24,13 @@ Route::group('api/admin', function () {
         Route::get('dashboard/pending-feedback', 'admin.Feedback/pendingSummary');
         
         // 用户管理
-        Route::get('users', 'admin.User/index');
-        Route::get('users/:id', 'admin.User/detail');
-        Route::put('users/:id/status', 'admin.User/toggleStatus');
-        Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
-        Route::get('users/behavior', 'Admin/userBehavior');
         Route::get('users/export', 'Admin/exportUsers');
+        Route::get('users/behavior', 'Admin/userBehavior');
+        Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
+        Route::put('users/:id/status', 'admin.User/toggleStatus');
+        Route::get('users/:id', 'admin.User/detail');
+        Route::get('users', 'admin.User/index');
+
         
         // 内容管理
         Route::get('content/bazi', 'Admin/baziRecords');

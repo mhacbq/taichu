@@ -1,6 +1,26 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Eleventh round of UI consistency fixes focused on Hehun history card semantics, replay branching, AI content rendering, and responsive touch targets.
+- Status: Completed (5 UI issues resolved and pushed).
+- Date: 2026-03-18
+- Commit: `71fdba6` (`"fix-ui-hehun-history-20260318-0415"`)
+
+## Summary
+- `frontend/src/views/Hehun.vue`: 将合婚历史列表改成可点击卡片，补齐“免费预览 / 完整版 / VIP完整版”类型标签、AI状态标签、选中态和更清晰的回看文案，统一圆角、阴影与按钮触达尺寸。
+- `frontend/src/views/Hehun.vue`: 修复历史接口兼容问题，改为读取 `limit=5` 与数组/列表双结构返回，并统一按 `tier / is_premium` 回放到基础预览或完整版结果。
+- `frontend/src/views/Hehun.vue`: 新增合婚结果归一化逻辑，把后端真实返回的 `scores/details/suggestions` 映射为结果页可用的维度卡、详细分析和 AI 结构化内容，避免历史回放与实时结果展示错位。
+- `backend/app/model/HehunRecord.php`: 历史记录返回补齐 `male_birth_date`、`female_birth_date`、`is_ai_analysis`、`is_premium`、`tier` 与 `created_at`，兼容新旧表结构给前端提供稳定展示字段。
+- `TODO.md`: 已移除合婚历史记录这条 `[UI]` 待办。
+
+## Validation
+- `read_lints`: `frontend/src/views/Hehun.vue`、`backend/app/model/HehunRecord.php` 0 diagnostics。
+- `npm run build --prefix frontend`: 通过（仅剩 Vite chunk size warning 与 NativeSymbolResolver 提示，不影响产物）。
+- 本地预览 `http://127.0.0.1:4173/` 已打开复核，用于检查历史卡片标签、回放入口和结果页结构。
+
+---
+
+## Previous Run
 - Task: Tenth round of UI consistency fixes focused on the homepage Hero value expression, card hierarchy, responsive touch targets, and preview blocking issue.
 - Status: Completed (5 UI issues resolved).
 - Date: 2026-03-18

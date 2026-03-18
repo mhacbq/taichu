@@ -1,13 +1,21 @@
 <template>
   <div class="app-container">
     <div class="table-operations">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" :disabled="readonlyMode" @click="handleAdd">
         <el-icon><Plus /></el-icon>发布公告
       </el-button>
     </div>
 
     <el-card shadow="never">
-      <el-table :data="noticeList" v-loading="loading" stripe>
+      <div v-if="noticeError" class="page-state">
+        <el-result icon="warning" :title="noticeError.title" :sub-title="noticeError.description">
+          <template #extra>
+            <el-button type="primary" :loading="loading" @click="loadNotices">重新加载</el-button>
+          </template>
+        </el-result>
+      </div>
+
+      <el-table v-else :data="noticeList" v-loading="loading" stripe>
         <el-table-column prop="title" label="公告标题" min-width="220" />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
@@ -26,15 +34,15 @@
         <el-table-column prop="created_at" label="发布时间" width="180" />
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" :disabled="readonlyMode" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" :disabled="readonlyMode" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <el-dialog v-model="dialog.visible" title="公告管理" width="600px" destroy-on-close>
-      <el-form :model="dialog.form" label-width="80px">
+      <el-form :model="dialog.form" label-width="80px" :disabled="readonlyMode">
         <el-form-item label="标题">
           <el-input v-model="dialog.form.title" maxlength="100" show-word-limit placeholder="请输入公告标题" />
         </el-form-item>
@@ -63,25 +71,29 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">保存</el-button>
+        <el-button type="primary" :loading="submitting" :disabled="readonlyMode" @click="handleSubmit">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteNotice, getNotices, saveNotice } from '@/api/system'
+import { createReadonlyErrorState } from '@/utils/page-error'
 
 const loading = ref(false)
 const submitting = ref(false)
+const noticeError = ref(null)
 const noticeList = ref([])
 const dialog = reactive({
   visible: false,
   form: createDefaultForm()
 })
+
+const readonlyMode = computed(() => Boolean(noticeError.value))
 
 function createDefaultForm() {
   return {
@@ -105,30 +117,54 @@ function normalizeNoticeRow(row = {}) {
   }
 }
 
+function ensureWritable(message) {
+  if (!readonlyMode.value) {
+    return true
+  }
+
+  ElMessage.warning(message)
+  return false
+}
+
 async function loadNotices() {
   loading.value = true
   try {
-    const res = await getNotices({ page: 1, pageSize: 100 })
+    const res = await getNotices({ page: 1, pageSize: 100 }, { showErrorMessage: false })
     const list = Array.isArray(res?.data?.list) ? res.data.list : []
     noticeList.value = list.map(normalizeNoticeRow)
+    noticeError.value = null
   } catch (error) {
-    ElMessage.error(error.message || '加载公告失败，请稍后重试')
+    noticeList.value = []
+    dialog.visible = false
+    noticeError.value = createReadonlyErrorState(error, '系统公告', 'config_manage')
   } finally {
     loading.value = false
   }
 }
 
 function handleAdd() {
+  if (!ensureWritable('系统公告尚未成功加载，当前为只读保护状态')) {
+    return
+  }
+
   dialog.form = createDefaultForm()
   dialog.visible = true
 }
 
 function handleEdit(row) {
+  if (!ensureWritable('系统公告尚未成功加载，当前为只读保护状态')) {
+    return
+  }
+
   dialog.form = normalizeNoticeRow(row)
   dialog.visible = true
 }
 
 async function handleSubmit() {
+  if (!ensureWritable('系统公告尚未成功加载，暂时无法保存')) {
+    return
+  }
+
   const title = dialog.form.title.trim()
   const content = dialog.form.content.trim()
 
@@ -150,7 +186,7 @@ async function handleSubmit() {
       type: dialog.form.type,
       content,
       status: dialog.form.status
-    })
+    }, { showErrorMessage: false })
     ElMessage.success(dialog.form.id ? '公告更新成功' : '公告发布成功')
     dialog.visible = false
     await loadNotices()
@@ -162,13 +198,17 @@ async function handleSubmit() {
 }
 
 async function handleDelete(row) {
+  if (!ensureWritable('系统公告尚未成功加载，暂时无法删除')) {
+    return
+  }
+
   try {
     await ElMessageBox.confirm(`确定删除公告「${row.title}」吗？`, '删除确认', {
       type: 'warning',
       confirmButtonText: '删除',
       cancelButtonText: '取消'
     })
-    await deleteNotice(row.id)
+    await deleteNotice(row.id, { showErrorMessage: false })
     ElMessage.success('公告已删除')
     await loadNotices()
   } catch (error) {
@@ -190,5 +230,9 @@ onMounted(() => {
 
 .table-operations {
   margin-bottom: 20px;
+}
+
+.page-state {
+  padding: 12px 0;
 }
 </style>

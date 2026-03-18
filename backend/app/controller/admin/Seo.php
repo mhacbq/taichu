@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
+use app\service\SchemaInspector;
 use think\Request;
 use think\facade\Db;
 
@@ -41,7 +42,23 @@ class Seo extends BaseController
             $keyword = trim((string) $request->get('keyword', ''));
             $isActive = $request->get('is_active', '');
 
-            $query = Db::name('seo_config')
+            $configTable = $this->resolveSeoTable('config');
+            $submissionTable = $this->resolveSeoTable('submissions');
+            if ($configTable === null) {
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                    'sitemap' => [
+                        'lastModified' => date('Y-m-d H:i:s'),
+                        'urlCount' => 0,
+                        'fileSize' => '0.1 KB',
+                        'baiduIndexed' => false,
+                    ],
+                    'submitStatus' => $this->formatSeoSubmitStatus(),
+                ], '获取成功');
+            }
+
+            $query = Db::table($configTable)
                 ->order('priority', 'desc')
                 ->order('updated_at', 'desc');
 
@@ -60,11 +77,12 @@ class Seo extends BaseController
 
             $total = $query->count();
             $rows = $query->page($page, $pageSize)->select()->toArray();
-            $activeRows = Db::name('seo_config')
+            $activeRows = Db::table($configTable)
                 ->where('is_active', 1)
                 ->field('route,updated_at')
                 ->select()
                 ->toArray();
+
             $lastModified = '';
             foreach ($activeRows as $row) {
                 if (($row['updated_at'] ?? '') > $lastModified) {
@@ -77,6 +95,14 @@ class Seo extends BaseController
                 $xmlSize += strlen((string) ($row['route'] ?? '')) + 128;
             }
             $fileSize = number_format($xmlSize / 1024, 1) . ' KB';
+            $baiduIndexed = false;
+            if ($submissionTable !== null) {
+                $baiduIndexed = Db::table($submissionTable)
+                    ->where('engine', 'baidu')
+                    ->where('type', 'sitemap')
+                    ->where('status', 'success')
+                    ->count() > 0;
+            }
 
             return $this->success([
                 'list' => array_map([$this, 'formatSeoConfigRow'], $rows),
@@ -85,11 +111,8 @@ class Seo extends BaseController
                     'lastModified' => $lastModified ?: date('Y-m-d H:i:s'),
                     'urlCount' => count($activeRows),
                     'fileSize' => $fileSize,
-                    'baiduIndexed' => Db::name('seo_submissions')
-                        ->where('engine', 'baidu')
-                        ->where('type', 'sitemap')
-                        ->where('status', 'success')
-                        ->count() > 0,
+                    'baiduIndexed' => $baiduIndexed,
+
                 ],
                 'submitStatus' => $this->formatSeoSubmitStatus(),
             ], '获取成功');
@@ -173,13 +196,14 @@ class Seo extends BaseController
             ];
 
             if ($existing) {
-                Db::name('seo_config')->where('id', $id)->update($payload);
+                Db::table($configTable)->where('id', $id)->update($payload);
             } else {
                 $payload['created_at'] = date('Y-m-d H:i:s');
-                $id = (int) Db::name('seo_config')->insertGetId($payload);
+                $id = (int) Db::table($configTable)->insertGetId($payload);
             }
 
-            $saved = Db::name('seo_config')->where('id', $id)->find();
+            $saved = Db::table($configTable)->where('id', $id)->find();
+
             $afterData = $saved ? $this->formatSeoConfigRow($saved) : ['id' => $id, 'route' => $route];
 
             $this->logOperation('save_seo_config', 'config', [
@@ -364,7 +388,16 @@ class Seo extends BaseController
         }
 
         try {
-            $rows = Db::name('seo_robots')
+            $robotsTable = $this->resolveSeoTable('robots');
+            if ($robotsTable === null) {
+                return $this->success([
+                    'content' => '',
+                    'list' => [],
+                    'updated_at' => '',
+                ], '获取成功');
+            }
+
+            $rows = Db::table($robotsTable)
                 ->where('is_active', 1)
                 ->order('sort_order', 'asc')
                 ->order('id', 'asc')
@@ -411,8 +444,10 @@ class Seo extends BaseController
         }
 
         try {
-            $beforeRows = Db::name('seo_robots')->order('sort_order', 'asc')->select()->toArray();
+            $robotsTable = $this->resolveSeoTable('robots') ?? 'tc_seo_robots';
+            $beforeRows = Db::table($robotsTable)->order('sort_order', 'asc')->select()->toArray();
             $insertData = [];
+
             $now = date('Y-m-d H:i:s');
             foreach ($parsedEntries as $index => $entry) {
                 $insertData[] = [
@@ -428,8 +463,9 @@ class Seo extends BaseController
             }
 
             Db::startTrans();
-            Db::name('seo_robots')->delete();
-            Db::name('seo_robots')->insertAll($insertData);
+            Db::table($robotsTable)->delete();
+            Db::table($robotsTable)->insertAll($insertData);
+
             Db::commit();
 
             $this->logOperation('save_seo_robots', 'config', [
@@ -502,10 +538,41 @@ class Seo extends BaseController
     }
 
     /**
+     * 解析 SEO 相关数据表
+     */
+    protected function resolveSeoTable(string $type): ?string
+    {
+        return match ($type) {
+            'config' => $this->resolveFirstExistingTable(['seo_config', 'tc_seo_config']),
+            'keywords' => $this->resolveFirstExistingTable(['seo_keywords', 'tc_seo_keywords']),
+            'indexed_pages' => $this->resolveFirstExistingTable(['seo_indexed_pages', 'tc_seo_indexed_pages']),
+            'submissions' => $this->resolveFirstExistingTable(['seo_submissions', 'tc_seo_submissions']),
+            'traffic_daily' => $this->resolveFirstExistingTable(['seo_traffic_daily', 'tc_seo_traffic_daily']),
+            'robots' => $this->resolveFirstExistingTable(['seo_robots', 'tc_seo_robots']),
+            default => null,
+        };
+    }
+
+    /**
+     * 返回首个存在的数据表名
+     */
+    protected function resolveFirstExistingTable(array $tables): ?string
+    {
+        foreach ($tables as $table) {
+            if (SchemaInspector::tableExists((string) $table)) {
+                return (string) $table;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * 格式化 SEO 配置行数据
      */
     protected function formatSeoConfigRow(array $row): array
     {
+
         return [
             'id' => (int) ($row['id'] ?? 0),
             'route' => $row['route'] ?? '',
@@ -744,8 +811,14 @@ class Seo extends BaseController
     protected function formatSeoSubmitStatus(): array
     {
         $statusMap = [];
+        $submissionTable = $this->resolveSeoTable('submissions');
         foreach (self::SEO_ENGINES as $engine) {
-            $row = Db::name('seo_submissions')
+            if ($submissionTable === null) {
+                $statusMap[$engine] = ['type' => 'info', 'text' => '未提交'];
+                continue;
+            }
+
+            $row = Db::table($submissionTable)
                 ->where('engine', $engine)
                 ->order('submitted_at', 'desc')
                 ->find();
@@ -754,6 +827,7 @@ class Seo extends BaseController
                 $statusMap[$engine] = ['type' => 'info', 'text' => '未提交'];
                 continue;
             }
+
 
             $status = (string) ($row['status'] ?? 'pending');
             if ($status === 'success') {

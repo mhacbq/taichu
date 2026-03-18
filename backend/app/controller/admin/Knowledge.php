@@ -87,6 +87,7 @@ class Knowledge extends BaseController
             }
 
             $categoryPayload = $this->buildArticleCategoryPayload();
+            $article = $this->normalizeArticleListRow($article);
             $article['category_path'] = $this->resolveArticleCategoryPath((int) ($article['category_id'] ?? 0), $categoryPayload['map']);
             return $this->success($article);
         } catch (\Throwable $e) {
@@ -484,10 +485,42 @@ class Knowledge extends BaseController
     }
 
     /**
+     * 归一化文章列表/详情中的分类展示字段
+     */
+    protected function normalizeArticleListRow(array $row): array
+    {
+        $row['category_name'] = $this->normalizePossiblyGarbledText((string) ($row['category_name'] ?? ''));
+        return $row;
+    }
+
+    /**
+     * 尝试修复常见的 UTF-8 -> Windows-1252 乱码
+     */
+    protected function normalizePossiblyGarbledText(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '' || preg_match('/[\x{4e00}-\x{9fff}]/u', $value)) {
+            return $value;
+        }
+
+        if (!preg_match('/[åäæçéöüÃÂâ€]/u', $value)) {
+            return $value;
+        }
+
+        $repaired = @iconv('UTF-8', 'Windows-1252//IGNORE', $value);
+        if (is_string($repaired) && $repaired !== '' && preg_match('//u', $repaired) && preg_match('/[\x{4e00}-\x{9fff}]/u', $repaired)) {
+            return $repaired;
+        }
+
+        return $value;
+    }
+
+    /**
      * 解析分类路径，供编辑页快速跳转使用
      */
     protected function resolveArticleCategoryPath(int $categoryId, array $categoryMap): array
     {
+
         $path = [];
         $visited = [];
         while ($categoryId > 0 && isset($categoryMap[$categoryId]) && !isset($visited[$categoryId])) {

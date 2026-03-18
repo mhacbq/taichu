@@ -1,9 +1,9 @@
 ## 待处理项目
 
 ### 🔴 高优先级
-- [x] [2026-03-18] [运营] 用户列表首屏可正常加载，但按“用户名=用户8001”搜索后会立刻进入“用户列表加载失败”只读态；浏览器网络显示 `GET /api/admin/users?username=...` 已返回 HTTP 200，运营无法通过搜索快速定位目标用户 - 用户管理 / 用户列表搜索 - 已在 `backend/app/service/AdminStatsService.php` 补齐 `username / nickname / phone / id` 兼容搜索，并停止用手机号覆盖真实 `username` 展示；同时列表/详情页调积分提交值统一切回 `sub`，兼容旧运行态只接受 `add/sub` 的接口。
+- [ ] [运营] 2026-03-18 回归复测确认：用户列表首屏虽能正常加载，但按“用户名=用户8001”搜索后仍会立刻进入“用户列表加载失败”只读态；同时用户详情页“用户名”字段仍展示手机号 `13800138001`，运营无法稳定按用户名检索并核对用户身份 - 用户管理 / 用户列表搜索 / 用户详情 - 需继续排查当前运行态是否未真正吃到 `username` 兼容搜索与展示修复，避免搜索和身份核验继续失真。
 - [ ] [运营] 用户详情页“手动调积分”弹窗可打开，但提交最小化 `+1` 积分后连续提示“调整积分失败，请稍后重试”；对应 `POST /api/admin/points/adjust` 的 HTTP 请求已成功返回 200，导致人工补偿/扣减积分无法落地 - 用户管理 / 用户详情 / 积分调整 - 需核对业务响应码与前端提交参数/成功判断，确保调账成功后余额和记录即时刷新。
-- [x] [2026-03-18] [运营] 黄历管理 `/content/almanac`、SEO 管理 `/site/seo` 与 VIP 订单 `/payment/vip-orders` 页面在真实登录后都会直接进入“加载失败”只读态；相关 GET 请求分别已命中 `/api/admin/content/almanac`、`/api/admin/system/seo/*`、`/api/admin/order` 且 HTTP 状态均为 200，运营无法维护黄历、SEO 或处理 VIP 订单 - 内容管理 / SEO / VIP订单 - 已在 `backend/app/controller/admin/Almanac.php` 把读写权限兼容到现有 `content_manage / config_manage` 体系，并在缺表时返回空列表成功结构；`backend/app/controller/admin/Seo.php` 改为基于真实 schema 表名读取 SEO 配置，避免站点地图统计再因表名/未初始化状态直接抛错；同时新增 `database/{20260318_create_almanac_table.sql,20260318_create_seo_tables.sql}` 并挂入 `backend/docker-entrypoint.sh` 自举列表，fresh setup 后黄历与 SEO 依赖表会自动补齐；前端 `admin/src/views/site-content/seo.vue` 与 `admin/src/views/payment/vip-orders.vue` 也同步补齐响应字段归一化和真实权限判断，避免成功响应继续被误锁成只读。
+- [ ] [运营] 2026-03-18 回归复测确认：黄历管理 `/content/almanac`、SEO 管理 `/site/seo` 与 VIP 订单 `/payment/vip-orders` 当前在真实登录后仍会直接进入“加载失败”只读态，运营依然无法维护黄历、调整 SEO 或处理会员订单 - 内容管理 / SEO / VIP订单 - 需继续核查当前运行态是否未真正加载已提交的接口兼容与字段归一化修复，并补齐可用于定位的页内错误信息。
 
 - [x] [2026-03-18] [代码] 前端 `Bazi.vue` 存在未使用的 Vue `h` 导入，`SEOStats.vue` 复核后确认 `RankBadge` 仍实际依赖 `h`，原 TODO 描述过宽 - `frontend/src/views/{Bazi.vue,admin/SEOStats.vue}` - 已移除 `Bazi.vue` 的无效导入，并核销 `SEOStats.vue` 的历史误报，避免继续把正常渲染逻辑当成 lint 问题处理。
 
@@ -16,7 +16,7 @@
 
 ### 🟡 中优先级
 - [ ] [运营] 知识库分类列表中文名称显示为 `å…«å—åŸºç¡€` 一类乱码，文章侧虽然能进入，但运营无法辨认真实分类并准确归档文章 - 网站内容 / 知识库文章 / 分类管理 - 建议检查分类名称的存储编码、接口输出与前端解码链路，恢复中文可读性。
-- [x] [2026-03-18] [运营] 积分记录页能加载真实记录，但“变动数量 / 变动后余额 / 变动原因”三列大量为空或仅显示 `-`，运营无法核对扣增依据，也难以追溯手工调账结果 - 积分管理 / 积分记录 - 已重写 `backend/app/controller/Admin.php::pointsRecords()` 的返回映射，按旧 `points/remark` 与新 `amount/balance/reason` 双口径统一补齐三列；同时新增 `database/20260318_add_points_record_audit_fields.sql` 回填审计字段，减少历史记录空列。
+- [ ] [运营] 积分记录页按用户 `3` 过滤后，`2026-03-18 01:30:20` 的“连续签到1天”正向记录仍被展示成“减少”，且“变动数量 / 变动后余额 / 变动原因”三列大量为空或仅显示 `-`，运营无法判断积分到底是增加还是扣减，更无法完成审计追踪 - 积分管理 / 积分记录 - 需统一记录类型、增减方向、数量、余额与原因的映射，避免把真实加分记录误判成扣分。
 - [x] [运营] 充值订单页 `GET /api/admin/payment/orders` 已能返回列表，但统计接口 `/api/admin/payment/stats` 仍返回 500，页面顶部“支付订单 / 累计实收 / 累计发放积分 / 待支付订单”继续显示默认 0 值，运营容易把异常误判成真实订单表现 - 订单管理 / 充值订单 - 已在 `backend/app/controller/admin/Payment.php` 去掉会触发 ThinkORM `distinct(): Argument #1 ($distinct) must be of type bool, string given` 的用户去重写法，改为兼容旧表结构的 `user_id` 去重统计；同时在 `admin/src/views/payment/orders.vue` 改成列表成功、统计失败时页内告警降级，不再让单个统计接口把整页一起拖进错误态。
 
 

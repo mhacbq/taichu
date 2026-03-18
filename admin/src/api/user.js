@@ -22,13 +22,15 @@ export function logout() {
   })
 }
 
-export function getUserList(params) {
+export function getUserList(params, options = {}) {
   return request({
     url: '/users',
     method: 'get',
-    params
+    params,
+    ...options
   })
 }
+
 
 export function getUserDetail(id, options = {}) {
   return request({

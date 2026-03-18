@@ -54,26 +54,29 @@ export function importSensitiveWords(data) {
   })
 }
 
-export function getNotices(params) {
+export function getNotices(params, options = {}) {
   return request({
     url: '/system/notices',
     method: 'get',
-    params
+    params,
+    ...options
   })
 }
 
-export function saveNotice(data) {
+export function saveNotice(data, options = {}) {
   return request({
     url: '/system/notices',
     method: 'post',
-    data
+    data,
+    ...options
   })
 }
 
-export function deleteNotice(id) {
+export function deleteNotice(id, options = {}) {
   return request({
     url: `/system/notices/${id}`,
-    method: 'delete'
+    method: 'delete',
+    ...options
   })
 }
 

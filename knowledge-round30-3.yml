@@ -1,0 +1,243 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - link "太初管理后台" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - menubar [ref=e10]:
+      - menuitem "仪表盘" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 仪表盘
+      - menuitem "用户管理" [ref=e18]:
+        - generic [ref=e19] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e23]: 用户管理
+          - img [ref=e25]
+      - menuitem "内容管理" [ref=e28]:
+        - generic [ref=e29] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: 内容管理
+          - img [ref=e35]
+      - menuitem "网站内容" [ref=e38]:
+        - generic [ref=e39] [cursor=pointer]:
+          - img [ref=e41]
+          - generic [ref=e43]: 网站内容
+          - img [ref=e45]
+      - menuitem "编辑页面" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 编辑页面
+      - menuitem "积分管理" [ref=e51]:
+        - generic [ref=e52] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e58]: 积分管理
+          - img [ref=e60]
+      - menuitem "支付管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e70]: 支付管理
+          - img [ref=e72]
+      - menuitem "短信管理" [ref=e75]:
+        - generic [ref=e76] [cursor=pointer]:
+          - img [ref=e78]
+          - generic [ref=e81]: 短信管理
+          - img [ref=e83]
+      - menuitem "反馈管理" [ref=e86]:
+        - generic [ref=e87] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]: 反馈管理
+          - img [ref=e94]
+      - menuitem "反作弊系统" [ref=e97]:
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e102]: 反作弊系统
+          - img [ref=e104]
+      - menuitem "AI管理" [ref=e107]:
+        - generic [ref=e108] [cursor=pointer]:
+          - img [ref=e110]
+          - generic [ref=e113]: AI管理
+          - img [ref=e115]
+      - menuitem "系统设置" [ref=e118]:
+        - generic [ref=e119] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e123]: 系统设置
+          - img [ref=e125]
+      - menuitem "日志管理" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 日志管理
+          - img [ref=e135]
+      - menuitem "任务调度" [ref=e138]:
+        - generic [ref=e139] [cursor=pointer]:
+          - img [ref=e141]
+          - generic [ref=e145]: 任务调度
+          - img [ref=e147]
+  - generic [ref=e149]:
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153] [cursor=pointer]:
+            - img
+          - navigation "面包屑" [ref=e155]:
+            - generic [ref=e156]:
+              - link "仪表盘" [ref=e157]
+              - text: /
+            - generic [ref=e158]:
+              - link "网站内容" [ref=e159]
+              - text: /
+            - link "知识库文章" [ref=e161]
+        - generic [ref=e162]:
+          - generic [ref=e163] [cursor=pointer]:
+            - img
+          - button "admin" [ref=e166] [cursor=pointer]:
+            - generic [ref=e168]: admin
+            - img [ref=e170]
+      - link "知识库文章" [ref=e176] [cursor=pointer]:
+        - /url: /site/knowledge
+        - text: 知识库文章
+        - img [ref=e178]
+    - generic [ref=e181]:
+      - generic [ref=e183]:
+        - button "刷新" [ref=e185] [cursor=pointer]:
+          - generic [ref=e186]: 刷新
+        - button "新增文章" [ref=e188] [cursor=pointer]:
+          - generic [ref=e189]: 新增文章
+        - button "新增分类" [ref=e191] [cursor=pointer]:
+          - generic [ref=e192]: 新增分类
+      - generic [ref=e193]:
+        - generic [ref=e195]:
+          - generic [ref=e197]:
+            - generic [ref=e198]:
+              - generic [ref=e199]: 知识库分类
+              - generic [ref=e200]: 维护文章树、父子分类与启用状态。
+            - generic [ref=e202]: 5 个分类
+          - generic [ref=e205]:
+            - table [ref=e207]:
+              - rowgroup [ref=e212]:
+                - row "分类 状态 操作" [ref=e213]:
+                  - columnheader "分类" [ref=e214]:
+                    - generic [ref=e215]: 分类
+                  - columnheader "状态" [ref=e216]:
+                    - generic [ref=e217]: 状态
+                  - columnheader "操作" [ref=e218]:
+                    - generic [ref=e219]: 操作
+            - table [ref=e224]:
+              - rowgroup [ref=e229]:
+                - row "å…«å—åŸºç¡€ 启用 编辑 删除" [ref=e230]:
+                  - cell "å…«å—åŸºç¡€" [ref=e231]:
+                    - generic [ref=e234]: å…«å—åŸºç¡€
+                  - cell "启用" [ref=e235]:
+                    - generic [ref=e238]: 启用
+                  - cell "编辑 删除" [ref=e239]:
+                    - generic [ref=e240]:
+                      - button "编辑" [ref=e241] [cursor=pointer]:
+                        - generic [ref=e242]: 编辑
+                      - button "删除" [ref=e243] [cursor=pointer]:
+                        - generic [ref=e244]: 删除
+                - 'row "åç¥žæ ¼å±€ 启用 编辑 删除" [ref=e245]':
+                  - 'cell "åç¥žæ ¼å±€" [ref=e246]':
+                    - generic [ref=e249]: "å\x8d\x81ç¥žæ ¼å±€"
+                  - cell "启用" [ref=e250]:
+                    - generic [ref=e253]: 启用
+                  - cell "编辑 删除" [ref=e254]:
+                    - generic [ref=e255]:
+                      - button "编辑" [ref=e256] [cursor=pointer]:
+                        - generic [ref=e257]: 编辑
+                      - button "删除" [ref=e258] [cursor=pointer]:
+                        - generic [ref=e259]: 删除
+                - 'row "å¤§è¿æµå¹´ 启用 编辑 删除" [ref=e260]':
+                  - 'cell "å¤§è¿æµå¹´" [ref=e261]':
+                    - generic [ref=e264]: "å¤§è¿\x90æµ\x81å¹´"
+                  - cell "启用" [ref=e265]:
+                    - generic [ref=e268]: 启用
+                  - cell "编辑 删除" [ref=e269]:
+                    - generic [ref=e270]:
+                      - button "编辑" [ref=e271] [cursor=pointer]:
+                        - generic [ref=e272]: 编辑
+                      - button "删除" [ref=e273] [cursor=pointer]:
+                        - generic [ref=e274]: 删除
+                - row "å¡”ç½—ä½“ç³» 启用 编辑 删除" [ref=e275]:
+                  - cell "å¡”ç½—ä½“ç³»" [ref=e276]:
+                    - generic [ref=e279]: å¡”ç½—ä½“ç³»
+                  - cell "启用" [ref=e280]:
+                    - generic [ref=e283]: 启用
+                  - cell "编辑 删除" [ref=e284]:
+                    - generic [ref=e285]:
+                      - button "编辑" [ref=e286] [cursor=pointer]:
+                        - generic [ref=e287]: 编辑
+                      - button "删除" [ref=e288] [cursor=pointer]:
+                        - generic [ref=e289]: 删除
+                - 'row "é£Žæ°´æ‹©å‰ 启用 编辑 删除" [ref=e290]':
+                  - 'cell "é£Žæ°´æ‹©å‰" [ref=e291]':
+                    - generic [ref=e294]: "é£Žæ°´æ‹©å\x90‰"
+                  - cell "启用" [ref=e295]:
+                    - generic [ref=e298]: 启用
+                  - cell "编辑 删除" [ref=e299]:
+                    - generic [ref=e300]:
+                      - button "编辑" [ref=e301] [cursor=pointer]:
+                        - generic [ref=e302]: 编辑
+                      - button "删除" [ref=e303] [cursor=pointer]:
+                        - generic [ref=e304]: 删除
+        - generic [ref=e306]:
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - generic [ref=e310]: 知识库文章
+              - generic [ref=e311]: 支持文章发布、草稿维护、热门标记与分类归档。
+            - generic [ref=e313]: 共 0 篇
+          - generic [ref=e314]:
+            - generic [ref=e315]:
+              - generic [ref=e316]:
+                - generic [ref=e317]: 关键词
+                - textbox "关键词" [ref=e321]:
+                  - /placeholder: 搜索标题 / 摘要
+              - generic [ref=e322]:
+                - generic [ref=e323]: 分类
+                - generic [ref=e326] [cursor=pointer]:
+                  - generic:
+                    - combobox "分类" [ref=e328]
+                    - generic [ref=e329]: 全部分类
+                  - img [ref=e332]
+              - generic [ref=e335]:
+                - button "搜索" [ref=e336] [cursor=pointer]:
+                  - generic [ref=e337]: 搜索
+                - button "重置" [ref=e338] [cursor=pointer]:
+                  - generic [ref=e339]: 重置
+            - generic [ref=e341]:
+              - table [ref=e343]:
+                - rowgroup [ref=e353]:
+                  - row "标题 分类 状态 热门 作者 发布时间 更新时间 操作" [ref=e354]:
+                    - columnheader "标题" [ref=e355]:
+                      - generic [ref=e356]: 标题
+                    - columnheader "分类" [ref=e357]:
+                      - generic [ref=e358]: 分类
+                    - columnheader "状态" [ref=e359]:
+                      - generic [ref=e360]: 状态
+                    - columnheader "热门" [ref=e361]:
+                      - generic [ref=e362]: 热门
+                    - columnheader "作者" [ref=e363]:
+                      - generic [ref=e364]: 作者
+                    - columnheader "发布时间" [ref=e365]:
+                      - generic [ref=e366]: 发布时间
+                    - columnheader "更新时间" [ref=e367]:
+                      - generic [ref=e368]: 更新时间
+                    - columnheader "操作" [ref=e369]:
+                      - generic [ref=e370]: 操作
+              - generic [ref=e374]:
+                - table:
+                  - rowgroup
+                - generic [ref=e376]: 暂无数据
+            - generic [ref=e378]:
+              - generic [ref=e379]: 共 0 条
+              - generic [ref=e382] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e384]
+                  - generic [ref=e385]: 20条/页
+                - img [ref=e388]
+              - button "上一页" [disabled] [ref=e390]:
+                - generic:
+                  - img
+              - list [ref=e391]:
+                - listitem "第 1 页" [ref=e392]: "1"
+              - button "下一页" [disabled] [ref=e393]:
+                - generic:
+                  - img
+              - generic [ref=e394]:
+                - generic [ref=e395]: 前往
+                - spinbutton "页" [ref=e398]: "1"
+                - generic [ref=e399]: 页

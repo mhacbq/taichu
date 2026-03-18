@@ -144,7 +144,7 @@
         <el-form-item label="调整类型">
           <el-radio-group v-model="pointsDialog.form.type">
             <el-radio label="add">增加</el-radio>
-            <el-radio label="reduce">减少</el-radio>
+            <el-radio label="sub">减少</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="调整数量">

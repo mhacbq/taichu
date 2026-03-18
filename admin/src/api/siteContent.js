@@ -87,7 +87,7 @@ export function getEnums() {
  */
 export function getContentList(params) {
   return request({
-    url: '/api/admin/site/content/list',
+    url: '/site/content/list',
     method: 'get',
     params
   })
@@ -98,7 +98,7 @@ export function getContentList(params) {
  */
 export function saveContent(data) {
   return request({
-    url: '/api/admin/site/content/save',
+    url: '/site/content/save',
     method: 'post',
     data
   })
@@ -109,7 +109,7 @@ export function saveContent(data) {
  */
 export function batchUpdateContent(page, contents) {
   return request({
-    url: '/api/admin/site/content/batch',
+    url: '/site/content/batch',
     method: 'post',
     data: { page, contents }
   })
@@ -120,7 +120,7 @@ export function batchUpdateContent(page, contents) {
  */
 export function deleteContent(id) {
   return request({
-    url: `/api/admin/site/content/${id}`,
+    url: `/site/content/${id}`,
     method: 'delete'
   })
 }
@@ -130,7 +130,7 @@ export function deleteContent(id) {
  */
 export function getTestimonialList(params) {
   return request({
-    url: '/api/admin/site/testimonials',
+    url: '/site/testimonials',
     method: 'get',
     params
   })
@@ -141,7 +141,7 @@ export function getTestimonialList(params) {
  */
 export function saveTestimonial(data) {
   return request({
-    url: '/api/admin/site/testimonials',
+    url: '/site/testimonials',
     method: 'post',
     data
   })
@@ -152,7 +152,7 @@ export function saveTestimonial(data) {
  */
 export function deleteTestimonial(id) {
   return request({
-    url: `/api/admin/site/testimonials/${id}`,
+    url: `/site/testimonials/${id}`,
     method: 'delete'
   })
 }
@@ -162,7 +162,7 @@ export function deleteTestimonial(id) {
  */
 export function getFaqList(params) {
   return request({
-    url: '/api/admin/site/faqs',
+    url: '/site/faqs',
     method: 'get',
     params
   })
@@ -173,7 +173,7 @@ export function getFaqList(params) {
  */
 export function saveFaq(data) {
   return request({
-    url: '/api/admin/site/faqs',
+    url: '/site/faqs',
     method: 'post',
     data
   })
@@ -184,7 +184,7 @@ export function saveFaq(data) {
  */
 export function deleteFaq(id) {
   return request({
-    url: `/api/admin/site/faqs/${id}`,
+    url: `/site/faqs/${id}`,
     method: 'delete'
   })
 }
@@ -194,7 +194,7 @@ export function deleteFaq(id) {
  */
 export function getTarotCardList(params) {
   return request({
-    url: '/api/admin/site/tarot-cards',
+    url: '/site/tarot-cards',
     method: 'get',
     params
   })
@@ -205,7 +205,7 @@ export function getTarotCardList(params) {
  */
 export function saveTarotCard(data) {
   return request({
-    url: '/api/admin/site/tarot-cards',
+    url: '/site/tarot-cards',
     method: 'post',
     data
   })
@@ -216,7 +216,7 @@ export function saveTarotCard(data) {
  */
 export function getSpreadList(params) {
   return request({
-    url: '/api/admin/site/spreads',
+    url: '/site/spreads',
     method: 'get',
     params
   })
@@ -227,7 +227,7 @@ export function getSpreadList(params) {
  */
 export function saveSpread(data) {
   return request({
-    url: '/api/admin/site/spreads',
+    url: '/site/spreads',
     method: 'post',
     data
   })
@@ -238,7 +238,7 @@ export function saveSpread(data) {
  */
 export function getQuestionList(params) {
   return request({
-    url: '/api/admin/site/questions',
+    url: '/site/questions',
     method: 'get',
     params
   })
@@ -249,7 +249,7 @@ export function getQuestionList(params) {
  */
 export function saveQuestion(data) {
   return request({
-    url: '/api/admin/site/questions',
+    url: '/site/questions',
     method: 'post',
     data
   })
@@ -260,7 +260,7 @@ export function saveQuestion(data) {
  */
 export function getFortuneTemplateList(params) {
   return request({
-    url: '/api/admin/site/fortune-templates',
+    url: '/site/fortune-templates',
     method: 'get',
     params
   })
@@ -271,7 +271,7 @@ export function getFortuneTemplateList(params) {
  */
 export function saveFortuneTemplate(data) {
   return request({
-    url: '/api/admin/site/fortune-templates',
+    url: '/site/fortune-templates',
     method: 'post',
     data
   })
@@ -282,62 +282,71 @@ export function saveFortuneTemplate(data) {
 /**
  * 获取SEO配置列表
  */
-export function getSeoConfigs() {
+export function getSeoConfigs(params, options = {}) {
   return request({
-    url: '/api/admin/site/seo/list',
-    method: 'get'
+    url: '/system/seo/configs',
+    method: 'get',
+    params,
+    ...options
   })
 }
+
 
 /**
  * 保存SEO配置
  */
-export function saveSeoConfig(data) {
+export function saveSeoConfig(data, options = {}) {
   return request({
-    url: '/api/admin/site/seo/save',
-    method: 'post',
-    data
+    url: data?.id ? `/system/seo/configs/${data.id}` : '/system/seo/configs',
+    method: data?.id ? 'put' : 'post',
+    data,
+    ...options
   })
 }
 
 /**
  * 删除SEO配置
  */
-export function deleteSeoConfig(route) {
+export function deleteSeoConfig(id, options = {}) {
   return request({
-    url: '/api/admin/site/seo/delete',
-    method: 'post',
-    data: { route }
+    url: `/system/seo/configs/${id}`,
+    method: 'delete',
+    ...options
   })
 }
 
 /**
  * 获取Robots配置
  */
-export function getRobotsConfig() {
+export function getRobotsConfig(options = {}) {
   return request({
-    url: '/api/admin/site/seo/robots',
-    method: 'get'
+    url: '/system/seo/robots',
+    method: 'get',
+    ...options
   })
 }
 
 /**
  * 保存Robots配置
  */
-export function saveRobotsConfig(content) {
+export function saveRobotsConfig(content, options = {}) {
   return request({
-    url: '/api/admin/site/seo/robots',
-    method: 'post',
-    data: { content }
+    url: '/system/seo/robots',
+    method: 'put',
+    data: { content },
+    ...options
   })
 }
 
 /**
- * 生成站点地图
+ * 提交站点地图
  */
-export function generateSitemap() {
+export function generateSitemap(data = { engine: 'baidu', type: 'sitemap' }, options = {}) {
   return request({
-    url: '/api/admin/site/seo/sitemap',
-    method: 'post'
+    url: '/system/seo/submit',
+    method: 'post',
+    data,
+    ...options
   })
 }
+

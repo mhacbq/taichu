@@ -1,0 +1,46 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - link "太初命理" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e13]: 太初命理
+      - generic [ref=e14]:
+        - link "首页" [ref=e15] [cursor=pointer]:
+          - /url: /
+        - link "八字排盘" [ref=e16] [cursor=pointer]:
+          - /url: /bazi
+        - link "塔罗占卜" [ref=e17] [cursor=pointer]:
+          - /url: /tarot
+        - link "六爻占卜" [ref=e18] [cursor=pointer]:
+          - /url: /liuyao
+        - link "八字合婚" [ref=e19] [cursor=pointer]:
+          - /url: /hehun
+        - link "每日运势" [ref=e20] [cursor=pointer]:
+          - /url: /daily
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - img [ref=e24]
+          - generic [ref=e26]: "95"
+        - button "用 用户7832" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: 用
+          - generic [ref=e30]: 用户7832
+          - img [ref=e32]
+  - main [ref=e34]
+  - contentinfo [ref=e35]:
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e39]: 太初命理
+        - paragraph [ref=e40]: 传承千年智慧，指引人生方向
+      - paragraph [ref=e42]: 迷茫不是软弱，而是成长的开始
+      - generic [ref=e43]:
+        - link "帮助中心" [ref=e44] [cursor=pointer]:
+          - /url: /help
+        - link "个人中心" [ref=e45] [cursor=pointer]:
+          - /url: /profile
+        - link "意见反馈" [ref=e46] [cursor=pointer]:
+          - /url: "#"
+        - link "关于我们" [ref=e47] [cursor=pointer]:
+          - /url: "#"
+      - paragraph [ref=e49]: © 2025 太初命理 - 愿你在迷茫中找到方向
+  - img [ref=e53] [cursor=pointer]

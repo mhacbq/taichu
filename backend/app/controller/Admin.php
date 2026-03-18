@@ -14,6 +14,8 @@ use app\model\TarotRecord;
 use app\service\AdminAuthService;
 use app\service\AdminStatsService;
 use app\service\ConfigService;
+use app\service\SchemaInspector;
+
 
 use think\Request;
 use think\facade\Log;
@@ -763,11 +765,110 @@ class Admin extends BaseController
         }
     }
 
+    protected function applyPointsRecordDirectionFilter($query, string $type, array $columns): void
+    {
+        $normalized = strtolower(trim($type));
+        $isReduce = in_array($normalized, ['reduce', 'sub', 'subtract', 'minus', 'consume'], true);
+
+        if (isset($columns['points'])) {
+            $query->where('points', $isReduce ? '<' : '>', 0);
+            return;
+        }
+
+        if (isset($columns['type'])) {
+            $query->whereIn('type', $isReduce
+                ? ['reduce', 'sub', 'subtract', 'minus', 'consume']
+                : ['add', 'income', 'increase', 'recharge', 'register', 'reward']);
+        }
+    }
+
+    protected function normalizePointsRecordRow(array $row, array $columns): array
+    {
+        $rawAmount = isset($row['amount']) ? (int) $row['amount'] : null;
+        $delta = isset($row['points']) ? (int) $row['points'] : ($rawAmount ?? 0);
+        $type = $this->normalizePointsRecordType($row, $delta);
+        if ($rawAmount === null) {
+            $rawAmount = abs($delta);
+        }
+
+        $reason = trim((string) (
+            $row['reason']
+            ?? $row['remark']
+            ?? $row['description']
+            ?? $row['action']
+            ?? $row['type']
+            ?? '积分变动'
+        ));
+
+        $balance = array_key_exists('balance', $row) && $row['balance'] !== null && $row['balance'] !== ''
+            ? (int) $row['balance']
+            : $this->estimatePointsRecordBalance($row, $columns);
+
+        return array_merge($row, [
+            'type' => $type,
+            'amount' => abs((int) $rawAmount),
+            'balance' => $balance,
+            'reason' => $reason !== '' ? $reason : '积分变动',
+            'created_at' => (string) ($row['created_at'] ?? ''),
+        ]);
+    }
+
+    protected function normalizePointsRecordType(array $row, int $delta): string
+    {
+        if ($delta < 0) {
+            return 'reduce';
+        }
+        if ($delta > 0) {
+            return 'add';
+        }
+
+        $normalized = strtolower(trim((string) ($row['type'] ?? '')));
+        return in_array($normalized, ['reduce', 'sub', 'subtract', 'minus', 'consume'], true) ? 'reduce' : 'add';
+    }
+
+    protected function estimatePointsRecordBalance(array $row, array $columns): ?int
+    {
+        if (!isset($row['user_id']) || !isset($columns['user_id']) || !isset($columns['points']) || !SchemaInspector::tableExists('tc_user')) {
+            return null;
+        }
+
+        $userId = (int) ($row['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $currentPoints = Db::table('tc_user')->where('id', $userId)->value('points');
+        if ($currentPoints === null) {
+            return null;
+        }
+
+        $laterQuery = Db::table('tc_points_record')->where('user_id', $userId);
+        $createdAt = trim((string) ($row['created_at'] ?? ''));
+        $recordId = (int) ($row['id'] ?? 0);
+
+        if ($createdAt !== '') {
+            $laterQuery->where(function ($query) use ($createdAt, $recordId) {
+                $query->where('created_at', '>', $createdAt);
+                if ($recordId > 0) {
+                    $query->whereOr(function ($orQuery) use ($createdAt, $recordId) {
+                        $orQuery->where('created_at', '=', $createdAt)->where('id', '>', $recordId);
+                    });
+                }
+            });
+        } elseif ($recordId > 0) {
+            $laterQuery->where('id', '>', $recordId);
+        }
+
+        $laterDelta = (int) ($laterQuery->sum('points') ?? 0);
+        return (int) $currentPoints - $laterDelta;
+    }
+
     /**
      * 调整用户积分
      */
     public function adjustPoints(Request $request)
     {
+
         // 检查权限
         if (!$this->checkPermission('points_adjust')) {
             return $this->error('无权限调整积分', 403);
@@ -3289,7 +3390,7 @@ class Admin extends BaseController
     {
         $userRows = User::order('created_at', 'desc')
             ->limit($limit)
-            ->field('id,nickname,username,created_at')
+            ->field($this->buildRealtimeUserFieldList(true))
             ->select()
             ->toArray();
 
@@ -3320,11 +3421,12 @@ class Admin extends BaseController
 
         $events = [];
         foreach ($userRows as $row) {
+            $sortTime = (string) ($row['created_at'] ?? $row['updated_at'] ?? '');
             $events[] = [
-                'time' => date('H:i:s', strtotime((string) ($row['created_at'] ?? 'now'))),
+                'time' => date('H:i:s', strtotime($sortTime ?: 'now')),
                 'action' => '新用户注册',
-                'user' => (string) ($row['nickname'] ?: ($row['username'] ?? ('用户#' . (int) ($row['id'] ?? 0)))),
-                'sort_time' => (string) ($row['created_at'] ?? ''),
+                'user' => $this->formatRealtimeUserName($row),
+                'sort_time' => $sortTime,
             ];
         }
         foreach ($baziRows as $row) {
@@ -3376,8 +3478,50 @@ class Admin extends BaseController
     {
         return Feedback::where(function ($query) {
             $query->where('status', 0)
-                ->whereOr('status', 'pending');
+                ->whereOr('status', '=', 'pending');
         });
+    }
+
+    /**
+     * 构建实时动态所需的用户字段列表
+     */
+    protected function buildRealtimeUserFieldList(bool $includeTimeField = false): string
+    {
+        $columns = SchemaInspector::getTableColumns('tc_user');
+        $fields = ['id'];
+
+        foreach (['nickname', 'username', 'phone'] as $field) {
+            if (isset($columns[$field])) {
+                $fields[] = $field;
+            }
+        }
+
+        if ($includeTimeField) {
+            foreach (['created_at', 'updated_at'] as $field) {
+                if (isset($columns[$field])) {
+                    $fields[] = $field;
+                    break;
+                }
+            }
+        }
+
+        return implode(',', array_values(array_unique($fields)));
+    }
+
+    /**
+     * 统一格式化实时动态中的用户显示名
+     */
+    protected function formatRealtimeUserName(array $row): string
+    {
+        $id = (int) ($row['id'] ?? 0);
+        foreach (['nickname', 'username', 'phone'] as $field) {
+            $value = trim((string) ($row[$field] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '用户#' . $id;
     }
 
     /**
@@ -3391,18 +3535,19 @@ class Admin extends BaseController
         }
 
         $rows = User::whereIn('id', $userIds)
-            ->field('id,nickname,username')
+            ->field($this->buildRealtimeUserFieldList())
             ->select()
             ->toArray();
 
         $result = [];
         foreach ($rows as $row) {
             $id = (int) ($row['id'] ?? 0);
-            $result[$id] = (string) (($row['nickname'] ?? '') ?: ($row['username'] ?? ('用户#' . $id)));
+            $result[$id] = $this->formatRealtimeUserName($row);
         }
 
         return $result;
     }
+
 
     /**
      * 导出用户数据

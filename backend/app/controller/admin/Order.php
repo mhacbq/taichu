@@ -6,6 +6,8 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\service\AdminStatsService;
+use app\service\SchemaInspector;
+use think\facade\Db;
 use think\facade\Log;
 
 /**
@@ -47,22 +49,31 @@ class Order extends BaseController
         }
 
         try {
-            $order = \think\facade\Db::table('tc_vip_order')
-                ->alias('o')
-                ->leftJoin('tc_user u', 'o.user_id = u.id')
+            $orderTable = $this->resolveFirstExistingTable(['tc_vip_order', 'vip_orders']);
+            if ($orderTable === null) {
+                return $this->error('订单不存在', 404);
+            }
+
+            $userTable = $this->resolveFirstExistingTable(['tc_user', 'user']);
+            $query = Db::table($orderTable)->alias('o');
+            if ($userTable !== null && SchemaInspector::tableExists($userTable)) {
+                $query->leftJoin($userTable . ' u', 'o.user_id = u.id');
+            }
+
+            $fields = ['o.*'];
+            $fields[] = $userTable !== null && !empty(SchemaInspector::getTableColumns($userTable)['nickname']) ? 'u.nickname' : "'' as nickname";
+            $fields[] = $userTable !== null && !empty(SchemaInspector::getTableColumns($userTable)['phone']) ? 'u.phone' : "'' as phone";
+
+            $order = $query
                 ->where('o.id', $id)
-                ->field([
-                    'o.*',
-                    'u.nickname',
-                    'u.phone',
-                ])
+                ->field($fields)
                 ->find();
 
             if (!$order) {
                 return $this->error('订单不存在', 404);
             }
 
-            return $this->success($order);
+            return $this->success($this->normalizeVipOrderPayload($order));
         } catch (\Throwable $e) {
             Log::error('后台获取订单详情失败', [
                 'admin_id' => $this->getAdminId(),
@@ -119,12 +130,20 @@ class Order extends BaseController
         }
 
         try {
-            $packages = \think\facade\Db::table('tc_vip_package')
-                ->where('status', 1)
-                ->order('sort_order', 'ASC')
-                ->select();
+            $packageTable = $this->resolveFirstExistingTable(['tc_vip_package', 'vip_package', 'vip_packages']);
+            if ($packageTable === null) {
+                return $this->success([]);
+            }
 
-            return $this->success($packages);
+            $query = Db::table($packageTable)->order('id', 'ASC');
+            if (!empty(SchemaInspector::getTableColumns($packageTable)['status'])) {
+                $query->where('status', 1);
+            }
+            if (!empty(SchemaInspector::getTableColumns($packageTable)['sort_order'])) {
+                $query->order('sort_order', 'ASC');
+            }
+
+            return $this->success($query->select());
         } catch (\Throwable $e) {
             Log::error('后台获取VIP套餐失败', [
                 'admin_id' => $this->getAdminId(),
@@ -181,5 +200,56 @@ class Order extends BaseController
             ]);
             return $this->error('保存失败，请稍后重试', 500);
         }
+    }
+
+    protected function resolveFirstExistingTable(array $tables): ?string
+    {
+        foreach ($tables as $table) {
+            if (SchemaInspector::tableExists((string) $table)) {
+                return (string) $table;
+            }
+        }
+
+        return null;
+    }
+
+    protected function normalizeVipOrderPayload(array $row): array
+    {
+        $payAmount = (float) ($row['pay_amount'] ?? ($row['amount'] ?? 0));
+        $packagePrice = (float) ($row['package_price'] ?? ($row['amount'] ?? 0));
+        $packageName = trim((string) ($row['package_name'] ?? ''));
+        if ($packageName === '' && isset($row['duration']) && (int) $row['duration'] > 0) {
+            $packageName = (int) $row['duration'] . '天VIP';
+        }
+
+        return array_merge($row, [
+            'nickname' => (string) ($row['nickname'] ?? ''),
+            'phone' => (string) ($row['phone'] ?? ''),
+            'package_name' => $packageName,
+            'package_price' => round($packagePrice, 2),
+            'pay_amount' => round($payAmount, 2),
+            'status' => $this->normalizeVipOrderStatus($row['status'] ?? 0),
+            'pay_time' => (string) ($row['pay_time'] ?? ''),
+            'refund_time' => (string) ($row['refund_time'] ?? ''),
+            'refund_amount' => round((float) ($row['refund_amount'] ?? 0), 2),
+            'refund_reason' => (string) ($row['refund_reason'] ?? ''),
+            'refund_no' => (string) ($row['refund_no'] ?? ''),
+            'transaction_id' => (string) (($row['transaction_id'] ?? '') ?: ($row['pay_trade_no'] ?? '')),
+            'platform' => (string) (($row['platform'] ?? '') ?: ($row['pay_type'] ?? 'wechat')),
+        ]);
+    }
+
+    protected function normalizeVipOrderStatus(mixed $status): int
+    {
+        if (is_numeric($status)) {
+            return (int) $status;
+        }
+
+        return match (strtolower(trim((string) $status))) {
+            'paid', 'success', 'completed' => 1,
+            'cancelled', 'canceled', 'closed' => 2,
+            'refunded' => 3,
+            default => 0,
+        };
     }
 }

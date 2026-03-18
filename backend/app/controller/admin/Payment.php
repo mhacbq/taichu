@@ -612,9 +612,13 @@ class Payment extends BaseController
             $totalAmount = (float) ((clone $paidBaseQuery)->sum('amount') ?? 0);
             $totalPoints = (int) ((clone $paidBaseQuery)->sum('points') ?? 0);
             $orderCount = (int) (clone $paidBaseQuery)->count();
-            $userCount = (int) (clone $paidBaseQuery)
-                ->distinct(true)
-                ->count('user_id');
+            $rechargeOrderColumns = SchemaInspector::getTableColumns('tc_recharge_order');
+            $paidUserIds = isset($rechargeOrderColumns['user_id'])
+                ? (clone $paidBaseQuery)->column('user_id')
+                : [];
+            $userCount = count(array_unique(array_filter(array_map('intval', (array) $paidUserIds), static fn (int $userId): bool => $userId > 0)));
+
+
 
             $pendingBaseQuery = Db::table('tc_recharge_order')
                 ->where('created_at', '>=', $startDate . ' 00:00:00')

@@ -2,6 +2,131 @@
 
 ## 最近更新
 
+### 后台运营巡检（第二十八轮自动化执行，2026-03-18）
+
+- 本轮先读取 `.codebuddy/automations/30-3/memory.md` 与 `TODO.md`，随后直接复用当前本地运行中的独立后台 `http://localhost:3001/login`，使用默认账号 `admin / admin123` 完成真实登录，并按运营路径实测 Dashboard、用户管理、黄历/知识库/神煞/SEO、订单、积分、系统配置与公告页面。
+- 本轮未修改业务代码；已更新 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`，并新增 5 张运行态截图：登录成功页、Dashboard、用户搜索失败、黄历失败、知识库分类乱码。
+- 已将 **3 个高优先级、2 个中优先级、1 个低优先级问题** 追加到 `TODO.md` 顶部待处理区。
+
+#### 关键发现
+1. **登录链路已恢复，但多条运营页面仍会把成功请求误判为失败态**
+   - `POST /api/admin/auth/login` 与 `GET /api/admin/auth/info` 均返回 200，默认管理员可以稳定进入后台；但黄历管理 `/content/almanac`、SEO 管理 `/site/seo`、VIP 订单 `/payment/vip-orders` 会在真实登录后直接进入“加载失败”只读态。
+   - 浏览器网络里对应的 `/api/admin/content/almanac`、`/api/admin/system/seo/*`、`/api/admin/order` 请求 HTTP 状态都已是 200，说明当前更像是前端成功判断/响应结构兼容问题，而不是入口不可达。
+2. **用户精细化运营链路仍不稳定**
+   - 用户列表首屏能正常出数，但输入“用户8001”执行搜索后会整页落入“用户列表加载失败”；同一时刻网络里的 `GET /api/admin/users?username=...` 已返回 200。
+   - 用户详情 `/user/detail/3` 已可正常打开，但“手动调积分”提交最小化 `+1` 后连续提示“调整积分失败，请稍后重试”；对应 `POST /api/admin/points/adjust` 的 HTTP 请求仍是 200，人工补偿/扣减积分链路没有真正打通。
+3. **知识库与积分审计页仍存在运营可用性缺口**
+   - 知识库分类表可以渲染出 5 个分类，但中文名称显示为 `å…«å—åŸºç¡€` 这类乱码，运营无法准确辨认分类归属。
+   - 积分记录页能加载 46 条记录，但“变动数量 / 变动后余额 / 变动原因”三列大量为空或仅显示 `-`，审计信息不足。
+4. **本轮确认可正常进入的模块**
+   - Dashboard 主看板、用户列表首屏、用户详情基础信息、知识库文章页、神煞列表、充值订单页、积分记录页、系统基础配置页、系统公告页均可真实打开。
+   - 其中 Dashboard 当前只有用户量、活跃与八字/塔罗使用量卡片，未直接呈现订单数、收入等经营指标，已作为低优先级建议补写到 `TODO.md`。
+
+#### 运行态证据
+- 登录成功截图：
+  ![后台登录成功第二十八轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-round30-3-current.png)
+- Dashboard 实测截图：
+  ![后台 Dashboard 第二十八轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-dashboard-round30-3-latest.png)
+- 用户搜索失败截图：
+  ![后台用户搜索失败第二十八轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-user-search-failure-round30-3.png)
+- 黄历失败态截图：
+  ![后台黄历失败第二十八轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-almanac-failure-round30-3.png)
+- 知识库分类乱码截图：
+  ![后台知识库乱码第二十八轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-knowledge-garbled-round30-3.png)
+- 关键网络结果：
+  - `POST http://localhost:3001/api/admin/auth/login` => `200 OK`，登录后跳转 `/dashboard`
+  - `GET http://localhost:3001/api/admin/auth/info` => `200 OK`
+  - `GET http://localhost:3001/api/admin/users?username=%E7%94%A8%E6%88%B78001&phone=&status=&page=1&pageSize=20` => `200 OK`，页面仍进入失败态
+  - `POST http://localhost:3001/api/admin/points/adjust` => `200 OK`，页面仍提示“调整积分失败，请稍后重试”
+  - `GET http://localhost:3001/api/admin/content/almanac?date=&page=1&limit=20` => `200 OK`，页面仍进入失败态
+  - `GET http://localhost:3001/api/admin/system/seo/configs?page=1&pageSize=10` => `200 OK`
+  - `GET http://localhost:3001/api/admin/system/seo/robots` => `200 OK`，SEO 页仍进入失败态
+  - `GET http://localhost:3001/api/admin/order?page=1&page_size=20` => `200 OK`，VIP 订单页仍进入失败态
+
+#### 验证说明
+- 已真实验证：登录页可访问、默认管理员账号可完成登录、登录后自动跳转到 `/dashboard`。
+- 已通过浏览器页面验证：Dashboard 可打开；用户列表首屏/用户详情/神煞/知识库/充值订单/积分记录/系统设置/公告可进入；用户搜索、手动调积分、黄历、SEO、VIP 订单存在本轮新增问题。
+- 已通过网络日志验证：本轮多数故障不再是入口 403/500，而是“HTTP 200 但页面误判失败”或“HTTP 200 但操作未被前端认作成功”的运行态问题。
+
+### 后台运营巡检（第二十七轮自动化执行，2026-03-18）
+
+- 本轮先读取 `.codebuddy/automations/30-3/memory.md` 与 `TODO.md`，随后重建了 `backend` 容器到当前仓库代码，并在独立后台 `http://localhost:3001/login` 用默认账号 `admin / admin123` 完成真实登录；登录后继续按运营路径实测 Dashboard、用户管理、内容管理、订单管理、积分管理与系统配置。
+- 本轮未修改业务代码，只更新了 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`，并新增 3 张本轮运行态截图：Dashboard、用户列表、充值订单页。
+- 已把 **2 个高优先级问题、1 个中优先级问题** 追加到 `TODO.md` 顶部待处理区，避免与历史已标记“已修复”的巡检记录混淆。
+
+#### 关键发现
+1. **登录链路在当前仓库代码下已恢复，但 Dashboard 核心统计接口仍未恢复**
+   - `POST /api/admin/auth/login` 与 `GET /api/admin/auth/info` 现均返回 200，说明默认管理员与登录后跳转/鉴权链路已经打通；但 `/api/admin/dashboard/statistics`、`/api/admin/dashboard/trend` 仍然 500，首页直接落到“运营看板加载失败”。
+2. **用户管理主链路仍被页面失败态阻断**
+   - `GET /api/admin/users?...` 与 `GET /api/admin/users/1` 从浏览器网络看都已发出请求，但 `user/list`、`user/detail/1` 页面仍统一进入“加载失败”只读态，导致用户搜索、详情查看、列表内调积分都没法继续用。
+3. **充值订单页存在“列表能开、统计失真”的半故障状态**
+   - `GET /api/admin/payment/orders` 可访问，但 `GET /api/admin/payment/stats` 仍 500；页面顶部统计卡片继续展示默认 0，运营很容易把接口故障误读成当天没有订单或收入。
+4. **内容管理与系统配置的大部分基础入口已恢复可打开**
+   - 黄历、知识库文章、神煞、SEO、系统设置、系统公告、积分记录、积分调整页面本轮均可正常进入，且核心列表/表单结构已经渲染；当前暂未复现上一轮那种一进页就直接 403/500 的整页阻断。
+
+#### 运行态证据
+- Dashboard 错误态截图：
+  ![后台 Dashboard 第二十七轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-dashboard-round30-3-recheck.png)
+- 用户列表失败态截图：
+  ![后台用户列表第二十七轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-user-list-round30-3-recheck.png)
+- 充值订单页统计异常截图：
+  ![后台充值订单第二十七轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-payment-orders-round30-3-recheck.png)
+- 关键网络结果：
+  - `POST http://localhost:3001/api/admin/auth/login` => `200 OK`
+  - `GET http://localhost:3001/api/admin/auth/info` => `200 OK`
+  - `GET http://localhost:3001/api/admin/dashboard/statistics` => `500 Internal Server Error`
+  - `GET http://localhost:3001/api/admin/dashboard/trend?days=7` => `500 Internal Server Error`
+  - `GET http://localhost:3001/api/admin/users?username=&phone=&status=&page=1&pageSize=20` => 已命中接口，但页面仍进入失败态
+  - `GET http://localhost:3001/api/admin/users/1` => 已命中接口，但详情页仍进入失败态
+  - `GET http://localhost:3001/api/admin/payment/orders?page=1&limit=20` => `200 OK`
+  - `GET http://localhost:3001/api/admin/payment/stats` => `500 Internal Server Error`
+
+#### 验证说明
+- 已真实验证：登录页可访问、默认管理员可完成登录、登录后自动跳转到 `/dashboard`。
+- 已通过浏览器页面验证：Dashboard 显示整页错误态；用户列表与用户详情显示只读失败态；充值订单页列表可打开但统计卡片仍显示 0；黄历、知识库、神煞、SEO、系统设置、公告、积分记录、积分调整页面均可打开。
+- 已通过接口/网络日志验证：当前最明显的运行态故障集中在 Dashboard 统计/趋势、用户模块页面消费链路、充值订单统计接口。
+
+### 前端修复批次（15-2 自动化执行，2026-03-18）
+
+
+- 本轮先读取 `.codebuddy/automations/15-2/memory.md` 与 `TODO.md`，随后聚焦当前仍未清理的前端/Vue 待办，完成了 **6 个前端问题收尾/修复**：1) `/bazi` 关键路由改为同步加载，并为动态 chunk 失败增加自动刷新兜底；2) `Hehun.vue` 增加 `pricingLoading / pricingError / canUnlockPremium`，价格未就绪时不再允许解锁；3) `GuideModal.vue` 改为可关闭、可“稍后再看”的非阻断引导，且不再自动跳登录；4) `Home.vue` + `Login.vue` 为“注册领积分”补齐 `intent=register` 承接文案；5) `Tarot.vue` 把牌阵/话题/模板从 `div@click` 改成可聚焦按钮并补齐可访问性反馈；6) 首页服务卡片名称统一回“八字排盘 / 塔罗占卜 / 每日运势”。
+- 已同步从 `TODO.md` 移除本轮已完成项；同时复核确认 `admin/src/views/user/detail.vue` 的失败态与只读保护已在现有代码落地，因此一并清理了这条遗留前端待办。
+- 本轮提交只包含 `frontend/src/router/index.js`、`frontend/src/components/GuideModal.vue`、`frontend/src/views/Home.vue`、`frontend/src/views/Login.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/views/Hehun.vue`、`TODO.md`；未把工作区其他未关联改动一并带入提交。
+
+#### 验证情况
+- `npm run build --prefix frontend`：通过；仍只有既有大 chunk warning，没有新增编译错误。
+- `git diff --check -- frontend/src/router/index.js frontend/src/components/GuideModal.vue frontend/src/views/Home.vue frontend/src/views/Login.vue frontend/src/views/Tarot.vue frontend/src/views/Hehun.vue TODO.md`：通过。
+- `read_lints`：上述 6 个前端文件均为 0 条新增诊断。
+- Git：提交并推送 `7c0240d "fix-frontend-multiple-issues-20260318-1015"` 到 `origin/master`。
+- 本轮未新增页面截图或录屏；改动集中在交互逻辑、路由稳定性与可访问性收尾。
+
+### 后台运营巡检（第二十五轮自动化执行，2026-03-18）
+
+- 本轮先读取 `.codebuddy/automations/30-3/memory.md`，再按运营真实路径打开独立后台 `http://localhost:3001/login`，使用默认账号 `admin / admin123` 发起真实登录；浏览器提交与直连 `8080` 登录接口都返回“管理员账号表不存在，请先执行 `database/20260317_create_admin_users_table.sql`”。
+- 在登录链路仍被阻断的情况下，我继续结合当前后台运行态、后台路由/页面实现与已注册后端接口，复核 Dashboard、用户管理、内容管理、订单管理、系统配置的可运营性；本轮未修改业务代码，仅更新 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`，并新增 1 张登录失败截图。
+- 已将 **1 个高优先级问题、2 个中优先级问题** 写入 `TODO.md` 顶部的 **《第二十五轮后台运营检查报告》**。
+
+#### 关键发现
+1. **知识库文章管理仍没有后台入口**
+   - `backend/route/admin.php` 已注册 `/api/admin/knowledge/articles`、`/api/admin/knowledge/categories` 等接口，但 `admin/src/router/index.js` 与 `admin/src/views/` 里仍没有对应的文章/分类管理页面与菜单入口，运营无法在后台实际发布或维护命理文章。
+2. **Dashboard 仍会用默认空态掩盖加载失败**
+   - `admin/src/views/dashboard/index.vue` 通过 `Promise.allSettled` 吞掉局部失败，接口异常时页面继续保留默认 `0`、`尚未加载` 与空列表，容易让运营把异常误读成真实经营数据。
+3. **多个核心列表页仍缺页内错误态**
+   - `admin/src/views/user/list.vue`、`admin/src/views/content/almanac.vue`、`admin/src/views/content/shensha.vue`、`admin/src/views/payment/orders.vue`、`admin/src/views/payment/vip-orders.vue` 在加载失败时主要依赖 toast 报错，页面主体仍会显示空表或旧数据，没有像系统配置页那样给出显式错误态与只读保护。
+
+#### 运行态证据
+- 登录失败截图：
+  ![后台登录页第二十五轮](c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin-login-round30-3.png)
+- 页面实测：浏览器打开 `http://localhost:3001/login` 成功，但提交默认账号后页面告警“管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql”。
+- 接口实测：`curl http://localhost:8080/api/health` 返回 `{"code":200,...}`；`curl -X POST http://localhost:8080/api/admin/auth/login -d username=admin -d password=admin123` 返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql"}`。
+- 运行态与代码交叉核验：数据库当前存在 `tc_admin_role`、`tc_admin_user_role` 等权限表，但 `tc_admin/admin` 管理员主表仍缺失；后台前端路由中也未搜索到 `knowledge` / `article` 相关入口。
+
+#### 验证说明
+- 已真实验证：后台登录页可访问，但默认管理员账号无法完成登录，当前无法以真实后台身份继续完成深层写操作链路。
+- 已通过代码/路由核验：知识库后端接口存在，但后台 UI 仍无运营入口；Dashboard、用户/内容/订单多个核心页面仍缺统一错误态与只读保护。
+
+
+
 ### 代码维护批次（automation-2，2026-03-18）
 - 本轮先读取 `.codebuddy/automations/automation-2/memory.md`，随后按代码维护自动化要求处理了 3 个 `[代码]` 优化点，优先覆盖前端工具层 lint / 运行时问题、埋点敏感信息收敛，以及后端 AI 服务日志与重复调用逻辑整理。
 - 关键改动文件：`frontend/src/utils/requestCache.js`、`frontend/src/utils/analytics.js`、`backend/app/service/AiService.php`、`TODO.md`。

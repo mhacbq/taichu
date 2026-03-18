@@ -1,0 +1,436 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - link "太初管理后台" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - menubar [ref=e10]:
+      - menuitem "仪表盘" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 仪表盘
+      - menuitem "用户管理" [ref=e18]:
+        - generic [ref=e19] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e23]: 用户管理
+          - img [ref=e25]
+      - menuitem "内容管理" [ref=e28]:
+        - generic [ref=e29] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: 内容管理
+          - img [ref=e35]
+      - menuitem "网站内容" [ref=e38]:
+        - generic [ref=e39] [cursor=pointer]:
+          - img [ref=e41]
+          - generic [ref=e43]: 网站内容
+          - img [ref=e45]
+      - menuitem "编辑页面" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 编辑页面
+      - menuitem "积分管理" [ref=e51]:
+        - generic [ref=e52] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e58]: 积分管理
+          - img [ref=e60]
+      - menuitem "支付管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e70]: 支付管理
+          - img [ref=e72]
+      - menuitem "短信管理" [ref=e75]:
+        - generic [ref=e76] [cursor=pointer]:
+          - img [ref=e78]
+          - generic [ref=e81]: 短信管理
+          - img [ref=e83]
+      - menuitem "反馈管理" [ref=e86]:
+        - generic [ref=e87] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]: 反馈管理
+          - img [ref=e94]
+      - menuitem "反作弊系统" [ref=e97]:
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e102]: 反作弊系统
+          - img [ref=e104]
+      - menuitem "AI管理" [ref=e107]:
+        - generic [ref=e108] [cursor=pointer]:
+          - img [ref=e110]
+          - generic [ref=e113]: AI管理
+          - img [ref=e115]
+      - menuitem "系统设置" [ref=e118]:
+        - generic [ref=e119] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e123]: 系统设置
+          - img [ref=e125]
+      - menuitem "日志管理" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 日志管理
+          - img [ref=e135]
+      - menuitem "任务调度" [ref=e138]:
+        - generic [ref=e139] [cursor=pointer]:
+          - img [ref=e141]
+          - generic [ref=e145]: 任务调度
+          - img [ref=e147]
+  - generic [ref=e149]:
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153] [cursor=pointer]:
+            - img
+          - navigation "面包屑" [ref=e155]:
+            - generic [ref=e156]:
+              - link "仪表盘" [ref=e157]
+              - text: /
+            - generic [ref=e158]:
+              - link "用户管理" [ref=e159]
+              - text: /
+            - link "用户列表" [ref=e161]
+        - generic [ref=e162]:
+          - generic [ref=e163] [cursor=pointer]:
+            - img
+          - button "admin" [ref=e166] [cursor=pointer]:
+            - generic [ref=e168]: admin
+            - img [ref=e170]
+      - link "用户列表" [ref=e176] [cursor=pointer]:
+        - /url: /user/list
+        - text: 用户列表
+        - img [ref=e178]
+    - generic [ref=e181]:
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - generic [ref=e186]: 用户名
+          - textbox "用户名" [ref=e190]:
+            - /placeholder: 请输入用户名
+        - generic [ref=e191]:
+          - generic [ref=e192]: 手机号
+          - textbox "手机号" [ref=e196]:
+            - /placeholder: 请输入手机号
+        - generic [ref=e197]:
+          - generic [ref=e198]: 状态
+          - generic [ref=e201] [cursor=pointer]:
+            - generic:
+              - combobox "状态" [ref=e203]
+              - generic: 全部状态
+            - img [ref=e206]
+        - generic [ref=e208]:
+          - generic [ref=e209]: 注册时间
+          - generic [ref=e211]:
+            - img [ref=e213]
+            - combobox "注册时间" [ref=e215]
+            - generic [ref=e216]: 至
+            - combobox "结束日期" [ref=e217]
+        - generic [ref=e219]:
+          - button "搜索" [ref=e220] [cursor=pointer]:
+            - generic [ref=e221]: 搜索
+          - button "重置" [ref=e222] [cursor=pointer]:
+            - generic [ref=e223]: 重置
+      - generic [ref=e225]:
+        - button "导出" [ref=e227] [cursor=pointer]:
+          - generic [ref=e228]:
+            - img [ref=e230]
+            - text: 导出
+        - button "批量启用" [disabled] [ref=e233]:
+          - generic [ref=e234]: 批量启用
+        - button "批量禁用" [disabled] [ref=e236]:
+          - generic [ref=e237]: 批量禁用
+      - generic [ref=e239]:
+        - generic [ref=e241]:
+          - table [ref=e243]:
+            - rowgroup [ref=e256]:
+              - 'row "选择所有行 # ID 用户信息 手机号 积分 按 积分 排序 八字次数 塔罗次数 注册时间 状态 操作" [ref=e257]':
+                - columnheader "选择所有行" [ref=e258]:
+                  - generic "选择所有行" [ref=e260] [cursor=pointer]:
+                    - generic [ref=e261]:
+                      - checkbox "选择所有行"
+                - columnheader "#" [ref=e263]:
+                  - generic [ref=e264]: "#"
+                - columnheader "ID" [ref=e265]:
+                  - generic [ref=e266]: ID
+                - columnheader "用户信息" [ref=e267]:
+                  - generic [ref=e268]: 用户信息
+                - columnheader "手机号" [ref=e269]:
+                  - generic [ref=e270]: 手机号
+                - columnheader "积分 按 积分 排序" [ref=e271] [cursor=pointer]:
+                  - generic [ref=e272]:
+                    - text: 积分
+                    - button "按 积分 排序" [ref=e273]
+                - columnheader "八字次数" [ref=e276]:
+                  - generic [ref=e277]: 八字次数
+                - columnheader "塔罗次数" [ref=e278]:
+                  - generic [ref=e279]: 塔罗次数
+                - columnheader "注册时间" [ref=e280]:
+                  - generic [ref=e281]: 注册时间
+                - columnheader "状态" [ref=e282]:
+                  - generic [ref=e283]: 状态
+                - columnheader "操作" [ref=e284]:
+                  - generic [ref=e285]: 操作
+          - table [ref=e290]:
+            - rowgroup [ref=e303]:
+              - row "选择当前行 1 7 用户8006 13800138006 13800138006 20 0 0 2026-03-18 02:58:30 查看 调积分 更多" [ref=e304]:
+                - cell "选择当前行" [ref=e305]:
+                  - generic "选择当前行" [ref=e307] [cursor=pointer]:
+                    - generic [ref=e308]:
+                      - checkbox "选择当前行"
+                - cell "1" [ref=e310]:
+                  - generic [ref=e312]: "1"
+                - cell "7" [ref=e313]:
+                  - generic [ref=e314]: "7"
+                - cell "用户8006 13800138006" [ref=e315]:
+                  - generic [ref=e319]:
+                    - generic [ref=e320]: 用户8006
+                    - generic [ref=e321]: "13800138006"
+                - cell "13800138006" [ref=e322]:
+                  - generic [ref=e323]: "13800138006"
+                - cell "20" [ref=e324]:
+                  - generic [ref=e327]: "20"
+                - cell "0" [ref=e328]:
+                  - generic [ref=e329]: "0"
+                - cell "0" [ref=e330]:
+                  - generic [ref=e331]: "0"
+                - cell "2026-03-18 02:58:30" [ref=e332]:
+                  - generic [ref=e333]: 2026-03-18 02:58:30
+                - cell [ref=e334]:
+                  - generic [ref=e336]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e339]:
+                  - generic [ref=e340]:
+                    - button "查看" [ref=e341] [cursor=pointer]:
+                      - generic [ref=e342]: 查看
+                    - button "调积分" [ref=e343] [cursor=pointer]:
+                      - generic [ref=e344]: 调积分
+                    - button "更多" [ref=e346] [cursor=pointer]:
+                      - generic [ref=e347]:
+                        - text: 更多
+                        - img [ref=e349]
+              - row "选择当前行 2 6 用户8004 13800138004 13800138004 100 0 0 2026-03-18 02:55:52 查看 调积分 更多" [ref=e351]:
+                - cell "选择当前行" [ref=e352]:
+                  - generic "选择当前行" [ref=e354] [cursor=pointer]:
+                    - generic [ref=e355]:
+                      - checkbox "选择当前行"
+                - cell "2" [ref=e357]:
+                  - generic [ref=e359]: "2"
+                - cell "6" [ref=e360]:
+                  - generic [ref=e361]: "6"
+                - cell "用户8004 13800138004" [ref=e362]:
+                  - generic [ref=e366]:
+                    - generic [ref=e367]: 用户8004
+                    - generic [ref=e368]: "13800138004"
+                - cell "13800138004" [ref=e369]:
+                  - generic [ref=e370]: "13800138004"
+                - cell "100" [ref=e371]:
+                  - generic [ref=e374]: "100"
+                - cell "0" [ref=e375]:
+                  - generic [ref=e376]: "0"
+                - cell "0" [ref=e377]:
+                  - generic [ref=e378]: "0"
+                - cell "2026-03-18 02:55:52" [ref=e379]:
+                  - generic [ref=e380]: 2026-03-18 02:55:52
+                - cell [ref=e381]:
+                  - generic [ref=e383]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e386]:
+                  - generic [ref=e387]:
+                    - button "查看" [ref=e388] [cursor=pointer]:
+                      - generic [ref=e389]: 查看
+                    - button "调积分" [ref=e390] [cursor=pointer]:
+                      - generic [ref=e391]: 调积分
+                    - button "更多" [ref=e393] [cursor=pointer]:
+                      - generic [ref=e394]:
+                        - text: 更多
+                        - img [ref=e396]
+              - row "选择当前行 3 5 用户8003 13800138003 13800138003 100 0 0 2026-03-18 02:55:27 查看 调积分 更多" [ref=e398]:
+                - cell "选择当前行" [ref=e399]:
+                  - generic "选择当前行" [ref=e401] [cursor=pointer]:
+                    - generic [ref=e402]:
+                      - checkbox "选择当前行"
+                - cell "3" [ref=e404]:
+                  - generic [ref=e406]: "3"
+                - cell "5" [ref=e407]:
+                  - generic [ref=e408]: "5"
+                - cell "用户8003 13800138003" [ref=e409]:
+                  - generic [ref=e413]:
+                    - generic [ref=e414]: 用户8003
+                    - generic [ref=e415]: "13800138003"
+                - cell "13800138003" [ref=e416]:
+                  - generic [ref=e417]: "13800138003"
+                - cell "100" [ref=e418]:
+                  - generic [ref=e421]: "100"
+                - cell "0" [ref=e422]:
+                  - generic [ref=e423]: "0"
+                - cell "0" [ref=e424]:
+                  - generic [ref=e425]: "0"
+                - cell "2026-03-18 02:55:27" [ref=e426]:
+                  - generic [ref=e427]: 2026-03-18 02:55:27
+                - cell [ref=e428]:
+                  - generic [ref=e430]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e433]:
+                  - generic [ref=e434]:
+                    - button "查看" [ref=e435] [cursor=pointer]:
+                      - generic [ref=e436]: 查看
+                    - button "调积分" [ref=e437] [cursor=pointer]:
+                      - generic [ref=e438]: 调积分
+                    - button "更多" [ref=e440] [cursor=pointer]:
+                      - generic [ref=e441]:
+                        - text: 更多
+                        - img [ref=e443]
+              - row "选择当前行 4 4 用户8002 13800138002 13800138002 85 0 0 2026-03-17 19:49:07 查看 调积分 更多" [ref=e445]:
+                - cell "选择当前行" [ref=e446]:
+                  - generic "选择当前行" [ref=e448] [cursor=pointer]:
+                    - generic [ref=e449]:
+                      - checkbox "选择当前行"
+                - cell "4" [ref=e451]:
+                  - generic [ref=e453]: "4"
+                - cell "4" [ref=e454]:
+                  - generic [ref=e455]: "4"
+                - cell "用户8002 13800138002" [ref=e456]:
+                  - generic [ref=e460]:
+                    - generic [ref=e461]: 用户8002
+                    - generic [ref=e462]: "13800138002"
+                - cell "13800138002" [ref=e463]:
+                  - generic [ref=e464]: "13800138002"
+                - cell "85" [ref=e465]:
+                  - generic [ref=e468]: "85"
+                - cell "0" [ref=e469]:
+                  - generic [ref=e470]: "0"
+                - cell "0" [ref=e471]:
+                  - generic [ref=e472]: "0"
+                - cell "2026-03-17 19:49:07" [ref=e473]:
+                  - generic [ref=e474]: 2026-03-17 19:49:07
+                - cell [ref=e475]:
+                  - generic [ref=e477]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e480]:
+                  - generic [ref=e481]:
+                    - button "查看" [ref=e482] [cursor=pointer]:
+                      - generic [ref=e483]: 查看
+                    - button "调积分" [ref=e484] [cursor=pointer]:
+                      - generic [ref=e485]: 调积分
+                    - button "更多" [ref=e487] [cursor=pointer]:
+                      - generic [ref=e488]:
+                        - text: 更多
+                        - img [ref=e490]
+              - row "选择当前行 5 3 用户8001 13800138001 13800138001 50 2 0 2026-03-17 19:46:40 查看 调积分 更多" [ref=e492]:
+                - cell "选择当前行" [ref=e493]:
+                  - generic "选择当前行" [ref=e495] [cursor=pointer]:
+                    - generic [ref=e496]:
+                      - checkbox "选择当前行"
+                - cell "5" [ref=e498]:
+                  - generic [ref=e500]: "5"
+                - cell "3" [ref=e501]:
+                  - generic [ref=e502]: "3"
+                - cell "用户8001 13800138001" [ref=e503]:
+                  - generic [ref=e507]:
+                    - generic [ref=e508]: 用户8001
+                    - generic [ref=e509]: "13800138001"
+                - cell "13800138001" [ref=e510]:
+                  - generic [ref=e511]: "13800138001"
+                - cell "50" [ref=e512]:
+                  - generic [ref=e515]: "50"
+                - cell "2" [ref=e516]:
+                  - generic [ref=e517]: "2"
+                - cell "0" [ref=e518]:
+                  - generic [ref=e519]: "0"
+                - cell "2026-03-17 19:46:40" [ref=e520]:
+                  - generic [ref=e521]: 2026-03-17 19:46:40
+                - cell [ref=e522]:
+                  - generic [ref=e524]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e527]:
+                  - generic [ref=e528]:
+                    - button "查看" [ref=e529] [cursor=pointer]:
+                      - generic [ref=e530]: 查看
+                    - button "调积分" [ref=e531] [cursor=pointer]:
+                      - generic [ref=e532]: 调积分
+                    - button "更多" [ref=e534] [cursor=pointer]:
+                      - generic [ref=e535]:
+                        - text: 更多
+                        - img [ref=e537]
+              - row "选择当前行 6 2 用户8000 13800138000 13800138000 30 3 0 2026-03-17 18:08:54 查看 调积分 更多" [ref=e539]:
+                - cell "选择当前行" [ref=e540]:
+                  - generic "选择当前行" [ref=e542] [cursor=pointer]:
+                    - generic [ref=e543]:
+                      - checkbox "选择当前行"
+                - cell "6" [ref=e545]:
+                  - generic [ref=e547]: "6"
+                - cell "2" [ref=e548]:
+                  - generic [ref=e549]: "2"
+                - cell "用户8000 13800138000" [ref=e550]:
+                  - generic [ref=e554]:
+                    - generic [ref=e555]: 用户8000
+                    - generic [ref=e556]: "13800138000"
+                - cell "13800138000" [ref=e557]:
+                  - generic [ref=e558]: "13800138000"
+                - cell "30" [ref=e559]:
+                  - generic [ref=e562]: "30"
+                - cell "3" [ref=e563]:
+                  - generic [ref=e564]: "3"
+                - cell "0" [ref=e565]:
+                  - generic [ref=e566]: "0"
+                - cell "2026-03-17 18:08:54" [ref=e567]:
+                  - generic [ref=e568]: 2026-03-17 18:08:54
+                - cell [ref=e569]:
+                  - generic [ref=e571]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e574]:
+                  - generic [ref=e575]:
+                    - button "查看" [ref=e576] [cursor=pointer]:
+                      - generic [ref=e577]: 查看
+                    - button "调积分" [ref=e578] [cursor=pointer]:
+                      - generic [ref=e579]: 调积分
+                    - button "更多" [ref=e581] [cursor=pointer]:
+                      - generic [ref=e582]:
+                        - text: 更多
+                        - img [ref=e584]
+              - row "选择当前行 7 1 用户7832 13510417832 13510417832 25 5 0 2026-03-17 17:36:43 查看 调积分 更多" [ref=e586]:
+                - cell "选择当前行" [ref=e587]:
+                  - generic "选择当前行" [ref=e589] [cursor=pointer]:
+                    - generic [ref=e590]:
+                      - checkbox "选择当前行"
+                - cell "7" [ref=e592]:
+                  - generic [ref=e594]: "7"
+                - cell "1" [ref=e595]:
+                  - generic [ref=e596]: "1"
+                - cell "用户7832 13510417832" [ref=e597]:
+                  - generic [ref=e601]:
+                    - generic [ref=e602]: 用户7832
+                    - generic [ref=e603]: "13510417832"
+                - cell "13510417832" [ref=e604]:
+                  - generic [ref=e605]: "13510417832"
+                - cell "25" [ref=e606]:
+                  - generic [ref=e609]: "25"
+                - cell "5" [ref=e610]:
+                  - generic [ref=e611]: "5"
+                - cell "0" [ref=e612]:
+                  - generic [ref=e613]: "0"
+                - cell "2026-03-17 17:36:43" [ref=e614]:
+                  - generic [ref=e615]: 2026-03-17 17:36:43
+                - cell [ref=e616]:
+                  - generic [ref=e618]:
+                    - switch [checked]
+                - cell "查看 调积分 更多" [ref=e621]:
+                  - generic [ref=e622]:
+                    - button "查看" [ref=e623] [cursor=pointer]:
+                      - generic [ref=e624]: 查看
+                    - button "调积分" [ref=e625] [cursor=pointer]:
+                      - generic [ref=e626]: 调积分
+                    - button "更多" [ref=e628] [cursor=pointer]:
+                      - generic [ref=e629]:
+                        - text: 更多
+                        - img [ref=e631]
+        - generic [ref=e634]:
+          - generic [ref=e635]: 共 7 条
+          - generic [ref=e638] [cursor=pointer]:
+            - generic:
+              - combobox [ref=e640]
+              - generic [ref=e641]: 20条/页
+            - img [ref=e644]
+          - button "上一页" [disabled] [ref=e646]:
+            - generic:
+              - img
+          - list [ref=e647]:
+            - listitem "第 1 页" [ref=e648]: "1"
+          - button "下一页" [disabled] [ref=e649]:
+            - generic:
+              - img
+          - generic [ref=e650]:
+            - generic [ref=e651]: 前往
+            - spinbutton "页" [ref=e654]: "1"
+            - generic [ref=e655]: 页

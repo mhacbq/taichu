@@ -232,8 +232,15 @@ const refundForm = reactive({
 })
 
 const readonlyMode = computed(() => Boolean(pageError.value))
-const canModifyOrder = computed(() => userStore.userInfo?.role === 'admin' && !readonlyMode.value)
+const canModifyOrder = computed(() => {
+  const hasWritePermission = userStore.permissions?.includes('*')
+    || userStore.permissions?.includes('config_manage')
+    || userStore.roles?.includes('admin')
+
+  return hasWritePermission && !readonlyMode.value
+})
 const paidCount = computed(() => orderList.value.filter(item => Number(item.status) === 1).length)
+
 const refundedCount = computed(() => orderList.value.filter(item => Number(item.status) === 3).length)
 const currentPageAmount = computed(() => orderList.value.reduce((sum, item) => sum + Number(item.pay_amount || 0), 0))
 

@@ -1032,6 +1032,21 @@ const aiLoadingTime = ref(0)
 const aiAbortController = ref(null)
 const aiLoadingTimer = ref(null)
 
+const syncCurrentPoints = (remainingPoints, fallbackCost = 0) => {
+  const parsedRemainingPoints = Number(remainingPoints)
+  if (Number.isFinite(parsedRemainingPoints)) {
+    currentPoints.value = parsedRemainingPoints
+  } else {
+    const parsedFallbackCost = Number(fallbackCost)
+    if (Number.isFinite(parsedFallbackCost) && parsedFallbackCost > 0) {
+      currentPoints.value = Math.max(0, currentPoints.value - parsedFallbackCost)
+    }
+  }
+
+  window.dispatchEvent(new Event('points-updated'))
+}
+
+
 // 流年运势相关
 const fortunePointsCost = ref({
   yearly_fortune: null,
