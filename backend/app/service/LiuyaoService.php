@@ -355,6 +355,20 @@ class LiuyaoService
     }
 
     /**
+     * 统一六爻模块的性别口径，兼容 male/female 与传统 男/女。
+     */
+    protected static function normalizeGenderLabel(string $gender): string
+    {
+        $normalized = strtolower(trim($gender));
+        if (in_array($normalized, ['female', '女'], true)) {
+            return '女';
+        }
+
+        return '男';
+    }
+
+
+    /**
      * 计算六神
      * 根据日辰天干确定起始六神，然后按顺序配到六爻
      * 
@@ -430,11 +444,13 @@ class LiuyaoService
         ];
         
         $targetLiuqin = $yongShenMap[$questionType] ?? '世爻';
+        $genderLabel = self::normalizeGenderLabel($gender);
         
         // 特殊处理：感情根据性别区分用神
         if ($questionType === '感情') {
-            $targetLiuqin = ($gender === '女') ? '官鬼' : '妻财';
+            $targetLiuqin = ($genderLabel === '女') ? '官鬼' : '妻财';
         }
+
         
         $xunkong = [];
         $selectionReason = '';

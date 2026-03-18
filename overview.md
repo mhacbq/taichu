@@ -2,7 +2,74 @@
 
 ## 最近更新
 
+### 命理算法修复（自动化执行，2026-03-18）
+
+- 本轮先复查 `.codebuddy/automations/automation/memory.md` 与 `TODO.md`，确认当前 `TODO.md` 已无残留 `[占卜]` 待办；随后继续针对 `backend/app/service/` 做算法级收口，而不是机械重复改 TODO。
+- 本轮集中修了 **5 个命理算法问题**：1) `BaziCalculationService` 修正寿星公式在世纪尾数 `00` 时对 `floor((Y-1)/4)` 的错误截断，避免 1900/2000 年初节气整体偏移一天；2) `LiuyaoService` 为六爻感情占补齐 `male/female` → `男/女` 的性别归一化，避免女命误取妻财；3) `BaziInterpretationService` 去掉五行平衡分的硬性 20 分下限，让极端偏枯命局不再被抬分；4) 同文件把最旺/最弱五行的平票口径改成显式“并列”，避免误报单一主导元素；5) `TarotElementService` 新增英文大阿卡纳牌名与 `name_en/title/title_en/arcana_name` 解析，修复元素关系偶发回落为空的问题。
+- 本轮未新增数据库变更；`TODO.md` 复查后 `[占卜]` 结果仍为 0，因此无需额外删除条目。
+
+#### 本轮主要改动文件
+- `backend/app/service/BaziCalculationService.php`
+- `backend/app/service/LiuyaoService.php`
+- `backend/app/service/BaziInterpretationService.php`
+- `backend/app/service/TarotElementService.php`
+- `overview.md`
+
+#### 验证情况
+- `read_lints`：上述 4 个服务文件均为 0 diagnostics。
+- 容器内 `php -l`：4 个服务文件全部通过语法检查。
+- 容器内一次性回归脚本：已验证 `2000-02-04` 立春边界、六爻女命感情取官鬼、极端偏枯命局平衡分低于 20、五行并列最旺口径、塔罗英文牌名 `Judgement / The Moon` 的元素映射，6 项检查全部通过。
+- 截图 / 录屏：本轮为纯后端算法修复，无新增 UI 截图。
+
+### 后台运营运行态修复（2026-03-18）
+
+
+- 本轮继续处理 `TODO.md` 顶部 4 条高优先级 `[运营]` 阻塞项，先对照工作区代码与容器内实际运行代码，确认根因并不是仓库缺少修补，而是 **本地 `taichu-app` 容器长期运行旧版 backend 代码**，导致黄历、神煞、SEO、积分调整仍命中旧实现。
+- 为避免后续再次出现“仓库已修、容器未同步”，已修改 `backend/docker-compose.yml`，为 backend 服务补上源码挂载：`./:/var/www/html`；随后执行 `docker compose up -d --build backend`，让容器直接使用工作区当前代码。
+- 在真实运行态复测过程中，又补抓到两个额外致命错误并已同步修复：
+  1. `backend/app/middleware/AdminAuth.php` 调用了不存在的 `sanitizeParams()`，导致已登录后的后台请求在认证中间件阶段直接 500；现已改为统一走 `SensitiveDataSanitizer::getFilteredRequestParams()`，并补上正确的类导入。
+  2. `backend/app/controller/Notification.php` 定义了与 `BaseController` 同名但静态签名冲突的 `sanitizeLogContext()`，导致手动调积分在通知阶段触发 PHP 8 致命错误；现已改名为 `sanitizeNotificationLogContext()` 并同步调整调用点。
+- 已同步更新 `TODO.md` 顶部 4 条 `[运营]` 任务为完成，并回写 `.codebuddy/automations/admin/memory.md`。
+
+#### 本轮主要改动文件
+- `backend/docker-compose.yml`
+- `backend/app/middleware/AdminAuth.php`
+- `backend/app/controller/Notification.php`
+- `TODO.md`
+- `.codebuddy/automations/admin/memory.md`
+- `overview.md`
+
+#### 验证情况
+- 容器代码核对：已确认重建后的 `taichu-app` 运行代码与工作区一致，`Almanac/User/Shensha/Seo/AdminStatsService` 均已切到最新版本。
+- `read_lints`：`backend/app/middleware/AdminAuth.php`、`backend/app/controller/Notification.php` 均为 0 diagnostics。
+- 真实运行态冒烟：使用默认管理员 `admin / admin123` 登录后，已逐项通过以下链路：
+  - 用户列表
+  - 手动调积分 `POST /api/admin/points/adjust`（`+1` 与 `-1` 回滚）
+  - 黄历列表 `GET /api/admin/content/almanac`
+  - 神煞新增 / 删除 `POST/DELETE /api/admin/system/shensha`
+  - SEO 新增 / 删除 `POST/DELETE /api/admin/system/seo/configs`
+- 截图 / 录屏：本轮以容器重建与 API 冒烟验证为主，未新增 UI 截图；关键结果已体现在 `TODO.md` 与本概览中。
+
+### UI 设计巡检（第五十三次自动化执行，2026-03-18）
+
+
+- 本轮先读取 `.codebuddy/automations/ui/memory.md` 与 `TODO.md`，随后继续按代码级 UI/UX 审查方式复核首页、八字、塔罗、六爻、合婚与每日运势，并严格跳过当前 `TODO.md` 中已存在或相似的问题。
+- 本轮未修改业务代码；已更新 `TODO.md`、`.codebuddy/automations/ui/memory.md`、`overview.md`，新增 **2 个高优先级、2 个中优先级、1 个低优先级** UI 待办。
+
+#### 关键发现
+1. **塔罗结果态仍缺上下文锁定**
+   - `Tarot.vue` 抽牌完成后，牌阵选择和问题输入仍可继续编辑；保存记录、分享文案与详情弹窗都继续读取当前 `selectedSpread / question`，容易让“抽牌结果”和“对外展示的上下文”发生错位。
+2. **八字核心可视化口径与后端已脱节**
+   - `Bazi.vue` 的“五行分布”仍按 `count / 8` 画条形图，但后端 `wuxing_stats` 已升级为最高 9.5 的加权值；极端命局下进度条会被压缩或溢出，核心结果图表不再可信。
+3. **首页与表单层级仍有设计一致性问题**
+   - `Home.vue` 的“用户心声”虽声明为示例反馈，但视觉上仍像真实评价墙；`Liuyao.vue` 把进阶参数整块默认展开，移动端首屏信息密度偏高；`Hehun.vue` 也仍混用原生表单控件，与站内其他页的交互口径割裂。
+
+#### 验证情况
+- `read_lints`：`TODO.md` 与 `.codebuddy/automations/ui/memory.md` 均为 0 diagnostics。
+- 截图 / 录屏：本轮未新增视觉截图；仍以代码级 UI 审查为主。
+
 ### UI 修复批次（ui-15 自动化执行，2026-03-18）
+
 
 - 本轮先读取 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，随后围绕剩余 `[UI]` 待办完成了 **5 个前台 UI/UX 修复**：1) `Daily.vue` 详细运势改为按真实返回的首个有效分项自动展开；2) `Daily.vue` 综合分与星级改成统一阈值映射，避免 85+ 仍只显示四星；3) `Daily.vue` 为“比劫 / 印绶 / 食伤 / 官杀 / 财星”补上白话解释；4) `Daily.vue` 将个性化区域拆分为游客、未排盘、字段异常、已就绪四种状态；5) `Liuyao.vue` + `backend/app/controller/Liuyao.php` 为实时结果与历史回看统一回显起卦方式、时间、日辰、月建与旬空上下文。
 - 已同步从 `TODO.md` 删除本轮完成的 5 条 `[UI]` 待办，避免后续自动化重复返工。

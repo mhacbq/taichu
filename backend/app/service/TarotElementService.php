@@ -44,7 +44,50 @@ class TarotElementService
         '世界' => '土',
     ];
 
+    private const CARD_NAME_ELEMENT_MAP_EN = [
+        'the fool' => '风',
+        'fool' => '风',
+        'the magician' => '风',
+        'magician' => '风',
+        'the high priestess' => '水',
+        'high priestess' => '水',
+        'the empress' => '土',
+        'empress' => '土',
+        'the emperor' => '火',
+        'emperor' => '火',
+        'the hierophant' => '土',
+        'hierophant' => '土',
+        'the lovers' => '风',
+        'lovers' => '风',
+        'the chariot' => '水',
+        'chariot' => '水',
+        'strength' => '火',
+        'the hermit' => '土',
+        'hermit' => '土',
+        'wheel of fortune' => '火',
+        'justice' => '风',
+        'the hanged man' => '水',
+        'hanged man' => '水',
+        'death' => '水',
+        'temperance' => '火',
+        'the devil' => '土',
+        'devil' => '土',
+        'the tower' => '火',
+        'tower' => '火',
+        'the star' => '风',
+        'star' => '风',
+        'the moon' => '水',
+        'moon' => '水',
+        'the sun' => '火',
+        'sun' => '火',
+        'judgement' => '火',
+        'judgment' => '火',
+        'the world' => '土',
+        'world' => '土',
+    ];
+
     private const RELATION_MAP = [
+
         '友好尊严' => [
             '土-水' => '土承水意，情绪获得承载，现实层面更容易稳步落地。',
             '火-风' => '风助火势，意志得到思想鼓动，行动更容易迅速展开。',
@@ -91,6 +134,13 @@ class TarotElementService
             return self::CARD_NAME_ELEMENT_MAP[$name];
         }
 
+        foreach (['name_en', 'title', 'title_en', 'arcana_name'] as $field) {
+            $englishName = mb_strtolower(trim((string)($card[$field] ?? '')), 'UTF-8');
+            if ($englishName !== '' && isset(self::CARD_NAME_ELEMENT_MAP_EN[$englishName])) {
+                return self::CARD_NAME_ELEMENT_MAP_EN[$englishName];
+            }
+        }
+
         foreach (['权杖' => '火', '圣杯' => '水', '宝剑' => '风', '星币' => '土', '金币' => '土', '钱币' => '土', '圆盘' => '土'] as $marker => $element) {
             if ($name !== '' && mb_strpos($name, $marker, 0, 'UTF-8') !== false) {
                 return $element;
@@ -99,6 +149,7 @@ class TarotElementService
 
         return '';
     }
+
 
     public static function normalizePairKey(string $left, string $right): string
     {

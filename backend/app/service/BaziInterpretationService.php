@@ -384,18 +384,28 @@ class BaziInterpretationService
 
 
     /**
-     * 根据分值取首个对应五行。
+     * 根据分值取对应五行；若并列，则显式标记并列，避免把平票误说成单一最旺/最弱。
      */
     protected function findWuxingByValue(array $wuxingStats, float $target): string
     {
+        $matched = [];
         foreach ($wuxingStats as $wx => $value) {
             if (abs($value - $target) < 0.0001) {
-                return $wx;
+                $matched[] = $wx;
             }
         }
 
-        return '未知';
+        if (empty($matched)) {
+            return '未知';
+        }
+
+        if (count($matched) === 1) {
+            return $matched[0];
+        }
+
+        return implode('、', $matched) . '（并列）';
     }
+
 
     /**
      * 分析五行强弱
@@ -445,8 +455,10 @@ class BaziInterpretationService
             - ($lackCount * 5)
             - ($overStrongCount * 3);
 
-        return (int) round(max(20, min(98, $score)));
+        // 偏枯命局不应被强行抬到 20 分，否则会掩盖加权五行已经明显失衡的事实。
+        return (int) round(max(0, min(98, $score)));
     }
+
 
 
     /**

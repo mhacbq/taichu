@@ -200,10 +200,13 @@ class BaziCalculationService
 
         // 寿星通式：[Y×0.2422 + C] - L。
         // 小寒、大寒、立春、雨水位于闰日之前，L 取 floor((Y-1)/4)；
-        // 其余节气位于闰日之后，L 取 floor(Y/4)。这比“一刀切”更贴近通行历算口径。
+        // 其余节气位于闰日之后，L 取 floor(Y/4)。
+        // 注意世纪年尾数为 00 时（如 1900/2000），(Y-1)/4 需要保留 -0.25 → -1 的进位，
+        // 若强行截成 0，会把年初交节整体推偏一天。
         $preLeapTerms = ['小寒', '大寒', '立春', '雨水'];
-        $leapBase = in_array($name, $preLeapTerms, true) ? max(0, $y - 1) : $y;
+        $leapBase = in_array($name, $preLeapTerms, true) ? ($y - 1) : $y;
         $value = $y * 0.2422 + $C - floor($leapBase / 4);
+
 
         // 特殊年份修正
         if (isset($termAdjustments[$name][$year])) {
