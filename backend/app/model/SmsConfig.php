@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace app\model;
 
+use app\service\SensitiveConfigCrypt;
 use think\Model;
 
 /**
@@ -10,10 +11,12 @@ use think\Model;
  */
 class SmsConfig extends Model
 {
+    protected const ENCRYPTED_FIELDS = ['secret_id', 'secret_key', 'sign_name'];
+
     protected $name = 'tc_sms_config';
-    
+
     protected $autoWriteTimestamp = true;
-    
+
     protected $schema = [
         'id' => 'int',
         'provider' => 'string',
@@ -28,7 +31,7 @@ class SmsConfig extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-    
+
     /**
      * 获取腾讯云短信配置
      */
@@ -37,86 +40,117 @@ class SmsConfig extends Model
         $config = self::where('provider', 'tencent')
             ->where('is_enabled', 1)
             ->find();
-            
+
         if (!$config) {
             return null;
         }
-        
+
+        $values = self::decryptSensitiveValues($config, true);
+
         return [
-            'secret_id' => $config->secret_id,
-            'secret_key' => $config->secret_key,
-            'sdk_app_id' => $config->sdk_app_id,
-            'sign_name' => $config->sign_name,
-            'template_code' => $config->template_code,
-            'template_register' => $config->template_register,
-            'template_reset' => $config->template_reset,
+            'secret_id' => $values['secret_id'],
+            'secret_key' => $values['secret_key'],
+            'sdk_app_id' => (string) $config->sdk_app_id,
+            'sign_name' => $values['sign_name'],
+            'template_code' => (string) $config->template_code,
+            'template_register' => (string) $config->template_register,
+            'template_reset' => (string) $config->template_reset,
         ];
     }
-    
+
     /**
      * 获取后台展示的配置（隐藏敏感信息）
      */
     public static function getSafeConfig(): ?array
     {
         $config = self::where('provider', 'tencent')->find();
-        
+
         if (!$config) {
             return null;
         }
-        
-        // 隐藏敏感信息
-        $mask = function($str, $start = 6, $end = 6) {
-            if (empty($str)) return '';
-            $len = strlen($str);
-            if ($len <= $start + $end) return str_repeat('*', $len);
-            return substr($str, 0, $start) . str_repeat('*', $len - $start - $end) . substr($str, -$end);
-        };
-        
+
+        $values = self::decryptSensitiveValues($config, false);
+
         return [
             'id' => $config->id,
-            'provider' => $config->provider,
-            'secret_id' => $mask($config->secret_id),
-            'secret_key' => $config->secret_key ? '********' : '',
-            'secret_id_masked' => true,
-            'secret_key_masked' => true,
-            'sdk_app_id' => $config->sdk_app_id,
-            'sign_name' => $config->sign_name,
-            'template_code' => $config->template_code,
-            'template_register' => $config->template_register,
-            'template_reset' => $config->template_reset,
+            'provider' => (string) $config->provider,
+            'secret_id' => self::maskValue($values['secret_id'], 6, 6),
+            'secret_key' => $values['secret_key'] !== '' ? '********' : '',
+            'secret_id_masked' => $values['secret_id'] !== '',
+            'secret_key_masked' => $values['secret_key'] !== '',
+            'sdk_app_id' => (string) $config->sdk_app_id,
+            'sign_name' => $values['sign_name'],
+            'template_code' => (string) $config->template_code,
+            'template_register' => (string) $config->template_register,
+            'template_reset' => (string) $config->template_reset,
             'is_enabled' => $config->is_enabled,
             'created_at' => $config->created_at,
             'updated_at' => $config->updated_at,
         ];
     }
-    
+
     /**
      * 保存或更新配置
      */
     public static function saveConfig(array $data): bool
     {
         $config = self::where('provider', $data['provider'] ?? 'tencent')->find();
-        
+
         if (!$config) {
             $config = new self();
             $config->provider = $data['provider'] ?? 'tencent';
         }
-        
+
         $fields = ['secret_id', 'secret_key', 'sdk_app_id', 'sign_name', 'template_code', 'template_register', 'template_reset'];
-        
+
         foreach ($fields as $field) {
-            if (isset($data[$field]) && $data[$field] !== '') {
-                // 如果值是脱敏的，则不更新
-                if (strpos($data[$field], '***') === false) {
-                    $config->$field = $data[$field];
-                }
+            if (!array_key_exists($field, $data) || $data[$field] === '') {
+                continue;
             }
+
+            $value = is_string($data[$field]) ? trim($data[$field]) : $data[$field];
+            if (is_string($value) && strpos($value, '***') !== false) {
+                continue;
+            }
+
+            if (in_array($field, self::ENCRYPTED_FIELDS, true)) {
+                $config->$field = SensitiveConfigCrypt::encrypt((string) $value);
+                continue;
+            }
+
+            $config->$field = $value;
         }
-        
+
         if (isset($data['is_enabled'])) {
             $config->is_enabled = $data['is_enabled'] ? 1 : 0;
         }
-        
-        return $config->save();
+
+        return (bool) $config->save();
+    }
+
+    protected static function decryptSensitiveValues(self $config, bool $strict): array
+    {
+        $values = [];
+        foreach (self::ENCRYPTED_FIELDS as $field) {
+            $values[$field] = SensitiveConfigCrypt::decrypt((string) ($config->$field ?? ''), $strict);
+        }
+
+        return $values;
+    }
+
+    protected static function maskValue(string $value, int $prefixLength = 2, int $suffixLength = 2): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        $length = strlen($value);
+        if ($length <= ($prefixLength + $suffixLength)) {
+            return str_repeat('*', $length);
+        }
+
+        return substr($value, 0, $prefixLength)
+            . str_repeat('*', max(4, $length - $prefixLength - $suffixLength))
+            . substr($value, -$suffixLength);
     }
 }

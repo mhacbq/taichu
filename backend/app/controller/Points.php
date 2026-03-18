@@ -69,10 +69,13 @@ class Points extends BaseController
         
         $query = PointsRecord::where('user_id', $user['sub'])
             ->order('created_at', 'desc');
-        
+
         $total = $query->count();
-        $list = $query->page($page, $pageSize)->select()->toArray();
-        
+        $rows = $query->page($page, $pageSize)->select()->toArray();
+        $list = PointsRecord::normalizeRecordList($rows, [
+            (int) $user['sub'] => (int) $this->pointsService->getBalance((int) $user['sub']),
+        ]);
+
         return $this->success([
             'list' => $list,
             'pagination' => [

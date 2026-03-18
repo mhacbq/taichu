@@ -44,8 +44,9 @@ class DailyTask extends Command
         $totalTasks++;
         $output->write('▶ 清理过期短信验证码... ');
         try {
-            $count = SmsCode::clearExpired();
-            $output->writeln("✅ 已清理 {$count} 条");
+            $expiredCount = SmsCode::clearExpired();
+            $purgedCount = SmsCode::purgeExpired(7);
+            $output->writeln("✅ 已标记 {$expiredCount} 条，额外删除 {$purgedCount} 条历史记录");
             $successTasks++;
         } catch (\Exception $e) {
             $output->writeln('❌ 失败: ' . $e->getMessage());

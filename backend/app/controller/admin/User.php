@@ -56,13 +56,17 @@ class User extends BaseController
             $userData = $user->toArray();
             $displayUsername = $this->resolveDisplayUsername($userData, $id);
             $normalizedUserData = $this->normalizeDetailUserData($userData, $displayUsername, $id);
-            $pointsRecords = SchemaInspector::tableExists('tc_points_record')
-                ? \app\model\PointsRecord::where('user_id', $id)
+            $pointsRecords = [];
+            if (SchemaInspector::tableExists('tc_points_record')) {
+                $pointsRecordRows = \app\model\PointsRecord::where('user_id', $id)
                     ->order('created_at', 'desc')
                     ->limit(20)
                     ->select()
-                    ->toArray()
-                : [];
+                    ->toArray();
+                $pointsRecords = \app\model\PointsRecord::normalizeRecordList($pointsRecordRows, [
+                    $id => (int) ($normalizedUserData['points'] ?? 0),
+                ]);
+            }
 
 
             $liuyaoTable = $this->resolveFirstExistingTable(['tc_liuyao_record', 'liuyao_records']);

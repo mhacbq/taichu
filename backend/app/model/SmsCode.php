@@ -126,4 +126,15 @@ class SmsCode extends Model
             ->where('is_used', 0)
             ->update(['is_used' => 1]);
     }
+
+    /**
+     * 物理删除历史过期验证码，降低表膨胀风险
+     */
+    public static function purgeExpired(int $retentionDays = 7): int
+    {
+        $retentionDays = max(0, $retentionDays);
+        $deadline = date('Y-m-d H:i:s', strtotime(sprintf('-%d days', $retentionDays)));
+
+        return self::where('expire_time', '<', $deadline)->delete();
+    }
 }

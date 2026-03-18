@@ -761,9 +761,10 @@ class Admin extends BaseController
 
             $total = (int) (clone $query)->count();
             $rows = $query->page($page, $pageSize)->select()->toArray();
-            $list = array_map(function (array $row) use ($columns): array {
-                return $this->normalizePointsRecordRow($row, $columns);
-            }, $rows);
+            $list = \app\model\PointsRecord::normalizeRecordList(
+                $rows,
+                \app\model\PointsRecord::getCurrentBalanceMap(array_column($rows, 'user_id'))
+            );
 
             return $this->success([
                 'list' => $list,
