@@ -981,7 +981,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
@@ -1057,13 +1058,16 @@ const fortunePointsCost = ref({
 const selectedYear = ref(new Date().getFullYear())
 const yearlyFortuneResult = ref(null)
 const yearlyFortuneLoading = ref(false)
+const lastAnalyzedYear = ref(null)
 
 // 大运分析相关
 const selectedDayunIndex = ref(0)
 const dayunAnalysisResult = ref(null)
 const dayunAnalysisLoading = ref(false)
+const lastAnalyzedDayunIndex = ref(null)
 const dayunChartData = ref(null)
 const dayunChartLoading = ref(false)
+
 
 // 积分消耗确认对话框
 const pointsConfirmVisible = ref(false)
@@ -1077,8 +1081,11 @@ const resetDerivedAnalysisState = () => {
   aiAnalysisResult.value = null
   aiStreamContent.value = ''
   aiPrompt.value = ''
+  lastAnalyzedYear.value = null
+  lastAnalyzedDayunIndex.value = null
   selectedYear.value = new Date().getFullYear()
   selectedDayunIndex.value = 0
+
   activeNames.value = ['basic']
 
   if (aiAbortController.value) {
@@ -1217,7 +1224,28 @@ const getFortuneToolActionText = (type, readyText) => {
   return readyText
 }
 
+watch(selectedYear, (newYear, oldYear) => {
+  if (newYear === oldYear) {
+    return
+  }
+
+  if (lastAnalyzedYear.value !== null && newYear !== lastAnalyzedYear.value) {
+    yearlyFortuneResult.value = null
+  }
+})
+
+watch(selectedDayunIndex, (newIndex, oldIndex) => {
+  if (newIndex === oldIndex) {
+    return
+  }
+
+  if (lastAnalyzedDayunIndex.value !== null && newIndex !== lastAnalyzedDayunIndex.value) {
+    dayunAnalysisResult.value = null
+  }
+})
+
 const resolveAiAnalysisCost = (clientConfig = {}) => {
+
   const costs = clientConfig?.points?.costs || {}
   const candidates = [
     costs.ai_analysis,
@@ -1427,8 +1455,10 @@ const getYearlyFortuneAnalysis = async () => {
     
     if (response.code === 200) {
       yearlyFortuneResult.value = response.data
+      lastAnalyzedYear.value = selectedYear.value
       currentPoints.value = response.data.remaining_points
       ElMessage.success('流年运势分析完成！')
+
     } else {
       ElMessage.error(response.message || '分析失败')
     }
@@ -1453,8 +1483,10 @@ const getDayunFortuneAnalysis = async () => {
     
     if (response.code === 200) {
       dayunAnalysisResult.value = response.data
+      lastAnalyzedDayunIndex.value = selectedDayunIndex.value
       currentPoints.value = response.data.remaining_points
       ElMessage.success('大运运势分析完成！')
+
     } else {
       ElMessage.error(response.message || '分析失败')
     }

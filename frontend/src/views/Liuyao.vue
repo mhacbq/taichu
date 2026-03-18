@@ -98,9 +98,10 @@
               <el-icon><Collection v-if="result.is_history" /><CircleCheckFilled v-else /></el-icon>
               <span>{{ savedStatusText }}</span>
             </div>
-            <el-button v-if="history.length > 0" round size="large" @click="showHistory = true">
-              <el-icon><Collection /></el-icon> 查看历史
+            <el-button v-if="historyLoaded || historyLoading || historyError" round size="large" @click="showHistory = true">
+              <el-icon><Collection /></el-icon> {{ historyTriggerText }}
             </el-button>
+
           </div>
         </div>
       </div>
@@ -246,9 +247,10 @@
           </el-button>
 
 
-          <div class="history-link" v-if="history.length > 0">
-            <a @click="showHistory = true">查看历史记录 ({{ history.length }}条)</a>
+          <div class="history-link" v-if="historyLoaded || historyLoading || historyError">
+            <a @click="showHistory = true">{{ historyTriggerText }}</a>
           </div>
+
         </div>
       </div>
 
@@ -262,18 +264,33 @@
             </button>
           </div>
           <div class="history-list">
-            <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
-              <div class="history-main">
-                <p class="history-question">{{ item.question }}</p>
-                <p class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</p>
-              </div>
-              <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
-                <el-icon><Delete /></el-icon>
-                <span class="delete-label">删除</span>
-              </button>
-
+            <div v-if="historyLoading" class="history-state" role="status" aria-live="polite">
+              <p>历史记录加载中...</p>
+              <span>最近的占卜记录会在这里出现。</span>
             </div>
+            <div v-else-if="historyError" class="history-state history-state--error" role="alert">
+              <p>历史记录暂时没加载出来</p>
+              <span>{{ historyError }}</span>
+              <el-button type="primary" link @click="loadHistory">重新加载</el-button>
+            </div>
+            <div v-else-if="historyLoaded && history.length === 0" class="history-state" role="status" aria-live="polite">
+              <p>暂时还没有历史记录</p>
+              <span>完成一次占卜后，这里会自动保存你的记录。</span>
+            </div>
+            <template v-else>
+              <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
+                <div class="history-main">
+                  <p class="history-question">{{ item.question }}</p>
+                  <p class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</p>
+                </div>
+                <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
+                  <el-icon><Delete /></el-icon>
+                  <span class="delete-label">删除</span>
+                </button>
+              </div>
+            </template>
           </div>
+
         </div>
       </div>
     </div>
@@ -412,8 +429,12 @@ const shouldShowRemainingPoints = computed(() => {
 })
 
 const savedStatusText = computed(() => (result.value?.is_history ? '来自历史记录' : '已自动保存到历史记录'))
+const historyTriggerText = computed(() => (
+  history.value.length > 0 ? `查看历史记录 (${history.value.length}条)` : '查看历史记录'
+))
 
 const reportUiError = (action, error, userMessage = '') => {
+
   console.error(`[Liuyao] ${action}`, error)
   if (userMessage) {
     ElMessage.error(userMessage)
@@ -561,15 +582,30 @@ const loadPricing = async () => {
 
 // 加载历史记录
 const loadHistory = async () => {
+  historyLoading.value = true
+  historyError.value = ''
+
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 50 })
     if (response.code === 200) {
       history.value = (response.data.list || []).map((item) => normalizeResult(item, true))
+      historyLoaded.value = true
+      return
     }
+
+    history.value = []
+    historyLoaded.value = false
+    historyError.value = response.message || '获取历史记录失败，请稍后重试。'
   } catch (error) {
+    history.value = []
+    historyLoaded.value = false
+    historyError.value = '获取历史记录失败，请稍后重试。'
     reportUiError('获取历史记录失败', error)
+  } finally {
+    historyLoading.value = false
   }
 }
+
 
 const buildDivinationPayload = () => {
   const payload = {

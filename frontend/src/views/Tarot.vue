@@ -172,11 +172,14 @@
           </EmptyState>
         </div>
 
-        <div class="interpretation" :class="{ 'interpretation--pending': !interpretation }">
+        <div class="interpretation" :class="{ 'interpretation--pending': interpretationState !== 'ready' }">
           <h3>牌面解读</h3>
-          <div v-if="interpretation" class="interpretation-content">{{ interpretation }}</div>
-          <p v-else class="interpretation-placeholder">解读结果暂未生成，请先重试当前步骤。</p>
+          <div v-if="interpretationState === 'ready'" class="interpretation-content">{{ interpretation }}</div>
+          <p v-else-if="interpretationState === 'loading'" class="interpretation-placeholder interpretation-placeholder--loading">牌面已经抽出，正在结合你的问题生成解读，请稍候...</p>
+          <p v-else-if="interpretationState === 'error'" class="interpretation-placeholder interpretation-placeholder--error">本次牌面已抽出，但解读暂时中断。你可以直接点击“重试解读”，无需重新抽牌。</p>
+          <p v-else class="interpretation-placeholder">抽牌完成后，这里会展示与你问题对应的牌面解读。</p>
         </div>
+
         
         <!-- 操作按钮 -->
         <div class="result-actions">
@@ -405,7 +408,10 @@ const selectSpread = (spreadId) => {
   selectedSpread.value = spreadId
 }
 
+const displayedSpread = computed(() => selectedSpread.value)
+
 const flowErrorTitle = computed(() => {
+
   if (!flowError.value) return ''
   return flowError.value.stage === 'interpret' ? '牌面已抽出，但解读未完成' : '抽牌流程暂时中断'
 })
@@ -423,7 +429,24 @@ const flowErrorActionText = computed(() => {
   return flowError.value.stage === 'interpret' ? '重试解读' : '重试抽牌'
 })
 
+const interpretationState = computed(() => {
+  if (interpretation.value) {
+    return 'ready'
+  }
+
+  if (loading.value && cards.value.length > 0 && !flowError.value) {
+    return 'loading'
+  }
+
+  if (flowError.value?.stage === 'interpret') {
+    return 'error'
+  }
+
+  return 'idle'
+})
+
 const spreadPositionLabels = {
+
   single: ['今日指引'],
   three: ['过去', '现在', '未来'],
   celtic: [
@@ -725,12 +748,13 @@ const saveTarotResult = async () => {
   
   try {
     const response = await saveTarotRecord({
-      spread_type: drawnSpread.value || selectedSpread.value,
+      spread_type: displayedSpread.value,
       question: question.value,
       cards: cards.value,
       interpretation: interpretation.value,
       ai_analysis: ''
     })
+
 
     
     if (response.code === 200) {
@@ -1304,7 +1328,22 @@ const getCardAdvice = (card) => {
   white-space: pre-line;
 }
 
+.interpretation-placeholder {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.interpretation-placeholder--loading {
+  color: var(--primary-color);
+}
+
+.interpretation-placeholder--error {
+  color: var(--danger-color);
+}
+
 /* 塔罗牌样式 */
+
 .card-inner-alt {
   width: 100%;
   height: 100%;

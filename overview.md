@@ -2,6 +2,21 @@
 
 ## 最近更新
 
+### 前端修复批次（15-2 自动化执行，2026-03-18 12:08）
+
+- 本轮先读取 `.codebuddy/automations/15-2/memory.md` 与 `TODO.md`，随后继续清理当前仍未收口的前端/Vue 待办，完成了 **5 个前端问题修复**：1) `Tarot.vue` 保存记录改为统一使用现有牌阵状态，修复未定义变量导致的保存失败风险；2) `Tarot.vue` 把牌面解读区改为区分“生成中 / 失败 / 待展示”三种状态，不再把正常处理中误写成失败；3) `Liuyao.vue` 历史记录弹窗补齐 loading / error / empty 三态和重试入口，同时在无记录或失败态下仍保留查看入口；4) `Hehun.vue` 免费预览升级区去掉 `v-if="!isLoading"` 的整体隐藏方式，改为保留卡片并展示解锁中的进度与失败反馈；5) `Bazi.vue` 在流年年份与大运选项切换时主动清空旧分析结果，恢复 CTA，避免当前选择与下方旧结论脱钩。
+- 已同步从 `TODO.md` 删除本轮 5 条已完成前端待办，避免后续自动化重复处理。
+- 本轮主要改动文件：`frontend/src/views/Tarot.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Bazi.vue`、`TODO.md`。
+
+#### 验证情况
+- `read_lints`：`Tarot.vue`、`Liuyao.vue`、`Hehun.vue`、`Bazi.vue` 均为 0 条新增诊断。
+- `git diff --check -- frontend/src/views/Tarot.vue frontend/src/views/Liuyao.vue frontend/src/views/Hehun.vue frontend/src/views/Bazi.vue`：通过。
+- `npm run build --prefix frontend`：命令已执行，但当前本机 Node 运行时仍被旧语法支持拦住，输出 `SyntaxError: Unexpected token '??='`；因此本轮沿用 IDE/LSP + diff 检查作为主要前端校验依据，完整构建仍需在较新的 Node 环境下复测。
+- 截图 / 录屏：本轮为交互逻辑修复与状态提示补齐，未新增界面截图。
+- Git：计划按 `fix-frontend-multiple-issues-20260318-1208` 提交并推送到 `origin/master`。
+
+
+
 ### 后台运营巡检（第二十八轮自动化执行，2026-03-18）
 
 - 本轮先读取 `.codebuddy/automations/30-3/memory.md` 与 `TODO.md`，随后直接复用当前本地运行中的独立后台 `http://localhost:3001/login`，使用默认账号 `admin / admin123` 完成真实登录，并按运营路径实测 Dashboard、用户管理、黄历/知识库/神煞/SEO、订单、积分、系统配置与公告页面。
@@ -579,4 +594,27 @@
 - `npm run build --prefix frontend`：通过。
 - `npm run build --prefix admin`：通过。
 - 备注：构建过程中存在 Sass legacy-js-api 与大体积 chunk 警告，但不影响本轮功能编译通过。
+
+### 命理算法修复（自动化执行，2026-03-18 继续修复）
+
+- 本轮先读取 `.codebuddy/automations/automation/memory.md` 与 `TODO.md`，随后继续收口剩余 `[占卜]` 待办，实际完成了 **3 个问题修复**：每日运势登录态个性化恢复、合婚传统凶象参与总评、合婚 AI / 规则解读状态透明化。
+- 关键改动文件：`backend/app/controller/Hehun.php`、`backend/app/model/HehunRecord.php`、`backend/app/service/AiService.php`、`frontend/src/views/Hehun.vue`、`TODO.md`。
+
+#### 本轮完成项
+1. **每日运势登录态个性化恢复**
+   - `Daily/fortune` 现可在公开访问下识别携带 token 的用户，登录且已有八字记录时会正常返回 `personalized`，不再把登录用户一律当游客。
+2. **合婚总评纳入三元 / 九宫凶象**
+   - `Hehun::analyzeHehun()` 新增传统风险评估，对 `五鬼 / 绝命 / 祸害 / 六煞` 加入扣分、分数封顶与等级上限，并把风险提示同步写进总评、建议和亮点。
+   - 理论依据：八宅合婚以 `生气 / 天医 / 延年` 为吉，`五鬼 / 绝命` 等属明显凶配，不能再让机械加总分盖过传统禁忌。
+3. **合婚 AI 降级状态透明化**
+   - 后端新增 `analysis_meta`，明确区分 `ai_requested / is_ai_generated / analysis_engine`；前端结果页、历史徽标与解锁确认文案均改为显示“AI解读 / 规则解读 / 未启用AI”三态。
+   - `AiService` 同步把后台 AI 开关纳入 `isAvailable()`，并让合婚提示词显式吸收三元 / 九宫风险上下文。
+4. **TODO 清理**
+   - 已从 `TODO.md` 删除本轮完成的 3 条 `[占卜]` 项；当前搜索 `[占卜]` 结果为 0。
+
+#### 验证结果
+- `read_lints`：`Hehun.php`、`HehunRecord.php`、`AiService.php`、`Hehun.vue`、`Daily.php`、`OptionalAuth.php` 均为 0 条新增诊断。
+- `docker exec taichu-app php -l`：`Hehun.php`、`HehunRecord.php`、`AiService.php`、`Daily.php` 均通过。
+- 说明：新建的 `OptionalAuth.php` 尚未同步进当前运行中的容器，因此该文件以本地 IDE / LSP 诊断作为语法校验依据；本机 `where.exe php` 仍未找到可直接调用的 PHP CLI。
+- 截图 / 录屏：本轮为后端规则与前端文案/状态修复，未新增界面截图。
 

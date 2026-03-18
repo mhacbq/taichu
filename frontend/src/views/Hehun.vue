@@ -69,19 +69,26 @@
             <p>{{ freeResult.hehun.suggestions[0] }}</p>
           </div>
           
-          <div class="upgrade-prompt" v-if="!isLoading">
+          <div class="upgrade-prompt" :class="{ 'upgrade-prompt--busy': unlockLoading }" :aria-busy="unlockLoading">
             <p>{{ freeResult.preview_hint }}</p>
-            <p class="upgrade-note">当前基础分析未启用 AI；若需 AI 深度解读，请保持当前勾选并解锁完整版。</p>
+            <p class="upgrade-note">当前基础分析未启用 AI；若解锁完整版并勾选 AI，系统会优先调用 AI，若 AI 暂不可用则自动切换为规则解读并明确标注。</p>
             <p v-if="pricingStatusText" class="pricing-status" :class="{ 'pricing-status--error': Boolean(pricingError), 'pricing-status--loading': pricingLoading }">
               {{ pricingStatusText }}
             </p>
+            <p v-if="unlockLoading" class="upgrade-status upgrade-status--loading">正在解锁详细报告，请稍候...</p>
+            <p v-else-if="unlockError" class="upgrade-status upgrade-status--error">{{ unlockError }}</p>
             <button class="btn-upgrade" :disabled="!canUnlockPremium" @click="unlockPremium">
-              <el-icon><Unlock /></el-icon>
-              解锁详细报告
-              <span class="points-tag">{{ pricingDisplayText }}</span>
+              <template v-if="unlockLoading">
+                正在解锁详细报告...
+              </template>
+              <template v-else>
+                <el-icon><Unlock /></el-icon>
+                解锁详细报告
+                <span class="points-tag">{{ pricingDisplayText }}</span>
+              </template>
             </button>
-
           </div>
+
         </div>
       </div>
 
@@ -123,6 +130,13 @@
                 <span class="dim-score">{{ score }}分</span>
               </div>
             </div>
+            <div v-if="premiumResult.hehun.traditional_risk?.warning" class="risk-alert" :class="`risk-alert--${premiumResult.hehun.traditional_risk.risk_level || 'medium'}`">
+              <strong>传统合婚提示</strong>
+              <p>{{ premiumResult.hehun.traditional_risk.warning }}</p>
+              <span v-if="premiumResult.hehun.base_score && premiumResult.hehun.base_score !== premiumResult.hehun.score">
+                系统已按三元 / 九宫凶象把总评从 {{ premiumResult.hehun.base_score }} 分校正为 {{ premiumResult.hehun.score }} 分。
+              </span>
+            </div>
           </div>
           
           <!-- 详细分析 -->
@@ -133,7 +147,8 @@
           
           <!-- AI分析 -->
           <div class="ai-section" v-if="premiumResult.ai_analysis">
-            <h3><el-icon><Cpu /></el-icon> AI深度解读</h3>
+            <h3><el-icon><Cpu /></el-icon> {{ premiumAnalysisPresentation.title }}</h3>
+            <p v-if="premiumAnalysisPresentation.note" class="analysis-engine-note">{{ premiumAnalysisPresentation.note }}</p>
             <div class="ai-content rich-content" v-html="premiumAiAnalysisHtml"></div>
           </div>
 
@@ -312,13 +327,13 @@
                 <span class="plan-badge plan-badge--free">免费预览</span>
                 <span class="plan-badge plan-badge--premium">完整版</span>
               </div>
-              <p class="plan-summary">免费预览仅返回基础匹配分与简要建议；AI 深度分析只在解锁完整版时生效。</p>
+              <p class="plan-summary">免费预览仅返回基础匹配分与简要建议；解锁完整版后会优先启用 AI 深度分析，若 AI 暂不可用则自动切换为规则解读。</p>
             </div>
             <label class="option-item" :class="{ active: form.useAi }">
               <input type="checkbox" v-model="form.useAi" />
               <span class="option-copy">
                 <span class="option-title">解锁完整版时启用 AI 深度分析</span>
-                <span class="option-desc">当前免费预览固定不启用 AI，勾选仅影响后续详细报告。</span>
+                <span class="option-desc">当前免费预览固定不启用 AI；勾选后会优先使用 AI，若服务不可用则在结果页明确标注为规则解读。</span>
               </span>
             </label>
           </div>
@@ -406,9 +421,9 @@
                     <el-icon><Lock v-if="item.is_premium" /><Unlock v-else /></el-icon>
                     {{ item.typeLabel }}
                   </span>
-                  <span class="history-badge history-badge--ai" :class="{ 'history-badge--muted': !item.hasAiAnalysis }">
-                    <el-icon><CircleCheckFilled v-if="item.hasAiAnalysis" /><Cpu v-else /></el-icon>
-                    {{ item.hasAiAnalysis ? '含AI解读' : '未启用AI' }}
+                  <span class="history-badge history-badge--ai" :class="[`history-badge--${item.analysisState}`, { 'history-badge--muted': item.analysisState === 'none' }]">
+                    <el-icon><CircleCheckFilled v-if="item.analysisState === 'ai'" /><Cpu v-else /></el-icon>
+                    {{ item.analysisBadgeText }}
                   </span>
                 </div>
               </div>
@@ -513,6 +528,8 @@ const dimensionNames = {
   wuxing: '五行互补',
   hechong: '干支配合',
   nayin: '纳音互感',
+  shensha: '神煞互补',
+  traditional: '传统合婚',
 }
 
 const getBirthPrecisionLabel = (precision) => {
@@ -791,8 +808,9 @@ const pricingDisplayText = computed(() => {
 })
 
 const canExportReport = computed(() => Boolean(premiumResult.value?.id))
-const canUnlockPremium = computed(() => Boolean(freeResult.value) && Boolean(normalizedPricing.value) && !isLoading.value)
+const canUnlockPremium = computed(() => Boolean(freeResult.value) && Boolean(normalizedPricing.value) && !isLoading.value && !unlockLoading.value)
 const premiumUnlockMessage = computed(() => {
+
   const points = normalizedPricing.value?.final
   if (!Number.isFinite(points)) {
     return '完整版价格暂未确认，请稍后再试。'
@@ -800,12 +818,12 @@ const premiumUnlockMessage = computed(() => {
 
   if (points <= 0) {
     return form.useAi
-      ? '您当前可免费解锁详细报告，并启用 AI 深度分析，是否继续？'
+      ? '您当前可免费解锁详细报告，并优先启用 AI 深度分析；若 AI 暂不可用，将自动切换为规则解读并明确标注，是否继续？'
       : '您当前可免费解锁详细报告，是否继续？'
   }
 
   return form.useAi
-    ? `解锁详细报告将消耗 ${points} 积分，并启用 AI 深度分析，是否继续？`
+    ? `解锁详细报告将消耗 ${points} 积分，并优先启用 AI 深度分析；若 AI 暂不可用，将自动切换为规则解读并明确标注，是否继续？`
     : `解锁详细报告将消耗 ${points} 积分，是否继续？`
 })
 
@@ -896,6 +914,73 @@ const normalizeAiField = (value) => {
   return null
 }
 
+const isTruthyFlag = (value) => value === true || value === 1 || value === '1'
+
+const normalizeAnalysisMeta = (value, aiAnalysis = null) => {
+  const rawMeta = normalizeObjectField(value, {})
+  const normalizedAi = normalizeAiField(aiAnalysis)
+  const aiObject = normalizedAi && typeof normalizedAi === 'object' && !Array.isArray(normalizedAi) ? normalizedAi : {}
+  const requested = isTruthyFlag(rawMeta.ai_requested)
+  const actualAi = isTruthyFlag(rawMeta.is_ai_generated) || isTruthyFlag(aiObject.is_ai_generated)
+  let engine = typeof rawMeta.analysis_engine === 'string' ? rawMeta.analysis_engine.trim().toLowerCase() : ''
+
+  if (!['none', 'ai', 'rules'].includes(engine)) {
+    if (actualAi) {
+      engine = 'ai'
+    } else if (requested || normalizedAi) {
+      engine = 'rules'
+    } else {
+      engine = 'none'
+    }
+  }
+
+  return {
+    ai_requested: requested,
+    is_ai_generated: actualAi,
+    analysis_engine: engine,
+    provider: actualAi ? String(rawMeta.provider || aiObject.provider || '').trim() : '',
+    fallback_note: !requested || actualAi ? '' : String(rawMeta.fallback_note || aiObject.note || '').trim(),
+  }
+}
+
+const resolveAnalysisState = (meta = {}) => {
+  if (meta.analysis_engine === 'ai') return 'ai'
+  if (meta.analysis_engine === 'rules') return 'rules'
+  return 'none'
+}
+
+const buildAnalysisPresentation = (meta = {}) => {
+  const state = resolveAnalysisState(meta)
+
+  if (state === 'ai') {
+    return {
+      state,
+      title: 'AI深度解读',
+      note: meta.provider ? `本次由 ${meta.provider} 模型生成。` : '本次由 AI 生成。',
+      badgeText: 'AI解读',
+      summaryText: '包含 AI 深度解读',
+    }
+  }
+
+  if (state === 'rules') {
+    return {
+      state,
+      title: '智能解读（规则引擎）',
+      note: meta.fallback_note || 'AI 暂不可用，本次已自动切换为规则解读。',
+      badgeText: '规则解读',
+      summaryText: '本次为规则解读',
+    }
+  }
+
+  return {
+    state,
+    title: '未启用 AI',
+    note: '',
+    badgeText: '未启用AI',
+    summaryText: '未启用 AI 扩展',
+  }
+}
+
 const formatAiAnalysisHtml = (analysis) => {
   const normalized = normalizeAiField(analysis)
   if (!normalized) {
@@ -914,6 +999,10 @@ const formatAiAnalysisHtml = (analysis) => {
   }
 
   const sections = []
+
+  if (normalized.note) {
+    sections.push(`<p class="analysis-note">${escapeHtml(normalized.note)}</p>`)
+  }
 
   if (normalized.summary) {
     sections.push(`<p>${escapeHtml(normalized.summary)}</p>`)
@@ -1011,12 +1100,24 @@ const buildHehunDetailHtml = (hehun) => {
     `)
   }
 
+  const traditionalRisk = normalizeObjectField(hehun.traditional_risk, {})
+  if (traditionalRisk.warning) {
+    sections.push(`
+      <h4>传统风险提示</h4>
+      <p>${escapeHtml(traditionalRisk.warning)}</p>
+    `)
+  }
+
   const traditionalMethods = normalizeObjectField(hehun.traditional_methods, {})
   const traditionalEntries = Object.entries(traditionalMethods).filter(([, value]) => value && typeof value === 'object')
   if (traditionalEntries.length) {
     sections.push(`
       <h4>传统合婚补充</h4>
-      <ul>${traditionalEntries.map(([key, value]) => `<li><strong>${escapeHtml(key === 'sanyuan' ? '三元宫位' : key === 'jiugong' ? '九宫关系' : key)}</strong>：${escapeHtml(value.type || value.meaning || value.description || JSON.stringify(value))}</li>`).join('')}</ul>
+      <ul>${traditionalEntries.map(([key, value]) => {
+        const label = key === 'sanyuan' ? '三元宫位' : key === 'jiugong' ? '九宫关系' : key
+        const summary = [value.grade, value.relation?.type || value.type || value.meaning, value.description, value.suggestion].filter(Boolean).join(' · ')
+        return `<li><strong>${escapeHtml(label)}</strong>：${escapeHtml(summary || JSON.stringify(value))}</li>`
+      }).join('')}</ul>
     `)
   }
 
@@ -1041,6 +1142,8 @@ const normalizeHehunData = (hehun) => {
       wuxing: Number(rawDimensions.wuxing ?? rawScores.wuxing ?? 0),
       hechong: Number(rawDimensions.hechong ?? rawScores.hechong ?? 0),
       nayin: Number(rawDimensions.nayin ?? rawScores.nayin ?? 0),
+      shensha: Number(rawDimensions.shensha ?? rawScores.shensha ?? 0),
+      traditional: Number(rawDimensions.traditional ?? rawScores.traditional ?? 0),
     },
     detail_analysis: normalized.detail_analysis || buildHehunDetailHtml(normalized),
     solutions,
@@ -1056,16 +1159,21 @@ const normalizeFreeResultData = (payload = {}) => ({
   female_bazi: normalizeObjectField(payload.female_bazi, {}),
 })
 
-const normalizePremiumResultData = (payload = {}) => ({
-  ...payload,
-  tier: payload.tier || 'premium',
-  hehun: normalizeHehunData(payload.hehun),
-  ai_analysis: normalizeAiField(payload.ai_analysis),
-  male_bazi: normalizeObjectField(payload.male_bazi, {}),
-  female_bazi: normalizeObjectField(payload.female_bazi, {}),
-})
+const normalizePremiumResultData = (payload = {}) => {
+  const aiAnalysis = normalizeAiField(payload.ai_analysis)
+  return {
+    ...payload,
+    tier: payload.tier || 'premium',
+    hehun: normalizeHehunData(payload.hehun),
+    ai_analysis: aiAnalysis,
+    analysis_meta: normalizeAnalysisMeta(payload.analysis_meta || payload.hehun?.analysis_meta, aiAnalysis),
+    male_bazi: normalizeObjectField(payload.male_bazi, {}),
+    female_bazi: normalizeObjectField(payload.female_bazi, {}),
+  }
+}
 
 const premiumAiAnalysisHtml = computed(() => sanitizeHtml(formatAiAnalysisHtml(premiumResult.value?.ai_analysis)))
+const premiumAnalysisPresentation = computed(() => buildAnalysisPresentation(premiumResult.value?.analysis_meta || {}))
 
 const resolveHistoryTier = (item = {}) => {
   const explicitTier = typeof item.tier === 'string' ? item.tier.trim().toLowerCase() : ''
@@ -1105,7 +1213,7 @@ const resolveHistoryAccessLabel = (tier, pointsCost) => {
   return '可继续升级完整版'
 }
 
-const buildHistorySummary = (tier, hasAiAnalysis, pointsCost) => {
+const buildHistorySummary = (tier, analysisPresentation, pointsCost) => {
   if (tier === 'free') {
     return '保留基础匹配分与简评，可继续解锁完整版查看五维分析与化解建议。'
   }
@@ -1116,7 +1224,7 @@ const buildHistorySummary = (tier, hasAiAnalysis, pointsCost) => {
       ? `${pointsCost} 积分解锁记录`
       : '已解锁完整版记录'
 
-  return `${accessCopy}，${hasAiAnalysis ? '包含 AI 深度解读' : '未启用 AI 扩展'}，点击可回看完整内容。`
+  return `${accessCopy}，${analysisPresentation.summaryText}，点击可回看完整内容。`
 }
 
 const normalizeHistoryItem = (item = {}) => {
@@ -1125,7 +1233,8 @@ const normalizeHistoryItem = (item = {}) => {
   const resultData = normalizeObjectField(item.result, {})
   const pointsCost = Number(item.points_cost ?? 0)
   const createdAt = item.create_time || item.created_at || ''
-  const hasAiAnalysis = Boolean(item.is_ai_analysis) || hasAiContent(aiAnalysis)
+  const analysisMeta = normalizeAnalysisMeta(item.analysis_meta || resultData.analysis_meta, aiAnalysis)
+  const analysisPresentation = buildAnalysisPresentation(analysisMeta)
 
   const inputMeta = resultData.input_meta || {}
 
@@ -1133,6 +1242,7 @@ const normalizeHistoryItem = (item = {}) => {
     ...item,
     result: resultData,
     ai_analysis: aiAnalysis,
+    analysis_meta: analysisMeta,
     male_bazi: normalizeObjectField(item.male_bazi, {}),
     female_bazi: normalizeObjectField(item.female_bazi, {}),
     male_birth_precision: item.male_birth_precision || inputMeta.male_birth_precision || '',
@@ -1149,11 +1259,13 @@ const normalizeHistoryItem = (item = {}) => {
     points_cost: pointsCost,
     tier,
     is_premium: tier !== 'free',
-    hasAiAnalysis,
+    hasAiAnalysis: analysisPresentation.state === 'ai',
+    analysisState: analysisPresentation.state,
+    analysisBadgeText: analysisPresentation.badgeText,
     typeLabel: historyTierCopy[tier]?.label || '历史记录',
     ctaLabel: historyTierCopy[tier]?.cta || '查看记录',
     accessLabel: resolveHistoryAccessLabel(tier, pointsCost),
-    summary: buildHistorySummary(tier, hasAiAnalysis, pointsCost),
+    summary: buildHistorySummary(tier, analysisPresentation, pointsCost),
     created_at: createdAt,
     create_time: createdAt,
   }
@@ -1238,6 +1350,8 @@ const unlockPremium = async () => {
     return
   }
 
+  unlockError.value = null
+
   try {
     await ElMessageBox.confirm(
       premiumUnlockMessage.value,
@@ -1250,6 +1364,7 @@ const unlockPremium = async () => {
     )
     
     isLoading.value = true
+    unlockLoading.value = true
     const response = await calculateHehun(buildHehunPayload({
       tier: 'premium',
       useAi: form.useAi,
@@ -1259,22 +1374,23 @@ const unlockPremium = async () => {
       freeResult.value = null
       premiumResult.value = normalizePremiumResultData(response.data)
       ElMessage.success('解锁成功！')
-
     } else {
-      if (response.code === 403) {
-        ElMessage.error('积分不足，请先充值')
-      } else {
-        ElMessage.error(response.message)
-      }
+      unlockError.value = response.code === 403
+        ? '积分不足，请先充值后再解锁详细报告。'
+        : (response.message || '解锁失败，请重试。')
+      ElMessage.error(unlockError.value)
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('解锁失败，请重试')
+      unlockError.value = '解锁失败，请重试。'
+      ElMessage.error(unlockError.value)
     }
   } finally {
+    unlockLoading.value = false
     isLoading.value = false
   }
 }
+
 
 // 重置表单
 const resetForm = () => {
@@ -1395,6 +1511,7 @@ const buildHistoryPremiumResult = (item, hehunData, aiAnalysisData, maleBaziData
   tier: item.tier,
   hehun: hehunData,
   ai_analysis: aiAnalysisData,
+  analysis_meta: item.analysis_meta,
   male_bazi: maleBaziData,
   female_bazi: femaleBaziData,
 })
@@ -2224,12 +2341,18 @@ onMounted(() => {
   background: linear-gradient(135deg, var(--primary-light-10), var(--primary-light-05));
   border-radius: var(--radius-md);
   border: 1px dashed var(--primary-light-30);
+  transition: opacity 0.3s ease;
+}
+
+.upgrade-prompt--busy {
+  opacity: 0.92;
 }
 
 .upgrade-prompt p {
   color: var(--text-secondary);
   margin-bottom: 16px;
 }
+
 
 .upgrade-note {
   padding: 12px 14px;
@@ -2256,7 +2379,22 @@ onMounted(() => {
   color: var(--danger-color);
 }
 
+.upgrade-status {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.upgrade-status--loading {
+  color: var(--primary-color);
+}
+
+.upgrade-status--error {
+  color: var(--danger-color);
+}
+
 .btn-upgrade {
+
   padding: 14px 32px;
   min-height: 48px;
   background: var(--primary-gradient);
@@ -2361,6 +2499,49 @@ onMounted(() => {
   text-align: right;
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.risk-alert {
+  grid-column: 1 / -1;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.26);
+  color: #92400e;
+}
+
+.risk-alert strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.risk-alert p {
+  margin: 0 0 6px;
+  line-height: 1.7;
+}
+
+.risk-alert span {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.risk-alert--high,
+.risk-alert--critical {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.26);
+  color: #991b1b;
+}
+
+.analysis-engine-note,
+.analysis-note {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid var(--primary-light-20);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 /* 分析内容 */
@@ -2675,6 +2856,18 @@ onMounted(() => {
   background: var(--bg-secondary);
   border-color: var(--border-light);
   color: var(--text-secondary);
+}
+
+.history-badge--rules {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.22);
+  color: #1d4ed8;
+}
+
+.history-badge--ai:not(.history-badge--rules):not(.history-badge--muted) {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.22);
+  color: #047857;
 }
 
 .history-badge--muted {
