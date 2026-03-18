@@ -1,6 +1,14 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-18 15:15 执行摘要（本轮）
+
+- 本轮聚焦合婚页表单一致性与回改链路，实质落地 5 个前端修复点：返回修改保留输入、结果区按钮统一、姓名输入改为 `el-input`、出生日期/时间改为 `el-date-picker`、AI 选项与主 CTA 统一到 Element Plus 交互。
+- 关键文件：`frontend/src/views/Hehun.vue`、`TODO.md`。
+- 验证结果：`frontend/src/views/Hehun.vue` 的 `read_lints` 为 0 条新增诊断，`git diff --check -- frontend/src/views/Hehun.vue` 通过，`npm run build --prefix frontend` 成功；仍保留大包体告警，但不影响构建。
+- Git：按 `fix-frontend-form-consistency-20260318-1515` 提交并推送本轮修复。
+
 ## 2026-03-18 13:41 执行摘要（本轮）
+
 
 - 本轮完成 5 个前端问题修复并清理对应 TODO：八字 AI 解盘补充积分确认、全局导航积分徽标改为监听实时余额事件、塔罗问题模板区改为可折叠继续查看、塔罗保存/个人中心历史统一到云端数据源、合婚历史载入前增加草稿覆盖确认。
 - 关键文件：`frontend/src/views/Bazi.vue`、`frontend/src/App.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/views/Profile.vue`、`frontend/src/views/Hehun.vue`、`TODO.md`。

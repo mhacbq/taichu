@@ -2137,11 +2137,12 @@ onMounted(() => {
 
 .option-item {
   color: var(--text-secondary);
-  padding: 16px 18px;
+  padding: 0;
   border-radius: var(--radius-md);
-  background: var(--bg-secondary);
+  background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.03));
   border: 1px solid var(--border-light);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
 }
 
 .option-item.active {
@@ -2152,14 +2153,18 @@ onMounted(() => {
 
 .option-checkbox {
   width: 100%;
+  margin-right: 0;
+  padding: 16px 18px;
+  align-items: flex-start;
 }
 
 .option-checkbox :deep(.el-checkbox__label) {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   white-space: normal;
-  padding-left: 10px;
+  padding-left: 12px;
 }
 
 .option-checkbox :deep(.el-checkbox__input) {
@@ -2169,10 +2174,16 @@ onMounted(() => {
 .option-checkbox :deep(.el-checkbox__inner) {
   width: 18px;
   height: 18px;
+  border-color: var(--border-light);
+  background: var(--bg-secondary);
 }
 
 .option-checkbox :deep(.el-checkbox__inner::after) {
   left: 5px;
+}
+
+.option-checkbox :deep(.el-checkbox__input.is-focus .el-checkbox__inner) {
+  box-shadow: var(--focus-ring);
 }
 
 .option-title {
