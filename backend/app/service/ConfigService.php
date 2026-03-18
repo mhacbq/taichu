@@ -160,6 +160,8 @@ class ConfigService
             'vip' => 'VIP会员',
             'points' => '积分系统',
             'ai_analysis' => 'AI解盘',
+            'daily' => '每日运势',
+            'feedback' => '用户反馈',
             'yearly_fortune' => '流年运势',
             'dayun_analysis' => '大运分析',
             'dayun_chart' => '运势K线图',
@@ -172,6 +174,7 @@ class ConfigService
             'report_tier' => '报告分层',
             'tasks' => '积分任务',
         ];
+
         
         $result = [];
         foreach ($features as $key => $name) {

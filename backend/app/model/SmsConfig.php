@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace app\model;
 
+use app\service\SchemaInspector;
 use app\service\SensitiveConfigCrypt;
 use think\Model;
+
 
 /**
  * 短信配置模型
@@ -13,9 +15,21 @@ class SmsConfig extends Model
 {
     protected const ENCRYPTED_FIELDS = ['secret_id', 'secret_key', 'sign_name'];
 
+    protected static ?string $resolvedTable = null;
+
     protected $name = 'tc_sms_config';
 
-    protected $autoWriteTimestamp = true;
+    protected $autoWriteTimestamp = 'datetime';
+    protected $createTime = 'created_at';
+    protected $updateTime = 'updated_at';
+
+
+    public function __construct(array|object $data = [])
+    {
+        parent::__construct($data);
+        $this->table = self::resolveTableName();
+    }
+
 
     protected $schema = [
         'id' => 'int',
@@ -153,4 +167,22 @@ class SmsConfig extends Model
             . str_repeat('*', max(4, $length - $prefixLength - $suffixLength))
             . substr($value, -$suffixLength);
     }
+
+    protected static function resolveTableName(): string
+    {
+        if (self::$resolvedTable !== null) {
+            return self::$resolvedTable;
+        }
+
+        foreach (['tc_sms_config', 'sms_configs'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                self::$resolvedTable = $table;
+                return $table;
+            }
+        }
+
+        self::$resolvedTable = 'tc_sms_config';
+        return self::$resolvedTable;
+    }
 }
+

@@ -1,5 +1,18 @@
 # 运营人员后台检查 - 执行历史
 
+## 2026-03-18 第三十四轮执行摘要
+
+### 检查范围
+- 复测独立后台 `http://localhost:3001/login`，并通过 3001 代理检查 `/api/health`、`/api/admin/auth/login`；同时核对本地 `backend` 容器状态与最近启动日志。
+
+### 检查结果概述
+- 本轮未能继续进入后台：登录页可访问，但 `/api/health`、`/api/admin/auth/login` 通过 3001 代理均返回 `HTTP 500`；`docker compose ps` 显示 `taichu-app` 持续重启，日志确认根因是 `database/20260318_fix_shensha_display_encoding.sql` 在 bootstrap 时触发 `tc_shensha.uk_name_category` 唯一键冲突。
+- 为避免重复登记，已直接补充 `TODO.md` 现有“服务启动重启循环”条目的后台运营影响范围，并新增 1 条运营体验问题：登录页把服务异常误报成账号错误；本轮未修改业务代码，仅更新了 `TODO.md`、本执行摘要与概览。
+
+---
+
+
+
 ## 2026-03-18 第三十三轮执行摘要
 
 ### 检查范围

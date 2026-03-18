@@ -66,6 +66,32 @@
             </div>
           </div>
 
+          <div v-if="structuredResultItems.length || result.line_details.length" class="structured-section">
+            <h4>结构化排盘</h4>
+            <div v-if="structuredResultItems.length" class="structured-summary">
+              <span v-for="item in structuredResultItems" :key="item.label" class="structured-chip">
+                <span class="structured-chip__label">{{ item.label }}</span>
+                <span class="structured-chip__value">{{ item.value }}</span>
+              </span>
+            </div>
+
+            <div v-if="result.line_details.length" class="line-detail-list">
+              <div v-for="line in result.line_details" :key="line.position" class="line-detail-card">
+                <div class="line-detail-card__header">
+                  <span class="line-detail-card__title">第{{ line.position }}爻 · {{ line.name }}</span>
+                  <div class="line-detail-card__tags">
+                    <span v-if="line.is_shi" class="line-tag line-tag--shi">世</span>
+                    <span v-if="line.is_ying" class="line-tag line-tag--ying">应</span>
+                    <span v-if="line.is_moving" class="line-tag line-tag--moving">动</span>
+                  </div>
+                </div>
+                <div class="line-detail-card__meta">
+                  <span v-if="line.liuqin">六亲：{{ line.liuqin }}</span>
+                  <span v-if="line.liushen">六神：{{ line.liushen }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- 卦辞 -->
           <div class="gua-ci-section">
@@ -139,7 +165,7 @@
 
           <div class="form-group">
             <label>起卦方式</label>
-            <el-radio-group v-model="form.method" class="method-group">
+            <el-radio-group v-model="form.method" class="method-group premium-segment premium-segment--compact">
               <el-radio-button v-for="option in methodOptions" :key="option.value" :label="option.value">
                 {{ option.label }}
               </el-radio-button>
@@ -541,6 +567,35 @@ const resultContextItems = computed(() => {
   ].filter((item) => item.value)
 })
 
+const structuredResultItems = computed(() => {
+  if (!result.value) {
+    return []
+  }
+
+  const shiYing = result.value.shi_ying || {}
+  const yongShen = result.value.yong_shen || {}
+  const yongShenText = [yongShen.liuqin, yongShen.description]
+    .filter((item) => item && String(item).trim())
+    .join('｜')
+  const dongYao = Array.isArray(result.value.bian_gua?.dong_yao)
+    ? result.value.bian_gua.dong_yao.filter(Boolean).join('、')
+    : ''
+  const shiYingText = [
+    shiYing.shi ? `世爻：第${shiYing.shi}爻` : '',
+    shiYing.ying ? `应爻：第${shiYing.ying}爻` : '',
+  ].filter(Boolean).join('｜')
+
+  return [
+    { label: '本卦', value: result.value.gua?.name || '' },
+    { label: '变卦', value: result.value.bian_gua?.name || '' },
+    { label: '互卦', value: result.value.hu_gua?.name || '' },
+    { label: '所属宫位', value: result.value.gong || '' },
+    { label: '世应', value: shiYingText },
+    { label: '动爻', value: dongYao },
+    { label: '用神', value: yongShenText },
+  ].filter((item) => item.value)
+})
+
 const reportUiError = (action, error, userMessage = '') => {
 
 
@@ -637,7 +692,34 @@ const normalizeAiAnalysis = (value) => {
 
 const normalizeResult = (data = {}, isHistory = false) => {
   const gua = data.gua || {}
+  const bianGua = data.bian_gua || {}
+  const huGua = data.hu_gua || {}
   const yaoResult = parseYaoResult(data.yao_result ?? data.yao_results, data.yao_code || gua.code || '')
+  const liuqinMap = (data.liuqin && typeof data.liuqin === 'object') ? data.liuqin : {}
+  const liushenMap = (data.liushen && typeof data.liushen === 'object') ? data.liushen : {}
+  const shiYing = (data.shi_ying && typeof data.shi_ying === 'object') ? data.shi_ying : {}
+  const dongYao = Array.isArray(bianGua.dong_yao) ? bianGua.dong_yao.map((item) => Number(item)) : []
+  const lineDetails = Array.isArray(data.line_details) && data.line_details.length
+    ? data.line_details.map((line, index) => ({
+      position: Number(line.position || index + 1),
+      value: normalizeYaoCode(line.value ?? yaoResult[index] ?? 1),
+      name: line.name || getYaoName(line.value ?? yaoResult[index] ?? 1),
+      liuqin: line.liuqin || liuqinMap[String(line.position || index + 1)] || liuqinMap[line.position || index + 1] || '',
+      liushen: line.liushen || liushenMap[String(line.position || index + 1)] || liushenMap[line.position || index + 1] || '',
+      is_moving: Boolean(line.is_moving),
+      is_shi: Boolean(line.is_shi),
+      is_ying: Boolean(line.is_ying),
+    }))
+    : yaoResult.map((item, index) => ({
+      position: index + 1,
+      value: item,
+      name: getYaoName(item),
+      liuqin: liuqinMap[String(index + 1)] || liuqinMap[index + 1] || '',
+      liushen: liushenMap[String(index + 1)] || liushenMap[index + 1] || '',
+      is_moving: dongYao.includes(index + 1),
+      is_shi: Number(shiYing.shi || 0) === index + 1,
+      is_ying: Number(shiYing.ying || 0) === index + 1,
+    }))
 
   return {
     id: data.id,
@@ -647,7 +729,6 @@ const normalizeResult = (data = {}, isHistory = false) => {
     time_info: data.time_info || null,
     created_at: data.created_at || data.createdAt || '',
     yao_result: yaoResult,
-
     yao_names: Array.isArray(data.yao_names) && data.yao_names.length === yaoResult.length
       ? data.yao_names
       : yaoResult.map((item) => getYaoName(item)),
@@ -656,6 +737,23 @@ const normalizeResult = (data = {}, isHistory = false) => {
       code: gua.code || data.gua_code || data.clean_gua_code || data.yao_code || '',
       gua_ci: gua.gua_ci || data.gua_ci || data.gua_info?.main?.gua_ci || data.gua_info?.main?.general_meaning || '',
     },
+    bian_gua: {
+      name: bianGua.name || data.bian_gua_name || '',
+      code: bianGua.code || data.bian_gua_code || '',
+      dong_yao: dongYao.filter((item) => Number.isFinite(item) && item > 0),
+    },
+    hu_gua: {
+      name: huGua.name || data.hu_gua_name || '',
+      code: huGua.code || data.hu_gua_code || '',
+    },
+    gong: data.gong || '',
+    shi_ying: shiYing,
+    liuqin: liuqinMap,
+    liushen: liushenMap,
+    yong_shen: (data.yong_shen && typeof data.yong_shen === 'object')
+      ? data.yong_shen
+      : { liuqin: data.yongshen || '' },
+    line_details: lineDetails,
     interpretation: data.interpretation || '',
     ai_analysis: normalizeAiAnalysis(data.ai_analysis || data.ai_interpretation),
     points_cost: Number(data.points_cost ?? data.consumed_points ?? 0) || 0,
@@ -1501,6 +1599,110 @@ onUnmounted(() => {
 }
 
 
+
+.structured-section {
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-light);
+}
+
+.structured-section h4 {
+  color: var(--primary-color);
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+
+.structured-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.structured-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(184, 134, 11, 0.08);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+.structured-chip__label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.structured-chip__value {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.line-detail-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.line-detail-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid var(--border-light);
+}
+
+.line-detail-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.line-detail-card__title {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.line-detail-card__tags {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.line-tag {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-align: center;
+  color: #fff;
+}
+
+.line-tag--shi {
+  background: #8b6914;
+}
+
+.line-tag--ying {
+  background: #6f42c1;
+}
+
+.line-tag--moving {
+  background: #d9534f;
+}
+
+.line-detail-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
 
 /* 卦辞 */
 .gua-ci-section {

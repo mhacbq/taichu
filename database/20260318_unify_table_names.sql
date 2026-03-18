@@ -30,8 +30,9 @@ DEALLOCATE PREPARE stmt_sms_codes;
 -- 2. 重命名 sms_configs 为 tc_sms_config
 SET @check_sms_configs := (
     SELECT COUNT(*) FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = 'taichu' AND TABLE_NAME = 'sms_configs'
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sms_configs'
 );
+
 
 SET @sql_sms_configs := IF(
     @check_sms_configs > 0,
@@ -62,17 +63,15 @@ DEALLOCATE PREPARE stmt_payment_configs;
 -- 验证结果
 SELECT '表名统一迁移完成' AS message;
 SELECT
-    'tc_sms_code' AS table_name,
-    COUNT(*) AS row_count
-FROM `tc_sms_code`
-UNION ALL
-SELECT
-    'tc_sms_config' AS table_name,
-    COUNT(*) AS row_count
-FROM `tc_sms_config`
-UNION ALL
-SELECT
-    'tc_payment_config' AS table_name,
-    COUNT(*) AS row_count
-FROM `tc_payment_config`;
+    candidates.table_name,
+    CASE WHEN actual.TABLE_NAME IS NULL THEN 'missing' ELSE 'exists' END AS status
+FROM (
+    SELECT 'tc_sms_code' AS table_name
+    UNION ALL SELECT 'tc_sms_config'
+    UNION ALL SELECT 'tc_payment_config'
+) AS candidates
+LEFT JOIN information_schema.TABLES AS actual
+    ON actual.TABLE_SCHEMA = DATABASE()
+   AND actual.TABLE_NAME = candidates.table_name;
+
 

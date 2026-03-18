@@ -102,6 +102,7 @@ class Feedback extends Model
         return self::create([
             'user_id' => $data['user_id'] ?? 0,
             'type' => $data['type'] ?? 'other',
+            'title' => self::buildFeedbackTitle((array) $data),
             'content' => $data['content'] ?? '',
             'contact' => $data['contact'] ?? '',
             'images' => $data['images'] ?? '',
@@ -110,6 +111,22 @@ class Feedback extends Model
             'replied_at' => null,
         ]);
     }
+
+    protected static function buildFeedbackTitle(array $data): string
+    {
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title !== '') {
+            return mb_substr($title, 0, 200);
+        }
+
+        $content = trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($data['content'] ?? ''))) ?? '');
+        if ($content !== '') {
+            return mb_substr($content, 0, 200);
+        }
+
+        return '用户反馈';
+    }
+
 
     /**
      * 回复反馈

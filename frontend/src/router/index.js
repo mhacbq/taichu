@@ -367,6 +367,12 @@ router.beforeEach((to, from, next) => {
 
 // 路由后置守卫 - 设置SEO
 router.afterEach((to) => {
+  const isAdminRoute = typeof to?.path === 'string' && to.path.startsWith('/admin')
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.classList.toggle('route-admin', isAdminRoute)
+    document.body.classList.toggle('route-frontend', !isAdminRoute)
+  }
+
   // 获取页面SEO配置
   const seoConfig = to.meta.seo || seoConfigs.home
   

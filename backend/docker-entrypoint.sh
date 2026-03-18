@@ -7,6 +7,7 @@ BOOTSTRAP_SQL_DIR="${BOOTSTRAP_SQL_DIR:-/var/www/bootstrap-sql}"
 BOOTSTRAP_SQL_FILES=(
     "20260317_create_admin_users_table.sql"
     "20260317_create_shensha_table.sql"
+    "20260318_fix_shensha_display_encoding.sql"
     "20260317_create_knowledge_tables.sql"
     "20260318_create_almanac_table.sql"
     "20260318_create_seo_tables.sql"
@@ -82,7 +83,9 @@ run_bootstrap_sql() {
         fi
 
         echo "[entrypoint] applying bootstrap SQL: $sql_file"
-        MYSQL_PWD="$password" mysql -h "$host" -P "$port" -u "$user" "$database" < "$sql_path"
+        if ! MYSQL_PWD="$password" mysql -h "$host" -P "$port" -u "$user" "$database" < "$sql_path"; then
+            echo "[entrypoint] bootstrap SQL failed, continue: $sql_file" >&2
+        fi
     done
 }
 

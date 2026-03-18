@@ -97,14 +97,15 @@ class Share extends BaseController
         }
         
         // 记录分享日志
-        Db::name('tc_share_log')->insert([
+        Db::table('tc_share_log')->insert([
             'user_id' => $userId,
             'platform' => $platform,
             'type' => $shareType,
-            'points' => $pointsEarned,
+            'points_reward' => $pointsEarned,
             'ip' => $this->request->ip(),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
+
         
         return $this->success([
             'points_earned' => $pointsEarned,
@@ -146,26 +147,31 @@ class Share extends BaseController
         $page = (int) $this->request->get('page', 1);
         $limit = (int) $this->request->get('limit', 20);
         
-        $query = Db::name('tc_invite_record')
+        $query = Db::table('tc_invite_record')
             ->where('inviter_id', $userId)
             ->where('status', 1)
             ->order('created_at', 'desc');
+
         
         $total = $query->count();
         $list = $query->page($page, $limit)->select()->toArray();
         
         // 获取被邀请人信息
         foreach ($list as &$item) {
-            if (!empty($item['invitee_id'])) {
-                $invitee = Db::name('tc_user')
-                    ->where('id', $item['invitee_id'])
+            $invitedUserId = (int) ($item['invited_id'] ?? 0);
+            if ($invitedUserId > 0) {
+                $invitee = Db::table('tc_user')
+                    ->where('id', $invitedUserId)
                     ->field('nickname, avatar, created_at')
                     ->find();
+                $item['invitee_id'] = $invitedUserId;
                 $item['invitee'] = $invitee ?: null;
             } else {
+                $item['invitee_id'] = 0;
                 $item['invitee'] = null;
             }
         }
+
         
         return $this->success([
             'list' => $list,

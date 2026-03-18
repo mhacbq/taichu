@@ -193,7 +193,7 @@
         <!-- 反馈建议 -->
         <div class="feedback-section card card-hover">
           <h3>反馈建议</h3>
-          <div class="feedback-form">
+          <div v-if="feedbackEnabled" class="feedback-form">
             <el-input
               v-model="feedbackContent"
               type="textarea"
@@ -210,16 +210,19 @@
               提交反馈
             </el-button>
           </div>
+          <el-empty v-else description="反馈功能暂时关闭，后续开放后可在这里直接提交建议" />
         </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, submitFeedback } from '../api'
+import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, submitFeedback, getClientConfig } from '../api'
+
 
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
@@ -236,6 +239,7 @@ const tarotHistory = ref([])
 const feedbackContent = ref('')
 const feedbackContact = ref('')
 const feedbackLoading = ref(false)
+const feedbackEnabled = ref(true)
 
 // 分页相关
 const baziCurrentPage = ref(1)
@@ -243,13 +247,19 @@ const baziPageSize = ref(5)
 const baziTotal = ref(0)
 
 // 积分获取方式
-const pointsMethods = ref([
+const pointMethodDefinitions = [
   { id: 1, icon: 'calendar', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
   { id: 2, icon: 'present', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
   { id: 3, icon: 'user', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
   { id: 4, icon: 'share', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
   { id: 5, icon: 'chat', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
-])
+]
+const pointsMethods = computed(() => (
+  feedbackEnabled.value
+    ? pointMethodDefinitions
+    : pointMethodDefinitions.filter(method => method.action !== 'feedback')
+))
+
 
 // 邀请相关
 const inviteCode = ref('')
@@ -284,7 +294,39 @@ const reportProfileError = (action, error, extra = {}) => {
   })
 }
 
+const resolveFeedbackEnabled = (config = {}) => {
+  const featureConfig = config?.features?.feedback
+  if (featureConfig && typeof featureConfig === 'object' && 'enabled' in featureConfig) {
+    return Boolean(featureConfig.enabled)
+  }
+
+  if (typeof featureConfig === 'boolean') {
+    return featureConfig
+  }
+
+  return true
+}
+
+const syncClientFeatureConfig = async () => {
+  try {
+    const response = await getClientConfig()
+    if (response?.code === 200) {
+      feedbackEnabled.value = resolveFeedbackEnabled(response.data)
+      if (!feedbackEnabled.value) {
+        feedbackContent.value = ''
+        feedbackContact.value = ''
+      }
+      return
+    }
+  } catch (error) {
+    reportProfileError('load_client_config_failed', error)
+  }
+
+  feedbackEnabled.value = true
+}
+
 const safeReadArrayFromStorage = (key) => {
+
   try {
     const rawValue = localStorage.getItem(key)
     if (!rawValue) {
@@ -364,6 +406,8 @@ const loadUserData = async () => {
     if (historyRes.code === 200) {
       pointsHistory.value = historyRes.data || []
     }
+
+    await syncClientFeatureConfig()
     
     // 加载排盘历史
     await loadBaziHistory()
@@ -371,6 +415,7 @@ const loadUserData = async () => {
     // 加载塔罗历史
     await loadTarotHistory()
   } catch (error) {
+
 
     reportProfileError('load_user_data_failed', error)
   }
@@ -421,10 +466,16 @@ const handleTarotHistoryUpdated = () => {
 
 
 const submitFeedbackForm = async () => {
+  if (!feedbackEnabled.value) {
+    ElMessage.warning('反馈功能暂时关闭')
+    return
+  }
+
   if (!feedbackContent.value.trim()) {
     ElMessage.warning('请输入反馈内容')
     return
   }
+
   
   feedbackLoading.value = true
   try {

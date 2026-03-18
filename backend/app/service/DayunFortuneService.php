@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace app\service;
 
-use app\model\PointsRecord;
-
 /**
  * 大运运势评分服务
  * 提供大运的详细评分和分析
@@ -39,38 +37,37 @@ class DayunFortuneService
             $cached['points_cost'] = 0;
             return $cached;
         }
-        
-        // 检查用户积分
+
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
             throw new \Exception('用户不存在');
         }
-        
-        if ($userModel->points < self::DAYUN_ANALYSIS_POINTS_COST) {
+
+        if ((int) ($userModel->points ?? 0) < self::DAYUN_ANALYSIS_POINTS_COST) {
             throw new \Exception('积分不足，需要' . self::DAYUN_ANALYSIS_POINTS_COST . '积分', 403);
         }
-        
-        // 扣除积分
-        $userModel->deductPoints(self::DAYUN_ANALYSIS_POINTS_COST);
-        PointsRecord::record(
+
+        $scores = $this->calculateDayunScores($dayun, $bazi);
+        $analysis = $this->generateDayunAnalysis($dayun, $bazi, $scores);
+        $overallScore = (int) ($scores['overall'] ?? 0);
+        $fortuneLevel = $this->getFortuneLevel($overallScore);
+
+        $pointsService = new PointsService();
+        $consumeResult = $pointsService->consume(
             $userId,
+            self::DAYUN_ANALYSIS_POINTS_COST,
             '大运运势分析',
-            -self::DAYUN_ANALYSIS_POINTS_COST,
             'dayun_analysis',
             0,
             "大运: {$dayun['gan']}{$dayun['zhi']} ({$dayun['start_age']}-{$dayun['end_age']}岁)"
         );
-        
-        // 计算各项评分
-        $scores = $this->calculateDayunScores($dayun, $bazi);
-        
-        // 生成分析文本
-        $analysis = $this->generateDayunAnalysis($dayun, $bazi, $scores);
-        
-        // 确定运势等级
-        $overallScore = $scores['overall'];
-        $fortuneLevel = $this->getFortuneLevel($overallScore);
-        
+
+        if (empty($consumeResult['success'])) {
+            $message = (string) ($consumeResult['message'] ?? '积分扣除失败');
+            $code = $message === '积分不足' ? 403 : 500;
+            throw new \Exception($message, $code);
+        }
+
         $result = [
             'dayun' => $dayun,
             'scores' => $scores,
@@ -81,13 +78,12 @@ class DayunFortuneService
             'unlucky_years' => $this->getUnluckyYears($dayun),
             'key_suggestions' => $this->getKeySuggestions($scores, $dayun, $bazi),
             'points_cost' => self::DAYUN_ANALYSIS_POINTS_COST,
-            'remaining_points' => $userModel->points,
+            'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
-        
-        // 缓存结果
+
         CacheService::set($cacheKey, $result, self::CACHE_TTL, CacheService::TAG_AI);
-        
+
         return $result;
     }
     
@@ -110,44 +106,33 @@ class DayunFortuneService
             $cached['points_cost'] = 0;
             return $cached;
         }
-        
-        // 检查用户积分
+
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
             throw new \Exception('用户不存在');
         }
-        
-        if ($userModel->points < self::DAYUN_CHART_POINTS_COST) {
+
+        if ((int) ($userModel->points ?? 0) < self::DAYUN_CHART_POINTS_COST) {
             throw new \Exception('积分不足，需要' . self::DAYUN_CHART_POINTS_COST . '积分', 403);
         }
-        
-        // 扣除积分
-        $userModel->deductPoints(self::DAYUN_CHART_POINTS_COST);
-        PointsRecord::record(
-            $userId,
-            '大运运势K线图',
-            -self::DAYUN_CHART_POINTS_COST,
-            'dayun_chart',
-            0,
-            '查看大运运势走势图'
-        );
-        
+
         $chartData = [];
-        
+
         foreach ($dayuns as $index => $dayun) {
             $scores = $this->calculateDayunScores($dayun, $bazi);
-            
+
             // 细化到每一年的数据点
             $startYear = $dayun['start_year'] ?? (date('Y') - $dayun['start_age'] + 20);
             $years = [];
-            
+            $overallScore = (int) ($scores['overall'] ?? 0);
+
             for ($i = 0; $i < 10; $i++) {
                 $year = $startYear + $i;
                 $age = $dayun['start_age'] + $i;
-                
+
                 // 计算该年的波动
-                $yearScore = $this->calculateYearScoreInDayun($scores['overall'], $i);
-                
+                $yearScore = $this->calculateYearScoreInDayun($overallScore, $i);
+
                 $years[] = [
                     'year' => $year,
                     'age' => $age,
@@ -156,32 +141,47 @@ class DayunFortuneService
                     'is_current' => ($year == date('Y')),
                 ];
             }
-            
+
             $chartData[] = [
                 'dayun_index' => $index,
                 'dayun_name' => $dayun['gan'] . $dayun['zhi'],
                 'dayun_nayin' => $dayun['nayin'] ?? '',
                 'start_age' => $dayun['start_age'],
                 'end_age' => $dayun['end_age'],
-                'overall_score' => $scores['overall'],
-                'fortune_level' => $this->getFortuneLevel($scores['overall']),
+                'overall_score' => $overallScore,
+                'fortune_level' => $this->getFortuneLevel($overallScore),
                 'years' => $years,
                 'trend' => $this->calculateTrend($years),
             ];
         }
-        
+
+        $pointsService = new PointsService();
+        $consumeResult = $pointsService->consume(
+            $userId,
+            self::DAYUN_CHART_POINTS_COST,
+            '大运运势K线图',
+            'dayun_chart',
+            0,
+            '查看大运运势走势图'
+        );
+
+        if (empty($consumeResult['success'])) {
+            $message = (string) ($consumeResult['message'] ?? '积分扣除失败');
+            $code = $message === '积分不足' ? 403 : 500;
+            throw new \Exception($message, $code);
+        }
+
         $result = [
             'chart_data' => $chartData,
             'summary' => $this->generateChartSummary($chartData),
             'best_period' => $this->findBestPeriod($chartData),
             'points_cost' => self::DAYUN_CHART_POINTS_COST,
-            'remaining_points' => $userModel->points,
+            'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
-        
-        // 缓存结果
+
         CacheService::set($cacheKey, $result, self::CACHE_TTL, CacheService::TAG_AI);
-        
+
         return $result;
     }
     
@@ -214,20 +214,25 @@ class DayunFortuneService
         $shishenScore = $this->calculateShishenScore($dayun['shishen'] ?? '比肩');
         
         // 计算总分
-        $overall = round(
+        $overall = (int) round(
             $ganScore * 0.3 +
             $zhiScore * 0.3 +
             $wuxingScore * 0.2 +
             $shishenScore * 0.2
         );
-        
-        // 各维度评分（基于总体评分的分布）
+
+        // 各维度评分改为确定性加权，避免同一命局重复请求却出现随机波动。
+        $career = (int) round($ganScore * 0.35 + $shishenScore * 0.30 + $zhiScore * 0.20 + $wuxingScore * 0.15);
+        $wealth = (int) round($wuxingScore * 0.35 + $shishenScore * 0.25 + $ganScore * 0.20 + $zhiScore * 0.20);
+        $relationship = (int) round($zhiScore * 0.35 + $wuxingScore * 0.25 + $ganScore * 0.20 + $shishenScore * 0.20);
+        $health = (int) round($zhiScore * 0.30 + $wuxingScore * 0.30 + $ganScore * 0.20 + $shishenScore * 0.20);
+
         return [
             'overall' => $overall,
-            'career' => min(100, max(1, $overall + mt_rand(-10, 15))),
-            'wealth' => min(100, max(1, $overall + mt_rand(-15, 10))),
-            'relationship' => min(100, max(1, $overall + mt_rand(-10, 10))),
-            'health' => min(100, max(1, $overall + mt_rand(-5, 5))),
+            'career' => min(100, max(1, $career)),
+            'wealth' => min(100, max(1, $wealth)),
+            'relationship' => min(100, max(1, $relationship)),
+            'health' => min(100, max(1, $health)),
             'gan_score' => $ganScore,
             'zhi_score' => $zhiScore,
             'wuxing_score' => $wuxingScore,
@@ -336,18 +341,20 @@ class DayunFortuneService
      */
     protected function calculateYearScoreInDayun(int $dayunScore, int $yearInDayun): int
     {
-        // 大运初期通常运势逐渐上升
+        // 十年大运通常呈“初入适应、中段发力、末段收束”的节奏，这里用确定性曲线模拟。
         $progress = $yearInDayun / 9; // 0-1
-        
-        // 基础波动
-        $baseVariation = sin($progress * M_PI) * 10;
-        
-        // 随机波动
-        $randomVariation = mt_rand(-8, 8);
-        
-        $yearScore = $dayunScore + $baseVariation + $randomVariation;
-        
-        return max(1, min(100, round($yearScore)));
+        $curveVariation = sin($progress * M_PI) * 8;
+
+        $phaseVariation = match (true) {
+            $yearInDayun <= 1 => -3,
+            $yearInDayun <= 4 => 2,
+            $yearInDayun <= 7 => 4,
+            default => -2,
+        };
+
+        $yearScore = $dayunScore + $curveVariation + $phaseVariation;
+
+        return max(1, min(100, (int) round($yearScore)));
     }
     
     /**

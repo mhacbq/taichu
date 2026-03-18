@@ -46,40 +46,23 @@ class Fortune extends BaseController
     {
         $baziId = $request->param('bazi_id', 0);
         $year = (int)$request->param('year', date('Y'));
-        
+
         if (!$baziId) {
             return $this->error('请提供八字记录ID');
         }
-        
+
         // 获取八字记录
         $user = $request->user;
         $record = BaziRecord::where('id', $baziId)
             ->where('user_id', $user['sub'])
             ->find();
-        
+
         if (!$record) {
             return $this->error('八字记录不存在', 404);
         }
-        
-        // 构建八字数据
-        $bazi = [
-            'year' => [
-                'gan' => $record->year_gan,
-                'zhi' => $record->year_zhi,
-            ],
-            'month' => [
-                'gan' => $record->month_gan,
-                'zhi' => $record->month_zhi,
-            ],
-            'day' => [
-                'gan' => $record->day_gan,
-                'zhi' => $record->day_zhi,
-            ],
-            'hour' => [
-                'gan' => $record->hour_gan,
-                'zhi' => $record->hour_zhi,
-            ],
-        ];
+
+        $bazi = $this->buildBaziPayload($record);
+
         
         try {
             $result = $this->yearlyService->getYearlyFortune(
@@ -90,7 +73,7 @@ class Fortune extends BaseController
             );
             
             return $this->success($result);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $this->handleFortuneException(
                 '获取流年运势',
                 $e,
@@ -186,40 +169,23 @@ class Fortune extends BaseController
     {
         $baziId = $request->param('bazi_id', 0);
         $dayunIndex = (int)$request->param('dayun_index', 0);
-        
+
         if (!$baziId) {
             return $this->error('请提供八字记录ID');
         }
-        
+
         // 获取八字记录
         $user = $request->user;
         $record = BaziRecord::where('id', $baziId)
             ->where('user_id', $user['sub'])
             ->find();
-        
+
         if (!$record) {
             return $this->error('八字记录不存在', 404);
         }
-        
-        // 构建八字数据
-        $bazi = [
-            'year' => [
-                'gan' => $record->year_gan,
-                'zhi' => $record->year_zhi,
-            ],
-            'month' => [
-                'gan' => $record->month_gan,
-                'zhi' => $record->month_zhi,
-            ],
-            'day' => [
-                'gan' => $record->day_gan,
-                'zhi' => $record->day_zhi,
-            ],
-            'hour' => [
-                'gan' => $record->hour_gan,
-                'zhi' => $record->hour_zhi,
-            ],
-        ];
+
+        $bazi = $this->buildBaziPayload($record);
+
         
         // 重新计算大运（沿用排盘控制器的同源算法与节气口径）
         $paipanController = new \app\controller\Paipan($this->app);
@@ -236,7 +202,7 @@ class Fortune extends BaseController
             $result = $this->dayunService->analyzeDayun($dayun, $bazi, $user['sub']);
             
             return $this->success($result);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $this->handleFortuneException(
                 '获取大运分析',
                 $e,
@@ -244,6 +210,7 @@ class Fortune extends BaseController
                 '积分不足，解锁大运分析需要' . DayunFortuneService::DAYUN_ANALYSIS_POINTS_COST . '积分'
             );
         }
+
     }
     
     /**
@@ -255,40 +222,23 @@ class Fortune extends BaseController
     public function dayunChart(Request $request)
     {
         $baziId = $request->param('bazi_id', 0);
-        
+
         if (!$baziId) {
             return $this->error('请提供八字记录ID');
         }
-        
+
         // 获取八字记录
         $user = $request->user;
         $record = BaziRecord::where('id', $baziId)
             ->where('user_id', $user['sub'])
             ->find();
-        
+
         if (!$record) {
             return $this->error('八字记录不存在', 404);
         }
-        
-        // 构建八字数据
-        $bazi = [
-            'year' => [
-                'gan' => $record->year_gan,
-                'zhi' => $record->year_zhi,
-            ],
-            'month' => [
-                'gan' => $record->month_gan,
-                'zhi' => $record->month_zhi,
-            ],
-            'day' => [
-                'gan' => $record->day_gan,
-                'zhi' => $record->day_zhi,
-            ],
-            'hour' => [
-                'gan' => $record->hour_gan,
-                'zhi' => $record->hour_zhi,
-            ],
-        ];
+
+        $bazi = $this->buildBaziPayload($record);
+
         
         // 重新计算大运（沿用排盘控制器的同源算法与节气口径）
         $paipanController = new \app\controller\Paipan($this->app);
@@ -299,7 +249,7 @@ class Fortune extends BaseController
             $result = $this->dayunService->getDayunChartData($dayuns, $bazi, $user['sub']);
             
             return $this->success($result);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $this->handleFortuneException(
                 '获取大运图表',
                 $e,
@@ -324,8 +274,39 @@ class Fortune extends BaseController
     }
 
     /**
+     * 统一构建运势分析所需的八字结构。
+     */
+    private function buildBaziPayload(BaziRecord $record): array
+    {
+        $birthTimestamp = strtotime((string) $record->birth_date);
+        $birthYear = $birthTimestamp !== false ? (int) date('Y', $birthTimestamp) : null;
+
+        return [
+            'year' => [
+                'gan' => $record->year_gan,
+                'zhi' => $record->year_zhi,
+                'number' => $birthYear,
+            ],
+            'month' => [
+                'gan' => $record->month_gan,
+                'zhi' => $record->month_zhi,
+            ],
+            'day' => [
+                'gan' => $record->day_gan,
+                'zhi' => $record->day_zhi,
+            ],
+            'hour' => [
+                'gan' => $record->hour_gan,
+                'zhi' => $record->hour_zhi,
+            ],
+            'birth_date' => (string) $record->birth_date,
+        ];
+    }
+
+    /**
      * 统一处理运势分析异常
      */
+
     private function handleFortuneException(string $scene, \Throwable $e, array $context = [], string $forbiddenMessage = '当前权益不足或功能暂未开放')
     {
         $code = (int) $e->getCode() === 403 ? 403 : 500;

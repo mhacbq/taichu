@@ -3,17 +3,31 @@ declare(strict_types=1);
 
 namespace app\model;
 
+use app\service\SchemaInspector;
 use think\Model;
+
 
 /**
  * 短信验证码模型
  */
 class SmsCode extends Model
 {
+    protected static ?string $resolvedTable = null;
+
     // 使用 tc_ 前缀，与数据库表名统一
     protected $name = 'tc_sms_code';
     
-    protected $autoWriteTimestamp = true;
+    protected $autoWriteTimestamp = 'datetime';
+    protected $createTime = 'created_at';
+    protected $updateTime = false;
+
+
+    public function __construct(array|object $data = [])
+    {
+        parent::__construct($data);
+        $this->table = self::resolveTableName();
+    }
+
     
     // 验证码类型常量
     const TYPE_REGISTER = 'register';  // 注册
@@ -51,17 +65,19 @@ class SmsCode extends Model
             ->update(['is_used' => 1]);
         
         $code = self::generateCode();
-        
+
         $smsCode = new self();
-        $smsCode->phone = $phone;
-        $smsCode->code = $code;
-        $smsCode->type = $type;
-        $smsCode->expire_time = date('Y-m-d H:i:s', strtotime("+{$expireMinutes} minutes"));
-        $smsCode->is_used = false;
-        $smsCode->ip = $ip;
-        $smsCode->save();
-        
+        $smsCode->save([
+            'phone' => $phone,
+            'code' => $code,
+            'type' => $type,
+            'expire_time' => date('Y-m-d H:i:s', strtotime("+{$expireMinutes} minutes")),
+            'is_used' => 0,
+            'ip' => $ip,
+        ]);
+
         return $code;
+
     }
     
     /**
@@ -137,4 +153,22 @@ class SmsCode extends Model
 
         return self::where('expire_time', '<', $deadline)->delete();
     }
+
+    protected static function resolveTableName(): string
+    {
+        if (self::$resolvedTable !== null) {
+            return self::$resolvedTable;
+        }
+
+        foreach (['tc_sms_code', 'sms_codes'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                self::$resolvedTable = $table;
+                return $table;
+            }
+        }
+
+        self::$resolvedTable = 'tc_sms_code';
+        return self::$resolvedTable;
+    }
 }
+

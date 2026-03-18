@@ -213,7 +213,7 @@ class Feedback extends BaseController
         }
 
         try {
-            $rows = Db::name('system_config')
+            $rows = Db::table('system_config')
                 ->where('category', self::CATEGORY_FEEDBACK)
                 ->order('sort_order', 'asc')
                 ->order('id', 'desc')
@@ -252,7 +252,7 @@ class Feedback extends BaseController
         try {
             $existing = null;
             if ($id > 0) {
-                $existing = Db::name('system_config')
+                $existing = Db::table('system_config')
                     ->where('id', $id)
                     ->where('category', self::CATEGORY_FEEDBACK)
                     ->find();
@@ -261,7 +261,7 @@ class Feedback extends BaseController
                 }
             }
 
-            $duplicateQuery = Db::name('system_config')
+            $duplicateQuery = Db::table('system_config')
                 ->where('category', self::CATEGORY_FEEDBACK)
                 ->where('config_key', $this->buildCategoryConfigKey($code));
             if ($id > 0) {
@@ -289,13 +289,13 @@ class Feedback extends BaseController
             ];
 
             if ($existing) {
-                Db::name('system_config')->where('id', $id)->update($rowData);
+                Db::table('system_config')->where('id', $id)->update($rowData);
             } else {
                 $rowData['created_at'] = date('Y-m-d H:i:s');
-                $id = (int) Db::name('system_config')->insertGetId($rowData);
+                $id = (int) Db::table('system_config')->insertGetId($rowData);
             }
 
-            $saved = Db::name('system_config')->where('id', $id)->find();
+            $saved = Db::table('system_config')->where('id', $id)->find();
             $this->logOperation($existing ? 'update' : 'create', 'feedback', [
                 'target_id' => $id,
                 'target_type' => 'feedback_category',
@@ -323,7 +323,7 @@ class Feedback extends BaseController
         }
 
         try {
-            $existing = Db::name('system_config')
+            $existing = Db::table('system_config')
                 ->where('id', $id)
                 ->where('category', self::CATEGORY_FEEDBACK)
                 ->find();
@@ -331,7 +331,7 @@ class Feedback extends BaseController
                 return $this->error('反馈分类不存在', 404);
             }
 
-            Db::name('system_config')->where('id', $id)->delete();
+            Db::table('system_config')->where('id', $id)->delete();
             $this->logOperation('delete', 'feedback', [
                 'target_id' => $id,
                 'target_type' => 'feedback_category',

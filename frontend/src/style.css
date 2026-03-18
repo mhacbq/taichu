@@ -455,8 +455,398 @@ small {
   transform: translateY(0) scale(0.985);
 }
 
-.el-radio-button__inner,
-.el-checkbox__inner {
+/* Frontend premium segmented selectors (white-gold style) */
+body.route-frontend .premium-segment.el-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+body.route-frontend .premium-segment .el-radio-button {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+body.route-frontend .premium-segment .el-radio-button__inner {
+  position: relative;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px !important;
+  border: 1px solid rgba(203, 149, 55, 0.32) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 228, 0.98)) !important;
+  color: #6f4a17 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-weight: var(--weight-semibold);
+  line-height: 1.35;
+  box-shadow: 0 8px 18px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease, color 0.22s ease;
+}
+
+body.route-frontend .premium-segment .el-radio-button:first-child .el-radio-button__inner,
+body.route-frontend .premium-segment .el-radio-button:last-child .el-radio-button__inner {
+  border-radius: 12px !important;
+}
+
+body.route-frontend .premium-segment .el-radio-button__inner:hover {
+  transform: translateY(-1px);
+  border-color: rgba(203, 149, 55, 0.44) !important;
+  box-shadow: 0 12px 22px rgba(149, 111, 45, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+body.route-frontend .premium-segment .el-radio-button.is-active .el-radio-button__inner,
+body.route-frontend .premium-segment .el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: linear-gradient(135deg, #e3b254 0%, #f6d484 52%, #ffe5aa 100%) !important;
+  border-color: rgba(203, 149, 55, 0.54) !important;
+  color: #5f4317 !important;
+  box-shadow: 0 12px 24px rgba(186, 134, 39, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.66);
+}
+
+body.route-frontend .premium-segment .el-radio-button__original-radio:focus-visible + .el-radio-button__inner {
+  outline: 2px solid rgba(186, 134, 39, 0.45);
+  outline-offset: 2px;
+}
+
+body.route-frontend .premium-segment--compact .el-radio-button__inner {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+body.route-frontend .premium-segment--card .el-radio-button__inner {
+  min-height: 70px;
+  min-width: 132px;
+  padding: 12px 14px;
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+}
+
+body.route-frontend .premium-segment--card .el-radio-button__inner small,
+body.route-frontend .premium-segment--card .precision-option-desc {
+  color: #7f6f58;
+}
+
+body.route-frontend .premium-segment--card .el-radio-button.is-active .el-radio-button__inner small,
+body.route-frontend .premium-segment--card .el-radio-button.is-active .precision-option-desc,
+body.route-frontend .premium-segment--card .el-radio-button__original-radio:checked + .el-radio-button__inner small,
+body.route-frontend .premium-segment--card .el-radio-button__original-radio:checked + .el-radio-button__inner .precision-option-desc {
+  color: #715220;
+}
+
+body.route-frontend .premium-segment--scroll.el-radio-group {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+body.route-frontend .premium-segment--scroll.el-radio-group::-webkit-scrollbar {
+  height: 6px;
+}
+
+body.route-frontend .premium-segment--scroll.el-radio-group::-webkit-scrollbar-thumb {
+  background: rgba(203, 149, 55, 0.42);
+  border-radius: 999px;
+}
+
+/* Frontend-only premium buttons (exclude /admin routes) */
+body.route-frontend .el-button,
+body.route-frontend .send-code-btn,
+body.route-frontend .login-submit-btn,
+body.route-frontend .pay-btn,
+body.route-frontend .draw-btn,
+body.route-frontend .btn-submit {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px !important;
+  letter-spacing: 0.01em;
+}
+
+body.route-frontend .el-button::after,
+body.route-frontend .send-code-btn::after,
+body.route-frontend .login-submit-btn::after,
+body.route-frontend .pay-btn::after,
+body.route-frontend .draw-btn::after,
+body.route-frontend .btn-submit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 18%, rgba(255, 255, 255, 0.35) 50%, transparent 82%);
+  transform: translateX(-130%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+
+body.route-frontend .el-button:hover::after,
+body.route-frontend .send-code-btn:hover::after,
+body.route-frontend .login-submit-btn:hover::after,
+body.route-frontend .pay-btn:hover::after,
+body.route-frontend .draw-btn:hover::after,
+body.route-frontend .btn-submit:hover::after {
+  transform: translateX(130%);
+}
+
+body.route-frontend .el-button--primary:not(.is-disabled):not(.is-plain),
+body.route-frontend .login-submit-btn,
+body.route-frontend .pay-btn,
+body.route-frontend .draw-btn,
+body.route-frontend .btn-submit {
+  color: #5f4317 !important;
+  background: linear-gradient(135deg, #e3b254 0%, #f6d484 52%, #ffe5aa 100%) !important;
+  border-color: rgba(203, 149, 55, 0.5) !important;
+  box-shadow: 0 12px 24px rgba(186, 134, 39, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+body.route-frontend .el-button--default:not(.is-disabled):not(.is-plain),
+body.route-frontend .send-code-btn,
+body.route-frontend .el-button--text,
+body.route-frontend .el-button.is-text {
+  color: #6f4a17 !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 228, 0.98)) !important;
+  border-color: rgba(203, 149, 55, 0.34) !important;
+  box-shadow: 0 10px 20px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75) !important;
+}
+
+body.route-frontend .el-button--text,
+body.route-frontend .el-button.is-text {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+
+body.route-frontend .el-button:hover,
+body.route-frontend .send-code-btn:hover,
+body.route-frontend .login-submit-btn:hover,
+body.route-frontend .pay-btn:hover,
+body.route-frontend .draw-btn:hover,
+body.route-frontend .btn-submit:hover {
+  transform: translateY(-2px);
+}
+
+body.route-frontend .el-button--primary:not(.is-disabled):not(.is-plain):hover,
+body.route-frontend .login-submit-btn:hover,
+body.route-frontend .pay-btn:hover,
+body.route-frontend .draw-btn:hover,
+body.route-frontend .btn-submit:hover {
+  box-shadow: 0 16px 30px rgba(186, 134, 39, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+body.route-frontend .el-button--default:not(.is-disabled):not(.is-plain):hover,
+body.route-frontend .send-code-btn:hover,
+body.route-frontend .el-button--text:hover,
+body.route-frontend .el-button.is-text:hover {
+  border-color: rgba(203, 149, 55, 0.44) !important;
+  box-shadow: 0 14px 26px rgba(149, 111, 45, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+}
+
+body.route-frontend .el-button:focus-visible,
+body.route-frontend .send-code-btn:focus-visible,
+body.route-frontend .login-submit-btn:focus-visible,
+body.route-frontend .pay-btn:focus-visible,
+body.route-frontend .draw-btn:focus-visible,
+body.route-frontend .btn-submit:focus-visible {
+  outline: 2px solid rgba(186, 134, 39, 0.45);
+  outline-offset: 2px;
+}
+
+body.route-frontend .el-button.is-disabled,
+body.route-frontend .el-button.is-disabled:hover,
+body.route-frontend .el-button:disabled,
+body.route-frontend .send-code-btn:disabled,
+body.route-frontend .login-submit-btn:disabled,
+body.route-frontend .pay-btn:disabled,
+body.route-frontend .draw-btn:disabled,
+body.route-frontend .btn-submit:disabled {
+  opacity: 0.6;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Frontend date/time picker unification */
+body.route-frontend .el-date-editor .el-input__wrapper,
+body.route-frontend .el-date-editor.el-range-editor {
+  min-height: 44px;
+  border: 1px solid rgba(203, 149, 55, 0.32) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 228, 0.98)) !important;
+  box-shadow: 0 8px 18px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  color: #6f4a17 !important;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+body.route-frontend .el-date-editor .el-input__wrapper:hover,
+body.route-frontend .el-date-editor.el-range-editor:hover {
+  border-color: rgba(203, 149, 55, 0.44) !important;
+  box-shadow: 0 12px 22px rgba(149, 111, 45, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  transform: translateY(-1px);
+}
+
+body.route-frontend .el-date-editor .el-input__wrapper.is-focus,
+body.route-frontend .el-date-editor.el-range-editor.is-active {
+  border-color: rgba(186, 134, 39, 0.54) !important;
+  box-shadow: 0 0 0 2px rgba(186, 134, 39, 0.22), 0 12px 24px rgba(149, 111, 45, 0.16) !important;
+}
+
+body.route-frontend .el-picker__popper,
+body.route-frontend .el-time-panel,
+body.route-frontend .el-date-picker,
+body.route-frontend .el-picker-panel {
+  border-radius: 14px !important;
+  border-color: rgba(203, 149, 55, 0.3) !important;
+  box-shadow: 0 16px 34px rgba(149, 111, 45, 0.2) !important;
+}
+
+body.route-frontend .el-picker-panel__shortcut:hover,
+body.route-frontend .el-picker-panel__footer .el-button:hover {
+  color: #7f5415 !important;
+}
+
+body.route-frontend .el-date-table td.today .el-date-table-cell__text,
+body.route-frontend .el-date-table td.available:hover .el-date-table-cell__text,
+body.route-frontend .el-month-table td .cell:hover,
+body.route-frontend .el-year-table td .cell:hover {
+  color: #8f6120 !important;
+}
+
+body.route-frontend .el-date-table td.current:not(.disabled) .el-date-table-cell__text,
+body.route-frontend .el-month-table td.current:not(.disabled) .cell,
+body.route-frontend .el-year-table td.current:not(.disabled) .cell {
+  background: linear-gradient(135deg, #e3b254 0%, #f6d484 52%, #ffe5aa 100%) !important;
+  color: #5f4317 !important;
+}
+
+/* Frontend select/cascader dropdown unification */
+body.route-frontend .el-select__wrapper,
+body.route-frontend .el-cascader .el-input__wrapper,
+body.route-frontend .el-select .el-input__wrapper {
+  min-height: 44px;
+  border-radius: 12px !important;
+  border: 1px solid rgba(203, 149, 55, 0.32) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 228, 0.98)) !important;
+  box-shadow: 0 8px 18px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+body.route-frontend .el-select__wrapper:hover,
+body.route-frontend .el-cascader .el-input__wrapper:hover,
+body.route-frontend .el-select .el-input__wrapper:hover {
+  border-color: rgba(203, 149, 55, 0.44) !important;
+  box-shadow: 0 12px 22px rgba(149, 111, 45, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(-1px);
+}
+
+body.route-frontend .el-select__wrapper.is-focused,
+body.route-frontend .el-cascader .el-input__wrapper.is-focus,
+body.route-frontend .el-select .el-input__wrapper.is-focus {
+  border-color: rgba(186, 134, 39, 0.54) !important;
+  box-shadow: 0 0 0 2px rgba(186, 134, 39, 0.22), 0 12px 24px rgba(149, 111, 45, 0.16) !important;
+}
+
+body.route-frontend .el-select-dropdown,
+body.route-frontend .el-cascader__dropdown,
+body.route-frontend .el-select-dropdown__wrap {
+  border-radius: 14px !important;
+}
+
+body.route-frontend .el-select-dropdown,
+body.route-frontend .el-cascader__dropdown,
+body.route-frontend .el-select-dropdown__item,
+body.route-frontend .el-cascader-node {
+  color: #584b3b !important;
+}
+
+body.route-frontend .el-select-dropdown,
+body.route-frontend .el-cascader__dropdown {
+  border: 1px solid rgba(203, 149, 55, 0.28) !important;
+  box-shadow: 0 16px 34px rgba(149, 111, 45, 0.2) !important;
+}
+
+body.route-frontend .el-select-dropdown__item.hover,
+body.route-frontend .el-select-dropdown__item:hover,
+body.route-frontend .el-cascader-node:not(.is-disabled):hover {
+  background: rgba(245, 196, 103, 0.14) !important;
+  color: #7f5415 !important;
+}
+
+body.route-frontend .el-select-dropdown__item.selected,
+body.route-frontend .el-cascader-node.is-selectable.in-active-path,
+body.route-frontend .el-cascader-node.in-active-path {
+  color: #5f4317 !important;
+  font-weight: var(--weight-semibold);
+  background: rgba(245, 196, 103, 0.2) !important;
+}
+
+/* Frontend input-number unification */
+body.route-frontend .el-input-number {
+  border-radius: 12px;
+}
+
+body.route-frontend .el-input-number .el-input__wrapper {
+  min-height: 44px;
+  border-radius: 12px !important;
+  border: 1px solid rgba(203, 149, 55, 0.32) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 228, 0.98)) !important;
+  box-shadow: 0 8px 18px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+body.route-frontend .el-input-number .el-input__wrapper.is-focus,
+body.route-frontend .el-input-number:hover .el-input__wrapper {
+  border-color: rgba(186, 134, 39, 0.5) !important;
+}
+
+body.route-frontend .el-input-number__increase,
+body.route-frontend .el-input-number__decrease {
+  width: 28px;
+  color: #7f5415 !important;
+  background: rgba(245, 196, 103, 0.14) !important;
+  border-color: rgba(203, 149, 55, 0.3) !important;
+}
+
+body.route-frontend .el-input-number__increase:hover,
+body.route-frontend .el-input-number__decrease:hover {
+  background: rgba(245, 196, 103, 0.24) !important;
+}
+
+/* Frontend switch/checkbox/radio unification */
+body.route-frontend .el-switch__core {
+  border-color: rgba(203, 149, 55, 0.35) !important;
+  background: rgba(219, 197, 157, 0.6) !important;
+}
+
+body.route-frontend .el-switch.is-checked .el-switch__core {
+  border-color: rgba(186, 134, 39, 0.56) !important;
+  background: linear-gradient(135deg, #e3b254 0%, #f6d484 52%, #ffe5aa 100%) !important;
+}
+
+body.route-frontend .el-checkbox__inner,
+body.route-frontend .el-radio__inner {
+  border-color: rgba(203, 149, 55, 0.4) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+body.route-frontend .el-checkbox__input.is-checked .el-checkbox__inner,
+body.route-frontend .el-radio__input.is-checked .el-radio__inner {
+  border-color: rgba(186, 134, 39, 0.56) !important;
+  background: linear-gradient(135deg, #e3b254 0%, #f6d484 52%, #ffe5aa 100%) !important;
+}
+
+body.route-frontend .el-checkbox__input.is-checked + .el-checkbox__label,
+body.route-frontend .el-radio__input.is-checked + .el-radio__label {
+  color: #6f4a17 !important;
+  font-weight: var(--weight-semibold);
+}
+
+body.route-frontend .el-checkbox__input.is-focus .el-checkbox__inner,
+body.route-frontend .el-radio__input.is-focus .el-radio__inner {
+  box-shadow: 0 0 0 2px rgba(186, 134, 39, 0.22) !important;
+}
+
+body.route-frontend .el-radio-button__inner,
+body.route-frontend .el-checkbox__inner {
   min-height: 44px;
 }
 

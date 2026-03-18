@@ -186,8 +186,8 @@ class DailyTask extends Command
         ];
         
         // 存入系统配置或专用统计表
-        Db::name('system_config')->where('config_key', 'daily_stats_' . $yesterday)->delete();
-        Db::name('system_config')->insert([
+        Db::table('system_config')->where('config_key', 'daily_stats_' . $yesterday)->delete();
+        Db::table('system_config')->insert([
             'config_key' => 'daily_stats_' . $yesterday,
             'config_value' => json_encode($stats),
             'config_type' => 'json',

@@ -80,31 +80,14 @@ class Liuyao extends BaseController
                 }
             }
 
-            if ($pointsCost > 0) {
-                $deducted = $userModel->deductPoints($pointsCost);
-                if (!$deducted) {
-                    return $this->error('积分不足，请先充值', 403);
-                }
-
-                try {
-                    PointsRecord::record((int) $userModel->id, '六爻占卜', -$pointsCost, 'liuyao', 0, '六爻占卜消耗');
-                } catch (\Throwable $pointsError) {
-                    Log::warning('六爻积分流水写入失败', [
-                        'user_id' => (int) $userModel->id,
-                        'message' => $pointsError->getMessage(),
-                    ]);
-                }
-            }
-
-            $recordId = null;
-            try {
-                $recordId = $this->storeDivinationRecord($data, $coreResult, $interpretation, $aiContent, $pointsCost);
-            } catch (\Throwable $recordError) {
-                Log::warning('六爻占卜记录保存失败', [
-                    'user_id' => (int) $userModel->id,
-                    'message' => $recordError->getMessage(),
-                ]);
-            }
+            [$recordId, $remainingPoints] = $this->persistDivinationOutcome(
+                $userModel,
+                $data,
+                $coreResult,
+                $interpretation,
+                $aiContent,
+                $pointsCost
+            );
 
             return $this->success($this->buildFrontendDivinationResult(
                 $recordId,
@@ -112,7 +95,7 @@ class Liuyao extends BaseController
                 $interpretation,
                 $aiContent,
                 $pointsCost,
-                (int) ($userModel->points ?? 0),
+                $remainingPoints,
                 $pricing['is_first_free']
             ));
         } catch (\Throwable $e) {
@@ -826,6 +809,77 @@ PROMPT;
     }
 
     /**
+     * 统一处理六爻结果持久化。
+     * 付费场景下，记录落库与积分扣减必须同成同败，避免“已扣费却没有历史记录”。
+     *
+     * @return array{0:int,1:int}
+     */
+    private function persistDivinationOutcome(User $userModel, array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): array
+    {
+        if ($pointsCost <= 0) {
+            $recordId = $this->storeDivinationRecord($data, $coreResult, $interpretation, $aiContent, $pointsCost);
+            if ($recordId <= 0) {
+                throw new \RuntimeException('六爻占卜记录保存失败');
+            }
+
+            return [$recordId, (int) ($userModel->points ?? 0)];
+        }
+
+
+        Db::startTrans();
+        try {
+            $recordId = $this->storeDivinationRecord($data, $coreResult, $interpretation, $aiContent, $pointsCost);
+            if ($recordId <= 0) {
+                throw new \RuntimeException('六爻占卜记录保存失败');
+            }
+
+            $lockedUser = Db::name('tc_user')
+                ->where('id', (int) $userModel->id)
+                ->where('status', 1)
+                ->lock(true)
+                ->find();
+
+            if (!$lockedUser) {
+                throw new \RuntimeException('用户不存在');
+            }
+
+            $currentPoints = (int) ($lockedUser['points'] ?? 0);
+            if ($currentPoints < $pointsCost) {
+                throw new \RuntimeException('积分不足，需要' . $pointsCost . '积分', 403);
+            }
+
+            $updateResult = Db::name('tc_user')
+                ->where('id', (int) $userModel->id)
+                ->dec('points', $pointsCost)
+                ->update();
+
+            if ($updateResult === 0) {
+                throw new \RuntimeException('积分扣除失败，请重试');
+            }
+
+            $remainingPoints = $currentPoints - $pointsCost;
+            $pointsPayload = PointsRecord::buildRecordPayload(
+                (int) $userModel->id,
+                '六爻占卜',
+                -$pointsCost,
+                'liuyao',
+                $recordId,
+                '六爻占卜消耗',
+                ['balance' => $remainingPoints]
+            );
+            Db::name('tc_points_record')->insert($pointsPayload);
+
+            Db::commit();
+            $userModel->points = $remainingPoints;
+
+            return [$recordId, $remainingPoints];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            throw $e;
+        }
+    }
+
+    /**
      * 生成前端所需的占卜结果结构
      */
     private function buildFrontendDivinationResult(?int $recordId, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost, int $remainingPoints, bool $isFirst): array
@@ -845,6 +899,21 @@ PROMPT;
                 'code' => $coreResult['clean_gua_code'] ?? '',
                 'gua_ci' => $guaCi,
             ],
+            'bian_gua' => [
+                'name' => $coreResult['bian_gua']['bian_name'] ?? '',
+                'code' => $coreResult['bian_gua']['bian_code'] ?? '',
+                'dong_yao' => $coreResult['bian_gua']['dong_yao'] ?? [],
+            ],
+            'hu_gua' => [
+                'name' => $coreResult['hu_gua']['hu_name'] ?? '',
+                'code' => $coreResult['hu_gua']['hu_code'] ?? '',
+            ],
+            'gong' => $coreResult['gong'] ?? '',
+            'shi_ying' => $coreResult['shi_ying'] ?? [],
+            'liuqin' => $coreResult['liuqin'] ?? [],
+            'liushen' => $coreResult['liu_shen'] ?? [],
+            'yong_shen' => $coreResult['yong_shen'] ?? [],
+            'line_details' => $this->buildLineSnapshots($coreResult),
             'yao_result' => $coreResult['yao_result'],
             'yao_names' => $coreResult['yao_names'],
             'interpretation' => $interpretation,
@@ -1029,6 +1098,8 @@ PROMPT;
     {
         $originalGua = $this->decodeJsonField($record['hexagram_original'] ?? null);
         $changedGua = $this->decodeJsonField($record['hexagram_changed'] ?? null);
+        $mutualGua = $this->decodeJsonField($record['hexagram_mutual'] ?? null);
+        $storedLines = $this->decodeJsonField($record['lines'] ?? null);
         $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? $originalGua['name'] ?? '');
         $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? $originalGua['code'] ?? '');
         $bianGuaName = (string) ($record['bian_gua_name'] ?? $changedGua['name'] ?? '');
@@ -1057,6 +1128,34 @@ PROMPT;
                 $xunkong = [];
             }
         }
+
+        $liuqinMap = $this->normalizePositionMap($this->decodeJsonField($record['liuqin'] ?? null));
+        $liushenMap = $this->normalizePositionMap($this->decodeJsonField($record['liushen'] ?? null));
+        $dongYao = array_values(array_map('intval', $this->decodeJsonField($record['moving_lines'] ?? null)));
+        $gong = '';
+        $shiYing = [];
+        $bianGuaCode = (string) ($record['bian_gua_code'] ?? $changedGua['code'] ?? '');
+        $huGuaName = (string) ($record['hu_gua_name'] ?? $mutualGua['name'] ?? '');
+        $huGuaCode = (string) ($record['hu_gua_code'] ?? $mutualGua['code'] ?? '');
+
+        if ($yaoCode !== '') {
+            try {
+                $bianData = LiuyaoService::getBianGua($yaoCode);
+                $huData = LiuyaoService::getHuGua($yaoCode);
+                $guaMeta = LiuyaoService::getGuaInfo($yaoCode);
+                $shiYing = LiuyaoService::getShiYing($mainGuaName, $yaoCode);
+                $dongYao = $dongYao !== [] ? $dongYao : array_values(array_map('intval', (array) ($bianData['dong_yao'] ?? [])));
+                $bianGuaName = $bianGuaName !== '' ? $bianGuaName : (string) ($bianData['bian_name'] ?? '');
+                $bianGuaCode = $bianGuaCode !== '' ? $bianGuaCode : (string) ($bianData['bian_code'] ?? '');
+                $huGuaName = $huGuaName !== '' ? $huGuaName : (string) ($huData['hu_name'] ?? '');
+                $huGuaCode = $huGuaCode !== '' ? $huGuaCode : (string) ($huData['hu_code'] ?? '');
+                $gong = (string) ($guaMeta['gong'] ?? '');
+            } catch (\Throwable $exception) {
+                $shiYing = [];
+            }
+        }
+
+        $lineDetails = $this->normalizeStoredLineDetails($storedLines, $yaoResult, $liuqinMap, $liushenMap, $shiYing, $dongYao);
         $timeInfo = [
             'ri_gan' => $riGan,
             'ri_zhi' => $riZhi,
@@ -1082,6 +1181,21 @@ PROMPT;
             'gua_name' => $mainGuaName,
             'gua_code' => $mainGuaCode,
             'gua_ci' => $guaCi,
+            'bian_gua' => [
+                'name' => $bianGuaName,
+                'code' => $bianGuaCode,
+                'dong_yao' => $dongYao,
+            ],
+            'hu_gua' => [
+                'name' => $huGuaName,
+                'code' => $huGuaCode,
+            ],
+            'gong' => $gong,
+            'shi_ying' => $shiYing,
+            'liuqin' => $liuqinMap,
+            'liushen' => $liushenMap,
+            'yong_shen' => ['liuqin' => (string) ($record['yongshen'] ?? '')],
+            'line_details' => $lineDetails,
             'interpretation' => $interpretation,
             'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
             'consumed_points' => $consumedPoints,
@@ -1155,6 +1269,10 @@ PROMPT;
     private function buildLineSnapshots(array $coreResult): array
     {
         $snapshots = [];
+        $shiPosition = (int) ($coreResult['shi_ying']['shi'] ?? 0);
+        $yingPosition = (int) ($coreResult['shi_ying']['ying'] ?? 0);
+        $movingLines = array_map('intval', (array) ($coreResult['bian_gua']['dong_yao'] ?? []));
+
         foreach (($coreResult['yao_result'] ?? []) as $index => $value) {
             $position = $index + 1;
             $snapshots[] = [
@@ -1163,10 +1281,75 @@ PROMPT;
                 'name' => $this->getYaoName((int) $value),
                 'liuqin' => $coreResult['liuqin'][$position] ?? '',
                 'liushen' => $coreResult['liu_shen'][$position] ?? '',
+                'is_moving' => in_array($position, $movingLines, true),
+                'is_shi' => $position === $shiPosition,
+                'is_ying' => $position === $yingPosition,
             ];
         }
 
         return $snapshots;
+    }
+
+    private function normalizePositionMap(array $value): array
+    {
+        $normalized = [];
+        foreach ($value as $key => $item) {
+            $position = (int) $key;
+            if ($position <= 0) {
+                continue;
+            }
+            $normalized[$position] = is_scalar($item) ? (string) $item : '';
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeStoredLineDetails(array $storedLines, array $yaoResult, array $liuqinMap, array $liushenMap, array $shiYing, array $dongYao): array
+    {
+        $lineDetails = [];
+        $shiPosition = (int) ($shiYing['shi'] ?? 0);
+        $yingPosition = (int) ($shiYing['ying'] ?? 0);
+        $movingLines = array_map('intval', $dongYao);
+
+        if ($storedLines !== []) {
+            foreach ($storedLines as $line) {
+                $position = (int) ($line['position'] ?? 0);
+                if ($position <= 0) {
+                    continue;
+                }
+                $value = isset($line['value']) ? (int) $line['value'] : (int) ($yaoResult[$position - 1] ?? 1);
+                $lineDetails[] = [
+                    'position' => $position,
+                    'value' => $value,
+                    'name' => (string) ($line['name'] ?? $this->getYaoName($value)),
+                    'liuqin' => (string) ($line['liuqin'] ?? ($liuqinMap[$position] ?? '')),
+                    'liushen' => (string) ($line['liushen'] ?? ($liushenMap[$position] ?? '')),
+                    'is_moving' => array_key_exists('is_moving', $line) ? (bool) $line['is_moving'] : in_array($position, $movingLines, true),
+                    'is_shi' => array_key_exists('is_shi', $line) ? (bool) $line['is_shi'] : $position === $shiPosition,
+                    'is_ying' => array_key_exists('is_ying', $line) ? (bool) $line['is_ying'] : $position === $yingPosition,
+                ];
+            }
+
+            if ($lineDetails !== []) {
+                return $lineDetails;
+            }
+        }
+
+        foreach ($yaoResult as $index => $value) {
+            $position = $index + 1;
+            $lineDetails[] = [
+                'position' => $position,
+                'value' => (int) $value,
+                'name' => $this->getYaoName((int) $value),
+                'liuqin' => $liuqinMap[$position] ?? '',
+                'liushen' => $liushenMap[$position] ?? '',
+                'is_moving' => in_array($position, $movingLines, true),
+                'is_shi' => $position === $shiPosition,
+                'is_ying' => $position === $yingPosition,
+            ];
+        }
+
+        return $lineDetails;
     }
 
     private function decodeJsonField($value): array

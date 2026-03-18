@@ -1,12 +1,14 @@
 import request from './request'
 
-export function login(data) {
+export function login(data, options = {}) {
   return request({
     url: '/auth/login',
     method: 'post',
-    data
+    data,
+    ...options
   })
 }
+
 
 export function getInfo() {
   return request({

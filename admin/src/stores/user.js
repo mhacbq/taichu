@@ -36,9 +36,10 @@ export const useUserStore = defineStore('user', () => {
   const name = computed(() => userInfo.value?.username || '管理员')
   const accessRoutes = computed(() => filterAsyncRoutes(asyncRoutes, roles.value))
 
-  async function loginAction(loginForm) {
-    const { data } = await login(loginForm)
+  async function loginAction(loginForm, options = {}) {
+    const { data } = await login(loginForm, options)
     const nextRoles = normalizeAdminRoles(data.admin?.roles || data.roles || ['admin'])
+
 
     token.value = data.token
     userInfo.value = data.admin

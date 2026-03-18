@@ -37,7 +37,7 @@ class Notice extends BaseController
                 self::MAX_PAGE_SIZE
             );
 
-            $query = Db::name('system_config')
+            $query = Db::table('system_config')
                 ->where('category', self::CATEGORY_SYSTEM_NOTICE)
                 ->order('created_at', 'desc');
 
@@ -108,7 +108,7 @@ class Notice extends BaseController
         try {
             $existing = null;
             if ($id > 0) {
-                $existing = Db::name('system_config')
+                $existing = Db::table('system_config')
                     ->where('id', $id)
                     ->where('category', self::CATEGORY_SYSTEM_NOTICE)
                     ->find();
@@ -134,12 +134,12 @@ class Notice extends BaseController
             ];
 
             if ($existing) {
-                Db::name('system_config')->where('id', $id)->update($saveData);
+                Db::table('system_config')->where('id', $id)->update($saveData);
             } else {
                 $saveData['config_key'] = 'system_notice_' . uniqid('', true);
                 $saveData['sort_order'] = 0;
                 $saveData['created_at'] = date('Y-m-d H:i:s');
-                $id = (int) Db::name('system_config')->insertGetId($saveData);
+                $id = (int) Db::table('system_config')->insertGetId($saveData);
             }
 
             $this->logOperation('save_notice', 'config', [
@@ -171,7 +171,7 @@ class Notice extends BaseController
         }
 
         try {
-            $existing = Db::name('system_config')
+            $existing = Db::table('system_config')
                 ->where('id', $id)
                 ->where('category', self::CATEGORY_SYSTEM_NOTICE)
                 ->find();
@@ -179,7 +179,7 @@ class Notice extends BaseController
                 return $this->error('公告不存在', 404);
             }
 
-            Db::name('system_config')->where('id', $id)->delete();
+            Db::table('system_config')->where('id', $id)->delete();
 
             $this->logOperation('delete_notice', 'config', [
                 'target_id' => $id,

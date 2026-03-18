@@ -29,7 +29,7 @@ class SensitiveWord extends BaseController
 
         try {
             $pagination = $this->getPaginationParams('page', 'pageSize', 20, 100);
-            $query = Db::name('system_config')
+            $query = Db::table('system_config')
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->order('created_at', 'desc');
 
@@ -39,7 +39,7 @@ class SensitiveWord extends BaseController
 
             $total = (clone $query)->count();
             $rows = $query->page($pagination['page'], $pagination['pageSize'])->select()->toArray();
-            $allRows = Db::name('system_config')
+            $allRows = Db::table('system_config')
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->select()
                 ->toArray();
@@ -82,7 +82,7 @@ class SensitiveWord extends BaseController
                 return $this->error('敏感词已存在', 400);
             }
 
-            $id = (int) Db::name('system_config')->insertGetId([
+            $id = (int) Db::table('system_config')->insertGetId([
                 'config_key' => 'sensitive_word_' . uniqid('', true),
                 'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'config_type' => 'json',
@@ -120,7 +120,7 @@ class SensitiveWord extends BaseController
         }
 
         try {
-            $existing = Db::name('system_config')
+            $existing = Db::table('system_config')
                 ->where('id', $id)
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->find();
@@ -133,7 +133,7 @@ class SensitiveWord extends BaseController
                 return $this->error('敏感词已存在', 400);
             }
 
-            Db::name('system_config')
+            Db::table('system_config')
                 ->where('id', $id)
                 ->update([
                     'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
@@ -172,7 +172,7 @@ class SensitiveWord extends BaseController
         }
 
         try {
-            $existing = Db::name('system_config')
+            $existing = Db::table('system_config')
                 ->where('id', $id)
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->find();
@@ -180,7 +180,7 @@ class SensitiveWord extends BaseController
                 return $this->error('敏感词不存在', 404);
             }
 
-            Db::name('system_config')->where('id', $id)->delete();
+            Db::table('system_config')->where('id', $id)->delete();
             ConfigService::clearCache();
 
             $this->logOperation('delete', 'config', [
@@ -252,7 +252,7 @@ class SensitiveWord extends BaseController
             }
 
             if (!empty($insertData)) {
-                Db::name('system_config')->insertAll($insertData);
+                Db::table('system_config')->insertAll($insertData);
                 ConfigService::clearCache();
             }
 
@@ -337,7 +337,7 @@ class SensitiveWord extends BaseController
      */
     protected function hasDuplicateSensitiveWord(string $word, int $excludeId = 0): bool
     {
-        $rows = Db::name('system_config')
+        $rows = Db::table('system_config')
             ->where('category', self::CATEGORY_SENSITIVE_WORDS)
             ->select()
             ->toArray();

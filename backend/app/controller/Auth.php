@@ -314,7 +314,7 @@ class Auth extends BaseController
         Cache::delete($attemptKey);
         
         // 检查是否已经被邀请过
-        $exists = InviteRecord::where('invitee_id', $newUserId)->find();
+        $exists = InviteRecord::where('invited_id', $newUserId)->find();
         if ($exists) {
             return;
         }
@@ -326,10 +326,11 @@ class Auth extends BaseController
             // 记录邀请关系
             InviteRecord::create([
                 'inviter_id' => $inviterId,
-                'invitee_id' => $newUserId,
+                'invited_id' => $newUserId,
                 'invite_code' => $inviteCode,
                 'points_reward' => $rewardPoints,
             ]);
+
             
             // 给邀请人增加积分
             $inviter = User::find($inviterId);
@@ -540,7 +541,10 @@ class Auth extends BaseController
             ->select();
 
         $inviteList = $invites->toArray();
-        $inviteeIds = array_values(array_unique(array_filter(array_column($inviteList, 'invitee_id'))));
+        $inviteeIds = array_values(array_unique(array_filter(array_map(
+            static fn (array $invite): int => (int) ($invite['invited_id'] ?? 0),
+            $inviteList
+        ))));
         $inviteeInfos = [];
 
         if (!empty($inviteeIds)) {
@@ -550,15 +554,17 @@ class Auth extends BaseController
         
         $result = [];
         foreach ($inviteList as $invite) {
-            $inviteeInfo = $inviteeInfos[$invite['invitee_id']] ?? [];
+            $invitedUserId = (int) ($invite['invited_id'] ?? 0);
+            $inviteeInfo = $inviteeInfos[$invitedUserId] ?? [];
             $result[] = [
-                'invitee_id' => $invite['invitee_id'],
+                'invitee_id' => $invitedUserId,
                 'nickname' => $inviteeInfo['nickname'] ?? '神秘用户',
                 'avatar' => $inviteeInfo['avatar'] ?? '',
                 'points_reward' => $invite['points_reward'],
                 'created_at' => $invite['created_at'],
             ];
         }
+
         
         // 获取总数
         $total = InviteRecord::where('inviter_id', $user['sub'])

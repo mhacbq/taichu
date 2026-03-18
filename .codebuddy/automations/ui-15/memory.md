@@ -1,6 +1,48 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Nineteenth round of UI consistency fixes focused on the admin login entry experience, clearer failure-state guidance, and brand-aligned visual polish.
+- Status: Completed (5 UI issues resolved and pushed).
+- Date: 2026-03-18
+- Commit: `d3f0148` (`"fix-ui-login-feedback-20260318-1640"`)
+
+## Summary
+- `admin/src/views/login/index.vue`: 将后台登录页改为品牌化双栏布局，统一登录面板、状态卡和提示卡的圆角、阴影、间距与色彩层级，缓解后台入口与前台品牌语言割裂的问题。
+- `admin/src/views/login/index.vue`: 统一输入框、密码可见切换按钮和主 CTA 的尺寸、触达区域与交互动效，并补齐移动端断点下的栈式布局，满足更稳定的响应式触达体验。
+- `admin/src/views/login/index.vue`: 为账号错误、服务异常、超时和代理故障分别提供场景标签、诊断胶囊与排障步骤，让登录失败反馈从“只有一句报错”升级为可操作的状态面板。
+- `admin/src/api/request.js`: 透传 `requestId` 给登录页错误态，用于前端展示更明确的排障上下文。
+- `TODO.md`: 删除已完成的后台登录页 UI/UX 待办，仅保留后续全站设计一致性项。
+
+## Validation
+- `read_lints`: `admin/src/views/login/index.vue`、`admin/src/api/request.js`、`TODO.md` 0 diagnostics。
+- `git diff --check -- admin/src/views/login/index.vue admin/src/api/request.js TODO.md`: 通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/admin`: 通过；仅剩既有 Sass legacy API deprecation 与 chunk size warning。
+- `git push origin master`: 已推送 `d3f0148` 到 `origin/master`。
+
+---
+
+## Previous Run
+- Task: Eighteenth round of UI consistency fixes focused on Hehun form guidance hierarchy, clarity of input modes, and mobile-friendly explanatory copy after the form component unification landed.
+- Status: Completed (5 UI polish issues resolved and pushed).
+- Date: 2026-03-18
+- Commit: `465d3ab` (`"fix-ui-hehun-form-20260318-1524"`)
+
+## Summary
+- `frontend/src/views/Hehun.vue`: 在表单标题下新增模式引导文案与三枚模式标签，把“精确时分 / 大概时段 / 仅生日趋势”三种输入口径直接前置说明，减少首次进入时的理解成本。
+- `frontend/src/views/Hehun.vue`: 为男方、女方信息卡补齐各自的辅助说明文案，统一两侧分区的层级节奏，让“生日 / 时段 / 仅生日”三种填写路径更直观。
+- `frontend/src/views/Hehun.vue`: 为“分析方案与解锁偏好”补充分区标题，并同步优化底部提示文案，明确免费预览、历史保留与是否解锁完整版之间的关系。
+- `frontend/src/views/Hehun.vue`: 调整新增说明、标签与分区文案的样式层级，并在移动端改为左对齐和更贴近阅读顺序的布局，避免小屏下说明块显得漂浮。
+- `TODO.md`: 当前再次搜索 `[UI]` 结果仍为 0，未发现新的待处理 UI 待办；本轮因此继续对最后完成的合婚表单问题域做收尾 polish，而不是新增 TODO 噪音。
+
+## Validation
+- `read_lints`: `frontend/src/views/Hehun.vue` 0 diagnostics。
+- `git diff --check -- frontend/src/views/Hehun.vue`: 通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 通过；仅剩既有 chunk size warning，不影响产物。
+- `git push origin master`: 已推送 `465d3ab` 到 `origin/master`。
+
+---
+
+## Previous Run
 - Task: Seventeenth round of UI consistency fixes focused on Hehun form component consistency and unified input/button behavior.
 - Status: Completed (5 UI issues resolved under the last remaining Hehun UI TODO).
 - Date: 2026-03-18
