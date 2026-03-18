@@ -30,11 +30,13 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { asyncRoutes } from '@/router'
+import { useUserStore } from '@/stores/user'
 import SidebarItem from './SidebarItem.vue'
 
 const route = useRoute()
 const appStore = useAppStore()
+const userStore = useUserStore()
+
 
 const variables = {
   menuBg: '#304156',
@@ -42,7 +44,7 @@ const variables = {
   menuActiveText: '#409eff'
 }
 
-const routes = computed(() => asyncRoutes.filter(r => !r.hidden))
+const routes = computed(() => userStore.accessRoutes.filter(item => !item.hidden))
 
 const activeMenu = computed(() => {
   const { meta, path } = route

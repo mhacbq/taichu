@@ -225,11 +225,11 @@ const formatDate = (dateStr) => {
 
 <style scoped>
 .achievement-system {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--white-10);
 }
 
 .achievement-header {
@@ -253,11 +253,11 @@ const formatDate = (dateStr) => {
 }
 
 .progress-info {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .completed {
-  color: #e94560;
+  color: var(--primary-color);
   font-size: 24px;
   font-weight: bold;
 }
@@ -268,7 +268,7 @@ const formatDate = (dateStr) => {
 
 .progress-bar {
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 20px;
@@ -276,7 +276,7 @@ const formatDate = (dateStr) => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
@@ -295,9 +295,9 @@ const formatDate = (dateStr) => {
   gap: 6px;
   padding: 8px 16px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--white-10);
+  background: var(--white-05);
+  color: var(--white-70);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -305,11 +305,11 @@ const formatDate = (dateStr) => {
 }
 
 .category-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
 }
 
 .category-btn.active {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border-color: transparent;
   color: #fff;
 }
@@ -329,9 +329,9 @@ const formatDate = (dateStr) => {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-03);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--white-05);
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
@@ -339,7 +339,7 @@ const formatDate = (dateStr) => {
 }
 
 .achievement-card:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-08);
   transform: translateY(-2px);
 }
 
@@ -357,15 +357,15 @@ const formatDate = (dateStr) => {
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(233, 69, 96, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(184, 134, 11, 0); }
 }
 
 .achievement-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -394,7 +394,7 @@ const formatDate = (dateStr) => {
 }
 
 .achievement-desc {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--white-50);
   font-size: 12px;
   margin: 0;
   white-space: nowrap;
@@ -408,21 +408,21 @@ const formatDate = (dateStr) => {
 
 .progress-track {
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-fill-small {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--white-40);
   margin-top: 4px;
   display: block;
 }
@@ -443,7 +443,7 @@ const formatDate = (dateStr) => {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #e94560;
+  background: var(--primary-color);
   color: #fff;
   font-size: 10px;
   padding: 2px 6px;
@@ -474,7 +474,7 @@ const formatDate = (dateStr) => {
   width: 100%;
   text-align: center;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--white-10);
 }
 
 .close-btn {
@@ -483,7 +483,7 @@ const formatDate = (dateStr) => {
   right: 16px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--white-50);
   font-size: 20px;
   cursor: pointer;
   width: 32px;
@@ -496,7 +496,7 @@ const formatDate = (dateStr) => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   color: #fff;
 }
 
@@ -512,7 +512,7 @@ const formatDate = (dateStr) => {
 }
 
 .modal-desc {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   font-size: 14px;
   margin-bottom: 24px;
   line-height: 1.6;

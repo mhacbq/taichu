@@ -1,0 +1,199 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - link "太初管理后台" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - menubar [ref=e10]:
+      - menuitem "仪表盘" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 仪表盘
+      - menuitem "用户管理" [ref=e18]:
+        - generic [ref=e19] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e23]: 用户管理
+          - img [ref=e25]
+      - menuitem "内容管理" [ref=e28]:
+        - generic [ref=e29] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: 内容管理
+          - img [ref=e35]
+      - menuitem "网站内容" [ref=e38]:
+        - generic [ref=e39] [cursor=pointer]:
+          - img [ref=e41]
+          - generic [ref=e43]: 网站内容
+          - img [ref=e45]
+      - menuitem "编辑页面" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 编辑页面
+      - menuitem "积分管理" [ref=e51]:
+        - generic [ref=e52] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e58]: 积分管理
+          - img [ref=e60]
+      - menuitem "支付管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e70]: 支付管理
+          - img [ref=e72]
+      - menuitem "短信管理" [ref=e75]:
+        - generic [ref=e76] [cursor=pointer]:
+          - img [ref=e78]
+          - generic [ref=e81]: 短信管理
+          - img [ref=e83]
+      - menuitem "反馈管理" [ref=e86]:
+        - generic [ref=e87] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]: 反馈管理
+          - img [ref=e94]
+      - menuitem "反作弊系统" [ref=e97]:
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e102]: 反作弊系统
+          - img [ref=e104]
+      - menuitem "AI管理" [ref=e107]:
+        - generic [ref=e108] [cursor=pointer]:
+          - img [ref=e110]
+          - generic [ref=e113]: AI管理
+          - img [ref=e115]
+      - menuitem "系统设置" [ref=e118]:
+        - generic [ref=e119] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e123]: 系统设置
+          - img [ref=e125]
+      - menuitem "日志管理" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 日志管理
+          - img [ref=e135]
+      - menuitem "任务调度" [ref=e138]:
+        - generic [ref=e139] [cursor=pointer]:
+          - img [ref=e141]
+          - generic [ref=e145]: 任务调度
+          - img [ref=e147]
+  - generic [ref=e149]:
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153] [cursor=pointer]:
+            - img
+          - navigation "面包屑" [ref=e155]:
+            - generic [ref=e156]:
+              - link "仪表盘" [ref=e157]
+              - text: /
+            - generic [ref=e158]:
+              - link "网站内容" [ref=e159]
+              - text: /
+            - link "知识库文章" [ref=e161]
+        - generic [ref=e162]:
+          - generic [ref=e163] [cursor=pointer]:
+            - img
+          - button "admin" [ref=e166] [cursor=pointer]:
+            - generic [ref=e168]: admin
+            - img [ref=e170]
+      - link "知识库文章" [ref=e176] [cursor=pointer]:
+        - /url: /site/knowledge
+        - text: 知识库文章
+        - img [ref=e178]
+    - generic [ref=e181]:
+      - generic [ref=e183]:
+        - generic [ref=e184]:
+          - button "刷新" [disabled]:
+            - generic:
+              - img
+            - generic: 刷新
+        - button "新增文章" [ref=e186] [cursor=pointer]:
+          - generic [ref=e187]: 新增文章
+        - button "新增分类" [ref=e189] [cursor=pointer]:
+          - generic [ref=e190]: 新增分类
+      - generic [ref=e191]:
+        - generic [ref=e193]:
+          - generic [ref=e195]:
+            - generic [ref=e196]:
+              - generic [ref=e197]: 知识库分类
+              - generic [ref=e198]: 维护文章树、父子分类与启用状态。
+            - generic:
+              - generic: 0 个分类
+          - generic [ref=e200]:
+            - generic [ref=e201]:
+              - table [ref=e203]:
+                - rowgroup [ref=e208]:
+                  - row "分类 状态 操作" [ref=e209]:
+                    - columnheader "分类" [ref=e210]:
+                      - generic [ref=e211]: 分类
+                    - columnheader "状态" [ref=e212]:
+                      - generic [ref=e213]: 状态
+                    - columnheader "操作" [ref=e214]:
+                      - generic [ref=e215]: 操作
+              - generic [ref=e219]:
+                - table:
+                  - rowgroup
+                - generic [ref=e221]: 暂无数据
+            - img [ref=e224]
+        - generic [ref=e227]:
+          - generic [ref=e229]:
+            - generic [ref=e230]:
+              - generic [ref=e231]: 知识库文章
+              - generic [ref=e232]: 支持文章发布、草稿维护、热门标记与分类归档。
+            - generic:
+              - generic: 共 0 篇
+          - generic [ref=e233]:
+            - generic [ref=e234]:
+              - generic [ref=e235]:
+                - generic [ref=e236]: 关键词
+                - textbox "关键词" [ref=e240]:
+                  - /placeholder: 搜索标题 / 摘要
+              - generic [ref=e241]:
+                - generic [ref=e242]: 分类
+                - generic [ref=e245] [cursor=pointer]:
+                  - generic:
+                    - combobox "分类" [ref=e247]
+                    - generic [ref=e248]: 全部分类
+                  - img [ref=e251]
+              - generic [ref=e254]:
+                - button "搜索" [ref=e255] [cursor=pointer]:
+                  - generic [ref=e256]: 搜索
+                - button "重置" [ref=e257] [cursor=pointer]:
+                  - generic [ref=e258]: 重置
+            - generic [ref=e259]:
+              - generic [ref=e260]:
+                - table [ref=e262]:
+                  - rowgroup [ref=e272]:
+                    - row "标题 分类 状态 热门 作者 发布时间 更新时间 操作" [ref=e273]:
+                      - columnheader "标题" [ref=e274]:
+                        - generic [ref=e275]: 标题
+                      - columnheader "分类" [ref=e276]:
+                        - generic [ref=e277]: 分类
+                      - columnheader "状态" [ref=e278]:
+                        - generic [ref=e279]: 状态
+                      - columnheader "热门" [ref=e280]:
+                        - generic [ref=e281]: 热门
+                      - columnheader "作者" [ref=e282]:
+                        - generic [ref=e283]: 作者
+                      - columnheader "发布时间" [ref=e284]:
+                        - generic [ref=e285]: 发布时间
+                      - columnheader "更新时间" [ref=e286]:
+                        - generic [ref=e287]: 更新时间
+                      - columnheader "操作" [ref=e288]:
+                        - generic [ref=e289]: 操作
+                - generic [ref=e293]:
+                  - table:
+                    - rowgroup
+                  - generic [ref=e295]: 暂无数据
+              - img [ref=e298]
+            - generic [ref=e301]:
+              - generic [ref=e302]: 共 0 条
+              - generic [ref=e305] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e307]
+                  - generic [ref=e308]: 20条/页
+                - img [ref=e311]
+              - button "上一页" [disabled] [ref=e313]:
+                - generic:
+                  - img
+              - list [ref=e314]:
+                - listitem "第 1 页" [ref=e315]: "1"
+              - button "下一页" [disabled] [ref=e316]:
+                - generic:
+                  - img
+              - generic [ref=e317]:
+                - generic [ref=e318]: 前往
+                - spinbutton "页" [ref=e321]: "1"
+                - generic [ref=e322]: 页

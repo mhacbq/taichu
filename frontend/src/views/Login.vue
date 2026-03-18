@@ -4,11 +4,12 @@
       <div class="login-box">
         <div class="login-header">
           <div class="logo">
-            <span class="logo-icon">☯</span>
+            <el-icon class="logo-icon"><Star /></el-icon>
             <span>太初命理</span>
           </div>
-          <h2>欢迎回来</h2>
-          <p>登录后即可体验八字排盘、塔罗占卜等服务</p>
+          <h2>{{ loginTitle }}</h2>
+          <p>{{ loginSubtitle }}</p>
+          <p v-if="isRegisterIntent" class="intent-tip">当前入口会在验证成功后直接发放新手积分，无需再额外找注册按钮。</p>
         </div>
 
         <!-- 登录表单 -->
@@ -21,7 +22,9 @@
               class="login-input"
               maxlength="11"
             >
-              <template #prefix>📱</template>
+              <template #prefix>
+                <el-icon><Phone /></el-icon>
+              </template>
             </el-input>
             <div class="code-input-row">
               <el-input
@@ -31,7 +34,9 @@
                 class="login-input code-input"
                 maxlength="6"
               >
-                <template #prefix>🔐</template>
+                <template #prefix>
+                  <el-icon><Lock /></el-icon>
+                </template>
               </el-input>
               <el-button 
                 size="large" 
@@ -50,14 +55,14 @@
               :disabled="!isValidPhone || !isValidCode"
               @click="handlePhoneLogin"
             >
-              登录
+              {{ submitButtonText }}
             </el-button>
           </div>
         </div>
 
         <div class="login-tips">
-          <p>💡 登录后可获得 100 积分新手礼包</p>
-          <p>🔒 我们严格保护您的隐私信息</p>
+          <p><el-icon><Star /></el-icon> {{ primaryTipText }}</p>
+          <p><el-icon><LockIcon /></el-icon> 我们严格保护您的隐私信息</p>
           <p class="agreement-tip">
             登录即表示同意
             <el-link type="primary" :underline="false" @click="showAgreement">用户协议</el-link>
@@ -74,6 +79,7 @@
 import { ref, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Phone, Lock, Star, Lock as LockIcon } from '@element-plus/icons-vue'
 import { phoneLogin, sendSmsCode } from '../api'
 import { validatePhone } from '../utils/validators'
 
@@ -89,9 +95,47 @@ const phoneForm = ref({
   code: ''
 })
 
+const isRegisterIntent = computed(() => route.query.intent === 'register')
+const loginTitle = computed(() => isRegisterIntent.value ? '注册领取新手积分' : '欢迎回来')
+const loginSubtitle = computed(() => isRegisterIntent.value
+  ? '验证手机号后会直接创建账号并登录，八字排盘、塔罗占卜等入口都能立即使用。'
+  : '登录后即可体验八字排盘、塔罗占卜等服务')
+const submitButtonText = computed(() => isRegisterIntent.value ? '领取积分并登录' : '登录')
+const primaryTipText = computed(() => isRegisterIntent.value ? '验证成功后即可领取 100 积分新手礼包' : '登录后可获得 100 积分新手礼包')
+
 // 表单验证
 const isValidPhone = computed(() => validatePhone(phoneForm.value.phone))
 const isValidCode = computed(() => /^\d{6}$/.test(phoneForm.value.code))
+
+const maskPhone = (phone) => {
+  const normalizedPhone = String(phone ?? '').trim()
+  if (normalizedPhone.length < 7) {
+    return normalizedPhone
+  }
+
+  return `${normalizedPhone.slice(0, 3)}****${normalizedPhone.slice(-4)}`
+}
+
+const truncateLoginMessage = (message) => {
+  if (!message) {
+    return 'unknown'
+  }
+
+  return message.length > 160 ? `${message.slice(0, 157)}...` : message
+}
+
+const reportLoginError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[Login]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateLoginMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')),
+    ...extra
+  })
+}
 
 // 显示用户协议
 const showAgreement = () => {
@@ -112,14 +156,22 @@ const sendCode = async () => {
   
   try {
     const response = await sendSmsCode({ phone: phoneForm.value.phone })
-    if (response.code === 0) {
-      ElMessage.success('验证码已发送')
+    if (response.code === 200) {
+      const testCode = response.data?.test_code
+      if (testCode) {
+        ElMessage.success(`测试模式验证码：${testCode}`)
+      } else {
+        ElMessage.success('验证码已发送')
+      }
       startCountdown()
     } else {
+
       ElMessage.error(response.message || '发送失败')
     }
   } catch (error) {
-    console.error('发送验证码失败:', error)
+    reportLoginError('send_sms_code_failed', error, {
+      phone: maskPhone(phoneForm.value.phone)
+    })
     ElMessage.error('发送失败，请稍后重试')
   }
 }
@@ -153,18 +205,21 @@ const handlePhoneLogin = async () => {
       code: phoneForm.value.code
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('userInfo', JSON.stringify(response.data.user))
-      ElMessage.success('登录成功！')
+      ElMessage.success(isRegisterIntent.value ? '注册成功，欢迎来到太初命理！' : '登录成功！')
       const redirect = route.query.redirect || '/'
       router.push(redirect)
     } else {
       ElMessage.error(response.message || '登录失败')
     }
   } catch (error) {
+    reportLoginError('phone_login_failed', error, {
+      phone: maskPhone(phoneForm.value.phone),
+      intent: isRegisterIntent.value ? 'register' : 'login'
+    })
     ElMessage.error('登录失败，请稍后重试')
-    console.error(error)
   } finally {
     loading.value = false
   }
@@ -184,7 +239,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: var(--bg-primary);
   padding: 20px;
 }
 
@@ -194,11 +249,12 @@ onUnmounted(() => {
 }
 
 .login-box {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .login-header {
@@ -209,7 +265,7 @@ onUnmounted(() => {
 .logo {
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,18 +275,33 @@ onUnmounted(() => {
 
 .logo-icon {
   font-size: 36px;
-  color: #e94560;
+  color: var(--primary-color);
+}
+
+.logo-icon svg {
+  width: 36px;
+  height: 36px;
 }
 
 .login-header h2 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 24px;
   margin-bottom: 10px;
 }
 
 .login-header p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
+}
+
+.intent-tip {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--text-primary) !important;
+  line-height: 1.6;
 }
 
 .login-methods {
@@ -242,7 +313,7 @@ onUnmounted(() => {
 }
 
 .login-tips p {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 8px 0;
 }
@@ -260,13 +331,13 @@ onUnmounted(() => {
 }
 
 .login-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .login-input :deep(.el-input__inner) {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .code-input-row {
@@ -288,7 +359,8 @@ onUnmounted(() => {
 
 .login-submit-btn {
   width: 100%;
-  height: 50px;
+  min-height: 48px;
+  height: auto;
   font-size: 16px;
 }
 
@@ -300,9 +372,13 @@ onUnmounted(() => {
   .login-box {
     padding: 30px 20px;
   }
+
+  .code-input-row {
+    flex-direction: column;
+  }
   
   .send-code-btn {
-    width: 100px;
+    width: 100%;
     padding: 0 10px;
   }
 }

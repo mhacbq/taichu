@@ -1,6 +1,5 @@
 <template>
   <div class="app-container">
-    <!-- 搜索表单 -->
     <el-card class="search-form" shadow="never">
       <el-form :model="queryForm" inline>
         <el-form-item label="用户名">
@@ -26,99 +25,127 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>搜索
-          </el-button>
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 操作栏 -->
-    <div class="table-operations">
-      <el-button type="primary" @click="handleExport">
-        <el-icon><Download /></el-icon>导出
-      </el-button>
+    <div class="table-operations mb-4">
+      <el-space>
+        <el-button type="primary" :disabled="readonlyMode" @click="handleExport">
+          <el-icon><Download /></el-icon>导出
+        </el-button>
+        <el-button
+          type="success"
+          :disabled="readonlyMode || !selectedUsers.length"
+          @click="handleBatchStatus(1)"
+        >
+          批量启用
+        </el-button>
+        <el-button
+          type="danger"
+          :disabled="readonlyMode || !selectedUsers.length"
+          @click="handleBatchStatus(0)"
+        >
+          批量禁用
+        </el-button>
+      </el-space>
     </div>
 
-    <!-- 用户列表 -->
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="userList" stripe>
-        <el-table-column type="index" label="#" width="50" />
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column label="用户信息" min-width="200">
-          <template #default="{ row }">
-            <div class="user-info">
-              <el-avatar :size="40" :src="row.avatar" />
-              <div class="user-detail">
-                <div class="nickname">{{ row.nickname }}</div>
-                <div class="username">{{ row.username }}</div>
-              </div>
-            </div>
+      <div v-if="pageError" class="page-state">
+        <el-result icon="warning" :title="pageError.title" :sub-title="pageError.description">
+          <template #extra>
+            <el-button type="primary" :loading="loading" @click="loadUserList">重新加载</el-button>
           </template>
-        </el-table-column>
-        <el-table-column prop="phone" label="手机号" width="120" />
-        <el-table-column prop="points" label="积分" width="100" sortable>
-          <template #default="{ row }">
-            <el-tag type="warning">{{ row.points }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="bazi_count" label="八字次数" width="100" />
-        <el-table-column prop="tarot_count" label="塔罗次数" width="100" />
-        <el-table-column prop="created_at" label="注册时间" width="160" />
-        <el-table-column prop="status" label="状态" width="80">
-          <template #default="{ row }">
-            <el-switch
-              v-model="row.status"
-              :active-value="1"
-              :inactive-value="0"
-              @change="handleStatusChange(row)"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleView(row)">查看</el-button>
-            <el-button link type="primary" @click="handleAdjustPoints(row)">调积分</el-button>
-            <el-dropdown @command="handleMore($event, row)">
-              <el-button link type="primary">
-                更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="log">行为日志</el-dropdown-item>
-                  <el-dropdown-item command="risk" divided>风险标记</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="queryForm.page"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        </el-result>
       </div>
+
+      <template v-else>
+        <el-table
+          v-loading="loading"
+          :data="userList"
+          stripe
+          @selection-change="handleSelectionChange"
+        >
+          <el-table-column type="selection" width="55" />
+          <el-table-column type="index" label="#" width="50" />
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column label="用户信息" min-width="200">
+            <template #default="{ row }">
+              <div class="user-info">
+                <el-avatar :size="40" :src="row.avatar" />
+                <div class="user-detail">
+                  <div class="nickname">{{ row.nickname }}</div>
+                  <div class="username">{{ row.username }}</div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="phone" label="手机号" width="120" />
+          <el-table-column prop="points" label="积分" width="100" sortable>
+            <template #default="{ row }">
+              <el-tag type="warning">{{ row.points }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="bazi_count" label="八字次数" width="100" />
+          <el-table-column prop="tarot_count" label="塔罗次数" width="100" />
+          <el-table-column prop="created_at" label="注册时间" width="160" />
+          <el-table-column prop="status" label="状态" width="80">
+            <template #default="{ row }">
+              <el-switch
+                v-model="row.status"
+                :active-value="1"
+                :inactive-value="0"
+                :disabled="readonlyMode"
+                @change="handleStatusChange(row)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="handleView(row)">查看</el-button>
+              <el-button link type="primary" :disabled="readonlyMode || !canAdjustPoints" @click="handleAdjustPoints(row)">调积分</el-button>
+
+              <el-dropdown :disabled="readonlyMode" @command="handleMore($event, row)">
+                <el-button link type="primary">
+                  更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="log">行为日志</el-dropdown-item>
+                    <el-dropdown-item command="risk" divided>风险标记</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="queryForm.page"
+            v-model:page-size="queryForm.pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
+      </template>
     </el-card>
 
-    <!-- 调整积分弹窗 -->
-    <el-dialog v-model="pointsDialog.visible" title="调整用户积分" width="500px">
-      <el-form :model="pointsDialog.form" label-width="100px">
+    <el-dialog v-model="pointsDialog.visible" title="调整用户积分" width="500px" destroy-on-close>
+      <el-form :model="pointsDialog.form" label-width="100px" :disabled="readonlyMode">
         <el-form-item label="当前积分">
           <span>{{ pointsDialog.currentPoints }}</span>
         </el-form-item>
         <el-form-item label="调整类型">
           <el-radio-group v-model="pointsDialog.form.type">
             <el-radio label="add">增加</el-radio>
-            <el-radio label="reduce">减少</el-radio>
+            <el-radio label="sub">减少</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="调整数量">
@@ -135,24 +162,32 @@
       </el-form>
       <template #footer>
         <el-button @click="pointsDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="confirmAdjustPoints">确定</el-button>
+        <el-button type="primary" :disabled="readonlyMode || !canAdjustPoints" @click="confirmAdjustPoints">确定</el-button>
+
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, updateUserStatus, exportUsers } from '@/api/user'
+import { ArrowDown, Download } from '@element-plus/icons-vue'
+import { getUserList, updateUserStatus, exportUsers, batchUpdateUserStatus } from '@/api/user'
 import { adjustPoints } from '@/api/points'
+import { useUserStore } from '@/stores/user'
+import { createReadonlyErrorState } from '@/utils/page-error'
 
 const router = useRouter()
+const userStore = useUserStore()
+
 
 const loading = ref(false)
 const total = ref(0)
 const userList = ref([])
+const selectedUsers = ref([])
+const pageError = ref(null)
 
 const queryForm = reactive({
   username: '',
@@ -167,12 +202,32 @@ const pointsDialog = reactive({
   visible: false,
   currentPoints: 0,
   userId: null,
-  form: {
+  form: createDefaultPointsForm()
+})
+
+const readonlyMode = computed(() => Boolean(pageError.value))
+const canAdjustPoints = computed(() => {
+  return userStore.permissions?.includes('*')
+    || userStore.permissions?.includes('points_adjust')
+    || userStore.roles?.includes('admin')
+})
+
+
+function createDefaultPointsForm() {
+  return {
     type: 'add',
     amount: 10,
     reason: ''
   }
-})
+}
+
+function ensureWritable(message) {
+  if (!readonlyMode.value) {
+    return true
+  }
+  ElMessage.warning(message)
+  return false
+}
 
 onMounted(() => {
   loadUserList()
@@ -181,9 +236,17 @@ onMounted(() => {
 async function loadUserList() {
   loading.value = true
   try {
-    const { data } = await getUserList(queryForm)
-    userList.value = data.list
-    total.value = data.total
+    const { data } = await getUserList(queryForm, { showErrorMessage: false })
+    userList.value = Array.isArray(data?.list) ? data.list : []
+    total.value = Number(data?.total || 0)
+    selectedUsers.value = []
+    pageError.value = null
+  } catch (error) {
+    userList.value = []
+    total.value = 0
+    selectedUsers.value = []
+    pointsDialog.visible = false
+    pageError.value = createReadonlyErrorState(error, '用户列表', 'user_view / user_edit / points_adjust')
   } finally {
     loading.value = false
   }
@@ -207,16 +270,27 @@ function handleReset() {
 }
 
 async function handleStatusChange(row) {
+  if (!ensureWritable('用户列表尚未成功加载，当前暂时无法修改状态')) {
+    row.status = row.status === 1 ? 0 : 1
+    return
+  }
+
+  const nextStatus = row.status
+  const previousStatus = nextStatus === 1 ? 0 : 1
+
   try {
     await ElMessageBox.confirm(
-      `确定${row.status === 1 ? '启用' : '禁用'}该用户吗？`,
+      `确定${nextStatus === 1 ? '启用' : '禁用'}该用户吗？`,
       '提示',
       { type: 'warning' }
     )
-    await updateUserStatus(row.id, row.status)
+    await updateUserStatus(row.id, nextStatus, { showErrorMessage: false })
     ElMessage.success('操作成功')
-  } catch {
-    row.status = row.status === 1 ? 0 : 1
+  } catch (error) {
+    row.status = previousStatus
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.message || '更新用户状态失败')
+    }
   }
 }
 
@@ -225,22 +299,49 @@ function handleView(row) {
 }
 
 function handleAdjustPoints(row) {
+  if (!ensureWritable('用户列表尚未成功加载，当前暂时无法调积分')) {
+    return
+  }
+
+  if (!canAdjustPoints.value) {
+    ElMessage.warning('当前账号无积分调整权限')
+    return
+  }
+
   pointsDialog.userId = row.id
+
   pointsDialog.currentPoints = row.points
+  pointsDialog.form = createDefaultPointsForm()
   pointsDialog.visible = true
 }
 
 async function confirmAdjustPoints() {
+  if (!ensureWritable('用户列表尚未成功加载，当前暂时无法调积分')) {
+    return
+  }
+
+  if (!canAdjustPoints.value) {
+    ElMessage.warning('当前账号无积分调整权限')
+    return
+  }
+
+  if (!pointsDialog.form.reason.trim()) {
+
+    ElMessage.warning('请输入调整原因')
+    return
+  }
+
   try {
     await adjustPoints({
       user_id: pointsDialog.userId,
-      ...pointsDialog.form
-    })
+      ...pointsDialog.form,
+      reason: pointsDialog.form.reason.trim()
+    }, { showErrorMessage: false })
     ElMessage.success('积分调整成功')
     pointsDialog.visible = false
-    loadUserList()
+    await loadUserList()
   } catch (error) {
-    console.error(error)
+    ElMessage.error(error.message || '积分调整失败')
   }
 }
 
@@ -251,12 +352,13 @@ function handleMore(command, row) {
       query: { userId: row.id }
     })
   } else if (command === 'risk') {
-    // 标记风险用户
+    ElMessage.info(`用户 ${row.id} 的风险标记能力待接入`) 
   }
 }
 
 function handleSizeChange(val) {
   queryForm.pageSize = val
+  queryForm.page = 1
   loadUserList()
 }
 
@@ -265,7 +367,42 @@ function handleCurrentChange(val) {
   loadUserList()
 }
 
+function handleSelectionChange(selection) {
+  selectedUsers.value = selection
+}
+
+async function handleBatchStatus(status) {
+  if (!ensureWritable('用户列表尚未成功加载，当前暂时无法执行批量状态修改')) {
+    return
+  }
+
+  const ids = selectedUsers.value.map(u => u.id)
+  const actionText = status === 1 ? '启用' : '禁用'
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要批量${actionText}选中的 ${ids.length} 个用户吗？`,
+      '批量操作',
+      { type: 'warning' }
+    )
+    loading.value = true
+    await batchUpdateUserStatus(ids, status, { showErrorMessage: false })
+    ElMessage.success('批量操作成功')
+    await loadUserList()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.message || '批量操作失败')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
 async function handleExport() {
+  if (!ensureWritable('用户列表尚未成功加载，当前为只读保护状态，暂不导出默认空结果')) {
+    return
+  }
+
   try {
     const blob = await exportUsers(queryForm)
     const url = window.URL.createObjectURL(blob)
@@ -276,7 +413,7 @@ async function handleExport() {
     window.URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
   } catch (error) {
-    ElMessage.error('导出失败')
+    ElMessage.error(error.message || '导出失败')
   }
 }
 </script>
@@ -285,15 +422,15 @@ async function handleExport() {
 .user-info {
   display: flex;
   align-items: center;
-  
+
   .user-detail {
     margin-left: 10px;
-    
+
     .nickname {
       font-weight: 500;
       color: #303133;
     }
-    
+
     .username {
       font-size: 12px;
       color: #909399;
@@ -304,5 +441,19 @@ async function handleExport() {
 
 .search-form {
   margin-bottom: 20px;
+}
+
+.table-operations {
+  margin-bottom: 16px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.page-state {
+  padding: 12px 0;
 }
 </style>

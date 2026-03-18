@@ -16,7 +16,7 @@
           </p>
           <div class="hero-actions">
             <router-link to="/bazi" class="btn-primary">
-              <span>✨</span>
+              <el-icon><StarFilled /></el-icon>
               开始探索
             </router-link>
             <router-link to="/daily" class="btn-secondary">
@@ -45,6 +45,28 @@
       </ScrollReveal>
     </section>
 
+    <!-- 2026流年运势 Banner -->
+    <section class="section annual-fortune-banner">
+      <div class="container">
+        <ScrollReveal animation="fade-up">
+          <div class="fortune-banner-card">
+            <div class="banner-content">
+              <div class="banner-tag">2026 丙午年</div>
+              <h2>流年运势抢先看</h2>
+              <p>洞悉流年机遇，把握人生转折点。AI 深度解析你的 2026 事业、财运与感情走势。</p>
+              <router-link to="/bazi" class="btn-primary banner-btn">
+                <el-icon><Calendar /></el-icon>
+                立即测算 2026 运势
+              </router-link>
+            </div>
+            <div class="banner-visual">
+               <div class="year-symbol">丙午</div>
+            </div>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
+
     <!-- 快捷入口 -->
     <section class="section">
       <div class="container">
@@ -60,12 +82,12 @@
         <ScrollReveal animation="fade-up" :delay="200">
           <div class="fortune-overview">
             <h2 class="section-title">
-              <span>📊</span>
+              <el-icon><DataLine /></el-icon>
               今日运势概览
             </h2>
             <div class="overview-cards">
               <div class="overview-card">
-                <div class="card-icon">🎯</div>
+                <div class="card-icon"><el-icon><Aim /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">综合运势</span>
                   <div class="card-score">
@@ -77,7 +99,7 @@
                 </div>
               </div>
               <div class="overview-card">
-                <div class="card-icon">💼</div>
+                <div class="card-icon"><el-icon><Briefcase /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">事业运</span>
                   <div class="card-score">
@@ -89,7 +111,7 @@
                 </div>
               </div>
               <div class="overview-card">
-                <div class="card-icon">💰</div>
+                <div class="card-icon"><el-icon><Money /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">财运</span>
                   <div class="card-score">
@@ -101,7 +123,7 @@
                 </div>
               </div>
               <div class="overview-card">
-                <div class="card-icon">💕</div>
+                <div class="card-icon"><el-icon><Star /></el-icon></div>
                 <div class="card-info">
                   <span class="card-label">感情运</span>
                   <div class="card-score">
@@ -138,7 +160,7 @@
         <ScrollReveal animation="fade-up">
           <div class="calendar-section">
             <h2 class="section-title">
-              <span>📅</span>
+              <el-icon><Calendar /></el-icon>
               运势日历
             </h2>
             <FortuneCalendar />
@@ -152,7 +174,7 @@
       <div class="container">
         <ScrollReveal animation="fade-up">
           <h2 class="section-title center">
-            <span>✨</span>
+            <el-icon><StarFilled /></el-icon>
             为什么选择太初命理
           </h2>
         </ScrollReveal>
@@ -165,7 +187,14 @@
             :delay="100 + index * 100"
           >
             <div class="feature-card">
-              <div class="feature-icon">{{ feature.icon }}</div>
+              <div class="feature-icon">
+                <el-icon v-if="feature.icon === 'aim'"><Aim /></el-icon>
+                <el-icon v-else-if="feature.icon === 'magic'"><MagicStick /></el-icon>
+                <el-icon v-else-if="feature.icon === 'cpu'"><Cpu /></el-icon>
+                <el-icon v-else-if="feature.icon === 'cellphone'"><Cellphone /></el-icon>
+                <el-icon v-else-if="feature.icon === 'lock'"><Present /></el-icon>
+                <el-icon v-else-if="feature.icon === 'present'"><Lock /></el-icon>
+              </div>
               <h3 class="feature-title">{{ feature.title }}</h3>
               <p class="feature-desc">{{ feature.description }}</p>
             </div>
@@ -186,9 +215,9 @@
             </router-link>
           </div>
           <div class="trust-badges">
-            <span class="badge">🔒 数据安全</span>
-            <span class="badge">✓ 专业准确</span>
-            <span class="badge">💝 贴心服务</span>
+            <span class="badge"><el-icon><Lock /></el-icon> 数据安全</span>
+            <span class="badge"><el-icon><CircleCheck /></el-icon> 专业准确</span>
+            <span class="badge"><el-icon><StarFilled /></el-icon> 贴心服务</span>
           </div>
         </div>
       </ScrollReveal>
@@ -204,37 +233,38 @@ import QuickActions from '../components/QuickActions.vue'
 import MoodTracker from '../components/MoodTracker.vue'
 import AchievementSystem from '../components/AchievementSystem.vue'
 import FortuneCalendar from '../components/FortuneCalendar.vue'
+import { StarFilled, DataLine, Aim, MagicStick, Cpu, Cellphone, Lock, Present, Calendar, Briefcase, Money, Star, CircleCheck } from '@element-plus/icons-vue'
 
 const isLoggedIn = ref(false)
 
 const features = [
   {
-    icon: '🎯',
+    icon: 'aim',
     title: '精准分析',
     description: '基于传统命理学，结合现代算法，为你提供精准的运势分析',
   },
   {
-    icon: '🔮',
+    icon: 'magic',
     title: '多元服务',
     description: '八字排盘、塔罗占卜、每日运势，满足你的各种需求',
   },
   {
-    icon: '🤖',
+    icon: 'cpu',
     title: 'AI 解读',
     description: '智能AI深度解读，让复杂的命理变得通俗易懂',
   },
   {
-    icon: '📱',
+    icon: 'cellphone',
     title: '随时查看',
     description: '多端同步，随时随地查看你的运势和历史记录',
   },
   {
-    icon: '🔒',
+    icon: 'lock',
     title: '隐私保护',
     description: '严格的数据加密，保护你的个人信息安全',
   },
   {
-    icon: '🎁',
+    icon: 'present',
     title: '免费体验',
     description: '新用户注册即送积分，免费体验多项功能',
   },
@@ -259,7 +289,12 @@ onMounted(() => {
   justify-content: center;
   padding: 80px 20px;
   position: relative;
+  background: 
+    radial-gradient(circle at 50% 40%, rgba(184, 134, 11, 0.25) 0%, transparent 60%),
+    radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(184, 134, 11, 0.12) 0%, transparent 40%);
 }
+
 
 .hero-content {
   text-align: center;
@@ -274,12 +309,12 @@ onMounted(() => {
   display: block;
   font-size: 48px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
 .title-line.highlight {
-  background: linear-gradient(135deg, #e94560, #ff6b6b, #feca57);
+  background: linear-gradient(135deg, #B8860B, #D4AF37, #F4E4C1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -287,7 +322,7 @@ onMounted(() => {
 
 .hero-subtitle {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin: 0 0 32px 0;
   line-height: 1.6;
 }
@@ -302,45 +337,52 @@ onMounted(() => {
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 16px 32px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
+  padding: 12px 32px;
+  min-height: 44px;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
   text-decoration: none;
-  border-radius: 30px;
+  border-radius: var(--radius-btn);
   font-weight: 600;
   transition: all 0.3s ease;
   border: none;
   cursor: pointer;
   font-size: 16px;
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
 }
 
 .btn-primary.large {
-  padding: 18px 40px;
+  padding: 14px 40px;
+  min-height: 52px;
   font-size: 18px;
 }
 
 .btn-secondary {
   display: inline-flex;
   align-items: center;
-  padding: 16px 32px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  justify-content: center;
+  padding: 12px 32px;
+  min-height: 44px;
+  background: var(--bg-hover);
+  color: var(--text-primary);
   text-decoration: none;
-  border-radius: 30px;
+  border-radius: var(--radius-btn);
   font-weight: 500;
   transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--white-20);
   transform: translateY(-2px);
+  border-color: var(--primary-color);
 }
 
 .hero-stats {
@@ -352,30 +394,42 @@ onMounted(() => {
 
 .stat-item {
   text-align: center;
+  padding: 15px 25px;
+  background: var(--white-03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  background: var(--white-06);
+  transform: translateY(-5px);
+  border-color: var(--primary-light-30);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-number {
   display: block;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
-  color: #fff;
+  color: var(--primary-light);
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 }
 
 .stat-divider {
   width: 1px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-color);
 }
 
 /* Section Styles */
 .section {
-  padding: 60px 20px;
+  padding: 80px 20px;
 }
 
 .container {
@@ -384,9 +438,9 @@ onMounted(() => {
 }
 
 .section-title {
-  color: #fff;
-  font-size: 24px;
-  margin: 0 0 24px 0;
+  color: var(--text-primary);
+  font-size: 28px;
+  margin: 0 0 32px 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -398,36 +452,40 @@ onMounted(() => {
 
 /* Fortune Overview */
 .fortune-overview {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 .overview-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 20px;
 }
 
 .overview-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  padding: 20px;
+  background: var(--white-03);
+  border-radius: var(--radius-md);
   transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
 }
 
 .overview-card:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-hover);
   transform: translateY(-2px);
+  border-color: var(--primary-light-30);
 }
 
 .card-icon {
   font-size: 28px;
+  color: var(--primary-color);
 }
 
 .card-info {
@@ -437,7 +495,7 @@ onMounted(() => {
 .card-label {
   display: block;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 
@@ -450,89 +508,100 @@ onMounted(() => {
 .score {
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .score-bar {
   flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  height: 6px;
+  background: var(--border-light);
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .score-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
-  border-radius: 2px;
+  background: var(--primary-gradient);
+  border-radius: 3px;
 }
 
 .score-fill.high {
-  background: linear-gradient(90deg, #52c41a, #73d13d);
+  background: var(--success-gradient);
 }
 
 .score-fill.medium {
-  background: linear-gradient(90deg, #faad14, #ffc53d);
+  background: var(--warning-gradient);
 }
 
 /* Two Columns */
 .two-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 30px;
 }
 
 /* Calendar Section */
 .calendar-section {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Features Section */
 .features-section {
-  background: linear-gradient(180deg, transparent, rgba(233, 69, 96, 0.05), transparent);
+  background: linear-gradient(180deg, transparent, rgba(184, 134, 11, 0.05), transparent);
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 30px;
 }
 
 .feature-card {
   text-align: center;
-  padding: 32px 24px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 40px 30px;
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .feature-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(233, 69, 96, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-6px);
+  border-color: var(--primary-light-40);
+  box-shadow: var(--shadow-xl);
+  background: var(--white-08);
 }
 
 .feature-icon {
   font-size: 48px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: rgba(184, 134, 11, 0.1);
+  border-radius: var(--radius-round);
 }
 
 .feature-title {
-  color: #fff;
-  font-size: 18px;
-  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
 }
 
 .feature-desc {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  line-height: 1.6;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
   margin: 0;
 }
 
@@ -543,43 +612,142 @@ onMounted(() => {
 
 .cta-content {
   text-align: center;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 48px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(107, 70, 193, 0.1));
-  border-radius: 24px;
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  padding: 60px;
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(212, 175, 55, 0.1));
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--primary-light-30);
+  box-shadow: var(--shadow-xl);
 }
 
 .cta-title {
-  color: #fff;
-  font-size: 32px;
-  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-size: 36px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
 }
 
 .cta-desc {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  margin: 0 0 32px 0;
+  color: var(--text-secondary);
+  font-size: 18px;
+  margin: 0 0 40px 0;
 }
 
 .cta-actions {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .trust-badges {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 30px;
 }
 
 .badge {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--primary-light);
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/* Annual Fortune Banner */
+.annual-fortune-banner {
+  padding: 40px 0;
+}
+
+.fortune-banner-card {
+  background: linear-gradient(135deg, #8B0000, #B22222); /* Fire colors for Bing Wu */
+  border-radius: 20px;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(139, 0, 0, 0.3);
+  border: 1px solid rgba(255, 69, 0, 0.3);
+}
+
+.fortune-banner-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.banner-content {
+  flex: 1;
+  z-index: 1;
+}
+
+.banner-tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fortune-banner-card h2 {
+  font-size: 32px;
+  color: #fff;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.fortune-banner-card p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  margin-bottom: 25px;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.banner-btn {
+  background: #fff;
+  color: #8B0000;
+  border: none;
+}
+
+.banner-btn:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.banner-visual {
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  margin-left: 40px;
+  animation: pulse 3s infinite ease-in-out;
+}
+
+.year-symbol {
+  font-size: 48px;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  font-family: "Kaiti", "STKaiti", serif;
+}
+
+@media (max-width: 992px) {
   .overview-cards {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -597,6 +765,14 @@ onMounted(() => {
   .hero-actions {
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .btn-primary, .btn-secondary {
+    width: 100%;
   }
   
   .hero-stats {
@@ -605,8 +781,11 @@ onMounted(() => {
   }
   
   .stat-divider {
-    width: 80px;
-    height: 1px;
+    display: none;
+  }
+  
+  .stat-item {
+    width: 100%;
   }
   
   .overview-cards {
@@ -623,7 +802,28 @@ onMounted(() => {
   
   .trust-badges {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .cta-content {
+    padding: 40px 20px;
+  }
+
+  .fortune-banner-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .banner-visual {
+    margin: 30px auto 0;
+  }
+
+  .banner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 }
 </style>

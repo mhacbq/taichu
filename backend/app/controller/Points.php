@@ -69,10 +69,13 @@ class Points extends BaseController
         
         $query = PointsRecord::where('user_id', $user['sub'])
             ->order('created_at', 'desc');
-        
+
         $total = $query->count();
-        $list = $query->page($page, $pageSize)->select()->toArray();
-        
+        $rows = $query->page($page, $pageSize)->select()->toArray();
+        $list = PointsRecord::normalizeRecordList($rows, [
+            (int) $user['sub'] => (int) $this->pointsService->getBalance((int) $user['sub']),
+        ]);
+
         return $this->success([
             'list' => $list,
             'pagination' => [
@@ -128,10 +131,22 @@ class Points extends BaseController
                 $code = $result['message'] === '积分不足' ? 403 : 500;
                 return $this->error($result['message'], $code);
             }
-        } catch (\Exception $e) {
-            \think\facade\Log::error('积分扣除异常: ' . $e->getMessage());
-            return $this->error('积分扣除失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException(
+                '积分扣除',
+                $e,
+                '积分扣除失败，请稍后重试',
+                [
+                    'user_id' => (int) ($user['sub'] ?? 0),
+                    'points' => $points,
+                    'action' => $action,
+                    'type' => (string) ($data['type'] ?? 'consume'),
+                    'related_id' => (int) ($data['related_id'] ?? 0),
+                    'remark_length' => mb_strlen((string) ($data['remark'] ?? '')),
+                ]
+            );
         }
+
     }
     
     /**
@@ -175,9 +190,19 @@ class Points extends BaseController
             } else {
                 return $this->error($result['message'], 500);
             }
-        } catch (\Exception $e) {
-            \think\facade\Log::error('积分充值异常: ' . $e->getMessage());
-            return $this->error('充值失败，请稍后重试', 500);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException(
+                '积分充值',
+                $e,
+                '充值失败，请稍后重试',
+                [
+                    'user_id' => (int) ($user['sub'] ?? 0),
+                    'points' => $points,
+                    'action' => (string) ($data['action'] ?? '积分充值'),
+                    'remark_length' => mb_strlen((string) ($data['remark'] ?? '')),
+                ]
+            );
         }
+
     }
 }

@@ -84,25 +84,35 @@ class LogService
     {
         $userId = self::getCurrentUserId();
         $ip = Request::ip();
-        
+        $requestId = (string) ($extraData['request_id'] ?? Request::header('X-Request-Id', ''));
+
+        if (array_key_exists('request_id', $extraData)) {
+            unset($extraData['request_id']);
+        }
+
         $logData = [
             'type' => self::TYPE_ERROR,
             'context' => $context,
             'user_id' => $userId,
             'ip' => $ip,
-            'error' => [
-                'message' => $exception->getMessage(),
-                'code' => $exception->getCode(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-                'trace' => $exception->getTraceAsString(),
+            'request' => [
+                'id' => self::truncateText($requestId, 64),
+                'method' => strtoupper((string) Request::method()),
+                'path' => self::sanitizeRequestPath((string) Request::pathinfo()),
+                'has_query' => !empty(Request::get()),
             ],
-            'extra' => $extraData,
+            'error' => [
+                'message' => self::truncateText($exception->getMessage()),
+                'code' => (int) $exception->getCode(),
+                'exception' => get_class($exception),
+            ],
+            'extra' => self::sanitizeSensitiveData($extraData),
             'timestamp' => date('Y-m-d H:i:s'),
         ];
         
         Log::channel('error')->error($context ?: 'Application error', $logData);
     }
+
     
     /**
      * 记录安全相关日志

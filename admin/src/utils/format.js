@@ -21,6 +21,16 @@ export function formatDateOnly(value) {
 }
 
 /**
+ * 格式化日期时间
+ * @param {string|Date} value
+ * @returns {string}
+ */
+export function formatDateTime(value) {
+  return formatDate(value, 'YYYY-MM-DD HH:mm:ss')
+}
+
+
+/**
  * 格式化时间（仅时间部分）
  * @param {string|Date} value
  * @returns {string}

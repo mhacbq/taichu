@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInita63fd22007f2f93a382960468c99ab02
+class ComposerStaticInit598f16f79c7f06ea93482d301722f81c
 {
     public static $files = array (
         '9b552a3cc426e3287cc811caefa3cf53' => __DIR__ . '/..' . '/topthink/think-helper/src/helper.php',
@@ -13,15 +13,15 @@ class ComposerStaticInita63fd22007f2f93a382960468c99ab02
     );
 
     public static $prefixLengthsPsr4 = array (
-        't' => 
+        't' =>
         array (
             'think\\' => 6,
         ),
-        'a' => 
+        'a' =>
         array (
             'app\\' => 4,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psr\\SimpleCache\\' => 16,
             'Psr\\Log\\' => 8,
@@ -29,65 +29,65 @@ class ComposerStaticInita63fd22007f2f93a382960468c99ab02
             'Psr\\Container\\' => 14,
             'Psr\\Cache\\' => 10,
         ),
-        'L' => 
+        'L' =>
         array (
             'League\\MimeTypeDetection\\' => 25,
             'League\\Flysystem\\Cached\\' => 24,
             'League\\Flysystem\\' => 17,
         ),
-        'F' => 
+        'F' =>
         array (
             'Firebase\\JWT\\' => 13,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'think\\' => 
+        'think\\' =>
         array (
-            0 => __DIR__ . '/..' . '/topthink/think-helper/src',
-            1 => __DIR__ . '/..' . '/topthink/think-container/src',
+            0 => __DIR__ . '/..' . '/topthink/think-filesystem/src',
+            1 => __DIR__ . '/..' . '/topthink/framework/src/think',
             2 => __DIR__ . '/..' . '/topthink/think-validate/src',
             3 => __DIR__ . '/..' . '/topthink/think-orm/src',
-            4 => __DIR__ . '/..' . '/topthink/framework/src/think',
-            5 => __DIR__ . '/..' . '/topthink/think-filesystem/src',
+            4 => __DIR__ . '/..' . '/topthink/think-container/src',
+            5 => __DIR__ . '/..' . '/topthink/think-helper/src',
         ),
-        'app\\' => 
+        'app\\' =>
         array (
             0 => __DIR__ . '/../..' . '/app',
         ),
-        'Psr\\SimpleCache\\' => 
+        'Psr\\SimpleCache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/simple-cache/src',
         ),
-        'Psr\\Log\\' => 
+        'Psr\\Log\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/log/src',
         ),
-        'Psr\\Http\\Message\\' => 
+        'Psr\\Http\\Message\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'Psr\\Container\\' => 
+        'Psr\\Container\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
         ),
-        'Psr\\Cache\\' => 
+        'Psr\\Cache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
         ),
-        'League\\MimeTypeDetection\\' => 
+        'League\\MimeTypeDetection\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/mime-type-detection/src',
         ),
-        'League\\Flysystem\\Cached\\' => 
+        'League\\Flysystem\\Cached\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/flysystem-cached-adapter/src',
         ),
-        'League\\Flysystem\\' => 
+        'League\\Flysystem\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/flysystem/src',
         ),
-        'Firebase\\JWT\\' => 
+        'Firebase\\JWT\\' =>
         array (
             0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
@@ -100,9 +100,9 @@ class ComposerStaticInita63fd22007f2f93a382960468c99ab02
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInita63fd22007f2f93a382960468c99ab02::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInita63fd22007f2f93a382960468c99ab02::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInita63fd22007f2f93a382960468c99ab02::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit598f16f79c7f06ea93482d301722f81c::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit598f16f79c7f06ea93482d301722f81c::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit598f16f79c7f06ea93482d301722f81c::$classMap;
 
         }, null, ClassLoader::class);
     }

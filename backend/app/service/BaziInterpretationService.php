@@ -207,6 +207,14 @@ class BaziInterpretationService
     ];
 
     /**
+     * 天干五行映射
+     */
+    protected $ganWuXing = [
+        '甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土',
+        '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'
+    ];
+
+    /**
      * 五行生克关系
      */
     protected $wuxingRelations = [
@@ -222,15 +230,21 @@ class BaziInterpretationService
      */
     public function generateFullInterpretation(array $bazi, string $gender): array
     {
-        $dayMaster = $bazi['day']['gan'];
-        $dayMasterWuxing = $bazi['day']['gan_wuxing'];
-        $wuxingStats = $bazi['wuxing_stats'];
+        $dayMaster = $bazi['day']['gan'] ?? '甲';
+        if (!isset($this->ganCharacteristics[$dayMaster])) {
+            $dayMaster = '甲';
+        }
+
+        $dayMasterWuxing = $bazi['day']['gan_wuxing'] ?? ($this->ganWuXing[$dayMaster] ?? '木');
+        $bazi['day']['gan_wuxing'] = $dayMasterWuxing;
+
+        $wuxingStats = $this->normalizeWuxingStats($bazi['wuxing_stats'] ?? []);
         
         // 分析五行强弱
         $wuxingAnalysis = $this->analyzeWuxingStrength($wuxingStats);
         
-        // 分析喜用神
-        $yongshen = $this->determineYongshen($dayMasterWuxing, $wuxingStats);
+        // 分析喜用神 - 传入完整bazi以进行深入分析
+        $yongshen = $this->determineYongshen($bazi, $wuxingStats);
         
         // 分析日主特性
         $dayMasterAnalysis = $this->analyzeDayMaster($dayMaster, $bazi);
@@ -270,48 +284,143 @@ class BaziInterpretationService
     }
 
     /**
-     * 分析五行强弱
+     * 归一化五行统计，确保始终包含金木水火土五个键
      */
-    protected function analyzeWuxingStrength(array $wuxingStats): array
+    protected function normalizeWuxingStats(array $wuxingStats): array
     {
-        $total = array_sum($wuxingStats);
-        $average = $total / 5;
-        
-        $analysis = [];
-        foreach ($wuxingStats as $wx => $count) {
+        $normalized = [
+            '金' => 0.0,
+            '木' => 0.0,
+            '水' => 0.0,
+            '火' => 0.0,
+            '土' => 0.0,
+        ];
+
+        foreach ($normalized as $wx => $defaultValue) {
+            $normalized[$wx] = isset($wuxingStats[$wx]) ? round(max(0, (float)$wuxingStats[$wx]), 2) : $defaultValue;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * 基于加权五行分值生成统一强弱画像，避免“统计口径已改、解释阈值仍是旧整数”的错位。
+     */
+    protected function buildWuxingProfile(array $wuxingStats): array
+    {
+        $stats = $this->normalizeWuxingStats($wuxingStats);
+        $total = array_sum($stats);
+        $details = [];
+        $lack = [];
+        $weak = [];
+
+        if ($total <= 0.001) {
+            foreach ($stats as $wx => $count) {
+                $details[$wx] = [
+                    'count' => round($count, 2),
+                    'percentage' => 0.0,
+                    'strength' => '未知',
+                    'desc' => '无有效数据',
+                ];
+            }
+
+            return [
+                'stats' => $stats,
+                'details' => $details,
+                'dominant' => '未知',
+                'weakest' => '未知',
+                'lack' => $lack,
+                'weak' => $weak,
+            ];
+        }
+
+        $ideal = $total / 5;
+        foreach ($stats as $wx => $count) {
             $percentage = ($count / $total) * 100;
-            if ($count >= 3) {
+            $lackThreshold = max(0.08, $ideal * 0.18);
+            $weakThreshold = max(0.45, $ideal * 0.72);
+            $strongThreshold = $ideal * 1.25;
+            $overStrongThreshold = $ideal * 1.55;
+
+            if ($count <= $lackThreshold && $percentage < 4) {
+                $strength = '缺';
+                $desc = '明显不足';
+                $lack[] = $wx;
+            } elseif ($percentage >= 30 || $count >= $overStrongThreshold) {
                 $strength = '旺';
                 $desc = '过旺';
-            } elseif ($count == 2) {
+            } elseif ($percentage >= 24 || $count >= $strongThreshold) {
                 $strength = '强';
                 $desc = '偏强';
-            } elseif ($count == 1) {
+            } elseif ($percentage >= 12 || $count >= $weakThreshold) {
+                $strength = '平';
+                $desc = '中和';
+            } else {
                 $strength = '弱';
                 $desc = '偏弱';
-            } else {
-                $strength = '缺';
-                $desc = '缺失';
+                $weak[] = $wx;
             }
-            
-            $analysis[$wx] = [
-                'count' => $count,
+
+            $details[$wx] = [
+                'count' => round($count, 2),
                 'percentage' => round($percentage, 1),
                 'strength' => $strength,
                 'desc' => $desc,
             ];
         }
-        
-        // 找出最旺和最弱的五行
-        arsort($wuxingStats);
-        $maxWuxing = array_key_first($wuxingStats);
-        $minWuxing = array_key_last($wuxingStats);
-        
+
+        $max = max($stats);
+        $min = min($stats);
+
         return [
-            'details' => $analysis,
-            'dominant' => $maxWuxing,
-            'weakest' => $minWuxing,
-            'balance_score' => $this->calculateBalanceScore($wuxingStats),
+            'stats' => $stats,
+            'details' => $details,
+            'dominant' => $this->findWuxingByValue($stats, $max),
+            'weakest' => $this->findWuxingByValue($stats, $min),
+            'lack' => $lack,
+            'weak' => $weak,
+        ];
+    }
+
+
+    /**
+     * 根据分值取对应五行；若并列，则显式标记并列，避免把平票误说成单一最旺/最弱。
+     */
+    protected function findWuxingByValue(array $wuxingStats, float $target): string
+    {
+        $matched = [];
+        foreach ($wuxingStats as $wx => $value) {
+            if (abs($value - $target) < 0.0001) {
+                $matched[] = $wx;
+            }
+        }
+
+        if (empty($matched)) {
+            return '未知';
+        }
+
+        if (count($matched) === 1) {
+            return $matched[0];
+        }
+
+        return implode('、', $matched) . '（并列）';
+    }
+
+
+    /**
+     * 分析五行强弱
+     */
+    protected function analyzeWuxingStrength(array $wuxingStats): array
+    {
+        $profile = $this->buildWuxingProfile($wuxingStats);
+
+        return [
+            'details' => $profile['details'],
+            'dominant' => $profile['dominant'],
+            'weakest' => $profile['weakest'],
+            'balance_score' => $this->calculateBalanceScore($profile['stats']),
+            'lack' => $profile['lack'],
+            'weak' => $profile['weak'],
         ];
     }
 
@@ -320,58 +429,156 @@ class BaziInterpretationService
      */
     protected function calculateBalanceScore(array $wuxingStats): int
     {
-        $values = array_values($wuxingStats);
-        $max = max($values);
-        $min = min($values);
-        $diff = $max - $min;
-        
-        // 差值越小越平衡
-        if ($diff <= 1) return 90;
-        if ($diff <= 2) return 75;
-        if ($diff <= 3) return 60;
-        return 45;
+        $wuxingStats = $this->normalizeWuxingStats($wuxingStats);
+        $total = array_sum($wuxingStats);
+        if ($total <= 0.001) {
+            return 0;
+        }
+
+        $percentages = array_map(
+            static fn(float $value): float => ($value / $total) * 100,
+            $wuxingStats
+        );
+        $values = array_values($percentages);
+        $average = 20.0;
+        $meanAbsoluteDeviation = array_sum(array_map(
+            static fn(float $value): float => abs($value - $average),
+            $values
+        )) / count($values);
+        $maxGap = max($values) - min($values);
+        $lackCount = count(array_filter($values, static fn(float $value): bool => $value < 6));
+        $overStrongCount = count(array_filter($values, static fn(float $value): bool => $value > 34));
+
+        $score = 100
+            - ($meanAbsoluteDeviation * 2.1)
+            - ($maxGap * 0.35)
+            - ($lackCount * 5)
+            - ($overStrongCount * 3);
+
+        // 偏枯命局不应被强行抬到 20 分，否则会掩盖加权五行已经明显失衡的事实。
+        return (int) round(max(0, min(98, $score)));
     }
 
+
+
     /**
-     * 确定喜用神
+     * 确定喜用神 - 复用核心强弱评分，并纳入地支冲合结果
      */
-    protected function determineYongshen(string $dayMasterWuxing, array $wuxingStats): array
+    protected function determineYongshen(array $bazi, array $wuxingStats): array
     {
-        arsort($wuxingStats);
-        $maxCount = reset($wuxingStats);
-        $maxWuxing = key($wuxingStats);
-        $minCount = end($wuxingStats);
-        $minWuxing = key($wuxingStats);
-        
-        $yongshen = [];
-        $relations = $this->wuxingRelations[$dayMasterWuxing];
-        
-        // 判断日主强弱
-        $dayMasterCount = $wuxingStats[$dayMasterWuxing] ?? 0;
-        $isStrong = $dayMasterCount >= 2 || $wuxingStats[$relations['被生']] >= 2;
-        
+        $dayMasterWuxing = $bazi['day']['gan_wuxing'] ?? ($this->ganWuXing[$bazi['day']['gan'] ?? '甲'] ?? '木');
+        $relations = $this->wuxingRelations[$dayMasterWuxing] ?? $this->wuxingRelations['木'];
+        $strength = $bazi['strength'] ?? [];
+        $score = (float)($strength['score'] ?? 0);
+        $status = $strength['status'] ?? '';
+        $interactionNotes = $strength['details']['branch_interactions'] ?? [];
+
+        $isStrong = in_array($status, ['身旺', '中和偏旺'], true);
+        if ($status === '') {
+            $isStrong = $score >= 45;
+            $status = $isStrong ? '身强' : '身弱';
+        }
+
+        $favoriteDetails = array_values(array_filter(
+            $strength['favorite_wuxing_details'] ?? [],
+            static fn($item): bool => is_array($item) && is_string($item['element'] ?? null) && ($item['element'] ?? '') !== ''
+        ));
+
+        if (empty($favoriteDetails)) {
+            $favoriteDetails = $isStrong
+                ? [
+                    ['element' => $relations['被克'], 'relation' => '官杀', 'priority' => 1],
+                    ['element' => $relations['生'], 'relation' => '食伤', 'priority' => 2],
+                    ['element' => $relations['克'], 'relation' => '财星', 'priority' => 3],
+                ]
+                : [
+                    ['element' => $relations['被生'], 'relation' => '印星', 'priority' => 1],
+                    ['element' => $dayMasterWuxing, 'relation' => '比劫', 'priority' => 2],
+                ];
+        }
+
+        $normalizedStats = $this->normalizeWuxingStats($wuxingStats);
+        usort($favoriteDetails, function (array $left, array $right) use ($normalizedStats): int {
+            $priorityCompare = ((int) ($left['priority'] ?? 99)) <=> ((int) ($right['priority'] ?? 99));
+            if ($priorityCompare !== 0) {
+                return $priorityCompare;
+            }
+
+            $leftValue = (float) ($normalizedStats[$left['element'] ?? ''] ?? 0);
+            $rightValue = (float) ($normalizedStats[$right['element'] ?? ''] ?? 0);
+            if (abs($leftValue - $rightValue) >= 0.0001) {
+                return $leftValue <=> $rightValue;
+            }
+
+            return strcmp((string) ($left['element'] ?? ''), (string) ($right['element'] ?? ''));
+        });
+
+        $favoriteCandidates = [];
+        foreach ($favoriteDetails as $detail) {
+            $element = (string) ($detail['element'] ?? '');
+            if ($element !== '' && !in_array($element, $favoriteCandidates, true)) {
+                $favoriteCandidates[] = $element;
+            }
+        }
+
+        if (empty($favoriteCandidates)) {
+            $favoriteCandidates = [$dayMasterWuxing];
+        }
+
+        $primary = $favoriteCandidates[0];
+        $secondary = $favoriteCandidates[1] ?? $primary;
+        $favoriteText = implode('、', $favoriteCandidates);
+        $strategyText = $isStrong
+            ? '依“身强先官杀、次食伤、后财星”的次序疏泄制衡'
+            : '依“身弱先印星、次比劫”的次序扶身培元';
+
         if ($isStrong) {
-            // 日主强，喜克泄耗
-            $yongshen['shen'] = $relations['克']; // 官杀
-            $yongshen['xi'] = $relations['生']; // 食伤
-            $yongshen['type'] = '身强';
-            $yongshen['desc'] = "你的{$dayMasterWuxing}较旺，属于身强格。喜用神为克我之{$relations['克']}和泄我之{$relations['生']}，可以平衡命局。";
+            $yongshen = [
+                'shen' => $primary,
+                'xi' => $secondary,
+                'type' => '身强',
+                'score' => $score,
+                'favorable_elements' => $favoriteCandidates,
+                'favorable_element_details' => $favoriteDetails,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。{$strategyText}，宜以{$favoriteText}来疏泄制衡，其中当前更急需先借{$primary}发力。",
+            ];
         } else {
-            // 日主弱，喜生扶
-            $yongshen['shen'] = $relations['被生']; // 印绶
-            $yongshen['xi'] = $dayMasterWuxing; // 比劫
-            $yongshen['type'] = '身弱';
-            $yongshen['desc'] = "你的{$dayMasterWuxing}偏弱，属于身弱格。喜用神为生我之{$relations['被生']}和助我之{$dayMasterWuxing}，可以增强日主力量。";
+            $yongshen = [
+                'shen' => $primary,
+                'xi' => $secondary,
+                'type' => '身弱',
+                'score' => $score,
+                'favorable_elements' => $favoriteCandidates,
+                'favorable_element_details' => $favoriteDetails,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。{$strategyText}，宜以{$favoriteText}来扶身培元，其中当前更急需先补{$primary}。",
+            ];
         }
-        
-        // 如果某五行缺失，也是需要补充的
-        if ($minCount == 0) {
-            $yongshen['que'] = $minWuxing;
-            $yongshen['desc'] .= "另外，你的命局缺少{$minWuxing}，适当补充{$minWuxing}元素也有益处。";
+
+        if (!empty($interactionNotes)) {
+            $yongshen['desc'] .= '地支作用要点：' . implode('；', array_slice($interactionNotes, 0, 3)) . '。';
         }
-        
+
+        $profile = $this->buildWuxingProfile($wuxingStats);
+        $priorityElements = array_slice($favoriteCandidates, 0, 2);
+        $priorityLack = array_values(array_intersect($profile['lack'], $priorityElements));
+        $priorityWeak = array_values(array_intersect($profile['weak'], $priorityElements));
+        if (!empty($priorityLack)) {
+            $yongshen['que'] = $priorityLack[0];
+            $yongshen['desc'] .= "其中{$priorityLack[0]}既属喜用又明显不足，调理时可优先围绕该五行展开。";
+        } elseif (!empty($priorityWeak)) {
+            $yongshen['weak'] = $priorityWeak[0];
+            $yongshen['desc'] .= "其中{$priorityWeak[0]}既属喜用又偏弱，可作为后续调衡的重点。";
+        } elseif (!empty($profile['lack'])) {
+            $yongshen['imbalance_hint'] = $profile['lack'][0];
+            $yongshen['desc'] .= "命局另见{$profile['lack'][0]}不足，但是否取补仍应以扶抑取用次序为先，不宜脱离喜用神机械补缺。";
+        } elseif (!empty($profile['weak'])) {
+            $yongshen['imbalance_hint'] = $profile['weak'][0];
+            $yongshen['desc'] .= "命局另见{$profile['weak'][0]}偏弱，可作结构参考，但调理仍以喜用神先后为主。";
+        }
+
         return $yongshen;
     }
+
 
     /**
      * 分析日主
@@ -460,7 +667,7 @@ class BaziInterpretationService
     {
         $chars = $this->ganCharacteristics[$dayMaster];
         
-        $analysis = "作为{$chars['nature']}日主，你如同{$chars['symbol']}一般。";
+        $analysis = "你的日主属{$chars['nature']}，气质像{$chars['symbol']}。";
         $analysis .= $chars['strengths'] . '。';
         
         // 结合十神
@@ -474,14 +681,15 @@ class BaziInterpretationService
         
         // 结合五行
         if ($wuxingAnalysis['balance_score'] >= 75) {
-            $analysis .= '你的五行配置较为平衡，性格稳重，各方面发展都比较顺利。';
+            $analysis .= '你的五行配置较为平衡，性格稳重，各方面发展都比较顺遂。';
         } else {
             $dominant = $wuxingAnalysis['dominant'];
-            $analysis .= "你的{$dominant}较旺，这会增强你的" . $this->getWuxingTrait($dominant) . '特质。';
+            $analysis .= "你的{$dominant}之气偏旺，会增强你" . $this->getWuxingTrait($dominant) . '的一面。';
         }
         
         return $analysis;
     }
+
 
     /**
      * 生成事业分析
@@ -490,11 +698,11 @@ class BaziInterpretationService
     {
         $chars = $this->ganCharacteristics[$dayMaster];
         
-        $analysis = "基于你的{$wuxing}日主特性，" . implode('、', $chars['career']) . '等行业比较适合你。';
+        $analysis = "从{$wuxing}属性来看，" . implode('、', $chars['career']) . '等行业比较适合你。';
         
         // 结合喜用神
         if (isset($yongshen['shen'])) {
-            $analysis .= "你的喜用神为{$yongshen['shen']}，从事与{$yongshen['shen']}相关的行业会有更好的发展。";
+            $analysis .= "命局喜{$yongshen['shen']}，接触与{$yongshen['shen']}相关的行业更容易发挥长处。";
             $careerByWuxing = [
                 '金' => '金融、法律、机械、汽车、珠宝',
                 '木' => '教育、文化、出版、设计、环保',
@@ -502,7 +710,7 @@ class BaziInterpretationService
                 '火' => '能源、餐饮、美容、演艺、互联网',
                 '土' => '房地产、建筑、农业、保险、管理',
             ];
-            $analysis .= "如{$careerByWuxing[$yongshen['shen']]}等领域。";
+            $analysis .= "例如{$careerByWuxing[$yongshen['shen']]}等方向。";
         }
         
         // 结合十神
@@ -519,6 +727,7 @@ class BaziInterpretationService
         
         return $analysis;
     }
+
 
     /**
      * 生成财运分析
@@ -623,22 +832,24 @@ class BaziInterpretationService
             '火' => '心、小肠、血液循环',
             '土' => '脾、胃、消化系统',
         ];
-        
+
         $analysis = '';
-        
-        // 找出过旺和过弱的五行
-        foreach ($wuxingStats as $wx => $count) {
-            if ($count >= 3) {
-                $analysis .= "你的{$wx}较旺，注意{$organMap[$wx]}的保养，避免过度劳累。";
-            } elseif ($count == 0) {
+        $profile = $this->buildWuxingProfile($wuxingStats);
+
+        foreach ($profile['details'] as $wx => $detail) {
+            if (in_array($detail['strength'], ['旺', '强'], true)) {
+                $analysis .= "你的{$wx}偏旺，注意{$organMap[$wx]}的保养，避免长期透支。";
+            } elseif ($detail['strength'] === '缺') {
+                $analysis .= "你的{$wx}明显不足，{$organMap[$wx]}方面要重点留意并及早调养。";
+            } elseif ($detail['strength'] === '弱') {
                 $analysis .= "你的{$wx}偏弱，{$organMap[$wx]}方面需要多加关注。";
             }
         }
-        
+
         if (empty($analysis)) {
             $analysis = '你的五行配置相对平衡，整体健康状况良好。保持规律作息和适度运动即可。';
         }
-        
+
         return $analysis;
     }
 
@@ -648,33 +859,42 @@ class BaziInterpretationService
     protected function generateComprehensiveAdvice(array $yongshen, array $wuxingStats, string $dayMasterWuxing): string
     {
         $advice = '';
-        
+
         // 喜用神建议
         if (isset($yongshen['shen'])) {
             $shen = $yongshen['shen'];
             $directions = ['金' => '西方', '木' => '东方', '水' => '北方', '火' => '南方', '土' => '中央'];
             $colors = ['金' => '白色、金色', '木' => '绿色、青色', '水' => '黑色、蓝色', '火' => '红色、紫色', '土' => '黄色、棕色'];
             $numbers = ['金' => '4、9', '木' => '3、8', '水' => '1、6', '火' => '2、7', '土' => '5、0'];
-            
+
             $advice .= "你的喜用神是{$shen}，建议：";
             $advice .= "发展方向宜选择{$directions[$shen]}；";
             $advice .= "幸运颜色为{$colors[$shen]}；";
             $advice .= "幸运数字为{$numbers[$shen]}。";
         }
-        
-        // 五行调和建议
-        $weakWuxing = [];
-        foreach ($wuxingStats as $wx => $count) {
-            if ($count == 0) {
-                $weakWuxing[] = $wx;
-            }
+
+        $profile = $this->buildWuxingProfile($wuxingStats);
+        $focusElements = array_values(array_filter($yongshen['favorable_elements'] ?? [], static fn($item): bool => is_string($item) && $item !== ''));
+        if (empty($focusElements) && isset($yongshen['shen'])) {
+            $focusElements[] = $yongshen['shen'];
         }
-        
-        if (!empty($weakWuxing)) {
-            $advice .= '另外，你的命局缺少' . implode('、', $weakWuxing);
-            $advice .= '，可以通过佩戴相应饰品、选择对应颜色等方式适当补充。';
+        $focusElements = array_slice($focusElements, 0, 2);
+        if (!empty($focusElements)) {
+            $advice .= '实际调理宜先围绕' . implode('、', $focusElements) . '展开，以扶抑用神次序为主。';
         }
-        
+
+        $priorityLack = array_values(array_intersect($profile['lack'], $focusElements));
+        $priorityWeak = array_values(array_intersect($profile['weak'], $focusElements));
+        if (!empty($priorityLack)) {
+            $advice .= '其中' . $priorityLack[0] . '恰属喜用且明显不足，可优先从作息、环境与颜色上补其气。';
+        } elseif (!empty($priorityWeak)) {
+            $advice .= '其中' . $priorityWeak[0] . '恰属喜用而偏弱，可作为后续调衡的重点。';
+        } elseif (!empty($profile['lack'])) {
+            $advice .= '命局虽见' . implode('、', $profile['lack']) . '不足，但不必脱离喜用神顺序单独追补。';
+        } elseif (!empty($profile['weak'])) {
+            $advice .= '命局另有' . implode('、', $profile['weak']) . '偏弱，可作为结构参考，但仍以喜用神为先。';
+        }
+
         return $advice;
     }
 
@@ -715,9 +935,9 @@ class BaziInterpretationService
      */
     protected function simplifyText(string $text): string
     {
-        // 移除过于专业的术语，简化表达
+        // 移除过于专业的术语，简化表达。
+        // 这里不再直接把“日主”替换成“你”，否则很容易产生“阳金你”“金你特性”这类病句。
         $replacements = [
-            '日主' => '你',
             '命局' => '八字',
             '喜用神' => '有利的五行',
             '身强' => '自身能量强',
@@ -731,7 +951,11 @@ class BaziInterpretationService
         foreach ($replacements as $old => $new) {
             $text = str_replace($old, $new, $text);
         }
+
+        $text = preg_replace('/，+/', '，', $text) ?? $text;
+        $text = preg_replace('/。+/', '。', $text) ?? $text;
         
-        return $text;
+        return trim($text);
     }
+
 }

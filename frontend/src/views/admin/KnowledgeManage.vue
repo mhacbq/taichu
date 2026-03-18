@@ -35,7 +35,7 @@
       <el-input
         v-model="searchKeyword"
         placeholder="搜索文章标题/内容"
-        prefix-icon="Search"
+        :prefix-icon="Search"
         clearable
         style="width: 300px"
       />

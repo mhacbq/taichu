@@ -8,6 +8,8 @@ use app\model\AdminPermission;
 use app\model\AdminUserRole;
 use app\model\AdminRolePermission;
 use think\facade\Cache;
+use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 管理员权限服务
@@ -29,6 +31,11 @@ class AdminAuthService
      */
     public static function checkPermission(int $adminId, string $permissionCode): bool
     {
+        // 验证adminId有效性
+        if ($adminId <= 0) {
+            return false;
+        }
+        
         // 获取管理员的所有权限代码
         $permissions = self::getAdminPermissions($adminId);
         
@@ -67,10 +74,66 @@ class AdminAuthService
     }
     
     /**
+     * 解析管理员主表名
+     */
+    public static function resolveAdminTable(): ?string
+    {
+        foreach (['tc_admin', 'admin'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取仍然有效的管理员账号信息
+     */
+    public static function findActiveAdmin(int $adminId): ?array
+    {
+        if ($adminId <= 0) {
+            return null;
+        }
+
+        $adminTable = self::resolveAdminTable();
+        if ($adminTable === null) {
+            return null;
+        }
+
+        $query = Db::table($adminTable)->where('id', $adminId);
+        $columns = SchemaInspector::getTableColumns($adminTable);
+        if (isset($columns['status'])) {
+            $query->where('status', 1);
+        }
+
+        $admin = $query->find();
+        return $admin ?: null;
+    }
+
+    /**
+     * 获取管理员角色编码
+     */
+    public static function getAdminRoleCodes(int $adminId): array
+    {
+        $roleIds = self::getAdminRoleIds($adminId);
+        if (empty($roleIds)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('strval', AdminRole::whereIn('id', $roleIds)->column('code')))));
+    }
+
+    /**
      * 获取管理员的所有权限
      */
     public static function getAdminPermissions(int $adminId): array
     {
+        // 验证adminId有效性
+        if ($adminId <= 0) {
+            return [];
+        }
+        
         $cacheKey = self::$cachePrefix . $adminId;
         
         // 尝试从缓存获取
@@ -80,12 +143,12 @@ class AdminAuthService
         }
         
         // 获取管理员的所有角色
-        $roleIds = AdminUserRole::where('admin_id', $adminId)->column('role_id');
-        
+        $roleIds = self::getAdminRoleIds($adminId);
+
         if (empty($roleIds)) {
             return [];
         }
-        
+
         // 检查是否有超级管理员角色
         $hasSuperRole = AdminRole::whereIn('id', $roleIds)
             ->where('is_super', 1)
@@ -113,11 +176,40 @@ class AdminAuthService
         return $permissions;
     }
     
+    protected static function getAdminRoleIds(int $adminId): array
+    {
+        if ($adminId <= 0) {
+            return [];
+        }
+
+        $roleIds = [];
+        if (SchemaInspector::tableExists('tc_admin_user_role')) {
+            $roleIds = array_map('intval', AdminUserRole::where('admin_id', $adminId)->column('role_id'));
+        }
+
+        if (!empty($roleIds)) {
+            return array_values(array_unique(array_filter($roleIds, static fn (int $roleId): bool => $roleId > 0)));
+        }
+
+        $admin = self::findActiveAdmin($adminId);
+        $fallbackRoleId = isset($admin['role_id']) ? (int) $admin['role_id'] : 0;
+        if ($fallbackRoleId > 0) {
+            return [$fallbackRoleId];
+        }
+
+        return [];
+    }
+
     /**
      * 清除管理员权限缓存
      */
     public static function clearPermissionCache(int $adminId): void
     {
+        // 验证adminId有效性
+        if ($adminId <= 0) {
+            return;
+        }
+        
         $cacheKey = self::$cachePrefix . $adminId;
         Cache::delete($cacheKey);
     }
@@ -196,6 +288,13 @@ class AdminAuthService
             
             return true;
         } catch (\Exception $e) {
+            Log::error('分配管理员角色失败', [
+                'admin_id' => $adminId,
+                'role_id' => $roleId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return false;
         }
     }
@@ -215,6 +314,13 @@ class AdminAuthService
             
             return true;
         } catch (\Exception $e) {
+            Log::error('移除管理员角色失败', [
+                'admin_id' => $adminId,
+                'role_id' => $roleId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return false;
         }
     }

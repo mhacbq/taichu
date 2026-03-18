@@ -202,17 +202,7 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="设为默认">
-              <el-switch
-                v-model="form.is_default"
-                :active-value="1"
-                :inactive-value="0"
-                active-text="是"
-                inactive-text="否"
-              />
-            </el-form-item>
-          </el-col>
+
         </el-row>
       </el-form>
 
@@ -338,7 +328,7 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getPromptList(queryForm)
-    if (res.code === 0) {
+    if (res.code === 200) {
       tableData.value = res.data.list
       total.value = res.data.total
     }
@@ -404,7 +394,7 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
     const res = await deletePrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('删除成功')
       loadData()
     } else {
@@ -421,7 +411,7 @@ const handleDelete = async (row) => {
 const handleSetDefault = async (row) => {
   try {
     const res = await setDefaultPrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('设置成功')
       loadData()
     } else {
@@ -438,7 +428,7 @@ const handlePreview = async (row) => {
   previewLoading.value = true
   try {
     const res = await previewPrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       previewData.value = res.data
     } else {
       ElMessage.error(res.message || '预览失败')
@@ -454,7 +444,7 @@ const handlePreview = async (row) => {
 const handleDuplicate = async (row) => {
   try {
     const res = await duplicatePrompt(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('复制成功')
       loadData()
     } else {
@@ -493,15 +483,24 @@ const handleSubmit = async () => {
   }
 
   const data = {
-    ...form,
+    id: form.id,
+    name: form.name,
+    key: form.key,
+    type: form.type,
+    system_prompt: form.system_prompt,
+    user_prompt_template: form.user_prompt_template,
+    description: form.description,
+    sort_order: form.sort_order,
+    is_enabled: form.is_enabled,
     variables,
     model_params: modelParams
   }
 
+
   submitLoading.value = true
   try {
     const res = await savePrompt(data)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
       loadData()

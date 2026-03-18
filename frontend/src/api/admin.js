@@ -19,3 +19,27 @@ export const updateMarketingConfig = (data) => request.post('/admin/config/updat
 
 // 刷新缓存
 export const refreshConfigCache = () => request.post('/admin/config/refresh-cache')
+
+// 黄历管理
+export const getAlmanacList = (params) => request.get('/admin/almanac/list', { params })
+export const getAlmanacDetail = (date) => request.get('/admin/almanac/detail', { params: { date } })
+export const saveAlmanac = (data) => request.post('/admin/almanac/save', data)
+export const deleteAlmanac = (date) => request.post('/admin/almanac/delete', { date })
+export const generateAlmanacMonth = (year, month) => request.post('/admin/almanac/generate-month', { year, month })
+export const getAlmanacMonths = () => request.get('/admin/almanac/months')
+
+// SEO管理
+export const getSeoConfigs = () => request.get('/admin/seo/configs')
+export const saveSeoConfig = (data) => request.post('/admin/seo/save', data)
+export const deleteSeoConfig = (route) => request.post('/admin/seo/delete', { route })
+export const getRobotsConfig = () => request.get('/admin/seo/robots')
+export const saveRobotsConfig = (content) => request.post('/admin/seo/robots', { content })
+export const generateSitemap = () => request.post('/admin/seo/sitemap-generate')
+
+// 神煞管理
+export const getShenshaList = (params) => request.get('/admin/shensha/list', { params })
+export const saveShensha = (data) => request.post('/admin/shensha/save', data)
+export const deleteShenshaApi = (id) => request.post(`/admin/shensha/delete/${id}`)
+export const toggleShenshaStatus = (id, status) => request.post('/admin/shensha/toggle-status', { id, status })
+
+

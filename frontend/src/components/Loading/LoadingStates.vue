@@ -1,12 +1,9 @@
 <template>
   <div class="loading-states">
-    <!-- 类型1: 旋转动画 -->
-    <div v-if="type === 'spinner'" class="loading-spinner">
-      <div class="spinner-ring">
-        <div></div>
-        <div></div>
-        <div></div>
-        <div></div>
+    <!-- 类型1: 旋转动画 (太极风格) -->
+    <div v-if="type === 'spinner'" class="loading-taiji">
+      <div class="taiji-icon">
+        <div class="yin-yang"></div>
       </div>
       <p v-if="text" class="loading-text">{{ text }}</p>
     </div>
@@ -87,45 +84,52 @@ defineProps({
 </script>
 
 <style scoped>
-/* 旋转动画 */
-.loading-spinner {
+/* 太极旋转动画 */
+.loading-taiji {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
 }
 
-.spinner-ring {
-  display: inline-block;
-  position: relative;
-  width: 64px;
-  height: 64px;
+.taiji-icon {
+  width: 60px;
+  height: 60px;
+  animation: spin 3s linear infinite;
 }
 
-.spinner-ring div {
-  box-sizing: border-box;
-  display: block;
-  position: absolute;
-  width: 51px;
-  height: 51px;
-  margin: 6px;
-  border: 4px solid #667eea;
+.yin-yang {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  animation: spinner-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  border-color: #667eea transparent transparent transparent;
+  background: linear-gradient(to bottom, var(--primary-color) 50%, #1a1a2e 50%);
+  position: relative;
+  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
 }
 
-.spinner-ring div:nth-child(1) { animation-delay: -0.45s; }
-.spinner-ring div:nth-child(2) { animation-delay: -0.3s; }
-.spinner-ring div:nth-child(3) { animation-delay: -0.15s; }
+.yin-yang::before,
+.yin-yang::after {
+  content: '';
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+}
 
-@keyframes spinner-ring {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.yin-yang::before {
+  background: var(--primary-color);
+  top: 0;
+}
+
+.yin-yang::after {
+  background: #1a1a2e;
+  bottom: 0;
 }
 
 .loading-text {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -145,7 +149,7 @@ defineProps({
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
   border-radius: 4px;
   transition: width 0.3s ease;
   position: relative;
@@ -175,13 +179,13 @@ defineProps({
 
 .progress-text {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .progress-percent {
   font-size: 14px;
   font-weight: 600;
-  color: #667eea;
+  color: var(--primary-color);
 }
 
 @keyframes shimmer {
@@ -191,8 +195,8 @@ defineProps({
 
 /* 骨架屏 */
 .loading-skeleton {
-  background: white;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   padding: 20px;
 }
 
@@ -247,7 +251,7 @@ defineProps({
 .loading-fullscreen {
   position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: radial-gradient(circle at center, #1a1a2e 0%, #0d0d1a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -268,8 +272,8 @@ defineProps({
 .logo-circle {
   position: absolute;
   inset: 0;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 3px solid rgba(184, 134, 11, 0.3);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -282,7 +286,7 @@ defineProps({
   justify-content: center;
   font-size: 28px;
   font-weight: bold;
-  color: white;
+  color: var(--primary-color);
 }
 
 .loading-dots {
@@ -295,7 +299,8 @@ defineProps({
 .loading-dots span {
   width: 10px;
   height: 10px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--primary-color);
+  opacity: 0.6;
   border-radius: 50%;
   animation: bounce 1.4s ease-in-out infinite both;
 }
@@ -323,18 +328,15 @@ defineProps({
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
+  color: inherit;
+  font-size: inherit;
 }
 
 .btn-spinner {
   width: 16px;
   height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

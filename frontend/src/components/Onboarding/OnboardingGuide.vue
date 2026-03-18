@@ -15,9 +15,9 @@
         <div class="guide-header">
           <div class="step-dots">
             <span 
-              v-for="(step, index) in steps" 
+              v-for="(_, index) in normalizedSteps"
               :key="index"
-              :class="['dot', { active: index === currentStep }]"
+              :class="['dot', { active: index === currentStepIndex }]"
             ></span>
           </div>
           <button class="skip-btn" @click="skip">跳过</button>
@@ -26,7 +26,7 @@
         <div class="guide-content">
           <div class="step-icon" :style="{ background: currentStepData.iconBg }">
             <el-icon :size="32" :color="currentStepData.iconColor">
-              <component :is="currentStepData.icon" />
+              <component :is="resolvedStepIcon" />
             </el-icon>
           </div>
           <h3 class="step-title">{{ currentStepData.title }}</h3>
@@ -35,7 +35,7 @@
         
         <div class="guide-footer">
           <button 
-            v-if="currentStep > 0" 
+            v-if="currentStepIndex > 0"
             class="btn-prev"
             @click="prev"
           >
@@ -52,7 +52,7 @@
         </div>
         
         <!-- 箭头指示 -->
-        <div class="guide-arrow" :class="arrowPosition"></div>
+        <div v-if="showArrow" class="guide-arrow" :class="arrowPosition"></div>
       </div>
     </div>
   </Transition>
@@ -60,7 +60,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ArrowRight, Calendar, Magic, Star, Present } from '@element-plus/icons-vue'
+import { ArrowRight, Calendar, MagicStick, Star, Present } from '@element-plus/icons-vue'
 
 const props = defineProps({
   steps: {
@@ -79,7 +79,7 @@ const props = defineProps({
         target: '.quick-actions',
         title: '快速开始',
         description: '点击这里快速进行八字排盘、塔罗占卜或查看今日运势',
-        icon: 'Magic',
+        icon: 'MagicStick',
         iconBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
         iconColor: '#fff',
         position: 'bottom'
@@ -111,10 +111,54 @@ const emit = defineEmits(['complete', 'skip'])
 const show = ref(false)
 const currentStep = ref(0)
 const targetRect = ref(null)
+const isFallbackTarget = ref(false)
+let showTimer = null
+
+const iconMap = {
+  Star,
+  MagicStick,
+  Calendar,
+  Present,
+}
+
+const defaultStep = {
+  target: '',
+  title: '欢迎使用',
+  description: '让我们快速熟悉关键功能。',
+  icon: 'Star',
+  iconBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  iconColor: '#fff',
+  position: 'bottom',
+}
+
+const normalizedSteps = computed(() => {
+  if (!Array.isArray(props.steps) || props.steps.length === 0) {
+    return [defaultStep]
+  }
+
+  return props.steps.map((step) => ({ ...defaultStep, ...(step || {}) }))
+})
+
+const currentStepIndex = computed(() => {
+  const lastIndex = normalizedSteps.value.length - 1
+  if (lastIndex <= 0) {
+    return 0
+  }
+
+  return Math.min(Math.max(currentStep.value, 0), lastIndex)
+})
 
 // 当前步骤数据
-const currentStepData = computed(() => props.steps[currentStep.value])
-const isLastStep = computed(() => currentStep.value === props.steps.length - 1)
+const currentStepData = computed(() => normalizedSteps.value[currentStepIndex.value] || defaultStep)
+const isLastStep = computed(() => currentStepIndex.value === normalizedSteps.value.length - 1)
+const resolvedStepIcon = computed(() => {
+  const icon = currentStepData.value.icon
+  if (typeof icon === 'string') {
+    return iconMap[icon] || Star
+  }
+
+  return icon || Star
+})
 
 // 高亮区域样式
 const highlightStyle = computed(() => {
@@ -131,12 +175,27 @@ const highlightStyle = computed(() => {
 // 引导卡片位置
 const cardStyle = computed(() => {
   if (!targetRect.value) return {}
-  
+
+  if (typeof window === 'undefined') {
+    return {}
+  }
+
   const position = currentStepData.value.position || 'bottom'
-  const cardWidth = 320
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const cardWidth = Math.min(320, Math.max(260, viewportWidth - 24))
   const cardHeight = 280
-  const spacing = 20
-  
+  const spacing = viewportWidth < 768 ? 12 : 20
+
+  if (isFallbackTarget.value) {
+    const centerTop = Math.max(12, (viewportHeight - cardHeight) / 2)
+    const centerLeft = Math.max(12, (viewportWidth - cardWidth) / 2)
+    return {
+      top: `${centerTop}px`,
+      left: `${centerLeft}px`,
+    }
+  }
+
   let top, left
   
   switch (position) {
@@ -162,26 +221,50 @@ const cardStyle = computed(() => {
   }
   
   // 边界检查
-  const maxLeft = window.innerWidth - cardWidth - 20
-  const maxTop = window.innerHeight - cardHeight - 20
-  left = Math.max(20, Math.min(left, maxLeft))
-  top = Math.max(20, Math.min(top, maxTop))
-  
+  const maxLeft = viewportWidth - cardWidth - 12
+  const maxTop = viewportHeight - cardHeight - 12
+  left = Math.max(12, Math.min(left, maxLeft))
+  top = Math.max(12, Math.min(top, maxTop))
+
   return { top: `${top}px`, left: `${left}px` }
 })
 
 // 箭头位置
 const arrowPosition = computed(() => {
-  return currentStepData.value.position || 'bottom'
+  const validPositions = ['top', 'bottom', 'left', 'right']
+  const position = currentStepData.value.position || 'bottom'
+  return validPositions.includes(position) ? position : 'bottom'
 })
+
+const showArrow = computed(() => !isFallbackTarget.value)
 
 // 更新目标元素位置
 const updateTargetRect = () => {
-  const target = document.querySelector(currentStepData.value.target)
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const selector = currentStepData.value.target
+  const target = typeof selector === 'string' && selector ? document.querySelector(selector) : null
+
   if (target) {
+    isFallbackTarget.value = false
     targetRect.value = target.getBoundingClientRect()
     // 滚动到目标元素
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' })
+    return
+  }
+
+  // 目标不存在时回退为居中定位，避免渲染报错
+  isFallbackTarget.value = true
+  targetRect.value = {
+    top: window.innerHeight / 2 - 80,
+    left: window.innerWidth / 2 - 120,
+    width: 240,
+    height: 160,
+    right: window.innerWidth / 2 + 120,
+    bottom: window.innerHeight / 2 + 80,
   }
 }
 
@@ -190,15 +273,15 @@ const next = () => {
   if (isLastStep.value) {
     complete()
   } else {
-    currentStep.value++
+    currentStep.value = currentStepIndex.value + 1
     updateTargetRect()
   }
 }
 
 // 上一步
 const prev = () => {
-  if (currentStep.value > 0) {
-    currentStep.value--
+  if (currentStepIndex.value > 0) {
+    currentStep.value = currentStepIndex.value - 1
     updateTargetRect()
   }
 }
@@ -224,21 +307,53 @@ const handleResize = () => {
   }
 }
 
+const handleScroll = () => {
+  if (show.value) {
+    updateTargetRect()
+  }
+}
+
+const handleKeydown = (event) => {
+  if (!show.value) return
+
+  if (event.key === 'Escape') {
+    skip()
+    return
+  }
+
+  if (event.key === 'ArrowRight') {
+    next()
+    return
+  }
+
+  if (event.key === 'ArrowLeft') {
+    prev()
+  }
+}
+
 // 检查是否应该显示引导
 onMounted(() => {
   const completed = localStorage.getItem('onboarding_completed')
   if (!completed) {
-    setTimeout(() => {
+    showTimer = setTimeout(() => {
       show.value = true
       updateTargetRect()
     }, 1000)
   }
   
   window.addEventListener('resize', handleResize)
+  window.addEventListener('scroll', handleScroll, true)
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('scroll', handleScroll, true)
+  window.removeEventListener('keydown', handleKeydown)
+  if (showTimer) {
+    clearTimeout(showTimer)
+    showTimer = null
+  }
 })
 
 // 暴露方法供外部调用
@@ -276,7 +391,7 @@ defineExpose({ start, skip })
 
 .guide-card {
   position: absolute;
-  width: 320px;
+  width: min(320px, calc(100vw - 24px));
   background: white;
   border-radius: 20px;
   padding: 24px;
@@ -473,5 +588,26 @@ defineExpose({ start, skip })
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .guide-card {
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .step-title {
+    font-size: 18px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+  }
+
+  .btn-prev,
+  .btn-next {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
 }
 </style>

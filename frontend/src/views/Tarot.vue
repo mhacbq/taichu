@@ -1,154 +1,271 @@
 <template>
   <div class="tarot-page">
     <div class="container">
-      <div class="page-header">
-        <BackButton />
-        <h1 class="section-title">塔罗占卜</h1>
-      </div>
+      <PageHeroHeader
+        title="塔罗占卜"
+        subtitle="先选牌阵，再聚焦你真正想问的问题；抽牌完成后会锁定上下文，确保保存、分享和复盘都对得上本次解读。"
+        :icon="MagicStick"
+      />
+
 
       <!-- 积分提示 -->
-      <div class="points-hint card">
-        <span class="hint-icon">💎</span>
+      <div class="points-hint card card-hover">
+        <el-icon class="hint-icon"><Coin /></el-icon>
         <span>本次占卜将消耗 <strong>5 积分</strong></span>
-        <span class="current-points">当前积分: {{ currentPoints }}</span>
+        <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
+        <div v-if="pointsError" class="points-warning" role="status" aria-live="polite">
+          <span>积分同步失败，请先重新获取后再继续占卜</span>
+          <el-button link type="warning" class="points-retry" @click="loadPoints" :loading="pointsLoading">重新获取积分</el-button>
+        </div>
       </div>
 
-      <div v-if="currentPoints < 5" class="insufficient-points card">
-        <p>💡 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+      <div v-if="currentPoints !== null && currentPoints < 5" class="insufficient-points card card-hover">
+        <p><el-icon><MagicStick /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
       </div>
 
-      <div class="tarot-intro card">
+      <div class="tarot-intro card card-hover">
         <h2>选择您的牌阵</h2>
         <div class="spread-options">
-          <div 
-            v-for="spread in spreads" 
+          <button
+            v-for="spread in spreads"
             :key="spread.id"
-            class="spread-card"
-            :class="{ active: selectedSpread === spread.id }"
-            @click="selectedSpread = spread.id"
+            type="button"
+            class="spread-card card-hover"
+            :class="{ active: displayedSpread === spread.id }"
+            :aria-pressed="displayedSpread === spread.id"
+            :disabled="isTarotContextLocked"
+            :aria-disabled="isTarotContextLocked"
+            @click="selectSpread(spread.id)"
           >
-            <div class="spread-icon">{{ spread.icon }}</div>
+
+            <div class="spread-icon">
+              <el-icon v-if="spread.icon === 'card'"><Document /></el-icon>
+              <el-icon v-else-if="spread.icon === 'cards'"><ChatDotRound /></el-icon>
+              <el-icon v-else-if="spread.icon === 'magic'"><MagicStick /></el-icon>
+            </div>
+            <span v-if="selectedSpread === spread.id" class="spread-status-badge">
+              <el-icon><Select /></el-icon>
+            </span>
             <h3>{{ spread.name }}</h3>
             <p>{{ spread.description }}</p>
-          </div>
+          </button>
         </div>
       </div>
 
       <!-- 问题引导区域 -->
-      <div class="question-guide card" v-if="!question && cards.length === 0">
-        <h3>
-          <span class="guide-icon">💭</span>
-          不知道问什么？选择一个你关心的话题
-        </h3>
-        <div class="topic-tabs">
-          <div 
-            v-for="topic in questionTopics" 
-            :key="topic.id"
-            class="topic-tab"
-            :class="{ active: selectedTopic === topic.id }"
-            @click="selectTopic(topic.id)"
+      <div v-if="showQuestionGuide" class="question-guide card card-hover">
+        <div class="question-guide__header">
+          <h3>
+            <el-icon class="guide-icon"><ChatDotRound /></el-icon>
+            不知道问什么？选择一个你关心的话题
+          </h3>
+          <el-button
+            v-if="question && cards.length === 0"
+            link
+            type="primary"
+            class="guide-toggle"
+            @click="toggleQuestionGuide"
           >
-            <span class="topic-icon">{{ topic.icon }}</span>
-            <span class="topic-name">{{ topic.name }}</span>
-          </div>
+            {{ questionGuideExpanded ? '收起模板' : '继续查看模板' }}
+          </el-button>
         </div>
-        <div class="question-templates" v-if="selectedTopic">
-          <p class="template-hint">点击选择一个问题，或以此为灵感输入你自己的问题：</p>
-          <div class="template-list">
-            <div 
-              v-for="(template, index) in currentTemplates" 
-              :key="index"
-              class="template-item"
-              @click="selectQuestion(template)"
+        <div v-show="questionGuideExpanded || (!question && cards.length === 0)">
+          <div class="topic-tabs">
+            <button
+              v-for="topic in questionTopics"
+              :key="topic.id"
+              type="button"
+              class="topic-tab card-hover"
+              :class="{ active: selectedTopic === topic.id }"
+              :aria-pressed="selectedTopic === topic.id"
+              @click="selectTopic(topic.id)"
             >
-              <span class="template-bullet">•</span>
-              <span class="template-text">{{ template }}</span>
+              <span class="topic-icon">
+                <el-icon v-if="topic.icon === 'briefcase'"><Briefcase /></el-icon>
+                <el-icon v-else-if="topic.icon === 'heart'"><StarFilled /></el-icon>
+                <el-icon v-else-if="topic.icon === 'star'"><StarFilled /></el-icon>
+                <el-icon v-else-if="topic.icon === 'question'"><QuestionFilled /></el-icon>
+                <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
+              </span>
+              <span class="topic-name">{{ topic.name }}</span>
+            </button>
+          </div>
+          <div class="question-templates" v-if="selectedTopic">
+            <p class="template-hint">点击选择一个问题，或以此为灵感输入你自己的问题：</p>
+            <div class="template-list">
+              <button
+                v-for="(template, index) in currentTemplates"
+                :key="index"
+                type="button"
+                class="template-item card-hover"
+                @click="selectQuestion(template)"
+              >
+                <span class="template-bullet">•</span>
+                <span class="template-text">{{ template }}</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="question-section card">
+
+      <div class="question-section card card-hover" :class="{ 'question-section--locked': isResultLocked }">
         <h3>您想咨询的问题</h3>
         <el-input
           v-model="question"
           type="textarea"
           :rows="3"
+          :readonly="isTarotContextLocked"
           placeholder="描述你的困惑，越具体越好。比如：'我应该接受这份新工作吗？'"
         />
-        <div class="question-hint" v-if="question">
-          <span class="hint-icon">💡</span>
+        <div class="question-hint" v-if="question && !isResultLocked">
+          <el-icon class="hint-icon"><MagicStick /></el-icon>
           <span>好的问题通常是开放性的，以"我应该..."或"我该如何..."开头</span>
+        </div>
+        <div v-else-if="isResultLocked" class="question-lock-note" role="status" aria-live="polite">
+          <el-icon class="hint-icon"><Select /></el-icon>
+          <span>本次抽牌已锁定问题与牌阵，保存记录、分享与详情弹窗都会沿用当前上下文。想修改的话，直接点“重新占卜”。</span>
         </div>
         <el-button
           type="primary"
           size="large"
           @click="showConfirm"
           :loading="loading"
-          :disabled="!question || currentPoints < 5"
+          :disabled="!canDrawTarot"
           class="draw-btn"
         >
-          <span class="btn-icon">🎴</span>
+          <el-icon class="btn-icon"><Document /></el-icon>
           开始抽牌
         </el-button>
       </div>
 
-      <div v-if="cards.length > 0" class="cards-result card">
-        <h3>您的牌阵</h3>
-        <p class="cards-hint">💡 点击任意牌查看详细解读</p>
-        <div class="cards-display">
-          <div 
-            v-for="(card, index) in cards" 
-            :key="index"
-            class="tarot-card"
-            :class="{ reversed: card.reversed }"
-            @click="showCardDetail(card, index)"
-          >
-            <div class="card-inner" :style="getCardStyle(card)">
-              <div class="card-number">{{ index + 1 }}</div>
-              <div class="card-emoji">{{ card.emoji }}</div>
-              <div class="card-name">{{ card.name }}</div>
-              <div class="card-position">{{ getPositionName(index) }}</div>
-              <div class="card-element" :class="card.element">{{ card.element }}</div>
-              <div v-if="card.reversed" class="reversed-badge">逆位</div>
+
+      <div v-if="flowError && cards.length === 0" class="flow-error card card-hover">
+        <EmptyState
+          type="error"
+          size="small"
+          :title="flowErrorTitle"
+          :description="flowErrorDescription"
+        >
+          <template #extra>
+            <div class="flow-error-actions">
+              <el-button type="primary" @click="retryLastAction" :loading="loading">{{ flowErrorActionText }}</el-button>
+              <el-button @click="resetTarot">重新整理问题</el-button>
             </div>
+          </template>
+        </EmptyState>
+      </div>
+
+      <div v-if="cards.length > 0" class="cards-result card card-hover">
+        <h3>您的牌阵</h3>
+        <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击或按回车查看详细解读</p>
+        <div v-if="submittedQuestionDisplay" class="result-context-summary" aria-label="本次塔罗结果上下文">
+          <span class="result-context-chip">
+            <strong>牌阵</strong>
+            <span>{{ submittedSpreadName }}</span>
+          </span>
+          <span class="result-context-chip result-context-chip--question">
+            <strong>问题</strong>
+            <span>{{ submittedQuestionDisplay }}</span>
+          </span>
+        </div>
+        <div class="cards-display">
+          <div
+            v-for="(card, index) in cards"
+            :key="`${card.name}-${index}`"
+            class="card-stack"
+          >
+            <button
+              type="button"
+              class="card-detail-trigger"
+              :aria-label="getCardDetailAriaLabel(card, index)"
+              aria-haspopup="dialog"
+              @click="showCardDetail(card, index)"
+            >
+              <TarotCard
+                :name="card.name"
+                :emoji="card.emoji"
+                :reversed="card.reversed"
+                :element="card.element"
+                :color="card.color"
+                :index="index"
+              />
+
+              <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(displayedSpread, index) }}</span>
+            </button>
           </div>
         </div>
-        
-        <div class="interpretation">
-          <h3>牌面解读</h3>
-          <div class="interpretation-content">{{ interpretation }}</div>
+
+
+        <div v-if="flowError && cards.length > 0" class="flow-error flow-error--inline card card-hover">
+          <EmptyState
+            type="error"
+            size="small"
+            inline
+            :title="flowErrorTitle"
+            :description="flowErrorDescription"
+          >
+            <template #extra>
+              <div class="flow-error-actions">
+                <el-button type="primary" @click="retryLastAction" :loading="loading">{{ flowErrorActionText }}</el-button>
+                <el-button @click="resetTarot">重新占卜</el-button>
+              </div>
+            </template>
+          </EmptyState>
         </div>
+
+        <div class="interpretation" :class="{ 'interpretation--pending': interpretationState !== 'ready' }">
+          <h3>牌面解读</h3>
+          <div v-if="interpretationState === 'ready'" class="interpretation-content">{{ interpretation }}</div>
+          <p v-else-if="interpretationState === 'loading'" class="interpretation-placeholder interpretation-placeholder--loading">牌面已经抽出，正在结合你的问题生成解读，请稍候...</p>
+          <p v-else-if="interpretationState === 'error'" class="interpretation-placeholder interpretation-placeholder--error">本次牌面已抽出，但解读暂时中断。你可以直接点击“重试解读”，无需重新抽牌。</p>
+          <p v-else class="interpretation-placeholder">抽牌完成后，这里会展示与你问题对应的牌面解读。</p>
+        </div>
+
         
         <!-- 操作按钮 -->
         <div class="result-actions">
-          <el-button type="primary" @click="saveTarotResult">
-            <span class="btn-icon">💾</span> 保存记录
+          <el-button type="primary" @click="saveTarotResult" :disabled="!interpretation">
+            <el-icon class="btn-icon"><Download /></el-icon> 保存记录
           </el-button>
-          <el-button @click="shareTarotResult">
-            <span class="btn-icon">📤</span> 分享
+          <el-button @click="shareTarotResult" :disabled="!interpretation">
+            <el-icon class="btn-icon"><Document /></el-icon> 分享
           </el-button>
           <el-button @click="resetTarot">
-            <span class="btn-icon">🔄</span> 重新占卜
+            <el-icon class="btn-icon"><RefreshRight /></el-icon> 重新占卜
           </el-button>
         </div>
       </div>
 
       <!-- 单张牌详情弹窗 -->
       <el-dialog
+        v-if="selectedCard"
         v-model="cardDetailVisible"
-        :title="selectedCard?.name + ' - ' + (selectedCard?.reversed ? '逆位' : '正位')"
-        width="500px"
+        :title="selectedCard.name + ' - ' + (selectedCard.reversed ? '逆位' : '正位')"
+        width="min(92vw, 500px)"
         class="card-detail-dialog"
       >
+
         <div v-if="selectedCard" class="card-detail">
-          <div class="detail-header" :style="getCardStyle(selectedCard)">
-            <span class="detail-emoji">{{ selectedCard.emoji }}</span>
-            <span class="detail-element" :class="selectedCard.element">{{ selectedCard.element }}</span>
+          <div class="detail-header-new">
+            <TarotCard 
+              :name="selectedCard.name"
+              :emoji="selectedCard.emoji"
+              :reversed="selectedCard.reversed"
+              :element="selectedCard.element"
+              :color="selectedCard.color"
+              class="detail-card"
+            />
+          </div>
+          <div v-if="selectedCard.positionLabel" class="detail-context">
+            <span class="card-position card-position--detail">{{ selectedCard.positionLabel }}</span>
+            <span v-if="cards.length > 1" class="card-position card-position--detail">第{{ selectedCard.positionIndex + 1 }}张</span>
+            <span class="card-position card-position--detail">{{ selectedCard.spreadName }}</span>
           </div>
           <div class="detail-content">
             <h4>牌面含义</h4>
             <p class="detail-meaning">{{ selectedCard.meaning }}</p>
+
             
             <h4>详细解读</h4>
             <div class="detail-interpretation">
@@ -169,24 +286,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord } from '../api'
-import BackButton from '../components/BackButton.vue'
+import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic } from '../api'
+
+
+import PageHeroHeader from '../components/PageHeroHeader.vue'
+import TarotCard from '../components/TarotCard.vue'
+
+import EmptyState from '../components/EmptyState.vue'
+import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
 
 const spreads = [
-  { id: 'single', name: '单张牌', icon: '🎴', description: '简单直接，适合快速解答' },
-  { id: 'three', name: '三张牌', icon: '🎴🎴🎴', description: '过去、现在、未来' },
-  { id: 'celtic', name: '凯尔特十字', icon: '🔮', description: '深度分析，全面解读' },
+  { id: 'single', name: '单张牌', icon: 'card', description: '简单直接，适合快速解答' },
+  { id: 'three', name: '三张牌', icon: 'cards', description: '过去、现在、未来' },
+  { id: 'celtic', name: '凯尔特十字', icon: 'magic', description: '深度分析，全面解读' },
 ]
 
 // 问题引导话题
 const questionTopics = [
-  { id: 'career', name: '工作事业', icon: '💼' },
-  { id: 'love', name: '感情关系', icon: '💕' },
-  { id: 'growth', name: '个人成长', icon: '🌱' },
-  { id: 'decision', name: '选择困难', icon: '🤔' },
-  { id: 'relation', name: '人际关系', icon: '👥' },
+  { id: 'career', name: '工作事业', icon: 'briefcase' },
+  { id: 'love', name: '感情关系', icon: 'heart' },
+  { id: 'growth', name: '个人成长', icon: 'star' },
+  { id: 'decision', name: '选择困难', icon: 'question' },
+  { id: 'relation', name: '人际关系', icon: 'users' },
 ]
 
 // 问题模板
@@ -234,25 +357,248 @@ const questionTemplates = {
 const selectedSpread = ref('three')
 const question = ref('')
 const loading = ref(false)
+const pointsLoading = ref(false)
+const pointsError = ref(false)
 const cards = ref([])
 const interpretation = ref('')
-const currentPoints = ref(0)
+const currentPoints = ref(null)
 const cardDetailVisible = ref(false)
 const selectedCard = ref(null)
-const selectedCardIndex = ref(0)
 const selectedTopic = ref('')
+const questionGuideExpanded = ref(true)
+const flowError = ref(null)
+const submittedQuestion = ref('')
+const submittedSpread = ref('')
+
+
+const getSpreadName = (spreadType) => {
+  return spreads.find((spread) => spread.id === spreadType)?.name || '当前牌阵'
+}
+
+const isResultLocked = computed(() => cards.value.length > 0)
+const isTarotContextLocked = computed(() => loading.value || isResultLocked.value)
+const submittedQuestionDisplay = computed(() => submittedQuestion.value || question.value.trim())
+const submittedSpreadName = computed(() => getSpreadName(displayedSpread.value))
+
+
+const reportUiError = (action, error, userMessage = '') => {
+
+  console.error(`[Tarot] ${action}`, error)
+  if (userMessage) {
+    ElMessage.error(userMessage)
+  }
+}
+
+const pointsDisplayText = computed(() => {
+  if (pointsLoading.value) {
+    return '加载中...'
+  }
+
+  if (currentPoints.value === null || currentPoints.value === undefined) {
+    return '暂未获取'
+  }
+
+  return currentPoints.value
+})
+
+const canDrawTarot = computed(() => {
+  if (isResultLocked.value || !question.value.trim() || pointsLoading.value || loading.value) {
+    return false
+  }
+
+  if (currentPoints.value === null || currentPoints.value === undefined) {
+    return true
+  }
+
+  return currentPoints.value >= 5
+})
+
+
+
+const setFlowError = (stage, message) => {
+  flowError.value = {
+    stage,
+    message,
+  }
+}
+
+const clearFlowError = () => {
+  flowError.value = null
+}
+
+const refreshPoints = async ({ silent = false } = {}) => {
+  pointsLoading.value = true
+  pointsError.value = false
+
+  try {
+    const response = await getPointsBalance()
+    if (response.code === 200) {
+      currentPoints.value = response.data.balance
+      pointsError.value = false
+      return true
+    }
+
+    currentPoints.value = null
+    pointsError.value = true
+    if (!silent) {
+      ElMessage.warning(response.message || '获取积分失败，请稍后重试')
+    }
+  } catch (error) {
+    currentPoints.value = null
+    pointsError.value = true
+    reportUiError('获取积分失败', error, silent ? '' : '获取积分失败，请稍后重试')
+  } finally {
+    pointsLoading.value = false
+  }
+
+  return false
+}
+
 
 const currentTemplates = computed(() => {
   return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
 })
 
+const showQuestionGuide = computed(() => cards.value.length === 0 && (!question.value || questionGuideExpanded.value))
+
+const toggleQuestionGuide = () => {
+  questionGuideExpanded.value = !questionGuideExpanded.value
+}
+
+const selectSpread = (spreadId) => {
+  if (isTarotContextLocked.value) {
+    return
+  }
+
+  selectedSpread.value = spreadId
+}
+
+const displayedSpread = computed(() => submittedSpread.value || selectedSpread.value)
+
+
+const flowErrorTitle = computed(() => {
+
+  if (!flowError.value) return ''
+  return flowError.value.stage === 'interpret' ? '牌面已抽出，但解读未完成' : '抽牌流程暂时中断'
+})
+
+const flowErrorDescription = computed(() => {
+  if (!flowError.value) return ''
+
+  return flowError.value.stage === 'interpret'
+    ? `最近失败原因：${flowError.value.message}。您可以直接重试解读，无需重新抽牌。`
+    : `最近失败原因：${flowError.value.message}。请稍后重试，系统会重新发起抽牌流程。`
+})
+
+const flowErrorActionText = computed(() => {
+  if (!flowError.value) return '重试'
+  return flowError.value.stage === 'interpret' ? '重试解读' : '重试抽牌'
+})
+
+const interpretationState = computed(() => {
+  if (interpretation.value) {
+    return 'ready'
+  }
+
+  if (loading.value && cards.value.length > 0 && !flowError.value) {
+    return 'loading'
+  }
+
+  if (flowError.value?.stage === 'interpret') {
+    return 'error'
+  }
+
+  return 'idle'
+})
+
+const spreadPositionLabels = {
+
+  single: ['今日指引'],
+  three: ['过去', '现在', '未来'],
+  celtic: [
+    '当前状态',
+    '障碍/挑战',
+    '潜意识/基础',
+    '过去影响',
+    '目标可能',
+    '近期发展',
+    '你的态度',
+    '外部环境',
+    '希望/恐惧',
+    '最终走向',
+  ],
+}
+
+const getPositionLabel = (spreadType, index) => {
+  const labels = spreadPositionLabels[spreadType] || []
+  return labels[index] || `第${index + 1}张`
+}
+
 const selectTopic = (topicId) => {
   selectedTopic.value = topicId
+  questionGuideExpanded.value = true
 }
 
 const selectQuestion = (template) => {
+  if (isTarotContextLocked.value) {
+    return
+  }
+
   question.value = template
+  questionGuideExpanded.value = false
 }
+
+const getCurrentTarotQuestion = () => submittedQuestion.value || question.value.trim()
+const getCurrentTarotSpread = () => submittedSpread.value || selectedSpread.value
+const getCurrentCardNamesText = () => cards.value.map((card) => `${card.name}${card.reversed ? '(逆位)' : '(正位)'}`).join('、')
+
+const buildTarotShareSummary = (shareUrl) => {
+  const spreadName = getSpreadName(getCurrentTarotSpread())
+  return `我在太初命理完成了一次${spreadName}塔罗占卜\n` +
+    '这次先分享摘要与链接，问题全文和牌面详情未写入消息正文\n' +
+    `查看详情：${shareUrl}`
+}
+
+const buildTarotShareDetailText = (shareUrl) => {
+  const cardNames = getCurrentCardNamesText()
+  return `我在太初命理进行了塔罗占卜\n` +
+    `问题：${getCurrentTarotQuestion()}\n` +
+    `抽到的牌：${cardNames}\n` +
+    `查看详情：${shareUrl}`
+}
+
+const resolveTarotShareText = async (shareUrl) => {
+  try {
+    await ElMessageBox.confirm(
+      '默认只分享摘要与链接。若你确实需要把“问题全文 + 牌面详情”一起发出，请再次确认。',
+      '是否附带详细内容',
+      {
+        confirmButtonText: '附带问题与牌面',
+        cancelButtonText: '仅分享摘要',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+
+    return buildTarotShareDetailText(shareUrl)
+  } catch (actionOrError) {
+    if (actionOrError === 'cancel' || actionOrError === 'close' || actionOrError?.name === 'AbortError') {
+      return buildTarotShareSummary(shareUrl)
+    }
+
+    ElMessage.error('分享内容设置失败，请稍后重试')
+    return null
+  }
+}
+
+const getCardDetailAriaLabel = (card, index) => {
+
+  const positionLabel = getPositionLabel(displayedSpread.value, index)
+  const directionLabel = card.reversed ? '逆位' : '正位'
+  return `查看${positionLabel}${card.name}${directionLabel}的详细解读`
+}
+
+
 
 // 塔罗牌详细解读数据
 const cardDetailedMeanings = {
@@ -302,9 +648,9 @@ const cardDetailedMeanings = {
     advice: '相信自己的力量，温柔而坚定地面对挑战'
   },
   '隐者': {
-    upright: ' introspection, seeking inner wisdom, solitude',
-    reversed: 'isolation, loneliness, rejecting guidance',
-    advice: 'Take time to reflect and find your inner light'
+    upright: '内省沉思，寻求内在智慧，独处静修',
+    reversed: '孤立自闭，孤独寂寞，拒绝指引',
+    advice: '花时间反思，找到内心的光芒'
   },
   '命运之轮': {
     upright: '命运的转折，周期的变化，把握机会',
@@ -370,15 +716,32 @@ const cardDetailedMeanings = {
 
 // 获取当前积分
 const loadPoints = async () => {
-  try {
-    const response = await getPointsBalance()
-    if (response.code === 0) {
-      currentPoints.value = response.data.balance
-    }
-  } catch (error) {
-    console.error('获取积分失败:', error)
-  }
+  await refreshPoints()
 }
+
+const interpretCurrentCards = async () => {
+  const interpretQuestion = getCurrentTarotQuestion()
+  const interpretResponse = await interpretTarot({
+    cards: cards.value,
+    question: interpretQuestion,
+  })
+
+  if (interpretResponse.code === 200) {
+    interpretation.value = interpretResponse.data.interpretation
+    clearFlowError()
+    ElMessage.success('抽牌成功')
+    return true
+  }
+
+  setFlowError('interpret', interpretResponse.message || '解读失败')
+  ElMessage.error(interpretResponse.message || '解读失败')
+  if (interpretResponse.code === 403) {
+    await loadPoints()
+  }
+
+  return false
+}
+
 
 // 显示确认对话框
 const showConfirm = async () => {
@@ -386,17 +749,20 @@ const showConfirm = async () => {
     ElMessage.warning('请输入您想咨询的问题')
     return
   }
-  
-  // 重新获取最新积分，避免竞态条件
-  try {
-    const response = await getPointsBalance()
-    if (response.code === 0) {
-      currentPoints.value = response.data.balance
+
+  if (pointsError.value || currentPoints.value === null || currentPoints.value === undefined) {
+    const recovered = await refreshPoints()
+    if (!recovered) {
+      ElMessage.warning('积分同步失败，请先重新获取积分')
+      return
     }
-  } catch (error) {
-    console.error('获取积分失败:', error)
   }
-  
+
+  if (currentPoints.value === null || currentPoints.value === undefined) {
+    ElMessage.warning('积分状态同步中，请稍后再试')
+    return
+  }
+
   if (currentPoints.value < 5) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
@@ -418,142 +784,300 @@ const showConfirm = async () => {
   }
 }
 
-const getPositionName = (index) => {
-  const positions = {
-    'single': ['指引'],
-    'three': ['过去', '现在', '未来'],
-    'celtic': ['现状', '阻碍', '基础', '过去', '目标', '未来', '自我', '环境', '希望', '结果'],
-  }
-  return positions[selectedSpread.value]?.[index] || `位置 ${index + 1}`
-}
 
 const drawCards = async () => {
+  const lockedQuestion = question.value.trim()
+  const lockedSpread = selectedSpread.value
+
   loading.value = true
   try {
     const drawResponse = await drawTarot({
-      spread: selectedSpread.value,
-      question: question.value,
+      spread: lockedSpread,
+      question: lockedQuestion,
     })
 
-    if (drawResponse.code === 0) {
+    if (drawResponse.code === 200) {
       cards.value = drawResponse.data.cards
-      currentPoints.value = drawResponse.data.remaining_points
+      interpretation.value = ''
+      submittedQuestion.value = lockedQuestion
+      submittedSpread.value = lockedSpread
+      question.value = lockedQuestion
+      selectedSpread.value = lockedSpread
+      savedRecordId.value = null
+      savedShareCode.value = null
+      sharePublicConfirmed.value = false
 
-      const interpretResponse = await interpretTarot({
-        cards: cards.value,
-        question: question.value,
-      })
+      const remainingPoints = Number(drawResponse.data.remaining_points)
 
-      if (interpretResponse.code === 0) {
-        interpretation.value = interpretResponse.data.interpretation
-        ElMessage.success('抽牌成功')
+      if (Number.isFinite(remainingPoints)) {
+        currentPoints.value = remainingPoints
+        window.dispatchEvent(new CustomEvent('points-updated', {
+          detail: {
+            balance: remainingPoints,
+          },
+        }))
       }
-    } else {
-      ElMessage.error(drawResponse.message || '抽牌失败')
-      if (drawResponse.code === 403) {
-        loadPoints()
-      }
+
+      clearFlowError()
+
+      await interpretCurrentCards()
+      return
+    }
+
+
+    setFlowError('draw', drawResponse.message || '抽牌失败')
+    ElMessage.error(drawResponse.message || '抽牌失败')
+    if (drawResponse.code === 403) {
+      await loadPoints()
     }
   } catch (error) {
-    ElMessage.error('网络错误，请稍后重试')
-    console.error(error)
+    setFlowError('draw', '网络错误，请稍后重试')
+    reportUiError('抽牌失败', error, '网络错误，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
+const retryLastAction = async () => {
+  if (!flowError.value) {
+    return
+  }
+
+  if (flowError.value.stage === 'interpret' && cards.value.length > 0) {
+    loading.value = true
+    try {
+      await interpretCurrentCards()
+    } catch (error) {
+      setFlowError('interpret', '网络错误，请稍后重试')
+      reportUiError('重试塔罗解读失败', error, '网络错误，请稍后重试')
+    } finally {
+      loading.value = false
+    }
+    return
+  }
+
+  await drawCards()
+}
+
+const handlePointsUpdated = () => {
+  refreshPoints({ silent: true })
+}
+
 onMounted(() => {
   loadPoints()
+  window.addEventListener('points-updated', handlePointsUpdated)
 })
 
-// 获取卡片样式
-const getCardStyle = (card) => {
-  return {
-    background: `linear-gradient(135deg, ${card.color}40 0%, ${card.color}20 100%)`,
-    borderColor: card.color
-  }
-}
+onUnmounted(() => {
+  window.removeEventListener('points-updated', handlePointsUpdated)
+})
+
 
 // 当前保存的记录信息
 const savedRecordId = ref(null)
 const savedShareCode = ref(null)
+const sharePublicConfirmed = ref(false)
 
 // 保存塔罗结果到后端
 const saveTarotResult = async () => {
   if (savedRecordId.value) {
     ElMessage.info('已经保存过了')
-    return
+    return true
   }
   
   try {
     const response = await saveTarotRecord({
-      spread_type: selectedSpread.value,
-      question: question.value,
+      spread_type: getCurrentTarotSpread(),
+      question: getCurrentTarotQuestion(),
       cards: cards.value,
       interpretation: interpretation.value,
       ai_analysis: ''
     })
-    
-    if (response.code === 0) {
+
+
+    if (response.code === 200) {
       savedRecordId.value = response.data.record_id
       savedShareCode.value = response.data.share_code
-      ElMessage.success('保存成功，可在个人中心查看历史记录')
-    } else {
-      ElMessage.error(response.message || '保存失败')
+      sharePublicConfirmed.value = false
+      window.dispatchEvent(new CustomEvent('tarot-history-updated', {
+        detail: {
+          recordId: savedRecordId.value,
+        },
+      }))
+      ElMessage.success('保存成功，已同步到云端塔罗历史，可在个人中心查看')
+      return true
+    }
+
+    ElMessage.error(response.message || '保存失败')
+  } catch (error) {
+    reportUiError('保存塔罗记录失败', error, '保存失败，请稍后重试')
+  }
+
+  return false
+}
+
+
+const updateTarotShareVisibility = async (isPublic, { silent = false } = {}) => {
+  if (!savedRecordId.value) {
+    return false
+  }
+
+  const errorMessage = isPublic ? '分享链接准备失败，请稍后重试' : '恢复私密状态失败，请稍后重试'
+
+  try {
+    const response = await setTarotPublic({ id: savedRecordId.value, is_public: isPublic })
+    if (response.code === 200) {
+      savedShareCode.value = response.data.share_code || savedShareCode.value
+      sharePublicConfirmed.value = isPublic
+      return true
+    }
+
+    if (!silent) {
+      ElMessage.error(response.message || errorMessage)
     }
   } catch (error) {
-    console.error('保存塔罗记录失败:', error)
-    ElMessage.error('保存失败，请稍后重试')
+    reportUiError(
+      isPublic ? '准备塔罗分享链接失败' : '恢复塔罗私密状态失败',
+      error,
+      silent ? '' : errorMessage
+    )
   }
+
+  return false
+}
+
+const ensureTarotShareReady = async () => {
+  if (!savedRecordId.value) {
+    return { ready: false, exposedNow: false }
+  }
+
+  if (sharePublicConfirmed.value && savedShareCode.value) {
+    return { ready: true, exposedNow: false }
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      '分享前需要先将本次塔罗记录设为公开，仅持有链接的人可以查看。若你稍后取消系统分享，我们会自动恢复为私密状态。',
+      '确认公开分享',
+      {
+        confirmButtonText: '确认公开并分享',
+        cancelButtonText: '先不分享',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+  } catch (actionOrError) {
+    if (actionOrError === 'cancel' || actionOrError === 'close' || actionOrError?.name === 'AbortError') {
+      return { ready: false, exposedNow: false }
+    }
+
+    ElMessage.error('分享确认失败，请稍后重试')
+    return { ready: false, exposedNow: false }
+  }
+
+  const ready = await updateTarotShareVisibility(true)
+  return { ready, exposedNow: ready }
 }
 
 // 分享塔罗结果
 const shareTarotResult = async () => {
   // 如果没有保存过，先保存
   if (!savedRecordId.value) {
-    await saveTarotResult()
+    const saved = await saveTarotResult()
+    if (!saved) {
+      return
+    }
   }
+
   
-  if (!savedShareCode.value) {
+  if (!savedRecordId.value) {
     return
   }
-  
+
+  const { ready: shareReady, exposedNow } = await ensureTarotShareReady()
+  if (!shareReady || !savedShareCode.value) {
+    return
+  }
+
   // 生成分享链接
   const shareUrl = `${window.location.origin}/tarot/share/${savedShareCode.value}`
-  const cardNames = cards.value.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
-  const shareText = `我在太初命理进行了塔罗占卜\n` +
-    `问题：${question.value}\n` +
-    `抽到的牌：${cardNames}\n` +
-    `查看详情：${shareUrl}`
-  
+  const shareText = await resolveTarotShareText(shareUrl)
+  if (!shareText) {
+    if (exposedNow) {
+      await updateTarotShareVisibility(false)
+    }
+    return
+  }
+
   if (navigator.share) {
-    navigator.share({
-      title: '我的塔罗占卜结果',
-      text: shareText,
-      url: shareUrl
-    })
-  } else {
-    navigator.clipboard.writeText(shareText).then(() => {
-      ElMessage.success('分享链接已复制到剪贴板')
-    })
+
+    try {
+      await navigator.share({
+        title: '我的塔罗占卜结果',
+        text: shareText,
+        url: shareUrl
+      })
+    } catch (error) {
+      if (exposedNow) {
+        const reverted = await updateTarotShareVisibility(false)
+        if (reverted && error?.name === 'AbortError') {
+          ElMessage.info('已取消分享，本次记录仍保持私密')
+        }
+      }
+
+      if (error?.name !== 'AbortError') {
+        reportUiError('系统分享失败', error, '分享失败，请稍后重试')
+      }
+    }
+
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(shareText)
+    ElMessage.success('分享链接已复制到剪贴板')
+  } catch (error) {
+    if (exposedNow) {
+      await updateTarotShareVisibility(false)
+    }
+    reportUiError('复制分享内容失败', error, '复制失败，请手动复制')
   }
 }
+
+
+
 
 // 重置占卜
 const resetTarot = () => {
   cards.value = []
   interpretation.value = ''
   question.value = ''
+  submittedQuestion.value = ''
+  submittedSpread.value = ''
+  selectedTopic.value = ''
+  questionGuideExpanded.value = true
   savedRecordId.value = null
   savedShareCode.value = null
+  sharePublicConfirmed.value = false
+  clearFlowError()
 }
 
+
+
 // 显示卡片详情
-const showCardDetail = (card, index) => {
-  selectedCard.value = card
-  selectedCardIndex.value = index
+const showCardDetail = (card, index = 0) => {
+  const currentSpread = getCurrentTarotSpread()
+  selectedCard.value = {
+    ...card,
+    positionIndex: index,
+    positionLabel: getPositionLabel(currentSpread, index),
+    spreadType: currentSpread,
+    spreadName: getSpreadName(currentSpread),
+  }
   cardDetailVisible.value = true
 }
+
+
 
 // 获取卡片详细含义
 const getCardDetailedMeaning = (card) => {
@@ -575,25 +1099,15 @@ const getCardAdvice = (card) => {
   padding: 60px 0;
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.page-header .section-title {
-  margin: 0;
-}
-
 .points-hint {
+
   max-width: 900px;
   margin: 0 auto 20px;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 15px 20px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .hint-icon {
@@ -602,9 +1116,25 @@ const getCardAdvice = (card) => {
 
 .current-points {
   margin-left: auto;
-  color: #ffd700;
+  color: var(--wuxing-jin);
   font-weight: 500;
 }
+
+.points-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--warning-color, #d97706);
+  font-size: 13px;
+}
+
+.points-retry {
+  padding: 0;
+  min-height: auto;
+  font-weight: 600;
+}
+
 
 .insufficient-points {
   max-width: 900px;
@@ -614,7 +1144,7 @@ const getCardAdvice = (card) => {
 }
 
 .insufficient-points a {
-  color: #e94560;
+  color: var(--primary-color);
   text-decoration: underline;
 }
 
@@ -626,7 +1156,7 @@ const getCardAdvice = (card) => {
 .tarot-intro h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .spread-options {
@@ -636,175 +1166,278 @@ const getCardAdvice = (card) => {
 }
 
 .spread-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 25px;
+  appearance: none;
+  width: 100%;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  padding: 30px 20px;
   text-align: center;
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  color: inherit;
+  font: inherit;
 }
 
-.spread-card:hover,
+.spread-card:hover {
+  border-color: var(--primary-light-40);
+  background: var(--surface-hover);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-hover);
+}
+
 .spread-card.active {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--primary-light-10) 100%);
+  box-shadow: 0 16px 32px rgba(var(--primary-rgb), 0.18);
+  transform: translateY(-8px) scale(1.02);
+  z-index: 2;
+}
+
+.spread-card.active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--primary-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.spread-card:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  border-color: var(--primary-color);
+}
+
+.spread-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.spread-card:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--surface-raised);
+  border-color: var(--border-light);
+}
+
+
+.spread-status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  background: var(--primary-gradient);
+  color: var(--text-accent-contrast);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.24);
+}
+
+@keyframes scale-in {
+  from { transform: scale(0) rotate(-45deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
 }
 
 .spread-icon {
-  font-size: 36px;
-  margin-bottom: 15px;
+  font-size: 42px;
+  margin-bottom: 5px;
+  color: var(--primary-color);
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.spread-card:hover .spread-icon {
+  transform: scale(1.15) translateY(-5px);
+  color: var(--primary-light);
+}
+
+.spread-card.active .spread-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 15px var(--primary-color));
 }
 
 .spread-card h3 {
-  color: #fff;
-  margin-bottom: 10px;
+  color: var(--text-primary);
+  margin: 0;
+  font-size: var(--font-h4);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-normal);
 }
 
 .spread-card p {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-}
-
-.question-section {
-  max-width: 600px;
-  margin: 0 auto 30px;
-}
-
-.question-section h3 {
-  margin-bottom: 20px;
-  color: #fff;
-}
-
-.question-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 12px 15px;
-  background: rgba(103, 194, 58, 0.1);
-  border: 1px solid rgba(103, 194, 58, 0.2);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-}
-
-.hint-icon {
-  font-size: 16px;
-}
-
-.draw-btn {
-  margin-top: 20px;
-  width: 100%;
-}
-
-.btn-icon {
-  margin-right: 5px;
+  color: var(--text-secondary);
+  font-size: var(--font-caption);
+  line-height: var(--line-height-base);
+  margin: 0;
 }
 
 /* 问题引导 */
 .question-guide {
-  max-width: 700px;
-  margin: 0 auto 30px;
+  max-width: 800px;
+  margin: 0 auto 40px;
+  background: var(--white-02);
+  border: 1px solid var(--white-05);
 }
 
-.question-guide h3 {
-  color: #fff;
-  margin-bottom: 20px;
+.question-guide__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.question-guide__header h3 {
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.guide-icon {
-  font-size: 24px;
+.guide-toggle {
+  padding: 0;
+  min-height: auto;
 }
 
 .topic-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 25px;
 }
 
 .topic-tab {
+  appearance: none;
+  width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 25px;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 15px 10px;
+  background: var(--white-05);
+  border: 1px solid var(--white-10);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: inherit;
+  font: inherit;
 }
 
 .topic-tab:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: var(--white-10);
+  border-color: var(--primary-light-30);
+  transform: translateY(-3px);
 }
 
 .topic-tab.active {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.3));
-  border-color: #e94560;
+  background: var(--primary-gradient);
+  border-color: var(--primary-color);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px var(--primary-light-30);
 }
 
-.topic-icon {
-  font-size: 18px;
+.topic-tab:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  border-color: var(--primary-color);
 }
 
-.topic-name {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-}
-
-.question-templates {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.template-hint {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  margin-bottom: 15px;
-}
-
-.template-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.template-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 15px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  cursor: pointer;
+.topic-tab .topic-icon {
+  font-size: 24px;
+  color: var(--primary-color);
   transition: all 0.3s ease;
 }
 
+.topic-tab.active .topic-icon,
+.topic-tab.active .topic-name {
+  color: var(--text-accent-contrast);
+  font-weight: var(--weight-bold);
+}
+
+.template-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.template-item {
+  appearance: none;
+  width: 100%;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-light);
+  min-height: 44px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
 .template-item:hover {
-  background: rgba(233, 69, 96, 0.1);
-  border: 1px solid rgba(233, 69, 96, 0.3);
-  transform: translateX(5px);
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+  transform: scale(1.01) translateX(4px);
+}
+
+.template-item:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  border-color: var(--primary-color);
 }
 
 .template-bullet {
-  color: #e94560;
-  font-weight: bold;
+  color: var(--primary-color);
+  font-weight: var(--weight-bold);
 }
 
 .template-text {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 14px;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  line-height: var(--line-height-base);
+}
+
+.question-section--locked {
+  border-color: rgba(var(--primary-rgb), 0.22);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1), var(--shadow-md);
+}
+
+.question-lock-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.04));
+  color: var(--text-secondary);
+  line-height: 1.7;
 }
 
 .cards-result {
+
   max-width: 900px;
   margin: 0 auto;
 }
@@ -812,7 +1445,7 @@ const getCardAdvice = (card) => {
 .cards-result h3 {
   text-align: center;
   margin-bottom: 30px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .cards-display {
@@ -823,18 +1456,77 @@ const getCardAdvice = (card) => {
   margin-bottom: 40px;
 }
 
+.result-context-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 22px;
+}
+
+.result-context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.result-context-chip strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.result-context-chip--question {
+  max-width: min(100%, 520px);
+}
+
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.card-detail-trigger {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+.card-detail-trigger:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 6px;
+}
+
+
 .tarot-card {
   width: 150px;
   height: 250px;
   perspective: 1000px;
 }
 
+
 .card-inner {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: var(--bg-tertiary);
   border-radius: 15px;
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  border: 2px solid rgba(184, 134, 11, 0.3);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -850,42 +1542,69 @@ const getCardAdvice = (card) => {
 
 .card-number {
   font-size: 24px;
-  color: #e94560;
+  color: var(--primary-color);
   font-weight: bold;
   margin-bottom: 20px;
 }
 
 .card-name {
   font-size: 18px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .card-position {
-  margin-top: 15px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
 }
 
+
 .interpretation {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 15px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
   padding: 30px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
 }
 
 .interpretation-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-line;
 }
 
+.interpretation-placeholder {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.interpretation-placeholder--loading {
+  color: var(--primary-color);
+}
+
+.interpretation-placeholder--error {
+  color: var(--danger-color);
+}
+
 /* 塔罗牌样式 */
-.card-inner {
+
+.card-inner-alt {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 15px;
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(184, 134, 11, 0.25);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -898,7 +1617,7 @@ const getCardAdvice = (card) => {
 
 .tarot-card:hover .card-inner {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .tarot-card.reversed .card-inner {
@@ -915,29 +1634,32 @@ const getCardAdvice = (card) => {
 }
 
 .card-element {
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-tertiary);
   margin-top: 8px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
-.card-element.火 { background: rgba(255, 69, 0, 0.3); color: #ff6347; }
-.card-element.水 { background: rgba(30, 144, 255, 0.3); color: #87ceeb; }
-.card-element.木 { background: rgba(34, 139, 34, 0.3); color: #90ee90; }
-.card-element.金 { background: rgba(255, 215, 0, 0.3); color: #ffd700; }
-.card-element.土 { background: rgba(139, 69, 19, 0.3); color: #deb887; }
-.card-element.风 { background: rgba(147, 112, 219, 0.3); color: #dda0dd; }
+.card-element.火 { background: rgba(var(--wuxing-huo-rgb), 0.12); color: var(--wuxing-huo); }
+.card-element.水 { background: rgba(var(--wuxing-shui-rgb), 0.12); color: var(--wuxing-shui); }
+.card-element.木 { background: rgba(var(--wuxing-mu-rgb), 0.12); color: var(--wuxing-mu); }
+.card-element.金 { background: rgba(var(--wuxing-jin-rgb), 0.12); color: var(--wuxing-jin); }
+.card-element.土 { background: rgba(var(--wuxing-tu-rgb), 0.12); color: var(--wuxing-tu); }
+.card-element.风 { background: rgba(var(--primary-light-rgb), 0.16); color: var(--primary-color); }
 
 .reversed-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(233, 69, 96, 0.8);
-  color: #fff;
+  background: rgba(184, 134, 11, 0.8);
+  color: var(--text-primary);
   font-size: 10px;
   padding: 3px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 /* 操作按钮 */
@@ -949,13 +1671,18 @@ const getCardAdvice = (card) => {
   flex-wrap: wrap;
 }
 
+.result-actions .el-button {
+  min-height: 44px;
+  padding: 12px 24px;
+}
+
 .result-actions .btn-icon {
   margin-right: 5px;
 }
 
 .cards-hint {
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 20px;
 }
@@ -970,7 +1697,7 @@ const getCardAdvice = (card) => {
 }
 
 .card-detail-dialog :deep(.el-dialog__title) {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 20px;
 }
 
@@ -978,25 +1705,33 @@ const getCardAdvice = (card) => {
   text-align: center;
 }
 
-.detail-header {
-  padding: 30px;
-  border-radius: 15px;
-  margin-bottom: 25px;
-  position: relative;
+.detail-header-new {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-.detail-emoji {
-  font-size: 80px;
+.detail-context {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
-.detail-element {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  padding: 5px 12px;
-  border-radius: 15px;
+.card-position--detail {
+  min-height: 30px;
   font-size: 12px;
-  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+}
+
+.detail-card {
+  transform: scale(1.1);
+}
+
+
+.detail-card:hover {
+  transform: scale(1.1) translateY(-5px);
 }
 
 .detail-content {
@@ -1004,19 +1739,19 @@ const getCardAdvice = (card) => {
 }
 
 .detail-content h4 {
-  color: #e94560;
+  color: var(--primary-color);
   font-size: 16px;
   margin-bottom: 10px;
 }
 
 .detail-meaning {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   line-height: 1.8;
   margin-bottom: 20px;
 }
 
 .detail-interpretation {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
 }
@@ -1030,23 +1765,93 @@ const getCardAdvice = (card) => {
 }
 
 .interp-section h5 {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .interp-section p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 
 @media (max-width: 768px) {
+  .points-hint {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .current-points {
+    margin-left: 0;
+  }
+
+  .points-warning {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .points-retry {
+    min-height: 44px;
+  }
+
+
   .spread-options {
+
     grid-template-columns: 1fr;
+  }
+
+  .question-guide {
+    padding: 20px 16px;
+  }
+
+  .topic-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .topic-tab {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+
+  .template-list {
+    grid-template-columns: 1fr;
+  }
+
+  .template-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .template-text {
+    flex: 1;
+  }
+
+  .flow-error {
+    padding: 8px;
+  }
+
+  .flow-error-actions {
+    justify-content: stretch;
+  }
+
+  .flow-error-actions :deep(.el-button) {
+    flex: 1;
   }
   
   .cards-display {
     gap: 15px;
+  }
+
+  .detail-context {
+    justify-content: flex-start;
+  }
+
+  .card-position--detail {
+    min-height: 28px;
+    font-size: 11px;
   }
   
   .tarot-card {
@@ -1062,4 +1867,17 @@ const getCardAdvice = (card) => {
     font-size: 14px;
   }
 }
+
+
+@media (max-width: 480px) {
+  .topic-tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .card-detail-dialog :deep(.el-dialog) {
+    width: calc(100vw - 24px) !important;
+    margin: 4vh auto;
+  }
+}
+
 </style>

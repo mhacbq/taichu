@@ -1,0 +1,294 @@
+{
+  "started_at": "2026-03-18 10:31:18",
+  "base_url": "http://localhost:3001",
+  "checks": {
+    "login_page": {
+      "http_status": 200,
+      "contains_login_text": true
+    },
+    "login": {
+      "http_status": 200,
+      "code": 200,
+      "message": "登录成功"
+    },
+    "auth_info": {
+      "http_status": 200,
+      "code": 200,
+      "message": "获取成功",
+      "roles": [
+        "admin"
+      ],
+      "permissions_count": 1,
+      "username": "admin"
+    },
+    "dashboard": {
+      "statistics": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "realtime": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "pending_feedback": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "trend": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "feature_chart": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "overview_keys": [
+        "bazi_trend",
+        "divination_stats",
+        "order_stats",
+        "overview",
+        "points_stats",
+        "statistics",
+        "tarot_trend",
+        "trend",
+        "user_stats",
+        "user_trend"
+      ]
+    },
+    "users": {
+      "list_page1": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "total": 9,
+      "list_count": 9,
+      "page2": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "page2_list_count": 0,
+      "search": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "search_target_username": "用户8005",
+      "search_result_count": 1,
+      "detail": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "detail_username": "13800138005",
+      "detail_phone": "13800138005"
+    },
+    "points": {
+      "adjust_plus": {
+        "http_status": 200,
+        "code": 500,
+        "message": "调整积分失败，请稍后重试"
+      },
+      "adjust_minus": null,
+      "records": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "records_count": 2,
+      "records_sample": [
+        {
+          "id": 58,
+          "user_id": 9,
+          "action": "塔罗占卜消耗",
+          "points": -5,
+          "amount": 0,
+          "balance": null,
+          "type": "tarot",
+          "related_id": 0,
+          "remark": "牌阵: single",
+          "reason": "",
+          "created_at": "2026-03-18 10:28:20"
+        },
+        {
+          "id": 57,
+          "user_id": 9,
+          "action": "新用户注册奖励",
+          "points": 100,
+          "amount": 0,
+          "balance": null,
+          "type": "register",
+          "related_id": 0,
+          "remark": "",
+          "reason": "",
+          "created_at": "2026-03-18 10:27:14"
+        }
+      ]
+    },
+    "almanac": {
+      "list": {
+        "http_status": 200,
+        "code": 500,
+        "message": "获取黄历列表失败，请稍后重试"
+      },
+      "create": {
+        "http_status": 200,
+        "code": 200,
+        "message": "保存成功"
+      },
+      "update": {
+        "http_status": 200,
+        "code": 200,
+        "message": "保存成功"
+      },
+      "delete": {
+        "http_status": 200,
+        "code": 200,
+        "message": "删除成功"
+      }
+    },
+    "knowledge": {
+      "categories": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "articles": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "category_create": {
+        "http_status": 200,
+        "code": 200,
+        "message": "保存成功"
+      },
+      "article_create": {
+        "http_status": 200,
+        "code": 200,
+        "message": "保存成功"
+      },
+      "article_detail": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "article_update": {
+        "http_status": 200,
+        "code": 200,
+        "message": "更新成功"
+      },
+      "article_delete": {
+        "http_status": 200,
+        "code": 200,
+        "message": "删除成功"
+      },
+      "category_delete": {
+        "http_status": 200,
+        "code": 200,
+        "message": "删除成功"
+      }
+    },
+    "shensha": {
+      "options": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "list": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "create": {
+        "http_status": 200,
+        "code": 500,
+        "message": "保存神煞失败，请稍后重试"
+      },
+      "update": null,
+      "delete": null
+    },
+    "seo": {
+      "configs": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "robots": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "create": {
+        "http_status": 200,
+        "code": 500,
+        "message": "保存SEO配置失败，请稍后重试"
+      },
+      "update": null,
+      "delete": null
+    },
+    "vip_orders": {
+      "list": {
+        "http_status": 200,
+        "code": 200,
+        "message": "success"
+      },
+      "total": 0,
+      "list_count": 0,
+      "detail": null,
+      "first_order_status": null
+    },
+    "system": {
+      "settings_get": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "settings_save": {
+        "http_status": 200,
+        "code": 200,
+        "message": "保存成功"
+      },
+      "ai_get": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "notices_get": {
+        "http_status": 200,
+        "code": 200,
+        "message": "获取成功"
+      },
+      "notice_create": {
+        "http_status": 200,
+        "code": 200,
+        "message": "保存成功"
+      },
+      "notice_delete": {
+        "http_status": 200,
+        "code": 200,
+        "message": "删除成功"
+      }
+    },
+    "users_export": {
+      "http_status": 200,
+      "content_type": "text/csv; charset=utf-8",
+      "is_binary_like": false,
+      "body_prefix": "﻿ID,昵称,手机号,积分,VIP等级,状态,注册时间,最后登录\n9,用户8005,13800138005,95,0,正常,2026-03-18 10:27:1"
+    }
+  },
+  "mutations": {},
+  "issues": [
+    {
+      "priority": "high",
+      "text": "用户积分调整失败"
+    }
+  ],
+  "notes": []
+}

@@ -11,6 +11,8 @@
             <el-option label="内容管理" value="content" />
             <el-option label="积分管理" value="points" />
             <el-option label="系统设置" value="system" />
+            <el-option label="反作弊" value="anticheat" />
+            <el-option label="日志管理" value="log" />
           </el-select>
         </el-form-item>
         <el-form-item label="操作类型">
@@ -18,7 +20,8 @@
             <el-option label="新增" value="create" />
             <el-option label="修改" value="update" />
             <el-option label="删除" value="delete" />
-            <el-option label="查询" value="read" />
+            <el-option label="查询" value="view" />
+            <el-option label="导出" value="export" />
           </el-select>
         </el-form-item>
         <el-form-item label="操作时间">
@@ -34,6 +37,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="handleReset">重置</el-button>
+          <el-button :loading="exportLoading" @click="handleExport">导出日志</el-button>
           <el-button type="danger" @click="handleClear">清空日志</el-button>
         </el-form-item>
       </el-form>
@@ -54,14 +58,14 @@
             <el-tag :type="getActionType(row.action)" size="small">{{ getActionText(row.action) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="操作描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="description" label="操作描述" min-width="220" show-overflow-tooltip />
         <el-table-column prop="ip" label="IP地址" width="130" />
         <el-table-column prop="duration" label="耗时" width="80">
           <template #default="{ row }">
             <span :class="row.duration > 1000 ? 'text-danger' : ''">{{ row.duration }}ms</span>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="操作时间" width="160" />
+        <el-table-column prop="created_at" label="操作时间" width="180" />
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleViewDetail(row)">详情</el-button>
@@ -81,7 +85,6 @@
       </div>
     </el-card>
 
-    <!-- 详情弹窗 -->
     <el-dialog v-model="detailDialog.visible" title="操作详情" width="700px">
       <el-descriptions :column="2" border>
         <el-descriptions-item label="日志ID">{{ detailDialog.data.id }}</el-descriptions-item>
@@ -109,11 +112,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOperationLogs, clearLogs } from '@/api/log'
+import { clearLogs, exportLogs, getOperationLogs } from '@/api/log'
 
 const loading = ref(false)
+const exportLoading = ref(false)
 const logList = ref([])
 const total = ref(0)
 
@@ -135,12 +139,29 @@ onMounted(() => {
   loadLogList()
 })
 
+function buildRequestParams() {
+  const params = {
+    operator: queryForm.operator,
+    module: queryForm.module,
+    action: queryForm.action,
+    page: queryForm.page,
+    pageSize: queryForm.pageSize
+  }
+
+  if (Array.isArray(queryForm.dateRange) && queryForm.dateRange.length === 2) {
+    params.start_time = queryForm.dateRange[0]
+    params.end_time = queryForm.dateRange[1]
+  }
+
+  return params
+}
+
 async function loadLogList() {
   loading.value = true
   try {
-    const { data } = await getOperationLogs(queryForm)
-    logList.value = data.list
-    total.value = data.total
+    const { data } = await getOperationLogs(buildRequestParams())
+    logList.value = data.list || []
+    total.value = Number(data.total || 0)
   } finally {
     loading.value = false
   }
@@ -173,14 +194,35 @@ function handleCurrentChange(val) {
   loadLogList()
 }
 
+async function handleExport() {
+  exportLoading.value = true
+  try {
+    const response = await exportLogs('operation', buildRequestParams())
+    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `operation_logs_${Date.now()}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('日志导出成功')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
 async function handleClear() {
   try {
     await ElMessageBox.confirm('确定清空所有操作日志吗？此操作不可恢复！', '警告', { type: 'warning' })
     await clearLogs('operation')
     ElMessage.success('日志已清空')
-    loadLogList()
-  } catch {
-    // 取消
+    await loadLogList()
+  } catch (error) {
+    if (error !== 'cancel') {
+      // 统一由请求层提示错误
+    }
   }
 }
 
@@ -198,17 +240,24 @@ function formatJson(json) {
 }
 
 function getModuleText(module) {
-  const map = { user: '用户管理', content: '内容管理', points: '积分管理', system: '系统设置' }
+  const map = {
+    user: '用户管理',
+    content: '内容管理',
+    points: '积分管理',
+    system: '系统设置',
+    anticheat: '反作弊',
+    log: '日志管理'
+  }
   return map[module] || module
 }
 
 function getActionType(action) {
-  const map = { create: 'success', update: 'primary', delete: 'danger', read: 'info' }
+  const map = { create: 'success', update: 'primary', delete: 'danger', view: 'info', export: 'warning' }
   return map[action] || ''
 }
 
 function getActionText(action) {
-  const map = { create: '新增', update: '修改', delete: '删除', read: '查询' }
+  const map = { create: '新增', update: '修改', delete: '删除', view: '查询', export: '导出' }
   return map[action] || action
 }
 </script>

@@ -7,6 +7,7 @@ use app\model\SmsConfig;
 use app\model\SmsCode;
 use app\model\InviteRecord;
 use think\facade\Cache;
+use think\facade\Log;
 
 /**
  * 短信服务类
@@ -32,6 +33,25 @@ class SmsService
         if ($todayCount >= 10) {
             return ['success' => false, 'message' => '今日发送次数已达上限，请明天再试'];
         }
+
+        $isLocalTestMode = env('APP_DEBUG', false) || env('SMS_TEST_MODE', false);
+        $testCode = (string) env('SMS_TEST_CODE', '123456');
+        if ($isLocalTestMode) {
+            SmsCode::createCode($phone, $type, $ip, 5);
+            Log::info('短信测试模式验证码已生成', [
+                'phone' => self::maskPhone($phone),
+                'type' => $type,
+                'mode' => 'local_test',
+            ]);
+
+            return [
+                'success' => true,
+                'message' => '测试模式验证码已生成',
+                'expire' => 300,
+                'test_mode' => true,
+                'test_code' => $testCode,
+            ];
+        }
         
         // 获取短信配置
         $config = SmsConfig::getTencentConfig();
@@ -41,6 +61,7 @@ class SmsService
         
         // 生成验证码
         $code = SmsCode::createCode($phone, $type, $ip, 5);
+
         
         // 发送短信
         $result = self::sendTencentSms($phone, $code, $config, $type);
@@ -77,9 +98,10 @@ class SmsService
             return ['success' => false, 'message' => $result['Response']['SendStatusSet'][0]['Message'] ?? '发送失败'];
             
         } catch (\Exception $e) {
-            trace('腾讯云短信发送失败: ' . $e->getMessage(), 'error');
+            self::logSmsProviderException($e, $phone, $type, $config);
             return ['success' => false, 'message' => '短信服务异常'];
         }
+
     }
     
     /**
@@ -153,7 +175,9 @@ class SmsService
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        // 生产环境必须启用SSL验证，防止中间人攻击
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         
         $response = curl_exec($ch);
@@ -181,10 +205,15 @@ class SmsService
         
         if ($isLocalTestMode && $code === $testCode) {
             // 测试模式下使用固定验证码，直接返回成功
-            trace("[SMS TEST MODE] 手机号 {$phone} 使用测试验证码 {$testCode} 通过验证", 'info');
+            Log::info('短信测试模式验证码校验通过', [
+                'phone' => self::maskPhone($phone),
+                'type' => $type,
+                'mode' => 'local_test',
+            ]);
             InviteRecord::clearVerifyFail($phone, $type);
             return true;
         }
+
         
         // 1. 检查失败次数限制
         if (!InviteRecord::checkVerifyFailLimit($phone, $type)) {
@@ -212,5 +241,17 @@ class SmsService
         $key = "sms_verify_fail:{$phone}:{$type}";
         $failCount = Cache::get($key, 0);
         return max(0, 5 - $failCount);
+    }
+
+    /**
+     * 脱敏手机号
+     */
+    private static function maskPhone(string $phone): string
+    {
+        if (strlen($phone) < 7) {
+            return str_repeat('*', strlen($phone));
+        }
+
+        return substr($phone, 0, 3) . '****' . substr($phone, -4);
     }
 }

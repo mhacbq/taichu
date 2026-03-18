@@ -4,10 +4,12 @@ declare (strict_types = 1);
 namespace app\controller;
 
 use app\BaseController;
+use app\model\SystemConfig;
 use app\model\AiPrompt;
-use app\service\CacheService;
 use think\Request;
 use think\facade\Config;
+
+
 
 /**
  * AI解盘控制器
@@ -15,17 +17,31 @@ use think\facade\Config;
  */
 class AiAnalysis extends BaseController
 {
-    // 是否启用AI分析缓存（相同八字结果可复用）
-    const ENABLE_CACHE = true;
-    
-    // 缓存有效期（7天）
-    const CACHE_TTL = 604800;
     
     /**
      * AI解盘配置缓存
      */
     private function getAiConfig(): array
     {
+        // 优先从数据库获取配置
+        try {
+            $dbConfig = [];
+            $keys = ['ai_api_key', 'ai_api_url', 'ai_model', 'ai_enable_thinking', 'ai_enable_streaming'];
+            foreach ($keys as $key) {
+                $value = SystemConfig::getByKey($key);
+                if ($value !== null) {
+                    $configKey = str_replace('ai_', '', $key);
+                    $dbConfig[$configKey] = $value;
+                }
+            }
+            
+            if (!empty($dbConfig)) {
+                return array_merge(Config::get('ai', []), $dbConfig);
+            }
+        } catch (\Exception $e) {
+            // 数据库配置获取失败，降级使用文件配置
+        }
+
         return Config::get('ai', []);
     }
 
@@ -40,10 +56,63 @@ class AiAnalysis extends BaseController
         return AiPrompt::getDefault($type);
     }
 
+    private function buildAiAnalysisLogContext(array $baziData, string $promptKey, string $customPrompt, array $config, array $extra = []): array
+    {
+        $context = array_filter([
+            'prompt_key' => $promptKey,
+            'prompt_key_provided' => $promptKey !== '',
+            'has_custom_prompt' => $customPrompt !== '',
+            'custom_prompt_length' => $customPrompt !== '' ? mb_strlen($customPrompt) : 0,
+            'bazi_sections' => array_values(array_intersect(['year', 'month', 'day', 'hour', 'wuxing_stats'], array_keys($baziData))),
+            'bazi_field_count' => count($baziData),
+            'day_master' => (string) ($baziData['day_master'] ?? ''),
+            'model' => (string) ($config['model'] ?? 'DeepSeek-V3.2'),
+            'api_host' => $this->extractAiApiHost((string) ($config['api_url'] ?? '')),
+        ], static fn ($value) => !($value === '' || $value === 0 || $value === false || $value === null || $value === []));
+
+        return array_merge($context, $extra);
+    }
+
+    private function extractAiApiHost(string $apiUrl): string
+    {
+        $host = (string) parse_url($apiUrl, PHP_URL_HOST);
+        return $host !== '' ? $host : '';
+    }
+
+    /**
+     * 兼容旧版AI解盘路由
+     */
+
+    public function analyze(Request $request)
+    {
+        return $this->analyzeBazi($request);
+    }
+
+    /**
+     * 兼容旧版流式AI解盘路由
+     */
+    public function analyzeStream(Request $request)
+    {
+        return $this->analyzeBaziStream($request);
+    }
+
+    /**
+     * 获取AI分析历史（兼容旧版接口）
+     */
+    public function history()
+    {
+        return $this->success([
+            'list' => [],
+            'total' => 0,
+        ], '暂无历史记录');
+    }
+
     /**
      * AI八字解盘
      * 将八字数据发送到AI API进行分析
      */
+
+
     public function analyzeBazi(Request $request)
     {
         $baziData = $request->param('bazi');
@@ -51,14 +120,28 @@ class AiAnalysis extends BaseController
         $customPrompt = $request->param('prompt', '');
         
         if (empty($baziData)) {
-            return json(['code' => 400, 'message' => '八字数据不能为空']);
+            return $this->error('八字数据不能为空', 400);
+        }
+        
+        if (!is_array($baziData)) {
+            return $this->error('八字数据格式错误，应为数组类型', 400);
+        }
+        
+        // 限制八字数据大小，防止过大请求
+        if (count($baziData) > 100 || strlen(json_encode($baziData)) > 10000) {
+            return $this->error('八字数据过大', 400);
+        }
+        
+        // 限制自定义提示词长度
+        if (!empty($customPrompt) && mb_strlen($customPrompt) > 2000) {
+            return $this->error('自定义提示词不能超过2000字符', 400);
         }
 
         $config = $this->getAiConfig();
         
         // 检查配置
         if (empty($config['api_key']) || empty($config['api_url'])) {
-            return json(['code' => 500, 'message' => 'AI解盘服务未配置']);
+            return $this->error('AI解盘服务未配置', 500);
         }
 
         // 获取提示词配置
@@ -86,21 +169,24 @@ class AiAnalysis extends BaseController
             // 调用AI API
             $response = $this->callAiApi($systemPrompt, $userPrompt, $config);
             
-            return json([
-                'code' => 0,
-                'message' => 'success',
-                'data' => [
-                    'analysis' => $response,
-                    'model' => $config['model'] ?? 'DeepSeek-V3.2',
-                    'prompt_used' => $prompt ? $prompt->name : 'default'
-                ]
-            ]);
+            return $this->success([
+                'analysis' => $response,
+                'model' => $config['model'] ?? 'DeepSeek-V3.2',
+                'prompt_used' => $prompt ? $prompt->name : 'default'
+            ], 'AI解盘成功');
         } catch (\Exception $e) {
-            return json([
-                'code' => 500,
-                'message' => 'AI解盘失败：' . $e->getMessage()
-            ]);
+            return $this->respondSystemException(
+                'ai_bazi_analyze',
+                $e,
+                'AI解盘失败，请稍后重试',
+                $this->buildAiAnalysisLogContext($baziData, $promptKey, $customPrompt, $config, [
+                    'mode' => 'sync',
+                    'prompt_source' => $prompt ? 'preset' : 'default',
+                ])
+            );
         }
+
+
     }
 
     /**
@@ -114,13 +200,27 @@ class AiAnalysis extends BaseController
         $customPrompt = $request->param('prompt', '');
         
         if (empty($baziData)) {
-            return json(['code' => 400, 'message' => '八字数据不能为空']);
+            return $this->error('八字数据不能为空', 400);
+        }
+        
+        if (!is_array($baziData)) {
+            return $this->error('八字数据格式错误，应为数组类型', 400);
+        }
+        
+        // 限制八字数据大小，防止过大请求
+        if (count($baziData) > 100 || strlen(json_encode($baziData)) > 10000) {
+            return $this->error('八字数据过大', 400);
+        }
+        
+        // 限制自定义提示词长度
+        if (!empty($customPrompt) && mb_strlen($customPrompt) > 2000) {
+            return $this->error('自定义提示词不能超过2000字符', 400);
         }
 
         $config = $this->getAiConfig();
         
         if (empty($config['api_key']) || empty($config['api_url'])) {
-            return json(['code' => 500, 'message' => 'AI解盘服务未配置']);
+            return $this->error('AI解盘服务未配置', 500);
         }
 
         // 获取提示词配置
@@ -141,19 +241,27 @@ class AiAnalysis extends BaseController
             $prompt->incrementUsage();
         }
 
-        // 设置SSE响应头
-        header('Content-Type: text/event-stream');
-        header('Cache-Control: no-cache');
-        header('Connection: keep-alive');
-        header('X-Accel-Buffering: no');
+        $this->prepareSseResponse();
 
         try {
             $this->callAiApiStream($systemPrompt, $userPrompt, $config);
+            $this->emitSseDone();
         } catch (\Exception $e) {
-            echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
+            $this->logControllerException(
+                'ai_bazi_stream',
+                $e,
+                $this->buildAiAnalysisLogContext($baziData, $promptKey, $customPrompt, $config, [
+                    'mode' => 'stream',
+                    'prompt_source' => $prompt ? 'preset' : 'default',
+                ]),
+                'error'
+            );
+            $this->emitSseError('AI流式解盘失败，请稍后重试');
         }
 
+
         exit;
+
     }
 
     /**
@@ -248,9 +356,13 @@ class AiAnalysis extends BaseController
                     'content' => $userPrompt
                 ]
             ],
-            'stream' => false,
-            'extra_body' => [
-                'enable_thinking' => $config['enable_thinking'] ?? false,
+            'stream' => false
+        ];
+
+        // 仅在明确启用thinking时添加extra_body
+        if (!empty($config['enable_thinking'])) {
+             $payload['extra_body'] = [
+                'enable_thinking' => true,
                 'provider' => [
                     'only' => [],
                     'order' => [],
@@ -262,8 +374,8 @@ class AiAnalysis extends BaseController
                     'throughput_range' => [],
                     'latency_range' => []
                 ]
-            ]
-        ];
+            ];
+        }
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
@@ -275,6 +387,9 @@ class AiAnalysis extends BaseController
             'Content-Type: application/json'
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        // SSL验证配置，防止中间人攻击
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -326,9 +441,13 @@ class AiAnalysis extends BaseController
                     'content' => $userPrompt
                 ]
             ],
-            'stream' => true,
-            'extra_body' => [
-                'enable_thinking' => $config['enable_thinking'] ?? false,
+            'stream' => true
+        ];
+        
+        // 仅在明确启用thinking时添加extra_body
+        if (!empty($config['enable_thinking'])) {
+             $payload['extra_body'] = [
+                'enable_thinking' => true,
                 'provider' => [
                     'only' => [],
                     'order' => [],
@@ -340,37 +459,107 @@ class AiAnalysis extends BaseController
                     'throughput_range' => [],
                     'latency_range' => []
                 ]
-            ]
-        ];
+            ];
+        }
+
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        if ($payloadJson === false) {
+            throw new \Exception('流式请求参数编码失败');
+        }
+
+        ignore_user_abort(false);
+        @set_time_limit(0);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $apiKey,
             'Content-Type: application/json'
         ]);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        // 启用SSL验证，防止中间人攻击
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) {
+            if (connection_aborted()) {
+                return 0;
+            }
+
             echo $data;
+            if (function_exists('ob_flush')) {
+                @ob_flush();
+            }
             flush();
             return strlen($data);
         });
 
         curl_exec($ch);
-        
-        if (curl_errno($ch)) {
-            throw new \Exception('请求失败：' . curl_error($ch));
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (connection_aborted()) {
+            curl_close($ch);
+            return;
         }
-        
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new \Exception('请求失败：' . $error);
+        }
+
         curl_close($ch);
+
+        if ($httpCode !== 200) {
+            throw new \Exception('流式API返回错误：HTTP ' . $httpCode);
+        }
+    }
+
+
+    /**
+     * 准备SSE响应头
+     */
+    private function prepareSseResponse(): void
+    {
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, no-transform');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+    }
+
+    /**
+     * 输出SSE错误事件
+     */
+    private function emitSseError(string $message): void
+    {
+        $payload = json_encode(['error' => $message], JSON_UNESCAPED_UNICODE);
+        if ($payload === false) {
+            $payload = '{"error":"AI流式解盘失败，请稍后重试"}';
+        }
+
+        echo "data: {$payload}\n\n";
+        $this->emitSseDone();
+    }
+
+    /**
+     * 输出SSE结束标记
+     */
+    private function emitSseDone(): void
+    {
+        echo "data: [DONE]\n\n";
+        if (function_exists('ob_flush')) {
+            @ob_flush();
+        }
+        flush();
     }
 
     /**
      * 获取AI配置信息（后台使用）
      */
+
     public function getConfig()
     {
         $config = $this->getAiConfig();
@@ -380,11 +569,7 @@ class AiAnalysis extends BaseController
             $config['api_key'] = substr($config['api_key'], 0, 10) . '****' . substr($config['api_key'], -4);
         }
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $config
-        ]);
+        return $this->success($config, '获取成功');
     }
 
     /**
@@ -394,25 +579,56 @@ class AiAnalysis extends BaseController
     {
         $config = $request->param();
         
-        // 验证必要字段
         if (empty($config['api_url']) || empty($config['model'])) {
-            return json(['code' => 400, 'message' => 'API地址和模型名称不能为空']);
+            return $this->error('API地址和模型名称不能为空', 400);
+        }
+
+        // 移除API Key掩码处理，如果提交的是掩码，则不更新
+        if (isset($config['api_key']) && strpos($config['api_key'], '****') !== false) {
+            unset($config['api_key']);
+        }
+
+        try {
+            // 允许本地地址，但在保存前进行格式检查
+            $config['api_url'] = $this->normalizeExternalApiUrl((string) $config['api_url'], true);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+
+        // 保存到数据库
+        $saveData = [];
+        if (isset($config['api_url'])) $saveData['ai_api_url'] = $config['api_url'];
+        if (isset($config['api_key'])) $saveData['ai_api_key'] = $config['api_key']; // 注意：最好加密存储
+        if (isset($config['model'])) $saveData['ai_model'] = $config['model'];
+        if (isset($config['enable_thinking'])) $saveData['ai_enable_thinking'] = $config['enable_thinking'];
+        
+        foreach ($saveData as $key => $value) {
+            // 尝试更新现有配置，如果不存在则创建
+            $existing = SystemConfig::where('config_key', $key)->find();
+            if ($existing) {
+                $existing->config_value = (string)$value;
+                $existing->save();
+            } else {
+                SystemConfig::create([
+                    'config_key' => $key,
+                    'config_value' => (string)$value,
+                    'config_type' => 'string',
+                    'category' => 'ai',
+                    'description' => 'AI Configuration ' . $key,
+                    'is_editable' => 1
+                ]);
+            }
         }
         
-        // 如果API Key是掩码格式，不更新
-        if (strpos($config['api_key'], '****') !== false) {
-            $oldConfig = $this->getAiConfig();
-            $config['api_key'] = $oldConfig['api_key'] ?? '';
+        // 重新获取完整配置返回
+        $newConfig = $this->getAiConfig();
+        
+        $responseConfig = $newConfig;
+        if (!empty($responseConfig['api_key'])) {
+            $responseConfig['api_key'] = substr($responseConfig['api_key'], 0, 10) . '****' . substr($responseConfig['api_key'], -4);
         }
         
-        // 保存到配置文件（实际项目中应该保存到数据库或安全存储）
-        // 这里简化处理，实际应该使用数据库表来存储
-        
-        return json([
-            'code' => 0,
-            'message' => '保存成功',
-            'data' => $config
-        ]);
+        return $this->success($responseConfig, '保存成功');
     }
 
     /**
@@ -423,8 +639,9 @@ class AiAnalysis extends BaseController
         $config = $request->param('config', []);
         
         try {
+            $validatedConfig = $this->validateTestConnectionConfig($config);
             $payload = [
-                'model' => $config['model'] ?? 'DeepSeek-V3.2',
+                'model' => $validatedConfig['model'],
                 'messages' => [
                     [
                         'role' => 'user',
@@ -449,43 +666,163 @@ class AiAnalysis extends BaseController
             ];
 
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $config['api_url']);
+            curl_setopt($ch, CURLOPT_URL, $validatedConfig['api_url']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $config['api_key'],
+                'Authorization: Bearer ' . $validatedConfig['api_key'],
                 'Content-Type: application/json'
             ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
+            // 启用SSL验证，防止中间人攻击
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            if (defined('CURLOPT_PROTOCOLS') && defined('CURLPROTO_HTTPS')) {
+                curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+            }
 
             $response = curl_exec($ch);
+            if ($response === false) {
+                $errorMessage = curl_error($ch) ?: '未知网络错误';
+                curl_close($ch);
+                throw new \RuntimeException('AI连接测试请求失败: ' . $errorMessage);
+            }
+
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            if ($httpCode === 200) {
+            if ($httpCode >= 200 && $httpCode < 300) {
                 $data = json_decode($response, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    return json([
-                        'code' => 0,
-                        'message' => '连接成功',
-                        'data' => [
-                            'model' => $data['model'] ?? $config['model'],
-                            'status' => 'ok'
-                        ]
-                    ]);
+                    return $this->success([
+                        'model' => $data['model'] ?? $validatedConfig['model'],
+                        'status' => 'ok'
+                    ], '连接成功');
                 }
             }
 
-            return json([
-                'code' => 500,
-                'message' => '连接失败，请检查配置'
+            return $this->error('连接失败，请检查配置', 500);
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondBusinessException($e, 'ai_test_connection_validate', '测试配置无效', 400, [
+                'api_host' => $apiHost,
+                'model' => $modelInput,
             ]);
-        } catch (\Exception $e) {
-            return json([
-                'code' => 500,
-                'message' => '连接失败：' . $e->getMessage()
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('ai_test_connection', $e, '连接失败，请检查配置后重试', [
+                'api_host' => $apiHost,
+                'model' => $modelInput,
             ]);
         }
+
+    }
+
+    /**
+     * 验证AI连接测试参数
+     */
+    private function validateTestConnectionConfig(mixed $config): array
+    {
+        if (!is_array($config)) {
+            throw new \InvalidArgumentException('测试配置格式无效');
+        }
+
+        $apiUrl = trim((string) ($config['api_url'] ?? ''));
+        $apiKey = trim((string) ($config['api_key'] ?? ''));
+        $model = trim((string) ($config['model'] ?? ''));
+
+        if ($apiUrl === '') {
+            throw new \InvalidArgumentException('API地址不能为空');
+        }
+
+        if ($model === '') {
+            throw new \InvalidArgumentException('模型名称不能为空');
+        }
+
+        if ($apiKey === '') {
+            throw new \InvalidArgumentException('API Key不能为空');
+        }
+
+        return [
+            'api_url' => $this->normalizeExternalApiUrl($apiUrl),
+            'api_key' => $apiKey,
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 规范并校验外部AI接口地址，阻断明显的SSRF目标
+     */
+    private function normalizeExternalApiUrl(string $apiUrl, bool $allowLocal = false): string
+    {
+        if (!filter_var($apiUrl, FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException('API地址格式无效');
+        }
+
+        $parts = parse_url($apiUrl);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if ($scheme !== 'https') {
+            throw new \InvalidArgumentException('API地址必须使用HTTPS');
+        }
+
+        if ($host === '') {
+            throw new \InvalidArgumentException('API地址缺少主机名');
+        }
+
+        if (!$allowLocal && $this->isForbiddenAiHost($host)) {
+            throw new \InvalidArgumentException('API地址指向受限主机，请使用公网HTTPS接口');
+        }
+
+        return $apiUrl;
+    }
+
+    /**
+     * 判断主机是否为内网/本机/保留地址
+     */
+    private function isForbiddenAiHost(string $host): bool
+    {
+        $normalizedHost = trim($host, '[]');
+
+        if (in_array($normalizedHost, ['localhost', '0.0.0.0'], true) || str_ends_with($normalizedHost, '.local')) {
+            return true;
+        }
+
+        if (filter_var($normalizedHost, FILTER_VALIDATE_IP)) {
+            return $this->isPrivateOrReservedIp($normalizedHost);
+        }
+
+        foreach ($this->resolveHostIpv4List($normalizedHost) as $ip) {
+            if ($this->isPrivateOrReservedIp($ip)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 解析主机对应的 IPv4 地址列表
+     */
+    private function resolveHostIpv4List(string $host): array
+    {
+        $ips = @gethostbynamel($host);
+        if ($ips === false) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter($ips, static fn ($ip) => is_string($ip) && $ip !== '')));
+    }
+
+    /**
+     * 判断IP是否属于私网或保留地址段
+     */
+    private function isPrivateOrReservedIp(string $ip): bool
+    {
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 }
+

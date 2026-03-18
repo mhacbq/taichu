@@ -8,9 +8,11 @@ use app\model\HehunRecord;
 use app\model\PointsRecord;
 use app\model\User;
 use app\service\AiService;
+use app\service\BaziCalculationService;
 use app\service\CacheService;
 use app\service\ConfigService;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 八字合婚控制器
@@ -39,8 +41,98 @@ class Hehun extends BaseController
     protected $middleware = [\app\middleware\Auth::class];
     
     /**
+     * @var BaziCalculationService
+     */
+    protected $baziCalculationService;
+    
+    public function __construct(\think\App $app)
+    {
+        parent::__construct($app);
+        $this->baziCalculationService = new BaziCalculationService();
+    }
+
+    protected function resolveHehunBasePoints(): int
+    {
+        $configuredValue = ConfigService::get('points_cost_hehun', null);
+        if (is_numeric($configuredValue)) {
+            return max(0, (int) $configuredValue);
+        }
+
+        Log::warning('合婚积分配置缺失或非法，已回退默认值', [
+            'config_key' => 'points_cost_hehun',
+            'fallback' => self::HEHUN_POINTS_COST,
+            'value_type' => gettype($configuredValue),
+        ]);
+
+        return self::HEHUN_POINTS_COST;
+    }
+
+    protected function resolveHehunExportPoints(): int
+    {
+        $configuredValue = ConfigService::get('points_cost_hehun_export', null);
+        if (is_numeric($configuredValue)) {
+            return max(0, (int) $configuredValue);
+        }
+
+        Log::warning('合婚导出积分配置缺失或非法，已回退默认值', [
+            'config_key' => 'points_cost_hehun_export',
+            'fallback' => self::HEHUN_EXPORT_COST,
+            'value_type' => gettype($configuredValue),
+        ]);
+
+        return self::HEHUN_EXPORT_COST;
+    }
+
+    protected function buildHehunLogContext(array $user = [], array $data = [], array $extra = []): array
+    {
+        $context = array_filter([
+            'user_id' => (int) ($user['sub'] ?? 0),
+            'record_id' => isset($data['record_id']) ? (int) $data['record_id'] : 0,
+            'format' => (string) ($data['format'] ?? ''),
+            'template' => (string) ($data['template'] ?? ''),
+            'use_ai' => (bool) ($data['useAi'] ?? false),
+            'male_name_length' => mb_strlen((string) ($data['maleName'] ?? '')),
+            'female_name_length' => mb_strlen((string) ($data['femaleName'] ?? '')),
+            'birth_pair_hash' => $this->buildBirthPairHash($data),
+        ], static fn ($value) => !($value === '' || $value === 0 || $value === false || $value === null));
+
+        return array_merge($context, $extra);
+    }
+
+    protected function buildBirthPairHash(array $data): string
+    {
+        $maleBirthDate = trim((string) ($data['maleBirthDate'] ?? ''));
+        $femaleBirthDate = trim((string) ($data['femaleBirthDate'] ?? ''));
+
+        if ($maleBirthDate === '' && $femaleBirthDate === '') {
+            return '';
+        }
+
+        return substr(md5($maleBirthDate . '|' . $femaleBirthDate), 0, 12);
+    }
+
+    protected function buildBirthInputMeta(array $data): array
+    {
+        $allowedPrecision = ['exact', 'range', 'unknown'];
+        $allowedTimeRanges = ['before-dawn', 'morning', 'forenoon', 'noon', 'afternoon', 'evening'];
+
+        $malePrecision = strtolower(trim((string) ($data['maleBirthPrecision'] ?? 'exact')));
+        $femalePrecision = strtolower(trim((string) ($data['femaleBirthPrecision'] ?? 'exact')));
+        $maleTimeRange = strtolower(trim((string) ($data['maleBirthTimeRange'] ?? 'forenoon')));
+        $femaleTimeRange = strtolower(trim((string) ($data['femaleBirthTimeRange'] ?? 'forenoon')));
+
+        return [
+            'male_birth_precision' => in_array($malePrecision, $allowedPrecision, true) ? $malePrecision : 'exact',
+            'female_birth_precision' => in_array($femalePrecision, $allowedPrecision, true) ? $femalePrecision : 'exact',
+            'male_birth_time_range' => in_array($maleTimeRange, $allowedTimeRanges, true) ? $maleTimeRange : 'forenoon',
+            'female_birth_time_range' => in_array($femaleTimeRange, $allowedTimeRanges, true) ? $femaleTimeRange : 'forenoon',
+        ];
+    }
+    
+    /**
      * 天干五行
      */
+
     protected $ganWuXing = [
         '甲' => '木', '乙' => '木',
         '丙' => '火', '丁' => '火',
@@ -106,17 +198,18 @@ class Hehun extends BaseController
      * 日主配对关系
      */
     protected $dayMasterRelations = [
-        '甲' => ['合' => '己', '冲' => '庚'],
-        '乙' => ['合' => '庚', '冲' => '辛'],
-        '丙' => ['合' => '辛', '冲' => '壬'],
-        '丁' => ['合' => '壬', '冲' => '癸'],
-        '戊' => ['合' => '癸', '冲' => '甲'],
-        '己' => ['合' => '甲', '冲' => '乙'],
-        '庚' => ['合' => '乙', '冲' => '丙'],
-        '辛' => ['合' => '丙', '冲' => '丁'],
-        '壬' => ['合' => '丁', '冲' => '戊'],
-        '癸' => ['合' => '戊', '冲' => '己']
+        '甲' => ['合' => '己'],
+        '乙' => ['合' => '庚'],
+        '丙' => ['合' => '辛'],
+        '丁' => ['合' => '壬'],
+        '戊' => ['合' => '癸'],
+        '己' => ['合' => '甲'],
+        '庚' => ['合' => '乙'],
+        '辛' => ['合' => '丙'],
+        '壬' => ['合' => '丁'],
+        '癸' => ['合' => '戊']
     ];
+
     
     /**
      * 地支六合
@@ -172,8 +265,8 @@ class Hehun extends BaseController
         $isVip = $userModel->is_vip ?? false;
         
         // 获取基础积分消耗
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
-        $exportPoints = ConfigService::get('points_cost_hehun_export', self::HEHUN_EXPORT_COST);
+        $basePoints = $this->resolveHehunBasePoints();
+        $exportPoints = $this->resolveHehunExportPoints();
         
         // 检查是否新用户
         $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
@@ -266,16 +359,25 @@ class Hehun extends BaseController
         $tier = $data['tier'] ?? self::TIER_PREMIUM; // free 或 premium
         $useAi = $data['useAi'] ?? true;
         
-        // 计算双方八字（免费层也需要）
-        $paipanController = new Paipan();
-        $maleBazi = $paipanController->calculateBazi($data['maleBirthDate']);
-        $femaleBazi = $paipanController->calculateBazi($data['femaleBirthDate']);
+        // 计算双方八字（免费层也需要），并补齐旧结构可能缺失的索引与五行元数据
+        $maleBazi = $this->baziCalculationService->normalizeBaziStructure(
+            $this->baziCalculationService->calculateBazi($data['maleBirthDate'], '男')
+        );
+        $femaleBazi = $this->baziCalculationService->normalizeBaziStructure(
+            $this->baziCalculationService->calculateBazi($data['femaleBirthDate'], '女')
+        );
         
         // 执行完整合婚分析
-        $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName);
+        $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);
+        $storageStatus = HehunRecord::getStorageStatus();
         
         // 如果是免费层，只返回基础信息
         if ($tier === self::TIER_FREE) {
+            $pricing = $this->getQuickPricing($user['sub']);
+            $pricing['unlock_ready'] = $storageStatus['ready'];
+            $pricing['unlock_message'] = $storageStatus['message'];
+            $pricing['storage_table'] = $storageStatus['table'];
+
             return $this->success([
                 'tier' => self::TIER_FREE,
                 'male_bazi' => [
@@ -299,8 +401,11 @@ class Hehun extends BaseController
                     'comment' => $hehunResult['comment'],
                     'suggestions' => [count($hehunResult['suggestions']) > 0 ? $hehunResult['suggestions'][0] : '双方缘分尚可，建议查看详细报告了解更多。']
                 ],
-                'preview_hint' => '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告',
-                'pricing' => $this->getQuickPricing($user['sub'])
+                'preview_hint' => $storageStatus['ready']
+                    ? '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告'
+                    : '当前详细报告链路正在维护，建议先等待库表修复完成后再解锁。',
+                'storage_status' => $storageStatus,
+                'pricing' => $pricing
             ]);
         }
         
@@ -313,18 +418,28 @@ class Hehun extends BaseController
      */
     protected function processPremiumHehun(array $data, array $user, array $maleBazi, array $femaleBazi, array $hehunResult, string $maleName, string $femaleName, bool $useAi)
     {
+        $storageStatus = HehunRecord::getStorageStatus();
+        if (!$storageStatus['ready']) {
+            return $this->error($storageStatus['message'], 503, [
+                'storage_table' => $storageStatus['table'],
+            ]);
+        }
+
         // AI深度分析（付费层）- 在事务外执行AI调用
         $aiAnalysis = null;
         if ($useAi) {
             $aiAnalysis = $this->generateAiAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
         }
+        $analysisMeta = $this->buildAnalysisMeta($useAi, $aiAnalysis);
         
         // 计算实际积分消耗（事务外计算）
         $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $basePoints = $this->resolveHehunBasePoints();
         $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
         $finalPoints = $costInfo['final'];
         
+        $birthInputMeta = $this->buildBirthInputMeta($data);
+
         // ===== 使用数据库行锁防止并发问题 =====
         Db::startTrans();
         try {
@@ -380,20 +495,23 @@ class Hehun extends BaseController
                 ]);
             }
             
-            // 保存合婚记录
-            $record = HehunRecord::create([
+            // 保存合婚记录（兼容 hehun_records / tc_hehun_record 两套历史表结构）
+            $recordId = HehunRecord::createCompatible([
                 'user_id' => $user['sub'],
                 'male_name' => $maleName,
                 'female_name' => $femaleName,
                 'male_birth_date' => $data['maleBirthDate'],
                 'female_birth_date' => $data['femaleBirthDate'],
-                'male_bazi' => json_encode($maleBazi),
-                'female_bazi' => json_encode($femaleBazi),
+                'male_bazi' => $maleBazi,
+                'female_bazi' => $femaleBazi,
                 'score' => $hehunResult['score'],
                 'level' => $hehunResult['level'],
-                'result' => json_encode($hehunResult),
-                'ai_analysis' => $aiAnalysis ? json_encode($aiAnalysis) : null,
-                'is_ai_analysis' => $useAi,
+                'result' => array_merge($hehunResult, [
+                    'input_meta' => $birthInputMeta,
+                    'analysis_meta' => $analysisMeta,
+                ]),
+                'ai_analysis' => $aiAnalysis,
+                'is_ai_analysis' => $analysisMeta['is_ai_generated'],
                 'points_cost' => $needPoints ? $finalPoints : 0,
             ]);
             
@@ -405,12 +523,15 @@ class Hehun extends BaseController
                 ->value('points');
             
             $result = [
-                'id' => $record->id,
+                'id' => $recordId,
                 'tier' => $isVip ? self::TIER_VIP : self::TIER_PREMIUM,
                 'male_bazi' => $maleBazi,
                 'female_bazi' => $femaleBazi,
-                'hehun' => $hehunResult,
+                'hehun' => array_merge($hehunResult, [
+                    'analysis_meta' => $analysisMeta,
+                ]),
                 'ai_analysis' => $aiAnalysis,
+                'analysis_meta' => $analysisMeta,
                 'pricing' => [
                     'points_cost' => $needPoints ? $finalPoints : 0,
                     'original_points' => $costInfo['original'],
@@ -437,8 +558,19 @@ class Hehun extends BaseController
             
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('合婚分析失败: ' . $e->getMessage());
+            return $this->respondSystemException(
+                '合婚高级分析失败',
+                $e,
+                '合婚分析失败，请稍后重试',
+                $this->buildHehunLogContext($user, $data, [
+                    'step' => 'process_premium',
+                    'final_points' => $finalPoints,
+                    'need_points' => $needPoints,
+                    'is_new_user' => $isNewUser,
+                ])
+            );
         }
+
     }
     
     /**
@@ -450,7 +582,7 @@ class Hehun extends BaseController
         $isVip = $userModel->is_vip ?? false;
         $isNewUser = HehunRecord::getUserCount($userId) === 0;
         
-        $basePoints = ConfigService::get('points_cost_hehun', self::HEHUN_POINTS_COST);
+        $basePoints = $this->resolveHehunBasePoints();
         $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
         
         return [
@@ -466,51 +598,87 @@ class Hehun extends BaseController
     /**
      * 合婚核心分析逻辑
      */
-    protected function analyzeHehun(array $maleBazi, array $femaleBazi, string $maleName, string $femaleName): array
+    protected function analyzeHehun(array $maleBazi, array $femaleBazi, string $maleName, string $femaleName, string $maleBirthDate = '', string $femaleBirthDate = ''): array
     {
+        $maleBazi = $this->baziCalculationService->normalizeBaziStructure($maleBazi);
+        $femaleBazi = $this->baziCalculationService->normalizeBaziStructure($femaleBazi);
+
         $scores = [];
         $details = [];
         $suggestions = [];
+
         
         // 1. 年柱（生肖）配对分析 - 15分
         $yearScore = $this->analyzeYearPillar($maleBazi['year'], $femaleBazi['year']);
         $scores['year'] = $yearScore;
         $details['year'] = $this->getYearPillarDescription($yearScore);
         
-        // 2. 日柱（日主）配对分析 - 30分
+        // 2. 日柱（配偶宫）深度配对 - 25分
         $dayScore = $this->analyzeDayPillar($maleBazi['day'], $femaleBazi['day']);
-        $scores['day'] = $dayScore;
+        $scores['day'] = min(25, $dayScore); 
         $details['day'] = $this->getDayPillarDescription($dayScore);
         
-        // 3. 五行互补分析 - 20分
+        // 3. 五行喜用互补分析 - 20分
         $wuxingScore = $this->analyzeWuxingComplement($maleBazi, $femaleBazi);
         $scores['wuxing'] = $wuxingScore;
         $details['wuxing'] = $this->getWuxingDescription($wuxingScore);
         
-        // 4. 天干地支合冲分析 - 20分
+        // 4. 天干地支合冲分析 - 15分
         $hechongScore = $this->analyzeHeChong($maleBazi, $femaleBazi);
-        $scores['hechong'] = $hechongScore;
+        $scores['hechong'] = min(15, $hechongScore);
         $details['hechong'] = $this->getHeChongDescription($hechongScore);
         
         // 5. 纳音五行分析 - 15分
         $nayinScore = $this->analyzeNayin($maleBazi, $femaleBazi);
         $scores['nayin'] = $nayinScore;
         $details['nayin'] = $this->getNayinDescription($nayinScore);
+
+        // 6. 神煞互补分析 - 10分
+        $shenshaScore = $this->analyzeShenshaComplement($maleBazi, $femaleBazi);
+        $scores['shensha'] = $shenshaScore;
+        $details['shensha'] = $this->getShenshaDescription($shenshaScore);
         
-        // 计算总分
-        $totalScore = array_sum($scores);
+        // 7. 传统合婚模型 (三元/九宫) - 额外加分项 (最多10分)
+        $sanyuanAnalysis = $this->analyzeSanYuanHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
+        $jiugongAnalysis = $this->analyzeJiuGongHehun($maleBazi, $femaleBazi, $maleBirthDate, $femaleBirthDate);
         
+        $sanyuanScoreMap = ['上等婚' => 5, '中上婚' => 4, '中等婚' => 2, '下等婚' => 0];
+        $jiugongScoreMap = ['上等婚' => 5, '中等婚' => 2, '下等婚' => 0];
+        $traditionalScore = ($sanyuanScoreMap[$sanyuanAnalysis['grade'] ?? ''] ?? 1)
+            + ($jiugongScoreMap[$jiugongAnalysis['grade'] ?? ''] ?? 1);
+
+        $scores['traditional'] = min(10, $traditionalScore);
+        $traditionalRisk = $this->buildTraditionalRiskAssessment($sanyuanAnalysis, $jiugongAnalysis);
+        $details['traditional'] = '三元：' . $sanyuanAnalysis['description'] . ' ' . $sanyuanAnalysis['suggestion']
+            . ' 九宫：' . $jiugongAnalysis['description'] . ' ' . $jiugongAnalysis['suggestion'];
+        if (!empty($traditionalRisk['warning'])) {
+            $details['traditional'] .= ' 风险提示：' . $traditionalRisk['warning'];
+        }
+
+        $baseScore = min(100, array_sum($scores));
+        $totalScore = $this->applyTraditionalRiskToScore($baseScore, $traditionalRisk);
+
         // 确定等级
         $level = $this->calculateLevel($totalScore);
-        
+        if (!empty($traditionalRisk['level_cap'])) {
+            $level = $this->capCompatibilityLevel($level, (string) $traditionalRisk['level_cap']);
+            $totalScore = min($totalScore, $this->resolveScoreCeilingByLevel($level));
+        }
+
+        $traditionalMethods = [
+            'sanyuan' => $sanyuanAnalysis,
+            'jiugong' => $jiugongAnalysis,
+        ];
+
         // 生成建议
-        $suggestions = $this->generateSuggestions($scores, $maleBazi, $femaleBazi);
-        
+        $suggestions = $this->generateSuggestions($scores, $maleBazi, $femaleBazi, $traditionalRisk, $traditionalMethods);
+
         // 生成综合评语
-        $comment = $this->generateComment($totalScore, $level, $scores, $maleName, $femaleName);
-        
+        $comment = $this->generateComment($totalScore, $level, $scores, $maleName, $femaleName, $traditionalRisk, $traditionalMethods);
+
         return [
             'score' => $totalScore,
+            'base_score' => $baseScore,
             'max_score' => 100,
             'level' => $level,
             'level_text' => $this->getLevelText($level),
@@ -518,8 +686,132 @@ class Hehun extends BaseController
             'details' => $details,
             'suggestions' => $suggestions,
             'comment' => $comment,
-            'highlights' => $this->getHighlights($scores),
+            'highlights' => $this->getHighlights($scores, $traditionalRisk),
+            'traditional_methods' => $traditionalMethods,
+            'traditional_risk' => $traditionalRisk,
         ];
+    }
+
+    /**
+     * 传统三元/九宫风险校正。
+     *
+     * 八宅合婚以生气、天医、延年为吉，六煞、祸害、五鬼、绝命为凶；
+     * 若出现五鬼、绝命等重凶，不能再让综合分维持“佳偶天成”的乐观口径。
+     */
+    protected function buildTraditionalRiskAssessment(array $sanyuanAnalysis, array $jiugongAnalysis): array
+    {
+        $jiugongType = (string)($jiugongAnalysis['relation']['type'] ?? ($jiugongAnalysis['type'] ?? ''));
+        $jiugongGrade = (string)($jiugongAnalysis['grade'] ?? '');
+        $sanyuanGrade = (string)($sanyuanAnalysis['grade'] ?? '');
+
+        $risk = [
+            'risk_level' => 'none',
+            'penalty' => 0,
+            'score_cap' => 100,
+            'level_cap' => '',
+            'warning' => '',
+            'source' => '',
+            'relation' => $jiugongType,
+        ];
+
+        $jiugongRiskMap = [
+            '绝命' => [
+                'risk_level' => 'critical',
+                'penalty' => 28,
+                'score_cap' => 32,
+                'level_cap' => 'poor',
+                'warning' => '九宫命卦落“绝命”，属八宅合婚最忌之配，总评需以谨慎口径处理。',
+            ],
+            '五鬼' => [
+                'risk_level' => 'high',
+                'penalty' => 22,
+                'score_cap' => 39,
+                'level_cap' => 'poor',
+                'warning' => '九宫命卦落“五鬼”，传统上主是非惊扰与家宅不宁，不能只凭其他分项偏高就给出乐观结论。',
+            ],
+            '祸害' => [
+                'risk_level' => 'medium',
+                'penalty' => 14,
+                'score_cap' => 54,
+                'level_cap' => 'fair',
+                'warning' => '九宫命卦落“祸害”，多主口舌病灾隐忧，总评已按传统凶象做保守折减。',
+            ],
+            '六煞' => [
+                'risk_level' => 'medium',
+                'penalty' => 10,
+                'score_cap' => 69,
+                'level_cap' => 'medium',
+                'warning' => '九宫命卦落“六煞”，易起争执与外缘干扰，总评已按传统风险下调。',
+            ],
+        ];
+
+        if ($jiugongType !== '' && isset($jiugongRiskMap[$jiugongType])) {
+            $risk = array_merge($risk, $jiugongRiskMap[$jiugongType], [
+                'source' => 'jiugong',
+                'relation' => $jiugongType,
+            ]);
+        } elseif ($jiugongGrade === '下等婚') {
+            $risk = array_merge($risk, [
+                'risk_level' => 'medium',
+                'penalty' => 8,
+                'score_cap' => 69,
+                'level_cap' => 'medium',
+                'warning' => '九宫合婚落在下等婚区间，总评已按传统口径改为保守解释。',
+                'source' => 'jiugong',
+            ]);
+        }
+
+        if ($sanyuanGrade === '下等婚') {
+            $risk['penalty'] += 6;
+            $risk['source'] = $risk['source'] !== '' ? $risk['source'] . '+sanyuan' : 'sanyuan';
+
+            if ($risk['level_cap'] === '') {
+                $risk['risk_level'] = 'medium';
+                $risk['score_cap'] = min((int) $risk['score_cap'], 69);
+                $risk['level_cap'] = 'medium';
+            }
+
+            $risk['warning'] .= ($risk['warning'] !== '' ? ' ' : '') . '三元年命同时落下等婚，说明元运步调与纳音方向也偏离，宜再看现实磨合与边界管理。';
+        }
+
+        return $risk;
+    }
+
+    protected function applyTraditionalRiskToScore(int $baseScore, array $traditionalRisk): int
+    {
+        $score = max(0, $baseScore - (int)($traditionalRisk['penalty'] ?? 0));
+        $scoreCap = (int)($traditionalRisk['score_cap'] ?? 100);
+
+        return min(100, min($score, $scoreCap));
+    }
+
+    protected function capCompatibilityLevel(string $level, string $capLevel): string
+    {
+        $levelRank = [
+            'poor' => 0,
+            'fair' => 1,
+            'medium' => 2,
+            'good' => 3,
+            'excellent' => 4,
+        ];
+
+        if (!isset($levelRank[$level], $levelRank[$capLevel])) {
+            return $level;
+        }
+
+        return $levelRank[$level] <= $levelRank[$capLevel] ? $level : $capLevel;
+    }
+
+    protected function resolveScoreCeilingByLevel(string $level): int
+    {
+        return match ($level) {
+            'excellent' => 100,
+            'good' => 84,
+            'medium' => 69,
+            'fair' => 54,
+            'poor' => 39,
+            default => 100,
+        };
     }
     
     /**
@@ -529,8 +821,11 @@ class Hehun extends BaseController
     {
         // 获取生肖
         $shengxiao = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
-        $maleSx = $shengxiao[$maleYear['zhi_index']];
-        $femaleSx = $shengxiao[$femaleYear['zhi_index']];
+
+        $maleIndex = $this->resolveShengxiaoIndex($maleYear);
+        $femaleIndex = $this->resolveShengxiaoIndex($femaleYear);
+        $maleSx = $shengxiao[$maleIndex] ?? '鼠';
+        $femaleSx = $shengxiao[$femaleIndex] ?? '鼠';
         
         // 检查生肖配对
         $match = $this->shengxiaoMatch[$maleSx] ?? null;
@@ -544,6 +839,27 @@ class Hehun extends BaseController
         
         return 10; // 中等婚配
     }
+
+    protected function resolveShengxiaoIndex(array $pillar): int
+    {
+        if (isset($pillar['zhi_index']) && is_numeric($pillar['zhi_index'])) {
+            return ((int)$pillar['zhi_index'] % 12 + 12) % 12;
+        }
+
+        $zhiIndexMap = ['子' => 0, '丑' => 1, '寅' => 2, '卯' => 3, '辰' => 4, '巳' => 5, '午' => 6, '未' => 7, '申' => 8, '酉' => 9, '戌' => 10, '亥' => 11];
+        $zhi = (string)($pillar['zhi'] ?? '');
+        if ($zhi !== '' && isset($zhiIndexMap[$zhi])) {
+            return $zhiIndexMap[$zhi];
+        }
+
+        if (isset($pillar['number']) && is_numeric($pillar['number'])) {
+            $year = (int)$pillar['number'];
+            return (($year - 4) % 12 + 12) % 12;
+        }
+
+        return 0;
+    }
+
     
     /**
      * 获取年柱配对描述
@@ -569,12 +885,10 @@ class Hehun extends BaseController
         
         // 天干合化（如甲己合）
         $maleRelation = $this->dayMasterRelations[$maleDayGan] ?? null;
-        if ($maleRelation) {
-            if ($femaleDayGan === $maleRelation['合']) {
-                $score += 15; // 天干相合
-            } elseif ($femaleDayGan === $maleRelation['冲']) {
-                $score -= 5; // 天干相冲
-            }
+        if ($maleRelation && $femaleDayGan === $maleRelation['合']) {
+            $score += 15; // 天干五合
+        } elseif ($maleDayGan === $femaleDayGan) {
+            $score += 4; // 同气相求
         }
         
         // 地支六合
@@ -610,45 +924,190 @@ class Hehun extends BaseController
         if ($score >= 20) return '日主相生，性格互补，感情融洽，婚姻稳定。';
         if ($score >= 15) return '日主无明显冲突，需相互包容理解。';
         if ($score >= 10) return '日主略有冲克，需注意沟通方式，避免争执。';
-        return '日主相冲，婚姻需格外用心经营，建议晚婚或找化解之法。';
+        return '日柱冲克偏重，婚姻需格外用心经营，建议晚婚或找化解之法。';
     }
     
     /**
-     * 五行互补分析
+     * 五行喜用互补分析
      */
     protected function analyzeWuxingComplement(array $maleBazi, array $femaleBazi): int
     {
-        $maleStats = $maleBazi['wuxing_stats'];
-        $femaleStats = $femaleBazi['wuxing_stats'];
+        $maleFav = $maleBazi['strength']['favorite_wuxing'] ?? [];
+        $femaleFav = $femaleBazi['strength']['favorite_wuxing'] ?? [];
+
+        $maleStats = $this->normalizeWuxingDistribution($maleBazi['wuxing_stats'] ?? []);
+        $femaleStats = $this->normalizeWuxingDistribution($femaleBazi['wuxing_stats'] ?? []);
+
+        // 以 8 分为中轴，允许“补益”与“失衡”双向拉动，避免低配命局被基础分直接抬成及格。
+        $score = 8;
+        $score += $this->scorePartnerWuxingSupport($femaleStats, $maleFav);
+        $score += $this->scorePartnerWuxingSupport($maleStats, $femaleFav);
+
+        $maleStrengthScore = (float)($maleBazi['strength']['score'] ?? 50);
+        $femaleStrengthScore = (float)($femaleBazi['strength']['score'] ?? 50);
+        $strengthGap = abs($maleStrengthScore - $femaleStrengthScore);
+        if ($strengthGap <= 10) {
+            $score += 2;
+        } elseif ($strengthGap <= 20) {
+            $score += 1;
+        } elseif ($strengthGap >= 35) {
+            $score -= 2;
+        } elseif ($strengthGap >= 25) {
+            $score -= 1;
+        }
+
+        $maleDayMaster = $maleBazi['day_master_wuxing'] ?? '';
+        $femaleDayMaster = $femaleBazi['day_master_wuxing'] ?? '';
+        if ($maleDayMaster !== '' && in_array($maleDayMaster, $femaleFav, true)) {
+            $score += 1;
+        }
+        if ($femaleDayMaster !== '' && in_array($femaleDayMaster, $maleFav, true)) {
+            $score += 1;
+        }
+
+        $maleDominant = $this->getDominantWuxing($maleStats);
+        $femaleDominant = $this->getDominantWuxing($femaleStats);
+        if (
+            $maleDominant !== ''
+            && $maleDominant === $femaleDominant
+            && !in_array($maleDominant, $maleFav, true)
+            && !in_array($femaleDominant, $femaleFav, true)
+        ) {
+            $score -= 2;
+        }
+
+        return max(0, min(20, (int)round($score)));
+    }
+
+
+    /**
+     * 规范化五行分布为占比，便于合婚时按权重比较。
+     */
+    protected function normalizeWuxingDistribution(array $stats): array
+    {
+        $normalized = ['金' => 0.0, '木' => 0.0, '水' => 0.0, '火' => 0.0, '土' => 0.0];
+        $total = 0.0;
+
+        foreach ($normalized as $wx => $_) {
+            $value = max(0.0, (float)($stats[$wx] ?? 0));
+            $normalized[$wx] = $value;
+            $total += $value;
+        }
+
+        if ($total <= 0.0001) {
+            return $normalized;
+        }
+
+        foreach ($normalized as $wx => $value) {
+            $normalized[$wx] = round($value / $total, 4);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * 评估伴侣命局对我方喜用五行的支撑力度。
+     */
+    protected function scorePartnerWuxingSupport(array $partnerDistribution, array $favoriteWuxing): int
+    {
+        if (empty($favoriteWuxing)) {
+            return 0;
+        }
+
+        $supportRatio = 0.0;
+        foreach ($favoriteWuxing as $wx) {
+            $supportRatio += (float)($partnerDistribution[$wx] ?? 0);
+        }
+
+        if ($supportRatio >= 0.45) {
+            return 5;
+        }
+        if ($supportRatio >= 0.32) {
+            return 4;
+        }
+        if ($supportRatio >= 0.22) {
+            return 2;
+        }
+        if ($supportRatio >= 0.15) {
+            return 1;
+        }
+        if ($supportRatio >= 0.08) {
+            return 0;
+        }
+        if ($supportRatio >= 0.05) {
+            return -1;
+        }
+
+        return -2;
+    }
+
+    /**
+     * 获取命局中当前最强的五行。
+     */
+    protected function getDominantWuxing(array $distribution): string
+    {
+        $filtered = array_filter($distribution, static fn($value) => (float)$value > 0);
+        if ($filtered === []) {
+            return '';
+        }
+
+        arsort($filtered, SORT_NUMERIC);
+        return (string) array_key_first($filtered);
+    }
+
+
+    /**
+     * 神煞互补分析
+     */
+    protected function analyzeShenshaComplement(array $maleBazi, array $femaleBazi): int
+    {
+        $score = 5; // 基础分
         
-        $score = 10; // 基础分
+        // 1. 天乙贵人互补 (以日干查对方地支)
+        // 简化版贵人口诀：甲戊庚牛羊...
+        $guiRenMap = [
+            '甲' => ['丑', '未'], '戊' => ['丑', '未'], '庚' => ['丑', '未'],
+            '乙' => ['子', '申'], '己' => ['子', '申'],
+            '丙' => ['亥', '酉'], '丁' => ['亥', '酉'],
+            '壬' => ['卯', '巳'], '癸' => ['卯', '巳'],
+            '辛' => ['午', '寅']
+        ];
         
-        // 检查双方五行是否互补
-        foreach ($maleStats as $element => $count) {
-            // 男方旺的，女方弱则为互补
-            if ($count >= 3 && $femaleStats[$element] <= 1) {
-                $score -= 2; // 双方都旺同一五行，减分
-            }
-            // 男方弱的，女方旺则为互补
-            if ($count <= 1 && $femaleStats[$element] >= 3) {
-                $score += 3; // 互补，加分
+        $maleDayGan = $maleBazi['day']['gan'];
+        $femaleDayGan = $femaleBazi['day']['gan'];
+        
+        $femaleBranches = [$femaleBazi['year']['zhi'], $femaleBazi['month']['zhi'], $femaleBazi['day']['zhi'], $femaleBazi['hour']['zhi']];
+        $maleBranches = [$maleBazi['year']['zhi'], $maleBazi['month']['zhi'], $maleBazi['day']['zhi'], $maleBazi['hour']['zhi']];
+        
+        if (isset($guiRenMap[$maleDayGan])) {
+            foreach ($femaleBranches as $zhi) {
+                if (in_array($zhi, $guiRenMap[$maleDayGan])) {
+                    $score += 3; // 女方地支有男方的贵人
+                    break;
+                }
             }
         }
         
-        // 检查日主五行关系
-        $maleDayWuxing = $maleBazi['day_master_wuxing'];
-        $femaleDayWuxing = $femaleBazi['day_master_wuxing'];
-        
-        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
-        $keRelation = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
-        
-        if ($shengRelation[$maleDayWuxing] === $femaleDayWuxing) {
-            $score += 5; // 相生
-        } elseif ($keRelation[$maleDayWuxing] === $femaleDayWuxing) {
-            $score -= 3; // 相克
+        if (isset($guiRenMap[$femaleDayGan])) {
+            foreach ($maleBranches as $zhi) {
+                if (in_array($zhi, $guiRenMap[$femaleDayGan])) {
+                    $score += 3; // 男方地支有女方的贵人
+                    break;
+                }
+            }
         }
         
-        return max(0, min(20, $score));
+        return max(0, min(10, $score));
+    }
+    
+    /**
+     * 获取神煞互补描述
+     */
+    protected function getShenshaDescription(int $score): string
+    {
+        if ($score >= 8) return '神煞互为贵人，生活中多得对方助力，逢凶化吉，缘分极深。';
+        if ($score >= 5) return '神煞配合尚可，无明显冲突，感情生活平稳。';
+        return '神煞配合一般，建议在日常生活中多给予对方情感支持。';
     }
     
     /**
@@ -804,9 +1263,25 @@ class Hehun extends BaseController
     /**
      * 生成建议
      */
-    protected function generateSuggestions(array $scores, array $maleBazi, array $femaleBazi): array
+    protected function generateSuggestions(array $scores, array $maleBazi, array $femaleBazi, array $traditionalRisk = [], array $traditionalMethods = []): array
     {
         $suggestions = [];
+        $jiugongType = (string)($traditionalMethods['jiugong']['relation']['type'] ?? '');
+        $sanyuanGrade = (string)($traditionalMethods['sanyuan']['grade'] ?? '');
+
+        if (!empty($traditionalRisk['warning'])) {
+            $suggestions[] = $traditionalRisk['warning'];
+        }
+
+        if (in_array($jiugongType, ['五鬼', '绝命'], true)) {
+            $suggestions[] = "传统九宫命卦见{$jiugongType}，若现实中已准备进入婚姻，宜先把沟通方式、财务分工与居住安排谈清楚，再结合择吉与家居布局减轻冲耗。";
+        } elseif (in_array($jiugongType, ['祸害', '六煞'], true)) {
+            $suggestions[] = "传统九宫命卦见{$jiugongType}，更要防范口舌争执与外缘干扰，婚前最好先统一边界与重大决策规则。";
+        }
+
+        if ($sanyuanGrade === '下等婚') {
+            $suggestions[] = '三元年命步调不齐，婚后在家庭节奏、事业规划与长辈关系上更需要提前协商。';
+        }
         
         // 根据各项得分生成建议
         if ($scores['year'] < 10) {
@@ -830,13 +1305,13 @@ class Hehun extends BaseController
             $suggestions[] = '建议互相尊重、包容理解，共同创造美好未来。';
         }
         
-        return $suggestions;
+        return array_values(array_unique($suggestions));
     }
     
     /**
      * 生成综合评语
      */
-    protected function generateComment(int $score, string $level, array $scores, string $maleName, string $femaleName): string
+    protected function generateComment(int $score, string $level, array $scores, string $maleName, string $femaleName, array $traditionalRisk = [], array $traditionalMethods = []): string
     {
         $levelComments = [
             'excellent' => "{$maleName}与{$femaleName}的八字配合极佳，乃是难得的天作之合。双方命理高度契合，婚后生活和谐美满，事业家庭双丰收。",
@@ -845,14 +1320,28 @@ class Hehun extends BaseController
             'fair' => "{$maleName}与{$femaleName}的八字配合一般，需要多加经营。建议婚前多了解彼此，婚后多沟通，通过努力也能获得幸福。",
             'poor' => "{$maleName}与{$femaleName}的八字配合较弱，需要谨慎考虑。如决定在一起，建议找专业命理师择吉日、布置风水等方式化解。"
         ];
+
+        $comment = $levelComments[$level] ?? '八字合婚分析完成，请参考详细评分和建议。';
+
+        if (!empty($traditionalRisk['warning'])) {
+            $jiugongType = (string)($traditionalMethods['jiugong']['relation']['type'] ?? '');
+            $riskLead = in_array($traditionalRisk['risk_level'] ?? '', ['critical', 'high'], true)
+                ? ' 但传统合婚提示必须放在前面：'
+                : ' 同时还需结合传统合婚提示：';
+            $comment .= $riskLead . $traditionalRisk['warning'];
+
+            if ($jiugongType !== '') {
+                $comment .= " 当前九宫关系为{$jiugongType}，不宜只凭总分做单向乐观判断。";
+            }
+        }
         
-        return $levelComments[$level] ?? '八字合婚分析完成，请参考详细评分和建议。';
+        return $comment;
     }
     
     /**
      * 获取亮点
      */
-    protected function getHighlights(array $scores): array
+    protected function getHighlights(array $scores, array $traditionalRisk = []): array
     {
         $highlights = [];
         
@@ -873,6 +1362,9 @@ class Hehun extends BaseController
         }
         if ($scores['day'] < 12) {
             $highlights[] = ['type' => 'warn', 'text' => '日主相克'];
+        }
+        if (!empty($traditionalRisk['relation']) && !empty($traditionalRisk['warning'])) {
+            $highlights[] = ['type' => 'warn', 'text' => '九宫' . $traditionalRisk['relation'] . '提示'];
         }
         
         return $highlights;
@@ -909,6 +1401,22 @@ class Hehun extends BaseController
             \think\facade\Log::error('AI分析失败: ' . $e->getMessage());
             return $this->generateRuleBasedAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
         }
+    }
+
+    protected function buildAnalysisMeta(bool $useAi, ?array $analysis): array
+    {
+        $isAiGenerated = $useAi && !empty($analysis['is_ai_generated']);
+        $engine = !$useAi ? 'none' : ($isAiGenerated ? 'ai' : 'rules');
+
+        return [
+            'ai_requested' => $useAi,
+            'is_ai_generated' => $isAiGenerated,
+            'analysis_engine' => $engine,
+            'provider' => $isAiGenerated ? (string)($analysis['provider'] ?? '') : '',
+            'fallback_note' => !$useAi || $isAiGenerated
+                ? ''
+                : (string)($analysis['note'] ?? 'AI 服务暂不可用，本次已自动切换为规则解读。'),
+        ];
     }
     
     /**
@@ -978,19 +1486,38 @@ PROMPT;
      */
     protected function generateAiSummary(array $hehunResult, string $maleName, string $femaleName): string
     {
-        $score = $hehunResult['score'];
-        $level = $hehunResult['level'];
-        
-        if ($level === 'excellent') {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理契合度极高（{$score}分）。双方五行互补，日主相生，干支多合，是难得的上等婚配。婚后感情稳定，事业互助，家庭和睦，建议把握良缘。";
-        } elseif ($level === 'good') {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合良好（{$score}分）。双方有一定缘分基础，性格互补性较强。婚后需要相互包容理解，共同经营，必能收获美满婚姻。";
-        } elseif ($level === 'medium') {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合中等（{$score}分）。双方缘分尚可，但也存在一些小冲克。建议婚前多了解，婚后多沟通，通过共同努力创造幸福生活。";
-        } else {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合需要谨慎（{$score}分）。双方存在一些冲克因素，建议慎重考虑。如决定在一起，可通过择吉日、风水调理等方式化解。";
+        $score = (int) ($hehunResult['score'] ?? 0);
+        $level = (string) ($hehunResult['level'] ?? 'medium');
+        $traditionalRisk = $hehunResult['traditional_risk'] ?? [];
+        $warning = trim((string) ($traditionalRisk['warning'] ?? ''));
+        $riskLevel = (string) ($traditionalRisk['risk_level'] ?? 'none');
+        $relation = trim((string) ($traditionalRisk['relation'] ?? ''));
+
+        if (in_array($riskLevel, ['critical', 'high'], true) && $warning !== '') {
+            $relationText = $relation !== '' ? "当前九宫关系为{$relation}。" : '';
+            return "根据八字合婚分析，{$maleName}与{$femaleName}当前综合得分为{$score}分，但传统合婚提示必须优先看：{$warning}{$relationText}因此这段关系不宜只按分数作乐观理解，更适合先把沟通、现实边界与长期承压能力评估清楚，再决定后续走向。";
         }
+
+        if ($level === 'excellent') {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理契合度极高（{$score}分）。双方五行互补，日主相生，干支多合，是难得的上等婚配。婚后感情稳定，事业互助，家庭和睦，建议把握良缘。";
+        } elseif ($level === 'good') {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合良好（{$score}分）。双方有一定缘分基础，性格互补性较强。婚后需要相互包容理解，共同经营，方能把优势真正落到现实生活里。";
+        } elseif ($level === 'medium') {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合中等（{$score}分）。双方缘分尚可，但也存在一些小冲克。建议婚前多了解，婚后多沟通，通过共同努力创造幸福生活。";
+        } else {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合需要谨慎（{$score}分）。双方存在一些冲克因素，建议慎重考虑。如决定在一起，可通过择吉日、风水调理等方式化解。";
+        }
+
+        if ($warning !== '') {
+            $summary .= ' 同时仍需结合传统合婚提示：' . $warning;
+            if ($relation !== '') {
+                $summary .= " 当前九宫关系为{$relation}，不宜只凭总分做单向判断。";
+            }
+        }
+
+        return $summary;
     }
+
     
     /**
      * 分析性格契合度
@@ -1027,13 +1554,26 @@ PROMPT;
     {
         $relation = $this->dayMasterRelations[$male] ?? null;
         if (!$relation) return '双方性格需要相互了解磨合。';
-        
+
         if ($female === $relation['合']) {
-            return '男方日主与女方日主相合，性格互补性强，相处融洽，能够相互理解和包容。';
-        } elseif ($female === $relation['冲']) {
-            return '男方日主与女方日主相冲，性格差异较大，需要更多沟通和包容。';
+            return '男方日主与女方日主成五合，性格互补性较强，相处时更容易彼此体谅。';
         }
-        
+        if ($female === $male) {
+            return '双方日主同气相求，价值观与做事节奏较接近，但也要注意避免彼此固执。';
+        }
+
+        $maleWuxing = $this->ganWuXing[$male] ?? '';
+        $femaleWuxing = $this->ganWuXing[$female] ?? '';
+        $shengRelation = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
+        if ($maleWuxing !== '' && $femaleWuxing !== '') {
+            if (($shengRelation[$maleWuxing] ?? '') === $femaleWuxing) {
+                return '男方日主之气能生扶女方，互动中更容易形成照顾与带动关系。';
+            }
+            if (($shengRelation[$femaleWuxing] ?? '') === $maleWuxing) {
+                return '女方日主之气能生扶男方，彼此之间更容易形成支持与补位。';
+            }
+        }
+
         return '双方性格有一定差异，但只要互相尊重、理解包容，也能相处融洽。';
     }
     
@@ -1181,8 +1721,18 @@ PROMPT;
                 Db::commit();
             } catch (\Exception $e) {
                 Db::rollback();
-                return $this->error('处理失败: ' . $e->getMessage());
+                return $this->respondSystemException(
+                    '合婚缓存结果处理失败',
+                    $e,
+                    '处理失败，请稍后重试',
+                    $this->buildHehunLogContext($user, $data, [
+                        'step' => 'process_cached',
+                        'points_cost' => $pointsCost,
+                        'need_points' => $needPoints,
+                    ])
+                );
             }
+
         }
         
         $result = $cachedResult;
@@ -1202,10 +1752,7 @@ PROMPT;
         $user = $this->request->user;
         $limit = $this->request->get('limit', 20);
         
-        $history = HehunRecord::where('user_id', $user['sub'])
-            ->order('create_time', 'desc')
-            ->limit((int)$limit)
-            ->select();
+        $history = HehunRecord::getUserHistory((int)$user['sub'], (int)$limit);
         
         return $this->success($history);
     }
@@ -1229,9 +1776,7 @@ PROMPT;
         $template = $data['template'] ?? 'default';
         
         // 获取合婚记录
-        $record = HehunRecord::where('id', $data['record_id'])
-            ->where('user_id', $user['sub'])
-            ->find();
+        $record = HehunRecord::findUserRecord((int)$data['record_id'], (int)$user['sub']);
         
         if (!$record) {
             return $this->error('合婚记录不存在', 404);
@@ -1242,7 +1787,7 @@ PROMPT;
         $isVip = $userModel->is_vip ?? false;
         
         // 计算导出积分消耗
-        $exportPoints = ConfigService::get('points_cost_hehun_export', self::HEHUN_EXPORT_COST);
+        $exportPoints = $this->resolveHehunExportPoints();
         $needPoints = !$isVip;
         
         if ($needPoints && $userModel->points < $exportPoints) {
@@ -1252,15 +1797,15 @@ PROMPT;
         // 生成报告
         try {
             $reportData = [
-                'male_name' => $record->male_name,
-                'female_name' => $record->female_name,
-                'male_bazi' => json_decode($record->male_bazi, true),
-                'female_bazi' => json_decode($record->female_bazi, true),
-                'hehun' => json_decode($record->result, true),
-                'ai_analysis' => $record->ai_analysis ? json_decode($record->ai_analysis, true) : null,
-                'score' => $record->score,
-                'level' => $record->level,
-                'created_at' => $record->create_time,
+                'male_name' => $record['male_name'],
+                'female_name' => $record['female_name'],
+                'male_bazi' => $record['male_bazi'],
+                'female_bazi' => $record['female_bazi'],
+                'hehun' => $record['result'],
+                'ai_analysis' => $record['ai_analysis'] ?: null,
+                'score' => $record['score'],
+                'level' => $record['level'],
+                'created_at' => $record['create_time'],
                 'template' => $template
             ];
             
@@ -1268,8 +1813,16 @@ PROMPT;
             $exportResult = $this->generateReport($reportData, $format);
             
             if (!$exportResult['success']) {
-                return $this->error('报告生成失败: ' . $exportResult['message']);
+                Log::warning('合婚报告生成结果异常', $this->buildHehunLogContext($user, $data, [
+                    'step' => 'generate_report_result',
+                    'export_points' => $exportPoints,
+                    'need_points' => $needPoints,
+                    'has_result_message' => !empty($exportResult['message']),
+                ]));
+
+                return $this->error('报告生成失败，请稍后重试', 500);
             }
+
             
             // 扣除积分（非VIP）
             if ($needPoints) {
@@ -1296,8 +1849,19 @@ PROMPT;
             ]);
             
         } catch (\Exception $e) {
-            return $this->error('报告生成失败: ' . $e->getMessage());
+            return $this->respondSystemException(
+                '合婚报告导出失败',
+                $e,
+                '报告生成失败，请稍后重试',
+                $this->buildHehunLogContext($user, $data, [
+                    'step' => 'export',
+                    'record_id' => (int) $record->id,
+                    'export_points' => $exportPoints,
+                    'need_points' => $needPoints,
+                ])
+            );
         }
+
     }
     
     /**
@@ -1305,8 +1869,24 @@ PROMPT;
      */
     protected function generateReport(array $data, string $format): array
     {
-        $filename = 'hehun_' . md5(serialize($data)) . '_' . time();
-        $storagePath = public_path() . 'storage/hehun/';
+        // 生成安全的文件名：只允许字母数字和下划线
+        $hash = md5(serialize($data));
+        $timestamp = time();
+        $filename = 'hehun_' . preg_replace('/[^a-zA-Z0-9_]/', '', $hash) . '_' . (int)$timestamp;
+        
+        // 验证并规范化存储路径
+        $publicPath = realpath(public_path());
+        $storagePath = $publicPath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'hehun' . DIRECTORY_SEPARATOR;
+        
+        // 防止路径遍历：确保生成的路径在public目录内
+        $realStoragePath = realpath(dirname($storagePath)) ?: $publicPath;
+        if (strpos($realStoragePath, $publicPath) !== 0) {
+            return [
+                'success' => false,
+                'url' => '',
+                'message' => '存储路径无效'
+            ];
+        }
         
         // 确保目录存在
         if (!is_dir($storagePath)) {
@@ -1360,23 +1940,41 @@ PROMPT;
         $reportTitle = $data['report_title'] ?? '八字合婚分析报告';
         $generatedAt = date('Y年m月d日 H:i');
         
-        $maleName = $male['name'] ?? '男方';
-        $femaleName = $female['name'] ?? '女方';
+        $maleName = htmlspecialchars($male['name'] ?? '男方', ENT_QUOTES, 'UTF-8');
+        $femaleName = htmlspecialchars($female['name'] ?? '女方', ENT_QUOTES, 'UTF-8');
+        
+        // 转义八字数据
+        $maleYear = htmlspecialchars($male['year'] ?? '', ENT_QUOTES, 'UTF-8');
+        $maleMonth = htmlspecialchars($male['month'] ?? '', ENT_QUOTES, 'UTF-8');
+        $maleDay = htmlspecialchars($male['day'] ?? '', ENT_QUOTES, 'UTF-8');
+        $maleHour = htmlspecialchars($male['hour'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleYear = htmlspecialchars($female['year'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleMonth = htmlspecialchars($female['month'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleDay = htmlspecialchars($female['day'] ?? '', ENT_QUOTES, 'UTF-8');
+        $femaleHour = htmlspecialchars($female['hour'] ?? '', ENT_QUOTES, 'UTF-8');
+        
+        // 转义其他输出
+        $safeReportTitle = htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8');
+        $safeGrade = htmlspecialchars($grade, ENT_QUOTES, 'UTF-8');
         
         // 五维度评分
         $dimensions = $result['dimensions'] ?? [];
-        $wuxingScore = $dimensions['wuxing'] ?? 0;
-        $shengxiaoScore = $dimensions['shengxiao'] ?? 0;
-        $riyuanScore = $dimensions['riyuan'] ?? 0;
-        $tianmingScore = $dimensions['tianming'] ?? 0;
-        $dayunScore = $dimensions['dayun'] ?? 0;
+        $wuxingScore = (int)($dimensions['wuxing'] ?? 0);
+        $shengxiaoScore = (int)($dimensions['shengxiao'] ?? 0);
+        $riyuanScore = (int)($dimensions['riyuan'] ?? 0);
+        $tianmingScore = (int)($dimensions['tianming'] ?? 0);
+        $dayunScore = (int)($dimensions['dayun'] ?? 0);
+        
+        // 转义分数防止XSS
+        $safeScore = (int)$score;
         
         // 建议
         $suggestions = $result['suggestions'] ?? [];
         $suggestionsHtml = '';
         foreach ($suggestions as $i => $suggestion) {
             $num = $i + 1;
-            $suggestionsHtml .= "<div class='suggestion-item'><span class='suggestion-num'>{$num}</span>{$suggestion}</div>";
+            $safeSuggestion = htmlspecialchars((string)$suggestion, ENT_QUOTES, 'UTF-8');
+            $suggestionsHtml .= "<div class='suggestion-item'><span class='suggestion-num'>{$num}</span>{$safeSuggestion}</div>";
         }
         
         // 流年分析
@@ -1385,10 +1983,11 @@ PROMPT;
         if (!empty($liunian)) {
             $liunianHtml = "<div class='section'><h3>🗓️ 未来三年流年运势</h3>";
             foreach ($liunian as $year => $yearData) {
-                $yearDesc = $yearData['description'] ?? '';
-                $yearLuck = $yearData['fortune'] ?? '平';
+                $yearDesc = htmlspecialchars($yearData['description'] ?? '', ENT_QUOTES, 'UTF-8');
+                $yearLuck = htmlspecialchars($yearData['fortune'] ?? '平', ENT_QUOTES, 'UTF-8');
+                $safeYear = htmlspecialchars((string)$year, ENT_QUOTES, 'UTF-8');
                 $luckClass = $yearLuck === '吉' ? 'luck-good' : ($yearLuck === '凶' ? 'luck-bad' : 'luck-neutral');
-                $liunianHtml .= "<div class='liunian-item'><span class='year-tag'>{$year}年</span><span class='luck-badge {$luckClass}'>{$yearLuck}</span><span>{$yearDesc}</span></div>";
+                $liunianHtml .= "<div class='liunian-item'><span class='year-tag'>{$safeYear}年</span><span class='luck-badge {$luckClass}'>{$yearLuck}</span><span>{$yearDesc}</span></div>";
             }
             $liunianHtml .= "</div>";
         }
@@ -1399,10 +1998,15 @@ PROMPT;
         if (!empty($huajie)) {
             $huajieHtml = "<div class='section'><h3>🔮 化解方案</h3>";
             foreach ($huajie as $h) {
-                $huajieHtml .= "<div class='huajie-item'><strong>{$h['title']}</strong><p>{$h['content']}</p></div>";
+                $safeTitle = htmlspecialchars($h['title'] ?? '', ENT_QUOTES, 'UTF-8');
+                $safeContent = htmlspecialchars($h['content'] ?? '', ENT_QUOTES, 'UTF-8');
+                $huajieHtml .= "<div class='huajie-item'><strong>{$safeTitle}</strong><p>{$safeContent}</p></div>";
             }
             $huajieHtml .= "</div>";
         }
+        
+        // AI深度分析 - 转义防止XSS
+        $safeAiAnalysis = htmlspecialchars($analysis['ai_analysis'] ?? '暂无详细分析', ENT_QUOTES, 'UTF-8');
         
         return <<<HTML
 <!DOCTYPE html>
@@ -1410,7 +2014,7 @@ PROMPT;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{$reportTitle}</title>
+    <title>{$safeReportTitle}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -1577,20 +2181,20 @@ PROMPT;
                 <div class="person-card">
                     <div class="gender">👨</div>
                     <div class="name">{$maleName}</div>
-                    <div class="bazi">{$male['year']} {$male['month']} {$male['day']} {$male['hour']}</div>
+                    <div class="bazi">{$maleYear} {$maleMonth} {$maleDay} {$maleHour}</div>
                 </div>
                 <div style="display:flex;align-items:center;font-size:24px;color:#667eea;">💕</div>
                 <div class="person-card">
                     <div class="gender">👩</div>
                     <div class="name">{$femaleName}</div>
-                    <div class="bazi">{$female['year']} {$female['month']} {$female['day']} {$female['hour']}</div>
+                    <div class="bazi">{$femaleYear} {$femaleMonth} {$femaleDay} {$femaleHour}</div>
                 </div>
             </div>
             
             <div class="score-section">
-                <div class="score-value">{$score}</div>
+                <div class="score-value">{$safeScore}</div>
                 <div class="score-label">综合匹配分数</div>
-                <div class="grade-badge">{$grade}</div>
+                <div class="grade-badge">{$safeGrade}</div>
             </div>
             
             <div class="section">
@@ -1630,7 +2234,7 @@ PROMPT;
             <div class="section">
                 <h3>📝 AI深度分析</h3>
                 <div class="analysis-content">
-                    {$analysis['ai_analysis'] ?? '暂无详细分析'}
+                    {$safeAiAnalysis}
                 </div>
             </div>
         </div>
@@ -1643,5 +2247,534 @@ PROMPT;
 </body>
 </html>
 HTML;
+    }
+    
+    /**
+     * 三元合婚分析（传统合婚法）
+     * 根据双方年命纳音五行判断婚姻吉凶
+     * 
+     * 三元：上元、中元、下元
+     * 根据出生年份判断所属元运，再看纳音五行生克
+     */
+    protected function analyzeSanYuanHehun(array $maleBazi, array $femaleBazi, string $maleBirthDate, string $femaleBirthDate): array
+    {
+        $maleTs = strtotime($maleBirthDate);
+        $femaleTs = strtotime($femaleBirthDate);
+
+        // 使用立春交节时刻划分命理年，避免同日交节前后落错年命。
+        $maleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $maleTs),
+            (int)date('n', $maleTs),
+            (int)date('j', $maleTs),
+            (int)date('G', $maleTs),
+            (int)date('i', $maleTs)
+        );
+        $femaleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $femaleTs),
+            (int)date('n', $femaleTs),
+            (int)date('j', $femaleTs),
+            (int)date('G', $femaleTs),
+            (int)date('i', $femaleTs)
+        );
+
+        $maleYuanInfo = $this->getYuanYunInfo($maleYear);
+        $femaleYuanInfo = $this->getYuanYunInfo($femaleYear);
+        $yuanYunRelation = $this->analyzeYuanYunRelation($maleYuanInfo, $femaleYuanInfo);
+
+        $maleNayinName = $maleBazi['year']['nayin'] ?? '';
+        $femaleNayinName = $femaleBazi['year']['nayin'] ?? '';
+        $maleNayinElement = $this->getNayinElement($maleNayinName);
+        $femaleNayinElement = $this->getNayinElement($femaleNayinName);
+        $wuxingRelation = $this->getWuxingRelation($maleNayinElement, $femaleNayinElement);
+
+        $relationScoreMap = [
+            '生' => 14,
+            '被生' => 10,
+            '比和' => 8,
+            '无' => 0,
+            '被克' => -8,
+            '克' => -12,
+        ];
+        $totalScore = 60 + ($relationScoreMap[$wuxingRelation] ?? 0) + $yuanYunRelation['score'];
+        $totalScore = max(35, min(95, $totalScore));
+
+        $result = [
+            'method' => '三元合婚法',
+            'male' => [
+                'year' => $maleYear,
+                'yuan' => $maleYuanInfo['yuan'],
+                'yun' => $maleYuanInfo['yun_label'],
+                'nayin' => $maleNayinName,
+                'nayin_element' => $maleNayinElement,
+            ],
+            'female' => [
+                'year' => $femaleYear,
+                'yuan' => $femaleYuanInfo['yuan'],
+                'yun' => $femaleYuanInfo['yun_label'],
+                'nayin' => $femaleNayinName,
+                'nayin_element' => $femaleNayinElement,
+            ],
+            'relation' => $wuxingRelation,
+            'yuan_yun_relation' => $yuanYunRelation['type'],
+            'score' => (int)round($totalScore),
+            'grade' => '',
+            'description' => '',
+            'suggestion' => '',
+        ];
+
+        if ($totalScore >= 82) {
+            $result['grade'] = '上等婚';
+            $result['suggestion'] = '三元九运同调，纳音多见相生，比普通年命合婚更稳，适合顺势成家。';
+        } elseif ($totalScore >= 68) {
+            $result['grade'] = '中上婚';
+            $result['suggestion'] = '元运步调基本一致，若现实条件成熟，可优先考虑长期规划与共同目标。';
+        } elseif ($totalScore >= 55) {
+            $result['grade'] = '中等婚';
+            $result['suggestion'] = '年命基础尚可，但仍需依赖性格磨合与现实经营，不宜只看单一歌诀下结论。';
+        } else {
+            $result['grade'] = '下等婚';
+            $result['suggestion'] = '三元九运与纳音方向都偏离，若决定继续，宜通过择吉、分工与边界感来减轻冲耗。';
+        }
+
+        $result['description'] = $this->buildSanYuanDescription(
+            $maleNayinName,
+            $femaleNayinName,
+            $wuxingRelation,
+            $maleYuanInfo,
+            $femaleYuanInfo,
+            $yuanYunRelation
+        );
+
+        $result['nayin_gejue'] = $this->getNayinGeJue($maleNayinElement, $femaleNayinElement);
+        $result['yuan_analysis'] = $yuanYunRelation['description'];
+
+        return $result;
+    }
+    
+    /**
+     * 九宫合婚分析（传统合婚法）
+     * 根据双方出生年推算九宫命卦，判断婚姻吉凶
+     */
+    protected function analyzeJiuGongHehun(array $maleBazi, array $femaleBazi, string $maleBirthDate = '', string $femaleBirthDate = ''): array
+    {
+        $maleTs = strtotime($maleBirthDate ?: '1990-01-01');
+        $femaleTs = strtotime($femaleBirthDate ?: '1990-01-01');
+        
+        // 修正：使用立春交节时刻划分命理年
+        $maleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $maleTs),
+            (int)date('n', $maleTs),
+            (int)date('j', $maleTs),
+            (int)date('G', $maleTs),
+            (int)date('i', $maleTs)
+        );
+        $femaleYear = $this->baziCalculationService->getLunarYear(
+            (int)date('Y', $femaleTs),
+            (int)date('n', $femaleTs),
+            (int)date('j', $femaleTs),
+            (int)date('G', $femaleTs),
+            (int)date('i', $femaleTs)
+        );
+        
+        // 计算命卦
+        $maleGua = $this->calculateMingGua($maleYear, 'male');
+        $femaleGua = $this->calculateMingGua($femaleYear, 'female');
+        
+        // 九宫八卦名称
+        $guaNames = [
+            1 => '坎水', 2 => '坤土', 3 => '震木', 4 => '巽木', 5 => '中土',
+            6 => '乾金', 7 => '兑金', 8 => '艮土', 9 => '离火',
+        ];
+        
+        // 八卦五行
+        $guaWuxing = [1 => '水', 2 => '土', 3 => '木', 4 => '木', 5 => '土', 6 => '金', 7 => '金', 8 => '土', 9 => '火'];
+        
+        // 分析命卦关系
+        $relation = $this->analyzeGuaRelation($maleGua, $femaleGua);
+        
+        $result = [
+            'method' => '九宫合婚法（命卦合婚）',
+            'male' => [
+                'year' => $maleYear,
+                'minggua' => $maleGua,
+                'gua_name' => $guaNames[$maleGua] ?? '未知',
+                'wuxing' => $guaWuxing[$maleGua] ?? '未知',
+            ],
+            'female' => [
+                'year' => $femaleYear,
+                'minggua' => $femaleGua,
+                'gua_name' => $guaNames[$femaleGua] ?? '未知',
+                'wuxing' => $guaWuxing[$femaleGua] ?? '未知',
+            ],
+            'relation' => $relation,
+        ];
+
+        
+        // 根据命卦关系判断婚姻等级
+        switch ($relation['type']) {
+            case '生气':
+                $result['grade'] = '上等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '上上大吉，夫妻恩爱，子孙昌盛，家运兴隆。';
+                break;
+            case '天医':
+                $result['grade'] = '上等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '上吉，夫妻和睦，无病无灾，家庭平安。';
+                break;
+            case '延年':
+                $result['grade'] = '上等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '大吉，夫妻长寿，家业兴旺，福禄双全。';
+                break;
+            case '伏位':
+                $result['grade'] = '中等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '中平，夫妻平稳，但需相互理解包容。';
+                break;
+            case '六煞':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '不吉，易生口舌是非，建议化解。';
+                break;
+            case '祸害':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '凶，易有灾病，需谨慎考虑或化解。';
+                break;
+            case '五鬼':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '大凶，易有意外灾祸，强烈建议化解或慎重考虑。';
+                break;
+            case '绝命':
+                $result['grade'] = '下等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}，{$relation['type']}之配。";
+                $result['suggestion'] = '最凶，易有重大灾祸，建议慎重考虑。';
+                break;
+            default:
+                $result['grade'] = '中等婚';
+                $result['description'] = "男方{$guaNames[$maleGua]}与女方{$guaNames[$femaleGua]}。";
+                $result['suggestion'] = '中平，婚姻需双方共同努力经营。';
+        }
+        
+        // 方位建议
+        $result['direction'] = $this->getJiuGongDirection($maleGua, $femaleGua);
+        
+        return $result;
+    }
+    
+    /**
+     * 获取所属元运（上元、中元、下元）
+     */
+    protected function getYuanYun(int $year): string
+    {
+        return $this->getYuanYunInfo($year)['yuan'];
+    }
+
+    /**
+     * 获取三元九运明细。
+     */
+    protected function getYuanYunInfo(int $year): array
+    {
+        $baseYear = 1864;
+        $cycle = 180;
+        $relativeYear = (($year - $baseYear) % $cycle + $cycle) % $cycle;
+        $cycleStart = $year - $relativeYear;
+        $yun = (int)floor($relativeYear / 20) + 1;
+        $yuan = $yun <= 3 ? '上元' : ($yun <= 6 ? '中元' : '下元');
+        $yunLabels = [1 => '一运', 2 => '二运', 3 => '三运', 4 => '四运', 5 => '五运', 6 => '六运', 7 => '七运', 8 => '八运', 9 => '九运'];
+        $startYear = $cycleStart + (($yun - 1) * 20);
+
+        return [
+            'yuan' => $yuan,
+            'yun' => $yun,
+            'yun_label' => $yunLabels[$yun] ?? $yun . '运',
+            'start_year' => $startYear,
+            'end_year' => $startYear + 19,
+        ];
+    }
+
+    /**
+     * 三元九运关系分析。
+     */
+    protected function analyzeYuanYunRelation(array $maleInfo, array $femaleInfo): array
+    {
+        if ($maleInfo['yun'] === $femaleInfo['yun']) {
+            return [
+                'type' => '同运同气',
+                'score' => 8,
+                'description' => "双方同属{$maleInfo['yuan']}{$maleInfo['yun_label']}，二十年气运节律一致，婚后目标与节奏更容易同步。",
+            ];
+        }
+
+        if ($maleInfo['yuan'] === $femaleInfo['yuan']) {
+            $gap = abs($maleInfo['yun'] - $femaleInfo['yun']);
+            if ($gap === 1) {
+                return [
+                    'type' => '同元相承',
+                    'score' => 5,
+                    'description' => "双方同属{$maleInfo['yuan']}，虽分属{$maleInfo['yun_label']}与{$femaleInfo['yun_label']}，但仍在同一元气脉络内，属于前后承接之象。",
+                ];
+            }
+
+            return [
+                'type' => '同元异运',
+                'score' => 3,
+                'description' => "双方同属{$maleInfo['yuan']}，但处于不同运段，价值取向仍可沟通，只是人生节拍存在先后差。",
+            ];
+        }
+
+        return [
+            'type' => '异元异运',
+            'score' => -2,
+            'description' => "双方分属{$maleInfo['yuan']}与{$femaleInfo['yuan']}，元气阶段不同，若现实目标差异较大，需要额外磨合。",
+        ];
+    }
+
+    /**
+     * 组合三元合婚说明文案。
+     */
+    protected function buildSanYuanDescription(
+        string $maleNayin,
+        string $femaleNayin,
+        string $wuxingRelation,
+        array $maleYuanInfo,
+        array $femaleYuanInfo,
+        array $yuanYunRelation
+    ): string {
+        $nayinDesc = match ($wuxingRelation) {
+            '生' => "男方{$maleNayin}之气生扶女方{$femaleNayin}",
+            '被生' => "女方{$femaleNayin}之气回生男方{$maleNayin}",
+            '比和' => "双方纳音同气，比和相守",
+            '克' => "男方{$maleNayin}对女方{$femaleNayin}形成克制",
+            '被克' => "女方{$femaleNayin}对男方{$maleNayin}形成制约",
+            default => "双方纳音之间无明显生克偏向",
+        };
+
+        return $nayinDesc . '；' . $yuanYunRelation['description'] . " 男方年命落在{$maleYuanInfo['yuan']}{$maleYuanInfo['yun_label']}，女方落在{$femaleYuanInfo['yuan']}{$femaleYuanInfo['yun_label']}。";
+    }
+    
+    /**
+     * 根据纳音名称获取五行属性。
+     */
+    protected function getNayinElement(string $nayin): string
+    {
+        $nayinElementMap = [
+            '海中金' => '金', '剑锋金' => '金', '白蜡金' => '金', '沙中金' => '金', '金箔金' => '金', '钗钏金' => '金',
+            '石榴木' => '木', '大林木' => '木', '杨柳木' => '木', '松柏木' => '木', '平地木' => '木', '桑柘木' => '木',
+            '长流水' => '水', '天河水' => '水', '涧下水' => '水', '大溪水' => '水', '大海水' => '水', '泉中水' => '水',
+            '炉中火' => '火', '山头火' => '火', '霹雳火' => '火', '山下火' => '火', '覆灯火' => '火', '天上火' => '火',
+            '大驿土' => '土', '城头土' => '土', '屋上土' => '土', '路旁土' => '土', '壁上土' => '土', '沙中土' => '土',
+        ];
+
+        return $nayinElementMap[$nayin] ?? '未知';
+    }
+
+    /**
+     * 获取纳音五行
+     */
+    protected function getNayinWuxing(string $gan, string $zhi): string
+    {
+        $nayinTable = [
+            '甲子' => '海中金', '乙丑' => '海中金', '丙寅' => '炉中火', '丁卯' => '炉中火', '戊辰' => '大林木', '己巳' => '大林木',
+            '庚午' => '路旁土', '辛未' => '路旁土', '壬申' => '剑锋金', '癸酉' => '剑锋金', '甲戌' => '山头火', '乙亥' => '山头火',
+            '丙子' => '涧下水', '丁丑' => '涧下水', '戊寅' => '城头土', '己卯' => '城头土', '庚辰' => '白蜡金', '辛巳' => '白蜡金',
+            '壬午' => '杨柳木', '癸未' => '杨柳木', '甲申' => '泉中水', '乙酉' => '泉中水', '丙戌' => '屋上土', '丁亥' => '屋上土',
+            '戊子' => '霹雳火', '己丑' => '霹雳火', '庚寅' => '松柏木', '辛卯' => '松柏木', '壬辰' => '长流水', '癸巳' => '长流水',
+            '甲午' => '沙中金', '乙未' => '沙中金', '丙申' => '山下火', '丁酉' => '山下火', '戊戌' => '平地木', '己亥' => '平地木',
+            '庚子' => '壁上土', '辛丑' => '壁上土', '壬寅' => '金箔金', '癸卯' => '金箔金', '甲辰' => '覆灯火', '乙巳' => '覆灯火',
+            '丙午' => '天河水', '丁未' => '天河水', '戊申' => '大驿土', '己酉' => '大驿土', '庚戌' => '钗钏金', '辛亥' => '钗钏金',
+            '壬子' => '桑柘木', '癸丑' => '桑柘木', '甲寅' => '大溪水', '乙卯' => '大溪水', '丙辰' => '沙中土', '丁巳' => '沙中土',
+            '戊午' => '天上火', '己未' => '天上火', '庚申' => '石榴木', '辛酉' => '石榴木', '壬戌' => '大海水', '癸亥' => '大海水',
+        ];
+
+        $key = $gan . $zhi;
+        return $this->getNayinElement($nayinTable[$key] ?? '');
+    }
+    
+    /**
+     * 获取五行关系
+     */
+    protected function getWuxingRelation(string $wuxing1, string $wuxing2): string
+    {
+        $sheng = ['木' => '火', '火' => '土', '土' => '金', '金' => '水', '水' => '木'];
+        $ke = ['木' => '土', '土' => '水', '水' => '火', '火' => '金', '金' => '木'];
+
+        if (!isset($sheng[$wuxing1], $sheng[$wuxing2], $ke[$wuxing1], $ke[$wuxing2])) {
+            return '无';
+        }
+
+        if ($wuxing1 === $wuxing2) {
+            return '比和';
+        } elseif ($sheng[$wuxing1] === $wuxing2) {
+            return '生';
+        } elseif ($ke[$wuxing1] === $wuxing2) {
+            return '克';
+        } elseif ($sheng[$wuxing2] === $wuxing1) {
+            return '被生';
+        } elseif ($ke[$wuxing2] === $wuxing1) {
+            return '被克';
+        }
+
+        return '无';
+    }
+    
+    /**
+     * 获取纳音合婚歌诀
+     */
+    protected function getNayinGeJue(string $maleWuxing, string $femaleWuxing): string
+    {
+        $gejue = [
+            '金金' => '两金夫妻硬对硬，有女无男守空房，日夜争打语不合，各人各心各白眼。',
+            '金木' => '金木夫妻不多年，整天吵打哭连连，原来二命都有害，半世鳏寡守空房。',
+            '金水' => '金水夫妻富高强，钱财积聚百岁长，婚姻和合前程远，禾仓田宅福寿长。',
+            '金火' => '未有金火不相当，半世婚姻儿女孤，虽有钱财常争打，老来无依各西东。',
+            '金土' => '金土夫妻好姻缘，仕宦才名显赫全，六畜增生仓库满，儿女多才且贤能。',
+            '木木' => '双木夫妻福满多，钱财积聚好生活，原来二命都有害，各人各心各白眼。', // 备注：此处传统有不同版本，取互助意
+            '木火' => '木火夫妻大吉昌，此项婚配已相当，合来儿女多聪明，福禄双全百年长。',
+            '木土' => '土木夫妻本不宜，灾难重重两分离，原来二命都有害，半世鳏寡守空房。',
+            '木水' => '木水夫妻好姻缘，财源广进百岁前，儿女多才且贤能，富贵双全且长寿。',
+            '木金' => '木金夫妻本不宜，灾难重重两分离，原来二命都有害，半世鳏寡守空房。',
+            '水水' => '两水夫妻喜洋洋，儿女聪明家兴旺，财源广进百岁长，福寿双全好时光。',
+            '水火' => '水火夫妻不相配，虽然有钱也受苦，原来二命都有害，半世鳏寡守空房。',
+            '水土' => '水土夫妻不久长，三岁五岁不见面，口舌是非争不断，半世鳏寡守空房。',
+            '水木' => '水木夫妻好姻缘，财源广进百岁前，儿女多才且贤能，富贵双全且长寿。',
+            '水金' => '水金夫妻富高强，钱财积聚百岁长，婚姻和合前程远，禾仓田宅福寿长。',
+            '火火' => '两火夫妻日夜愁，妻离子散各西东，原来二命都有害，半世鳏寡守空房。',
+            '火土' => '火土夫妻好相配，高官厚禄名声大，儿女聪明且多才，福禄双全百年长。',
+            '火木' => '火木夫妻大吉昌，此项婚配已相当，合来儿女多聪明，福禄双全百年长。',
+            '火金' => '火金夫妻克连连，半世婚姻儿女孤，虽有钱财常争打，老来无依各西东。',
+            '火水' => '火水夫妻不相配，虽然有钱也受苦，原来二命都有害，半世鳏寡守空房。',
+            '土土' => '双土夫妻好姻缘，共看儿女后代贤，两意相投合心意，一生衣禄且平安。',
+            '土金' => '土金夫妻好姻缘，仕宦才名显赫全，六畜增生仓库满，儿女多才且贤能。',
+            '土水' => '土水夫妻不久长，三岁五岁不见面，口舌是非争不断，半世鳏寡守空房。',
+            '土木' => '土木夫妻本不宜，灾难重重两分离，原来二命都有害，半世鳏寡守空房。',
+            '土火' => '土火夫妻好相配，高官厚禄名声大，儿女聪明且多才，福禄双全百年长。',
+        ];
+
+        return $gejue[$maleWuxing . $femaleWuxing] ?? '命理天定，事在人为，只要相互体谅，必能白头偕老。';
+    }
+
+    /**
+     * 获取天干数字
+     */
+    protected function getGanNumber(string $gan): int
+    {
+        $numbers = ['甲' => 1, '乙' => 2, '丙' => 3, '丁' => 4, '戊' => 5, 
+                    '己' => 6, '庚' => 7, '辛' => 8, '壬' => 9, '癸' => 10];
+        return $numbers[$gan] ?? 1;
+    }
+    
+    /**
+     * 获取地支数字
+     */
+    protected function getZhiNumber(string $zhi): int
+    {
+        $numbers = ['子' => 1, '丑' => 2, '寅' => 3, '卯' => 4, '辰' => 5, '巳' => 6,
+                    '午' => 7, '未' => 8, '申' => 9, '酉' => 10, '戌' => 11, '亥' => 12];
+        return $numbers[$zhi] ?? 1;
+    }
+    
+    /**
+     * 计算命卦（三元命卦算法）
+     * 
+     * @param int $year 出生年份
+     * @param string $gender 性别 male/female
+     * @return int 命卦编号 (1-9)
+     */
+    protected function calculateMingGua(int $year, string $gender): int
+    {
+        // 1. 计算年份数字总和的模9余数
+        // 例如：1985 -> (1+9+8+5) % 9 = 23 % 9 = 5
+        $sum = 0;
+        $tempYear = $year;
+        while ($tempYear > 0) {
+            $sum += $tempYear % 10;
+            $tempYear = (int)($tempYear / 10);
+        }
+        $mod = $sum % 9;
+        if ($mod === 0) $mod = 9;
+
+        if ($gender === 'male') {
+            // 男命公式：11 - mod
+            $gua = 11 - $mod;
+            if ($gua > 9) $gua -= 9;
+            
+            // 男命 5 寄 2 (坤)
+            if ($gua === 5) $gua = 2;
+        } else {
+            // 女命公式：4 + mod
+            $gua = 4 + $mod;
+            if ($gua > 9) $gua -= 9;
+            
+            // 女命 5 寄 8 (艮)
+            if ($gua === 5) $gua = 8;
+        }
+        
+        return $gua;
+    }
+
+    
+    /**
+     * 分析命卦关系（八宅明镜法）
+     */
+    protected function analyzeGuaRelation(int $maleGua, int $femaleGua): array
+    {
+        // 八宅命卦关系表
+        // 生气、天医、延年为上吉，伏位为中平，六煞、祸害、五鬼、绝命为凶
+        $relations = [
+            1 => [1 => '伏位', 2 => '绝命', 3 => '天医', 4 => '生气', 5 => '祸害', 6 => '六煞', 7 => '五鬼', 8 => '延年', 9 => '延年'],
+            2 => [1 => '绝命', 2 => '伏位', 3 => '生气', 4 => '天医', 5 => '延年', 6 => '五鬼', 7 => '六煞', 8 => '祸害', 9 => '六煞'],
+            3 => [1 => '天医', 2 => '生气', 3 => '伏位', 4 => '延年', 5 => '六煞', 6 => '祸害', 7 => '绝命', 8 => '五鬼', 9 => '生气'],
+            4 => [1 => '生气', 2 => '天医', 3 => '延年', 4 => '伏位', 5 => '五鬼', 6 => '绝命', 7 => '祸害', 8 => '六煞', 9 => '天医'],
+            5 => [1 => '祸害', 2 => '延年', 3 => '六煞', 4 => '五鬼', 5 => '伏位', 6 => '天医', 7 => '生气', 8 => '绝命', 9 => '祸害'],
+            6 => [1 => '六煞', 2 => '五鬼', 3 => '祸害', 4 => '绝命', 5 => '天医', 6 => '伏位', 7 => '延年', 8 => '生气', 9 => '绝命'],
+            7 => [1 => '五鬼', 2 => '六煞', 3 => '绝命', 4 => '祸害', 5 => '生气', 6 => '延年', 7 => '伏位', 8 => '天医', 9 => '五鬼'],
+            8 => [1 => '延年', 2 => '祸害', 3 => '五鬼', 4 => '六煞', 5 => '绝命', 6 => '生气', 7 => '天医', 8 => '伏位', 9 => '祸害'],
+            9 => [1 => '延年', 2 => '六煞', 3 => '生气', 4 => '天医', 5 => '祸害', 6 => '绝命', 7 => '五鬼', 8 => '祸害', 9 => '伏位'],
+        ];
+
+        
+        $type = $relations[$maleGua][$femaleGua] ?? '未知';
+        
+        $meanings = [
+            '生气' => '朝气蓬勃，积极向上，主家运昌隆',
+            '天医' => '身体健康，无病无灾，主平安顺遂',
+            '延年' => '长寿康宁，夫妻恩爱，主福禄双全',
+            '伏位' => '平稳安定，细水长流，主平淡是真',
+            '六煞' => '口舌是非，感情波折，需谨慎处理',
+            '祸害' => '疾病灾祸，困难重重，需化解',
+            '五鬼' => '意外灾祸，破财损身，大凶之象',
+            '绝命' => '生死离别，家破人亡，最凶之象',
+        ];
+        
+        return [
+            'type' => $type,
+            'meaning' => $meanings[$type] ?? '关系不明',
+        ];
+    }
+    
+    /**
+     * 获取九宫方位建议
+     */
+    protected function getJiuGongDirection(int $maleGua, int $femaleGua): array
+    {
+        $directions = [
+            1 => ['吉方' => '东南、南方', '凶方' => '西方、西北', '建议' => '卧室宜设在东南方'],
+            2 => ['吉方' => '东北、西南', '凶方' => '东方、南方', '建议' => '卧室宜设在东北方'],
+            3 => ['吉方' => '南方、东方', '凶方' => '西方、西北', '建议' => '卧室宜设在南方'],
+            4 => ['吉方' => '北方、东南', '凶方' => '东北、西南', '建议' => '卧室宜设在北方'],
+            5 => ['吉方' => '中央、四方', '凶方' => '无明显凶方', '建议' => '卧室方位无特殊要求'],
+            6 => ['吉方' => '西方、西北', '凶方' => '南方、东方', '建议' => '卧室宜设在西方'],
+            7 => ['吉方' => '西北、西方', '凶方' => '南方、东方', '建议' => '卧室宜设在西北方'],
+            8 => ['吉方' => '西南、东北', '凶方' => '北方、东南', '建议' => '卧室宜设在西南方'],
+            9 => ['吉方' => '东方、南方', '凶方' => '北方、西方', '建议' => '卧室宜设在东方'],
+        ];
+        
+        return [
+            'male' => $directions[$maleGua] ?? $directions[5],
+            'female' => $directions[$femaleGua] ?? $directions[5],
+        ];
     }
 }

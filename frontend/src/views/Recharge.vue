@@ -23,11 +23,21 @@
             v-for="option in rechargeOptions" 
             :key="option.amount"
             class="option-item"
-            :class="{ active: selectedAmount === option.amount, hot: option.bonus > 0 }"
+            :class="{
+              active: selectedAmount === option.amount,
+              hot: option.bonus > 0,
+              vip: option.type === 'vip'
+            }"
             @click="selectAmount(option.amount)"
           >
+            <div v-if="option.type === 'vip'" class="vip-crown-icon">👑</div>
             <div class="amount">¥{{ option.amount }}</div>
-            <div class="points">{{ option.points }}积分</div>
+            <div class="points" :class="{ 'vip-points': option.type === 'vip' }">
+              {{ option.type === 'vip' ? option.label : option.points + '积分' }}
+            </div>
+
+            <div v-if="option.desc" class="desc">{{ option.desc }}</div>
+
             <div v-if="option.bonus > 0" class="bonus">+{{ option.bonus }}赠送</div>
             <div v-if="option.bonus > 0" class="hot-tag">HOT</div>
           </div>
@@ -181,6 +191,53 @@ const selectedPoints = computed(() => {
   return option ? option.points : 0
 })
 
+const truncateRechargeMessage = (message) => {
+  if (!message) {
+    return 'unknown'
+  }
+
+  return message.length > 160 ? `${message.slice(0, 157)}...` : message
+}
+
+const maskOrderNo = (orderNo) => {
+  const normalizedOrderNo = String(orderNo ?? '').trim()
+  if (normalizedOrderNo.length <= 8) {
+    return normalizedOrderNo
+  }
+
+  return `${normalizedOrderNo.slice(0, 4)}***${normalizedOrderNo.slice(-4)}`
+}
+
+const reportRechargeError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[Recharge]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateRechargeMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')),
+    ...extra
+  })
+}
+
+const buildWechatPayUrl = (orderNo) => `weixin://wxpay/bizpayurl?pr=${orderNo}`
+
+const buildFallbackQrCodeUrl = (orderNo) => {
+  const payUrl = encodeURIComponent(buildWechatPayUrl(orderNo))
+  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
+}
+
+const applyFallbackQrCode = () => {
+  qrCodeUrl.value = buildFallbackQrCodeUrl(currentOrderNo.value)
+}
+
+const showCreateOrderError = (message) => {
+  ElMessage.error(message || '创建订单失败')
+}
+
+const getWechatBridge = () => window.WeixinJSBridge
+
 // 检查是否在微信浏览器中
 const checkWechatBrowser = () => {
   const ua = navigator.userAgent.toLowerCase()
@@ -198,11 +255,11 @@ onMounted(() => {
 const loadPointsBalance = async () => {
   try {
     const res = await getPointsBalance()
-    if (res.code === 0) {
+    if (res.code === 200) {
       pointsBalance.value = res.data.balance
     }
   } catch (error) {
-    console.error('加载积分余额失败:', error)
+    reportRechargeError('load_points_balance_failed', error)
   }
 }
 
@@ -210,15 +267,29 @@ const loadPointsBalance = async () => {
 const loadRechargeOptions = async () => {
   try {
     const res = await getRechargeOptions()
-    if (res.code === 0) {
-      rechargeOptions.value = res.data.options
-      // 默认选中第一个
-      if (rechargeOptions.value.length > 0) {
-        selectedAmount.value = rechargeOptions.value[0].amount
+    if (res.code === 200) {
+      // 过滤掉旧的100元选项，添加新的68元会员选项
+      let options = res.data.options.filter(opt => opt.amount !== 100)
+
+      const membershipOption = {
+        amount: 68,
+        points: 500,
+        bonus: 0,
+        type: 'vip',
+        label: '年度会员',
+        desc: '含500积分 + 解锁深度报告'
       }
+
+      // 将会员选项放在第一位
+      options.unshift(membershipOption)
+
+      rechargeOptions.value = options
+
+      // 默认选中会员选项
+      selectedAmount.value = 68
     }
   } catch (error) {
-    console.error('加载充值选项失败:', error)
+    reportRechargeError('load_recharge_options_failed', error)
   }
 }
 
@@ -226,11 +297,11 @@ const loadRechargeOptions = async () => {
 const loadRechargeHistory = async () => {
   try {
     const res = await getRechargeHistory()
-    if (res.code === 0) {
+    if (res.code === 200) {
       rechargeHistory.value = res.data || []
     }
   } catch (error) {
-    console.error('加载充值记录失败:', error)
+    reportRechargeError('load_recharge_history_failed', error)
   }
 }
 
@@ -249,55 +320,57 @@ const handleRecharge = async () => {
   creatingOrder.value = true
   try {
     if (paymentMethod.value === 'wechat') {
-      // 微信支付
       const res = await createRechargeOrder({
         amount: selectedAmount.value
       })
 
-      if (res.code === 0) {
-        currentOrderNo.value = res.data.order_no
-        
-        // 如果在微信浏览器中，直接调起微信支付
-        if (isWechatBrowser.value && res.data.pay_params) {
-          callWechatPay(res.data.pay_params)
-        } else {
-          // PC端或其他浏览器显示支付弹窗
-          payDialogVisible.value = true
-          // 生成支付二维码
-          generateQRCode()
-          startQueryTimer()
-        }
-      } else {
-        ElMessage.error(res.message || '创建订单失败')
+      if (res.code !== 200) {
+        showCreateOrderError(res.message)
+        return
       }
-    } else if (paymentMethod.value === 'alipay') {
-      // 支付宝支付
+
+      currentOrderNo.value = res.data.order_no
+
+      if (isWechatBrowser.value && res.data.pay_params) {
+        callWechatPay(res.data.pay_params)
+        return
+      }
+
+      payDialogVisible.value = true
+      generateQRCode()
+      startQueryTimer()
+      return
+    }
+
+    if (paymentMethod.value === 'alipay') {
       const res = await createAlipayOrder({
         amount: selectedAmount.value
       })
 
-      if (res.code === 0) {
-        currentOrderNo.value = res.data.order_no
-        
-        if (res.data.pay_form) {
-          // PC端：插入表单并提交
-          const div = document.createElement('div')
-          div.innerHTML = res.data.pay_form
-          document.body.appendChild(div)
-          // 支付宝表单会自动提交
-        } else if (res.data.pay_url) {
-          // 移动端：跳转支付URL
-          window.location.href = res.data.pay_url
-        }
-        
-        startQueryTimer()
-      } else {
-        ElMessage.error(res.message || '创建订单失败')
+      if (res.code !== 200) {
+        showCreateOrderError(res.message)
+        return
       }
+
+      currentOrderNo.value = res.data.order_no
+
+      if (res.data.pay_form) {
+        const div = document.createElement('div')
+        div.innerHTML = res.data.pay_form
+        document.body.appendChild(div)
+      } else if (res.data.pay_url) {
+        window.location.href = res.data.pay_url
+      }
+
+      startQueryTimer()
     }
   } catch (error) {
+    reportRechargeError('create_order_failed', error, {
+      amount: selectedAmount.value,
+      payment_method: paymentMethod.value,
+      order_no: maskOrderNo(currentOrderNo.value)
+    })
     ElMessage.error('网络错误，请稍后重试')
-    console.error(error)
   } finally {
     creatingOrder.value = false
   }
@@ -307,34 +380,32 @@ const handleRecharge = async () => {
 const generateQRCode = async () => {
   generatingQR.value = true
   qrCodeUrl.value = ''
-  
+
   try {
-    // 调用后端API生成微信支付二维码
     const res = await fetch(`/api/payment/qrcode?order_no=${currentOrderNo.value}&amount=${selectedAmount.value}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
-    
-    if (res.ok) {
-      const data = await res.json()
-      if (data.code === 0 && data.data.qr_url) {
-        qrCodeUrl.value = data.data.qr_url
-      } else {
-        // 如果后端没有二维码接口，使用二维码生成API
-        const payUrl = encodeURIComponent(`weixin://wxpay/bizpayurl?pr=${currentOrderNo.value}`)
-        qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
-      }
-    } else {
-      // 备用方案：使用在线二维码生成服务
-      const payUrl = encodeURIComponent(`weixin://wxpay/bizpayurl?pr=${currentOrderNo.value}`)
-      qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
+
+    if (!res.ok) {
+      applyFallbackQrCode()
+      return
     }
+
+    const data = await res.json()
+    if (data.code === 200 && data.data.qr_url) {
+      qrCodeUrl.value = data.data.qr_url
+      return
+    }
+
+    applyFallbackQrCode()
   } catch (error) {
-    console.error('生成二维码失败:', error)
-    // 使用备用方案
-    const payUrl = encodeURIComponent(`weixin://wxpay/bizpayurl?pr=${currentOrderNo.value}`)
-    qrCodeUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payUrl}`
+    reportRechargeError('generate_qr_code_failed', error, {
+      amount: selectedAmount.value,
+      order_no: maskOrderNo(currentOrderNo.value)
+    })
+    applyFallbackQrCode()
   } finally {
     generatingQR.value = false
   }
@@ -342,28 +413,35 @@ const generateQRCode = async () => {
 
 // 调用微信支付
 const callWechatPay = (payParams) => {
-  if (typeof WeixinJSBridge === 'undefined') {
-    // 等待WeixinJSBridge准备就绪
-    if (document.addEventListener) {
-      document.addEventListener('WeixinJSBridgeReady', () => {
-        doWechatPay(payParams)
-      }, false)
-    } else if (document.attachEvent) {
-      document.attachEvent('WeixinJSBridgeReady', () => {
-        doWechatPay(payParams)
-      })
-      document.attachEvent('onWeixinJSBridgeReady', () => {
-        doWechatPay(payParams)
-      })
+  if (!getWechatBridge()) {
+    const handleBridgeReady = () => {
+      doWechatPay(payParams)
     }
-  } else {
-    doWechatPay(payParams)
+
+    if (document.addEventListener) {
+      document.addEventListener('WeixinJSBridgeReady', handleBridgeReady, false)
+    } else if (document.attachEvent) {
+      document.attachEvent('WeixinJSBridgeReady', handleBridgeReady)
+      document.attachEvent('onWeixinJSBridgeReady', handleBridgeReady)
+    }
+    return
   }
+
+  doWechatPay(payParams)
 }
 
 // 执行微信支付
 const doWechatPay = (payParams) => {
-  WeixinJSBridge.invoke('getBrandWCPayRequest', {
+  const bridge = getWechatBridge()
+  if (!bridge) {
+    reportRechargeError('wechat_bridge_missing', new Error('WeixinJSBridge unavailable'), {
+      order_no: maskOrderNo(currentOrderNo.value)
+    })
+    ElMessage.error('微信支付环境尚未就绪，请稍后重试')
+    return
+  }
+
+  bridge.invoke('getBrandWCPayRequest', {
     appId: payParams.appId,
     timeStamp: payParams.timeStamp,
     nonceStr: payParams.nonceStr,
@@ -372,17 +450,22 @@ const doWechatPay = (payParams) => {
     paySign: payParams.paySign
   }, (res) => {
     if (res.err_msg === 'get_brand_wcpay_request:ok') {
-      // 支付成功
       ElMessage.success('支付成功！')
       loadPointsBalance()
       loadRechargeHistory()
-    } else if (res.err_msg === 'get_brand_wcpay_request:cancel') {
-      // 用户取消
-      ElMessage.info('已取消支付')
-    } else {
-      // 支付失败
-      ElMessage.error('支付失败：' + res.err_msg)
+      return
     }
+
+    if (res.err_msg === 'get_brand_wcpay_request:cancel') {
+      ElMessage.info('已取消支付')
+      return
+    }
+
+    reportRechargeError('wechat_pay_failed', new Error(res.err_msg || 'wechat pay failed'), {
+      err_msg: truncateRechargeMessage(res.err_msg || ''),
+      order_no: maskOrderNo(currentOrderNo.value)
+    })
+    ElMessage.error('支付失败，请重试')
   })
 }
 
@@ -416,7 +499,7 @@ const checkPayStatus = async (silent = false) => {
   try {
     const res = await queryRechargeOrder({ order_no: currentOrderNo.value })
     
-    if (res.code === 0) {
+    if (res.code === 200) {
       if (res.data.status === 'paid') {
         stopQueryTimer()
         payDialogVisible.value = false
@@ -496,7 +579,7 @@ const getStatusText = (status) => {
 
 .points-label {
   display: block;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -505,11 +588,11 @@ const getStatusText = (status) => {
   display: block;
   font-size: 48px;
   font-weight: bold;
-  color: #ffd700;
+  color: var(--primary-light);
 }
 
 .points-tip {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin: 0;
 }
@@ -519,7 +602,7 @@ const getStatusText = (status) => {
 }
 
 .recharge-options h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -530,9 +613,9 @@ const getStatusText = (status) => {
 }
 
 .option-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border: 2px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px 15px;
   text-align: center;
   cursor: pointer;
@@ -541,47 +624,79 @@ const getStatusText = (status) => {
 }
 
 .option-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-08);
   transform: translateY(-2px);
 }
 
 .option-item.active {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color);
+  background: var(--primary-light-10);
 }
 
 .option-item.hot {
-  border-color: #ffd700;
+  border-color: var(--primary-light);
 }
 
-.option-item .amount {
+.option-item.vip {
+  background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+  border: 2px solid #D4AF37;
+  grid-column: span 3; /* Make it full width if possible, or handle grid */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 25px 40px;
+}
+
+@media (max-width: 768px) {
+  .option-item.vip {
+    grid-column: span 2;
+    flex-direction: column;
+    padding: 20px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .option-item.vip {
+    grid-column: span 1;
+  }
+}
+
+.option-item.vip.active {
+  background: linear-gradient(135deg, #3d3d3d, #252525);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.vip-crown-icon {
+  font-size: 32px;
+  margin-right: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.option-item.vip .amount {
+  color: #D4AF37;
+  font-size: 36px;
+  margin-bottom: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.option-item.vip .points {
+  color: #f0e68c;
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
-  margin-bottom: 5px;
 }
 
-.option-item .points {
+.option-item.vip .desc {
+  color: #bdbdbd;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.option-item .bonus {
-  font-size: 12px;
-  color: #ffd700;
   margin-top: 5px;
 }
 
-.hot-tag {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: linear-gradient(135deg, #ffd700, #ff6b6b);
-  color: #fff;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 4px 8px;
-  border-radius: 10px;
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .payment-info {
@@ -589,7 +704,7 @@ const getStatusText = (status) => {
 }
 
 .payment-info h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -598,8 +713,8 @@ const getStatusText = (status) => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 .info-row.total {
@@ -609,12 +724,12 @@ const getStatusText = (status) => {
 }
 
 .info-row .highlight {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .info-row .total-amount {
-  color: #e94560;
+  color: var(--primary-color);
   font-size: 24px;
 }
 
@@ -625,7 +740,7 @@ const getStatusText = (status) => {
 
 .payment-label {
   display: block;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 12px;
 }
@@ -642,21 +757,21 @@ const getStatusText = (status) => {
   justify-content: center;
   gap: 8px;
   padding: 15px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .payment-option:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-08);
 }
 
 .payment-option.active {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color);
+  background: var(--primary-light-10);
 }
 
 .payment-option span {
@@ -672,7 +787,7 @@ const getStatusText = (status) => {
 
 .pay-tip {
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 13px;
   margin-top: 15px;
   display: flex;
@@ -686,7 +801,7 @@ const getStatusText = (status) => {
 }
 
 .recharge-history h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -700,7 +815,7 @@ const getStatusText = (status) => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .history-item:last-child {
@@ -714,18 +829,18 @@ const getStatusText = (status) => {
 }
 
 .history-amount {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
   font-size: 16px;
 }
 
 .history-points {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 14px;
 }
 
 .history-time {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 12px;
 }
 
@@ -736,19 +851,19 @@ const getStatusText = (status) => {
 }
 
 .history-status.pending {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
+  background: var(--warning-light);
+  color: var(--warning-color);
 }
 
 .history-status.paid {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
+  background: var(--success-light);
+  color: var(--success-color);
 }
 
 .history-status.cancelled,
 .history-status.refunded {
-  background: rgba(158, 158, 158, 0.2);
-  color: #9e9e9e;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
 }
 
 /* 支付弹窗样式 */
@@ -760,7 +875,7 @@ const getStatusText = (status) => {
 .pay-amount {
   font-size: 36px;
   font-weight: bold;
-  color: #e94560;
+  color: var(--primary-color);
   margin-bottom: 20px;
 }
 
@@ -769,7 +884,7 @@ const getStatusText = (status) => {
   height: 200px;
   margin: 0 auto 20px;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -116,7 +116,39 @@ class ConfigService
      */
     public static function isFeatureEnabled(string $feature): bool
     {
-        return self::get("feature_{$feature}_enabled", true);
+        $value = self::get("feature_{$feature}_enabled", true);
+
+        return self::normalizeBool($value, true);
+    }
+
+    /**
+     * 将任意配置值标准化为布尔值
+     */
+    protected static function normalizeBool($value, bool $default = false): bool
+    {
+        if ($value === null) {
+            return $default;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int)$value !== 0;
+        }
+
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
+                return true;
+            }
+            if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
+                return false;
+            }
+        }
+
+        return $default;
     }
     
     /**
@@ -128,6 +160,8 @@ class ConfigService
             'vip' => 'VIP会员',
             'points' => '积分系统',
             'ai_analysis' => 'AI解盘',
+            'daily' => '每日运势',
+            'feedback' => '用户反馈',
             'yearly_fortune' => '流年运势',
             'dayun_analysis' => '大运分析',
             'dayun_chart' => '运势K线图',
@@ -140,6 +174,7 @@ class ConfigService
             'report_tier' => '报告分层',
             'tasks' => '积分任务',
         ];
+
         
         $result = [];
         foreach ($features as $key => $name) {
@@ -255,9 +290,9 @@ class ConfigService
     /**
      * 计算实际积分消耗
      */
-    public static function calculatePointsCost(string $feature, int $basePoints, bool $isNewUser = false): array
+    public static function calculatePointsCost(string $feature, $basePoints = null, bool $isNewUser = false): array
     {
-        $originalPoints = $basePoints;
+        $originalPoints = self::normalizePointsCostBase($feature, $basePoints);
         $discount = 0;
         $reason = '';
         
@@ -278,14 +313,48 @@ class ConfigService
         }
         
         $finalPoints = (int) ($originalPoints * (100 - $discount) / 100);
-        $finalPoints = max(1, $finalPoints); // 最低1积分
+        if ($originalPoints > 0) {
+            $finalPoints = max(1, $finalPoints); // 非免费项最低 1 积分
+        }
         
         return [
             'original' => $originalPoints,
             'final' => $finalPoints,
             'discount' => $discount,
             'reason' => $reason,
-            'saved' => $originalPoints - $finalPoints,
+            'saved' => max(0, $originalPoints - $finalPoints),
         ];
+    }
+
+    protected static function normalizePointsCostBase(string $feature, $basePoints): int
+    {
+        if (is_numeric($basePoints)) {
+            return max(0, (int) $basePoints);
+        }
+
+        $configKeyMap = [
+            'bazi' => 'points_cost_bazi',
+            'hehun' => 'points_cost_hehun',
+            'tarot' => 'points_cost_tarot',
+            'liuyao' => 'points_cost_liuyao',
+            'daily' => 'points_cost_daily',
+        ];
+        $featureDefaults = [
+            'bazi' => 10,
+            'hehun' => 80,
+            'tarot' => 20,
+            'liuyao' => 20,
+            'daily' => 0,
+        ];
+
+        $configKey = $configKeyMap[$feature] ?? null;
+        if ($configKey !== null) {
+            $configuredValue = self::get($configKey, null);
+            if (is_numeric($configuredValue)) {
+                return max(0, (int) $configuredValue);
+            }
+        }
+
+        return $featureDefaults[$feature] ?? 0;
     }
 }

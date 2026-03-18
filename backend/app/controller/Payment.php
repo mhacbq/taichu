@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\PaymentConfig;
 use app\model\RechargeOrder;
 use think\exception\HttpException;
+use think\facade\Log;
 
 /**
  * 微信支付控制器
@@ -53,7 +54,11 @@ class Payment extends BaseController
     public function createOrder()
     {
         $data = $this->request->post();
-        $user = $this->request->user;
+        $user = $this->request->user ?? [];
+
+        if (empty($user['sub']) || !is_numeric($user['sub'])) {
+            return $this->error('请先登录', 401);
+        }
         
         // 参数验证
         if (empty($data['amount'])) {
@@ -105,8 +110,19 @@ class Payment extends BaseController
             if ($orderModel) {
                 $orderModel->cancel();
             }
+
+            Log::error('创建支付订单失败', [
+                'user_id' => (int) $user['sub'],
+                'order_no' => $order['order_no'] ?? '',
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            if ($e->getMessage() === '用户未绑定微信') {
+                return $this->error('用户未绑定微信', 400);
+            }
             
-            return $this->error('创建支付订单失败：' . $e->getMessage());
+            return $this->error('创建支付订单失败，请稍后重试', 500);
         }
     }
     
@@ -179,7 +195,11 @@ class Payment extends BaseController
     public function queryOrder()
     {
         $orderNo = $this->request->get('order_no');
-        $user = $this->request->user;
+        $user = $this->request->user ?? [];
+
+        if (empty($user['sub']) || !is_numeric($user['sub'])) {
+            return $this->error('请先登录', 401);
+        }
         
         if (empty($orderNo)) {
             return $this->error('订单号不能为空');
@@ -273,7 +293,9 @@ class Payment extends BaseController
         try {
             $data = $this->xmlToArray($xml);
         } catch (\Exception $e) {
-            \think\facade\Log::error('支付回调：XML解析失败 - ' . $e->getMessage());
+            $this->logControllerException('解析支付回调 XML', $e, [
+                'payload_length' => strlen($xml),
+            ]);
             return $this->xmlResponse('FAIL', '解析失败');
         }
         
@@ -374,10 +396,11 @@ class Payment extends BaseController
                 return $this->xmlResponse('FAIL', $result['message']);
             }
         } catch (\Exception $e) {
-            \think\facade\Log::error('支付回调：处理异常', [
+            $this->logControllerException('处理支付回调', $e, [
                 'order_no' => $orderNo,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'pay_order_no' => $payOrderNo,
+                'notify_id' => $notifyId,
+                'total_fee' => $totalFee,
             ]);
             // 发生异常返回FAIL，让微信重试
             return $this->xmlResponse('FAIL', '处理异常');
@@ -389,7 +412,11 @@ class Payment extends BaseController
      */
     public function getUserRechargeHistory()
     {
-        $user = $this->request->user;
+        $user = $this->request->user ?? [];
+        if (empty($user['sub']) || !is_numeric($user['sub'])) {
+            return $this->error('请先登录', 401);
+        }
+
         $page = (int) $this->request->get('page', 1);
         $limit = (int) $this->request->get('limit', 10);
         
@@ -508,8 +535,9 @@ class Payment extends BaseController
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        // 生产环境必须启用SSL验证，防止中间人攻击
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         
         // 如果需要证书

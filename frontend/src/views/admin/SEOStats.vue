@@ -253,12 +253,21 @@
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue'
+import { ref, computed, h, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 import {
   ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
   Warning, InfoFilled, CircleCheck
 } from '@element-plus/icons-vue'
+
+// 图表实例
+let pieChartInstance = null
+let trendChartInstance = null
+
+// 图表DOM引用
+const pieChart = ref(null)
+const trendChart = ref(null)
 
 // 统计数据
 const stats = ref({
@@ -381,7 +390,90 @@ const RankBadge = {
   }
 }
 
-// 图表功能待实现 - 需要时添加图表引用和初始化代码
+// 初始化饼图
+const initPieChart = () => {
+  if (!pieChart.value) return
+  pieChartInstance = echarts.init(pieChart.value)
+  pieChartInstance.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: '0', left: 'center', textStyle: { color: '#8b8b8b' }, itemWidth: 10, itemHeight: 10 },
+    series: [{
+      name: '流量占比',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: false,
+      itemStyle: { borderRadius: 8, borderColor: 'transparent', borderWidth: 2 },
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: '14', fontWeight: 'bold' } },
+      data: [
+        { value: 1250, name: '百度', itemStyle: { color: '#2932e1' } },
+        { value: 680, name: '必应', itemStyle: { color: '#008373' } },
+        { value: 411, name: 'Google', itemStyle: { color: '#4285f4' } }
+      ]
+    }]
+  })
+}
+
+// 初始化趋势图
+const initTrendChart = () => {
+  if (!trendChart.value) return
+  trendChartInstance = echarts.init(trendChart.value)
+  updateTrendChart()
+}
+
+const updateTrendChart = () => {
+  const isTraffic = trendType.value === 'traffic'
+  const option = {
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: Array.from({ length: 30 }, (_, i) => `03-${i + 1}`),
+      axisLabel: { color: '#8b8b8b' }
+    },
+    yAxis: { type: 'value', axisLabel: { color: '#8b8b8b' } },
+    series: [
+      {
+        name: isTraffic ? '百度流量' : '百度收录',
+        type: 'line',
+        smooth: true,
+        data: Array.from({ length: 30 }, () => Math.floor(Math.random() * (isTraffic ? 500 : 50)) + 20),
+        itemStyle: { color: '#2932e1' },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(41, 50, 225, 0.2)' }, { offset: 1, color: 'rgba(41, 50, 225, 0)' }]) }
+      },
+      {
+        name: isTraffic ? '必应流量' : '必应收录',
+        type: 'line',
+        smooth: true,
+        data: Array.from({ length: 30 }, () => Math.floor(Math.random() * (isTraffic ? 300 : 30)) + 10),
+        itemStyle: { color: '#008373' },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 131, 115, 0.2)' }, { offset: 1, color: 'rgba(0, 131, 115, 0)' }]) }
+      }
+    ]
+  }
+  trendChartInstance.setOption(option)
+}
+
+watch(trendType, updateTrendChart)
+
+const handleResize = () => {
+  pieChartInstance?.resize()
+  trendChartInstance?.resize()
+}
+
+onMounted(() => {
+  initPieChart()
+  initTrendChart()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  pieChartInstance?.dispose()
+  trendChartInstance?.dispose()
+})
+
 </script>
 
 <style scoped>
@@ -438,12 +530,12 @@ const RankBadge = {
 
 .stat-icon.keywords {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  color: var(--text-primary);
 }
 
 .stat-icon.traffic {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  color: var(--text-primary);
 }
 
 .stat-icon img {

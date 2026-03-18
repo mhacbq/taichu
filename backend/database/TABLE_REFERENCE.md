@@ -28,6 +28,9 @@
 | tc_admin_permission | AdminPermission | 管理员权限 |
 | tc_admin_user_role | AdminUserRole | 管理员角色关联 |
 | tc_admin_role_permission | AdminRolePermission | 角色权限关联 |
+| tc_sms_code | SmsCode | 短信验证码记录 |
+| tc_sms_config | SmsConfig | 短信配置 |
+| tc_payment_config | PaymentConfig | 支付配置 |
 
 ### 不带 tc_ 前缀的表（系统配置表）
 

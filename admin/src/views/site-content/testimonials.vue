@@ -198,7 +198,7 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getTestimonialList(queryForm)
-    if (res.code === 0) {
+    if (res.code === 200) {
       tableData.value = res.data.list
       total.value = res.data.total
     }
@@ -255,7 +255,7 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
     const res = await deleteTestimonial(row.id)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('删除成功')
       loadData()
     }
@@ -274,7 +274,7 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     const res = await saveTestimonial(form)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
       loadData()

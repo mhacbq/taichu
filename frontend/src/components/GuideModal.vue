@@ -1,11 +1,13 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="currentStep === 1 ? '欢迎来到太初命理 ✨' : '新手指引'"
+    :title="currentStep === 1 ? '欢迎来到太初命理' : '新手指引'"
     width="520px"
-    :show-close="false"
-    :close-on-click-modal="false"
+    :show-close="true"
+    :close-on-click-modal="true"
+    :close-on-press-escape="true"
     class="guide-dialog"
+    @close="handleDialogClose"
   >
     <div class="guide-content">
       <!-- 步骤指示器 -->
@@ -22,34 +24,38 @@
       <div class="step-content">
         <!-- 第1步：暖心欢迎 -->
         <template v-if="currentStep === 1">
-          <div class="step-illustration welcome-anim">🌸</div>
+          <div class="step-illustration welcome-anim">
+            <el-icon class="large-icon"><Sunrise /></el-icon>
+          </div>
           <h3>在迷茫中寻找方向</h3>
           <p class="warm-text">生活有时会让人感到困惑和迷茫，这很正常。</p>
           <p class="warm-text">太初命理不是预测命运的"神谕"，而是帮你从另一个角度认识自己、理解当下的工具。</p>
-          <div class="comfort-cards">
-            <div class="comfort-item">
-              <span class="comfort-icon">💝</span>
-              <span>你并不孤单</span>
-            </div>
-            <div class="comfort-item">
-              <span class="comfort-icon">🌱</span>
-              <span>迷茫是成长的开始</span>
-            </div>
-            <div class="comfort-item">
-              <span class="comfort-icon">✨</span>
-              <span>答案在你心中</span>
-            </div>
+        <div class="comfort-cards">
+          <div class="comfort-item">
+            <el-icon class="comfort-icon"><User /></el-icon>
+            <span>你并不孤单</span>
           </div>
-          <p class="sub-text">让我们一起探索，找到属于你的那份指引。</p>
-        </template>
+          <div class="comfort-item">
+            <el-icon class="comfort-icon"><Lightning /></el-icon>
+            <span>迷茫是成长的开始</span>
+          </div>
+          <div class="comfort-item">
+            <el-icon class="comfort-icon"><Compass /></el-icon>
+            <span>答案在你心中</span>
+          </div>
+        </div>
+        <p class="sub-text">让我们一起探索，找到属于你的那份指引。</p>
+      </template>
 
-        <!-- 第2步：功能介绍 -->
-        <template v-if="currentStep === 2">
-          <div class="step-illustration">☯</div>
-          <h3>我们能为你做什么</h3>
+      <!-- 第2步：功能介绍 -->
+      <template v-if="currentStep === 2">
+        <div class="step-illustration">
+          <YinYangIcon class="large-icon" />
+        </div>
+        <h3>我们能为你做什么</h3>
           <div class="feature-list">
             <div class="feature-item">
-              <div class="feature-icon-bg">📅</div>
+              <div class="feature-icon-bg"><el-icon><Calendar /></el-icon></div>
               <div class="feature-info">
                 <h4>八字排盘</h4>
                 <p>了解自己的性格特点、优势与挑战，找到适合的发展方向</p>
@@ -57,7 +63,7 @@
               </div>
             </div>
             <div class="feature-item">
-              <div class="feature-icon-bg">🎴</div>
+              <div class="feature-icon-bg"><el-icon><Document /></el-icon></div>
               <div class="feature-info">
                 <h4>塔罗占卜</h4>
                 <p>针对具体困惑获得指引，工作、感情、人际关系都能找到答案</p>
@@ -65,7 +71,7 @@
               </div>
             </div>
             <div class="feature-item">
-              <div class="feature-icon-bg">🌟</div>
+              <div class="feature-icon-bg"><el-icon><MagicStick /></el-icon></div>
               <div class="feature-info">
                 <h4>每日运势</h4>
                 <p>基于你的八字生成个性化建议，趋吉避凶，把握每一天</p>
@@ -77,7 +83,9 @@
 
         <!-- 第3步：积分说明 -->
         <template v-if="currentStep === 3">
-          <div class="step-illustration">💎</div>
+          <div class="step-illustration">
+            <el-icon class="large-icon"><Coin /></el-icon>
+          </div>
           <h3>关于积分</h3>
           <p class="points-intro">为了提供更优质的服务，部分功能需要消耗积分：</p>
           <div class="points-table">
@@ -98,7 +106,7 @@
             </div>
           </div>
           <div class="earn-points">
-            <h4>💡 如何获取积分？</h4>
+            <h4><el-icon><Mouse /></el-icon> 如何获取积分？</h4>
             <ul>
               <li>注册即送 <strong>100积分</strong> 新手礼包</li>
               <li>每日签到领积分</li>
@@ -109,25 +117,27 @@
 
         <!-- 第4步：开始体验 -->
         <template v-if="currentStep === 4">
-          <div class="step-illustration">🚀</div>
+          <div class="step-illustration">
+            <el-icon class="large-icon"><Promotion /></el-icon>
+          </div>
           <h3>准备好了吗？</h3>
           <p class="warm-text">记住：命理分析仅供参考，真正的改变来自于你的行动。</p>
           <div class="start-tips">
             <div class="tip-item">
-              <span class="tip-icon">🎯</span>
+              <el-icon class="tip-icon"><Aim /></el-icon>
               <p><strong>建议一：</strong>首次使用先从八字排盘开始，了解自己的基本命格</p>
             </div>
             <div class="tip-item">
-              <span class="tip-icon">💭</span>
+              <el-icon class="tip-icon"><ChatLineRound /></el-icon>
               <p><strong>建议二：</strong>有具体困惑时，使用塔罗占卜获得针对性指引</p>
             </div>
             <div class="tip-item">
-              <span class="tip-icon">🌅</span>
+              <el-icon class="tip-icon"><Sunrise /></el-icon>
               <p><strong>建议三：</strong>每天早上看看今日运势，为一天做好准备</p>
             </div>
           </div>
           <div class="encourage-box">
-            <p>🌟 "每一个迷茫的时刻，都是重新认识自己的机会"</p>
+            <p><el-icon><Star /></el-icon> "每一个迷茫的时刻，都是重新认识自己的机会"</p>
           </div>
         </template>
       </div>
@@ -135,25 +145,30 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button v-if="currentStep > 1" @click="prevStep" class="footer-btn">
-          上一步
+        <el-button text @click="snoozeGuide" class="footer-btn footer-btn--text">
+          {{ currentStep < totalSteps ? '稍后再看' : '先自己逛逛' }}
         </el-button>
-        <el-button 
-          v-if="currentStep < totalSteps" 
-          type="primary" 
-          @click="nextStep"
-          class="footer-btn primary"
-        >
-          {{ currentStep === 1 ? '告诉我更多' : '下一步' }}
-        </el-button>
-        <el-button 
-          v-else 
-          type="primary" 
-          @click="finish"
-          class="footer-btn primary"
-        >
-          开始探索 ✨
-        </el-button>
+        <div class="footer-actions">
+          <el-button v-if="currentStep > 1" @click="prevStep" class="footer-btn">
+            上一步
+          </el-button>
+          <el-button
+            v-if="currentStep < totalSteps"
+            type="primary"
+            @click="nextStep"
+            class="footer-btn primary"
+          >
+            {{ currentStep === 1 ? '告诉我更多' : '下一步' }}
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            @click="finish"
+            class="footer-btn primary"
+          >
+            开始探索
+          </el-button>
+        </div>
       </div>
     </template>
   </el-dialog>
@@ -161,9 +176,27 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import {
+  Sunrise,
+  User,
+  Lightning,
+  Compass,
+  Calendar,
+  Document,
+  MagicStick,
+  Coin,
+  Mouse,
+  Promotion,
+  Aim,
+  ChatLineRound,
+  Star
+} from '@element-plus/icons-vue'
+import YinYangIcon from './YinYangIcon.vue'
 
-const router = useRouter()
+const GUIDE_SHOWN_KEY = 'guideShown'
+const GUIDE_DEFERRED_AT_KEY = 'guideDeferredAt'
+const GUIDE_DEFER_HOURS = 12
+
 const visible = ref(false)
 const currentStep = ref(1)
 const totalSteps = 4
@@ -180,27 +213,52 @@ const prevStep = () => {
   }
 }
 
-const finish = () => {
-  localStorage.setItem('guideShown', 'true')
+const closeGuide = () => {
   visible.value = false
-  // 引导用户去登录
-  const token = localStorage.getItem('token')
-  if (!token) {
-    router.push('/login')
+  currentStep.value = 1
+}
+
+const snoozeGuide = () => {
+  localStorage.setItem(GUIDE_DEFERRED_AT_KEY, String(Date.now()))
+  closeGuide()
+}
+
+const handleDialogClose = () => {
+  if (localStorage.getItem(GUIDE_SHOWN_KEY) === 'true') {
+    currentStep.value = 1
+    return
   }
+
+  localStorage.setItem(GUIDE_DEFERRED_AT_KEY, String(Date.now()))
+  currentStep.value = 1
+}
+
+const finish = () => {
+  localStorage.setItem(GUIDE_SHOWN_KEY, 'true')
+  localStorage.removeItem(GUIDE_DEFERRED_AT_KEY)
+  closeGuide()
+}
+
+const shouldDelayGuide = () => {
+  const deferredAt = Number(localStorage.getItem(GUIDE_DEFERRED_AT_KEY) || 0)
+  if (!Number.isFinite(deferredAt) || deferredAt <= 0) {
+    return false
+  }
+
+  return Date.now() - deferredAt < GUIDE_DEFER_HOURS * 60 * 60 * 1000
 }
 
 onMounted(() => {
-  // 检查是否已显示过引导
-  const guideShown = localStorage.getItem('guideShown')
+  const guideShown = localStorage.getItem(GUIDE_SHOWN_KEY)
   const token = localStorage.getItem('token')
-  
-  // 首次访问或未登录用户显示引导
-  if (!guideShown && !token) {
-    setTimeout(() => {
-      visible.value = true
-    }, 800)
+
+  if (guideShown === 'true' || token || shouldDelayGuide()) {
+    return
   }
+
+  setTimeout(() => {
+    visible.value = true
+  }, 800)
 })
 </script>
 
@@ -213,8 +271,8 @@ onMounted(() => {
 .guide-dialog :deep(.el-dialog__title) {
   font-size: 22px;
   font-weight: bold;
-  color: #fff;
-  background: linear-gradient(135deg, #fff 0%, #e94560 100%);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -240,12 +298,12 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-muted);
   transition: all 0.3s ease;
 }
 
 .step-dot.active {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   width: 30px;
   border-radius: 5px;
 }
@@ -257,7 +315,15 @@ onMounted(() => {
 .step-illustration {
   font-size: 60px;
   margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   animation: float 3s ease-in-out infinite;
+}
+
+.large-icon {
+  font-size: 60px;
+  color: var(--primary-color);
 }
 
 @keyframes float {
@@ -276,20 +342,20 @@ onMounted(() => {
 
 .step-content h3 {
   font-size: 24px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   font-weight: 600;
 }
 
 .warm-text {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: var(--text-secondary) !important;
   line-height: 1.8;
   margin-bottom: 15px;
   font-size: 15px;
 }
 
 .sub-text {
-  color: rgba(233, 69, 96, 0.9) !important;
+  color: var(--primary-light) !important;
   margin-top: 20px;
   font-size: 14px;
 }
@@ -304,25 +370,28 @@ onMounted(() => {
 }
 
 .comfort-item {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.15), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 15px 20px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   font-size: 14px;
+  min-height: 44px;
   transition: all 0.3s ease;
 }
 
 .comfort-item:hover {
   transform: translateY(-3px);
-  border-color: rgba(233, 69, 96, 0.4);
+  border-color: var(--primary-color);
+  background: var(--bg-card);
 }
 
 .comfort-icon {
   font-size: 20px;
+  color: var(--primary-color);
 }
 
 /* 功能列表 */
@@ -337,39 +406,41 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 15px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   border-radius: 12px;
   padding: 18px;
   text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
+  min-height: 44px;
   transition: all 0.3s ease;
 }
 
 .feature-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: var(--bg-card);
+  border-color: var(--primary-color);
 }
 
 .feature-icon-bg {
   width: 45px;
   height: 45px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.3));
+  background: var(--primary-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  color: var(--bg-main);
   flex-shrink: 0;
 }
 
 .feature-info h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   margin-bottom: 5px;
 }
 
 .feature-info p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
   line-height: 1.6;
   margin-bottom: 8px;
@@ -377,26 +448,26 @@ onMounted(() => {
 
 .feature-tag {
   display: inline-block;
-  background: rgba(233, 69, 96, 0.2);
-  color: #e94560;
+  background: var(--primary-light);
+  color: var(--text-primary);
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
 }
 
 .feature-tag.free {
-  background: rgba(103, 194, 58, 0.2);
-  color: #67c23a;
+  background: var(--success-color);
+  color: white;
 }
 
 /* 积分表格 */
 .points-intro {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
 .points-table {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 20px;
@@ -407,7 +478,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
+  min-height: 44px;
 }
 
 .points-row:last-child {
@@ -415,45 +487,48 @@ onMounted(() => {
 }
 
 .service-name {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 15px;
 }
 
 .points-cost {
-  color: #ffd700;
+  color: var(--primary-color);
   font-weight: 500;
 }
 
 .points-cost .original {
   text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   margin-right: 8px;
 }
 
 .free-tag {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
-  color: #fff;
+  background: var(--success-gradient);
+  color: white;
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 11px;
 }
 
 .points-cost.free {
-  color: #67c23a;
+  color: var(--success-color);
 }
 
 .earn-points {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.2);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 18px;
   text-align: left;
 }
 
 .earn-points h4 {
-  color: #67c23a;
+  color: var(--success-color);
   margin-bottom: 12px;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .earn-points ul {
@@ -461,8 +536,8 @@ onMounted(() => {
 }
 
 .earn-points li {
-  color: rgba(255, 255, 255, 0.8);
-  padding: 6px 0;
+  color: var(--text-secondary);
+  padding: 8px 0;
   padding-left: 20px;
   position: relative;
   font-size: 14px;
@@ -472,7 +547,7 @@ onMounted(() => {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #67c23a;
+  color: var(--success-color);
   font-weight: bold;
 }
 
@@ -488,67 +563,91 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   border-radius: 10px;
   padding: 15px;
   text-align: left;
+  min-height: 44px;
 }
 
 .tip-icon {
   font-size: 24px;
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
 .tip-item p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
 }
 
 .tip-item strong {
-  color: #e94560;
+  color: var(--primary-color);
 }
 
 .encourage-box {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.15), rgba(255, 107, 107, 0.15));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 18px;
   margin-top: 20px;
 }
 
 .encourage-box p {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
   margin: 0;
   font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* 底部按钮 */
 .dialog-footer {
   display: flex;
-  justify-content: center;
-  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .footer-btn {
   min-width: 120px;
-  padding: 12px 24px;
+  height: 44px;
   font-size: 15px;
+  border-radius: 22px;
+}
+
+.footer-btn--text {
+  min-width: auto;
+  padding-inline: 0;
 }
 
 .footer-btn.primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border: none;
+  color: var(--bg-main);
+  font-weight: bold;
 }
 
 .footer-btn.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 5px 20px var(--primary-light);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .comfort-cards {
     flex-direction: column;
   }

@@ -1,487 +1,1501 @@
 <?php
+
 declare(strict_types=1);
 
 namespace app\controller;
 
 use app\BaseController;
-use app\model\LiuyaoRecord;
+use app\model\PointsRecord;
 use app\model\User;
-use app\service\AiService;
-use app\service\CacheService;
+use app\service\BaziCalculationService;
+use app\service\ConfigService;
+use app\service\DeepSeekService;
+use app\service\LiuyaoService;
+use app\service\SchemaInspector;
+use think\Request;
 use think\facade\Db;
+use think\facade\Log;
+
 
 /**
  * 六爻占卜控制器
- * 
- * 六爻是中国传统占卜方法，通过六次掷钱币得到六个爻，组成一个卦象
- * 每个爻可以是：老阴(0)、少阴(1)、少阳(2)、老阳(3)
- * 老阴和老阳为动爻，会产生变卦
  */
 class Liuyao extends BaseController
 {
-    // 六爻占卜所需积分
-    const LIUYAO_POINTS_COST = 15;
-    
-    // 是否启用缓存
-    const ENABLE_CACHE = true;
-    
     protected $middleware = [\app\middleware\Auth::class];
-    
+
+    private const LIUYAO_POINTS_COST = 15;
+    private const VALID_GAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    private const VALID_ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+    private static ?string $liuyaoRecordTable = null;
+
     /**
-     * 六爻名称映射
-     */
-    protected $yaoNames = [
-        0 => '老阴',  // 变爻，阴变阳
-        1 => '少阴',  // 静爻，保持阴
-        2 => '少阳',  // 静爻，保持阳
-        3 => '老阳',  // 变爻，阳变阴
-    ];
-    
-    /**
-     * 爻符号
-     */
-    protected $yaoSymbols = [
-        0 => '⚋',  // 老阴 ×
-        1 => '⚋',  // 少阴 -
-        2 => '⚊',  // 少阳 -
-        3 => '⚊',  // 老阳 ○
-    ];
-    
-    /**
-     * 获取六爻定价
+     * 获取六爻占卜定价
      */
     public function getPricing()
     {
-        $user = $this->request->user;
-        $userModel = User::find($user['sub']);
-        $isVip = $userModel->is_vip ?? false;
-        
-        $basePoints = config('app.points_cost_liuyao', self::LIUYAO_POINTS_COST);
-        
-        // VIP免费
-        if ($isVip) {
-            return $this->success([
-                'cost' => 0,
-                'original_cost' => $basePoints,
-                'is_vip_free' => true,
-                'message' => 'VIP用户免费',
-            ]);
+        try {
+            $userModel = $this->getCurrentUserModel();
+            return $this->success($this->resolvePricing($userModel));
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('获取六爻定价', $e, '获取定价失败，请稍后重试');
         }
-        
-        // 首次免费
-        $isFirst = LiuyaoRecord::where('user_id', $user['sub'])->count() === 0;
-        
-        return $this->success([
-            'cost' => $isFirst ? 0 : $basePoints,
-            'original_cost' => $basePoints,
-            'is_first_free' => $isFirst,
-            'is_vip_free' => false,
-            'message' => $isFirst ? '首次占卜免费' : "每次消耗{$basePoints}积分",
-        ]);
     }
-    
+
     /**
-     * 执行六爻占卜
+     * 前端占卜兼容接口
      */
     public function divination()
     {
-        $data = $this->request->post();
-        $user = $this->request->user;
-        
-        // 验证参数
-        if (empty($data['question'])) {
-            return $this->error('请输入占卜问题');
-        }
-        
-        $question = trim($data['question']);
-        $useAi = $data['useAi'] ?? true;
-        
-        if (mb_strlen($question) < 2 || mb_strlen($question) > 100) {
-            return $this->error('问题长度应在2-100字之间');
-        }
-        
-        // 生成六爻结果（模拟掷钱币）
-        $yaoResult = $this->generateYaoResult();
-        
-        // 计算卦象
-        $guaInfo = $this->calculateGua($yaoResult);
-        
-        // 使用行锁处理积分
-        Db::startTrans();
         try {
-            // 1. 查询用户（带行锁）
-            $userData = Db::name('tc_user')
-                ->where('id', $user['sub'])
-                ->where('status', 1)
-                ->lock(true)
-                ->find();
-            
-            if (!$userData) {
-                Db::rollback();
-                return $this->error('用户不存在', 404);
+            $data = $this->request->post();
+            $question = trim((string) ($data['question'] ?? ''));
+            if ($question === '') {
+                return $this->error('请输入占卜问题', 400);
             }
-            
-            // 2. 检查是否是首次
-            $recordCount = LiuyaoRecord::where('user_id', $user['sub'])->count();
-            $isFirst = $recordCount === 0;
-            $isVip = $userData['is_vip'] ?? false;
-            $needPoints = !$isFirst && !$isVip;
-            $pointsCost = $needPoints ? self::LIUYAO_POINTS_COST : 0;
-            
-            // 3. 检查积分
-            if ($needPoints && $userData['points'] < $pointsCost) {
-                Db::rollback();
-                return $this->error('积分不足，请先充值', 403, [
-                    'need_points' => $pointsCost,
-                    'current_points' => $userData['points'],
-                ]);
+
+            $data['question'] = $question;
+            $userModel = $this->getCurrentUserModel();
+            $pricing = $this->resolvePricing($userModel);
+            $pointsCost = ($pricing['is_first_free'] || $pricing['is_vip_free']) ? 0 : (int) $pricing['cost'];
+
+            if ($pointsCost > 0 && (int) ($userModel->points ?? 0) < $pointsCost) {
+                return $this->error('积分不足，请先充值', 403);
             }
-            
-            // 4. 扣除积分
-            if ($needPoints) {
-                $updateResult = Db::name('tc_user')
-                    ->where('id', $user['sub'])
-                    ->dec('points', $pointsCost)
-                    ->update();
-                
-                if ($updateResult === 0) {
-                    Db::rollback();
-                    return $this->error('积分扣除失败');
+
+            $data['user_id'] = (int) $userModel->id;
+            $coreResult = $this->buildDivinationCore($data);
+            $interpretation = $this->buildInterpretation($coreResult);
+            $aiContent = null;
+
+            if (!empty($data['useAi'])) {
+                try {
+                    $aiContent = DeepSeekService::interpretLiuyao($this->buildAiPayload($coreResult));
+                } catch (\Throwable $aiError) {
+                    Log::warning('六爻 AI 解读降级', [
+                        'user_id' => (int) $userModel->id,
+                        'message' => $aiError->getMessage(),
+                    ]);
                 }
-                
-                // 记录积分变动
-                Db::name('tc_points_record')->insert([
-                    'user_id' => $user['sub'],
-                    'action' => '六爻占卜消耗',
-                    'points' => -$pointsCost,
-                    'type' => 'liuyao',
-                    'related_id' => 0,
-                    'remark' => "问题: " . mb_substr($question, 0, 20),
-                    'created_at' => date('Y-m-d H:i:s'),
-                ]);
             }
-            
-            // 5. AI分析
-            $aiAnalysis = null;
-            if ($useAi) {
-                $aiAnalysis = $this->generateAiAnalysis($question, $guaInfo, $yaoResult);
-            }
-            
-            // 6. 保存记录
-            $record = LiuyaoRecord::create([
-                'user_id' => $user['sub'],
-                'question' => $question,
-                'yao_result' => implode('', $yaoResult),
-                'gua_code' => $guaInfo['code'],
-                'gua_name' => $guaInfo['name'],
-                'gua_ci' => $guaInfo['gua_ci'] ?? '',
-                'yao_ci' => json_encode($guaInfo['yao_ci'] ?? []),
-                'interpretation' => $this->generateInterpretation($question, $guaInfo, $yaoResult),
-                'ai_analysis' => $aiAnalysis ? json_encode($aiAnalysis) : null,
-                'is_ai_analysis' => $useAi,
-                'consumed_points' => $pointsCost,
-            ]);
-            
-            Db::commit();
-            
-            // 查询最新积分
-            $remainingPoints = Db::name('tc_user')
-                ->where('id', $user['sub'])
-                ->value('points');
-            
-            return $this->success([
-                'id' => $record->id,
-                'question' => $question,
-                'yao_result' => $yaoResult,
-                'yao_names' => array_map(function($yao) {
-                    return $this->yaoNames[$yao];
-                }, $yaoResult),
-                'gua' => $guaInfo,
-                'interpretation' => $record->interpretation,
-                'ai_analysis' => $aiAnalysis,
-                'points_cost' => $pointsCost,
-                'remaining_points' => $remainingPoints,
-                'is_first' => $isFirst,
-            ]);
-            
-        } catch (\Exception $e) {
-            Db::rollback();
-            return $this->error('占卜失败: ' . $e->getMessage());
+
+            [$recordId, $remainingPoints] = $this->persistDivinationOutcome(
+                $userModel,
+                $data,
+                $coreResult,
+                $interpretation,
+                $aiContent,
+                $pointsCost
+            );
+
+            return $this->success($this->buildFrontendDivinationResult(
+                $recordId,
+                $coreResult,
+                $interpretation,
+                $aiContent,
+                $pointsCost,
+                $remainingPoints,
+                $pricing['is_first_free']
+            ));
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('执行六爻占卜', $e, '占卜失败，请稍后重试');
         }
     }
-    
+
     /**
-     * 生成六爻结果（模拟钱币占卜）
-     * 
-     * 三个钱币：
-     * - 三个正面（字）：老阳（3）
-     * - 两个正面一个反面：少阴（1）
-     * - 一个正面两个反面：少阳（2）
-     * - 三个反面：老阴（0）
-     * 
-     * 记录顺序：从下到上（初爻到上爻）
-     */
-    protected function generateYaoResult(): array
-    {
-        $result = [];
-        for ($i = 0; $i < 6; $i++) {
-            // 模拟三个钱币：0=反面，1=正面
-            $coins = [
-                random_int(0, 1),
-                random_int(0, 1),
-                random_int(0, 1),
-            ];
-            $sum = array_sum($coins);
-            
-            // 根据传统钱币占卜规则
-            switch ($sum) {
-                case 0: // 三个反面（背）
-                    $result[] = 0; // 老阴
-                    break;
-                case 1: // 一个正面
-                    $result[] = 2; // 少阳
-                    break;
-                case 2: // 两个正面
-                    $result[] = 1; // 少阴
-                    break;
-                case 3: // 三个正面
-                    $result[] = 3; // 老阳
-                    break;
-            }
-        }
-        return $result;
-    }
-    
-    /**
-     * 计算卦象
-     * 
-     * 六爻组成一个卦，每两爻组成一爻（初爻+二爻=下卦，四爻+五爻+上爻=上卦）
-     * 阳爻(2,3)记为1，阴爻(0,1)记为0
-     * 三爻组成一个八卦：000=坤，001=震，010=坎，011=兑，100=艮，101=离，110=巽，111=乾
-     */
-    protected function calculateGua(array $yaoResult): array
-    {
-        // 下卦（初爻、二爻、三爻）- 从下到上
-        $lower = ($yaoResult[0] >= 2 ? 1 : 0) 
-               + ($yaoResult[1] >= 2 ? 2 : 0) 
-               + ($yaoResult[2] >= 2 ? 4 : 0);
-        
-        // 上卦（四爻、五爻、上爻）
-        $upper = ($yaoResult[3] >= 2 ? 1 : 0) 
-               + ($yaoResult[4] >= 2 ? 2 : 0) 
-               + ($yaoResult[5] >= 2 ? 4 : 0);
-        
-        // 卦象代码：上卦+下卦
-        $guaCode = $upper . $lower;
-        
-        // 查询卦象信息
-        $guaInfo = Db::name('liuyao_gua')
-            ->where('gua_code', $guaCode)
-            ->find();
-        
-        if (!$guaInfo) {
-            // 默认返回坤卦
-            return [
-                'code' => '00',
-                'name' => '坤为地',
-                'gua_ci' => '元亨，利牝马之贞。',
-                'wuxing' => '土',
-                'gong' => '坤宫',
-            ];
-        }
-        
-        // 提取动爻信息
-        $movingYao = [];
-        foreach ($yaoResult as $index => $yao) {
-            if ($yao == 0 || $yao == 3) {
-                $yaoNumber = $index + 1;
-                $movingYao[] = [
-                    'position' => $yaoNumber,
-                    'name' => ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻'][$index],
-                    'type' => $yao == 0 ? '老阴' : '老阳',
-                    'ci' => $guaInfo['yao_' . $yaoNumber] ?? '',
-                ];
-            }
-        }
-        
-        return [
-            'code' => $guaInfo['gua_code'],
-            'name' => $guaInfo['gua_name'],
-            'gua_ci' => $guaInfo['gua_ci'] ?? '',
-            'xiang_ci' => $guaInfo['xiang_ci'] ?? '',
-            'tuan_ci' => $guaInfo['tuan_ci'] ?? '',
-            'wuxing' => $guaInfo['wuxing'] ?? '',
-            'gong' => $guaInfo['gong'] ?? '',
-            'description' => $guaInfo['description'] ?? '',
-            'yao_ci' => [
-                $guaInfo['yao_1'] ?? '',
-                $guaInfo['yao_2'] ?? '',
-                $guaInfo['yao_3'] ?? '',
-                $guaInfo['yao_4'] ?? '',
-                $guaInfo['yao_5'] ?? '',
-                $guaInfo['yao_6'] ?? '',
-            ],
-            'moving_yao' => $movingYao,
-        ];
-    }
-    
-    /**
-     * 生成基础解读
-     */
-    protected function generateInterpretation(string $question, array $guaInfo, array $yaoResult): string
-    {
-        $movingCount = count(array_filter($yaoResult, function($yao) {
-            return $yao == 0 || $yao == 3;
-        }));
-        
-        $interpretation = "占问：{$question}\n\n";
-        $interpretation .= "所得卦象：{$guaInfo['name']}\n";
-        $interpretation .= "卦辞：{$guaInfo['gua_ci']}\n\n";
-        
-        if (!empty($guaInfo['description'])) {
-            $interpretation .= "卦象含义：{$guaInfo['description']}\n\n";
-        }
-        
-        if ($movingCount > 0) {
-            $interpretation .= "动爻分析：\n";
-            foreach ($guaInfo['moving_yao'] ?? [] as $yao) {
-                $interpretation .= "{$yao['name']}（{$yao['type']}）：{$yao['ci']}\n";
-            }
-            $interpretation .= "\n";
-        } else {
-            $interpretation .= "此卦无动爻，为静卦，表示事情发展平稳。\n\n";
-        }
-        
-        $interpretation .= "五行属性：{$guaInfo['wuxing']}\n";
-        $interpretation .= "所属宫位：{$guaInfo['gong']}\n";
-        
-        return $interpretation;
-    }
-    
-    /**
-     * AI深度分析
-     */
-    protected function generateAiAnalysis(string $question, array $guaInfo, array $yaoResult): ?array
-    {
-        try {
-            $movingYaoStr = '';
-            foreach ($guaInfo['moving_yao'] ?? [] as $yao) {
-                $movingYaoStr .= $yao['name'] . '（' . $yao['type'] . '）：' . mb_substr($yao['ci'], 0, 50) . "\n";
-            }
-            
-            $prompt = "占问：{$question}\n\n";
-            $prompt .= "卦名：{$guaInfo['name']}\n";
-            $prompt .= "卦辞：{$guaInfo['gua_ci']}\n";
-            $prompt .= "动爻：\n{$movingYaoStr}\n";
-            
-            $systemPrompt = '你是一位精通六爻占卜的易学大师。请根据提供的卦象信息，为用户提供详细、准确、有指导意义的解读。解读应包括：1.卦象整体分析 2.针对问题的具体解答 3.行动建议 4.注意事项。语言要专业但易懂，避免过于玄奥。';
-            
-            $response = AiService::chat($prompt, $systemPrompt);
-            
-            return [
-                'content' => $response['content'] ?? 'AI分析暂时不可用',
-                'model' => $response['model'] ?? 'unknown',
-            ];
-        } catch (\Exception $e) {
-            return [
-                'content' => 'AI分析暂时不可用，请稍后重试',
-                'error' => $e->getMessage(),
-            ];
-        }
-    }
-    
-    /**
-     * 获取历史记录
+     * 获取当前用户的六爻历史
      */
     public function history()
     {
-        $user = $this->request->user;
-        $page = (int)$this->request->get('page', 1);
-        $pageSize = (int)$this->request->get('page_size', 20);
-        
-        $pageSize = min(max($pageSize, 1), 100);
-        
-        $query = LiuyaoRecord::where('user_id', $user['sub'])
-            ->order('created_at', 'desc');
-        
-        $total = $query->count();
-        $list = $query->page($page, $pageSize)->select()->toArray();
-        
-        // 格式化数据
-        foreach ($list as &$item) {
-            $item['yao_result'] = str_split($item['yao_result']);
-            if ($item['yao_ci']) {
-                $item['yao_ci'] = json_decode($item['yao_ci'], true);
+        try {
+            $userModel = $this->getCurrentUserModel();
+            $pagination = $this->getPaginationParams('page', 'page_size', 20, 100);
+            $query = $this->applyRecordActiveFilter(
+                Db::table($this->resolveLiuyaoRecordTable())
+            )->where('user_id', (int) $userModel->id);
+
+            $total = (clone $query)->count();
+
+            $records = (clone $query)
+                ->order('created_at', 'desc')
+                ->page($pagination['page'], $pagination['pageSize'])
+                ->select()
+                ->toArray();
+
+            $list = array_map(fn(array $record) => $this->formatRecordForFrontend($record), $records);
+
+            return $this->success([
+                'total' => $total,
+                'page' => $pagination['page'],
+                'page_size' => $pagination['pageSize'],
+                'list' => $list,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('获取六爻历史', $e, '获取记录失败，请稍后重试');
+        }
+    }
+
+    /**
+     * 获取单条六爻历史详情
+     */
+    public function detail()
+    {
+        try {
+            $record = $this->findOwnedRecord((int) $this->request->get('id', 0));
+            return $this->success($this->formatRecordForFrontend($record));
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondBusinessException($e, '获取六爻详情', '记录不存在', 404);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('获取六爻详情', $e, '获取记录详情失败，请稍后重试');
+        }
+    }
+
+    /**
+     * 删除六爻记录
+     */
+    public function delete()
+    {
+        try {
+            $record = $this->findOwnedRecord((int) $this->request->post('id', 0));
+            $table = $this->resolveLiuyaoRecordTable();
+            $columns = $this->getLiuyaoRecordColumns();
+
+            if (isset($columns['status'])) {
+                $deletePayload = ['status' => 0];
+                if (isset($columns['updated_at'])) {
+                    $deletePayload['updated_at'] = date('Y-m-d H:i:s');
+                }
+
+                Db::table($table)
+                    ->where('id', (int) $record['id'])
+                    ->update($deletePayload);
+            } else {
+                Db::table($table)
+                    ->where('id', (int) $record['id'])
+                    ->delete();
             }
-            if ($item['ai_analysis']) {
-                $item['ai_analysis'] = json_decode($item['ai_analysis'], true);
+
+
+            return $this->success(null, '删除成功');
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondBusinessException($e, '删除六爻记录', '记录不存在', 404);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('删除六爻记录', $e, '删除失败，请稍后重试');
+        }
+    }
+
+    /**
+     * 起卦 - 支持多种起卦方式
+     */
+    public function qiGua()
+    {
+        $data = $this->request->post();
+        $method = trim((string) ($data['method'] ?? 'time'));
+
+        try {
+            $result = $this->buildDivinationCore($data);
+
+            if (!empty($data['user_id'])) {
+                $this->saveRecord($data, $result);
             }
+
+            return $this->success($result);
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondBusinessException($e, '执行六爻起卦', '起卦参数无效', 400, [
+                'method' => $method,
+                'user_id' => (int) ($data['user_id'] ?? 0),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('执行六爻起卦', $e, '起卦失败，请稍后重试', [
+                'method' => $method,
+                'user_id' => (int) ($data['user_id'] ?? 0),
+            ]);
+        }
+    }
+    
+    /**
+     * 时间起卦
+     */
+    private function qiGuaByTime(): array
+    {
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai'));
+        return LiuyaoService::qiGuaByTime(
+            (int)$now->format('Y'),
+            (int)$now->format('n'),
+            (int)$now->format('j'),
+            (int)$now->format('G')
+        );
+    }
+    
+    /**
+     * 数字起卦
+     */
+    private function qiGuaByNumber(array $data): array
+    {
+        if (empty($data['numbers'])) {
+            throw new \Exception('请提供数字');
         }
         
-        return $this->success([
-            'list' => $list,
-            'pagination' => [
+        $numbers = $data['numbers'];
+        if (is_string($numbers)) {
+            $numbers = array_map('intval', explode(',', $numbers));
+        }
+        
+        return LiuyaoService::qiGuaByNumber($numbers[0] ?? 1, $numbers[1] ?? null);
+    }
+    
+    /**
+     * 手动摇卦
+     */
+    private function qiGuaByManual(array $data): array
+    {
+        if (empty($data['yao_results']) || count($data['yao_results']) != 6) {
+            throw new \Exception('请提供6次摇卦结果');
+        }
+        
+        return LiuyaoService::qiGuaByManual($data['yao_results']);
+    }
+    
+    /**
+     * 获取卦辞信息
+     */
+    private function getGuaInfo(string $mainGua, string $bianGua): array
+    {
+        $table = $this->resolveGuaDataTable();
+        if ($table === '') {
+            return [
+                'main' => null,
+                'bian' => null,
+            ];
+        }
+
+        // 验证卦名格式，只允许中文字符
+        $pattern = '/^[\x{4e00}-\x{9fa5}]+$/u';
+        $mainInfo = null;
+        $bianInfo = null;
+
+        if ($mainGua !== '' && preg_match($pattern, $mainGua)) {
+            $mainInfo = Db::table($table)
+                ->where('gua_name', $mainGua)
+                ->find();
+        }
+
+        if ($bianGua !== '' && preg_match($pattern, $bianGua)) {
+            $bianInfo = Db::table($table)
+                ->where('gua_name', $bianGua)
+                ->find();
+        }
+
+        return [
+            'main' => $this->normalizeGuaInfoRow($mainInfo),
+            'bian' => $this->normalizeGuaInfoRow($bianInfo),
+        ];
+    }
+
+    private function resolveGuaDataTable(): string
+    {
+        foreach (['gua_data', 'liuyao_gua'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return '';
+    }
+
+    private function resolveGuaYaoDataTable(): string
+    {
+        foreach (['gua_yao_data'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return '';
+    }
+
+    private function normalizeGuaInfoRow(?array $row): ?array
+    {
+        if (!$row) {
+            return null;
+        }
+
+        if (!isset($row['gua_ci'])) {
+            $row['gua_ci'] = '';
+        }
+        if (empty($row['general_meaning'])) {
+            $row['general_meaning'] = (string) ($row['description'] ?? $row['gua_ci_meaning'] ?? $row['gua_ci'] ?? '');
+        }
+
+        return $row;
+    }
+
+
+    
+
+    /**
+     * 获取AI解读
+     */
+    public function aiInterpretation()
+    {
+        try {
+            $data = $this->request->post();
+            
+            if (empty($data['yao_code']) || empty($data['question'])) {
+                return $this->error('参数错误', 400);
+            }
+            
+            // 构建提示词
+            $prompt = $this->buildAiPrompt($data);
+            
+            // 调用DeepSeek API
+            $interpretation = DeepSeekService::chat($prompt);
+            
+            // 更新记录
+            if (!empty($data['record_id'])) {
+                $table = $this->resolveLiuyaoRecordTable();
+                $columns = $this->getLiuyaoRecordColumns();
+                $updateData = [];
+
+                if (isset($columns['ai_interpretation'])) {
+                    $updateData['ai_interpretation'] = $interpretation;
+                }
+                if (isset($columns['ai_analysis'])) {
+                    $updateData['ai_analysis'] = $interpretation;
+                }
+                if (isset($columns['is_ai_analysis'])) {
+                    $updateData['is_ai_analysis'] = 1;
+                }
+                if (isset($columns['updated_at'])) {
+                    $updateData['updated_at'] = date('Y-m-d H:i:s');
+                }
+
+                if ($updateData !== []) {
+                    Db::table($table)
+                        ->where('id', $data['record_id'])
+                        ->update($updateData);
+                }
+            }
+
+
+            
+            return $this->success(['interpretation' => $interpretation]);
+        } catch (\Exception $e) {
+            return $this->respondSystemException('六爻 AI 解读', $e, 'AI解读失败，请稍后重试', [
+                'record_id' => (int) ($data['record_id'] ?? 0),
+                'question_length' => mb_strlen((string) ($data['question'] ?? '')),
+            ]);
+        }
+    }
+    
+    /**
+     * 构建AI提示词
+     */
+    private function buildAiPrompt(array $data): string
+    {
+        $mainGua = $data['main_gua'] ?? '';
+        $bianGua = $data['bian_gua'] ?? '';
+        $yaoCode = $data['yao_code'] ?? '';
+        $question = $data['question'] ?? '';
+        $yongShen = $data['yong_shen'] ?? '';
+        
+        return <<<PROMPT
+你是一位专业的六爻占卜大师，请根据以下卦象为求测者进行详细解读：
+
+【所问事项】
+{$question}
+
+【本卦】
+{$mainGua}
+
+【变卦】
+{$bianGua}
+
+【动爻】
+{$yaoCode}
+
+【用神】
+{$yongShen}
+
+请从以下几个方面进行解读：
+1. 卦象总体分析
+2. 用神状态分析
+3. 动变分析（事情的发展变化）
+4. 应期推断（事情发生的时间）
+5. 具体建议
+
+请用专业但易懂的语言进行解读。
+PROMPT;
+    }
+    
+    /**
+     * 获取起卦记录列表
+     */
+    public function records()
+    {
+        try {
+            $pagination = $this->getPaginationParams('page', 'page_size', 20, 100);
+            $page = $pagination['page'];
+            $pageSize = $pagination['pageSize'];
+            $userId = $this->request->get('user_id');
+
+            $query = $this->applyRecordActiveFilter(
+                \think\facade\Db::table($this->resolveLiuyaoRecordTable())
+            );
+
+
+            if ($userId) {
+                $query->where('user_id', $userId);
+            }
+
+            $total = $query->count();
+            $list = $query->page($page, $pageSize)
+                ->order('created_at', 'DESC')
+                ->select();
+
+            return $this->success([
+                'total' => $total,
                 'page' => $page,
                 'page_size' => $pageSize,
-                'total' => $total,
-                'total_pages' => (int)ceil($total / $pageSize),
-            ],
-        ]);
+                'list' => $list,
+            ]);
+        } catch (\Exception $e) {
+            return $this->respondSystemException('获取六爻记录列表', $e, '获取记录失败，请稍后重试', [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'user_id' => $userId !== null && $userId !== '' ? (int) $userId : null,
+            ]);
+        }
     }
+
     
     /**
      * 获取记录详情
      */
-    public function detail()
+    public function recordDetail(int $id)
     {
-        $user = $this->request->user;
-        $id = (int)$this->request->get('id');
-        
-        if (!$id) {
-            return $this->error('参数错误');
+        try {
+            $record = $this->applyRecordActiveFilter(
+                \think\facade\Db::table($this->resolveLiuyaoRecordTable())
+            )
+                ->where('id', $id)
+                ->find();
+
+            
+            if (!$record) {
+                return $this->error('记录不存在', 404);
+            }
+
+            // 解析JSON字段
+            $record['liuqin'] = json_decode($record['liuqin'], true);
+            $record['liushen'] = json_decode($record['liushen'], true);
+
+            return $this->success($record);
+        } catch (\Exception $e) {
+            return $this->respondSystemException('获取六爻记录详情', $e, '获取记录详情失败，请稍后重试', [
+                'record_id' => $id,
+            ]);
         }
-        
-        $record = LiuyaoRecord::where('id', $id)
-            ->where('user_id', $user['sub'])
+    }
+
+    
+    /**
+     * 获取六十四卦列表
+     */
+    public function guaList()
+    {
+        try {
+            $table = $this->resolveGuaDataTable();
+            if ($table === '') {
+                return $this->success([]);
+            }
+
+            $field = $table === 'gua_data'
+                ? 'id, gua_name, gua_xuhao, wuxing, general_meaning, gua_ci'
+                : 'id, gua_name, gua_code, wuxing, description, gua_ci';
+            $orderField = $table === 'gua_data' ? 'gua_xuhao' : 'id';
+            $list = Db::table($table)
+                ->field($field)
+                ->order($orderField, 'ASC')
+                ->select()
+                ->toArray();
+
+            $list = array_map(fn(array $item) => $this->normalizeGuaInfoRow($item) ?? $item, $list);
+
+            return $this->success($list);
+        } catch (\Exception $e) {
+            return $this->respondSystemException('获取六爻卦象列表', $e, '获取卦象列表失败，请稍后重试');
+        }
+    }
+
+
+    
+    /**
+     * 获取卦象详情
+     */
+    public function guaDetail(string $name)
+    {
+        try {
+            $guaTable = $this->resolveGuaDataTable();
+            if ($guaTable === '') {
+                return $this->error('卦象基础数据未部署', 503);
+            }
+
+            $gua = Db::table($guaTable)
+                ->where('gua_name', $name)
+                ->find();
+            
+            if (!$gua) {
+                return $this->error('卦象不存在', 404);
+            }
+
+            $gua = $this->normalizeGuaInfoRow($gua) ?? $gua;
+
+            // 获取爻辞
+            $gua['yao_ci'] = [];
+            $yaoTable = $this->resolveGuaYaoDataTable();
+            if ($yaoTable !== '' && !empty($gua['id'])) {
+                $gua['yao_ci'] = Db::table($yaoTable)
+                    ->where('gua_id', $gua['id'])
+                    ->order('yao_position', 'ASC')
+                    ->select()
+                    ->toArray();
+            }
+
+            return $this->success($gua);
+        } catch (\Exception $e) {
+            return $this->respondSystemException('获取六爻卦象详情', $e, '获取卦象详情失败，请稍后重试', [
+                'gua_name' => $name,
+            ]);
+        }
+    }
+
+
+    
+    /**
+     * 构建六爻核心结果
+     */
+    private function buildDivinationCore(array $data): array
+    {
+        $method = $data['method'] ?? 'time';
+        $result = match ($method) {
+            'time' => $this->qiGuaByTime(),
+            'number' => $this->qiGuaByNumber($data),
+            'manual' => $this->qiGuaByManual($data),
+            default => throw new \InvalidArgumentException('不支持的起卦方式'),
+        };
+
+        $result['bian_gua'] = LiuyaoService::getBianGua($result['yao_code']);
+        $result['hu_gua'] = LiuyaoService::getHuGua($result['yao_code']);
+        $result['gua_info'] = $this->getGuaInfo($result['main_gua'], $result['bian_gua']['bian_name']);
+
+        $referenceMoment = $this->resolveDivinationMoment();
+        [$riGan, $riZhi] = $this->resolveRiChen($data, $referenceMoment);
+        $timeInfo = [
+            'ri_gan' => $riGan,
+            'ri_zhi' => $riZhi,
+            'ri_chen' => $riGan . $riZhi,
+            'yue_jian' => $this->resolveYueJian($referenceMoment),
+            'divination_at' => $referenceMoment->format('Y-m-d H:i:s'),
+            'xunkong' => LiuyaoService::calculateXunKong($riGan, $riZhi),
+        ];
+
+
+        $result['question'] = trim((string) ($data['question'] ?? ''));
+        $result['time_info'] = $timeInfo;
+        $result['liu_shen'] = LiuyaoService::getLiuShen($riGan);
+        if (count($result['liu_shen']) !== 6) {
+            throw new \InvalidArgumentException('日辰天干解析失败，无法排定六神');
+        }
+
+        $guaInfo = LiuyaoService::getGuaInfo($result['yao_code']);
+
+        $result['gong'] = $guaInfo['gong'];
+        $result['shi_ying'] = LiuyaoService::getShiYing($result['main_gua'], $result['yao_code']);
+
+        $gongWuxing = LiuyaoService::BA_GUA_WUXING[$guaInfo['gong']] ?? '金';
+        $result['liuqin'] = LiuyaoService::getLiuQin($result['main_gua'], $gongWuxing, $result['yao_code']);
+
+        $questionType = $data['question_type'] ?? '其他';
+        $gender = $data['gender'] ?? '男';
+        $result['question_type'] = $questionType;
+        $result['gender'] = $gender;
+        $result['yong_shen'] = LiuyaoService::getYongShen(
+            $questionType,
+            $result['liuqin'],
+            $result['shi_ying'],
+            $result['yao_code'],
+            $gender,
+            $timeInfo
+        );
+        $result['method_label'] = $this->getMethodLabel($method);
+        $result['clean_gua_code'] = str_replace(['0', '1', '2', '3'], ['0', '1', '0', '1'], $result['yao_code']);
+        $result['yao_result'] = $this->normalizeYaoResult($result['yao_results'] ?? null, $result['yao_code']);
+        $result['yao_names'] = array_map(fn(int $item) => $this->getYaoName($item), $result['yao_result']);
+
+        return $result;
+    }
+
+    /**
+     * 统一六爻所使用的起卦时刻。
+     * 晚子时按次日处理，以保持与八字日柱口径一致。
+     */
+    private function resolveDivinationMoment(): \DateTimeImmutable
+    {
+        $moment = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai'));
+        if ((int) $moment->format('G') >= 23) {
+            $moment = $moment->modify('+1 day');
+        }
+
+        return $moment;
+    }
+
+    /**
+     * 自动补齐日辰
+     */
+    private function resolveRiChen(array $data, \DateTimeImmutable $referenceMoment): array
+    {
+        $riGan = trim((string) ($data['ri_gan'] ?? ''));
+        $riZhi = trim((string) ($data['ri_zhi'] ?? ''));
+
+        if (($riGan === '') xor ($riZhi === '')) {
+            throw new \InvalidArgumentException('日辰天干与地支必须同时提供，或同时留空由系统自动推算');
+        }
+
+        if ($riGan === '' && $riZhi === '') {
+            $pillar = (new BaziCalculationService())->calculateDayPillar(
+                (int) $referenceMoment->format('Y'),
+                (int) $referenceMoment->format('n'),
+                (int) $referenceMoment->format('j')
+            );
+
+            $riGan = self::VALID_GAN[(int) $pillar['gan_index']];
+            $riZhi = self::VALID_ZHI[(int) $pillar['zhi_index']];
+        }
+
+        if (!in_array($riGan, self::VALID_GAN, true)) {
+            throw new \InvalidArgumentException('日辰天干参数无效，必须是甲-癸之一');
+        }
+        if (!in_array($riZhi, self::VALID_ZHI, true)) {
+            throw new \InvalidArgumentException('日辰地支参数无效，必须是子-亥之一');
+        }
+
+        return [$riGan, $riZhi];
+    }
+
+    /**
+     * 推导当前起卦时刻的月建。
+     * 以八字统一节气口径取月支，六爻展示时追加“月”字。
+     */
+    private function resolveYueJian(\DateTimeImmutable $referenceMoment): string
+    {
+        $bazi = (new BaziCalculationService())->calculateBazi($referenceMoment->format('Y-m-d H:i:s'), '男');
+        $monthZhi = trim((string) ($bazi['month']['zhi'] ?? ''));
+
+        return $monthZhi !== '' ? $monthZhi . '月' : '';
+    }
+
+
+    /**
+     * 解析并统一爻值编码（0 老阴 / 1 少阳 / 2 少阴 / 3 老阳）
+     */
+    private function normalizeYaoResult(mixed $value, string $fallbackYaoCode = ''): array
+    {
+        if (is_array($value) && $value !== []) {
+            return array_values(array_map(fn(mixed $item) => $this->normalizeYaoCodeValue($item), $value));
+        }
+
+        if (is_string($value) && trim($value) !== '') {
+            $trimmed = trim($value);
+            $decoded = json_decode($trimmed, true);
+            if (is_array($decoded)) {
+                return array_values(array_map(fn(mixed $item) => $this->normalizeYaoCodeValue($item), $decoded));
+            }
+
+            if (str_contains($trimmed, ',')) {
+                return array_values(array_map(fn(string $item) => $this->normalizeYaoCodeValue($item), explode(',', $trimmed)));
+            }
+
+            if (preg_match('/^[0-3]{6}$/', $trimmed) || preg_match('/^[6-9]{6}$/', $trimmed)) {
+                return array_values(array_map(fn(string $item) => $this->normalizeYaoCodeValue($item), str_split($trimmed)));
+            }
+        }
+
+        if ($fallbackYaoCode !== '' && preg_match('/^[0-3]{6}$/', $fallbackYaoCode)) {
+            return array_values(array_map(fn(string $item) => $this->normalizeYaoCodeValue($item), str_split($fallbackYaoCode)));
+        }
+
+        return [];
+    }
+
+    /**
+     * 单个爻值归一化
+     */
+    private function normalizeYaoCodeValue(mixed $value): int
+    {
+        $numeric = (int) $value;
+        return match ($numeric) {
+            6 => 0,
+            7 => 1,
+            8 => 2,
+            9 => 3,
+            default => max(0, min(3, $numeric)),
+        };
+    }
+
+    /**
+     * 获取爻名
+     */
+    private function getYaoName(int $value): string
+    {
+        return [0 => '老阴', 1 => '少阳', 2 => '少阴', 3 => '老阳'][$value] ?? '未知';
+    }
+
+    /**
+     * 方法标签
+     */
+    private function getMethodLabel(string $method): string
+    {
+        return [
+            'time' => '时间起卦',
+            'number' => '数字起卦',
+            'manual' => '手动摇卦',
+        ][$method] ?? '时间起卦';
+    }
+
+    /**
+     * 当前用户模型
+     */
+    private function getCurrentUserModel(): User
+    {
+        $userId = (int) ($this->request->user['sub'] ?? 0);
+        $userModel = User::find($userId);
+        if (!$userModel) {
+            throw new \InvalidArgumentException('用户不存在');
+        }
+
+        return $userModel;
+    }
+
+    /**
+     * 计算六爻前端展示定价
+     */
+    private function resolvePricing(User $userModel): array
+    {
+        $recordCount = (int) $this->applyRecordActiveFilter(
+            Db::table($this->resolveLiuyaoRecordTable())
+        )
+            ->where('user_id', (int) $userModel->id)
+            ->count();
+
+
+        $isFirstFree = $recordCount === 0;
+        $isVipFree = !$isFirstFree && !empty($userModel->is_vip);
+        $basePoints = (int) ConfigService::get('points_cost_liuyao', self::LIUYAO_POINTS_COST);
+        $costInfo = ConfigService::calculatePointsCost('liuyao', $basePoints, $isFirstFree);
+        $cost = ($isFirstFree || $isVipFree) ? 0 : $costInfo['final'];
+
+        return [
+            'cost' => $cost,
+            'original_cost' => $cost > 0 ? $costInfo['original'] : 0,
+            'discount' => $cost > 0 ? $costInfo['discount'] : 0,
+            'reason' => $isFirstFree ? '首次占卜免费' : ($isVipFree ? 'VIP 免费' : ($costInfo['reason'] ?? '')),
+            'is_first_free' => $isFirstFree,
+            'is_vip_free' => $isVipFree,
+            'remaining_points' => (int) ($userModel->points ?? 0),
+        ];
+    }
+
+    /**
+     * 统一处理六爻结果持久化。
+     * 付费场景下，记录落库与积分扣减必须同成同败，避免“已扣费却没有历史记录”。
+     *
+     * @return array{0:int,1:int}
+     */
+    private function persistDivinationOutcome(User $userModel, array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): array
+    {
+        if ($pointsCost <= 0) {
+            $recordId = $this->storeDivinationRecord($data, $coreResult, $interpretation, $aiContent, $pointsCost);
+            if ($recordId <= 0) {
+                throw new \RuntimeException('六爻占卜记录保存失败');
+            }
+
+            return [$recordId, (int) ($userModel->points ?? 0)];
+        }
+
+
+        Db::startTrans();
+        try {
+            $recordId = $this->storeDivinationRecord($data, $coreResult, $interpretation, $aiContent, $pointsCost);
+            if ($recordId <= 0) {
+                throw new \RuntimeException('六爻占卜记录保存失败');
+            }
+
+            $lockedUser = Db::name('tc_user')
+                ->where('id', (int) $userModel->id)
+                ->where('status', 1)
+                ->lock(true)
+                ->find();
+
+            if (!$lockedUser) {
+                throw new \RuntimeException('用户不存在');
+            }
+
+            $currentPoints = (int) ($lockedUser['points'] ?? 0);
+            if ($currentPoints < $pointsCost) {
+                throw new \RuntimeException('积分不足，需要' . $pointsCost . '积分', 403);
+            }
+
+            $updateResult = Db::name('tc_user')
+                ->where('id', (int) $userModel->id)
+                ->dec('points', $pointsCost)
+                ->update();
+
+            if ($updateResult === 0) {
+                throw new \RuntimeException('积分扣除失败，请重试');
+            }
+
+            $remainingPoints = $currentPoints - $pointsCost;
+            $pointsPayload = PointsRecord::buildRecordPayload(
+                (int) $userModel->id,
+                '六爻占卜',
+                -$pointsCost,
+                'liuyao',
+                $recordId,
+                '六爻占卜消耗',
+                ['balance' => $remainingPoints]
+            );
+            Db::name('tc_points_record')->insert($pointsPayload);
+
+            Db::commit();
+            $userModel->points = $remainingPoints;
+
+            return [$recordId, $remainingPoints];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * 生成前端所需的占卜结果结构
+     */
+    private function buildFrontendDivinationResult(?int $recordId, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost, int $remainingPoints, bool $isFirst): array
+    {
+        $guaCi = $coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? '';
+        $createdAt = date('Y-m-d H:i:s');
+
+        return [
+            'id' => $recordId,
+            'question' => $coreResult['question'],
+            'method' => $coreResult['method'] ?? '',
+            'method_label' => $coreResult['method_label'] ?? '时间起卦',
+            'time_info' => $coreResult['time_info'],
+            'created_at' => $createdAt,
+            'gua' => [
+                'name' => $coreResult['main_gua'],
+                'code' => $coreResult['clean_gua_code'] ?? '',
+                'gua_ci' => $guaCi,
+            ],
+            'bian_gua' => [
+                'name' => $coreResult['bian_gua']['bian_name'] ?? '',
+                'code' => $coreResult['bian_gua']['bian_code'] ?? '',
+                'dong_yao' => $coreResult['bian_gua']['dong_yao'] ?? [],
+            ],
+            'hu_gua' => [
+                'name' => $coreResult['hu_gua']['hu_name'] ?? '',
+                'code' => $coreResult['hu_gua']['hu_code'] ?? '',
+            ],
+            'gong' => $coreResult['gong'] ?? '',
+            'shi_ying' => $coreResult['shi_ying'] ?? [],
+            'liuqin' => $coreResult['liuqin'] ?? [],
+            'liushen' => $coreResult['liu_shen'] ?? [],
+            'yong_shen' => $coreResult['yong_shen'] ?? [],
+            'line_details' => $this->buildLineSnapshots($coreResult),
+            'yao_result' => $coreResult['yao_result'],
+            'yao_names' => $coreResult['yao_names'],
+            'interpretation' => $interpretation,
+            'ai_analysis' => $aiContent ? ['content' => $aiContent] : null,
+            'points_cost' => $pointsCost,
+            'remaining_points' => $remainingPoints,
+            'is_first' => $isFirst,
+            'fushen' => $this->buildFushenDisplay($coreResult),
+        ];
+    }
+
+
+    /**
+     * 构建简要解读
+     */
+    private function buildInterpretation(array $coreResult): string
+    {
+        $segments = [];
+        $mainMeaning = trim((string) ($coreResult['gua_info']['main']['general_meaning'] ?? $coreResult['gua_info']['main']['gua_ci'] ?? ''));
+        if ($mainMeaning !== '') {
+            $segments[] = '本卦提示：' . $mainMeaning;
+        }
+
+        $segments[] = '本卦：' . ($coreResult['main_gua'] ?? '') . '，变卦：' . ($coreResult['bian_gua']['bian_name'] ?? '') . '，互卦：' . ($coreResult['hu_gua']['hu_name'] ?? '');
+
+        if (!empty($coreResult['yong_shen']['description'])) {
+            $segments[] = '用神分析：' . $coreResult['yong_shen']['description'];
+        }
+
+        if (!empty($coreResult['time_info']['yue_jian'])) {
+            $segments[] = '月建参考：' . $coreResult['time_info']['yue_jian'];
+        }
+
+        if (!empty($coreResult['time_info']['xunkong'])) {
+            $segments[] = '旬空参考：' . implode('、', (array) $coreResult['time_info']['xunkong']);
+        }
+
+        return implode(PHP_EOL . PHP_EOL, array_filter($segments));
+    }
+
+
+    /**
+     * AI 提示数据
+     */
+    private function buildAiPayload(array $coreResult): array
+    {
+        $dongYao = $coreResult['bian_gua']['dong_yao'] ?? [];
+        $yaoInfo = [];
+        foreach ($coreResult['yao_result'] as $index => $value) {
+            $position = $index + 1;
+            $liuQin = $coreResult['liuqin'][$position] ?? '';
+            $liuShen = $coreResult['liu_shen'][$position] ?? '';
+            $yaoInfo[] = sprintf('第%s爻：%s（%s/%s）', $position, $this->getYaoName((int) $value), $liuQin, $liuShen);
+        }
+
+        return [
+            'question' => $coreResult['question'] ?? '',
+            'main_gua' => $coreResult['main_gua'] ?? '',
+            'bian_gua' => $coreResult['bian_gua']['bian_name'] ?? '',
+            'hu_gua' => $coreResult['hu_gua']['hu_name'] ?? '',
+            'yao_info' => implode(PHP_EOL, $yaoInfo),
+            'dong_yao' => empty($dongYao) ? '无动爻' : implode('、', $dongYao),
+            'liu_shen' => $coreResult['liu_shen'] ?? [],
+            'yong_shen' => $coreResult['yong_shen'] ?? [],
+            'ri_chen' => $coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? '')),
+            'yue_jian' => $coreResult['time_info']['yue_jian'] ?? '未提供',
+            'xun_kong' => $coreResult['time_info']['xunkong'] ? implode('、', (array) $coreResult['time_info']['xunkong']) : '未提供',
+        ];
+    }
+
+
+    /**
+     * 保存前端兼容结果
+     */
+    private function storeDivinationRecord(array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): int
+    {
+        $table = $this->resolveLiuyaoRecordTable();
+        $columns = $this->getLiuyaoRecordColumns();
+        $createdAt = date('Y-m-d H:i:s');
+        $recordData = [];
+
+        if (isset($columns['hexagram_original']) || isset($columns['analysis']) || isset($columns['points_used'])) {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => (string) ($data['question'] ?? ''),
+                'method' => (string) ($data['method'] ?? 'time'),
+                'hexagram_original' => json_encode([
+                    'name' => $coreResult['main_gua'] ?? '',
+                    'code' => $coreResult['clean_gua_code'] ?? '',
+                    'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
+                    'yao_code' => $coreResult['yao_code'] ?? '',
+                    'yao_result' => $coreResult['yao_result'] ?? [],
+                ], JSON_UNESCAPED_UNICODE),
+                'hexagram_changed' => json_encode([
+                    'name' => $coreResult['bian_gua']['bian_name'] ?? '',
+                    'code' => $coreResult['bian_gua']['bian_code'] ?? '',
+                ], JSON_UNESCAPED_UNICODE),
+                'hexagram_mutual' => json_encode([
+                    'name' => $coreResult['hu_gua']['hu_name'] ?? '',
+                    'code' => $coreResult['hu_gua']['hu_code'] ?? '',
+                ], JSON_UNESCAPED_UNICODE),
+                'lines' => json_encode($this->buildLineSnapshots($coreResult), JSON_UNESCAPED_UNICODE),
+                'moving_lines' => json_encode($coreResult['bian_gua']['dong_yao'] ?? [], JSON_UNESCAPED_UNICODE),
+                'analysis' => $interpretation,
+                'ai_analysis' => $aiContent ?? '',
+                'points_used' => $pointsCost,
+                'is_free' => $pointsCost === 0 ? 1 : 0,
+                'is_public' => 0,
+                'share_code' => '',
+                'client_ip' => (string) $this->request->ip(),
+                'created_at' => $createdAt,
+            ];
+        } elseif (isset($columns['question_type']) || isset($columns['main_gua_name']) || isset($columns['yao_code'])) {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => (string) ($data['question'] ?? ''),
+                'question_type' => $this->getQuestionTypeCode((string) ($data['question_type'] ?? '其他')),
+                'method' => $this->getMethodCode((string) ($data['method'] ?? 'time')),
+                'input_number' => !empty($data['numbers']) ? implode(',', (array) $data['numbers']) : '',
+                'yao_result' => json_encode($coreResult['yao_result'] ?? [], JSON_UNESCAPED_UNICODE),
+                'yao_code' => (string) ($coreResult['yao_code'] ?? ''),
+                'main_gua_name' => (string) ($coreResult['main_gua'] ?? ''),
+                'main_gua_code' => (string) ($coreResult['clean_gua_code'] ?? ''),
+                'bian_gua_name' => (string) ($coreResult['bian_gua']['bian_name'] ?? ''),
+                'bian_gua_code' => (string) ($coreResult['bian_gua']['bian_code'] ?? ''),
+                'hu_gua_name' => (string) ($coreResult['hu_gua']['hu_name'] ?? ''),
+                'hu_gua_code' => (string) ($coreResult['hu_gua']['hu_code'] ?? ''),
+                'liuqin' => json_encode($coreResult['liuqin'] ?? [], JSON_UNESCAPED_UNICODE),
+                'liushen' => json_encode($coreResult['liu_shen'] ?? [], JSON_UNESCAPED_UNICODE),
+                'yongshen' => (string) ($coreResult['yong_shen']['liuqin'] ?? ''),
+                'liunian' => (string) ($coreResult['time_info']['ri_zhi'] ?? ''),
+                'yuejian' => (string) ($coreResult['time_info']['yue_jian'] ?? ''),
+                'rigan' => (string) ($coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''))),
+                'interpretation' => $interpretation,
+                'ai_interpretation' => $aiContent ?? '',
+                'updated_at' => $createdAt,
+                'created_at' => $createdAt,
+            ];
+        } else {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => (string) ($data['question'] ?? ''),
+                'method' => (string) ($data['method'] ?? 'time'),
+                'yao_result' => (string) ($coreResult['yao_code'] ?? json_encode($coreResult['yao_result'] ?? [], JSON_UNESCAPED_UNICODE)),
+                'gua_code' => $this->buildLegacyGuaCode($coreResult),
+                'gua_name' => (string) ($coreResult['main_gua'] ?? ''),
+                'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
+                'yao_ci' => '',
+                'interpretation' => $interpretation,
+                'ai_analysis' => $aiContent ?? '',
+                'is_ai_analysis' => $aiContent ? 1 : 0,
+                'consumed_points' => $pointsCost,
+                'created_at' => $createdAt,
+            ];
+        }
+
+
+        $recordData = $this->filterRecordDataByColumns($recordData, $columns);
+
+        return (int) Db::table($table)->insertGetId($recordData);
+    }
+
+
+
+    /**
+     * 兼容旧 saveRecord 调用
+     */
+    private function saveRecord(array $data, array $result): void
+    {
+        $this->storeDivinationRecord(
+            $data,
+            $result,
+            $result['interpretation'] ?? ($result['gua_info']['main']['general_meaning'] ?? ''),
+            $result['ai_interpretation'] ?? null,
+            0
+        );
+    }
+
+    /**
+     * 前端历史记录格式
+     */
+    private function formatRecordForFrontend(array $record): array
+    {
+        $originalGua = $this->decodeJsonField($record['hexagram_original'] ?? null);
+        $changedGua = $this->decodeJsonField($record['hexagram_changed'] ?? null);
+        $mutualGua = $this->decodeJsonField($record['hexagram_mutual'] ?? null);
+        $storedLines = $this->decodeJsonField($record['lines'] ?? null);
+        $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? $originalGua['name'] ?? '');
+        $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? $originalGua['code'] ?? '');
+        $bianGuaName = (string) ($record['bian_gua_name'] ?? $changedGua['name'] ?? '');
+        $yaoSeed = $record['yao_result'] ?? ($originalGua['yao_result'] ?? '');
+        $legacyYaoCode = is_string($yaoSeed) && preg_match('/^[0-3]{6}$/', trim($yaoSeed)) ? trim($yaoSeed) : '';
+        $yaoCode = (string) ($record['yao_code'] ?? $originalGua['yao_code'] ?? $legacyYaoCode);
+        $yaoResult = $this->normalizeYaoResult($yaoSeed, $yaoCode);
+        if (strlen($mainGuaCode) <= 2 && $yaoCode !== '') {
+            $mainGuaCode = strtr($yaoCode, ['0' => '0', '1' => '1', '2' => '0', '3' => '1']);
+        }
+
+        $guaInfo = $this->getGuaInfo($mainGuaName, $bianGuaName);
+        $method = $this->resolveMethodByCode($record['method'] ?? 1);
+        $aiContent = (string) ($record['ai_interpretation'] ?? $record['ai_analysis'] ?? '');
+        $guaCi = (string) ($record['gua_ci'] ?? $originalGua['gua_ci'] ?? $guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? '');
+        $interpretation = (string) ($record['interpretation'] ?? $record['analysis'] ?? '');
+        $consumedPoints = (int) ($record['consumed_points'] ?? $record['points_used'] ?? 0);
+        $createdAt = (string) ($record['created_at'] ?? '');
+        $riChen = trim((string) ($record['rigan'] ?? ''));
+        $yueJian = trim((string) ($record['yuejian'] ?? ''));
+        $riGan = $riChen !== '' ? mb_substr($riChen, 0, 1) : '';
+        $riZhi = $riChen !== '' ? mb_substr($riChen, 1) : '';
+        $xunkong = $this->decodeJsonField($record['xunkong'] ?? $record['xun_kong'] ?? null);
+        if (!is_array($xunkong)) {
+            $xunkong = [];
+        }
+        if (empty($xunkong) && $riGan !== '' && $riZhi !== '') {
+            try {
+                $xunkong = LiuyaoService::calculateXunKong($riGan, $riZhi);
+            } catch (\Throwable $exception) {
+                $xunkong = [];
+            }
+        }
+
+        $liuqinMap = $this->normalizePositionMap($this->decodeJsonField($record['liuqin'] ?? null));
+        $liushenMap = $this->normalizePositionMap($this->decodeJsonField($record['liushen'] ?? null));
+        $dongYao = array_values(array_map('intval', $this->decodeJsonField($record['moving_lines'] ?? null)));
+        $gong = '';
+        $shiYing = [];
+        $bianGuaCode = (string) ($record['bian_gua_code'] ?? $changedGua['code'] ?? '');
+        $huGuaName = (string) ($record['hu_gua_name'] ?? $mutualGua['name'] ?? '');
+        $huGuaCode = (string) ($record['hu_gua_code'] ?? $mutualGua['code'] ?? '');
+
+        if ($yaoCode !== '') {
+            try {
+                $bianData = LiuyaoService::getBianGua($yaoCode);
+                $huData = LiuyaoService::getHuGua($yaoCode);
+                $guaMeta = LiuyaoService::getGuaInfo($yaoCode);
+                $shiYing = LiuyaoService::getShiYing($mainGuaName, $yaoCode);
+                $dongYao = $dongYao !== [] ? $dongYao : array_values(array_map('intval', (array) ($bianData['dong_yao'] ?? [])));
+                $bianGuaName = $bianGuaName !== '' ? $bianGuaName : (string) ($bianData['bian_name'] ?? '');
+                $bianGuaCode = $bianGuaCode !== '' ? $bianGuaCode : (string) ($bianData['bian_code'] ?? '');
+                $huGuaName = $huGuaName !== '' ? $huGuaName : (string) ($huData['hu_name'] ?? '');
+                $huGuaCode = $huGuaCode !== '' ? $huGuaCode : (string) ($huData['hu_code'] ?? '');
+                $gong = (string) ($guaMeta['gong'] ?? '');
+            } catch (\Throwable $exception) {
+                $shiYing = [];
+            }
+        }
+
+        $lineDetails = $this->normalizeStoredLineDetails($storedLines, $yaoResult, $liuqinMap, $liushenMap, $shiYing, $dongYao);
+        $timeInfo = [
+            'ri_gan' => $riGan,
+            'ri_zhi' => $riZhi,
+            'ri_chen' => $riChen,
+            'yue_jian' => $yueJian,
+            'divination_at' => $createdAt,
+            'xunkong' => array_values(array_filter(array_map('strval', $xunkong))),
+        ];
+
+        return [
+            'id' => (int) ($record['id'] ?? 0),
+            'question' => (string) ($record['question'] ?? ''),
+            'method' => $method,
+            'method_label' => $this->getMethodLabel($method),
+            'time_info' => $timeInfo,
+            'yao_result' => $yaoResult,
+            'yao_names' => array_map(fn(int $item) => $this->getYaoName($item), $yaoResult),
+            'gua' => [
+                'name' => $mainGuaName,
+                'code' => $mainGuaCode,
+                'gua_ci' => $guaCi,
+            ],
+            'gua_name' => $mainGuaName,
+            'gua_code' => $mainGuaCode,
+            'gua_ci' => $guaCi,
+            'bian_gua' => [
+                'name' => $bianGuaName,
+                'code' => $bianGuaCode,
+                'dong_yao' => $dongYao,
+            ],
+            'hu_gua' => [
+                'name' => $huGuaName,
+                'code' => $huGuaCode,
+            ],
+            'gong' => $gong,
+            'shi_ying' => $shiYing,
+            'liuqin' => $liuqinMap,
+            'liushen' => $liushenMap,
+            'yong_shen' => ['liuqin' => (string) ($record['yongshen'] ?? '')],
+            'line_details' => $lineDetails,
+            'interpretation' => $interpretation,
+            'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
+            'consumed_points' => $consumedPoints,
+            'created_at' => $createdAt,
+            'fushen' => null,
+        ];
+
+    }
+
+
+
+    /**
+     * 伏神展示结构
+     */
+    private function buildFushenDisplay(array $coreResult): ?array
+    {
+        $yongShen = $coreResult['yong_shen'] ?? [];
+        if (empty($yongShen['is_fushen']) || empty($yongShen['fushen_info']['position'])) {
+            return null;
+        }
+
+        $position = (int) $yongShen['fushen_info']['position'];
+        if ($position < 1 || $position > 6) {
+            return null;
+        }
+
+        $display = array_fill(0, 6, null);
+        $display[$position - 1] = [
+            'name' => $yongShen['liuqin'] ?? '伏神',
+            'ganzhi' => $yongShen['fushen_info']['di_zhi'] ?? '',
+        ];
+
+        return $display;
+    }
+
+    /**
+     * 解析当前环境可用的六爻记录表。
+     */
+    private function resolveLiuyaoRecordTable(): string
+    {
+        if (self::$liuyaoRecordTable !== null) {
+            return self::$liuyaoRecordTable;
+        }
+
+        foreach (['tc_liuyao_record', 'liuyao_records'] as $table) {
+            $columns = SchemaInspector::getTableColumns($table);
+            if (!empty($columns) && isset($columns['user_id']) && isset($columns['question'])) {
+                self::$liuyaoRecordTable = $table;
+                return $table;
+            }
+        }
+
+        self::$liuyaoRecordTable = 'tc_liuyao_record';
+        return self::$liuyaoRecordTable;
+    }
+
+    private function getLiuyaoRecordColumns(): array
+    {
+        return SchemaInspector::getTableColumns($this->resolveLiuyaoRecordTable());
+    }
+
+    private function filterRecordDataByColumns(array $data, array $columns): array
+    {
+        return array_filter(
+            $data,
+            static fn($value, string $key): bool => isset($columns[$key]),
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
+
+    private function buildLineSnapshots(array $coreResult): array
+    {
+        $snapshots = [];
+        $shiPosition = (int) ($coreResult['shi_ying']['shi'] ?? 0);
+        $yingPosition = (int) ($coreResult['shi_ying']['ying'] ?? 0);
+        $movingLines = array_map('intval', (array) ($coreResult['bian_gua']['dong_yao'] ?? []));
+
+        foreach (($coreResult['yao_result'] ?? []) as $index => $value) {
+            $position = $index + 1;
+            $snapshots[] = [
+                'position' => $position,
+                'value' => (int) $value,
+                'name' => $this->getYaoName((int) $value),
+                'liuqin' => $coreResult['liuqin'][$position] ?? '',
+                'liushen' => $coreResult['liu_shen'][$position] ?? '',
+                'is_moving' => in_array($position, $movingLines, true),
+                'is_shi' => $position === $shiPosition,
+                'is_ying' => $position === $yingPosition,
+            ];
+        }
+
+        return $snapshots;
+    }
+
+    private function normalizePositionMap(array $value): array
+    {
+        $normalized = [];
+        foreach ($value as $key => $item) {
+            $position = (int) $key;
+            if ($position <= 0) {
+                continue;
+            }
+            $normalized[$position] = is_scalar($item) ? (string) $item : '';
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeStoredLineDetails(array $storedLines, array $yaoResult, array $liuqinMap, array $liushenMap, array $shiYing, array $dongYao): array
+    {
+        $lineDetails = [];
+        $shiPosition = (int) ($shiYing['shi'] ?? 0);
+        $yingPosition = (int) ($shiYing['ying'] ?? 0);
+        $movingLines = array_map('intval', $dongYao);
+
+        if ($storedLines !== []) {
+            foreach ($storedLines as $line) {
+                $position = (int) ($line['position'] ?? 0);
+                if ($position <= 0) {
+                    continue;
+                }
+                $value = isset($line['value']) ? (int) $line['value'] : (int) ($yaoResult[$position - 1] ?? 1);
+                $lineDetails[] = [
+                    'position' => $position,
+                    'value' => $value,
+                    'name' => (string) ($line['name'] ?? $this->getYaoName($value)),
+                    'liuqin' => (string) ($line['liuqin'] ?? ($liuqinMap[$position] ?? '')),
+                    'liushen' => (string) ($line['liushen'] ?? ($liushenMap[$position] ?? '')),
+                    'is_moving' => array_key_exists('is_moving', $line) ? (bool) $line['is_moving'] : in_array($position, $movingLines, true),
+                    'is_shi' => array_key_exists('is_shi', $line) ? (bool) $line['is_shi'] : $position === $shiPosition,
+                    'is_ying' => array_key_exists('is_ying', $line) ? (bool) $line['is_ying'] : $position === $yingPosition,
+                ];
+            }
+
+            if ($lineDetails !== []) {
+                return $lineDetails;
+            }
+        }
+
+        foreach ($yaoResult as $index => $value) {
+            $position = $index + 1;
+            $lineDetails[] = [
+                'position' => $position,
+                'value' => (int) $value,
+                'name' => $this->getYaoName((int) $value),
+                'liuqin' => $liuqinMap[$position] ?? '',
+                'liushen' => $liushenMap[$position] ?? '',
+                'is_moving' => in_array($position, $movingLines, true),
+                'is_shi' => $position === $shiPosition,
+                'is_ying' => $position === $yingPosition,
+            ];
+        }
+
+        return $lineDetails;
+    }
+
+    private function decodeJsonField($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (!is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * 兼容旧版 liuyao_records 两位卦码结构。
+     */
+    private function buildLegacyGuaCode(array $coreResult): string
+    {
+        $cleanCode = (string) ($coreResult['clean_gua_code'] ?? '');
+        if (strlen($cleanCode) !== 6) {
+            return '';
+        }
+
+        $trigramMap = [
+            '000' => '0', // 坤
+            '100' => '1', // 震
+            '010' => '2', // 坎
+            '110' => '3', // 兑
+            '011' => '4', // 巽
+            '111' => '5', // 乾
+            '101' => '6', // 离
+            '001' => '7', // 艮
+        ];
+
+        $lower = substr($cleanCode, 0, 3);
+        $upper = substr($cleanCode, 3, 3);
+
+        return ($trigramMap[$upper] ?? '') . ($trigramMap[$lower] ?? '');
+    }
+
+
+    /**
+     * 仅在存在软删字段时追加过滤。
+     */
+    private function applyRecordActiveFilter($query)
+    {
+        $columns = $this->getLiuyaoRecordColumns();
+        if (isset($columns['status'])) {
+            $query->where('status', 1);
+        }
+        if (isset($columns['is_deleted'])) {
+            $query->where('is_deleted', 0);
+        }
+
+        return $query;
+    }
+
+    /**
+     * 根据代码反解起卦方式
+     */
+    private function resolveMethodByCode($methodCode): string
+    {
+        if (is_string($methodCode)) {
+            $normalized = strtolower(trim($methodCode));
+            $stringMap = [
+                'time' => 'time',
+                'number' => 'number',
+                'manual' => 'manual',
+                'coin' => 'manual',
+                'random' => 'time',
+            ];
+            if (isset($stringMap[$normalized])) {
+                return $stringMap[$normalized];
+            }
+
+            if (is_numeric($normalized)) {
+                $methodCode = (int) $normalized;
+            } else {
+                return 'time';
+            }
+        }
+
+        return [1 => 'time', 2 => 'number', 3 => 'manual'][(int) $methodCode] ?? 'time';
+    }
+
+
+    /**
+     * 查询当前用户自己的记录
+     */
+    private function findOwnedRecord(int $id): array
+    {
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('记录不存在');
+        }
+
+        $userModel = $this->getCurrentUserModel();
+        $record = $this->applyRecordActiveFilter(
+            Db::table($this->resolveLiuyaoRecordTable())
+        )
+            ->where('id', $id)
+            ->where('user_id', (int) $userModel->id)
             ->find();
-        
+
         if (!$record) {
-            return $this->error('记录不存在', 404);
+            throw new \InvalidArgumentException('记录不存在');
         }
-        
-        $record->yao_result = str_split($record->yao_result);
-        if ($record->yao_ci) {
-            $record->yao_ci = json_decode($record->yao_ci, true);
-        }
-        if ($record->ai_analysis) {
-            $record->ai_analysis = json_decode($record->ai_analysis, true);
-        }
-        
-        return $this->success($record);
+
+        return $record;
+    }
+
+
+    /**
+     * 转换问事类型为代码
+     */
+    private function getQuestionTypeCode(string $type): int
+    {
+        $map = [
+            '求财' => 1,
+            '感情' => 2,
+            '事业' => 3,
+            '健康' => 4,
+            '学业' => 5,
+            '出行' => 6,
+            '其他' => 7,
+        ];
+        return $map[$type] ?? 7;
     }
     
     /**
-     * 删除记录
+     * 转换起卦方式为代码
      */
-    public function delete()
+    private function getMethodCode(string $method): int
     {
-        $user = $this->request->user;
-        $id = (int)$this->request->post('id');
-        
-        if (!$id) {
-            return $this->error('参数错误');
-        }
-        
-        $record = LiuyaoRecord::where('id', $id)
-            ->where('user_id', $user['sub'])
-            ->find();
-        
-        if (!$record) {
-            return $this->error('记录不存在', 404);
-        }
-        
-        $record->delete();
-        
-        return $this->success(['message' => '删除成功']);
+        $map = [
+            'time' => 1,
+            'number' => 2,
+            'manual' => 3,
+        ];
+        return $map[$method] ?? 1;
     }
 }

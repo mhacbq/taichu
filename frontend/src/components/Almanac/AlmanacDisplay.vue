@@ -248,7 +248,7 @@ defineProps({
   justify-content: space-between;
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .date-info,
@@ -266,13 +266,13 @@ defineProps({
 
 .label {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .value {
   font-size: 15px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* 宜忌 */
@@ -285,8 +285,8 @@ defineProps({
 
 .yi-section,
 .ji-section {
-  background: #f8f8f8;
-  border-radius: 12px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   padding: 20px;
 }
 
@@ -301,7 +301,7 @@ defineProps({
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  background: var(--success-gradient);
   color: white;
   border-radius: 50%;
   font-size: 18px;
@@ -314,7 +314,7 @@ defineProps({
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+  background: var(--danger-gradient);
   color: white;
   border-radius: 50%;
   font-size: 18px;
@@ -338,15 +338,15 @@ defineProps({
 
 .chongsha-card,
 .zhiri-card {
-  background: #f8f8f8;
-  border-radius: 12px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   padding: 20px;
 }
 
 .card-title {
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -367,7 +367,7 @@ defineProps({
 .sha .value {
   font-size: 18px;
   font-weight: 700;
-  color: #ff4d4f;
+  color: var(--danger-color);
 }
 
 .zhiri-item {
@@ -386,19 +386,19 @@ defineProps({
 }
 
 .zhiri-item .value.ji {
-  color: #ff4d4f;
+  color: var(--danger-color);
 }
 
 .zhiri-item .value.xiong {
-  color: #fa8c16;
+  color: var(--warning-color);
 }
 
 .zhiri-item .value.ping {
-  color: #1890ff;
+  color: var(--info-color);
 }
 
 .zhiri-item .value.xiaoJi {
-  color: #52c41a;
+  color: var(--success-color);
 }
 
 /* 时辰吉凶 */
@@ -412,7 +412,7 @@ defineProps({
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 
@@ -423,8 +423,8 @@ defineProps({
 }
 
 .shichen-item {
-  background: #f8f8f8;
-  border-radius: 8px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   padding: 12px 8px;
   text-align: center;
   transition: all 0.3s;
@@ -432,63 +432,63 @@ defineProps({
 
 .shichen-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .shichen-item.ji {
-  background: linear-gradient(135deg, #fff2f0 0%, #fff1f0 100%);
-  border: 1px solid #ffccc7;
+  background: linear-gradient(135deg, var(--danger-light-10) 0%, var(--danger-light-05) 100%);
+  border: 1px solid var(--danger-light);
 }
 
 .shichen-item.xiong {
-  background: linear-gradient(135deg, #fff7e6 0%, #fff2e8 100%);
-  border: 1px solid #ffd8bf;
+  background: linear-gradient(135deg, var(--warning-light-10) 0%, var(--warning-light-05) 100%);
+  border: 1px solid var(--warning-light);
 }
 
 .shichen-item.xiaoJi {
-  background: linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%);
-  border: 1px solid #b7eb8f;
+  background: linear-gradient(135deg, var(--success-light-10) 0%, var(--success-light-05) 100%);
+  border: 1px solid var(--success-light);
 }
 
 .shichen-time {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   margin-bottom: 4px;
 }
 
 .shichen-name {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .shichen-status {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 16px;
   display: inline-block;
   margin-bottom: 4px;
 }
 
 .shichen-item.ji .shichen-status {
-  background: #ff4d4f;
+  background: var(--danger-color);
   color: white;
 }
 
 .shichen-item.xiong .shichen-status {
-  background: #fa8c16;
+  background: var(--warning-color);
   color: white;
 }
 
 .shichen-item.xiaoJi .shichen-status {
-  background: #52c41a;
+  background: var(--success-color);
   color: white;
 }
 
 .shichen-yiji {
   font-size: 11px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* 吉神凶煞 */
@@ -503,17 +503,17 @@ defineProps({
 }
 
 .jishen-col {
-  background: #f8f8f8;
-  border-radius: 12px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   padding: 20px;
 }
 
 .jishen-col.ji {
-  background: linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%);
+  background: linear-gradient(135deg, var(--success-light-10) 0%, var(--success-light-05) 100%);
 }
 
 .jishen-col.xiong {
-  background: linear-gradient(135deg, #fff2f0 0%, #fff1f0 100%);
+  background: linear-gradient(135deg, var(--danger-light-10) 0%, var(--danger-light-05) 100%);
 }
 
 .col-title {
@@ -526,11 +526,11 @@ defineProps({
 }
 
 .jishen-col.ji .col-title {
-  color: #52c41a;
+  color: var(--success-color);
 }
 
 .jishen-col.xiong .col-title {
-  color: #ff4d4f;
+  color: var(--danger-color);
 }
 
 .jishen-tags {
@@ -551,8 +551,8 @@ defineProps({
 
 .shengxiao-card {
   flex: 1;
-  background: #f8f8f8;
-  border-radius: 12px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   padding: 20px;
   text-align: center;
   position: relative;
@@ -560,18 +560,18 @@ defineProps({
 }
 
 .shengxiao-card.teji {
-  background: linear-gradient(135deg, #fffbe6 0%, #fff7e6 100%);
-  border: 1px solid #ffd666;
+  background: linear-gradient(135deg, var(--warning-light-10) 0%, var(--warning-light-05) 100%);
+  border: 1px solid var(--warning-color);
 }
 
 .shengxiao-card.ciji {
-  background: linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%);
-  border: 1px solid #b7eb8f;
+  background: linear-gradient(135deg, var(--success-light-10) 0%, var(--success-light-05) 100%);
+  border: 1px solid var(--success-color);
 }
 
 .shengxiao-card.daidai {
-  background: linear-gradient(135deg, #fff2f0 0%, #fff1f0 100%);
-  border: 1px solid #ffccc7;
+  background: linear-gradient(135deg, var(--danger-light-10) 0%, var(--danger-light-05) 100%);
+  border: 1px solid var(--danger-color);
 }
 
 .card-badge {
@@ -581,28 +581,28 @@ defineProps({
   padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
-  border-bottom-left-radius: 12px;
+  border-bottom-left-radius: 16px;
 }
 
 .shengxiao-card.teji .card-badge {
-  background: #ffd666;
-  color: #874d00;
+  background: var(--warning-color);
+  color: var(--warning-text);
 }
 
 .shengxiao-card.ciji .card-badge {
-  background: #b7eb8f;
-  color: #389e0d;
+  background: var(--success-color);
+  color: var(--success-text);
 }
 
 .shengxiao-card.daidai .card-badge {
-  background: #ffccc7;
-  color: #a8071a;
+  background: var(--danger-color);
+  color: var(--danger-text);
 }
 
 .shengxiao-name {
   font-size: 24px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   margin-top: 20px;
 }
 
@@ -614,8 +614,8 @@ defineProps({
 }
 
 .fangwei-item {
-  background: #f8f8f8;
-  border-radius: 8px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
   padding: 16px;
   text-align: center;
 }
@@ -628,6 +628,6 @@ defineProps({
 .fangwei-item .value {
   font-size: 18px;
   font-weight: 600;
-  color: #1890ff;
+  color: var(--info-color);
 }
 </style>

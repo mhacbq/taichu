@@ -77,3 +77,75 @@ export function deleteDailyFortune(id) {
     method: 'delete'
   })
 }
+
+// 黄历管理
+export function getAlmanacList(params, options = {}) {
+  return request({
+    url: '/content/almanac',
+    method: 'get',
+    params,
+    ...options
+  })
+}
+
+export function createAlmanac(data, options = {}) {
+  return request({
+    url: '/content/almanac',
+    method: 'post',
+    data,
+    ...options
+  })
+}
+
+export function updateAlmanac(id, data, options = {}) {
+  return request({
+    url: `/content/almanac/${id}`,
+    method: 'put',
+    data,
+    ...options
+  })
+}
+
+export function deleteAlmanac(id, options = {}) {
+  return request({
+    url: `/content/almanac/${id}`,
+    method: 'delete',
+    ...options
+  })
+}
+
+// 神煞管理
+export function getShenshaList(params, options = {}) {
+  return request({
+    url: '/system/shensha',
+    method: 'get',
+    params,
+    ...options
+  })
+}
+
+export function getShenshaOptions(options = {}) {
+  return request({
+    url: '/system/shensha/options',
+    method: 'get',
+    ...options
+  })
+}
+
+export function saveShensha(data, options = {}) {
+  const isUpdate = !!data.id
+  return request({
+    url: isUpdate ? `/system/shensha/${data.id}` : '/system/shensha',
+    method: isUpdate ? 'put' : 'post',
+    data,
+    ...options
+  })
+}
+
+export function deleteShensha(id, options = {}) {
+  return request({
+    url: `/system/shensha/${id}`,
+    method: 'delete',
+    ...options
+  })
+}

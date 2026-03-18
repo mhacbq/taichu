@@ -113,7 +113,7 @@ export default {
   gap: 12px;
   padding: 16px;
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   margin: 8px;
   min-width: 300px;
@@ -124,19 +124,19 @@ export default {
 }
 
 .toast--success {
-  border-left: 4px solid #52c41a;
+  border-left: 4px solid var(--success-color);
 }
 
 .toast--error {
-  border-left: 4px solid #ff4d4f;
+  border-left: 4px solid var(--danger-color);
 }
 
 .toast--warning {
-  border-left: 4px solid #faad14;
+  border-left: 4px solid var(--warning-color);
 }
 
 .toast--info {
-  border-left: 4px solid #1890ff;
+  border-left: 4px solid var(--info-color);
 }
 
 .toast__icon {
@@ -145,10 +145,10 @@ export default {
   flex-shrink: 0;
 }
 
-.toast--success .toast__icon { color: #52c41a; }
-.toast--error .toast__icon { color: #ff4d4f; }
-.toast--warning .toast__icon { color: #faad14; }
-.toast--info .toast__icon { color: #1890ff; }
+.toast--success .toast__icon { color: var(--success-color); }
+.toast--error .toast__icon { color: var(--danger-color); }
+.toast--warning .toast__icon { color: var(--warning-color); }
+.toast--info .toast__icon { color: var(--info-color); }
 
 .toast__icon svg {
   width: 100%;

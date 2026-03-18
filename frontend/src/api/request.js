@@ -5,7 +5,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 // 重试配置
 const RETRY_CONFIG = {
-  maxRetries: 3,
+  // 默认关闭自动重试，避免首次失败后重复请求
+  maxRetries: 0,
   retryDelay: 1000,
   retryableStatuses: [408, 429, 500, 502, 503, 504],
   retryableErrors: ['ECONNABORTED', 'ETIMEDOUT', 'ENOTFOUND', 'ECONNREFUSED', 'NETWORK_ERROR']
@@ -19,9 +20,6 @@ const request = axios.create({
   },
 })
 
-// 重试计数器
-const retryCount = new Map()
-
 request.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
@@ -32,7 +30,6 @@ request.interceptors.request.use(
     // 为重试请求设置标识
     if (!config.__retryCount) {
       config.__retryCount = 0
-      config.__requestId = Date.now() + '_' + Math.random()
     }
     
     return config
@@ -44,11 +41,6 @@ request.interceptors.request.use(
 
 request.interceptors.response.use(
   (response) => {
-    // 请求成功，清除重试计数
-    const requestId = response.config.__requestId
-    if (requestId) {
-      retryCount.delete(requestId)
-    }
     return response.data
   },
   async (error) => {
@@ -59,13 +51,15 @@ request.interceptors.response.use(
     }
     
     // 检查是否需要重试
-    const shouldRetry = checkShouldRetry(error, config)
+    const shouldRetry = checkShouldRetry(error)
     
-    if (shouldRetry && config.__retryCount < RETRY_CONFIG.maxRetries) {
+    const enableRetry = config.retry === true
+
+    if (enableRetry && shouldRetry && config.__retryCount < RETRY_CONFIG.maxRetries) {
       config.__retryCount++
       
       // 显示重试提示
-      if (config.__retryCount === 1) {
+      if (config.__retryCount === 1 && !isSilentRequest(config)) {
         ElMessage.warning('网络不稳定，正在尝试重连...')
       }
       
@@ -77,6 +71,7 @@ request.interceptors.response.use(
       
       return request(config)
     }
+
     
     // 处理不同类型的错误
     handleApiError(error)
@@ -93,7 +88,7 @@ request.interceptors.response.use(
 )
 
 // 检查是否应该重试
-function checkShouldRetry(error, config) {
+function checkShouldRetry(error) {
   // 用户主动取消的请求不重试
   if (axios.isCancel(error)) {
     return false
@@ -123,8 +118,13 @@ function checkShouldRetry(error, config) {
   return false
 }
 
+function isSilentRequest(config) {
+  return Boolean(config?.silent || config?.skipGlobalError)
+}
+
 // 处理API错误
 function handleApiError(error) {
+
   let message = '请求失败，请稍后重试'
   
   if (error.response) {
@@ -172,9 +172,10 @@ function handleApiError(error) {
   }
   
   // 只在非重试状态下显示错误
-  if (!error.config || error.config.__retryCount === 0) {
+  if ((!error.config || error.config.__retryCount === 0) && !isSilentRequest(error.config)) {
     ElMessage.error(message)
   }
 }
+
 
 export default request

@@ -9,7 +9,7 @@
     <div class="share-content">
       <!-- 奖励提示 -->
       <div class="reward-banner" v-if="showReward">
-        <span class="reward-icon">🎁</span>
+        <el-icon class="reward-icon"><Present /></el-icon>
         <div class="reward-text">
           <p class="reward-title">分享即可获得 <strong>+5 积分</strong></p>
           <p class="reward-sub">每天首次分享都有奖励哦</p>
@@ -19,7 +19,7 @@
       <!-- 预览卡片 -->
       <div class="preview-card" ref="previewCard">
         <div class="preview-header">
-          <span class="logo-icon">☯</span>
+          <el-icon class="logo-icon"><StarFilled /></el-icon>
           <span class="logo-text">太初命理</span>
         </div>
         <div class="preview-body">
@@ -34,7 +34,7 @@
         <div class="preview-footer">
           <p>扫码获取你的专属运势分析</p>
           <div class="qr-placeholder">
-            <span>☯</span>
+            <el-icon><StarFilled /></el-icon>
           </div>
         </div>
       </div>
@@ -51,7 +51,9 @@
             @click="handleShare(option.type)"
             :disabled="sharing"
           >
-            <span class="btn-icon">{{ option.icon }}</span>
+            <el-icon class="btn-icon">
+              <component :is="option.icon" />
+            </el-icon>
             <span class="btn-text">{{ option.name }}</span>
           </button>
         </div>
@@ -72,8 +74,8 @@
             @click="copyLink"
             :class="{ copied: copied }"
           >
-            <span v-if="!copied">📋 复制链接</span>
-            <span v-else>✓ 已复制</span>
+            <span v-if="!copied"><el-icon><DocumentCopy /></el-icon> 复制链接</span>
+            <span v-else><el-icon><Check /></el-icon> 已复制</span>
           </button>
         </div>
       </div>
@@ -87,7 +89,7 @@
           rows="3"
         ></textarea>
         <button class="copy-text-btn" @click="copyText">
-          📋 复制文案
+          <el-icon><DocumentCopy /></el-icon> 复制文案
         </button>
       </div>
     </div>
@@ -97,6 +99,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Present, StarFilled, DocumentCopy, Check, ChatDotRound, Iphone, UserFilled, Promotion } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: {
@@ -142,11 +145,37 @@ watch(() => props.shareText, (newVal) => {
 })
 
 const shareOptions = [
-  { type: 'wechat', name: '微信好友', icon: '💬' },
-  { type: 'moment', name: '朋友圈', icon: '📱' },
-  { type: 'qq', name: 'QQ', icon: '🐧' },
-  { type: 'weibo', name: '微博', icon: '📢' }
+  { type: 'wechat', name: '微信好友', icon: ChatDotRound },
+  { type: 'moment', name: '朋友圈', icon: Iphone },
+  { type: 'qq', name: 'QQ', icon: UserFilled },
+  { type: 'weibo', name: '微博', icon: Promotion }
 ]
+
+const truncateShareMessage = (message) => {
+  if (!message) {
+    return 'unknown'
+  }
+
+  return message.length > 160 ? `${message.slice(0, 157)}...` : message
+}
+
+const reportShareError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[ShareModal]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateShareMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')),
+    ...extra
+  })
+}
+
+const isShareCancelled = (error) => {
+  const message = typeof error?.message === 'string' ? error.message : ''
+  return error?.name === 'AbortError' || /cancel|abort/i.test(message)
+}
 
 const handleShare = async (type) => {
   sharing.value = true
@@ -167,8 +196,15 @@ const handleShare = async (type) => {
       ElMessage.success('分享内容已复制，请粘贴到' + shareOptions.find(o => o.type === type)?.name)
     }
   } catch (error) {
-    // 用户取消分享
-    console.log('分享取消')
+    if (isShareCancelled(error)) {
+      return
+    }
+
+    reportShareError('share_failed', error, {
+      type,
+      share_mode: navigator.share ? 'native' : 'clipboard'
+    })
+    ElMessage.error(navigator.share ? '分享失败，请稍后重试' : '复制分享内容失败，请手动重试')
   } finally {
     sharing.value = false
   }
@@ -218,8 +254,8 @@ const copyText = async () => {
 
 /* 奖励提示 */
 .reward-banner {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.1));
+  border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 12px;
   padding: 15px 20px;
   display: flex;
@@ -268,7 +304,7 @@ const copyText = async () => {
 
 .logo-icon {
   font-size: 28px;
-  color: #e94560;
+  color: #ffd700;
 }
 
 .logo-text {
@@ -354,8 +390,8 @@ const copyText = async () => {
 }
 
 .share-btn:hover {
-  background: rgba(233, 69, 96, 0.1);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.3);
   transform: translateY(-3px);
 }
 
@@ -395,7 +431,7 @@ const copyText = async () => {
 
 .copy-btn {
   padding: 12px 20px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: linear-gradient(135deg, #ffd700, #ffc107);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -407,7 +443,7 @@ const copyText = async () => {
 
 .copy-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
 }
 
 .copy-btn.copied {
@@ -442,7 +478,7 @@ const copyText = async () => {
 
 .share-textarea:focus {
   outline: none;
-  border-color: rgba(233, 69, 96, 0.5);
+  border-color: rgba(255, 215, 0, 0.5);
 }
 
 .copy-text-btn {
@@ -457,8 +493,8 @@ const copyText = async () => {
 }
 
 .copy-text-btn:hover {
-  background: rgba(233, 69, 96, 0.2);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: rgba(255, 215, 0, 0.2);
+  border-color: rgba(255, 215, 0, 0.3);
 }
 
 @media (max-width: 480px) {

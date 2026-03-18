@@ -3,11 +3,14 @@
     <div class="container">
       <!-- 页面标题 -->
       <div class="page-header">
-        <h1 class="page-title">
-          <span class="title-icon">☯</span>
-          六爻占卜
-        </h1>
-        <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
+        <BackButton fallback="/" />
+        <div class="page-header-content">
+          <h1 class="page-title">
+            <el-icon class="title-icon"><MagicStick /></el-icon>
+            六爻占卜
+          </h1>
+          <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
+        </div>
       </div>
 
       <!-- 占卜结果 -->
@@ -18,14 +21,25 @@
             <span v-if="result.is_first" class="first-free-badge">首次免费</span>
           </div>
 
+          <div v-if="resultContextItems.length" class="result-context" aria-label="起卦上下文信息">
+            <span v-for="item in resultContextItems" :key="item.label" class="context-chip">
+              <span class="context-chip__label">{{ item.label }}</span>
+              <span class="context-chip__value">{{ item.value }}</span>
+            </span>
+          </div>
+
           <!-- 问题 -->
           <div class="question-box">
+
             <span class="label">占问：</span>
             <span class="question-text">{{ result.question }}</span>
           </div>
 
           <!-- 卦象展示 -->
           <div class="gua-display">
+            <div class="gua-decoration">
+              <el-icon><MagicStick /></el-icon>
+            </div>
             <div class="gua-info">
               <h3 class="gua-name">{{ result.gua.name }}</h3>
               <p class="gua-code">卦象代码：{{ result.gua.code }}</p>
@@ -33,11 +47,48 @@
 
             <!-- 六爻图形 -->
             <div class="yao-container">
-              <div v-for="(yao, index) in result.yao_result" :key="index" class="yao-line"
-                :class="{ 'moving': yao == 0 || yao == 3, 'yang': yao >= 2, 'yin': yao <= 1 }">
+              <div
+                v-for="(yao, index) in result.yao_result"
+                :key="index"
+                class="yao-line"
+                :class="{ moving: isMovingYao(yao), yang: isYangYao(yao), yin: !isYangYao(yao) }"
+              >
+                <!-- 伏神显示 -->
+                <div v-if="result.fushen && result.fushen[index]" class="fushen-box">
+                   <span class="fushen-label">伏</span>
+                   <span class="fushen-name">{{ result.fushen[index].name }}</span>
+                   <span class="fushen-ganzhi">{{ result.fushen[index].ganzhi }}</span>
+                </div>
                 <span class="yao-mark">{{ getYaoMark(yao) }}</span>
                 <span class="yao-bar"></span>
                 <span class="yao-name">{{ result.yao_names[index] }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="structuredResultItems.length || result.line_details.length" class="structured-section">
+            <h4>结构化排盘</h4>
+            <div v-if="structuredResultItems.length" class="structured-summary">
+              <span v-for="item in structuredResultItems" :key="item.label" class="structured-chip">
+                <span class="structured-chip__label">{{ item.label }}</span>
+                <span class="structured-chip__value">{{ item.value }}</span>
+              </span>
+            </div>
+
+            <div v-if="result.line_details.length" class="line-detail-list">
+              <div v-for="line in result.line_details" :key="line.position" class="line-detail-card">
+                <div class="line-detail-card__header">
+                  <span class="line-detail-card__title">第{{ line.position }}爻 · {{ line.name }}</span>
+                  <div class="line-detail-card__tags">
+                    <span v-if="line.is_shi" class="line-tag line-tag--shi">世</span>
+                    <span v-if="line.is_ying" class="line-tag line-tag--ying">应</span>
+                    <span v-if="line.is_moving" class="line-tag line-tag--moving">动</span>
+                  </div>
+                </div>
+                <div class="line-detail-card__meta">
+                  <span v-if="line.liuqin">六亲：{{ line.liuqin }}</span>
+                  <span v-if="line.liushen">六神：{{ line.liushen }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -57,7 +108,7 @@
           <!-- AI分析 -->
           <div v-if="result.ai_analysis" class="ai-section">
             <h4>
-              <span>🤖</span>
+              <el-icon><MagicStick /></el-icon>
               AI深度分析
             </h4>
             <div class="ai-content">{{ result.ai_analysis.content }}</div>
@@ -67,17 +118,25 @@
           <div class="points-info">
             <span v-if="result.points_cost > 0">消耗 {{ result.points_cost }} 积分</span>
             <span v-else>本次免费</span>
-            <span>剩余 {{ result.remaining_points }} 积分</span>
+            <span v-if="shouldShowRemainingPoints">剩余 {{ result.remaining_points }} 积分</span>
           </div>
+
+
 
           <!-- 操作按钮 -->
           <div class="action-buttons">
-            <button class="btn-secondary" @click="resetForm">
-              <span>🔄</span> 再次占卜
-            </button>
-            <button class="btn-primary" @click="saveResult">
-              <span>💾</span> 保存结果
-            </button>
+            <el-button type="info" round size="large" @click="resetForm">
+              <el-icon><RefreshRight /></el-icon> 再次占卜
+            </el-button>
+            <div class="saved-status" :class="{ 'saved-status--history': result.is_history }" role="status" aria-live="polite">
+              <el-icon><Collection v-if="result.is_history" /><CircleCheckFilled v-else /></el-icon>
+              <span>{{ savedStatusText }}</span>
+            </div>
+            <el-button v-if="historyLoaded || historyLoading || historyError" round size="large" @click="openHistoryDialog($event)">
+              <el-icon><Collection /></el-icon> {{ historyTriggerText }}
+            </el-button>
+
+
           </div>
         </div>
       </div>
@@ -90,146 +149,745 @@
 
           <div class="form-group">
             <label>您的问题 <span class="required">*</span></label>
-            <textarea v-model="form.question" rows="4" placeholder="例如：
-• 我最近的考试能通过吗？
-• 这份工作适合我吗？
-• 我和TA的感情发展如何？
-• 这个项目能成功吗？" maxlength="100"></textarea>
-            <span class="char-count">{{ form.question.length }}/100</span>
+            <el-input
+              v-model="form.question"
+              type="textarea"
+              :rows="4"
+              placeholder="例如：
+我最近的考试能通过吗？
+这份工作适合我吗？
+我和TA的感情发展如何？
+这个项目能成功吗？"
+              maxlength="100"
+              show-word-limit
+            />
           </div>
 
+          <div class="form-group">
+            <label>起卦方式</label>
+            <el-radio-group v-model="form.method" class="method-group premium-segment premium-segment--compact">
+              <el-radio-button v-for="option in methodOptions" :key="option.value" :label="option.value">
+                {{ option.label }}
+              </el-radio-button>
+            </el-radio-group>
+            <p class="form-helper">{{ currentMethodDescription }}</p>
+          </div>
+
+          <div v-if="form.method === 'time'" class="helper-card">
+            <p class="helper-card__title">时间起卦</p>
+            <p class="helper-card__desc">将按当前北京时间 {{ currentBeijingTime }} 自动起卦，无需额外输入数字或摇卦结果。</p>
+          </div>
+
+          <div v-else-if="form.method === 'number'" class="helper-card">
+            <p class="helper-card__title">数字起卦</p>
+            <p class="helper-card__desc">请输入 1-999 的数字。单数字可只填第一个，双数字会按上下卦分别计算。</p>
+            <div class="input-grid input-grid--double">
+              <div class="input-grid__item">
+                <label>第一个数字</label>
+                <el-input-number v-model="form.numbers[0]" :min="1" :max="999" :step="1" :precision="0" controls-position="right" class="full-width" />
+              </div>
+              <div class="input-grid__item">
+                <label>第二个数字（可选）</label>
+                <el-input-number v-model="form.numbers[1]" :min="1" :max="999" :step="1" :precision="0" controls-position="right" class="full-width" />
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="helper-card">
+            <p class="helper-card__title">手动摇卦</p>
+            <p class="helper-card__desc">请按从初爻到上爻的顺序，依次录入 6 次摇卦结果。</p>
+            <div class="manual-grid">
+              <div v-for="(label, index) in yaoLineLabels" :key="label" class="manual-grid__item">
+                <label>{{ label }}</label>
+                <el-select v-model="form.yaoResults[index]" placeholder="请选择爻象" class="full-width">
+                  <el-option v-for="option in yaoValueOptions" :key="option.value" :label="option.label" :value="option.value" />
+                </el-select>
+              </div>
+            </div>
+          </div>
+
+          <div class="advanced-card">
+            <button
+              type="button"
+              class="advanced-toggle"
+              :aria-expanded="showAdvancedSettings"
+              aria-controls="liuyao-advanced-grid"
+              @click="showAdvancedSettings = !showAdvancedSettings"
+            >
+              <div class="advanced-card__header">
+                <h3>进阶设置</h3>
+                <p>问事类型、性别与日辰信息可按需补充；第一次起卦也可以先跳过。</p>
+              </div>
+              <span class="advanced-toggle__action">
+                {{ showAdvancedSettings ? '收起' : '展开' }}
+                <el-icon>
+                  <ArrowUp v-if="showAdvancedSettings" />
+                  <ArrowDown v-else />
+                </el-icon>
+              </span>
+            </button>
+            <div v-show="showAdvancedSettings" id="liuyao-advanced-grid" class="advanced-grid">
+              <div class="form-group">
+                <label>问事类型</label>
+                <el-select v-model="form.questionType" class="full-width">
+                  <el-option v-for="option in questionTypeOptions" :key="option" :label="option" :value="option" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label>求测者性别</label>
+                <el-radio-group v-model="form.gender">
+                  <el-radio-button label="男" />
+                  <el-radio-button label="女" />
+                </el-radio-group>
+              </div>
+              <div class="form-group">
+                <label>日辰天干（可选）</label>
+                <el-select v-model="form.riGan" clearable placeholder="默认自动推算" class="full-width">
+                  <el-option v-for="option in tianGanOptions" :key="option" :label="option" :value="option" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label>日辰地支（可选）</label>
+                <el-select v-model="form.riZhi" clearable placeholder="默认自动推算" class="full-width">
+                  <el-option v-for="option in diZhiOptions" :key="option" :label="option" :value="option" />
+                </el-select>
+              </div>
+            </div>
+          </div>
+
+
           <div class="options-section">
-            <label class="option-item">
-              <input type="checkbox" v-model="form.useAi" />
-              <span>使用AI深度分析（更准确、更详细）</span>
-            </label>
+            <el-checkbox v-model="form.useAi" label="使用AI深度分析（更准确、更详细）" />
           </div>
 
           <!-- 定价信息 -->
-          <div class="pricing-info" v-if="pricing">
-            <div v-if="pricing.is_first_free" class="pricing-free">
-              <span>🎁 首次占卜免费</span>
+          <div class="pricing-info" v-if="pricingLoading || pricing || pricingError">
+            <div v-if="pricingLoading" class="pricing-loading">
+              <span>正在同步当前占卜价格...</span>
             </div>
-            <div v-else-if="pricing.is_vip_free" class="pricing-vip">
-              <span>👑 VIP免费</span>
-            </div>
-            <div v-else class="pricing-normal">
-              <span>本次消耗 {{ pricing.cost }} 积分</span>
+            <template v-else-if="pricing">
+              <div v-if="pricing.is_first_free" class="pricing-free">
+                <span><el-icon><Present /></el-icon> 首次占卜免费</span>
+              </div>
+              <div v-else-if="pricing.is_vip_free" class="pricing-vip">
+                <span><el-icon><Trophy /></el-icon> VIP免费</span>
+              </div>
+              <div v-else class="pricing-normal">
+                <span>本次消耗 {{ pricing.cost }} 积分</span>
+              </div>
+              <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
+            </template>
+            <div v-else class="pricing-error">
+              <p class="pricing-reason pricing-reason--error">{{ pricingError }}</p>
+              <el-button type="primary" link @click="loadPricing">重新获取价格</el-button>
             </div>
           </div>
 
-          <button class="btn-submit" @click="submitDivination" :disabled="isLoading || !form.question.trim()">
-            <span v-if="isLoading" class="loading"></span>
-            <span v-else>
-              <span class="btn-icon">☯</span>
-              开始占卜
-            </span>
-          </button>
+          <el-button
+            type="primary"
+            size="large"
+            class="btn-submit"
+            @click="submitDivination"
+            :disabled="isLoading || !canSubmitDivination"
+            :loading="isLoading"
+          >
+            <template #icon v-if="!isLoading">
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
+            </template>
+            {{ isLoading ? '正在占卜...' : submitButtonText }}
+          </el-button>
 
-          <div class="history-link" v-if="history.length > 0">
-            <a @click="showHistory = true">查看历史记录 ({{ history.length }}条)</a>
+
+          <div class="history-link" v-if="historyLoaded || historyLoading || historyError">
+            <button type="button" class="history-link__button" @click="openHistoryDialog($event)">{{ historyTriggerText }}</button>
           </div>
+
+
         </div>
       </div>
 
       <!-- 历史记录弹窗 -->
-      <div v-if="showHistory" class="modal-overlay" @click.self="showHistory = false">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>历史记录</h3>
-            <button class="close-btn" @click="showHistory = false">×</button>
+      <el-dialog
+        v-model="showHistory"
+        title="历史记录"
+        width="min(92vw, 560px)"
+        append-to-body
+        class="history-dialog"
+        :close-on-click-modal="true"
+        :close-on-press-escape="true"
+        @closed="restoreHistoryTriggerFocus"
+      >
+        <div ref="historyListRef" class="history-list" aria-label="六爻历史记录列表">
+          <div v-if="historyLoading" class="history-state" role="status" aria-live="polite">
+            <p>历史记录加载中...</p>
+            <span>最近的占卜记录会在这里出现。</span>
           </div>
-          <div class="history-list">
-            <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
-              <div class="history-main">
-                <p class="history-question">{{ item.question }}</p>
-                <p class="history-gua">{{ item.gua_name }} · {{ formatDate(item.created_at) }}</p>
-              </div>
-              <button class="delete-btn" @click.stop="deleteRecord(item.id)">🗑</button>
+          <div v-else-if="historyError" class="history-state history-state--error" role="alert">
+            <p>历史记录暂时没加载出来</p>
+            <span>{{ historyError }}</span>
+            <el-button type="primary" link @click="loadHistory">重新加载</el-button>
+          </div>
+          <div v-else-if="historyLoaded && history.length === 0" class="history-state" role="status" aria-live="polite">
+            <p>暂时还没有历史记录</p>
+            <span>完成一次占卜后，这里会自动保存你的记录。</span>
+          </div>
+          <template v-else>
+            <div v-for="item in history" :key="item.id" class="history-item">
+              <button
+                type="button"
+                class="history-select"
+                :title="item.question"
+                @click="loadHistoryDetail(item)"
+              >
+                <div class="history-main">
+                  <p class="history-question">{{ item.question }}</p>
+                  <p class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</p>
+                </div>
+              </button>
+              <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
+                <el-icon><Delete /></el-icon>
+                <span class="delete-label">删除</span>
+              </button>
             </div>
-          </div>
+          </template>
         </div>
-      </div>
+      </el-dialog>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
+import { RefreshRight, Delete, MagicStick, Present, Trophy, CircleCheckFilled, Collection, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
-// 表单数据
-const form = reactive({
+import BackButton from '../components/BackButton.vue'
+
+
+const methodOptions = [
+  { label: '时间起卦', value: 'time', description: '按当前北京时间起卦，适合快速问事。' },
+  { label: '数字起卦', value: 'number', description: '通过数字拆分上下卦，适合已有灵感数字时使用。' },
+  { label: '手动摇卦', value: 'manual', description: '录入 6 次摇卦结果，满足标准六爻问卦流程。' },
+]
+
+const questionTypeOptions = ['求财', '感情', '事业', '健康', '学业', '出行', '其他']
+const yaoLineLabels = ['初爻（下）', '二爻', '三爻', '四爻', '五爻', '上爻（上）']
+const yaoValueOptions = [
+  { label: '老阴（6）', value: 6 },
+  { label: '少阳（7）', value: 7 },
+  { label: '少阴（8）', value: 8 },
+  { label: '老阳（9）', value: 9 },
+]
+const tianGanOptions = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸']
+const diZhiOptions = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+const yaoNameMap = ['老阴', '少阳', '少阴', '老阳']
+
+const createDefaultForm = () => ({
   question: '',
   useAi: true,
+  method: 'time',
+  questionType: '其他',
+  gender: '男',
+  numbers: [null, null],
+  yaoResults: [null, null, null, null, null, null],
+  riGan: '',
+  riZhi: '',
 })
+
+// 表单数据
+const form = reactive(createDefaultForm())
 
 // 状态
 const isLoading = ref(false)
 const result = ref(null)
 const pricing = ref(null)
+const pricingLoading = ref(true)
+const pricingError = ref('')
 const history = ref([])
+const historyLoading = ref(false)
+const historyLoaded = ref(false)
+const historyError = ref('')
+const submitError = ref('')
 const showHistory = ref(false)
+const showAdvancedSettings = ref(false)
+const historyListRef = ref(null)
+const currentBeijingTimestamp = ref(Date.now())
+
+let beijingTimer = null
+let historyTriggerEl = null
+
+
+
+const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+}).format(new Date(currentBeijingTimestamp.value)))
+
+
+const currentMethodDescription = computed(() => {
+  return methodOptions.find((item) => item.value === form.method)?.description || ''
+})
+
+const canSubmit = computed(() => {
+  if (!form.question.trim()) {
+    return false
+  }
+
+  if (form.method === 'number') {
+    return Number.isFinite(form.numbers[0])
+  }
+
+  if (form.method === 'manual') {
+    return form.yaoResults.every((item) => Number.isFinite(item))
+  }
+
+  return true
+})
+
+const isPricingReady = computed(() => {
+  return !pricingLoading.value && !pricingError.value && Boolean(pricing.value)
+})
+
+const canSubmitDivination = computed(() => {
+  return canSubmit.value && isPricingReady.value
+})
+
+const submitButtonText = computed(() => {
+  if (pricingLoading.value) {
+    return '正在同步价格...'
+  }
+
+  if (pricingError.value || !pricing.value) {
+    return '请先重新获取价格'
+  }
+
+  if (pricing.value.is_first_free) {
+    return '首次免费起卦'
+  }
+
+  if (pricing.value.is_vip_free) {
+    return 'VIP免费起卦'
+  }
+
+  const cost = Number(pricing.value.cost)
+  if (Number.isFinite(cost) && cost > 0) {
+    return `确认并消耗${cost}积分`
+  }
+
+  return '开始占卜'
+})
+
+
+const shouldShowRemainingPoints = computed(() => {
+
+  if (!result.value || result.value.is_history) {
+    return false
+  }
+
+  return result.value.remaining_points !== null && result.value.remaining_points !== undefined
+})
+
+const savedStatusText = computed(() => (result.value?.is_history ? '来自历史记录' : '已自动保存到历史记录'))
+const historyTriggerText = computed(() => (
+  history.value.length > 0 ? `查看历史记录 (${history.value.length}条)` : '查看历史记录'
+))
+
+const openHistoryDialog = (event) => {
+  historyTriggerEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  showHistory.value = true
+}
+
+const restoreHistoryTriggerFocus = () => {
+  if (historyTriggerEl instanceof HTMLElement) {
+    historyTriggerEl.focus()
+  }
+  historyTriggerEl = null
+}
+
+const focusHistoryDialogPrimaryAction = async () => {
+  await nextTick()
+  const target = historyListRef.value?.querySelector('.history-select, .delete-btn, .el-button')
+  if (target instanceof HTMLElement) {
+    target.focus()
+  }
+}
+
+watch(showHistory, (visible) => {
+  if (visible) {
+    focusHistoryDialogPrimaryAction()
+  }
+})
+
+const formatDateTime = (dateStr) => {
+
+  const rawValue = typeof dateStr === 'string' ? dateStr.trim() : ''
+  if (!rawValue) {
+    return ''
+  }
+
+  const normalizedValue = rawValue.includes('T') ? rawValue : rawValue.replace(' ', 'T')
+  const date = new Date(normalizedValue)
+  if (Number.isNaN(date.getTime())) {
+    return rawValue
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+const resultContextItems = computed(() => {
+  if (!result.value) {
+    return []
+  }
+
+  const timeInfo = result.value.time_info || {}
+  const xunkong = Array.isArray(timeInfo.xunkong)
+    ? timeInfo.xunkong.filter(Boolean).join('、')
+    : String(timeInfo.xunkong || '').trim()
+
+  return [
+    { label: '起卦方式', value: result.value.method_label || '' },
+    { label: '起卦时间', value: formatDateTime(timeInfo.divination_at || result.value.created_at || '') },
+    { label: '日辰', value: String(timeInfo.ri_chen || '').trim() },
+    { label: '月建', value: String(timeInfo.yue_jian || '').trim() },
+    { label: '旬空', value: xunkong },
+  ].filter((item) => item.value)
+})
+
+const structuredResultItems = computed(() => {
+  if (!result.value) {
+    return []
+  }
+
+  const shiYing = result.value.shi_ying || {}
+  const yongShen = result.value.yong_shen || {}
+  const yongShenText = [yongShen.liuqin, yongShen.description]
+    .filter((item) => item && String(item).trim())
+    .join('｜')
+  const dongYao = Array.isArray(result.value.bian_gua?.dong_yao)
+    ? result.value.bian_gua.dong_yao.filter(Boolean).join('、')
+    : ''
+  const shiYingText = [
+    shiYing.shi ? `世爻：第${shiYing.shi}爻` : '',
+    shiYing.ying ? `应爻：第${shiYing.ying}爻` : '',
+  ].filter(Boolean).join('｜')
+
+  return [
+    { label: '本卦', value: result.value.gua?.name || '' },
+    { label: '变卦', value: result.value.bian_gua?.name || '' },
+    { label: '互卦', value: result.value.hu_gua?.name || '' },
+    { label: '所属宫位', value: result.value.gong || '' },
+    { label: '世应', value: shiYingText },
+    { label: '动爻', value: dongYao },
+    { label: '用神', value: yongShenText },
+  ].filter((item) => item.value)
+})
+
+const reportUiError = (action, error, userMessage = '') => {
+
+
+  console.error(`[Liuyao] ${action}`, error)
+  if (userMessage) {
+    ElMessage.error(userMessage)
+  }
+}
+
+const isMovingYao = (yao) => Number(yao) === 0 || Number(yao) === 3
+const isYangYao = (yao) => Number(yao) === 1 || Number(yao) === 3
+
+const getYaoName = (yao) => {
+  const value = Number(yao)
+  return yaoNameMap[value] || '未知'
+}
 
 // 爻标记
 const getYaoMark = (yao) => {
-  if (yao === 0) return '×' // 老阴
-  if (yao === 3) return '○' // 老阳
+  const value = Number(yao)
+  if (value === 0) return '×' // 老阴
+  if (value === 3) return '○' // 老阳
   return '' // 少阴少阳
+}
+
+const parseYaoResult = (value, fallback = '') => {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeYaoCode(item))
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const trimmed = value.trim()
+    const parsed = safeJsonParse(trimmed, null)
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => normalizeYaoCode(item))
+    }
+
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map((item) => normalizeYaoCode(item))
+    }
+
+    if (/^[0-3]{6}$/.test(trimmed) || /^[6-9]{6}$/.test(trimmed)) {
+      return trimmed.split('').map((item) => normalizeYaoCode(item))
+    }
+  }
+
+  if (typeof fallback === 'string' && /^[0-3]{6}$/.test(fallback)) {
+    return fallback.split('').map((item) => normalizeYaoCode(item))
+  }
+
+  return []
+}
+
+const normalizeYaoCode = (value) => {
+  const numeric = Number(value)
+  if (Number.isNaN(numeric)) {
+    return 1
+  }
+
+  if (numeric >= 0 && numeric <= 3) {
+    return numeric
+  }
+
+  return ({ 6: 0, 7: 1, 8: 2, 9: 3 })[numeric] ?? 1
+}
+
+const safeJsonParse = (value, fallback = null) => {
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+const normalizeAiAnalysis = (value) => {
+  if (!value) {
+    return null
+  }
+
+  if (typeof value === 'string') {
+    return { content: value }
+  }
+
+  if (typeof value === 'object' && value.content) {
+    return value
+  }
+
+  return null
+}
+
+const normalizeResult = (data = {}, isHistory = false) => {
+  const gua = data.gua || {}
+  const bianGua = data.bian_gua || {}
+  const huGua = data.hu_gua || {}
+  const yaoResult = parseYaoResult(data.yao_result ?? data.yao_results, data.yao_code || gua.code || '')
+  const liuqinMap = (data.liuqin && typeof data.liuqin === 'object') ? data.liuqin : {}
+  const liushenMap = (data.liushen && typeof data.liushen === 'object') ? data.liushen : {}
+  const shiYing = (data.shi_ying && typeof data.shi_ying === 'object') ? data.shi_ying : {}
+  const dongYao = Array.isArray(bianGua.dong_yao) ? bianGua.dong_yao.map((item) => Number(item)) : []
+  const lineDetails = Array.isArray(data.line_details) && data.line_details.length
+    ? data.line_details.map((line, index) => ({
+      position: Number(line.position || index + 1),
+      value: normalizeYaoCode(line.value ?? yaoResult[index] ?? 1),
+      name: line.name || getYaoName(line.value ?? yaoResult[index] ?? 1),
+      liuqin: line.liuqin || liuqinMap[String(line.position || index + 1)] || liuqinMap[line.position || index + 1] || '',
+      liushen: line.liushen || liushenMap[String(line.position || index + 1)] || liushenMap[line.position || index + 1] || '',
+      is_moving: Boolean(line.is_moving),
+      is_shi: Boolean(line.is_shi),
+      is_ying: Boolean(line.is_ying),
+    }))
+    : yaoResult.map((item, index) => ({
+      position: index + 1,
+      value: item,
+      name: getYaoName(item),
+      liuqin: liuqinMap[String(index + 1)] || liuqinMap[index + 1] || '',
+      liushen: liushenMap[String(index + 1)] || liushenMap[index + 1] || '',
+      is_moving: dongYao.includes(index + 1),
+      is_shi: Number(shiYing.shi || 0) === index + 1,
+      is_ying: Number(shiYing.ying || 0) === index + 1,
+    }))
+
+  return {
+    id: data.id,
+    question: data.question || '',
+    method: data.method || '',
+    method_label: data.method_label || '',
+    time_info: data.time_info || null,
+    created_at: data.created_at || data.createdAt || '',
+    yao_result: yaoResult,
+    yao_names: Array.isArray(data.yao_names) && data.yao_names.length === yaoResult.length
+      ? data.yao_names
+      : yaoResult.map((item) => getYaoName(item)),
+    gua: {
+      name: gua.name || data.gua_name || data.main_gua || '',
+      code: gua.code || data.gua_code || data.clean_gua_code || data.yao_code || '',
+      gua_ci: gua.gua_ci || data.gua_ci || data.gua_info?.main?.gua_ci || data.gua_info?.main?.general_meaning || '',
+    },
+    bian_gua: {
+      name: bianGua.name || data.bian_gua_name || '',
+      code: bianGua.code || data.bian_gua_code || '',
+      dong_yao: dongYao.filter((item) => Number.isFinite(item) && item > 0),
+    },
+    hu_gua: {
+      name: huGua.name || data.hu_gua_name || '',
+      code: huGua.code || data.hu_gua_code || '',
+    },
+    gong: data.gong || '',
+    shi_ying: shiYing,
+    liuqin: liuqinMap,
+    liushen: liushenMap,
+    yong_shen: (data.yong_shen && typeof data.yong_shen === 'object')
+      ? data.yong_shen
+      : { liuqin: data.yongshen || '' },
+    line_details: lineDetails,
+    interpretation: data.interpretation || '',
+    ai_analysis: normalizeAiAnalysis(data.ai_analysis || data.ai_interpretation),
+    points_cost: Number(data.points_cost ?? data.consumed_points ?? 0) || 0,
+    remaining_points: data.remaining_points ?? null,
+    is_first: Boolean(data.is_first),
+    is_history: isHistory,
+    fushen: data.fushen || null,
+  }
 }
 
 // 获取定价
 const loadPricing = async () => {
+  pricingLoading.value = true
+  pricingError.value = ''
+
   try {
     const response = await getLiuyaoPricing()
-    if (response.code === 0) {
-      pricing.value = response.data
+    if (response.code === 200) {
+      pricing.value = response.data || null
+      return
     }
+
+    pricing.value = null
+    pricingError.value = response.message || '获取占卜价格失败，请稍后重试'
   } catch (error) {
-    console.error('获取定价失败:', error)
+    pricing.value = null
+    pricingError.value = '获取占卜价格失败，请稍后重试'
+    reportUiError('获取定价失败', error)
+  } finally {
+    pricingLoading.value = false
   }
 }
 
 // 加载历史记录
 const loadHistory = async () => {
+  historyLoading.value = true
+  historyError.value = ''
+
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 50 })
-    if (response.code === 0) {
-      history.value = response.data.list || []
+    if (response.code === 200) {
+      history.value = (response.data.list || []).map((item) => normalizeResult(item, true))
+      historyLoaded.value = true
+      return
     }
+
+    history.value = []
+    historyLoaded.value = false
+    historyError.value = response.message || '获取历史记录失败，请稍后重试。'
   } catch (error) {
-    console.error('获取历史记录失败:', error)
+    history.value = []
+    historyLoaded.value = false
+    historyError.value = '获取历史记录失败，请稍后重试。'
+    reportUiError('获取历史记录失败', error)
+  } finally {
+    historyLoading.value = false
   }
+}
+
+
+const buildDivinationPayload = () => {
+  const payload = {
+    question: form.question.trim(),
+    useAi: form.useAi,
+    method: form.method,
+    question_type: form.questionType,
+    gender: form.gender,
+  }
+
+  if (form.riGan) {
+    payload.ri_gan = form.riGan
+  }
+
+  if (form.riZhi) {
+    payload.ri_zhi = form.riZhi
+  }
+
+  if (form.method === 'number') {
+    payload.numbers = form.numbers.filter((item) => Number.isFinite(item))
+  }
+
+  if (form.method === 'manual') {
+    payload.yao_results = [...form.yaoResults]
+  }
+
+  return payload
 }
 
 // 提交占卜
 const submitDivination = async () => {
+  if (pricingLoading.value) {
+    ElMessage.warning('占卜价格还在同步，请稍候再试')
+    return
+  }
+
+  if (pricingError.value || !pricing.value) {
+    ElMessage.warning(pricingError.value || '请先重新获取价格后再提交占卜')
+    return
+  }
+
   if (!form.question.trim()) {
     ElMessage.warning('请输入占卜问题')
     return
   }
 
-  if (form.question.length < 2) {
+  if (form.question.trim().length < 2) {
     ElMessage.warning('问题太短了，请详细描述您的问题')
+    return
+  }
+
+  if (form.method === 'number' && !Number.isFinite(form.numbers[0])) {
+    ElMessage.warning('数字起卦至少需要填写第一个数字')
+    return
+  }
+
+  if (form.method === 'manual' && form.yaoResults.some((item) => !Number.isFinite(item))) {
+    ElMessage.warning('请完整填写 6 次摇卦结果')
     return
   }
 
   isLoading.value = true
   try {
-    const response = await liuyaoDivination({
-      question: form.question.trim(),
-      useAi: form.useAi,
-    })
+    const response = await liuyaoDivination(buildDivinationPayload())
 
-    if (response.code === 0) {
-      result.value = response.data
-      loadHistory() // 刷新历史
+
+    if (response.code === 200) {
+      result.value = normalizeResult(response.data, false)
+      await loadHistory()
+      await loadPricing()
     } else {
-      ElMessage.error(response.message)
+      ElMessage.error(response.message || '占卜失败，请重试')
     }
   } catch (error) {
-    ElMessage.error('占卜失败，请重试')
+    reportUiError('提交六爻占卜失败', error, '占卜失败，请重试')
   } finally {
     isLoading.value = false
   }
@@ -237,36 +895,16 @@ const submitDivination = async () => {
 
 // 重置表单
 const resetForm = () => {
+  Object.assign(form, createDefaultForm())
   result.value = null
-  form.question = ''
-  loadPricing() // 重新获取定价（可能是首次了）
+  loadPricing()
 }
 
-// 保存结果
-const saveResult = () => {
-  ElMessage.success('结果已自动保存到历史记录')
-}
+
 
 // 加载历史记录详情
 const loadHistoryDetail = (item) => {
-  result.value = {
-    id: item.id,
-    question: item.question,
-    yao_result: item.yao_result,
-    yao_names: item.yao_result.map(yao => {
-      const names = ['老阴', '少阴', '少阳', '老阳']
-      return names[yao]
-    }),
-    gua: {
-      name: item.gua_name,
-      code: item.gua_code,
-      gua_ci: item.gua_ci,
-    },
-    interpretation: item.interpretation,
-    ai_analysis: item.ai_analysis,
-    points_cost: item.consumed_points,
-    remaining_points: 0, // 历史记录不显示剩余积分
-  }
+  result.value = normalizeResult(item, true)
   showHistory.value = false
 }
 
@@ -280,15 +918,19 @@ const deleteRecord = async (id) => {
     })
 
     const response = await deleteLiuyaoRecord({ id })
-    if (response.code === 0) {
+    if (response.code === 200) {
       ElMessage.success('删除成功')
-      loadHistory()
+      await loadHistory()
+      if (result.value?.id === id) {
+        result.value = null
+      }
+      await loadPricing()
     } else {
       ElMessage.error(response.message)
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      reportUiError('删除六爻历史记录失败', error, '删除失败')
     }
   }
 }
@@ -296,13 +938,26 @@ const deleteRecord = async (id) => {
 // 格式化日期
 const formatDate = (dateStr) => {
   const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) {
+    return dateStr || '--'
+  }
   return date.toLocaleDateString('zh-CN')
 }
 
 // 初始化
 onMounted(() => {
+  beijingTimer = window.setInterval(() => {
+    currentBeijingTimestamp.value = Date.now()
+  }, 1000)
   loadPricing()
   loadHistory()
+})
+
+onUnmounted(() => {
+  if (beijingTimer) {
+    clearInterval(beijingTimer)
+    beijingTimer = null
+  }
 })
 </script>
 
@@ -318,17 +973,23 @@ onMounted(() => {
 }
 
 .page-header {
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
   margin-bottom: 40px;
+}
+
+.page-header-content {
+  flex: 1;
 }
 
 .page-title {
   font-size: 36px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
 }
 
@@ -337,27 +998,29 @@ onMounted(() => {
 }
 
 .page-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 16px;
+  margin: 0;
 }
 
 /* 表单样式 */
 .form-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .form-card h2 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 8px;
 }
 
 .form-tip {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   text-align: center;
   font-size: 14px;
   margin-bottom: 30px;
@@ -369,22 +1032,22 @@ onMounted(() => {
 
 .form-group label {
   display: block;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 10px;
   font-size: 14px;
 }
 
 .form-group label .required {
-  color: #e94560;
+  color: var(--primary-color);
 }
 
 .form-group textarea {
   width: 100%;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   line-height: 1.6;
   resize: vertical;
@@ -394,66 +1057,167 @@ onMounted(() => {
 
 .form-group textarea:focus {
   outline: none;
-  border-color: #e94560;
+  border-color: var(--primary-color);
 }
 
 .form-group textarea::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .char-count {
   display: block;
   text-align: right;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   font-size: 12px;
   margin-top: 6px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.method-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-helper {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.helper-card,
+.advanced-card {
+  padding: 18px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.helper-card__title {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.helper-card__desc,
+.advanced-card__header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.advanced-toggle {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.advanced-toggle__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.advanced-card__header {
+  margin-bottom: 0;
+}
+
+.advanced-card__header h3 {
+
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.input-grid,
+.advanced-grid,
+.manual-grid {
+
+  display: grid;
+  gap: 16px;
+}
+
+.input-grid--double,
+.advanced-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.advanced-grid {
+  margin-top: 18px;
+}
+
+
+.input-grid__item label,
+.manual-grid__item label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.manual-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
 }
 
 .options-section {
   margin: 20px 0;
 }
 
-.option-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-}
-
-.option-item input {
-  width: 18px;
-  height: 18px;
-  accent-color: #e94560;
-}
-
 .pricing-info {
   text-align: center;
   padding: 16px;
-  background: rgba(233, 69, 96, 0.1);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
   margin: 20px 0;
+  border: 1px solid var(--border-light);
+}
+
+.pricing-reason {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .pricing-free,
 .pricing-vip {
-  color: #67c23a;
+  color: var(--success-color);
   font-size: 18px;
   font-weight: 600;
 }
 
 .pricing-normal {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .btn-submit {
   width: 100%;
   padding: 18px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
@@ -471,7 +1235,7 @@ onMounted(() => {
 
 .btn-submit:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 10px 30px var(--primary-light-40);
 }
 
 .btn-icon {
@@ -481,8 +1245,8 @@ onMounted(() => {
 .loading {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -498,16 +1262,28 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-.history-link a {
-  color: rgba(255, 255, 255, 0.5);
+.history-link__button {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-secondary);
   cursor: pointer;
   text-decoration: underline;
   font-size: 14px;
+  font: inherit;
 }
 
-.history-link a:hover {
-  color: #e94560;
+.history-link__button:hover {
+  color: var(--primary-color);
 }
+
+.history-link__button:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 
 /* 结果卡片 */
 .result-section {
@@ -515,11 +1291,12 @@ onMounted(() => {
 }
 
 .result-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .result-header {
@@ -530,108 +1307,254 @@ onMounted(() => {
 }
 
 .result-header h2 {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .first-free-badge {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
-  color: #fff;
-  padding: 6px 14px;
+  background: var(--success-gradient);
+  color: var(--text-primary);
+  padding: 12px 24px;
   border-radius: 20px;
+  font-size: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.result-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-card));
+}
+
+.context-chip__label {
   font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.context-chip__value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .question-box {
+
   padding: 16px 20px;
-  background: rgba(233, 69, 96, 0.1);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .question-box .label {
-  color: #e94560;
+  color: var(--primary-color);
   font-weight: 600;
 }
 
 .question-box .question-text {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 /* 卦象展示 */
 .gua-display {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
-  margin-bottom: 24px;
+  padding: 50px 40px;
+  background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-primary));
+  border-radius: 24px;
+  margin-bottom: 40px;
+  border: 1px solid var(--primary-light-20);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.6), 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.gua-display::before {
+  content: '';
+  position: absolute;
+  inset: 15px;
+  border: 1px solid var(--primary-light-10);
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.gua-display::after {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 2px solid transparent;
+  border-image: linear-gradient(135deg, var(--primary-color), transparent, var(--primary-color)) 1;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* 装饰角 - 动态太极 */
+.gua-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 320px;
+  color: var(--primary-light-05);
+  animation: yinYangRotate 30s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(2px);
+}
+
+@keyframes yinYangRotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 .gua-info {
   text-align: center;
+  z-index: 2;
+  background: var(--white-03);
+  padding: 30px;
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--white-08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .gua-name {
-  color: #ffd700;
-  font-size: 28px;
-  margin-bottom: 8px;
+  color: var(--primary-color);
+  font-size: 48px;
+  margin-bottom: 15px;
+  font-weight: 900;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  letter-spacing: 8px;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .gua-code {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
+  color: var(--white-60);
+  font-size: 14px;
+  letter-spacing: 4px;
+  background: var(--white-05);
+  padding: 6px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  font-family: monospace;
 }
 
 /* 六爻图形 */
 .yao-container {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: column-reverse; /* 从下往上排 */
+  gap: 20px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 30px 40px;
+  border-radius: 20px;
+  border: 1px solid var(--primary-light-15);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
 .yao-line {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  transition: all 0.3s;
+  gap: 25px;
+  padding: 8px 20px;
+  border-radius: 12px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid transparent;
+}
+
+
+.yao-line:hover {
+  background: var(--primary-light-10);
+  transform: translateX(-10px) scale(1.05);
+  border-color: var(--primary-light-30);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .yao-line.moving {
-  background: rgba(233, 69, 96, 0.2);
+  position: relative;
+  background: var(--primary-light-05);
+  animation: moving-glow 2s ease-in-out infinite;
+}
+
+@keyframes moving-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--primary-light-20); }
+  50% { box-shadow: 0 0 15px var(--primary-light-40); }
+}
+
+.yao-line.moving::before {
+  content: '动';
+  position: absolute;
+  left: -35px;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--primary-light-10);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--primary-color);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
 }
 
 .yao-mark {
-  width: 24px;
+  width: 40px;
   text-align: center;
-  font-size: 18px;
-  color: #e94560;
-  font-weight: bold;
+  font-size: 28px;
+  color: var(--primary-light);
+  font-weight: 900;
+  filter: drop-shadow(0 0 8px var(--primary-color));
 }
 
 .yao-bar {
-  width: 60px;
-  height: 6px;
-  border-radius: 3px;
+  width: 140px;
+  height: 14px;
+  border-radius: 7px;
   position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .yao-line.yang .yao-bar {
-  background: #fff;
+  background: linear-gradient(90deg, #8B6914 0%, #D4AF37 20%, #FFF3D1 50%, #D4AF37 80%, #8B6914 100%);
+  border: 1px solid var(--primary-light-40);
 }
 
 .yao-line.yin .yao-bar::before,
 .yao-line.yin .yao-bar::after {
   content: '';
   position: absolute;
-  width: 45%;
+  width: 42%;
   height: 100%;
-  background: #fff;
-  border-radius: 3px;
+  background: linear-gradient(90deg, #2D2209 0%, #8B6914 20%, #B8860B 50%, #8B6914 80%, #2D2209 100%);
+  border-radius: 7px;
+  border: 1px solid var(--primary-light-20);
 }
 
 .yao-line.yin .yao-bar::after {
@@ -639,27 +1562,165 @@ onMounted(() => {
 }
 
 .yao-name {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
+  font-size: 14px;
+  min-width: 60px;
+  font-weight: 500;
+}
+
+/* 伏神样式 */
+.fushen-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  left: -80px;
+  background: rgba(184, 134, 11, 0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--primary-light-40);
+  min-width: 60px;
+}
+
+.fushen-label {
+  font-size: 10px;
+  color: var(--primary-light);
+  font-weight: bold;
+}
+
+.fushen-name {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.fushen-ganzhi {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+
+
+.structured-section {
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-light);
+}
+
+.structured-section h4 {
+  color: var(--primary-color);
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+
+.structured-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.structured-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(184, 134, 11, 0.08);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+.structured-chip__label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.structured-chip__value {
+  color: var(--text-primary);
   font-size: 13px;
-  min-width: 50px;
+  font-weight: 600;
+}
+
+.line-detail-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.line-detail-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid var(--border-light);
+}
+
+.line-detail-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.line-detail-card__title {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.line-detail-card__tags {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.line-tag {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-align: center;
+  color: #fff;
+}
+
+.line-tag--shi {
+  background: #8b6914;
+}
+
+.line-tag--ying {
+  background: #6f42c1;
+}
+
+.line-tag--moving {
+  background: #d9534f;
+}
+
+.line-detail-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 /* 卦辞 */
 .gua-ci-section {
   padding: 20px;
-  background: rgba(255, 215, 0, 0.1);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
 }
 
 .gua-ci-section h4 {
-  color: #ffd700;
+  color: var(--primary-color);
   margin-bottom: 10px;
   font-size: 16px;
 }
 
 .gua-ci {
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.8;
   font-size: 15px;
   margin: 0;
@@ -671,13 +1732,13 @@ onMounted(() => {
 }
 
 .interpretation-section h4 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
   font-size: 16px;
 }
 
 .interpretation-text {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 14px;
   white-space: pre-wrap;
@@ -689,13 +1750,13 @@ onMounted(() => {
 .ai-section {
   margin-bottom: 24px;
   padding: 20px;
-  background: rgba(103, 194, 58, 0.1);
-  border-radius: 12px;
-  border-left: 4px solid #67c23a;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border-left: 4px solid var(--success-color);
 }
 
 .ai-section h4 {
-  color: #67c23a;
+  color: var(--success-color);
   margin-bottom: 12px;
   font-size: 16px;
   display: flex;
@@ -704,7 +1765,7 @@ onMounted(() => {
 }
 
 .ai-content {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 14px;
   white-space: pre-wrap;
@@ -715,24 +1776,55 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 24px;
+  border: 1px solid var(--border-light);
+}
+
+.history-points-note {
+  color: var(--text-muted);
 }
 
 /* 操作按钮 */
+
 .action-buttons {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
+.saved-status {
+  flex: 1;
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(103, 194, 58, 0.12);
+  border: 1px solid rgba(103, 194, 58, 0.24);
+  color: var(--success-color);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.saved-status--history {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+}
+
+
 .btn-primary,
+
 .btn-secondary {
   flex: 1;
   padding: 14px 24px;
-  border-radius: 10px;
+  border-radius: 25px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -742,95 +1834,122 @@ onMounted(() => {
   gap: 8px;
   transition: all 0.3s;
   border: none;
+  min-height: 44px;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 8px 25px var(--primary-light-40);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--bg-hover);
 }
 
-/* 弹窗 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
+/* 历史对话框 */
+.history-dialog :deep(.el-dialog) {
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-xl);
 }
 
-.modal-content {
-  background: #1a1a2e;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.modal-header h3 {
-  color: #fff;
+.history-dialog :deep(.el-dialog__header) {
+  padding: 20px 20px 16px;
   margin: 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 24px;
-  cursor: pointer;
+.history-dialog :deep(.el-dialog__title) {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
-.close-btn:hover {
-  color: #fff;
+.history-dialog :deep(.el-dialog__body) {
+  padding: 16px 20px 20px;
+}
+
+.history-dialog :deep(.el-dialog__headerbtn) {
+  width: 44px;
+  height: 44px;
+  top: 12px;
+  right: 14px;
+}
+
+.history-dialog :deep(.el-dialog__headerbtn:focus-visible) {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .history-list {
-  max-height: 60vh;
+  max-height: min(60vh, 520px);
   overflow-y: auto;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-state {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.history-state p {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.history-state--error {
+  border-radius: 14px;
+  border: 1px solid rgba(245, 108, 108, 0.18);
+  background: rgba(245, 108, 108, 0.06);
 }
 
 .history-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s;
+  align-items: stretch;
+  gap: 12px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), var(--bg-card));
 }
 
-.history-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+.history-select {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.history-select:hover {
+  background: var(--bg-secondary);
+}
+
+.history-select:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
 }
 
 .history-main {
@@ -839,41 +1958,83 @@ onMounted(() => {
 }
 
 .history-question {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 6px 0;
   font-size: 14px;
-  white-space: nowrap;
+  line-height: 1.6;
+  min-height: calc(1.6em * 2);
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
+
 .history-gua {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
   font-size: 12px;
 }
 
 .delete-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 8px 12px;
+  background: var(--error-bg);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 999px;
+  color: var(--error-color);
   cursor: pointer;
-  padding: 8px;
-  font-size: 16px;
-  opacity: 0;
+  font-size: 13px;
+  font-weight: 600;
   transition: all 0.3s;
 }
 
-.history-item:hover .delete-btn {
-  opacity: 1;
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-.delete-btn:hover {
-  color: #ff4d4f;
+.delete-btn:focus-visible {
+  outline: 2px solid rgba(239, 68, 68, 0.4);
+  outline-offset: 2px;
+}
+
+.delete-label {
+  line-height: 1;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .loading,
+  .gua-decoration,
+  .yao-line,
+  .yao-line.moving,
+  .yao-line.moving::before,
+  .btn-submit,
+  .delete-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .yao-line:hover,
+  .btn-submit:not(:disabled):hover {
+    transform: none !important;
+  }
 }
 
 /* 响应式 */
+
 @media (max-width: 768px) {
+  .page-header {
+    align-items: stretch;
+  }
+
   .page-title {
     font-size: 28px;
   }
@@ -883,13 +2044,109 @@ onMounted(() => {
     padding: 24px;
   }
 
+  .result-context {
+    gap: 8px;
+  }
+
+  .context-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .advanced-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .advanced-toggle__action {
+    margin-top: 0;
+  }
+
+  .input-grid--double,
+
+  .advanced-grid,
+  .manual-grid {
+    grid-template-columns: 1fr;
+  }
+
+
   .gua-display {
     flex-direction: column;
     gap: 20px;
+    overflow: visible;
+  }
+
+  .yao-container {
+    width: 100%;
+    padding: 18px 16px;
+    gap: 14px;
+  }
+
+  .yao-line {
+    gap: 12px;
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .yao-line:hover {
+    transform: none;
+  }
+
+  .yao-line.moving::before {
+    left: auto;
+    right: 12px;
+    top: 10px;
+  }
+
+  .fushen-box {
+    position: static;
+    flex-direction: row;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+    padding: 6px 10px;
+    margin-bottom: 2px;
+  }
+
+  .fushen-label,
+  .fushen-name,
+  .fushen-ganzhi {
+    font-size: 12px;
+  }
+
+  .yao-mark {
+    width: 24px;
+    font-size: 22px;
+  }
+
+  .yao-bar {
+    flex: 1;
+    min-width: 96px;
+    width: auto;
+  }
+
+  .yao-name {
+    min-width: auto;
+    margin-left: auto;
+    text-align: right;
+    font-size: 13px;
+  }
+
+  .history-item {
+    flex-direction: column;
+  }
+
+  .delete-btn {
+    align-self: stretch;
+    width: 100%;
   }
 
   .action-buttons {
     flex-direction: column;
   }
 }
+
+
 </style>

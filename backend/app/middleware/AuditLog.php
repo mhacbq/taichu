@@ -3,12 +3,13 @@ declare(strict_types=1);
 
 namespace app\middleware;
 
+use app\service\SensitiveDataSanitizer;
 use think\facade\Log;
 
 /**
  * 审计日志中间件
- * 
- * 记录敏感操作和安全事件
+ *
+ * 记录敏感操作和安全事件。
  */
 class AuditLog
 {
@@ -26,127 +27,69 @@ class AuditLog
         'auth/login' => '用户登录',
         'auth/phoneLogin' => '手机号登录',
     ];
-    
+
     public function handle($request, \Closure $next)
     {
         $path = $request->pathinfo();
         $method = $request->method();
-        
-        // 记录请求开始
         $startTime = microtime(true);
-        
+
         $response = $next($request);
-        
-        // 计算执行时间
+
         $duration = round((microtime(true) - $startTime) * 1000, 2);
-        
-        // 检查是否需要记录审计日志
+
         if ($this->shouldLog($path, $method)) {
             $this->logAudit($request, $response, $duration);
         }
-        
-        // 记录慢请求（超过3秒）
+
         if ($duration > 3000) {
             $this->logSlowRequest($request, $duration);
         }
-        
+
         return $response;
     }
-    
-    /**
-     * 判断是否需要记录审计日志
-     */
+
     protected function shouldLog(string $path, string $method): bool
     {
-        // 只记录写操作
-        if (!in_array($method, ['POST', 'PUT', 'DELETE'])) {
+        if (!in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
             return false;
         }
-        
-        // 检查是否在敏感操作列表中
+
         foreach ($this->sensitiveActions as $action => $desc) {
             if (strpos($path, $action) !== false) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
-    /**
-     * 记录审计日志
-     */
+
     protected function logAudit($request, $response, float $duration): void
     {
         $user = $request->user ?? null;
-        $path = $request->pathinfo();
-        
-        // 过滤敏感参数
-        $params = $request->param();
-        $filteredParams = $this->filterSensitiveParams($params);
-        
-        $logData = [
+
+        Log::channel('audit')->info('Audit Log', [
             'type' => 'audit',
             'timestamp' => date('Y-m-d H:i:s'),
-            'path' => $path,
-            'method' => $request->method(),
+            'path' => (string) $request->pathinfo(),
+            'method' => (string) $request->method(),
             'user_id' => $user['sub'] ?? null,
-            'ip' => $request->ip(),
-            'user_agent' => $request->header('User-Agent'),
-            'params' => $filteredParams,
-            'response_code' => $response->getCode(),
+            'ip' => (string) $request->ip(),
+            'user_agent' => (string) $request->header('User-Agent', ''),
+            'params' => SensitiveDataSanitizer::getFilteredRequestParams($request),
+            'response_code' => method_exists($response, 'getCode') ? $response->getCode() : null,
             'duration_ms' => $duration,
-        ];
-        
-        Log::channel('audit')->info('Audit Log', $logData);
+        ]);
     }
-    
-    /**
-     * 记录慢请求
-     */
+
     protected function logSlowRequest($request, float $duration): void
     {
         Log::warning('Slow Request', [
-            'path' => $request->pathinfo(),
-            'method' => $request->method(),
+            'path' => (string) $request->pathinfo(),
+            'method' => (string) $request->method(),
             'duration_ms' => $duration,
             'user_id' => $request->user['sub'] ?? null,
-            'ip' => $request->ip(),
+            'ip' => (string) $request->ip(),
         ]);
-    }
-    
-    /**
-     * 过滤敏感参数
-     */
-    protected function filterSensitiveParams(array $params): array
-    {
-        $sensitiveFields = [
-            'password', 'pwd', 'passwd', 'secret', 'token',
-            'access_token', 'refresh_token', 'api_key', 'apikey',
-            'app_secret', 'private_key', 'cert', 'certificate',
-        ];
-        
-        $filtered = [];
-        foreach ($params as $key => $value) {
-            $lowerKey = strtolower($key);
-            $isSensitive = false;
-            
-            foreach ($sensitiveFields as $field) {
-                if (strpos($lowerKey, $field) !== false) {
-                    $isSensitive = true;
-                    break;
-                }
-            }
-            
-            if ($isSensitive) {
-                $filtered[$key] = '***REDACTED***';
-            } elseif (is_array($value)) {
-                $filtered[$key] = $this->filterSensitiveParams($value);
-            } else {
-                $filtered[$key] = $value;
-            }
-        }
-        
-        return $filtered;
     }
 }

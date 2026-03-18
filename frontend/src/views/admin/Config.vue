@@ -388,7 +388,7 @@ const marketingForm = ref({
 const loadFeatures = async () => {
   try {
     const res = await getFeatureSwitches()
-    if (res.code === 0) {
+    if (res.code === 200) {
       features.value = res.data
     }
   } catch (error) {
@@ -401,7 +401,7 @@ const handleUpdateFeature = async (key, enabled) => {
   savingFeatures.value[key] = true
   try {
     const res = await updateFeature(key, enabled)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('功能开关已更新')
     } else {
       ElMessage.error(res.message)
@@ -439,7 +439,7 @@ const saveAllFeatures = async () => {
   
   try {
     const res = await updateFeatures(featureData)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('所有功能开关已保存')
     } else {
       ElMessage.error(res.message)
@@ -453,7 +453,7 @@ const saveAllFeatures = async () => {
 const loadVipConfig = async () => {
   try {
     const res = await getVipConfig()
-    if (res.code === 0) {
+    if (res.code === 200) {
       Object.assign(vipForm.value, res.data)
     }
   } catch (error) {
@@ -466,7 +466,7 @@ const saveVipConfig = async () => {
   saving.value.vip = true
   try {
     const res = await updateVipConfig(vipForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('VIP配置已保存')
     } else {
       ElMessage.error(res.message)
@@ -482,7 +482,7 @@ const saveVipConfig = async () => {
 const loadPointsConfig = async () => {
   try {
     const res = await getPointsConfig()
-    if (res.code === 0) {
+    if (res.code === 200) {
       pointsForm.value.tasks = res.data.tasks
       pointsForm.value.costs = res.data.costs
     }
@@ -496,7 +496,7 @@ const savePointsConfig = async () => {
   saving.value.points = true
   try {
     const res = await updatePointsConfig(pointsForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('积分配置已保存')
     } else {
       ElMessage.error(res.message)
@@ -512,7 +512,7 @@ const savePointsConfig = async () => {
 const loadMarketingConfig = async () => {
   try {
     const res = await getMarketingConfig()
-    if (res.code === 0) {
+    if (res.code === 200) {
       Object.assign(marketingForm.value, res.data)
     }
   } catch (error) {
@@ -525,7 +525,7 @@ const saveMarketingConfig = async () => {
   saving.value.marketing = true
   try {
     const res = await updateMarketingConfig(marketingForm.value)
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('营销配置已保存')
     } else {
       ElMessage.error(res.message)
@@ -541,13 +541,14 @@ const saveMarketingConfig = async () => {
 const refreshCache = async () => {
   try {
     const res = await refreshConfigCache()
-    if (res.code === 0) {
+    if (res.code === 200) {
       ElMessage.success('缓存已刷新')
     }
   } catch (error) {
     ElMessage.error('刷新失败')
   }
 }
+
 
 onMounted(() => {
   loadFeatures()
@@ -573,7 +574,7 @@ onMounted(() => {
 
 .header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .feature-switches,
@@ -587,12 +588,12 @@ onMounted(() => {
 .vip-config h3,
 .points-config h3,
 .marketing-config h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 10px;
 }
 
 .desc {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
@@ -608,9 +609,9 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
   transition: all 0.3s;
 }
 
@@ -626,7 +627,7 @@ onMounted(() => {
 }
 
 .feature-name {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -634,7 +635,7 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-light);
 }
 
 .config-form {
@@ -643,21 +644,21 @@ onMounted(() => {
 
 .unit {
   margin-left: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .hint {
   margin-left: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 :deep(.el-divider__text) {
-  background: #1a1a2e;
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--bg-card);
+  color: var(--text-secondary);
 }
 </style>

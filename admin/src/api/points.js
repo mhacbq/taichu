@@ -8,13 +8,15 @@ export function getPointsRecords(params) {
   })
 }
 
-export function adjustPoints(data) {
+export function adjustPoints(data, options = {}) {
   return request({
     url: '/points/adjust',
     method: 'post',
-    data
+    data,
+    ...options
   })
 }
+
 
 export function getPointsRules() {
   return request({

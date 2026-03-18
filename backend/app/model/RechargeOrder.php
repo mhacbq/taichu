@@ -5,6 +5,8 @@ namespace app\model;
 
 use think\Model;
 use think\facade\Db;
+use think\facade\Log;
+
 
 /**
  * 充值订单模型
@@ -33,6 +35,12 @@ class RechargeOrder extends Model
         'status' => 'string',
         'payment_type' => 'string',
         'pay_order_no' => 'string',
+        'refund_no' => 'string',
+        'refund_amount' => 'float',
+        'refund_time' => 'datetime',
+        'refund_reason' => 'string',
+        'wechat_refund_id' => 'string',
+        'refund_response' => 'json',
         'pay_time' => 'datetime',
         'expire_time' => 'datetime',
         'client_ip' => 'string',
@@ -45,7 +53,8 @@ class RechargeOrder extends Model
         'updated_at' => 'datetime',
     ];
     
-    protected $json = ['callback_data', 'process_log'];
+    protected $json = ['callback_data', 'refund_response', 'process_log'];
+
     
     /**
      * 生成唯一订单号
@@ -212,8 +221,23 @@ class RechargeOrder extends Model
                 'points_added' => $this->points,
                 'new_balance' => $userData['points'] + $this->points,
             ]);
+
+            try {
+                \app\controller\Notification::sendRechargeSuccessNotification(
+                    (int) $this->user_id,
+                    (float) $this->amount,
+                    (int) $this->points
+                );
+            } catch (\Throwable $notifyException) {
+                Log::warning('充值成功通知发送失败', [
+                    'order_id' => $this->id,
+                    'user_id' => $this->user_id,
+                    'error' => $notifyException->getMessage(),
+                ]);
+            }
             
             return ['success' => true, 'message' => '支付处理成功', 'is_duplicate' => false];
+
             
         } catch (\Exception $e) {
             Db::rollback();

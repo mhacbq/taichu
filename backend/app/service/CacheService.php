@@ -109,6 +109,11 @@ class CacheService
     }
     
     /**
+     * 应用缓存键前缀
+     */
+    const KEY_PREFIX = 'taichu:';
+    
+    /**
      * 生成八字排盘缓存键
      * 
      * @param string $birthDate 出生日期
@@ -118,7 +123,7 @@ class CacheService
     public static function baziKey(string $birthDate, string $gender): string
     {
         $hash = md5($birthDate . $gender);
-        return 'bazi:calc:' . $hash;
+        return self::KEY_PREFIX . 'bazi:calc:' . $hash;
     }
     
     /**
@@ -132,7 +137,7 @@ class CacheService
     {
         $baziString = json_encode($bazi);
         $hash = md5($baziString . $type);
-        return 'ai:analysis:' . $type . ':' . $hash;
+        return self::KEY_PREFIX . 'ai:analysis:' . $type . ':' . $hash;
     }
     
     /**
@@ -144,7 +149,7 @@ class CacheService
      */
     public static function dailyFortuneKey(int $userId, string $date): string
     {
-        return 'daily:fortune:' . $userId . ':' . $date;
+        return self::KEY_PREFIX . 'daily:fortune:' . $userId . ':' . $date;
     }
     
     /**
@@ -193,7 +198,7 @@ class CacheService
     {
         $baziString = json_encode($bazi);
         $hash = md5($baziString . $year);
-        return 'yearly:fortune:' . $year . ':' . $hash;
+        return self::KEY_PREFIX . 'yearly:fortune:' . $year . ':' . $hash;
     }
     
     /**
@@ -207,7 +212,7 @@ class CacheService
     {
         $dayunString = $dayun['gan'] . $dayun['zhi'] . $dayun['start_age'];
         $hash = md5($dayunString . $dayMaster);
-        return 'dayun:analysis:' . $hash;
+        return self::KEY_PREFIX . 'dayun:analysis:' . $hash;
     }
     
     /**
@@ -220,6 +225,6 @@ class CacheService
     public static function hehunKey(string $maleBirthDate, string $femaleBirthDate): string
     {
         $hash = md5($maleBirthDate . $femaleBirthDate);
-        return 'hehun:calc:' . $hash;
+        return self::KEY_PREFIX . 'hehun:calc:' . $hash;
     }
 }

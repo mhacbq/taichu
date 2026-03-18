@@ -1,0 +1,148 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - link "太初管理后台" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - menubar [ref=e10]:
+      - menuitem "仪表盘" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - generic [ref=e16]: 仪表盘
+      - menuitem "用户管理" [ref=e18]:
+        - generic [ref=e19] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e23]: 用户管理
+          - img [ref=e25]
+      - menuitem "内容管理" [ref=e28]:
+        - generic [ref=e29] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: 内容管理
+          - img [ref=e35]
+      - menuitem "网站内容" [ref=e38]:
+        - generic [ref=e39] [cursor=pointer]:
+          - img [ref=e41]
+          - generic [ref=e43]: 网站内容
+          - img [ref=e45]
+      - menuitem "编辑页面" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 编辑页面
+      - menuitem "积分管理" [ref=e51]:
+        - generic [ref=e52] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e58]: 积分管理
+          - img [ref=e60]
+      - menuitem "支付管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e70]: 支付管理
+          - img [ref=e72]
+      - menuitem "短信管理" [ref=e75]:
+        - generic [ref=e76] [cursor=pointer]:
+          - img [ref=e78]
+          - generic [ref=e81]: 短信管理
+          - img [ref=e83]
+      - menuitem "反馈管理" [ref=e86]:
+        - generic [ref=e87] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]: 反馈管理
+          - img [ref=e94]
+      - menuitem "反作弊系统" [ref=e97]:
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e102]: 反作弊系统
+          - img [ref=e104]
+      - menuitem "AI管理" [ref=e107]:
+        - generic [ref=e108] [cursor=pointer]:
+          - img [ref=e110]
+          - generic [ref=e113]: AI管理
+          - img [ref=e115]
+      - menuitem "系统设置" [ref=e118]:
+        - generic [ref=e119] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e123]: 系统设置
+          - img [ref=e125]
+      - menuitem "日志管理" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 日志管理
+          - img [ref=e135]
+      - menuitem "任务调度" [ref=e138]:
+        - generic [ref=e139] [cursor=pointer]:
+          - img [ref=e141]
+          - generic [ref=e145]: 任务调度
+          - img [ref=e147]
+  - generic [ref=e149]:
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153] [cursor=pointer]:
+            - img
+          - navigation "面包屑" [ref=e155]:
+            - generic [ref=e156]:
+              - link "仪表盘" [ref=e157]
+              - text: /
+            - generic [ref=e158]:
+              - link "内容管理" [ref=e159]
+              - text: /
+            - link "黄历管理" [ref=e161]
+        - generic [ref=e162]:
+          - generic [ref=e163] [cursor=pointer]:
+            - img
+          - button "admin" [ref=e166] [cursor=pointer]:
+            - generic [ref=e168]: admin
+            - img [ref=e170]
+      - link "黄历管理" [ref=e176] [cursor=pointer]:
+        - /url: /content/almanac
+        - text: 黄历管理
+        - img [ref=e178]
+    - generic [ref=e181]:
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - generic [ref=e186]: 日期
+          - generic [ref=e189]:
+            - img [ref=e192]
+            - combobox "日期" [ref=e194]
+        - generic [ref=e196]:
+          - button "搜索" [ref=e197] [cursor=pointer]:
+            - generic [ref=e198]: 搜索
+          - button "新增数据" [ref=e199] [cursor=pointer]:
+            - generic [ref=e200]: 新增数据
+      - generic [ref=e202]:
+        - generic [ref=e203]:
+          - generic [ref=e204]:
+            - table [ref=e206]:
+              - rowgroup [ref=e214]:
+                - row "日期 宜 忌 干支 五行 操作" [ref=e215]:
+                  - columnheader "日期" [ref=e216]:
+                    - generic [ref=e217]: 日期
+                  - columnheader "宜" [ref=e218]:
+                    - generic [ref=e219]: 宜
+                  - columnheader "忌" [ref=e220]:
+                    - generic [ref=e221]: 忌
+                  - columnheader "干支" [ref=e222]:
+                    - generic [ref=e223]: 干支
+                  - columnheader "五行" [ref=e224]:
+                    - generic [ref=e225]: 五行
+                  - columnheader "操作" [ref=e226]:
+                    - generic [ref=e227]: 操作
+            - generic [ref=e231]:
+              - table:
+                - rowgroup
+              - generic [ref=e233]: 暂无数据
+          - img [ref=e236]
+        - generic [ref=e239]:
+          - generic [ref=e240]: 共 0 条
+          - generic [ref=e243] [cursor=pointer]:
+            - generic:
+              - combobox [ref=e245]
+              - generic [ref=e246]: 20条/页
+            - img [ref=e249]
+          - button "上一页" [disabled] [ref=e251]:
+            - generic:
+              - img
+          - list [ref=e252]:
+            - listitem "第 1 页" [ref=e253]: "1"
+          - button "下一页" [disabled] [ref=e254]:
+            - generic:
+              - img
+          - generic [ref=e255]:
+            - generic [ref=e256]: 前往
+            - spinbutton "页" [ref=e259]: "1"
+            - generic [ref=e260]: 页

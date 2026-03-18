@@ -11,7 +11,7 @@
 
       <div class="profile-grid">
         <!-- 用户信息卡片 -->
-        <div class="user-info card">
+        <div class="user-info card card-hover">
           <div class="avatar-section">
             <div class="avatar">
               <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="头像">
@@ -37,7 +37,7 @@
         </div>
 
         <!-- 积分明细 -->
-        <div class="points-section card">
+        <div class="points-section card card-hover">
           <h3>积分明细</h3>
           <div class="points-list" v-if="pointsHistory.length > 0">
             <div v-for="record in pointsHistory" :key="record.id" class="points-item">
@@ -54,7 +54,7 @@
         </div>
 
         <!-- 排盘历史 -->
-        <div class="history-section card">
+        <div class="history-section card card-hover">
           <h3>排盘历史</h3>
           <div class="history-list" v-if="baziHistory.length > 0">
             <div v-for="record in baziHistory" :key="record.id" class="history-item">
@@ -84,14 +84,16 @@
         </div>
 
         <!-- 塔罗历史 -->
-        <div class="history-section card">
+        <div class="history-section card card-hover">
           <h3>塔罗占卜历史</h3>
           <div class="history-list" v-if="tarotHistory.length > 0">
             <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
               <div class="history-info">
-                <span class="history-date">{{ formatTime(record.date) }}</span>
+                <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
                 <span class="history-question" :title="record.question">{{ record.question }}</span>
+                <span class="history-birth">{{ record.spreadName }}</span>
               </div>
+
               <div class="tarot-cards">
                 <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
                   {{ card.emoji }}<small v-if="card.reversed">逆</small>
@@ -105,11 +107,17 @@
         </div>
 
         <!-- 积分获取攻略 -->
-        <div class="points-guide-section card">
-          <h3>💎 积分获取攻略</h3>
+        <div class="points-guide-section card card-hover">
+          <h3><el-icon><Coin /></el-icon> 积分获取攻略</h3>
           <div class="points-methods">
-            <div class="method-item" v-for="method in pointsMethods" :key="method.id">
-              <div class="method-icon">{{ method.icon }}</div>
+            <div class="method-item card-hover" v-for="method in pointsMethods" :key="method.id">
+              <div class="method-icon">
+                <el-icon v-if="method.icon === 'calendar'"><Calendar /></el-icon>
+                <el-icon v-else-if="method.icon === 'present'"><Present /></el-icon>
+                <el-icon v-else-if="method.icon === 'user'"><UserFilled /></el-icon>
+                <el-icon v-else-if="method.icon === 'share'"><Share /></el-icon>
+                <el-icon v-else-if="method.icon === 'chat'"><ChatDotRound /></el-icon>
+              </div>
               <div class="method-info">
                 <h4>{{ method.name }}</h4>
                 <p>{{ method.desc }}</p>
@@ -123,14 +131,14 @@
               >
                 {{ method.actionText }}
               </el-button>
-              <span v-else class="completed-badge">✓</span>
+              <el-icon v-else class="completed-badge"><Check /></el-icon>
             </div>
           </div>
         </div>
 
         <!-- 邀请好友 -->
-        <div class="invite-section card">
-          <h3>🎁 邀请好友赚积分</h3>
+        <div class="invite-section card card-hover">
+          <h3><el-icon><Present /></el-icon> 邀请好友赚积分</h3>
           <div class="invite-content">
             <p class="invite-desc">每邀请一位好友注册，您和好友各获得 <strong>20积分</strong></p>
             
@@ -140,7 +148,7 @@
               <div class="code-display">
                 <span class="code-value">{{ inviteCode || '加载中...' }}</span>
                 <el-button type="primary" size="small" @click="copyInviteCode">
-                  <span class="btn-icon">📋</span> 复制
+                  <el-icon><DocumentCopy /></el-icon> 复制
                 </el-button>
               </div>
             </div>
@@ -150,29 +158,29 @@
               <p class="share-label">快速分享：</p>
               <div class="share-btns">
                 <el-button type="success" size="small" @click="shareToWechat">
-                  <span class="btn-icon">💬</span> 微信
+                  <el-icon><ChatDotRound /></el-icon> 微信
                 </el-button>
                 <el-button type="primary" size="small" @click="copyInviteLink">
-                  <span class="btn-icon">🔗</span> 复制链接
+                  <el-icon><Link /></el-icon> 复制链接
                 </el-button>
               </div>
             </div>
             
             <!-- 邀请统计 -->
             <div class="invite-stats">
-              <div class="stat-card">
+              <div class="stat-card card-hover">
                 <span class="stat-value">{{ inviteCount }}</span>
                 <span class="stat-label">已邀请</span>
               </div>
-              <div class="stat-card">
+              <div class="stat-card card-hover">
                 <span class="stat-value">{{ invitePoints }}</span>
                 <span class="stat-label">获得积分</span>
               </div>
             </div>
             
             <!-- 邀请规则 -->
-            <div class="invite-rules">
-              <h4>📋 邀请规则</h4>
+            <div class="invite-rules card-hover">
+              <h4><el-icon><List /></el-icon> 邀请规则</h4>
               <ul>
                 <li>好友通过您的邀请码注册，双方各得20积分</li>
                 <li>每位好友仅限奖励一次</li>
@@ -183,9 +191,9 @@
         </div>
 
         <!-- 反馈建议 -->
-        <div class="feedback-section card">
+        <div class="feedback-section card card-hover">
           <h3>反馈建议</h3>
-          <div class="feedback-form">
+          <div v-if="feedbackEnabled" class="feedback-form">
             <el-input
               v-model="feedbackContent"
               type="textarea"
@@ -202,19 +210,24 @@
               提交反馈
             </el-button>
           </div>
+          <el-empty v-else description="反馈功能暂时关闭，后续开放后可在这里直接提交建议" />
         </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, submitFeedback } from '../api'
+import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, submitFeedback, getClientConfig } from '../api'
+
+
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
+import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar } from '@element-plus/icons-vue'
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
@@ -226,6 +239,7 @@ const tarotHistory = ref([])
 const feedbackContent = ref('')
 const feedbackContact = ref('')
 const feedbackLoading = ref(false)
+const feedbackEnabled = ref(true)
 
 // 分页相关
 const baziCurrentPage = ref(1)
@@ -233,13 +247,19 @@ const baziPageSize = ref(5)
 const baziTotal = ref(0)
 
 // 积分获取方式
-const pointsMethods = ref([
-  { id: 1, icon: '📅', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
-  { id: 2, icon: '🎁', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
-  { id: 3, icon: '👥', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
-  { id: 4, icon: '📤', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
-  { id: 5, icon: '💬', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
-])
+const pointMethodDefinitions = [
+  { id: 1, icon: 'calendar', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
+  { id: 2, icon: 'present', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
+  { id: 3, icon: 'user', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
+  { id: 4, icon: 'share', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
+  { id: 5, icon: 'chat', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
+]
+const pointsMethods = computed(() => (
+  feedbackEnabled.value
+    ? pointMethodDefinitions
+    : pointMethodDefinitions.filter(method => method.action !== 'feedback')
+))
+
 
 // 邀请相关
 const inviteCode = ref('')
@@ -247,7 +267,119 @@ const inviteCount = ref(0)
 const invitePoints = ref(0)
 const inviteLink = ref('')
 
+const truncateClientMessage = (value, maxLength = 160) => {
+  const text = typeof value === 'string' ? value.trim() : ''
+  if (!text) {
+    return ''
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+}
+
+const sanitizeProfileErrorMessage = (error) => {
+  const message = typeof error?.message === 'string' ? error.message : String(error ?? '')
+  return truncateClientMessage(message) || 'unknown'
+}
+
+const reportProfileError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[Profile]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: sanitizeProfileErrorMessage(error),
+    ...extra
+  })
+}
+
+const resolveFeedbackEnabled = (config = {}) => {
+  const featureConfig = config?.features?.feedback
+  if (featureConfig && typeof featureConfig === 'object' && 'enabled' in featureConfig) {
+    return Boolean(featureConfig.enabled)
+  }
+
+  if (typeof featureConfig === 'boolean') {
+    return featureConfig
+  }
+
+  return true
+}
+
+const syncClientFeatureConfig = async () => {
+  try {
+    const response = await getClientConfig()
+    if (response?.code === 200) {
+      feedbackEnabled.value = resolveFeedbackEnabled(response.data)
+      if (!feedbackEnabled.value) {
+        feedbackContent.value = ''
+        feedbackContact.value = ''
+      }
+      return
+    }
+  } catch (error) {
+    reportProfileError('load_client_config_failed', error)
+  }
+
+  feedbackEnabled.value = true
+}
+
+const safeReadArrayFromStorage = (key) => {
+
+  try {
+    const rawValue = localStorage.getItem(key)
+    if (!rawValue) {
+      return []
+    }
+
+    const parsedValue = JSON.parse(rawValue)
+    return Array.isArray(parsedValue) ? parsedValue : []
+  } catch (error) {
+    reportProfileError('read_storage_failed', error, { storage_key: key })
+    return []
+  }
+}
+
+const normalizeTarotCard = (card) => {
+  const source = card && typeof card === 'object' ? card : {}
+
+  return {
+    ...source,
+    name: typeof source.name === 'string' && source.name.trim() ? source.name.trim() : '未知牌',
+    reversed: Boolean(source.reversed),
+    emoji: typeof source.emoji === 'string' && source.emoji.trim() ? source.emoji : '🃏'
+  }
+}
+
+const normalizeTarotRecord = (record, index = 0) => {
+  const source = record && typeof record === 'object' ? record : {}
+  const cards = Array.isArray(source.cards) ? source.cards.map(normalizeTarotCard) : []
+  const spreadNameMap = {
+    single: '单牌占卜',
+    three: '三张牌阵',
+    celtic: '凯尔特十字',
+    relationship: '关系牌阵',
+  }
+
+  return {
+    ...source,
+    question: typeof source.question === 'string' && source.question.trim()
+      ? source.question.trim()
+      : `塔罗记录 ${index + 1}`,
+    cards,
+    date: source.date || source.created_at || '',
+    spreadName: source.spread_name || spreadNameMap[source.spread_type] || '塔罗占卜',
+  }
+}
+
+
+const getTarotCards = (record) => {
+  return Array.isArray(record?.cards) ? record.cards : []
+}
+
 const loadUserData = async () => {
+
   try {
     const [userRes, pointsRes, historyRes] = await Promise.all([
       getUserInfo(),
@@ -255,7 +387,7 @@ const loadUserData = async () => {
       getPointsHistory(),
     ])
     
-    if (userRes.code === 0) {
+    if (userRes.code === 200) {
       userInfo.value = userRes.data
       // 使用后端返回的邀请码和统计
       inviteCode.value = userRes.data.invite_code || ''
@@ -265,25 +397,30 @@ const loadUserData = async () => {
       inviteLink.value = `${window.location.origin}/login?invite_code=${inviteCode.value}`
     }
     
-    if (pointsRes.code === 0) {
+    if (pointsRes.code === 200) {
       pointsBalance.value = pointsRes.data.balance
       baziCount.value = pointsRes.data.baziCount || 0
       tarotCount.value = pointsRes.data.tarotCount || 0
     }
     
-    if (historyRes.code === 0) {
+    if (historyRes.code === 200) {
       pointsHistory.value = historyRes.data || []
     }
+
+    await syncClientFeatureConfig()
     
     // 加载排盘历史
     await loadBaziHistory()
     
-    // 加载本地保存的塔罗历史
-    loadTarotHistory()
+    // 加载塔罗历史
+    await loadTarotHistory()
   } catch (error) {
-    console.error('加载用户数据失败:', error)
+
+
+    reportProfileError('load_user_data_failed', error)
   }
 }
+
 
 // 加载排盘历史（后端分页）
 const loadBaziHistory = async () => {
@@ -292,26 +429,53 @@ const loadBaziHistory = async () => {
       page: baziCurrentPage.value,
       page_size: baziPageSize.value
     })
-    if (baziRes.code === 0) {
+    if (baziRes.code === 200) {
       baziHistory.value = baziRes.data.list || []
       baziTotal.value = baziRes.data.pagination?.total || 0
     }
   } catch (error) {
-    console.error('加载排盘历史失败:', error)
+    reportProfileError('load_bazi_history_failed', error, {
+      page: baziCurrentPage.value,
+      page_size: baziPageSize.value
+    })
   }
 }
 
-// 加载本地塔罗历史
-const loadTarotHistory = () => {
-  const saved = JSON.parse(localStorage.getItem('tarot_saved') || '[]')
-  tarotHistory.value = saved.slice(0, 10) // 显示最近10条
+// 加载塔罗历史
+const loadTarotHistory = async () => {
+  try {
+    const response = await getTarotHistory({ page: 1, page_size: 10 })
+    if (response.code === 200) {
+      const list = Array.isArray(response.data?.list) ? response.data.list : []
+      tarotHistory.value = list.map(normalizeTarotRecord)
+      return
+    }
+
+    tarotHistory.value = []
+    ElMessage.warning(response.message || '获取塔罗历史失败，请稍后重试')
+  } catch (error) {
+    tarotHistory.value = []
+    reportProfileError('load_tarot_history_failed', error)
+  }
 }
 
+const handleTarotHistoryUpdated = () => {
+  loadTarotHistory()
+}
+
+
+
 const submitFeedbackForm = async () => {
+  if (!feedbackEnabled.value) {
+    ElMessage.warning('反馈功能暂时关闭')
+    return
+  }
+
   if (!feedbackContent.value.trim()) {
     ElMessage.warning('请输入反馈内容')
     return
   }
+
   
   feedbackLoading.value = true
   try {
@@ -321,7 +485,7 @@ const submitFeedbackForm = async () => {
       contact: feedbackContact.value,
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       ElMessage.success('反馈提交成功，感谢您的建议！')
       feedbackContent.value = ''
       feedbackContact.value = ''
@@ -330,8 +494,9 @@ const submitFeedbackForm = async () => {
     }
   } catch (error) {
     ElMessage.error('网络错误，请稍后重试')
-    console.error(error)
+    reportProfileError('submit_feedback_failed', error)
   } finally {
+
     feedbackLoading.value = false
   }
 }
@@ -345,9 +510,16 @@ const viewDetail = (record) => {
 }
 
 const viewTarotDetail = (record) => {
-  const cardNames = record.cards.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
+  const cards = getTarotCards(record)
+  if (!cards.length) {
+    ElMessage.warning('该记录缺少塔罗牌数据')
+    return
+  }
+
+  const cardNames = cards.map(card => `${card.name}${card.reversed ? '(逆位)' : '(正位)'}`).join('、')
   ElMessage.info(`塔罗牌：${cardNames}`)
 }
+
 
 // 处理积分获取方式点击
 const handleMethodAction = (method) => {
@@ -396,7 +568,7 @@ const shareToWechat = () => {
 
 使用我的邀请码【${inviteCode.value}】注册，我们双方都能获得20积分奖励！
 
-快来试试吧 👇
+快来试试吧
 ${inviteLink.value}`
 
   if (navigator.share) {
@@ -415,7 +587,13 @@ ${inviteLink.value}`
 
 onMounted(() => {
   loadUserData()
+  window.addEventListener('tarot-history-updated', handleTarotHistoryUpdated)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('tarot-history-updated', handleTarotHistoryUpdated)
+})
+
 </script>
 
 <style scoped>
@@ -454,14 +632,15 @@ onMounted(() => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  background: var(--primary-gradient);
   margin: 0 auto 15px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 36px;
-  color: #fff;
+  color: var(--text-primary);
   overflow: hidden;
+  box-shadow: var(--shadow-md);
 }
 
 .avatar img {
@@ -471,12 +650,12 @@ onMounted(() => {
 }
 
 .avatar-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .user-id {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 14px;
 }
 
@@ -484,7 +663,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-light);
 }
 
 .stat {
@@ -495,12 +674,12 @@ onMounted(() => {
   display: block;
   font-size: 24px;
   font-weight: bold;
-  color: #e94560;
+  color: var(--primary-color);
 }
 
 .stat-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
 }
 
 .points-section,
@@ -512,7 +691,7 @@ onMounted(() => {
 .points-section h3,
 .history-section h3,
 .feedback-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -526,7 +705,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .points-item:last-child {
@@ -539,12 +718,12 @@ onMounted(() => {
 }
 
 .points-action {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .points-time {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -554,11 +733,11 @@ onMounted(() => {
 }
 
 .points-change.positive {
-  color: #67C23A;
+  color: var(--success-color);
 }
 
 .points-change.negative {
-  color: #F56C6C;
+  color: var(--danger-color);
 }
 
 .history-list {
@@ -571,7 +750,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-light);
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -586,12 +765,13 @@ onMounted(() => {
 }
 
 .history-date {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .history-gender {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -602,11 +782,11 @@ onMounted(() => {
 }
 
 .bazi-pillar {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .bazi-pillar.highlight {
-  color: #e94560;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
@@ -631,7 +811,7 @@ onMounted(() => {
 
 .history-birth {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -642,7 +822,7 @@ onMounted(() => {
 
 .history-question {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-top: 5px;
   max-width: 200px;
   overflow: hidden;
@@ -663,7 +843,7 @@ onMounted(() => {
 
 .tarot-mini small {
   font-size: 8px;
-  color: #e94560;
+  color: var(--primary-color);
   position: absolute;
   bottom: -5px;
   right: -5px;
@@ -671,7 +851,7 @@ onMounted(() => {
 
 .more-cards {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin-left: 5px;
 }
 
@@ -684,25 +864,25 @@ onMounted(() => {
 
 :deep(.el-pagination) {
   --el-pagination-bg-color: transparent;
-  --el-pagination-hover-color: #e94560;
-  --el-pagination-button-color: rgba(255, 255, 255, 0.8);
+  --el-pagination-hover-color: var(--primary-color);
+  --el-pagination-button-color: var(--text-secondary);
 }
 
 :deep(.el-pagination .btn-prev),
 :deep(.el-pagination .btn-next),
 :deep(.el-pagination .number) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   border-radius: 6px;
 }
 
 :deep(.el-pagination .number.active) {
-  background: #e94560;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--text-primary);
 }
 
 /* 积分获取攻略 */
 .points-guide-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -717,24 +897,26 @@ onMounted(() => {
   align-items: center;
   gap: 15px;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-secondary);
   border-radius: 10px;
   transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
 }
 
 .method-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-tertiary);
 }
 
 .method-icon {
   font-size: 28px;
   width: 50px;
   height: 50px;
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.1);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--primary-color);
 }
 
 .method-info {
@@ -742,30 +924,30 @@ onMounted(() => {
 }
 
 .method-info h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   margin-bottom: 4px;
 }
 
 .method-info p {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
 .method-reward {
-  color: #ffd700;
+  color: var(--wuxing-jin);
   font-weight: bold;
   font-size: 16px;
 }
 
 .completed-badge {
-  color: #67C23A;
+  color: var(--success-color);
   font-size: 18px;
 }
 
 /* 邀请好友 */
 .invite-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
@@ -774,14 +956,14 @@ onMounted(() => {
 }
 
 .invite-desc {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   margin-bottom: 25px;
   font-size: 15px;
 }
 
 .invite-code-box {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 2px dashed rgba(233, 69, 96, 0.5);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.05), rgba(212, 175, 55, 0.05));
+  border: 2px dashed rgba(184, 134, 11, 0.3);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -789,7 +971,7 @@ onMounted(() => {
 
 .code-label {
   display: block;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -803,7 +985,7 @@ onMounted(() => {
 }
 
 .code-value {
-  color: #e94560;
+  color: var(--primary-color);
   font-size: 28px;
   font-weight: bold;
   letter-spacing: 3px;
@@ -815,7 +997,7 @@ onMounted(() => {
 }
 
 .share-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -838,36 +1020,38 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-tertiary);
   border-radius: 12px;
   padding: 15px 30px;
   text-align: center;
   min-width: 100px;
+  border: 1px solid var(--border-light);
 }
 
 .stat-card .stat-value {
   display: block;
   font-size: 28px;
   font-weight: bold;
-  color: #e94560;
+  color: var(--primary-color);
 }
 
 .stat-card .stat-label {
   display: block;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
 .invite-rules {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
   padding: 15px;
   text-align: left;
+  border: 1px solid var(--border-light);
 }
 
 .invite-rules h4 {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -878,7 +1062,7 @@ onMounted(() => {
 }
 
 .invite-rules li {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
   margin-bottom: 5px;
 }

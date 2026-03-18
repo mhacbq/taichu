@@ -110,30 +110,6 @@
       </div>
     </div>
 
-    <!-- 创建文件夹弹窗 -->
-    <el-dialog
-      v-model="folderDialogVisible"
-      title="新建收藏夹"
-      width="400px"
-    >
-      <el-form :model="folderForm" label-position="top">
-        <el-form-item label="名称">
-          <el-input v-model="folderForm.name" placeholder="输入收藏夹名称" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input
-            v-model="folderForm.description"
-            type="textarea"
-            rows="3"
-            placeholder="添加描述（可选）"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="folderDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="createFolder">创建</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -150,10 +126,9 @@ import {
   Clock,
   Share,
   Calendar,
-  Magic,
+  MagicStick,
   Star,
-  Document,
-  Heart
+  Document
 } from '@element-plus/icons-vue'
 import { useAnalytics } from '@/utils/analytics'
 
@@ -163,24 +138,20 @@ const analytics = useAnalytics()
 const loading = ref(false)
 const viewMode = ref('grid')
 const activeCategory = ref('all')
-const folderDialogVisible = ref(false)
-const folderForm = ref({ name: '', description: '' })
 
-// 分类配置
-const categories = [
-  { key: 'all', label: '全部', icon: 'Collection', count: 0 },
-  { key: 'bazi', label: '八字', icon: 'Calendar', count: 0 },
-  { key: 'tarot', label: '塔罗', icon: 'Magic', count: 0 },
-  { key: 'fortune', label: '运势', icon: 'Star', count: 0 },
-  { key: 'article', label: '文章', icon: 'Document', count: 0 }
+const categoryMeta = [
+  { key: 'all', label: '全部', icon: Collection },
+  { key: 'bazi', label: '八字', icon: Calendar },
+  { key: 'tarot', label: '塔罗', icon: MagicStick },
+  { key: 'fortune', label: '运势', icon: Star },
+  { key: 'article', label: '文章', icon: Document }
 ]
 
-// 模拟收藏数据
 const favorites = ref([
   {
     id: '1',
     type: 'bazi',
-    icon: 'Calendar',
+    icon: Calendar,
     color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     title: '八字命盘详解',
     description: '我的八字命盘分析：正官格，五行平衡，事业财运解析...',
@@ -191,7 +162,7 @@ const favorites = ref([
   {
     id: '2',
     type: 'tarot',
-    icon: 'Magic',
+    icon: MagicStick,
     color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     title: '塔罗占卜 - 事业发展',
     description: '太阳正位，事业光明前景，把握机遇',
@@ -202,7 +173,7 @@ const favorites = ref([
   {
     id: '3',
     type: 'fortune',
-    icon: 'Star',
+    icon: Star,
     color: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
     title: '2024年运势详解',
     description: '今年整体运势分析，每月运程预测',
@@ -213,7 +184,7 @@ const favorites = ref([
   {
     id: '4',
     type: 'article',
-    icon: 'Document',
+    icon: Document,
     color: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
     title: '如何看懂自己的八字',
     description: '八字入门指南，教你快速读懂命盘信息',
@@ -224,7 +195,7 @@ const favorites = ref([
   {
     id: '5',
     type: 'bazi',
-    icon: 'Calendar',
+    icon: Calendar,
     color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     title: '八字合婚分析',
     description: '双方八字匹配度：85分，天作之合',
@@ -234,26 +205,21 @@ const favorites = ref([
   }
 ])
 
-// 筛选后的收藏
+const categories = computed(() => categoryMeta.map((category) => ({
+  ...category,
+  count: category.key === 'all'
+    ? favorites.value.length
+    : favorites.value.filter((item) => item.type === category.key).length
+})))
+
 const filteredFavorites = computed(() => {
   if (activeCategory.value === 'all') {
     return favorites.value
   }
-  return favorites.value.filter(item => item.type === activeCategory.value)
+
+  return favorites.value.filter((item) => item.type === activeCategory.value)
 })
 
-// 更新分类计数
-const updateCategoryCounts = () => {
-  categories.forEach(cat => {
-    if (cat.key === 'all') {
-      cat.count = favorites.value.length
-    } else {
-      cat.count = favorites.value.filter(item => item.type === cat.key).length
-    }
-  })
-}
-
-// 格式化时间
 const formatTime = (timestamp) => {
   const now = Date.now()
   const diff = now - timestamp
@@ -266,7 +232,6 @@ const formatTime = (timestamp) => {
   return new Date(timestamp).toLocaleDateString()
 }
 
-// 查看详情
 const viewDetail = (item) => {
   analytics.track('favorites_view_detail', {
     type: item.type,
@@ -274,7 +239,6 @@ const viewDetail = (item) => {
   })
 }
 
-// 取消收藏
 const unfavorite = async (item) => {
   try {
     await ElMessageBox.confirm('确定要取消收藏吗？', '提示', {
@@ -283,12 +247,8 @@ const unfavorite = async (item) => {
       type: 'warning'
     })
 
-    const index = favorites.value.findIndex(f => f.id === item.id)
-    if (index > -1) {
-      favorites.value.splice(index, 1)
-      updateCategoryCounts()
-      ElMessage.success('已取消收藏')
-    }
+    favorites.value = favorites.value.filter((favorite) => favorite.id !== item.id)
+    ElMessage.success('已取消收藏')
 
     analytics.track('favorites_remove', {
       type: item.type,
@@ -299,7 +259,6 @@ const unfavorite = async (item) => {
   }
 }
 
-// 分享
 const shareItem = (item) => {
   ElMessage.success('分享功能开发中')
 
@@ -309,7 +268,6 @@ const shareItem = (item) => {
   })
 }
 
-// 清空所有
 const clearAll = async () => {
   try {
     await ElMessageBox.confirm('确定要清空所有收藏吗？', '警告', {
@@ -319,7 +277,6 @@ const clearAll = async () => {
     })
 
     favorites.value = []
-    updateCategoryCounts()
     ElMessage.success('已清空所有收藏')
 
     analytics.track('favorites_clear_all')
@@ -328,25 +285,11 @@ const clearAll = async () => {
   }
 }
 
-// 创建文件夹
-const createFolder = () => {
-  if (!folderForm.value.name.trim()) {
-    ElMessage.warning('请输入收藏夹名称')
-    return
-  }
-
-  ElMessage.success('收藏夹创建成功')
-  folderDialogVisible.value = false
-  folderForm.value = { name: '', description: '' }
-}
-
-// 去探索
 const goExplore = () => {
   router.push('/')
 }
 
 onMounted(() => {
-  updateCategoryCounts()
   analytics.track('favorites_page_view')
 })
 </script>

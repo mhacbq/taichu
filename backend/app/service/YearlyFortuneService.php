@@ -5,7 +5,9 @@ namespace app\service;
 
 use app\model\PointsRecord;
 use think\facade\Config;
+use think\facade\Db;
 use think\facade\Log;
+
 
 /**
  * 流年运势分析服务
@@ -44,51 +46,36 @@ class YearlyFortuneService
                 return $cached;
             }
         }
-        
-        // 检查用户积分
+
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
             throw new \Exception('用户不存在');
         }
-        
-        // 使用事务保护积分扣除和AI分析
-        Db::startTrans();
-        try {
-            // 先尝试扣除积分（使用数据库行锁确保原子性）
-            $deductResult = Db::name('tc_user')
-                ->where('id', $userId)
-                ->where('points', '>=', self::YEARLY_FORTUNE_POINTS_COST)
-                ->dec('points', self::YEARLY_FORTUNE_POINTS_COST)
-                ->update();
-            
-            if ($deductResult === 0) {
-                Db::rollback();
-                throw new \Exception('积分不足，需要' . self::YEARLY_FORTUNE_POINTS_COST . '积分', 403);
-            }
-            
-            // 记录积分变动
-            PointsRecord::record(
-                $userId,
-                '流年运势AI分析',
-                -self::YEARLY_FORTUNE_POINTS_COST,
-                'yearly_fortune',
-                0,
-                "年份: {$year}"
-            );
-            
-            Db::commit();
-        } catch (\Exception $e) {
-            Db::rollback();
-            throw $e;
+
+        if ((int) ($userModel->points ?? 0) < self::YEARLY_FORTUNE_POINTS_COST) {
+            throw new \Exception('积分不足，需要' . self::YEARLY_FORTUNE_POINTS_COST . '积分', 403);
         }
-        
-        // 调用AI分析
+
+        // 先完成流年评分与分析，再统一扣费，避免“失败仍扣费”。
         $analysis = $this->callAiForYearlyFortune($bazi, $gender, $year);
-        
-        // 计算运势评分
         $score = $this->calculateYearlyScore($bazi, $year);
-        
-        // 构建结果
+
+        $pointsService = new PointsService();
+        $consumeResult = $pointsService->consume(
+            $userId,
+            self::YEARLY_FORTUNE_POINTS_COST,
+            '流年运势AI分析',
+            'yearly_fortune',
+            0,
+            "年份: {$year}"
+        );
+
+        if (empty($consumeResult['success'])) {
+            $message = (string) ($consumeResult['message'] ?? '积分扣除失败');
+            $code = $message === '积分不足' ? 403 : 500;
+            throw new \Exception($message, $code);
+        }
+
         $result = [
             'year' => $year,
             'ganzhi' => $this->getYearGanZhi($year),
@@ -107,15 +94,14 @@ class YearlyFortuneService
             'lucky_numbers' => $analysis['lucky_numbers'] ?? [],
             'lucky_directions' => $analysis['lucky_directions'] ?? [],
             'points_cost' => self::YEARLY_FORTUNE_POINTS_COST,
-            'remaining_points' => $userModel->points,
+            'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
-        
-        // 缓存结果
+
         if (self::ENABLE_CACHE) {
             CacheService::set($cacheKey, $result, self::CACHE_TTL, CacheService::TAG_AI);
         }
-        
+
         return $result;
     }
     
@@ -197,10 +183,18 @@ class YearlyFortuneService
             // 如果不是JSON，尝试从文本提取
             return $this->parseTextToAnalysis($response);
             
-        } catch (\Exception $e) {
-            Log::error('AI流年分析失败: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::warning('AI流年分析失败，已回退本地分析', [
+                'year' => $year,
+                'gender' => $gender,
+                'day_master' => (string) ($bazi['day']['gan'] ?? ''),
+                'has_hour_pillar' => !empty($bazi['hour']['gan']) && !empty($bazi['hour']['zhi']),
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
             return $this->generateLocalYearlyAnalysis($bazi, $gender, $year);
         }
+
     }
     
     /**
@@ -273,6 +267,9 @@ class YearlyFortuneService
             case 'restrain':
                 $score -= 10;
                 break;
+            case 'restrained':
+                $score -= 14;
+                break;
         }
         
         // 2. 地支关系评分
@@ -287,13 +284,27 @@ class YearlyFortuneService
             case 'harmony':
                 $score += 12;
                 break;
+            case 'drain':
+                $score -= 4;
+                break;
+            case 'restrain':
+            case 'restrained':
+                $score -= 9;
+                break;
             case 'conflict':
                 $score -= 15;
                 break;
             case 'punishment':
                 $score -= 8;
                 break;
+            case 'harm':
+                $score -= 6;
+                break;
+            case 'break':
+                $score -= 5;
+                break;
         }
+
         
         // 3. 纳音五行匹配
         $yearNayin = $this->getYearNayin($year);
@@ -417,8 +428,10 @@ class YearlyFortuneService
      */
     protected function getYearAnimalFromBazi(array $bazi): string
     {
-        return $this->getYearAnimal((int)$bazi['year']['number'] ?? 2000);
+        $birthYear = (int) ($bazi['year']['number'] ?? 2000);
+        return $this->getYearAnimal($birthYear);
     }
+
     
     /**
      * 获取天干五行
@@ -433,6 +446,22 @@ class YearlyFortuneService
             '壬' => '水', '癸' => '水',
         ];
         return $map[$gan] ?? '木';
+    }
+
+    /**
+     * 获取地支五行。
+     */
+    protected function getZhiWuxing(string $zhi): string
+    {
+        $map = [
+            '寅' => '木', '卯' => '木',
+            '巳' => '火', '午' => '火',
+            '辰' => '土', '戌' => '土', '丑' => '土', '未' => '土',
+            '申' => '金', '酉' => '金',
+            '亥' => '水', '子' => '水',
+        ];
+
+        return $map[$zhi] ?? '土';
     }
     
     /**
@@ -512,7 +541,23 @@ class YearlyFortuneService
             '辰' => '戌', '戌' => '辰',
             '巳' => '亥', '亥' => '巳',
         ];
-        
+
+        $xing = [
+            '子-卯',
+            '寅-巳', '巳-申', '申-寅',
+            '丑-未', '未-戌', '戌-丑',
+        ];
+
+        $hai = [
+            '子-未', '丑-午', '寅-巳',
+            '卯-辰', '申-亥', '酉-戌',
+        ];
+
+        $po = [
+            '子-酉', '午-卯', '巳-申',
+            '寅-亥', '辰-丑', '未-戌',
+        ];
+
         if (isset($liuhe[$zhi1]) && $liuhe[$zhi1] === $zhi2) {
             return 'harmony';
         }
@@ -520,9 +565,57 @@ class YearlyFortuneService
         if (isset($chong[$zhi1]) && $chong[$zhi1] === $zhi2) {
             return 'conflict';
         }
+
+        $pair = $zhi1 . '-' . $zhi2;
+        if (in_array($pair, $xing, true) || in_array($zhi2 . '-' . $zhi1, $xing, true)) {
+            return 'punishment';
+        }
+
+        if (in_array($pair, $hai, true) || in_array($zhi2 . '-' . $zhi1, $hai, true)) {
+
+            return 'harm';
+        }
+
+        if (in_array($pair, $po, true) || in_array($zhi2 . '-' . $zhi1, $po, true)) {
+            return 'break';
+        }
+
+        $wuxing1 = $this->getZhiWuxing($zhi1);
+        $wuxing2 = $this->getZhiWuxing($zhi2);
+        $generate = [
+            '木' => '火',
+            '火' => '土',
+            '土' => '金',
+            '金' => '水',
+            '水' => '木',
+        ];
+        $restrain = [
+            '木' => '土',
+            '土' => '水',
+            '水' => '火',
+            '火' => '金',
+            '金' => '木',
+        ];
+
+        if ($generate[$wuxing2] === $wuxing1) {
+            return 'generate';
+        }
+
+        if ($generate[$wuxing1] === $wuxing2) {
+            return 'drain';
+        }
+
+        if ($restrain[$wuxing2] === $wuxing1) {
+            return 'restrained';
+        }
+
+        if ($restrain[$wuxing1] === $wuxing2) {
+            return 'restrain';
+        }
         
         return 'neutral';
     }
+
     
     /**
      * 获取纳音五行

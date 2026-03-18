@@ -6,72 +6,35 @@ namespace app\controller;
 use app\BaseController;
 use app\model\User;
 use app\model\InviteRecord;
+use app\model\PointsRecord;
+use app\service\ConfigService;
 use app\service\SmsService;
+
 use Firebase\JWT\JWT;
 use think\facade\Cache;
 use think\facade\Config;
 use think\facade\Db;
+use think\facade\Log;
 
 class Auth extends BaseController
 {
+    protected $middleware = [
+        \app\middleware\Auth::class => ['only' => ['userinfo', 'updateProfile', 'myInvites']],
+    ];
+
+    // 常量定义
+    protected const MIN_PASSWORD_LENGTH = 6;
+    protected const MAX_NICKNAME_LENGTH = 50;
+    protected const REGISTER_POINTS = 100;
+    
     /**
-     * 微信登录
+     * 兼容旧版登录接口
      */
     public function login()
     {
-        $data = $this->request->post();
-        
-        // 验证参数
-        if (empty($data['code'])) {
-            return $this->error('缺少code参数');
-        }
-        
-        // 实际项目中应该调用微信API换取openid
-        // 这里模拟登录过程
-        $openid = 'wx_' . md5($data['code']);
-        
-        // 查找或创建用户
-        $user = User::findByOpenid($openid);
-        $isNewUser = false;
-        
-        if (!$user) {
-            $isNewUser = true;
-            
-            // 过滤昵称，防止XSS攻击
-            $nickname = $data['nickname'] ?? '';
-            $nickname = $this->filterXss($nickname);
-            if (empty($nickname)) {
-                $nickname = '微信用户' . random_int(1000, 9999);
-            }
-            
-            // 过滤头像URL
-            $avatar = $data['avatar'] ?? '';
-            $avatar = $this->filterUrl($avatar);
-            
-            $user = User::create([
-                'openid' => $openid,
-                'nickname' => $nickname,
-                'avatar' => $avatar,
-                'gender' => in_array($data['gender'] ?? 0, [0, 1, 2]) ? $data['gender'] : 0,
-            ]);
-            
-            // 新用户赠送积分
-            $user->addPoints(100);
-            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
-            
-            // 处理邀请码
-            if (!empty($data['invite_code'])) {
-                $this->processInviteCode($user->id, $data['invite_code']);
-            }
-        }
-        
-        // 更新登录时间
-        $user->last_login_at = date('Y-m-d H:i:s');
-        $user->save();
-        
-        return $this->generateTokenResponse($user, $isNewUser);
+        return $this->phoneLogin();
     }
-    
+
     /**
      * 手机号登录/注册
      */
@@ -106,21 +69,40 @@ class Auth extends BaseController
         $isNewUser = false;
         
         if (!$user) {
+            if (!$this->isRegisterEnabled()) {
+                return $this->error('当前暂未开放新用户注册', 403);
+            }
+
             $isNewUser = true;
-            $user = User::create([
-                'phone' => $phone,
-                'nickname' => '用户' . substr($phone, -4),
-                'avatar' => '',
-                'gender' => 0,
-            ]);
             
-            // 新用户赠送积分
-            $user->addPoints(100);
-            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
-            
-            // 处理邀请码
-            if (!empty($data['invite_code'])) {
-                $this->processInviteCode($user->id, $data['invite_code']);
+            // 使用事务包裹新用户创建相关操作
+            Db::startTrans();
+
+            try {
+                $user = User::create([
+                    'phone' => $phone,
+                    'nickname' => '用户' . substr($phone, -4),
+                    'avatar' => '',
+                    'gender' => 0,
+                ]);
+                
+                // 新用户赠送积分
+                $registerPoints = $this->getRegisterRewardPoints();
+                $user->addPoints($registerPoints);
+                PointsRecord::record($user->id, '新用户注册奖励', $registerPoints, 'register');
+
+                
+                // 处理邀请码
+                if (!empty($data['invite_code'])) {
+                    $this->processInviteCode($user->id, $data['invite_code']);
+                }
+                
+                Db::commit();
+            } catch (\Exception $e) {
+                Db::rollback();
+                // 记录错误日志，但返回通用错误消息，避免泄露敏感信息
+                Log::error('用户创建失败：' . $e->getMessage());
+                return $this->error('用户创建失败，请稍后重试');
             }
         }
         
@@ -137,9 +119,14 @@ class Auth extends BaseController
     public function phoneRegister()
     {
         $data = $this->request->post();
+
+        if (!$this->isRegisterEnabled()) {
+            return $this->error('当前暂未开放新用户注册', 403);
+        }
         
         // 验证参数
         if (empty($data['phone'])) {
+
             return $this->error('请输入手机号');
         }
         if (empty($data['code'])) {
@@ -159,8 +146,8 @@ class Auth extends BaseController
         }
         
         // 验证密码强度
-        if (strlen($password) < 6) {
-            return $this->error('密码长度不能少于6位');
+        if (strlen($password) < self::MIN_PASSWORD_LENGTH) {
+            return $this->error('密码长度不能少于' . self::MIN_PASSWORD_LENGTH . '位');
         }
         
         // 检查手机号是否已注册
@@ -198,8 +185,10 @@ class Auth extends BaseController
             ]);
             
             // 新用户赠送积分
-            $user->addPoints(100);
-            \app\model\PointsRecord::record($user->id, '新用户注册奖励', 100, 'register');
+            $registerPoints = $this->getRegisterRewardPoints();
+            $user->addPoints($registerPoints);
+            PointsRecord::record($user->id, '新用户注册奖励', $registerPoints, 'register');
+
             
             // 处理邀请码
             if (!empty($data['invite_code'])) {
@@ -211,7 +200,9 @@ class Auth extends BaseController
             return $this->generateTokenResponse($user, true, '注册成功');
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('注册失败：' . $e->getMessage());
+            // 记录错误日志，但返回通用错误消息，避免泄露敏感信息
+            Log::error('注册失败：' . $e->getMessage());
+            return $this->error('注册失败，请稍后重试');
         }
     }
     
@@ -225,7 +216,7 @@ class Auth extends BaseController
         // 转义特殊字符
         $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
         // 限制长度
-        return substr($text, 0, 50);
+        return substr($text, 0, self::MAX_NICKNAME_LENGTH);
     }
     
     /**
@@ -245,10 +236,26 @@ class Auth extends BaseController
         
         return $url;
     }
+
+    /**
+     * 读取后台可配置的注册赠送积分
+     */
+    protected function getRegisterRewardPoints(): int
+    {
+        $configuredPoints = ConfigService::get('register_points', self::REGISTER_POINTS);
+        return max(0, (int) $configuredPoints);
+    }
+
+    protected function isRegisterEnabled(): bool
+    {
+        return (bool) ConfigService::isFeatureEnabled('register');
+    }
     
     /**
      * 生成Token响应
      */
+
+
     protected function generateTokenResponse(User $user, bool $isNewUser = false, string $message = '登录成功')
     {
         $secret = Config::get('jwt.secret');
@@ -307,7 +314,7 @@ class Auth extends BaseController
         Cache::delete($attemptKey);
         
         // 检查是否已经被邀请过
-        $exists = InviteRecord::where('invitee_id', $newUserId)->find();
+        $exists = InviteRecord::where('invited_id', $newUserId)->find();
         if ($exists) {
             return;
         }
@@ -319,16 +326,17 @@ class Auth extends BaseController
             // 记录邀请关系
             InviteRecord::create([
                 'inviter_id' => $inviterId,
-                'invitee_id' => $newUserId,
+                'invited_id' => $newUserId,
                 'invite_code' => $inviteCode,
                 'points_reward' => $rewardPoints,
             ]);
+
             
             // 给邀请人增加积分
             $inviter = User::find($inviterId);
             if ($inviter) {
                 $inviter->addPoints($rewardPoints);
-                \app\model\PointsRecord::record(
+                PointsRecord::record(
                     $inviterId, 
                     '邀请好友奖励', 
                     $rewardPoints, 
@@ -342,7 +350,7 @@ class Auth extends BaseController
             $invitee = User::find($newUserId);
             if ($invitee) {
                 $invitee->addPoints($rewardPoints);
-                \app\model\PointsRecord::record(
+                PointsRecord::record(
                     $newUserId, 
                     '被邀请奖励', 
                     $rewardPoints, 
@@ -357,13 +365,33 @@ class Auth extends BaseController
             Db::rollback();
         }
     }
+
+    /**
+     * 获取当前登录用户载荷
+     */
+    protected function getAuthenticatedUserPayload(): ?array
+    {
+        $user = $this->request->user ?? null;
+
+        if (!is_array($user) || empty($user['sub']) || !is_numeric($user['sub'])) {
+            return null;
+        }
+
+        $user['sub'] = (int) $user['sub'];
+
+        return $user;
+    }
     
     /**
      * 获取用户信息
      */
     public function userinfo()
     {
-        $user = $this->request->user;
+        $user = $this->getAuthenticatedUserPayload();
+        if (!$user) {
+            return $this->error('请先登录', 401);
+        }
+
         $userInfo = User::find($user['sub']);
         
         if (!$userInfo) {
@@ -392,9 +420,16 @@ class Auth extends BaseController
      */
     public function updateProfile()
     {
-        $user = $this->request->user;
-        $data = $this->request->post();
-        
+        $user = $this->getAuthenticatedUserPayload();
+        if (!$user) {
+            return $this->error('请先登录', 401);
+        }
+
+        $data = $this->request->isPut() ? $this->request->put() : $this->request->post();
+        if (!is_array($data)) {
+            $data = [];
+        }
+
         $userInfo = User::find($user['sub']);
         
         if (!$userInfo) {
@@ -405,26 +440,35 @@ class Auth extends BaseController
         $updateData = [];
         
         foreach ($allowFields as $field) {
-            if (isset($data[$field])) {
-                $value = $data[$field];
-                
-                // 对昵称进行XSS过滤
-                if ($field === 'nickname') {
-                    $value = $this->filterXss($value);
-                }
-                
-                // 对头像URL进行过滤
-                if ($field === 'avatar') {
-                    $value = $this->filterUrl($value);
-                }
-                
-                // 验证性别范围
-                if ($field === 'gender') {
-                    $value = in_array($value, [0, 1, 2]) ? $value : 0;
-                }
-                
-                $updateData[$field] = $value;
+            if (!isset($data[$field])) {
+                continue;
             }
+
+            $value = $data[$field];
+
+            if ($field === 'nickname') {
+                $value = $this->filterXss(trim((string) $value));
+                if ($value === '') {
+                    return $this->error('昵称不能为空');
+                }
+            }
+
+            if ($field === 'avatar') {
+                $value = $this->filterUrl((string) $value);
+            }
+
+            if ($field === 'gender') {
+                $value = in_array((int) $value, [0, 1, 2], true) ? (int) $value : 0;
+            }
+
+            if ($field === 'phone') {
+                $value = trim((string) $value);
+                if (!preg_match('/^1[3-9]\d{9}$/', $value)) {
+                    return $this->error('手机号格式不正确');
+                }
+            }
+                
+            $updateData[$field] = $value;
         }
         
         if (empty($updateData)) {
@@ -475,35 +519,52 @@ class Auth extends BaseController
      */
     public function myInvites()
     {
-        $user = $this->request->user;
-        $page = (int)$this->request->get('page', 1);
-        $limit = (int)$this->request->get('limit', 10);
-        
-        $offset = ($page - 1) * $limit;
+        $user = $this->getAuthenticatedUserPayload();
+        if (!$user) {
+            return $this->error('请先登录', 401);
+        }
+
+        $pagination = $this->normalizePagination(
+            $this->request->get('page', 1),
+            $this->request->get('limit', 10),
+            10,
+            50
+        );
+        $page = $pagination['page'];
+        $limit = $pagination['pageSize'];
         
         // 获取邀请记录
         $invites = InviteRecord::where('inviter_id', $user['sub'])
             ->where('status', 1)
             ->order('created_at', 'desc')
-            ->limit($offset, $limit)
+            ->page($page, $limit)
             ->select();
-        
-        // 获取被邀请人信息
-        $inviteeIds = array_column($invites->toArray(), 'invitee_id');
-        $inviteeInfos = User::whereIn('id', $inviteeIds)
-            ->column('nickname,avatar,created_at', 'id');
+
+        $inviteList = $invites->toArray();
+        $inviteeIds = array_values(array_unique(array_filter(array_map(
+            static fn (array $invite): int => (int) ($invite['invited_id'] ?? 0),
+            $inviteList
+        ))));
+        $inviteeInfos = [];
+
+        if (!empty($inviteeIds)) {
+            $inviteeInfos = User::whereIn('id', $inviteeIds)
+                ->column('nickname,avatar,created_at', 'id');
+        }
         
         $result = [];
-        foreach ($invites as $invite) {
-            $inviteeInfo = $inviteeInfos[$invite['invitee_id']] ?? [];
+        foreach ($inviteList as $invite) {
+            $invitedUserId = (int) ($invite['invited_id'] ?? 0);
+            $inviteeInfo = $inviteeInfos[$invitedUserId] ?? [];
             $result[] = [
-                'invitee_id' => $invite['invitee_id'],
+                'invitee_id' => $invitedUserId,
                 'nickname' => $inviteeInfo['nickname'] ?? '神秘用户',
                 'avatar' => $inviteeInfo['avatar'] ?? '',
                 'points_reward' => $invite['points_reward'],
                 'created_at' => $invite['created_at'],
             ];
         }
+
         
         // 获取总数
         $total = InviteRecord::where('inviter_id', $user['sub'])
@@ -512,10 +573,10 @@ class Auth extends BaseController
         
         return $this->success([
             'list' => $result,
-            'total' => $total,
+            'total' => (int) $total,
             'page' => $page,
             'limit' => $limit,
-            'total_pages' => ceil($total / $limit),
+            'total_pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
         ]);
     }
 }

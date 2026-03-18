@@ -6,7 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'think\\' => array($vendorDir . '/topthink/think-helper/src', $vendorDir . '/topthink/think-container/src', $vendorDir . '/topthink/think-validate/src', $vendorDir . '/topthink/think-orm/src', $vendorDir . '/topthink/framework/src/think', $vendorDir . '/topthink/think-filesystem/src'),
+    'think\\' => array($vendorDir . '/topthink/think-filesystem/src', $vendorDir . '/topthink/framework/src/think', $vendorDir . '/topthink/think-validate/src', $vendorDir . '/topthink/think-orm/src', $vendorDir . '/topthink/think-container/src', $vendorDir . '/topthink/think-helper/src'),
     'app\\' => array($baseDir . '/app'),
     'Psr\\SimpleCache\\' => array($vendorDir . '/psr/simple-cache/src'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log/src'),

@@ -44,8 +44,9 @@ class DailyTask extends Command
         $totalTasks++;
         $output->write('▶ 清理过期短信验证码... ');
         try {
-            $count = SmsCode::clearExpired();
-            $output->writeln("✅ 已清理 {$count} 条");
+            $expiredCount = SmsCode::clearExpired();
+            $purgedCount = SmsCode::purgeExpired(7);
+            $output->writeln("✅ 已标记 {$expiredCount} 条，额外删除 {$purgedCount} 条历史记录");
             $successTasks++;
         } catch (\Exception $e) {
             $output->writeln('❌ 失败: ' . $e->getMessage());
@@ -185,8 +186,8 @@ class DailyTask extends Command
         ];
         
         // 存入系统配置或专用统计表
-        Db::name('system_config')->where('config_key', 'daily_stats_' . $yesterday)->delete();
-        Db::name('system_config')->insert([
+        Db::table('system_config')->where('config_key', 'daily_stats_' . $yesterday)->delete();
+        Db::table('system_config')->insert([
             'config_key' => 'daily_stats_' . $yesterday,
             'config_value' => json_encode($stats),
             'config_type' => 'json',

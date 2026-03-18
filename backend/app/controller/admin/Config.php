@@ -25,11 +25,7 @@ class Config extends BaseController
             $configs = ConfigService::getAll();
         }
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $configs,
-        ]);
+        return $this->success($configs, 'success');
     }
     
     /**
@@ -39,11 +35,7 @@ class Config extends BaseController
     {
         $features = ConfigService::getFeatureSwitches();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $features,
-        ]);
+        return $this->success($features, 'success');
     }
     
     /**
@@ -55,25 +47,16 @@ class Config extends BaseController
         $value = $this->request->post('value');
         
         if (empty($key)) {
-            return json([
-                'code' => 400,
-                'message' => '配置键不能为空',
-            ], 400);
+            return $this->error('配置键不能为空', 400);
         }
         
         $result = ConfigService::set($key, $value);
         
         if ($result) {
-            return json([
-                'code' => 0,
-                'message' => '配置更新成功',
-            ]);
+            return $this->success(null, '配置更新成功');
         }
         
-        return json([
-            'code' => 500,
-            'message' => '配置更新失败',
-        ], 500);
+        return $this->error('配置更新失败', 500);
     }
     
     /**
@@ -84,19 +67,12 @@ class Config extends BaseController
         $configs = $this->request->post('configs', []);
         
         if (empty($configs) || !is_array($configs)) {
-            return json([
-                'code' => 400,
-                'message' => '配置数据不能为空',
-            ], 400);
+            return $this->error('配置数据不能为空', 400);
         }
         
         $result = ConfigService::setBatch($configs);
         
-        return json([
-            'code' => 0,
-            'message' => '批量更新成功',
-            'data' => ['success' => $result],
-        ]);
+        return $this->success(['success' => $result], '批量更新成功');
     }
     
     /**
@@ -108,30 +84,20 @@ class Config extends BaseController
         $enabled = $this->request->post('enabled', false);
         
         if (empty($feature)) {
-            return json([
-                'code' => 400,
-                'message' => '功能标识不能为空',
-            ], 400);
+            return $this->error('功能标识不能为空', 400);
         }
         
         $key = "feature_{$feature}_enabled";
         $result = ConfigService::set($key, $enabled ? '1' : '0');
         
         if ($result) {
-            return json([
-                'code' => 0,
-                'message' => '功能开关更新成功',
-                'data' => [
-                    'feature' => $feature,
-                    'enabled' => $enabled,
-                ],
-            ]);
+            return $this->success([
+                'feature' => $feature,
+                'enabled' => $enabled,
+            ], '功能开关更新成功');
         }
         
-        return json([
-            'code' => 500,
-            'message' => '更新失败',
-        ], 500);
+        return $this->error('更新失败', 500);
     }
     
     /**
@@ -142,10 +108,7 @@ class Config extends BaseController
         $features = $this->request->post('features', []);
         
         if (empty($features)) {
-            return json([
-                'code' => 400,
-                'message' => '功能配置不能为空',
-            ], 400);
+            return $this->error('功能配置不能为空', 400);
         }
         
         $configs = [];
@@ -155,11 +118,7 @@ class Config extends BaseController
         
         $result = ConfigService::setBatch($configs);
         
-        return json([
-            'code' => 0,
-            'message' => '功能开关批量更新成功',
-            'data' => ['success' => $result],
-        ]);
+        return $this->success(['success' => $result], '功能开关批量更新成功');
     }
     
     /**
@@ -169,11 +128,7 @@ class Config extends BaseController
     {
         $config = ConfigService::getCategory('vip');
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $config,
-        ]);
+        return $this->success($config, 'success');
     }
     
     /**
@@ -202,19 +157,12 @@ class Config extends BaseController
         }
         
         if (empty($configs)) {
-            return json([
-                'code' => 400,
-                'message' => '没有要更新的配置',
-            ], 400);
+            return $this->error('没有要更新的配置', 400);
         }
         
         $result = ConfigService::setBatch($configs);
         
-        return json([
-            'code' => 0,
-            'message' => 'VIP配置更新成功',
-            'data' => ['success' => $result],
-        ]);
+        return $this->success(['success' => $result], 'VIP配置更新成功');
     }
     
     /**
@@ -225,14 +173,10 @@ class Config extends BaseController
         $tasks = ConfigService::getPointsTasks();
         $costs = ConfigService::getCategory('points_cost');
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'tasks' => $tasks,
-                'costs' => $costs,
-            ],
-        ]);
+        return $this->success([
+            'tasks' => $tasks,
+            'costs' => $costs,
+        ], 'success');
     }
     
     /**
@@ -285,19 +229,12 @@ class Config extends BaseController
         }
         
         if (empty($configs)) {
-            return json([
-                'code' => 400,
-                'message' => '没有要更新的配置',
-            ], 400);
+            return $this->error('没有要更新的配置', 400);
         }
         
         $result = ConfigService::setBatch($configs);
         
-        return json([
-            'code' => 0,
-            'message' => '积分配置更新成功',
-            'data' => ['success' => $result],
-        ]);
+        return $this->success(['success' => $result], '积分配置更新成功');
     }
     
     /**
@@ -310,16 +247,12 @@ class Config extends BaseController
         $newUser = ConfigService::getCategory('new_user');
         $recharge = ConfigService::getCategory('recharge');
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'limited_offer' => $limitedOffer,
-                'packages' => $packages,
-                'new_user' => $newUser,
-                'recharge' => $recharge,
-            ],
-        ]);
+        return $this->success([
+            'limited_offer' => $limitedOffer,
+            'packages' => $packages,
+            'new_user' => $newUser,
+            'recharge' => $recharge,
+        ], 'success');
     }
     
     /**
@@ -363,19 +296,12 @@ class Config extends BaseController
         }
         
         if (empty($configs)) {
-            return json([
-                'code' => 400,
-                'message' => '没有要更新的配置',
-            ], 400);
+            return $this->error('没有要更新的配置', 400);
         }
         
         $result = ConfigService::setBatch($configs);
         
-        return json([
-            'code' => 0,
-            'message' => '营销配置更新成功',
-            'data' => ['success' => $result],
-        ]);
+        return $this->success(['success' => $result], '营销配置更新成功');
     }
     
     /**
@@ -385,9 +311,6 @@ class Config extends BaseController
     {
         ConfigService::refreshCache();
         
-        return json([
-            'code' => 0,
-            'message' => '配置缓存已刷新',
-        ]);
+        return $this->success(null, '配置缓存已刷新');
     }
 }

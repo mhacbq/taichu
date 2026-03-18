@@ -138,18 +138,47 @@ const successMessage = ref('分享成功')
 
 // 分享选项
 const shareOptions = [
-  { key: 'wechat', label: '微信', icon: 'ChatDotRound', color: '#07c160' },
-  { key: 'moments', label: '朋友圈', icon: 'Postcard', color: '#07c160' },
-  { key: 'copy', label: '复制链接', icon: 'Link', color: '#667eea' }
+  { key: 'wechat', label: '微信', icon: ChatDotRound, color: '#07c160' },
+  { key: 'moments', label: '朋友圈', icon: Postcard, color: '#07c160' },
+  { key: 'copy', label: '复制链接', icon: Link, color: '#667eea' }
 ]
+
 
 // 实际分享链接
 const actualShareUrl = computed(() => {
   return props.shareUrl || window.location.href
 })
 
+const getShareOrigin = () => {
+  try {
+    return new URL(actualShareUrl.value, window.location.origin).origin
+  } catch {
+    return window.location.origin
+  }
+}
+
+const sanitizeClientErrorMessage = (error, fallback = 'unknown') => {
+  const message = typeof error?.message === 'string' ? error.message.trim() : ''
+  if (!message) {
+    return fallback
+  }
+
+  return message.length > 120 ? `${message.slice(0, 120)}...` : message
+}
+
+const trackShareClientError = (action, error) => {
+  analytics.track('share_component_error', {
+    action,
+    error_type: error?.name || typeof error,
+    message: sanitizeClientErrorMessage(error),
+    url_origin: getShareOrigin(),
+    has_share_url: Boolean(actualShareUrl.value)
+  })
+}
+
 // 打开分享弹窗
 const openShare = () => {
+
   visible.value = true
   
   // 生成二维码
@@ -175,9 +204,10 @@ const generateQRCode = async () => {
       }
     })
   } catch (error) {
-    console.error('QRCode generation failed:', error)
+    trackShareClientError('generate_qrcode', error)
   }
 }
+
 
 // 处理分享
 const handleShare = (option) => {
@@ -227,9 +257,11 @@ const copyLink = async () => {
       url: actualShareUrl.value
     })
   } catch (error) {
-    ElMessage.error('复制失败')
+    trackShareClientError('copy_link', error)
+    ElMessage.error('复制失败，请稍后重试')
   }
 }
+
 
 // 下载海报
 const downloadPoster = async () => {
@@ -260,10 +292,11 @@ const downloadPoster = async () => {
     
     emit('success', { type: 'poster' })
   } catch (error) {
-    console.error('Download poster failed:', error)
-    ElMessage.error('保存失败')
+    trackShareClientError('download_poster', error)
+    ElMessage.error('保存失败，请稍后重试')
   }
 }
+
 
 // 领取奖励
 const claimReward = async () => {

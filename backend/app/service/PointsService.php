@@ -4,8 +4,7 @@ declare(strict_types=1);
 namespace app\service;
 
 use think\facade\Db;
-use app\model\User;
-use app\model\PointsRecord;
+use think\facade\Log;
 
 /**
  * 积分服务类
@@ -97,10 +96,13 @@ class PointsService
 
         } catch (\Exception $e) {
             Db::rollback();
-            \think\facade\Log::error('积分扣除事务失败: ' . $e->getMessage(), [
+            $this->logTransactionFailure('consume', $e, [
                 'user_id' => $userId,
                 'points' => $points,
                 'action' => $action,
+                'type' => $type,
+                'related_id' => $relatedId,
+                'remark' => $remark,
             ]);
             throw $e;
         }
@@ -177,13 +179,42 @@ class PointsService
 
         } catch (\Exception $e) {
             Db::rollback();
-            \think\facade\Log::error('积分增加事务失败: ' . $e->getMessage(), [
+            $this->logTransactionFailure('add', $e, [
                 'user_id' => $userId,
                 'points' => $points,
                 'action' => $action,
+                'type' => $type,
+                'related_id' => $relatedId,
+                'remark' => $remark,
             ]);
             throw $e;
         }
+    }
+
+    protected function logTransactionFailure(string $operation, \Throwable $exception, array $context = []): void
+    {
+        Log::error('积分事务失败', [
+            'operation' => $operation,
+            'error' => $exception->getMessage(),
+            'exception' => get_class($exception),
+            'context' => $this->sanitizeLogContext($context),
+        ]);
+    }
+
+    protected function sanitizeLogContext(array $context): array
+    {
+        $sanitized = [];
+
+        foreach ($context as $key => $value) {
+            if (is_string($value)) {
+                $sanitized[$key] = mb_strlen($value) > 200 ? mb_substr($value, 0, 200) . '...' : $value;
+                continue;
+            }
+
+            $sanitized[$key] = $value;
+        }
+
+        return $sanitized;
     }
 
     /**

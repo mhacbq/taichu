@@ -1,0 +1,224 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e34]:
+    - generic [ref=e35]:
+      - link "太初管理后台" [ref=e37] [cursor=pointer]:
+        - /url: /
+      - menubar [ref=e41]:
+        - menuitem "仪表盘" [ref=e43] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e47]: 仪表盘
+        - menuitem "用户管理" [ref=e49]:
+          - generic [ref=e50] [cursor=pointer]:
+            - img [ref=e52]
+            - generic [ref=e54]: 用户管理
+            - img [ref=e56]
+        - menuitem "内容管理" [ref=e59]:
+          - generic [ref=e60] [cursor=pointer]:
+            - img [ref=e62]
+            - generic [ref=e64]: 内容管理
+            - img [ref=e66]
+        - menuitem "网站内容" [ref=e69]:
+          - generic [ref=e70] [cursor=pointer]:
+            - img [ref=e72]
+            - generic [ref=e74]: 网站内容
+            - img [ref=e76]
+        - menuitem "编辑页面" [ref=e79] [cursor=pointer]:
+          - generic [ref=e80]: 编辑页面
+        - menuitem "积分管理" [ref=e82]:
+          - generic [ref=e83] [cursor=pointer]:
+            - img [ref=e85]
+            - generic [ref=e89]: 积分管理
+            - img [ref=e91]
+        - menuitem "支付管理" [ref=e94]:
+          - generic [ref=e95] [cursor=pointer]:
+            - img [ref=e97]
+            - generic [ref=e101]: 支付管理
+            - img [ref=e103]
+        - menuitem "短信管理" [ref=e106]:
+          - generic [ref=e107] [cursor=pointer]:
+            - img [ref=e109]
+            - generic [ref=e112]: 短信管理
+            - img [ref=e114]
+        - menuitem "反馈管理" [ref=e117]:
+          - generic [ref=e118] [cursor=pointer]:
+            - img [ref=e120]
+            - generic [ref=e123]: 反馈管理
+            - img [ref=e125]
+        - menuitem "反作弊系统" [ref=e128]:
+          - generic [ref=e129] [cursor=pointer]:
+            - img [ref=e131]
+            - generic [ref=e133]: 反作弊系统
+            - img [ref=e135]
+        - menuitem "AI管理" [ref=e138]:
+          - generic [ref=e139] [cursor=pointer]:
+            - img [ref=e141]
+            - generic [ref=e144]: AI管理
+            - img [ref=e146]
+        - menuitem "系统设置" [ref=e149]:
+          - generic [ref=e150] [cursor=pointer]:
+            - img [ref=e152]
+            - generic [ref=e154]: 系统设置
+            - img [ref=e156]
+        - menuitem "日志管理" [ref=e159]:
+          - generic [ref=e160] [cursor=pointer]:
+            - img [ref=e162]
+            - generic [ref=e164]: 日志管理
+            - img [ref=e166]
+        - menuitem "任务调度" [ref=e169]:
+          - generic [ref=e170] [cursor=pointer]:
+            - img [ref=e172]
+            - generic [ref=e176]: 任务调度
+            - img [ref=e178]
+    - generic [ref=e180]:
+      - generic [ref=e181]:
+        - generic [ref=e182]:
+          - generic [ref=e183]:
+            - generic [ref=e184] [cursor=pointer]:
+              - img
+            - navigation "面包屑" [ref=e186]:
+              - link "仪表盘" [ref=e188]
+          - generic [ref=e189]:
+            - generic [ref=e190] [cursor=pointer]:
+              - img
+            - button "admin" [ref=e193] [cursor=pointer]:
+              - generic [ref=e195]: admin
+              - img [ref=e197]
+        - link "仪表盘" [ref=e203] [cursor=pointer]:
+          - /url: /dashboard
+          - text: 仪表盘
+          - img [ref=e205]
+      - generic [ref=e208]:
+        - generic [ref=e211]:
+          - generic [ref=e212]:
+            - generic [ref=e213]: 运营看板
+            - generic [ref=e214]: 集中查看核心经营指标、实时动态，并快速跳转到高频运营模块。
+            - generic [ref=e215]: 最近更新时间：2026-03-18 04:05:03 | 近 15 分钟活跃用户：0
+          - generic [ref=e216]:
+            - button "刷新看板" [ref=e217] [cursor=pointer]:
+              - generic [ref=e218]:
+                - img [ref=e220]
+                - text: 刷新看板
+            - button "导出实时快照" [ref=e222] [cursor=pointer]:
+              - generic [ref=e223]:
+                - img [ref=e225]
+                - text: 导出实时快照
+        - generic [ref=e227]:
+          - generic [ref=e229]:
+            - generic [ref=e230]:
+              - generic [ref=e231]: 运营快捷操作
+              - generic [ref=e232]: 黄历、知识库、订单、公告、SEO、系统配置等高频入口一步直达。
+            - generic [ref=e234]: 待处理反馈 0
+          - generic [ref=e236]:
+            - button "黄历管理 维护每日黄历、宜忌与生成结果。" [ref=e237] [cursor=pointer]:
+              - generic [ref=e238]: 黄历管理
+              - generic [ref=e239]: 维护每日黄历、宜忌与生成结果。
+            - button "知识库文章 发布命理文章并维护文章分类树。" [ref=e240] [cursor=pointer]:
+              - generic [ref=e241]: 知识库文章
+              - generic [ref=e242]: 发布命理文章并维护文章分类树。
+            - button "充值订单 查看充值订单、补单与退款处理。" [ref=e243] [cursor=pointer]:
+              - generic [ref=e244]: 充值订单
+              - generic [ref=e245]: 查看充值订单、补单与退款处理。
+            - button "VIP订单 集中处理会员订单与退款申请。" [ref=e246] [cursor=pointer]:
+              - generic [ref=e247]: VIP订单
+              - generic [ref=e248]: 集中处理会员订单与退款申请。
+            - button "系统公告 发布公告、维护草稿与上线状态。" [ref=e249] [cursor=pointer]:
+              - generic [ref=e250]: 系统公告
+              - generic [ref=e251]: 发布公告、维护草稿与上线状态。
+            - button "反馈列表 查看最新反馈并快速进入处理页。" [ref=e252] [cursor=pointer]:
+              - generic [ref=e253]: 反馈列表
+              - generic [ref=e254]: 查看最新反馈并快速进入处理页。
+            - button "SEO管理 更新页面 SEO、Robots 与收录提交。" [ref=e255] [cursor=pointer]:
+              - generic [ref=e256]: SEO管理
+              - generic [ref=e257]: 更新页面 SEO、Robots 与收录提交。
+            - button "系统设置 调整站点配置并即时同步到前台。" [ref=e258] [cursor=pointer]:
+              - generic [ref=e259]: 系统设置
+              - generic [ref=e260]: 调整站点配置并即时同步到前台。
+        - generic [ref=e261]:
+          - generic [ref=e265]:
+            - img [ref=e268]
+            - generic [ref=e270]:
+              - generic [ref=e271]: 总用户数
+              - generic [ref=e272]: "7"
+              - generic [ref=e273]: 与昨日持平
+          - generic [ref=e277]:
+            - img [ref=e280]
+            - generic [ref=e282]:
+              - generic [ref=e283]: 今日新增
+              - generic [ref=e284]: "3"
+              - generic [ref=e285]: "-25% 较昨日"
+          - generic [ref=e289]:
+            - img [ref=e292]
+            - generic [ref=e294]:
+              - generic [ref=e295]: 八字排盘
+              - generic [ref=e296]: "10"
+              - generic [ref=e297]: 与昨日持平
+          - generic [ref=e301]:
+            - img [ref=e304]
+            - generic [ref=e306]:
+              - generic [ref=e307]: 塔罗占卜
+              - generic [ref=e308]: "0"
+              - generic [ref=e309]: 与昨日持平
+        - generic [ref=e310]:
+          - generic [ref=e314]: 用户增长趋势（近 7 天）
+          - generic [ref=e322]: 功能使用分布
+        - generic [ref=e327]:
+          - generic [ref=e329]:
+            - generic [ref=e331]:
+              - generic [ref=e332]:
+                - generic [ref=e333]: 实时数据
+                - generic [ref=e334]: 按时间倒序展示最近关键运营事件。
+              - generic [ref=e336]: 最近 10 条
+            - generic [ref=e338]:
+              - generic [ref=e339]:
+                - generic [ref=e340]: 02:58:30
+                - generic [ref=e341]: 新用户注册
+                - generic [ref=e342]: 用户8006
+              - generic [ref=e343]:
+                - generic [ref=e344]: 02:55:52
+                - generic [ref=e345]: 新用户注册
+                - generic [ref=e346]: 用户8004
+              - generic [ref=e347]:
+                - generic [ref=e348]: 02:55:27
+                - generic [ref=e349]: 新用户注册
+                - generic [ref=e350]: 用户8003
+              - generic [ref=e351]:
+                - generic [ref=e352]: 02:51:03
+                - generic [ref=e353]: 提交八字排盘
+                - generic [ref=e354]: 用户7832
+              - generic [ref=e355]:
+                - generic [ref=e356]: 01:30:19
+                - generic [ref=e357]: 提交八字排盘
+                - generic [ref=e358]: 用户8001
+              - generic [ref=e359]:
+                - generic [ref=e360]: 01:30:19
+                - generic [ref=e361]: 提交八字排盘
+                - generic [ref=e362]: 用户8001
+              - generic [ref=e363]:
+                - generic [ref=e364]: 23:58:13
+                - generic [ref=e365]: 提交八字排盘
+                - generic [ref=e366]: 用户7832
+              - generic [ref=e367]:
+                - generic [ref=e368]: 22:44:06
+                - generic [ref=e369]: 提交八字排盘
+                - generic [ref=e370]: 用户7832
+              - generic [ref=e371]:
+                - generic [ref=e372]: 22:43:56
+                - generic [ref=e373]: 提交八字排盘
+                - generic [ref=e374]: 用户7832
+              - generic [ref=e375]:
+                - generic [ref=e376]: 21:13:21
+                - generic [ref=e377]: 提交八字排盘
+                - generic [ref=e378]: 用户8000
+          - generic [ref=e380]:
+            - generic [ref=e382]:
+              - generic [ref=e383]:
+                - generic [ref=e384]: 待处理反馈
+                - generic [ref=e385]: 优先处理用户最新提交的问题与建议。
+              - button "查看更多" [ref=e386] [cursor=pointer]:
+                - generic [ref=e387]: 查看更多
+            - generic [ref=e389]:
+              - img [ref=e391]
+              - paragraph [ref=e408]: 当前没有待处理反馈
+  - alert [ref=e409]:
+    - img [ref=e411]
+    - paragraph [ref=e413]: 登录成功

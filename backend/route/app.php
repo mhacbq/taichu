@@ -2,33 +2,13 @@
 
 use think\facade\Route;
 
-// CORS预检 - 处理所有OPTIONS请求
-Route::options('api/:any', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
-
-// 根路径OPTIONS
-Route::options('', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
-
 // API路由组
 Route::group('api', function () {
     
     // 健康检查
     Route::get('health', function() {
         return json([
-            'code' => 0,
+            'code' => 200,
             'message' => 'success',
             'data' => [
                 'status' => 'ok',
@@ -83,9 +63,11 @@ Route::group('api', function () {
         Route::post('save-record', 'Tarot/saveRecord');
         Route::get('history', 'Tarot/history');
         Route::get('detail', 'Tarot/detail');
+        Route::get('share', 'Tarot/share');
         Route::post('delete-record', 'Tarot/deleteRecord');
         Route::post('set-public', 'Tarot/setPublic');
     });
+
     
     // 每日运势
     Route::group('daily', function () {
@@ -127,8 +109,21 @@ Route::group('api', function () {
         Route::get('query-order', 'Payment/queryOrder');
         Route::get('history', 'Payment/getUserRechargeHistory');
     });
+
+    // 通知与推送
+    Route::group('notifications', function () {
+        Route::get('', 'Notification/getNotifications');
+        Route::post('read', 'Notification/markAsRead');
+        Route::post('delete', 'Notification/deleteNotification');
+        Route::get('settings', 'Notification/getSettings');
+        Route::put('settings', 'Notification/updateSettings');
+        Route::post('devices/register', 'Notification/registerDevice');
+        Route::post('devices/unregister', 'Notification/unregisterDevice');
+        Route::post('test', 'Notification/sendTestNotification');
+    });
     
     // 系统配置（公开接口）
+
     Route::group('config', function () {
         Route::get('client', 'Config/clientConfig');
         Route::get('features', 'Config/featureSwitches');
@@ -200,73 +195,17 @@ Route::group('liuyao', function () {
     \app\middleware\RateLimit::class,
 ]);
 
-// 支付回调（不需要认证）- 添加OPTIONS支持
-Route::options('api/payment/notify', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
+// 支付回调（不需要认证）
 Route::post('api/payment/notify', 'Payment/notify');
 Route::post('api/alipay/notify', 'Alipay/notify');
 Route::get('api/alipay/return', 'Alipay/return');
 
-// 公开分享接口 - 添加OPTIONS支持
-Route::options('api/tarot/share', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
+// 公开分享接口
 Route::get('api/tarot/share', 'Tarot/share');
 Route::get('api/bazi/share', 'Paipan/share');
 
-// 后台管理路由 - OPTIONS预检
-Route::options('api/admin/:any', function() {
-    return response('', 204)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Max-Age', '86400');
-});
 
-Route::group('api/admin', function () {
-    // 仪表盘
-    Route::group('dashboard', function () {
-        Route::get('statistics', 'admin.Dashboard/statistics');
-        Route::get('trend', 'admin.Dashboard/trend');
-        Route::get('realtime', 'admin.Dashboard/realtime');
-        Route::get('chart/:type', 'admin.Dashboard/chart');
-        Route::get('pending-feedback', 'admin.Dashboard/pendingFeedback');
-    });
-    
-    // 配置管理
-    Route::group('config', function () {
-        Route::get('', 'admin.Config/index');
-        Route::get('features', 'admin.Config/features');
-        Route::post('update', 'admin.Config/update');
-        Route::post('update-batch', 'admin.Config/updateBatch');
-        Route::post('update-feature', 'admin.Config/updateFeature');
-        Route::post('update-features', 'admin.Config/updateFeatures');
-        Route::get('vip', 'admin.Config/vip');
-        Route::post('update-vip', 'admin.Config/updateVip');
-        Route::get('points', 'admin.Config/points');
-        Route::post('update-points', 'admin.Config/updatePoints');
-        Route::get('marketing', 'admin.Config/marketing');
-        Route::post('update-marketing', 'admin.Config/updateMarketing');
-        Route::post('refresh-cache', 'admin.Config/refreshCache');
-    });
-    
-})->middleware([
-    \app\middleware\HttpsEnforce::class,
-    \app\middleware\Cors::class,
-    \app\middleware\Auth::class,  // 需要管理员认证
-]);
+
 
 // 404处理
 Route::miss(function() {

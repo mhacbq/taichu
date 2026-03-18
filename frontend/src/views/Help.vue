@@ -8,7 +8,7 @@
 
       <!-- 搜索区域 -->
       <div class="search-section card">
-        <h2>🔍 有问题？我们来帮您</h2>
+        <h2><el-icon><Search /></el-icon> 有问题？我们来帮您</h2>
         <el-input
           v-model="searchQuery"
           placeholder="搜索问题关键词..."
@@ -16,7 +16,7 @@
           clearable
           class="search-input"
         >
-          <template #prefix>🔍</template>
+          <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <div class="hot-tags">
           <span class="tag-label">热门搜索：</span>
@@ -37,9 +37,14 @@
           <el-collapse-item 
             v-for="(category, idx) in filteredCategories" 
             :key="idx"
-            :title="category.title" 
             :name="idx"
           >
+            <template #title>
+              <span class="category-title">
+                <el-icon v-if="category.icon"><component :is="category.icon" /></el-icon>
+                {{ category.title }}
+              </span>
+            </template>
             <div class="faq-list">
               <div 
                 v-for="(item, itemIdx) in category.items" 
@@ -49,7 +54,7 @@
                 <div class="faq-question" @click="toggleQuestion(item)">
                   <span class="q-icon">Q</span>
                   <span class="question-text">{{ item.question }}</span>
-                  <span class="expand-icon" :class="{ expanded: item.expanded }">▼</span>
+                  <el-icon class="expand-icon" :class="{ expanded: item.expanded }"><ArrowDown /></el-icon>
                 </div>
                 <div class="faq-answer" v-show="item.expanded">
                   <span class="a-icon">A</span>
@@ -63,21 +68,21 @@
 
       <!-- 联系客服 -->
       <div class="contact-section card">
-        <h3>📞 还有其他问题？</h3>
+        <h3><el-icon><Phone /></el-icon> 还有其他问题？</h3>
         <p>如果以上问题没有解答您的疑问，欢迎联系我们</p>
         <div class="contact-methods">
           <div class="contact-item">
-            <span class="contact-icon">💬</span>
+            <span class="contact-icon"><el-icon><ChatDotRound /></el-icon></span>
             <span class="contact-label">在线客服</span>
             <span class="contact-value">工作日 9:00-18:00</span>
           </div>
           <div class="contact-item">
-            <span class="contact-icon">📧</span>
+            <span class="contact-icon"><el-icon><Message /></el-icon></span>
             <span class="contact-label">邮箱</span>
             <span class="contact-value">support@taichu.com</span>
           </div>
           <div class="contact-item">
-            <span class="contact-icon">💬</span>
+            <span class="contact-icon"><el-icon><ChatDotRound /></el-icon></span>
             <span class="contact-label">微信公众号</span>
             <span class="contact-value">太初命理</span>
           </div>
@@ -92,19 +97,19 @@
         <h3>快速入口</h3>
         <div class="links-grid">
           <router-link to="/bazi" class="quick-link">
-            <span class="link-icon">☯</span>
+            <span class="link-icon"><el-icon><Coin /></el-icon></span>
             <span>八字排盘</span>
           </router-link>
           <router-link to="/tarot" class="quick-link">
-            <span class="link-icon">🎴</span>
+            <span class="link-icon"><el-icon><MagicStick /></el-icon></span>
             <span>塔罗占卜</span>
           </router-link>
           <router-link to="/daily" class="quick-link">
-            <span class="link-icon">🌟</span>
+            <span class="link-icon"><el-icon><StarFilled /></el-icon></span>
             <span>每日运势</span>
           </router-link>
           <router-link to="/profile" class="quick-link">
-            <span class="link-icon">👤</span>
+            <span class="link-icon"><el-icon><UserFilled /></el-icon></span>
             <span>个人中心</span>
           </router-link>
         </div>
@@ -117,6 +122,8 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BackButton from '../components/BackButton.vue'
+import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, Coin, Lock } from '@element-plus/icons-vue'
+
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -126,7 +133,7 @@ const hotTags = ['积分', '八字', '登录', '塔罗', '充值']
 
 const categories = ref([
   {
-    title: '📌 新手指南',
+    title: '新手指南',
     items: [
       {
         question: '太初命理是什么？',
@@ -146,7 +153,7 @@ const categories = ref([
     ]
   },
   {
-    title: '💎 积分相关',
+    title: '积分相关',
     items: [
       {
         question: '如何获得积分？',
@@ -166,7 +173,7 @@ const categories = ref([
     ]
   },
   {
-    title: '☯ 八字排盘',
+    title: '八字排盘',
     items: [
       {
         question: '什么是真太阳时？',
@@ -181,11 +188,13 @@ const categories = ref([
       {
         question: '可以多次排盘吗？',
         answer: '可以，每次排盘消耗10积分。同一人的八字是固定的，重复排盘结果相同。建议将结果保存或分享，方便日后查看。',
-        expanded: falsen      }
+        expanded: false
+      }
+
     ]
   },
   {
-    title: '🎴 塔罗占卜',
+    title: '塔罗占卜',
     items: [
       {
         question: '塔罗占卜有什么用？',
@@ -205,8 +214,10 @@ const categories = ref([
     ]
   },
   {
-    title: '🔐 账号安全',
+    title: '账号安全',
+    icon: Lock,
     items: [
+
       {
         question: '如何修改个人信息？',
         answer: '进入"个人中心"页面，可以查看和修改您的个人信息，包括昵称、头像等。',
@@ -273,7 +284,7 @@ const goToFeedback = () => {
 }
 
 .search-section h2 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   font-size: 24px;
 }
@@ -284,15 +295,23 @@ const goToFeedback = () => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 1px var(--border-light) inset, 0 6px 16px rgba(15, 23, 42, 0.04);
+  border: 1px solid transparent;
   border-radius: 25px;
   padding: 5px 15px;
 }
 
+.search-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--primary-light-20) inset, 0 10px 22px rgba(var(--primary-rgb), 0.08);
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--primary-color) inset, var(--focus-ring);
+}
+
 .search-input :deep(.el-input__inner) {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -305,19 +324,19 @@ const goToFeedback = () => {
 }
 
 .tag-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   font-size: 14px;
 }
 
 .hot-tag {
   cursor: pointer;
-  background: rgba(233, 69, 96, 0.2);
-  border-color: rgba(233, 69, 96, 0.3);
-  color: #fff;
+  background: var(--primary-light-20);
+  border-color: var(--primary-light-30);
+  color: var(--text-primary);
 }
 
 .hot-tag:hover {
-  background: rgba(233, 69, 96, 0.4);
+  background: var(--primary-light-40);
 }
 
 /* FAQ区域 */
@@ -332,11 +351,11 @@ const goToFeedback = () => {
 }
 
 .faq-collapse :deep(.el-collapse-item__header) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 20px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 10px;
@@ -349,7 +368,7 @@ const goToFeedback = () => {
 
 .faq-collapse :deep(.el-collapse-item__content) {
   padding: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
 }
 
 .faq-list {
@@ -357,8 +376,8 @@ const goToFeedback = () => {
 }
 
 .faq-item {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--white-03);
+  border: 1px solid var(--white-10);
   border-radius: 10px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -374,31 +393,31 @@ const goToFeedback = () => {
 }
 
 .faq-question:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
 }
 
 .q-icon {
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-accent-contrast);
   flex-shrink: 0;
 }
 
 .question-text {
   flex: 1;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 15px;
 }
 
 .expand-icon {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 12px;
   transition: transform 0.3s ease;
 }
@@ -411,31 +430,33 @@ const goToFeedback = () => {
   display: flex;
   gap: 12px;
   padding: 0 20px 20px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-light);
   margin-top: 0;
   padding-top: 15px;
+  background: rgba(var(--primary-rgb), 0.02);
 }
 
 .a-icon {
   width: 24px;
   height: 24px;
-  background: rgba(103, 194, 58, 0.8);
+  background: rgba(103, 194, 58, 0.16);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  color: #fff;
+  color: var(--success-color);
   flex-shrink: 0;
 }
 
 .faq-answer p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   line-height: 1.8;
   margin: 0;
   white-space: pre-line;
 }
+
 
 /* 联系区域 */
 .contact-section {
@@ -446,13 +467,13 @@ const goToFeedback = () => {
 }
 
 .contact-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 22px;
   margin-bottom: 10px;
 }
 
 .contact-section > p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 25px;
 }
 
@@ -476,12 +497,12 @@ const goToFeedback = () => {
 }
 
 .contact-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .contact-value {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
@@ -493,7 +514,7 @@ const goToFeedback = () => {
 }
 
 .quick-links h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 20px;
   margin-bottom: 25px;
 }
@@ -505,8 +526,8 @@ const goToFeedback = () => {
 }
 
 .quick-link {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 15px;
   padding: 25px 15px;
   text-decoration: none;
@@ -518,8 +539,8 @@ const goToFeedback = () => {
 }
 
 .quick-link:hover {
-  background: rgba(233, 69, 96, 0.1);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: rgba(184, 134, 11, 0.1);
+  border-color: rgba(184, 134, 11, 0.3);
   transform: translateY(-5px);
 }
 
@@ -528,7 +549,7 @@ const goToFeedback = () => {
 }
 
 .quick-link span:last-child {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
 }
 

@@ -186,8 +186,8 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   background: 
-    radial-gradient(ellipse at top, rgba(233, 69, 96, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(107, 70, 193, 0.08) 0%, transparent 50%);
+    radial-gradient(ellipse at top, rgba(255, 215, 0, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(255, 193, 7, 0.08) 0%, transparent 50%);
   pointer-events: none;
 }
 </style>

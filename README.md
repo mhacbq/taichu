@@ -6,11 +6,12 @@
 
 ```
 taichu-unified/
-├── frontend/          # Vue 3 前端项目
-├── backend/           # ThinkPHP 8 后端项目
-├── docker-compose.yml # Docker 部署配置
-├── nginx.conf         # Nginx 配置文件
-└── deploy.sh          # 服务器部署脚本
+├── frontend/             # Vue 3 前端项目
+├── admin/                # Vue 3 独立管理后台
+├── backend/              # ThinkPHP 8 后端项目（含 Docker 配置）
+├── database/             # 增量 SQL 与初始化补丁
+├── 本地启用.md          # 本地联调说明
+└── deploy/deploy.sh      # 服务器部署脚本
 ```
 
 ## 技术栈
@@ -32,19 +33,36 @@ taichu-unified/
 
 ### 本地开发
 
-#### 1. 启动后端服务
+#### 1. 推荐：使用一键本地启动脚本
+
+```powershell
+Set-Location "C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified"
+.\start-local.ps1
+```
+
+默认会执行 `backend/docker-compose.yml` 的 `docker compose up -d --build`，并在后端容器启动时自动补跑后台所需的幂等 SQL 补丁。标准本地后端地址为 `http://localhost:8080`。
+
+如需同时启动独立管理后台：
+
+```powershell
+.\start-local.ps1 -WithAdmin
+```
+
+独立后台默认访问地址：`http://localhost:3001`，其 `/api/*` 会代理到 `http://localhost:8080`。
+
+更多参数见 `本地启用.md`。
+
+#### 2. 手动启动后端服务
 
 ```bash
 cd backend
 composer install
 cp .env.example .env
 # 编辑 .env 配置数据库连接
-php think run
+php think run --port 8080
 ```
 
-后端服务将运行在 http://localhost:8000
-
-#### 2. 启动前端服务
+#### 3. 启动前端服务
 
 ```bash
 cd frontend
@@ -53,6 +71,9 @@ npm run dev
 ```
 
 前端服务将运行在 http://localhost:5173
+
+如需启动独立后台管理端，可在 `admin/` 目录执行 `npm install && npm run dev`，默认访问地址为 `http://localhost:3001`，并通过 Vite 代理转发到 `http://localhost:8080/api/admin`。
+
 
 ### Docker 部署
 
@@ -67,8 +88,12 @@ npm run build
 #### 2. 启动所有服务
 
 ```bash
-docker-compose up -d
+cd backend
+docker compose up -d --build
 ```
+
+如果需要让已有数据卷补齐后台管理员 / 统计 / 反作弊 / 神煞 / 知识库等缺失表，只需重启后端容器；入口脚本会自动补跑 `database/` 目录中的幂等 SQL 补丁。
+
 
 服务启动后：
 - 网站访问：http://localhost
@@ -78,13 +103,15 @@ docker-compose up -d
 #### 3. 停止服务
 
 ```bash
-docker-compose down
+cd backend
+docker compose down
 ```
 
 #### 4. 查看日志
 
 ```bash
-docker-compose logs -f
+cd backend
+docker compose logs -f
 ```
 
 ## 服务器部署
@@ -95,8 +122,8 @@ docker-compose logs -f
 2. 执行部署脚本：
 
 ```bash
-chmod +x deploy.sh
-./deploy.sh
+chmod +x deploy/deploy.sh
+deploy/deploy.sh
 ```
 
 ### 手动部署
@@ -104,8 +131,8 @@ chmod +x deploy.sh
 1. 安装 Docker 和 Docker Compose
 2. 克隆项目到服务器
 3. 构建前端：`cd frontend && npm install && npm run build`
-4. 启动服务：`docker-compose up -d`
-5. 配置 Nginx 或直接使用 docker-compose 中的 Nginx
+4. 启动服务：`cd backend && docker compose up -d --build`
+5. 配置 Nginx 或直接使用部署目录下的 Nginx 配置
 
 ## API 接口文档
 
@@ -131,7 +158,9 @@ chmod +x deploy.sh
 
 ## 数据库初始化
 
-首次启动时会自动执行 `backend/database.sql` 初始化数据库结构。
+- 首次初始化时，MySQL 容器会执行 `backend/database.sql` 创建核心表结构。
+- 后端容器每次启动都会自动补跑 `database/20260317_create_admin_users_table.sql`、`database/20260317_create_shensha_table.sql`、`database/20260317_create_knowledge_tables.sql` 等幂等补丁，确保旧数据卷也能补齐后台依赖表。
+- 如果基础库已损坏或想彻底重建，再执行 `start-local.ps1 -ResetData` / `docker compose down -v`。
 
 ## 环境变量
 

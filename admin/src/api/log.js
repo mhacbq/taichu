@@ -1,4 +1,12 @@
+import axios from 'axios'
 import request from './request'
+
+const baseURL = import.meta.env.VITE_APP_BASE_API || '/api/admin'
+
+function buildAuthHeaders() {
+  const token = localStorage.getItem('admin-token') || ''
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export function getOperationLogs(params) {
   return request({
@@ -32,10 +40,12 @@ export function clearLogs(type) {
 }
 
 export function exportLogs(type, params) {
-  return request({
+  return axios({
+    baseURL,
     url: `/logs/${type}/export`,
     method: 'get',
     params,
-    responseType: 'blob'
+    responseType: 'blob',
+    headers: buildAuthHeaders()
   })
 }

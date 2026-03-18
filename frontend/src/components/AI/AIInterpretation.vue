@@ -4,7 +4,7 @@
     <div class="ai-header">
       <div class="ai-avatar">
         <div class="avatar-ring"></div>
-        <el-icon :size="28" color="#667eea"><Magic /></el-icon>
+        <el-icon :size="28" color="#667eea"><MagicStick /></el-icon>
       </div>
       <div class="ai-info">
         <h3 class="ai-name">AI命理大师</h3>
@@ -34,7 +34,7 @@
         <div class="interpretation-section" v-for="(section, index) in sections" :key="index">
           <div class="section-header">
             <div class="section-icon" :style="{ background: section.color }">
-              <el-icon :size="18" color="white"><component :is="section.icon" /></el-icon>
+              <el-icon :size="18" color="white"><component :is="resolveSectionIcon(section.icon)" /></el-icon>
             </div>
             <h4 class="section-title">{{ section.title }}</h4>
           </div>
@@ -101,7 +101,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Magic,
+  MagicStick,
   StarFilled,
   Star,
   Share,
@@ -112,8 +112,7 @@ import {
   Moon,
   Money,
   UserFilled,
-  Briefcase,
-  HeartFilled
+  Briefcase
 } from '@element-plus/icons-vue'
 import { useAnalytics } from '@/utils/analytics'
 
@@ -141,6 +140,24 @@ const thinkingTexts = [
 // 解读段落
 const sections = ref([])
 const advice = ref('')
+
+const sectionIconMap = {
+  MagicStick,
+  StarFilled,
+  Sunny,
+  Moon,
+  Money,
+  UserFilled,
+  Briefcase
+}
+
+const resolveSectionIcon = (icon) => {
+  if (typeof icon !== 'string') {
+    return icon || StarFilled
+  }
+
+  return sectionIconMap[icon] || StarFilled
+}
 
 // 模拟加载过程
 const simulateLoading = () => {
@@ -202,7 +219,7 @@ const generateContent = () => {
       },
       {
         title: '感情婚姻',
-        icon: 'HeartFilled',
+        icon: 'StarFilled',
         color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
         content: [
           '桃花位在东南，今年有望遇到心仪对象。已婚者夫妻感情和睦，但需注意沟通交流，避免因小事产生误会。',
@@ -219,7 +236,7 @@ const generateContent = () => {
     sections.value = [
       {
         title: '牌面解析',
-        icon: 'Magic',
+        icon: 'MagicStick',
         color: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
         content: [
           '您抽到的「太阳」正位，象征光明、成功与喜悦。这是一张极具正能量的牌，预示着您即将迎来人生的高光时刻。',

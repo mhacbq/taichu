@@ -25,9 +25,17 @@
             >
               <el-icon><UserFilled /></el-icon>
               <span>{{ role.name }}</span>
-              <el-tag size="small" :type="role.status ? 'success' : 'info'" class="role-tag">
-                {{ role.status ? '启用' : '禁用' }}
-              </el-tag>
+              <div class="role-actions">
+                <el-button type="primary" link @click.stop="handleEditRole(role)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button type="danger" link @click.stop="handleDeleteRole(role)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+                <el-tag size="small" :type="role.status ? 'success' : 'info'" class="role-tag">
+                  {{ role.status ? '启用' : '禁用' }}
+                </el-tag>
+              </div>
             </el-menu-item>
           </el-menu>
         </el-card>
@@ -91,61 +99,61 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  getRoles, createRole, updateRole, deleteRole, 
+  getPermissions, getRolePermissions, updateRolePermissions 
+} from '../../api/system'
+import { Plus, UserFilled, Edit, Delete } from '@element-plus/icons-vue'
+import { reportAdminUiError } from '@/utils/dev-error'
+
 
 const treeRef = ref(null)
+const loading = ref(false)
 
 // 角色列表
-const roleList = ref([
-  { id: 1, name: '超级管理员', code: 'super_admin', status: 1 },
-  { id: 2, name: '运营管理员', code: 'operation', status: 1 },
-  { id: 3, name: '客服人员', code: 'customer_service', status: 1 },
-  { id: 4, name: '审计人员', code: 'auditor', status: 0 }
-])
+const roleList = ref([])
 
 // 选中的角色
 const selectedRole = ref(null)
 
 // 权限树
-const permissionTree = ref([
-  {
-    id: 'dashboard',
-    name: '仪表盘',
-    children: [
-      { id: 'dashboard:view', name: '查看仪表盘' },
-      { id: 'dashboard:export', name: '导出报表' }
-    ]
-  },
-  {
-    id: 'user',
-    name: '用户管理',
-    children: [
-      { id: 'user:view', name: '查看用户' },
-      { id: 'user:edit', name: '编辑用户' },
-      { id: 'user:disable', name: '禁用/启用用户' },
-      { id: 'user:points', name: '调整积分' }
-    ]
-  },
-  {
-    id: 'content',
-    name: '内容管理',
-    children: [
-      { id: 'content:view', name: '查看内容' },
-      { id: 'content:delete', name: '删除内容' }
-    ]
-  },
-  {
-    id: 'system',
-    name: '系统设置',
-    children: [
-      { id: 'system:settings', name: '基础配置' },
-      { id: 'system:sensitive', name: '敏感词管理' },
-      { id: 'system:admin', name: '管理员管理' },
-      { id: 'system:role', name: '角色权限管理' }
-    ]
+const permissionTree = ref([])
+
+// 加载角色列表
+const loadRoleList = async () => {
+  loading.value = true
+  try {
+    const res = await getRoles()
+    if (res.code === 200) {
+      roleList.value = res.data
+      if (roleList.value.length > 0 && !selectedRole.value) {
+        handleRoleSelect(roleList.value[0].id.toString())
+      }
+    }
+  } catch (error) {
+    reportAdminUiError('system_role', 'load_roles_failed', error)
+    ElMessage.error('加载角色列表失败')
+  } finally {
+
+    loading.value = false
   }
-])
+}
+
+// 加载权限树
+const loadPermissionTree = async () => {
+  try {
+    const res = await getPermissions()
+    if (res.code === 200) {
+      permissionTree.value = res.data
+    }
+  } catch (error) {
+    reportAdminUiError('system_role', 'load_permissions_failed', error)
+    ElMessage.error('加载权限树失败')
+  }
+}
+
 
 // 已选权限
 const selectedPermissions = ref([])
@@ -156,6 +164,7 @@ const dialog = reactive({
   visible: false,
   isEdit: false,
   form: {
+    id: null,
     name: '',
     code: '',
     description: '',
@@ -169,38 +178,133 @@ const rules = {
 }
 
 // 选择角色
-function handleRoleSelect(index) {
+async function handleRoleSelect(index) {
   selectedRole.value = roleList.value.find(r => r.id.toString() === index)
-  // 加载该角色的权限
-  selectedPermissions.value = ['dashboard:view', 'user:view'] // 模拟数据
+  if (selectedRole.value) {
+    // 加载该角色的权限
+    await loadRolePermissions(selectedRole.value.id)
+  }
 }
+
+// 加载角色权限
+const loadRolePermissions = async (roleId) => {
+  try {
+    const res = await getRolePermissions(roleId)
+    if (res.code === 200) {
+      selectedPermissions.value = res.data
+      treeRef.value?.setCheckedKeys(res.data)
+    }
+  } catch (error) {
+    reportAdminUiError('system_role', 'load_role_permissions_failed', error, {
+      role_id: roleId
+    })
+    ElMessage.error('加载角色权限失败')
+  }
+}
+
 
 // 新增角色
 function handleAddRole() {
   dialog.isEdit = false
-  dialog.form = { name: '', code: '', description: '', status: 1 }
+  dialog.form = { id: null, name: '', code: '', description: '', status: 1 }
   dialog.visible = true
 }
 
-// 提交角色
-function submitRole() {
-  // 保存逻辑
-  dialog.visible = false
-  ElMessage.success(dialog.isEdit ? '修改成功' : '新增成功')
+// 编辑角色
+function handleEditRole(role) {
+  dialog.isEdit = true
+  dialog.form = { ...role }
+  dialog.visible = true
 }
+
+// 删除角色
+async function handleDeleteRole(role) {
+  try {
+    await ElMessageBox.confirm(`确定要删除角色 ${role.name} 吗？`, '提示', { type: 'warning' })
+    const res = await deleteRole(role.id)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      if (selectedRole.value?.id === role.id) {
+        selectedRole.value = null
+      }
+      loadRoleList()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      reportAdminUiError('system_role', 'delete_role_failed', error, {
+        role_id: role.id,
+        role_name: role.name
+      })
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+
+// 提交角色
+async function submitRole() {
+  try {
+    const res = dialog.isEdit 
+      ? await updateRole(dialog.form.id, dialog.form)
+      : await createRole(dialog.form)
+      
+    if (res.code === 200) {
+      ElMessage.success(dialog.isEdit ? '修改成功' : '新增成功')
+      dialog.visible = false
+      loadRoleList()
+    }
+  } catch (error) {
+    reportAdminUiError('system_role', dialog.isEdit ? 'update_role_failed' : 'create_role_failed', error, {
+      role_id: dialog.form.id,
+      role_code: dialog.form.code,
+      role_status: dialog.form.status
+    })
+    ElMessage.error('保存失败')
+  }
+}
+
 
 // 展开/收起全部
 function handleExpandAll() {
   isAllExpanded.value = !isAllExpanded.value
-  // 实现展开/收起逻辑
+  const nodes = treeRef.value?.store.nodesMap
+  for (const i in nodes) {
+    nodes[i].expanded = isAllExpanded.value
+  }
 }
 
 // 保存权限
-function handleSavePermission() {
+async function handleSavePermission() {
+  if (!selectedRole.value) {
+    ElMessage.warning('请先选择角色')
+    return
+  }
   const checkedKeys = treeRef.value?.getCheckedKeys()
-  console.log('保存权限:', checkedKeys)
-  ElMessage.success('权限保存成功')
+  // const halfCheckedKeys = treeRef.value?.getHalfCheckedKeys()
+  // 只保存叶子节点或显式选中的ID，后端会处理父子关系或仅存储权限ID
+  const allKeys = [...checkedKeys]
+
+  try {
+    const res = await updateRolePermissions(selectedRole.value.id, allKeys)
+    if (res.code === 200) {
+      ElMessage.success('权限保存成功')
+    }
+  } catch (error) {
+    reportAdminUiError('system_role', 'save_permissions_failed', error, {
+      role_id: selectedRole.value?.id || null,
+      permission_count: allKeys.length
+    })
+    ElMessage.error('保存权限失败')
+  }
 }
+
+
+
+// 页面加载时初始化
+onMounted(() => {
+  loadRoleList()
+  loadPermissionTree()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -216,9 +320,18 @@ function handleSavePermission() {
   :deep(.el-menu-item) {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    
+    .role-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: auto;
+    }
     
     .role-tag {
-      margin-left: auto;
+      margin-left: 10px;
     }
   }
 }

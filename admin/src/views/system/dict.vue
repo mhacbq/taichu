@@ -16,10 +16,11 @@
           <el-input
             v-model="typeSearch"
             placeholder="搜索字典类型"
-            prefix-icon="Search"
+            :prefix-icon="Search"
             clearable
             style="margin-bottom: 15px;"
           />
+
           
           <el-table
             :data="filteredTypes"
@@ -101,29 +102,29 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CommonTable from '@/components/CommonTable/index.vue'
+import { 
+  getDictTypes, createDictType, updateDictType, deleteDictType,
+  getDictData, saveDictData, deleteDictData 
+} from '../../api/system'
+import { Plus, Search } from '@element-plus/icons-vue'
 
 // 搜索关键词
 const typeSearch = ref('')
+const loading = ref(false)
 
 // 字典类型列表
-const dictTypes = ref([
-  { id: 1, name: '用户状态', code: 'user_status', description: '用户账号状态' },
-  { id: 2, name: '反馈类型', code: 'feedback_type', description: '用户反馈类型' },
-  { id: 3, name: '风险等级', code: 'risk_level', description: '风险事件等级' },
-  { id: 4, name: '积分类型', code: 'points_type', description: '积分变动类型' },
-  { id: 5, name: '任务状态', code: 'task_status', description: '定时任务状态' }
-])
+const dictTypes = ref([])
 
 // 过滤后的类型
 const filteredTypes = computed(() => {
   if (!typeSearch.value) return dictTypes.value
   const keyword = typeSearch.value.toLowerCase()
-  return dictTypes.value.filter(t => 
-    t.name.toLowerCase().includes(keyword) || 
-    t.code.toLowerCase().includes(keyword)
+  return dictTypes.value.filter(t =>
+    t.name.toLowerCase().includes(keyword) ||
+    t.type.toLowerCase().includes(keyword)
   )
 })
 
@@ -138,7 +139,7 @@ const dictColumns = [
   { prop: 'id', label: 'ID', width: 80 },
   { prop: 'label', label: '标签' },
   { prop: 'value', label: '值' },
-  { prop: 'sort', label: '排序', width: 80 },
+  { prop: 'sort_order', label: '排序', width: 80 },
   { prop: 'status', label: '状态', type: 'tag', tagMap: { 1: '启用', 0: '禁用' }, width: 80 }
 ]
 
@@ -146,62 +147,85 @@ const dictColumns = [
 const typeDialog = reactive({
   visible: false,
   isEdit: false,
-  form: { name: '', code: '', description: '' }
+  form: { id: null, name: '', type: '', remark: '' }
 })
 
 // 数据弹窗
 const dataDialog = reactive({
   visible: false,
   isEdit: false,
-  form: { label: '', value: '', sort: 0, status: 1 }
+  form: { id: null, label: '', value: '', sort_order: 0, status: 1 }
 })
+
+// 加载字典类型列表
+const loadDictTypes = async () => {
+  loading.value = true
+  try {
+    const res = await getDictTypes()
+    if (res.code === 200) {
+      dictTypes.value = res.data
+      if (dictTypes.value.length > 0 && !selectedType.value) {
+        handleTypeSelect(dictTypes.value[0])
+      }
+    }
+  } catch (error) {
+    ElMessage.error('加载字典类型失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 选择类型
 function handleTypeSelect(row) {
   selectedType.value = row
   // 加载该类型的字典数据
-  loadDictData(row.code)
+  if (row) {
+    loadDataList(row.type)
+  } else {
+    dictData.value = []
+  }
 }
 
 // 加载字典数据
-function loadDictData(typeCode) {
-  // 模拟数据
-  const mockData = {
-    user_status: [
-      { id: 1, label: '正常', value: '1', sort: 1, status: 1 },
-      { id: 2, label: '禁用', value: '0', sort: 2, status: 1 }
-    ],
-    feedback_type: [
-      { id: 3, label: '问题反馈', value: 'bug', sort: 1, status: 1 },
-      { id: 4, label: '功能建议', value: 'feature', sort: 2, status: 1 },
-      { id: 5, label: '投诉举报', value: 'complaint', sort: 3, status: 1 }
-    ],
-    risk_level: [
-      { id: 6, label: '高危', value: 'high', sort: 1, status: 1 },
-      { id: 7, label: '中危', value: 'medium', sort: 2, status: 1 },
-      { id: 8, label: '低危', value: 'low', sort: 3, status: 1 }
-    ]
+const loadDataList = async (typeCode) => {
+  try {
+    const res = await getDictData(typeCode)
+    if (res.code === 200) {
+      dictData.value = res.data
+    }
+  } catch (error) {
+    ElMessage.error('加载字典数据失败')
   }
-  dictData.value = mockData[typeCode] || []
 }
 
 // 新增类型
 function handleAddType() {
   typeDialog.isEdit = false
-  typeDialog.form = { name: '', code: '', description: '' }
+  typeDialog.form = { id: null, name: '', type: '', remark: '' }
   typeDialog.visible = true
 }
 
 // 提交类型
-function submitType() {
-  typeDialog.visible = false
-  ElMessage.success('保存成功')
+async function submitType() {
+  try {
+    const res = typeDialog.isEdit 
+      ? await updateDictType(typeDialog.form.id, typeDialog.form)
+      : await createDictType(typeDialog.form)
+      
+    if (res.code === 200) {
+      ElMessage.success(typeDialog.isEdit ? '修改成功' : '新增成功')
+      typeDialog.visible = false
+      loadDictTypes()
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
 
 // 新增数据
 function handleAddData() {
   dataDialog.isEdit = false
-  dataDialog.form = { label: '', value: '', sort: 0, status: 1 }
+  dataDialog.form = { id: null, label: '', value: '', sort_order: 0, status: 1 }
   dataDialog.visible = true
 }
 
@@ -216,17 +240,42 @@ function handleEditData(row) {
 async function handleDeleteData(row) {
   try {
     await ElMessageBox.confirm('确定删除该字典数据吗？', '提示', { type: 'warning' })
-    ElMessage.success('删除成功')
-  } catch {
-    // 取消
+    const res = await deleteDictData(row.id)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      if (selectedType.value) {
+        loadDataList(selectedType.value.type)
+      }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 
 // 提交数据
-function submitData() {
-  dataDialog.visible = false
-  ElMessage.success('保存成功')
+async function submitData() {
+  try {
+    const data = { ...dataDialog.form, dict_type: selectedType.value?.type }
+    const res = await saveDictData(data)
+    if (res.code === 200) {
+      ElMessage.success(dataDialog.isEdit ? '修改成功' : '新增成功')
+      dataDialog.visible = false
+      if (selectedType.value) {
+        loadDataList(selectedType.value.type)
+      }
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
 }
+
+
+// 页面加载时初始化
+onMounted(() => {
+  loadDictTypes()
+})
 </script>
 
 <style lang="scss" scoped>

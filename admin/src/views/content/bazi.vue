@@ -73,6 +73,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBaziRecords, getBaziDetail, deleteBaziRecord } from '@/api/content'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const recordList = ref([])
@@ -136,7 +137,10 @@ async function handleView(row) {
     detailDialog.data = data
     detailDialog.visible = true
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('content_bazi', 'load_detail_failed', error, {
+      record_id: row.id,
+      user_id: row.user_id
+    })
   }
 }
 

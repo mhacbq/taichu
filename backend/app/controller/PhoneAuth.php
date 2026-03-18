@@ -285,7 +285,7 @@ class PhoneAuth extends BaseController
         }
         
         // 检查是否已经被邀请过
-        $exists = InviteRecord::where('invitee_id', $newUserId)->find();
+        $exists = InviteRecord::where('invited_id', $newUserId)->find();
         if ($exists) {
             return;
         }
@@ -297,10 +297,11 @@ class PhoneAuth extends BaseController
             // 记录邀请关系
             InviteRecord::create([
                 'inviter_id' => $inviterId,
-                'invitee_id' => $newUserId,
+                'invited_id' => $newUserId,
                 'invite_code' => $inviteCode,
                 'points_reward' => $rewardPoints,
             ]);
+
             
             // 给邀请人增加积分
             $inviter = User::find($inviterId);

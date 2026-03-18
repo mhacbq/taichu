@@ -1,4 +1,5 @@
 import { ref, reactive, toRaw } from 'vue'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 /**
  * 表单组合式函数
@@ -64,7 +65,10 @@ export function useForm(options = {}) {
       successCallback?.(res)
       return res
     } catch (error) {
-      console.error('Submit failed:', error)
+      reportAdminUiError('useForm', 'submit_failed', error, {
+        is_edit: isEdit.value,
+        has_submit_api: typeof submitApi === 'function'
+      })
       throw error
     } finally {
       submitting.value = false

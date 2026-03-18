@@ -1,14 +1,16 @@
 <template>
   <div class="bazi-page">
     <div class="container">
-      <div class="page-header">
-        <BackButton />
-        <h1 class="section-title">八字排盘</h1>
-      </div>
+      <PageHeroHeader
+        title="八字排盘"
+        subtitle="支持精确出生时间、大概时段与未知时辰三种口径，结果页会同步标注当前精度，避免把估算时刻误当成精确排盘。"
+        :icon="Grid"
+      />
+
       
       <!-- 暖心提示 -->
       <div class="warm-tip card" v-if="!result">
-        <span class="tip-icon">💝</span>
+        <el-icon class="tip-icon"><StarFilled /></el-icon>
         <div class="tip-content">
           <p class="tip-title">八字排盘能帮你了解什么？</p>
           <p class="tip-desc">你的性格优势 · 适合的发展方向 · 未来运势起伏 · 人际关系建议</p>
@@ -17,28 +19,34 @@
       
       <div class="bazi-form card" v-if="!result">
         <!-- 积分消耗提示 -->
-        <div class="points-hint">
-          <span class="hint-icon">💎</span>
-          <span>
-            <span v-if="isFirstBazi">🎁 首次排盘免费</span>
-            <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
-          </span>
-          <span class="current-points">当前积分: {{ currentPoints }}</span>
+        <div class="points-hint" :class="{ 'points-hint--loading': accountStatus === 'loading', 'points-hint--error': accountStatus === 'error' }">
+          <el-icon class="hint-icon"><Coin /></el-icon>
+          <span v-if="accountStatus === 'loading'">正在查询账户与价格信息...</span>
+          <span v-else-if="accountStatus === 'error'">账户与价格暂不可用，确认前不展示消费承诺</span>
+          <template v-else>
+            <span>
+              <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
+              <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
+            </span>
+            <span class="current-points">当前积分: {{ currentPoints }}</span>
+          </template>
+          <el-button v-if="accountStatus === 'error'" link type="primary" class="points-retry" @click="loadPoints()">重新获取</el-button>
         </div>
 
         <!-- 简版/专业版切换 -->
         <div class="version-toggle">
           <span class="toggle-label">排盘模式：</span>
-          <el-radio-group v-model="versionMode" size="small">
+          <el-radio-group v-model="versionMode" size="small" class="premium-segment premium-segment--compact">
             <el-radio-button label="simple">
               <span class="mode-option">
-                <span class="mode-icon">🌱</span>
+                <el-icon class="mode-icon"><MagicStick /></el-icon>
+
                 简化版
               </span>
             </el-radio-button>
             <el-radio-button label="pro">
               <span class="mode-option">
-                <span class="mode-icon">🔮</span>
+                <el-icon class="mode-icon"><Coin /></el-icon>
                 专业版
               </span>
             </el-radio-button>
@@ -47,16 +55,49 @@
         </div>
 
         <div class="form-group">
-          <label>出生日期</label>
-          <el-date-picker
-            v-model="birthDate"
-            type="datetime"
-            placeholder="选择出生日期时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            class="full-width"
-          />
-          <p class="form-hint">不知道具体时辰？选个大概的时间也可以</p>
+          <label>出生日期与时间</label>
+          <div class="time-accuracy-switch">
+            <span class="switch-label">时间确认度</span>
+            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group premium-segment premium-segment--compact">
+              <el-radio-button label="exact">精确到分钟</el-radio-button>
+              <el-radio-button label="estimated">大概时段 / 未知时辰</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <template v-if="birthTimeAccuracy === 'exact'">
+            <el-date-picker
+              v-model="exactBirthDate"
+              type="datetime"
+              placeholder="选择出生日期时间（精确到分钟）"
+              format="YYYY-MM-DD HH:mm"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="full-width"
+            />
+            <p class="form-hint">建议填写准确出生时间；若只记得大概时段，可切换为估算模式，结果页会同步标记时刻精度。</p>
+          </template>
+
+          <template v-else>
+            <div class="estimate-birth-grid">
+              <el-date-picker
+                v-model="estimatedBirthDate"
+                type="date"
+                placeholder="选择出生日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                class="full-width"
+              />
+              <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段或未知时辰" class="full-width" clearable>
+                <el-option
+                  v-for="option in estimatedTimeOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </div>
+            <p class="form-hint form-hint--precision"><el-icon><Warning /></el-icon> {{ estimatedModeHint }}</p>
+          </template>
+
         </div>
         
         <div class="form-group">
@@ -71,7 +112,7 @@
           <label>
             出生地点
             <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
-              <span class="help-icon">❓</span>
+              <el-icon class="help-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
           </label>
           <el-select-v2
@@ -83,7 +124,7 @@
             clearable
             :height="200"
           />
-          <p class="form-hint">💡 不知道出生地可以跳过，默认使用北京时间</p>
+          <p class="form-hint"><el-icon><MagicStick /></el-icon> 不知道出生地可以跳过，默认使用北京时间</p>
         </div>
         
         <el-button 
@@ -91,31 +132,42 @@
           size="large" 
           @click="showConfirm" 
           :loading="loading"
-          :disabled="!isFirstBazi && currentPoints < 10"
+          :disabled="!canStartBazi"
         >
-          {{ isFirstBazi ? '🎁 首次免费排盘' : '开始排盘' }}
+          <el-icon v-if="isAccountReady && isFirstBazi"><Present /></el-icon>
+          {{ startBaziButtonText }}
         </el-button>
 
         <!-- 积分不足提示 -->
-        <div v-if="!isFirstBazi && currentPoints < 10" class="insufficient-points">
-          <p>💡 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+        <div v-if="accountStatus === 'ready' && !isFirstBazi && currentPoints < BAZI_BASE_COST" class="insufficient-points">
+
+          <p><el-icon><StarFilled /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
         </div>
       </div>
 
       <!-- 确认对话框 -->
       <el-dialog
         v-model="confirmVisible"
-        title="确认排盘"
+        :title="confirmDialogConfig.title"
         width="400px"
         class="confirm-dialog"
       >
-        <div class="confirm-content">
-          <p>本次排盘将消耗 <strong>10 积分</strong></p>
+        <div class="confirm-content" :class="{ 'confirm-content--free': isFirstBazi }">
+          <p class="confirm-title">
+            <el-icon v-if="isFirstBazi"><Present /></el-icon>
+            <template v-if="isFirstBazi">
+              本次为您的首次排盘，不会扣除积分
+            </template>
+            <template v-else>
+              本次排盘将消耗 <strong>10 积分</strong>
+            </template>
+          </p>
           <p>排盘后可在个人中心查看历史记录</p>
+          <p class="confirm-note">规则说明：首次排盘免费，后续每次排盘消耗 10 积分。</p>
         </div>
         <template #footer>
           <el-button @click="confirmVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmCalculate">确认排盘</el-button>
+          <el-button type="primary" @click="confirmCalculate">{{ confirmDialogConfig.actionText }}</el-button>
         </template>
       </el-dialog>
 
@@ -127,24 +179,11 @@
         class="points-confirm-dialog"
       >
         <div class="points-confirm-content">
-          <div class="points-icon">💎</div>
-          <p class="points-title">
-            {{ 
-              pointsConfirmType === 'yearly' ? '流年运势分析' : 
-              pointsConfirmType === 'dayun' ? '大运运势评分' : 
-              '运势K线图' 
-            }}
-          </p>
+          <div class="points-icon"><el-icon :size="48"><Coin /></el-icon></div>
+          <p class="points-title">{{ getPointsConfirmTitle(pointsConfirmType) }}</p>
           <p class="points-desc">
-            此功能将消耗 
-            <strong>
-              {{ 
-                pointsConfirmType === 'yearly' ? fortunePointsCost.yearly_fortune : 
-                pointsConfirmType === 'dayun' ? fortunePointsCost.dayun_analysis : 
-                fortunePointsCost.dayun_chart 
-              }} 
-              积分
-            </strong>
+            此功能将消耗
+            <strong>{{ getPointsConfirmCost(pointsConfirmType) }} 积分</strong>
           </p>
           <p class="points-balance">当前积分: {{ currentPoints }}</p>
         </div>
@@ -159,26 +198,23 @@
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-state card">
         <div class="loading-animation">
-          <div class="yin-yang">
-            <div class="yin"></div>
-            <div class="yang"></div>
-          </div>
+          <div class="loading-taiji"></div>
         </div>
         <h3>正在为你排盘...</h3>
         <p class="loading-text">计算天干地支 · 分析五行配置 · 生成命理解读</p>
         <div class="loading-steps">
           <div class="step" :class="{ active: loadingStep >= 1, done: loadingStep > 1 }">
-            <span class="step-icon">{{ loadingStep > 1 ? '✓' : '1' }}</span>
+            <span class="step-icon"><el-icon v-if="loadingStep > 1"><Check /></el-icon><template v-else>1</template></span>
             <span class="step-text">排八字</span>
           </div>
           <div class="step-line" :class="{ active: loadingStep >= 2 }"></div>
           <div class="step" :class="{ active: loadingStep >= 2, done: loadingStep > 2 }">
-            <span class="step-icon">{{ loadingStep > 2 ? '✓' : '2' }}</span>
+            <span class="step-icon"><el-icon v-if="loadingStep > 2"><Check /></el-icon><template v-else>2</template></span>
             <span class="step-text">算五行</span>
           </div>
           <div class="step-line" :class="{ active: loadingStep >= 3 }"></div>
           <div class="step" :class="{ active: loadingStep >= 3, done: loadingStep > 3 }">
-            <span class="step-icon">{{ loadingStep > 3 ? '✓' : '3' }}</span>
+            <span class="step-icon"><el-icon v-if="loadingStep > 3"><Check /></el-icon><template v-else>3</template></span>
             <span class="step-text">析命理</span>
           </div>
           <div class="step-line" :class="{ active: loadingStep >= 4 }"></div>
@@ -193,707 +229,800 @@
         <div class="result-header">
           <h2>八字排盘结果</h2>
           <div class="result-meta">
-            <span class="meta-tag" v-if="result.is_first_bazi">🎁 首次免费</span>
-            <span class="meta-tag" v-if="result.from_cache">⚡ 智能缓存</span>
+            <span class="meta-tag meta-tag--success" v-if="result.is_first_bazi"><el-icon><Present /></el-icon> 首次免费</span>
+            <span class="meta-tag meta-tag--success" v-if="result.from_cache"><el-icon><Lightning /></el-icon> 智能缓存</span>
+            <span class="meta-tag meta-tag--info"><el-icon><MagicStick /></el-icon> {{ resultModeLabel }}</span>
+            <span class="meta-tag" :class="birthTimeAccuracy === 'estimated' ? 'meta-tag--warning' : 'meta-tag--neutral'"><el-icon><Calendar /></el-icon> {{ birthTimeAccuracyLabel }}</span>
+            <span class="meta-tag meta-tag--neutral"><el-icon><QuestionFilled /></el-icon> {{ locationContextLabel }}</span>
           </div>
         </div>
-        
-        <!-- 日主信息 -->
-        <div class="day-master-info">
-          <div class="day-master-card">
-            <span class="label">日主</span>
-            <span class="value">{{ result.bazi.day_master }}</span>
-            <span class="wuxing">{{ result.bazi.day_master_wuxing }}</span>
-          </div>
-        </div>
-        
-        <!-- 八字排盘表 -->
-        <div class="bazi-paipan">
-          <div class="paipan-row">
-            <div class="paipan-cell header">年柱</div>
-            <div class="paipan-cell header">月柱</div>
-            <div class="paipan-cell header">日柱</div>
-            <div class="paipan-cell header">时柱</div>
-          </div>
-          <!-- 天干行 -->
-          <div class="paipan-row">
-            <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi.year.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.year.gan_wuxing">{{ result.bazi.year.gan_wuxing }}</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi.month.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.month.gan_wuxing">{{ result.bazi.month.gan_wuxing }}</span>
-            </div>
-            <div class="paipan-cell highlight">
-              <span class="gan-text">{{ result.bazi.day.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.day.gan_wuxing">{{ result.bazi.day.gan_wuxing }}</span>
-              <span class="rizhu-tag">日主</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="gan-text">{{ result.bazi.hour.gan }}</span>
-              <span class="wuxing-badge" :class="result.bazi.hour.gan_wuxing">{{ result.bazi.hour.gan_wuxing }}</span>
-            </div>
-          </div>
-          <!-- 十神行 -->
-          <div class="paipan-row shishen-row">
-            <div class="paipan-cell shishen-cell">{{ result.bazi.year.shishen }}</div>
-            <div class="paipan-cell shishen-cell">{{ result.bazi.month.shishen }}</div>
-            <div class="paipan-cell shishen-cell highlight">日主</div>
-            <div class="paipan-cell shishen-cell">{{ result.bazi.hour.shishen }}</div>
-          </div>
-          <!-- 地支行 -->
-          <div class="paipan-row">
-            <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi.year.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.year.zhi_wuxing">{{ result.bazi.year.zhi_wuxing }}</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi.month.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.month.zhi_wuxing">{{ result.bazi.month.zhi_wuxing }}</span>
-            </div>
-            <div class="paipan-cell highlight">
-              <span class="zhi-text">{{ result.bazi.day.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.day.zhi_wuxing">{{ result.bazi.day.zhi_wuxing }}</span>
-            </div>
-            <div class="paipan-cell">
-              <span class="zhi-text">{{ result.bazi.hour.zhi }}</span>
-              <span class="wuxing-badge zhi" :class="result.bazi.hour.zhi_wuxing">{{ result.bazi.hour.zhi_wuxing }}</span>
-            </div>
-          </div>
-          <!-- 藏干行 -->
-          <div class="paipan-row canggan-row">
-            <div class="paipan-cell canggan-cell">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.year.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.year.canggan_shishen[idx] }})</small>
-                </span>
-              </div>
-            </div>
-            <div class="paipan-cell canggan-cell">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.month.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.month.canggan_shishen[idx] }})</small>
-                </span>
-              </div>
-            </div>
-            <div class="paipan-cell canggan-cell highlight">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.day.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.day.canggan_shishen[idx] }})</small>
-                </span>
-              </div>
-            </div>
-            <div class="paipan-cell canggan-cell">
-              <div class="canggan-list">
-                <span v-for="(cg, idx) in result.bazi.hour.canggan" :key="idx" class="canggan-item">
-                  {{ cg }}<small>({{ result.bazi.hour.canggan_shishen[idx] }})</small>
-                </span>
-              </div>
-            </div>
-          </div>
-          <!-- 纳音行 -->
-          <div class="paipan-row nayin-row">
-            <div class="paipan-cell nayin-cell">{{ result.bazi.year.nayin }}</div>
-            <div class="paipan-cell nayin-cell">{{ result.bazi.month.nayin }}</div>
-            <div class="paipan-cell nayin-cell highlight">{{ result.bazi.day.nayin }}</div>
-            <div class="paipan-cell nayin-cell">{{ result.bazi.hour.nayin }}</div>
-          </div>
-        </div>
-        
-        <!-- 五行统计 -->
-        <div class="wuxing-stats">
-          <h3>五行分布</h3>
-          <div class="wuxing-bars">
-            <div v-for="(count, wx) in result.bazi.wuxing_stats" :key="wx" class="wuxing-bar-item">
-              <span class="wuxing-name">{{ wx }}</span>
-              <div class="wuxing-bar">
-                <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%' }"></div>
-              </div>
-              <span class="wuxing-count">{{ count }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 专业解读卡片 -->
-        <div class="professional-reading" v-if="result.fullInterpretation">
-          <h3>
-            <span class="section-icon">📜</span>
-            命盘精解
-            <span class="section-badge">专业版</span>
-          </h3>
-          
-          <!-- 日主信息卡片 -->
-          <div class="day-master-detail" v-if="result.fullInterpretation.basic">
-            <div class="dm-header">
-              <div class="dm-symbol">{{ result.fullInterpretation.basic.day_master_symbol }}</div>
-              <div class="dm-title">
-                <h4>{{ result.fullInterpretation.basic.day_master }}日主 · {{ result.fullInterpretation.basic.day_master_nature }}</h4>
-                <p class="dm-traits">
-                  <span v-for="(trait, idx) in result.fullInterpretation.basic.traits" :key="idx" class="trait-tag">{{ trait }}</span>
-                </p>
-              </div>
-            </div>
-            <div class="dm-content">
-              <div class="dm-section">
-                <h5>核心优势</h5>
-                <p>{{ result.fullInterpretation.basic.strengths }}</p>
-              </div>
-              <div class="dm-section">
-                <h5>需要注意</h5>
-                <p>{{ result.fullInterpretation.basic.weaknesses }}</p>
-              </div>
-            </div>
-          </div>
+        <p v-if="resultContextNote" class="result-context-note">{{ resultContextNote }}</p>
 
-          <!-- 喜用神分析 -->
-          <div class="yongshen-section" v-if="result.fullInterpretation.yongshen">
-            <div class="ys-header">
-              <span class="ys-icon">✨</span>
-              <div class="ys-info">
-                <h4>喜用神：{{ result.fullInterpretation.yongshen.shen }}、{{ result.fullInterpretation.yongshen.xi }}</h4>
-                <span class="ys-type">{{ result.fullInterpretation.yongshen.type }}格</span>
-              </div>
-            </div>
-            <p class="ys-desc">{{ result.fullInterpretation.yongshen.desc }}</p>
+        <div class="result-tabs">
+          <div class="tab-item" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">
+             <el-icon><Grid /></el-icon> 本命局
           </div>
+          <div class="tab-item" :class="{ active: activeTab === 'personality' }" @click="activeTab = 'personality'">
+             <el-icon><UserFilled /></el-icon> 性格内观
+          </div>
+          <div class="tab-item" :class="{ active: activeTab === 'career' }" @click="activeTab = 'career'">
+             <el-icon><Briefcase /></el-icon> 事业财运
+          </div>
+        </div>
 
-          <!-- 详细解读卡片网格 -->
-          <div class="reading-cards-grid">
-            <div class="reading-card" v-if="result.fullInterpretation.personality">
-              <div class="rc-header">
-                <span class="rc-icon">🎭</span>
-                <h4>性格详解</h4>
+        <div class="tab-content" v-show="activeTab === 'chart'">
+          <!-- 命盘基础部分 -->
+          <div class="tab-pane-content">
+            <div class="pane-title">
+                <el-icon class="title-icon"><Grid /></el-icon>
+                <span class="title-text">命盘核心数据</span>
+                <span class="title-desc">日主、八字、五行分布</span>
+            </div>
+
+            <!-- 日主信息 -->
+            <div class="day-master-info">
+              <div class="day-master-card">
+                <span class="label">日主</span>
+                <span class="value">{{ result.bazi?.day_master }}</span>
+                <span class="wuxing">{{ result.bazi?.day_master_wuxing }}</span>
               </div>
-              <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
             </div>
             
-            <div class="reading-card" v-if="result.fullInterpretation.career">
-              <div class="rc-header">
-                <span class="rc-icon">💼</span>
-                <h4>事业财运</h4>
+            <!-- 八字排盘表 -->
+            <div class="bazi-paipan">
+              <div class="paipan-row">
+                <div class="paipan-cell header">年柱</div>
+                <div class="paipan-cell header">月柱</div>
+                <div class="paipan-cell header">日柱</div>
+                <div class="paipan-cell header">时柱</div>
               </div>
-              <p class="rc-content">{{ result.fullInterpretation.career }}</p>
-            </div>
-            
-            <div class="reading-card" v-if="result.fullInterpretation.wealth">
-              <div class="rc-header">
-                <span class="rc-icon">💰</span>
-                <h4>财富分析</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
-            </div>
-            
-            <div class="reading-card" v-if="result.fullInterpretation.relationship">
-              <div class="rc-header">
-                <span class="rc-icon">💕</span>
-                <h4>感情婚姻</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
-            </div>
-            
-            <div class="reading-card" v-if="result.fullInterpretation.health">
-              <div class="rc-header">
-                <span class="rc-icon">🏃</span>
-                <h4>健康提醒</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.health }}</p>
-            </div>
-            
-            <div class="reading-card advice-card" v-if="result.fullInterpretation.advice">
-              <div class="rc-header">
-                <span class="rc-icon">🌟</span>
-                <h4>开运建议</h4>
-              </div>
-              <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 通俗解读：这对我意味着什么 -->
-        <div class="simple-interpretation" v-if="result.simpleInterpretation && !result.fullInterpretation">
-          <h3>
-            <span class="section-icon">💡</span>
-            这对我意味着什么？
-            <span class="section-subtitle">通俗解读</span>
-          </h3>
-          <div class="interpretation-cards">
-            <div class="interp-card personality">
-              <div class="interp-header">
-                <span class="interp-icon">🎭</span>
-                <h4>我的性格特点</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
-            </div>
-            <div class="interp-card career">
-              <div class="interp-header">
-                <span class="interp-icon">💼</span>
-                <h4>适合的发展方向</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
-            </div>
-            <div class="interp-card relationship">
-              <div class="interp-header">
-                <span class="interp-icon">💕</span>
-                <h4>人际关系建议</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
-            </div>
-            <div class="interp-card advice">
-              <div class="interp-header">
-                <span class="interp-icon">🌟</span>
-                <h4>给你的建议</h4>
-              </div>
-              <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bazi-analysis">
-          <h3>详细命理分析</h3>
-          <div class="analysis-content">{{ result.analysis }}</div>
-        </div>
-
-        <!-- 大运分析 -->
-        <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
-          <h3>
-            大运走势
-            <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
-              <span class="help-icon">❓</span>
-            </el-tooltip>
-          </h3>
-          <div class="dayun-timeline">
-            <div 
-              v-for="(yun, index) in result.dayun" 
-              :key="index"
-              class="dayun-item"
-              :class="{ 'current': isCurrentDaYun(yun) }"
-            >
-              <div class="dayun-age">{{ yun.age_start }}-{{ yun.age_end }}岁</div>
-              <div class="dayun-pillar">
-                <span class="gan">{{ yun.gan }}</span>
-                <span class="zhi">{{ yun.zhi }}</span>
-              </div>
-              <div class="dayun-shishen">{{ yun.shishen }}</div>
-              <div class="dayun-luck" :class="yun.luck">{{ yun.luck }}</div>
-              <div class="dayun-desc">{{ yun.luck_desc }}</div>
-              <div class="dayun-nayin">{{ yun.nayin }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 流年分析 -->
-        <div class="liunian-section" v-if="result.liunian && result.liunian.length > 0">
-          <h3>
-            流年运势
-            <el-tooltip content="流年是每年的运势参考，结合大运提供年度生活建议" placement="top">
-              <span class="help-icon">❓</span>
-            </el-tooltip>
-          </h3>
-          <div class="liunian-grid">
-            <div 
-              v-for="(year, index) in result.liunian" 
-              :key="index"
-              class="liunian-item"
-              :class="{ 'current': year.is_current }"
-            >
-              <div class="liunian-year">{{ year.year }}年</div>
-              <div class="liunian-pillar">
-                <span class="gan">{{ year.gan }}</span>
-                <span class="zhi">{{ year.zhi }}</span>
-              </div>
-              <div class="liunian-wuxing">
-                <span class="badge" :class="year.gan_wuxing">{{ year.gan_wuxing }}</span>
-                <span class="badge" :class="year.zhi_wuxing">{{ year.zhi_wuxing }}</span>
-              </div>
-              <div class="liunian-nayin">{{ year.nayin }}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 流年运势分析 -->
-        <div class="yearly-fortune-section" v-if="result.bazi">
-          <h3>
-            <span class="section-icon">📅</span>
-            流年运势深度分析
-            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.yearly_fortune }}积分</el-tag>
-          </h3>
-          
-          <!-- 年份选择 -->
-          <div class="year-selector">
-            <span class="selector-label">选择年份：</span>
-            <el-slider
-              v-model="selectedYear"
-              :min="new Date().getFullYear() - 3"
-              :max="new Date().getFullYear() + 7"
-              :step="1"
-              show-stops
-              class="year-slider"
-            />
-            <span class="selected-year">{{ selectedYear }}年</span>
-          </div>
-          
-          <!-- 流年分析结果 -->
-          <div v-if="yearlyFortuneResult" class="yearly-result">
-            <div class="yearly-header">
-              <div class="year-info">
-                <span class="year-number">{{ yearlyFortuneResult.year }}</span>
-                <span class="year-ganzhi">{{ yearlyFortuneResult.ganzhi }}年</span>
-                <span class="year-nayin">{{ yearlyFortuneResult.nayin }}</span>
-              </div>
-              <div class="score-display">
-                <div class="score-circle" :class="getScoreClass(yearlyFortuneResult.score)">
-                  <span class="score-value">{{ yearlyFortuneResult.score }}</span>
-                  <span class="score-label">运势评分</span>
+              <!-- 天干行 -->
+              <div class="paipan-row">
+                <div class="paipan-cell">
+                  <span class="gan-text">{{ result.bazi?.year?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.year?.gan_wuxing">{{ result.bazi?.year?.gan_wuxing }}</span>
                 </div>
-                <div class="rating-badge" :class="getScoreClass(yearlyFortuneResult.score)">
-                  {{ yearlyFortuneResult.rating }}
+                <div class="paipan-cell">
+                  <span class="gan-text">{{ result.bazi?.month?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.month?.gan_wuxing">{{ result.bazi?.month?.gan_wuxing }}</span>
+                </div>
+                <div class="paipan-cell highlight">
+                  <span class="gan-text">{{ result.bazi?.day?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.day?.gan_wuxing">{{ result.bazi?.day?.gan_wuxing }}</span>
+                  <span class="rizhu-tag">日主</span>
+                </div>
+                <div class="paipan-cell">
+                  <span class="gan-text">{{ result.bazi?.hour?.gan }}</span>
+                  <span class="wuxing-badge" :class="result.bazi?.hour?.gan_wuxing">{{ result.bazi?.hour?.gan_wuxing }}</span>
+                </div>
+              </div>
+              <!-- 十神行 -->
+              <div class="paipan-row shishen-row">
+                <div class="paipan-cell shishen-cell">{{ result.bazi?.year?.shishen }}</div>
+                <div class="paipan-cell shishen-cell">{{ result.bazi?.month?.shishen }}</div>
+                <div class="paipan-cell shishen-cell highlight">日主</div>
+                <div class="paipan-cell shishen-cell">{{ result.bazi?.hour?.shishen }}</div>
+              </div>
+              <!-- 地支行 -->
+              <div class="paipan-row">
+                <div class="paipan-cell">
+                  <span class="zhi-text">{{ result.bazi?.year?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.year?.zhi_wuxing">{{ result.bazi?.year?.zhi_wuxing }}</span>
+                </div>
+                <div class="paipan-cell">
+                  <span class="zhi-text">{{ result.bazi?.month?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.month?.zhi_wuxing">{{ result.bazi?.month?.zhi_wuxing }}</span>
+                </div>
+                <div class="paipan-cell highlight">
+                  <span class="zhi-text">{{ result.bazi?.day?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.day?.zhi_wuxing">{{ result.bazi?.day?.zhi_wuxing }}</span>
+                </div>
+                <div class="paipan-cell">
+                  <span class="zhi-text">{{ result.bazi?.hour?.zhi }}</span>
+                  <span class="wuxing-badge zhi" :class="result.bazi?.hour?.zhi_wuxing">{{ result.bazi?.hour?.zhi_wuxing }}</span>
+                </div>
+              </div>
+              <!-- 藏干行 -->
+              <div class="paipan-row canggan-row">
+                <div class="paipan-cell canggan-cell">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.year?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.year?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="paipan-cell canggan-cell">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.month?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.month?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="paipan-cell canggan-cell highlight">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.day?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.day?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="paipan-cell canggan-cell">
+                  <div class="canggan-list">
+                    <span v-for="(cg, idx) in result.bazi?.hour?.canggan || []" :key="idx" class="canggan-item">
+                      {{ cg }}<small>({{ result.bazi?.hour?.canggan_shishen?.[idx] }})</small>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <!-- 纳音行 -->
+              <div class="paipan-row nayin-row">
+                <div class="paipan-cell nayin-cell">{{ result.bazi?.year?.nayin }}</div>
+                <div class="paipan-cell nayin-cell">{{ result.bazi?.month?.nayin }}</div>
+                <div class="paipan-cell nayin-cell highlight">{{ result.bazi?.day?.nayin }}</div>
+                <div class="paipan-cell nayin-cell">{{ result.bazi?.hour?.nayin }}</div>
+              </div>
+              <!-- 旬空行 -->
+              <div class="paipan-row xunkong-row" v-if="result.bazi?.xunkong">
+                <div class="paipan-cell xunkong-cell">
+                   <span class="xunkong-label">年空:</span> {{ result.bazi?.year?.xunkong || '-' }}
+                </div>
+                <div class="paipan-cell xunkong-cell">
+                   <span class="xunkong-label">月空:</span> {{ result.bazi?.month?.xunkong || '-' }}
+                </div>
+                <div class="paipan-cell xunkong-cell highlight">
+                   <span class="xunkong-label">日空:</span> {{ result.bazi?.day?.xunkong || '-' }}
+                </div>
+                <div class="paipan-cell xunkong-cell">
+                   <span class="xunkong-label">时空:</span> {{ result.bazi?.hour?.xunkong || '-' }}
                 </div>
               </div>
             </div>
+
             
-            <div class="yearly-analysis">
-              <div class="analysis-card overall">
-                <h4>🎯 整体运势</h4>
-                <p>{{ yearlyFortuneResult.overall }}</p>
+            <!-- 五行统计 -->
+            <div class="wuxing-stats">
+              <div class="wuxing-header">
+                <h3>五行分布</h3>
+                <p class="wuxing-caption">以下为加权值，综合了天干透出、地支藏干与月令司令权重，并非简单计数。</p>
+              </div>
+              <div class="wuxing-bars">
+                <div v-for="item in wuxingDistributionItems" :key="item.name" class="wuxing-bar-item">
+                  <div class="wuxing-bar-main">
+                    <span class="wuxing-name">{{ item.name }}</span>
+                    <div class="wuxing-bar">
+                      <div class="wuxing-fill" :class="item.name" :style="{ width: `${item.width}%`, '--target-width': `${item.width}%` }"></div>
+                    </div>
+                  </div>
+                  <div class="wuxing-meta">
+                    <span class="wuxing-count">{{ item.displayValue }}</span>
+                    <span class="wuxing-unit">加权值</span>
+                    <span class="wuxing-share">{{ item.shareText }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tab-content" v-show="activeTab === 'personality' || activeTab === 'career'">
+          <div class="tab-pane-content">
+            <div class="pane-title" v-if="activeTab === 'personality'">
+                <el-icon class="title-icon"><UserFilled /></el-icon>
+                <span class="title-text">性格内观</span>
+            </div>
+            <div class="pane-title" v-if="activeTab === 'career'">
+                <el-icon class="title-icon"><Briefcase /></el-icon>
+                <span class="title-text">事业财运</span>
+            </div>
+
+          <!-- 性格与解读部分 (Shared Content with v-show logic inside) -->
+            <!-- Note: professional-reading and simple-interpretation logic will be patched later -->
+
+            <!-- 专业解读卡片 -->
+            <div class="professional-reading" v-if="result.fullInterpretation">
+              <div class="section-subtitle-wrapper">
+                <span class="section-badge">专业版</span>
               </div>
               
-              <div class="analysis-grid">
-                <div class="analysis-card">
-                  <h4>💼 事业运势</h4>
-                  <p>{{ yearlyFortuneResult.career }}</p>
+              <!-- 日主信息卡片 -->
+              <div class="day-master-detail" v-if="result.fullInterpretation.basic" v-show="activeTab === 'personality'">
+                <div class="dm-header">
+                  <div class="dm-symbol">{{ result.fullInterpretation.basic.day_master_symbol }}</div>
+                  <div class="dm-title">
+                    <h4>{{ result.fullInterpretation.basic.day_master }}日主 · {{ result.fullInterpretation.basic.day_master_nature }}</h4>
+                    <p class="dm-traits">
+                      <span v-for="(trait, idx) in result.fullInterpretation.basic.traits" :key="idx" class="trait-tag">{{ trait }}</span>
+                    </p>
+                  </div>
                 </div>
-                <div class="analysis-card">
-                  <h4>💰 财富运势</h4>
-                  <p>{{ yearlyFortuneResult.wealth }}</p>
+                <div class="dm-content">
+                  <div class="dm-section">
+                    <h5>核心优势</h5>
+                    <p>{{ result.fullInterpretation.basic.strengths }}</p>
+                  </div>
+                  <div class="dm-section">
+                    <h5>需要注意</h5>
+                    <p>{{ result.fullInterpretation.basic.weaknesses }}</p>
+                  </div>
                 </div>
-                <div class="analysis-card">
-                  <h4>💕 感情运势</h4>
-                  <p>{{ yearlyFortuneResult.relationship }}</p>
+              </div>
+
+              <!-- 喜用神分析 -->
+              <div class="yongshen-section" v-if="result.fullInterpretation.yongshen" v-show="activeTab === 'personality'">
+                <div class="ys-header">
+                  <el-icon class="ys-icon"><StarFilled /></el-icon>
+                  <div class="ys-info">
+                    <h4>喜用神：{{ result.fullInterpretation.yongshen.shen }}、{{ result.fullInterpretation.yongshen.xi }}</h4>
+                    <span class="ys-type">{{ result.fullInterpretation.yongshen.type }}格</span>
+                  </div>
                 </div>
-                <div class="analysis-card">
-                  <h4>🏃 健康提醒</h4>
-                  <p>{{ yearlyFortuneResult.health }}</p>
+                <p class="ys-desc">{{ result.fullInterpretation.yongshen.desc }}</p>
+              </div>
+
+              <!-- 详细解读卡片网格 -->
+              <div class="reading-cards-grid">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.personality" v-show="activeTab === 'personality'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><UserFilled /></el-icon>
+                    <h4>性格详解</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.career" v-show="activeTab === 'career'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Briefcase /></el-icon>
+                    <h4>事业财运</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.career }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth" v-show="activeTab === 'career'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Money /></el-icon>
+                    <h4>财富分析</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.relationship" v-show="activeTab === 'personality'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><UserFilled /></el-icon>
+                    <h4>感情婚姻</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
+                </div>
+                
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.health" v-show="activeTab === 'personality'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Aim /></el-icon>
+                    <h4>健康提醒</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.health }}</p>
+                </div>
+                
+                <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice" v-show="activeTab === 'personality'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><StarFilled /></el-icon>
+                    <h4>开运建议</h4>
+                  </div>
+                  <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 通俗解读：这对我意味着什么 -->
+            <div class="simple-interpretation" v-if="result.simpleInterpretation && !result.fullInterpretation">
+              <div class="section-subtitle-wrapper">
+                <span class="section-subtitle">通俗解读</span>
+              </div>
+              <div class="interpretation-cards">
+                <div class="interp-card personality card-hover" v-show="activeTab === 'personality'">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><UserFilled /></el-icon>
+                    <h4>我的性格特点</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
+                </div>
+                <div class="interp-card career card-hover" v-show="activeTab === 'career'">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><Briefcase /></el-icon>
+                    <h4>适合的发展方向</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
+                </div>
+                <div class="interp-card relationship card-hover" v-show="activeTab === 'personality'">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><UserFilled /></el-icon>
+                    <h4>人际关系建议</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
+                </div>
+                <div class="interp-card advice card-hover" v-show="activeTab === 'personality'">
+                  <div class="interp-header">
+                    <el-icon class="interp-icon"><StarFilled /></el-icon>
+                    <h4>给你的建议</h4>
+                  </div>
+                  <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bazi-analysis" v-show="activeTab === 'personality'">
+              <h3>详细命理分析</h3>
+              <div class="analysis-content">{{ result.analysis }}</div>
+            </div>
+          <!-- 运势趋势部分 (For Career Tab) -->
+          <div class="fortune-section-wrapper" v-if="showAdvancedResultSections" v-show="activeTab === 'career'">
+            <div class="section-divider"></div>
+            <div class="pane-title">
+                <el-icon class="title-icon"><TrendCharts /></el-icon>
+                <span class="title-text">大运与流年走势</span>
+                <span class="title-desc">十年大运、逐年流年参考</span>
+            </div>
+
+            <!-- 大运分析 -->
+            <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
+              <div class="section-title-with-tip">
+                <h3>大运走势</h3>
+                <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
+                  <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
+                </el-tooltip>
+              </div>
+              <div class="dayun-timeline">
+                <div 
+                  v-for="(yun, index) in result.dayun" 
+                  :key="index"
+                  class="dayun-item"
+                  :class="{ 'current': isCurrentDaYun(yun) }"
+                >
+                  <div class="dayun-age">{{ yun.age_start }}-{{ yun.age_end }}岁</div>
+                  <div class="dayun-pillar">
+                    <span class="gan">{{ yun.gan }}</span>
+                    <span class="zhi">{{ yun.zhi }}</span>
+                  </div>
+                  <div class="dayun-shishen">{{ yun.shishen }}</div>
+                  <div class="dayun-luck" :class="yun.luck">{{ yun.luck }}</div>
+                  <div class="dayun-desc">{{ yun.luck_desc }}</div>
+                  <div class="dayun-nayin">{{ yun.nayin }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 流年分析 -->
+            <div class="liunian-section" v-if="result.liunian && result.liunian.length > 0">
+              <div class="section-title-with-tip">
+                <h3>流年运势</h3>
+                <el-tooltip content="流年是每年的运势参考，结合大运提供年度生活建议" placement="top">
+                  <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
+                </el-tooltip>
+              </div>
+              <div class="liunian-grid">
+                <div 
+                  v-for="(year, index) in result.liunian" 
+                  :key="index"
+                  class="liunian-item"
+                  :class="{ 'current': year.is_current }"
+                >
+                  <div class="liunian-year">{{ year.year }}年</div>
+                  <div class="liunian-pillar">
+                    <span class="gan">{{ year.gan }}</span>
+                    <span class="zhi">{{ year.zhi }}</span>
+                  </div>
+                  <div class="liunian-wuxing">
+                    <span class="badge" :class="year.gan_wuxing">{{ year.gan_wuxing }}</span>
+                    <span class="badge" :class="year.zhi_wuxing">{{ year.zhi_wuxing }}</span>
+                  </div>
+                  <div class="liunian-nayin">{{ year.nayin }}</div>
+                </div>
+              </div>
+            </div>
+          <!-- 深度预测部分 (For Career Tab) -->
+          </div>
+          <div class="tools-section-wrapper" v-if="showAdvancedResultSections" v-show="activeTab === 'career'">
+            <div class="section-divider"></div>
+            <div class="pane-title">
+                <el-icon class="title-icon"><Aim /></el-icon>
+                <span class="title-text">深度预测工具</span>
+                <span class="title-desc">流年深度分析、大运评分、运势K线</span>
+            </div>
+
+            <!-- 流年运势分析 -->
+            <div class="yearly-fortune-section" v-if="result.bazi">
+              <div class="section-title-with-tag">
+                <h3>流年运势深度分析</h3>
+                <el-tag type="warning" size="small">{{ getFortuneToolTagText('yearly') }}</el-tag>
+              </div>
+              
+              <!-- 年份选择 -->
+              <div class="year-selector">
+                <div class="year-selector__header">
+                  <div class="year-selector__meta">
+                    <span class="selector-label">{{ isCompactViewport ? '年份' : '选择年份' }}</span>
+                    <span class="selector-hint">拖动滑块切换当前流年分析年份</span>
+                  </div>
+                  <span class="selected-year">{{ selectedYear }}年</span>
+                </div>
+                <el-slider
+                  v-model="selectedYear"
+                  :min="new Date().getFullYear() - 3"
+                  :max="new Date().getFullYear() + 7"
+                  :step="1"
+                  :show-stops="!isCompactViewport"
+                  class="year-slider"
+                />
+              </div>
+
+              
+              <!-- 流年分析结果 -->
+              <div v-if="yearlyFortuneResult" class="yearly-result">
+                <div class="yearly-header">
+                  <div class="year-info">
+                    <span class="year-number">{{ yearlyFortuneResult.year }}</span>
+                    <span class="year-ganzhi">{{ yearlyFortuneResult.ganzhi }}年</span>
+                    <span class="year-nayin">{{ yearlyFortuneResult.nayin }}</span>
+                  </div>
+                  <div class="score-display">
+                    <div class="score-circle" :class="getScoreClass(yearlyFortuneResult.score)">
+                      <span class="score-value">{{ yearlyFortuneResult.score }}</span>
+                      <span class="score-label">运势评分</span>
+                    </div>
+                    <div class="rating-badge" :class="getScoreClass(yearlyFortuneResult.score)">
+                      {{ yearlyFortuneResult.rating }}
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="yearly-analysis">
+                  <div class="analysis-card overall">
+                    <h4><el-icon><Aim /></el-icon> 整体运势</h4>
+                    <p>{{ yearlyFortuneResult.overall }}</p>
+                  </div>
+                  
+                  <div class="analysis-grid">
+                    <div class="analysis-card">
+                      <h4><el-icon><Briefcase /></el-icon> 事业运势</h4>
+                      <p>{{ yearlyFortuneResult.career }}</p>
+                    </div>
+                    <div class="analysis-card">
+                      <h4><el-icon><Money /></el-icon> 财富运势</h4>
+                      <p>{{ yearlyFortuneResult.wealth }}</p>
+                    </div>
+                    <div class="analysis-card">
+                      <h4><el-icon><UserFilled /></el-icon> 感情运势</h4>
+                      <p>{{ yearlyFortuneResult.relationship }}</p>
+                    </div>
+                    <div class="analysis-card">
+                      <h4><el-icon><Warning /></el-icon> 健康提醒</h4>
+                      <p>{{ yearlyFortuneResult.health }}</p>
+                    </div>
+                  </div>
+                  
+                  <div class="analysis-card advice">
+                    <h4><el-icon><StarFilled /></el-icon> 开运建议</h4>
+                    <p>{{ yearlyFortuneResult.advice }}</p>
+                  </div>
+                  
+                  <div class="lucky-info">
+                    <div class="lucky-section">
+                      <h5>幸运月份</h5>
+                      <div class="lucky-tags">
+                        <span v-for="month in yearlyFortuneResult.lucky_months" :key="month" class="lucky-tag good">
+                          {{ month }}月
+                        </span>
+                      </div>
+                    </div>
+                    <div class="lucky-section">
+                      <h5>注意月份</h5>
+                      <div class="lucky-tags">
+                        <span v-for="month in yearlyFortuneResult.unlucky_months" :key="month" class="lucky-tag bad">
+                          {{ month }}月
+                        </span>
+                      </div>
+                    </div>
+                    <div class="lucky-section">
+                      <h5>幸运颜色</h5>
+                      <div class="lucky-tags">
+                        <span v-for="color in yearlyFortuneResult.lucky_colors" :key="color" class="lucky-tag color">
+                          {{ color }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="lucky-section">
+                      <h5>幸运数字</h5>
+                      <div class="lucky-tags">
+                        <span v-for="num in yearlyFortuneResult.lucky_numbers" :key="num" class="lucky-tag number">
+                          {{ num }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div class="analysis-card advice">
-                <h4>🌟 开运建议</h4>
-                <p>{{ yearlyFortuneResult.advice }}</p>
+              <!-- 分析按钮 -->
+              <div v-else class="analysis-actions">
+                <p class="analysis-desc">基于你的八字，AI为你深度分析流年运势</p>
+                <el-button 
+                  type="warning" 
+                  size="large"
+                  :loading="yearlyFortuneLoading"
+                  :disabled="!canUseFortuneTool('yearly')"
+                  @click="showPointsConfirm('yearly')"
+                >
+                  <el-icon class="btn-icon"><StarFilled /></el-icon>
+                  {{ getFortuneToolActionText('yearly', '开始流年分析') }}
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 大运运势分析 -->
+            <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
+              <div class="section-title-with-tag">
+                <h3>大运运势评分</h3>
+                <el-tag type="warning" size="small">{{ getFortuneToolTagText('dayun') }}</el-tag>
               </div>
               
-              <div class="lucky-info">
-                <div class="lucky-section">
-                  <h5>✨ 幸运月份</h5>
-                  <div class="lucky-tags">
-                    <span v-for="month in yearlyFortuneResult.lucky_months" :key="month" class="lucky-tag good">
-                      {{ month }}月
-                    </span>
-                  </div>
-                </div>
-                <div class="lucky-section">
-                  <h5>⚠️ 注意月份</h5>
-                  <div class="lucky-tags">
-                    <span v-for="month in yearlyFortuneResult.unlucky_months" :key="month" class="lucky-tag bad">
-                      {{ month }}月
-                    </span>
-                  </div>
-                </div>
-                <div class="lucky-section">
-                  <h5>🎨 幸运颜色</h5>
-                  <div class="lucky-tags">
-                    <span v-for="color in yearlyFortuneResult.lucky_colors" :key="color" class="lucky-tag color">
-                      {{ color }}
-                    </span>
-                  </div>
-                </div>
-                <div class="lucky-section">
-                  <h5>🔢 幸运数字</h5>
-                  <div class="lucky-tags">
-                    <span v-for="num in yearlyFortuneResult.lucky_numbers" :key="num" class="lucky-tag number">
-                      {{ num }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 分析按钮 -->
-          <div v-else class="analysis-actions">
-            <p class="analysis-desc">基于你的八字，AI为你深度分析流年运势</p>
-            <el-button 
-              type="warning" 
-              size="large"
-              :loading="yearlyFortuneLoading"
-              :disabled="currentPoints < fortunePointsCost.yearly_fortune"
-              @click="showPointsConfirm('yearly')"
-            >
-              <span class="btn-icon">✨</span>
-              {{ currentPoints < fortunePointsCost.yearly_fortune ? '积分不足' : '开始流年分析' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 大运运势分析 -->
-        <div class="dayun-fortune-section" v-if="result.dayun && result.dayun.length > 0">
-          <h3>
-            <span class="section-icon">🎯</span>
-            大运运势评分
-            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_analysis }}积分</el-tag>
-          </h3>
-          
-          <!-- 大运选择 -->
-          <div class="dayun-selector">
-            <span class="selector-label">选择大运：</span>
-            <el-radio-group v-model="selectedDayunIndex" size="small">
-              <el-radio-button 
-                v-for="(yun, index) in result.dayun" 
-                :key="index" 
-                :label="index"
-              >
-                {{ yun.gan }}{{ yun.zhi }} ({{ yun.age_start }}-{{ yun.age_end }}岁)
-              </el-radio-button>
-            </el-radio-group>
-          </div>
-          
-          <!-- 大运分析结果 -->
-          <div v-if="dayunAnalysisResult" class="dayun-analysis-result">
-            <div class="dayun-header">
-              <div class="dayun-info">
-                <span class="dayun-name">{{ dayunAnalysisResult.dayun.gan }}{{ dayunAnalysisResult.dayun.zhi }}</span>
-                <span class="dayun-shishen">{{ dayunAnalysisResult.dayun.shishen }}</span>
-                <span class="dayun-age">{{ dayunAnalysisResult.dayun.start_age }}-{{ dayunAnalysisResult.dayun.end_age }}岁</span>
-              </div>
-              <div class="dayun-level-badge" :class="getScoreClass(dayunAnalysisResult.overall_score)">
-                {{ dayunAnalysisResult.fortune_level }}
-              </div>
-            </div>
-            
-            <div class="dayun-scores">
-              <div class="score-item">
-                <span class="score-name">综合</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.overall" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.overall)"
-                  :stroke-width="12"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.overall }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">事业</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.career" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.career)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.career }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">财运</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.wealth" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.wealth)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.wealth }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">感情</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.relationship" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.relationship)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.relationship }}</span>
-              </div>
-              <div class="score-item">
-                <span class="score-name">健康</span>
-                <el-progress 
-                  :percentage="dayunAnalysisResult.scores.health" 
-                  :color="getScoreColor(dayunAnalysisResult.scores.health)"
-                  :stroke-width="10"
-                  class="score-progress"
-                />
-                <span class="score-value">{{ dayunAnalysisResult.scores.health }}</span>
-              </div>
-            </div>
-            
-            <div class="dayun-analysis-text">
-              <div class="text-card" v-for="(text, key) in dayunAnalysisResult.analysis" :key="key">
-                <p>{{ text }}</p>
-              </div>
-            </div>
-            
-            <div class="key-suggestions">
-              <h4>💡 关键建议</h4>
-              <ul>
-                <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
-                  {{ suggestion }}
-                </li>
-              </ul>
-            </div>
-          </div>
-          
-          <!-- 分析按钮 -->
-          <div v-else class="analysis-actions">
-            <p class="analysis-desc">深度分析此大运的各方面运势评分</p>
-            <el-button 
-              type="primary" 
-              size="large"
-              :loading="dayunAnalysisLoading"
-              :disabled="currentPoints < fortunePointsCost.dayun_analysis"
-              @click="showPointsConfirm('dayun')"
-            >
-              <span class="btn-icon">📊</span>
-              {{ currentPoints < fortunePointsCost.dayun_analysis ? '积分不足' : '开始大运评分' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 运势K线图 -->
-        <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
-          <h3>
-            <span class="section-icon">📈</span>
-            运势K线图
-            <el-tag type="warning" size="small" class="ml-2">消耗{{ fortunePointsCost.dayun_chart }}积分</el-tag>
-          </h3>
-          
-          <!-- K线图结果 -->
-          <div v-if="dayunChartData" class="chart-result">
-            <div class="chart-summary">
-              <p>{{ dayunChartData.summary }}</p>
-              <div v-if="dayunChartData.best_period" class="best-period">
-                <span class="best-label">最佳时期：</span>
-                <span class="best-value">
-                  {{ dayunChartData.best_period.dayun_name }}运 
-                  ({{ dayunChartData.best_period.age_range }})
-                  评分{{ dayunChartData.best_period.dayun_score }}分
-                </span>
-              </div>
-            </div>
-            
-            <div class="chart-container">
-              <div v-for="(dayun, index) in dayunChartData.chart_data" :key="index" class="chart-dayun">
-                <div class="chart-dayun-header">
-                  <span class="dayun-title">{{ dayun.dayun_name }}运</span>
-                  <span class="dayun-score" :class="getScoreClass(dayun.overall_score)">
-                    {{ dayun.overall_score }}分
-                  </span>
-                  <span class="dayun-trend">{{ dayun.trend }}</span>
-                </div>
-                <div class="chart-years">
-                  <div 
-                    v-for="year in dayun.years" 
-                    :key="year.year"
-                    class="chart-year-bar"
-                    :class="{ 'current': year.is_current }"
-                    :style="{ height: year.score + '%' }"
-                    :title="`${year.year}年 (${year.age}岁): ${year.score}分`"
+              <!-- 大运选择 -->
+              <div class="dayun-selector">
+                <span class="selector-label">选择大运：</span>
+                <el-radio-group v-model="selectedDayunIndex" size="small" class="premium-segment premium-segment--scroll">
+                  <el-radio-button
+                    v-for="(yun, index) in result.dayun" 
+                    :key="index" 
+                    :label="index"
                   >
-                    <span class="year-label">{{ year.year }}</span>
-                    <span class="year-score">{{ year.score }}</span>
+                    {{ yun.gan }}{{ yun.zhi }} ({{ yun.age_start }}-{{ yun.age_end }}岁)
+                  </el-radio-button>
+                </el-radio-group>
+              </div>
+              
+              <!-- 大运分析结果 -->
+              <div v-if="dayunAnalysisResult" class="dayun-analysis-result">
+                <div class="dayun-header">
+                  <div class="dayun-info">
+                    <span class="dayun-name">{{ dayunAnalysisResult.dayun.gan }}{{ dayunAnalysisResult.dayun.zhi }}</span>
+                    <span class="dayun-shishen">{{ dayunAnalysisResult.dayun.shishen }}</span>
+                    <span class="dayun-age">{{ dayunAnalysisResult.dayun.start_age }}-{{ dayunAnalysisResult.dayun.end_age }}岁</span>
+                  </div>
+                  <div class="dayun-level-badge" :class="getScoreClass(dayunAnalysisResult.overall_score)">
+                    {{ dayunAnalysisResult.fortune_level }}
                   </div>
                 </div>
-                <div class="chart-legend">
-                  <span>{{ dayun.start_age }}-{{ dayun.end_age }}岁</span>
-                  <span :class="getScoreClass(dayun.overall_score)">{{ dayun.fortune_level }}</span>
+                
+                <div class="dayun-scores">
+                  <div class="score-item">
+                    <span class="score-name">综合</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.overall" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.overall)"
+                      :stroke-width="12"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.overall }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">事业</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.career" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.career)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.career }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">财运</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.wealth" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.wealth)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.wealth }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">感情</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.relationship" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.relationship)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.relationship }}</span>
+                  </div>
+                  <div class="score-item">
+                    <span class="score-name">健康</span>
+                    <el-progress 
+                      :percentage="dayunAnalysisResult.scores.health" 
+                      :color="getScoreColor(dayunAnalysisResult.scores.health)"
+                      :stroke-width="10"
+                      class="score-progress"
+                    />
+                    <span class="score-value">{{ dayunAnalysisResult.scores.health }}</span>
+                  </div>
+                </div>
+                
+                <div class="dayun-analysis-text">
+                  <div class="text-card" v-for="(text, key) in dayunAnalysisResult.analysis" :key="key">
+                    <p>{{ text }}</p>
+                  </div>
+                </div>
+                
+                <div class="key-suggestions">
+                  <h4><el-icon><StarFilled /></el-icon> 关键建议</h4>
+                  <ul>
+                    <li v-for="(suggestion, index) in dayunAnalysisResult.key_suggestions" :key="index">
+                      {{ suggestion }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- 分析按钮 -->
+              <div v-else class="analysis-actions">
+                <p class="analysis-desc">深度分析此大运的各方面运势评分</p>
+                <el-button 
+                  type="primary" 
+                  size="large"
+                  :loading="dayunAnalysisLoading"
+                  :disabled="!canUseFortuneTool('dayun')"
+                  @click="showPointsConfirm('dayun')"
+                >
+                  <el-icon class="btn-icon"><TrendCharts /></el-icon>
+                  {{ getFortuneToolActionText('dayun', '开始大运评分') }}
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 运势K线图 -->
+            <div class="fortune-chart-section" v-if="result.dayun && result.dayun.length > 0">
+              <div class="section-title-with-tag">
+                <h3>运势K线图</h3>
+                <el-tag type="warning" size="small">{{ getFortuneToolTagText('chart') }}</el-tag>
+              </div>
+              
+              <!-- K线图结果 -->
+              <div v-if="dayunChartData" class="chart-result">
+                <div class="chart-summary">
+                  <p>{{ dayunChartData.summary }}</p>
+                  <div v-if="dayunChartData.best_period" class="best-period">
+                    <span class="best-label">最佳时期：</span>
+                    <span class="best-value">
+                      {{ dayunChartData.best_period.dayun_name }}运 
+                      ({{ dayunChartData.best_period.age_range }})
+                      评分{{ dayunChartData.best_period.dayun_score }}分
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="chart-container">
+                  <div v-for="(dayun, index) in dayunChartData.chart_data" :key="index" class="chart-dayun">
+                    <div class="chart-dayun-header">
+                      <span class="dayun-title">{{ dayun.dayun_name }}运</span>
+                      <span class="dayun-score" :class="getScoreClass(dayun.overall_score)">
+                        {{ dayun.overall_score }}分
+                      </span>
+                      <span class="dayun-trend">{{ dayun.trend }}</span>
+                    </div>
+                    <div class="chart-years">
+                      <div 
+                        v-for="year in dayun.years" 
+                        :key="year.year"
+                        class="chart-year-bar"
+                        :class="{ 'current': year.is_current }"
+                        :style="{ height: year.score + '%' }"
+                        :title="`${year.year}年 (${year.age}岁): ${year.score}分`"
+                      >
+                        <span class="year-label">{{ year.year }}</span>
+                        <span class="year-score">{{ year.score }}</span>
+                      </div>
+                    </div>
+                    <div class="chart-legend">
+                      <span>{{ dayun.start_age }}-{{ dayun.end_age }}岁</span>
+                      <span :class="getScoreClass(dayun.overall_score)">{{ dayun.fortune_level }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 生成按钮 -->
+              <div v-else class="analysis-actions">
+                <p class="analysis-desc">可视化展示你一生的大运走势，找到最佳发展时期</p>
+                <el-button 
+                  type="success" 
+                  size="large"
+                  :loading="dayunChartLoading"
+                  :disabled="!canUseFortuneTool('chart')"
+                  @click="showPointsConfirm('chart')"
+                >
+                  <el-icon><TrendCharts /></el-icon>
+                  {{ getFortuneToolActionText('chart', '生成运势K线图') }}
+                </el-button>
+              </div>
+            </div>
+          <!-- AI 解盘部分 (For Personality Tab) -->
+          </div>
+          <div class="ai-section-wrapper" v-show="activeTab === 'personality'">
+            <div class="section-divider"></div>
+            <div class="pane-title">
+                <el-icon class="title-icon"><Cpu /></el-icon>
+                <span class="title-text">AI 智能解盘</span>
+                <span class="title-desc">基于 AI 的深度命理对话与分析</span>
+            </div>
+
+            <!-- AI智能解盘 -->
+            <div class="ai-analysis-section" v-if="result.bazi">
+              <div class="section-title-with-tag">
+                <h3>AI智能解盘</h3>
+                <el-tag type="warning" size="small">{{ aiPricingTagText }}</el-tag>
+              </div>
+              
+              <!-- AI解盘结果 -->
+              <div v-if="aiAnalysisResult" class="ai-result">
+                <div class="ai-result-header">
+                  <span class="ai-model">{{ aiAnalysisResult.model || 'AI' }} 解读</span>
+                  <el-button type="primary" link size="small" @click="clearAiResult">
+                    重新解读
+                  </el-button>
+                </div>
+                <div class="ai-content" v-html="formatAiContent(aiAnalysisResult.analysis)"></div>
+              </div>
+              
+              <!-- AI解盘输入 -->
+              <div v-else-if="!aiAnalyzing" class="ai-input">
+                <p class="ai-desc">基于你的八字信息，让AI为你提供深度分析</p>
+                <el-input
+                  v-model="aiPrompt"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="输入你想问的问题（可选），例如：我的事业运势如何？"
+                  class="mb-3"
+                />
+                <el-button 
+                  type="warning" 
+                  size="large"
+                  :disabled="!canStartAiAnalysis"
+                  @click="startAiAnalysis"
+                >
+                  <el-icon><MagicStick /></el-icon>
+                  {{ aiActionText }}
+                </el-button>
+              </div>
+              
+              <!-- AI解盘加载中 -->
+              <div v-else class="ai-loading">
+                <div class="ai-loading-spinner">
+                  <span class="spinner"></span>
+                  <span>AI正在深度分析你的八字...</span>
+                </div>
+                <div class="ai-loading-timeout" v-if="aiLoadingTime > 0">
+                  <span class="timeout-text">预计等待 {{ aiLoadingTime }} 秒</span>
+                </div>
+                <div class="ai-stream-content" v-if="aiStreamContent">
+                  {{ aiStreamContent }}
+                </div>
+                <div class="ai-loading-actions">
+                  <el-button type="danger" size="small" @click="cancelAiAnalysis">
+                    <el-icon><CircleClose /></el-icon>
+                    取消分析
+                  </el-button>
                 </div>
               </div>
             </div>
           </div>
-          
-          <!-- 生成按钮 -->
-          <div v-else class="analysis-actions">
-            <p class="analysis-desc">可视化展示你一生的大运走势，找到最佳发展时期</p>
-            <el-button 
-              type="success" 
-              size="large"
-              :loading="dayunChartLoading"
-              :disabled="currentPoints < fortunePointsCost.dayun_chart"
-              @click="showPointsConfirm('chart')"
-            >
-              <span class="btn-icon">📈</span>
-              {{ currentPoints < fortunePointsCost.dayun_chart ? '积分不足' : '生成运势K线图' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- AI智能解盘 -->
-        <div class="ai-analysis-section" v-if="result.bazi">
-          <h3>
-            <span class="section-icon">🤖</span>
-            AI智能解盘
-            <el-tag type="warning" size="small" class="ml-2">消耗30积分</el-tag>
-          </h3>
-          
-          <!-- AI解盘结果 -->
-          <div v-if="aiAnalysisResult" class="ai-result">
-            <div class="ai-result-header">
-              <span class="ai-model">{{ aiAnalysisResult.model || 'AI' }} 解读</span>
-              <el-button type="primary" link size="small" @click="clearAiResult">
-                重新解读
-              </el-button>
-            </div>
-            <div class="ai-content" v-html="formatAiContent(aiAnalysisResult.analysis)"></div>
-          </div>
-          
-          <!-- AI解盘输入 -->
-          <div v-else-if="!aiAnalyzing" class="ai-input">
-            <p class="ai-desc">基于你的八字信息，让AI为你提供深度分析</p>
-            <el-input
-              v-model="aiPrompt"
-              type="textarea"
-              :rows="2"
-              placeholder="输入你想问的问题（可选），例如：我的事业运势如何？"
-              class="mb-3"
-            />
-            <el-button 
-              type="warning" 
-              size="large"
-              :disabled="currentPoints < 30"
-              @click="startAiAnalysis"
-            >
-              <span class="btn-icon">✨</span>
-              {{ currentPoints < 30 ? '积分不足（需30积分）' : '开始AI解盘' }}
-            </el-button>
-          </div>
-          
-          <!-- AI解盘加载中 -->
-          <div v-else class="ai-loading">
-            <div class="ai-loading-spinner">
-              <span class="spinner"></span>
-              <span>AI正在深度分析你的八字...</span>
-            </div>
-            <div class="ai-loading-timeout" v-if="aiLoadingTime > 0">
-              <span class="timeout-text">预计等待 {{ aiLoadingTime }} 秒</span>
-            </div>
-            <div class="ai-stream-content" v-if="aiStreamContent">
-              {{ aiStreamContent }}
-            </div>
-            <div class="ai-loading-actions">
-              <el-button type="danger" size="small" @click="cancelAiAnalysis">
-                <el-icon><CircleClose /></el-icon>
-                取消分析
-              </el-button>
-            </div>
-          </div>
-        </div>
+        </div> <!-- End of Tab 2/3 container -->
 
         <!-- 操作按钮 -->
         <div class="result-actions">
           <el-button type="primary" @click="saveResult" :loading="saving">
-            <span class="btn-icon">💾</span> 保存结果
+            <el-icon><Download /></el-icon> 保存结果
           </el-button>
           <el-button @click="shareResult">
-            <span class="btn-icon">📤</span> 分享
+            <el-icon><Share /></el-icon> 分享
           </el-button>
-          <el-button @click="result = null">
-            <span class="btn-icon">🔄</span> 重新排盘
+          <el-button @click="resetCurrentResult">
+            <el-icon><RefreshRight /></el-icon> 重新排盘
           </el-button>
         </div>
       </div>
@@ -902,33 +1031,113 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import { CircleClose } from '@element-plus/icons-vue'
-import { 
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+
+
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
+
+import {
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
   getYearlyFortune, 
-  getYearlyTrend as getYearlyTrendApi, 
   getDayunAnalysis, 
   getDayunChart as getDayunChartApi,
-  getFortunePointsCost 
+  getFortunePointsCost,
+  getClientConfig
 } from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
-import BackButton from '../components/BackButton.vue'
+import PageHeroHeader from '../components/PageHeroHeader.vue'
 import { sanitizeHtml } from '../utils/sanitize'
 
-const birthDate = ref('')
+import { CHINA_CITIES } from '../utils/constants'
+
+const activeTab = ref('chart')
+
+const BAZI_BASE_COST = 10
+const AI_ANALYSIS_DEFAULT_COST = 30
+const WUXING_WEIGHT_MAX = 9.5
+
+
+const estimatedTimeOptions = [
+  { value: 'before-dawn', label: '凌晨（约 01:30）', time: '01:30:00', shortLabel: '凌晨' },
+  { value: 'morning', label: '早晨（约 07:30）', time: '07:30:00', shortLabel: '早晨' },
+  { value: 'forenoon', label: '上午（约 10:30）', time: '10:30:00', shortLabel: '上午' },
+  { value: 'noon', label: '中午（约 12:00）', time: '12:00:00', shortLabel: '中午' },
+  { value: 'afternoon', label: '下午（约 15:30）', time: '15:30:00', shortLabel: '下午' },
+  { value: 'evening', label: '晚上（约 20:30）', time: '20:30:00', shortLabel: '晚上' },
+  { value: 'unknown', label: '未知时辰（仅按生日趋势）', time: '', shortLabel: '未知时辰', mode: 'date-only' },
+]
+
+const resolveEstimatedTimeSlotByClock = (clock = '') => {
+  const [hour = '12'] = String(clock || '').split(':')
+  const parsedHour = Number(hour)
+
+  if (!Number.isFinite(parsedHour)) {
+    return ''
+  }
+
+  if (parsedHour < 6) return 'before-dawn'
+  if (parsedHour < 9) return 'morning'
+  if (parsedHour < 12) return 'forenoon'
+  if (parsedHour < 14) return 'noon'
+  if (parsedHour < 18) return 'afternoon'
+  return 'evening'
+}
+
+const birthTimeAccuracy = ref('exact')
+const exactBirthDate = ref('')
+const estimatedBirthDate = ref('')
+const estimatedTimeSlot = ref('')
+const selectedEstimatedTimeOption = computed(() => {
+  return estimatedTimeOptions.find((option) => option.value === estimatedTimeSlot.value) || null
+})
+const isEstimatedDateOnly = computed(() => selectedEstimatedTimeOption.value?.mode === 'date-only')
+const birthDate = computed(() => {
+  if (birthTimeAccuracy.value === 'exact') {
+    return exactBirthDate.value || ''
+  }
+
+  if (!estimatedBirthDate.value || !selectedEstimatedTimeOption.value) {
+    return ''
+  }
+
+  if (isEstimatedDateOnly.value) {
+    return estimatedBirthDate.value
+  }
+
+  return `${estimatedBirthDate.value} ${selectedEstimatedTimeOption.value.time}`
+})
+const estimatedModeHint = computed(() => {
+  if (!estimatedTimeSlot.value) {
+    return '请选择一个大概时段，或直接选择“未知时辰（仅按生日趋势）”，系统不会再默认替你预设中午。'
+  }
+
+  if (isEstimatedDateOnly.value) {
+    return '当前按“未知时辰”仅基于生日趋势排盘，系统会弱化时柱与流年细节判断，并在结果页醒目标注。'
+  }
+
+  return `当前将按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，时柱和流年细节更适合做方向参考，结果页会醒目标记“估算时刻”。`
+})
+
 const gender = ref('male')
 const location = ref('')
 const loading = ref(false)
 const result = ref(null)
 const currentPoints = ref(0)
+const accountStatus = ref('loading')
+const fortunePricingStatus = ref('loading')
+const aiPricingStatus = ref('loading')
+const aiAnalysisCost = ref(AI_ANALYSIS_DEFAULT_COST)
 const confirmVisible = ref(false)
+
 const saving = ref(false)
 const versionMode = ref('simple') // 'simple' or 'pro'
 const isFirstBazi = ref(true) // 是否首次排盘
+
 const loadingStep = ref(1) // 加载步骤
+const stepIntervalRef = ref(null) // 步骤动画定时器引用
+const activeNames = ref(['basic']) // 折叠面板默认展开“命盘信息”
 
 // AI解盘相关
 const aiPrompt = ref('')
@@ -939,27 +1148,90 @@ const aiLoadingTime = ref(0)
 const aiAbortController = ref(null)
 const aiLoadingTimer = ref(null)
 
+const syncCurrentPoints = (remainingPoints, fallbackCost = 0) => {
+  const parsedRemainingPoints = Number(remainingPoints)
+  if (Number.isFinite(parsedRemainingPoints)) {
+    currentPoints.value = parsedRemainingPoints
+  } else {
+    const parsedFallbackCost = Number(fallbackCost)
+    if (Number.isFinite(parsedFallbackCost) && parsedFallbackCost > 0) {
+      currentPoints.value = Math.max(0, currentPoints.value - parsedFallbackCost)
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('points-updated', {
+    detail: {
+      balance: currentPoints.value,
+    },
+  }))
+}
+
+
+
 // 流年运势相关
 const fortunePointsCost = ref({
-  yearly_fortune: 30,
-  dayun_analysis: 50,
-  dayun_chart: 30
+  yearly_fortune: null,
+  dayun_analysis: null,
+  dayun_chart: null,
 })
 const selectedYear = ref(new Date().getFullYear())
 const yearlyFortuneResult = ref(null)
 const yearlyFortuneLoading = ref(false)
+const lastAnalyzedYear = ref(null)
+const isCompactViewport = ref(false)
+
+const updateViewportState = () => {
+  isCompactViewport.value = window.innerWidth <= 520
+}
+
 
 // 大运分析相关
 const selectedDayunIndex = ref(0)
 const dayunAnalysisResult = ref(null)
 const dayunAnalysisLoading = ref(false)
+const lastAnalyzedDayunIndex = ref(null)
 const dayunChartData = ref(null)
 const dayunChartLoading = ref(false)
 
+
 // 积分消耗确认对话框
 const pointsConfirmVisible = ref(false)
-const pointsConfirmType = ref('') // 'yearly', 'dayun', 'chart'
+const pointsConfirmType = ref('') // 'yearly', 'dayun', 'chart', 'ai'
 const pointsConfirmData = ref({})
+
+
+const resetDerivedAnalysisState = () => {
+  yearlyFortuneResult.value = null
+  dayunAnalysisResult.value = null
+  dayunChartData.value = null
+  aiAnalysisResult.value = null
+  aiStreamContent.value = ''
+  aiPrompt.value = ''
+  lastAnalyzedYear.value = null
+  lastAnalyzedDayunIndex.value = null
+  selectedYear.value = new Date().getFullYear()
+  selectedDayunIndex.value = 0
+
+  activeNames.value = getDefaultActiveNames()
+
+  if (aiAbortController.value) {
+    aiAbortController.value.abort()
+  }
+
+  if (aiLoadingTimer.value) {
+    clearInterval(aiLoadingTimer.value)
+    aiLoadingTimer.value = null
+  }
+
+  aiAnalyzing.value = false
+  aiLoadingTime.value = 0
+  aiAbortController.value = null
+}
+
+const resetCurrentResult = () => {
+  resetDerivedAnalysisState()
+  result.value = null
+}
 
 // 版本提示
 const versionHint = computed(() => {
@@ -967,52 +1239,428 @@ const versionHint = computed(() => {
     ? '简化版：适合新手，只看核心信息，不用填出生地'
     : '专业版：适合进阶，包含真太阳时、大运流年等详细分析'
 })
+const resultModeLabel = computed(() => (versionMode.value === 'pro' ? '专业版结果' : '简化版结果'))
+const showAdvancedResultSections = computed(() => versionMode.value === 'pro')
+const birthTimeAccuracyLabel = computed(() => {
+  if (birthTimeAccuracy.value === 'exact') {
+    return '精确到分钟'
+  }
 
-// 中国城市数据
-const cities = [
-  '北京市', '上海市', '广州市', '深圳市', '杭州市', '南京市', '武汉市', '成都市', '西安市',
-  '重庆市', '天津市', '苏州市', '长沙市', '郑州市', '沈阳市', '青岛市', '宁波市', '东莞市',
-  '佛山市', '合肥市', '大连市', '厦门市', '福州市', '哈尔滨市', '济南市', '温州市', '长春市',
-  '石家庄市', '常州市', '泉州市', '南宁市', '贵阳市', '南昌市', '昆明市', '乌鲁木齐市',
-  '兰州市', '呼和浩特市', '海口市', '银川市', '西宁市', '拉萨市', '台北市', '香港', '澳门'
-]
+  if (isEstimatedDateOnly.value) {
+    return '未知时辰 · 仅生日趋势'
+  }
+
+  return selectedEstimatedTimeOption.value
+    ? `估算时刻 · ${selectedEstimatedTimeOption.value.shortLabel}`
+    : '待确认时段'
+})
+
+const locationContextLabel = computed(() => {
+  if (versionMode.value !== 'pro') {
+    return '未填写出生地 · 默认北京时间'
+  }
+
+  return location.value ? `${location.value} · 真太阳时校准` : '未填写出生地 · 默认北京时间'
+})
+const resultContextNote = computed(() => {
+  if (birthTimeAccuracy.value === 'estimated') {
+    if (isEstimatedDateOnly.value) {
+      return '当前按“未知时辰”仅基于生日趋势排盘，尤其时柱、起运点与流年细节更适合做方向参考。'
+    }
+
+    if (selectedEstimatedTimeOption.value) {
+      return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，尤其时柱与流年细节更适合做方向参考。`
+    }
+  }
+
+  if (!showAdvancedResultSections.value) {
+
+    return '当前为简化版结果，已自动收起大运、流年与深度预测工具；想继续深入，可切换到专业版。'
+  }
+
+  return ''
+})
+const getDefaultActiveNames = () => (showAdvancedResultSections.value ? ['basic', 'interpretation', 'fortune'] : ['basic', 'interpretation'])
 
 const cityOptions = computed(() => {
-  return cities.map(city => ({
+  return CHINA_CITIES.map(city => ({
     value: city,
     label: city
   }))
 })
 
+const formatWuxingScore = (value) => {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) {
+    return '0'
+  }
+
+  return Number(numericValue.toFixed(2)).toString()
+}
+
+const wuxingDistributionItems = computed(() => {
+  const wuxingOrder = ['金', '木', '水', '火', '土']
+  const stats = result.value?.bazi?.wuxing_stats || {}
+  const normalizedStats = wuxingOrder.map((name) => {
+    const numericValue = Number(stats[name] ?? 0)
+    return {
+      name,
+      value: Number.isFinite(numericValue) ? Math.max(0, numericValue) : 0,
+    }
+  })
+  const total = normalizedStats.reduce((sum, item) => sum + item.value, 0)
+
+  return normalizedStats.map((item) => {
+    const width = Math.min(100, (item.value / WUXING_WEIGHT_MAX) * 100)
+    const share = total > 0 ? (item.value / total) * 100 : 0
+
+    return {
+      ...item,
+      width: Number.isFinite(width) ? Number(width.toFixed(1)) : 0,
+      displayValue: formatWuxingScore(item.value),
+      shareText: total > 0 ? `占比 ${share.toFixed(1)}%` : '占比 0%',
+    }
+  })
+})
+
+const isAccountReady = computed(() => accountStatus.value === 'ready')
+
+const isFortunePricingReady = computed(() => fortunePricingStatus.value === 'ready')
+const isAiPricingReady = computed(() => aiPricingStatus.value === 'ready' || aiPricingStatus.value === 'fallback')
+
+const confirmDialogConfig = computed(() => {
+  if (isFirstBazi.value) {
+    return {
+      title: '首次排盘确认',
+      actionText: '开始排盘',
+    }
+  }
+
+  return {
+    title: '确认排盘',
+    actionText: '确认排盘',
+  }
+})
+
+const canStartBazi = computed(() => {
+  if (!birthDate.value || !isAccountReady.value) {
+    return false
+  }
+
+  return isFirstBazi.value || currentPoints.value >= BAZI_BASE_COST
+})
+
+const startBaziButtonText = computed(() => {
+  if (!birthDate.value) {
+    return '请选择出生日期'
+  }
+
+  if (accountStatus.value === 'loading') {
+    return '账户信息查询中...'
+  }
+
+  if (accountStatus.value === 'error') {
+    return '请先获取价格信息'
+  }
+
+  return isFirstBazi.value ? '首次免费排盘' : '开始排盘'
+})
+
+
+const getFortuneToolCost = (type) => {
+  const costKeyMap = {
+    yearly: 'yearly_fortune',
+    dayun: 'dayun_analysis',
+    chart: 'dayun_chart',
+  }
+
+  const rawCost = fortunePointsCost.value[costKeyMap[type]]
+  const parsedCost = Number(rawCost)
+  return Number.isFinite(parsedCost) ? parsedCost : null
+}
+
+const getPointsConfirmTitle = (type = '') => {
+  const titleMap = {
+    yearly: '流年运势分析',
+    dayun: '大运运势评分',
+    chart: '运势K线图',
+    ai: 'AI 智能解盘',
+  }
+
+  return titleMap[type] || '积分功能'
+}
+
+const getPointsConfirmCost = (type = '') => {
+  if (type === 'ai') {
+    return aiAnalysisCost.value
+  }
+
+  const cost = getFortuneToolCost(type)
+  return Number.isFinite(cost) ? cost : 0
+}
+
+const getFortuneToolTagText = (type) => {
+
+  if (fortunePricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (fortunePricingStatus.value === 'error') {
+    return '价格稍后确认'
+  }
+
+  const cost = getFortuneToolCost(type)
+  if (!Number.isFinite(cost)) {
+    return '价格待确认'
+  }
+
+  return cost > 0 ? `消耗${cost}积分` : '本次免费'
+}
+
+const canUseFortuneTool = (type) => {
+  if (!isAccountReady.value || !isFortunePricingReady.value) {
+    return false
+  }
+
+  const cost = getFortuneToolCost(type)
+  return Number.isFinite(cost) && currentPoints.value >= cost
+}
+
+const getFortuneToolActionText = (type, readyText) => {
+  if (accountStatus.value === 'loading' || fortunePricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (accountStatus.value === 'error' || fortunePricingStatus.value === 'error') {
+    return '请先刷新价格信息'
+  }
+
+  const cost = getFortuneToolCost(type)
+  if (!Number.isFinite(cost)) {
+    return '价格暂不可用'
+  }
+
+  if (cost > 0 && currentPoints.value < cost) {
+    return `积分不足（需${cost}积分）`
+  }
+
+  return readyText
+}
+
+watch(birthTimeAccuracy, (mode) => {
+  if (mode === 'estimated') {
+    if (!estimatedBirthDate.value && exactBirthDate.value) {
+      estimatedBirthDate.value = exactBirthDate.value.slice(0, 10)
+    }
+
+    if (!estimatedTimeSlot.value && exactBirthDate.value) {
+      const clockMatch = exactBirthDate.value.match(/(\d{2}:\d{2})/)
+      estimatedTimeSlot.value = clockMatch ? resolveEstimatedTimeSlotByClock(clockMatch[1]) : ''
+    }
+    return
+  }
+
+  if (!exactBirthDate.value && estimatedBirthDate.value && selectedEstimatedTimeOption.value && !isEstimatedDateOnly.value) {
+    exactBirthDate.value = `${estimatedBirthDate.value} ${selectedEstimatedTimeOption.value.time}`
+  }
+})
+
+
+watch(selectedYear, (newYear, oldYear) => {
+  if (newYear === oldYear) {
+    return
+  }
+
+  if (lastAnalyzedYear.value !== null && newYear !== lastAnalyzedYear.value) {
+    yearlyFortuneResult.value = null
+  }
+})
+
+watch(selectedDayunIndex, (newIndex, oldIndex) => {
+  if (newIndex === oldIndex) {
+    return
+  }
+
+  if (lastAnalyzedDayunIndex.value !== null && newIndex !== lastAnalyzedDayunIndex.value) {
+    dayunAnalysisResult.value = null
+  }
+})
+
+const resolveAiAnalysisCost = (clientConfig = {}) => {
+
+  const costs = clientConfig?.points?.costs || {}
+  const candidates = [
+    costs.ai_analysis,
+    costs.aiAnalysis,
+    costs.bazi_ai_analysis,
+    clientConfig?.ai_analysis_cost,
+  ]
+
+  for (const candidate of candidates) {
+    const parsed = Number(candidate)
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, parsed)
+    }
+  }
+
+  return null
+}
+
+const aiPricingTagText = computed(() => {
+  if (accountStatus.value === 'loading' || aiPricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (accountStatus.value === 'error') {
+    return '账户稍后确认'
+  }
+
+  if (aiPricingStatus.value === 'fallback') {
+    return `预计消耗${aiAnalysisCost.value}积分`
+  }
+
+  return aiAnalysisCost.value > 0 ? `消耗${aiAnalysisCost.value}积分` : '本次免费'
+})
+
+const canStartAiAnalysis = computed(() => {
+  if (!isAccountReady.value || !isAiPricingReady.value) {
+    return false
+  }
+
+  return currentPoints.value >= aiAnalysisCost.value
+})
+
+const aiActionText = computed(() => {
+  if (accountStatus.value === 'loading') {
+    return '账户查询中'
+  }
+
+  if (aiPricingStatus.value === 'loading') {
+    return '价格查询中'
+  }
+
+  if (accountStatus.value === 'error') {
+    return '请先刷新账户信息'
+  }
+
+  if (!isAiPricingReady.value) {
+    return '请先刷新价格信息'
+  }
+
+  return currentPoints.value < aiAnalysisCost.value ? `积分不足（需${aiAnalysisCost.value}积分）` : '开始AI解盘'
+})
+
+const needsFortunePriceRecovery = computed(() => accountStatus.value === 'error' || fortunePricingStatus.value === 'error')
+
+const fortunePriceRecoveryText = computed(() => {
+  if (accountStatus.value === 'error') {
+    return '当前账户与积分状态暂未同步成功，请先重新获取，避免误判剩余积分或消费承诺。'
+  }
+
+  if (fortunePricingStatus.value === 'error') {
+    return '深度工具价格暂未同步成功，刷新后即可继续流年分析、大运评分和运势 K 线。'
+  }
+
+  return ''
+})
+const aiNeedsAccountRecovery = computed(() => accountStatus.value === 'error')
+const aiRecoveryText = computed(() => {
+  return aiNeedsAccountRecovery.value
+    ? 'AI 解盘依赖当前账户积分，刷新账户信息后即可继续使用。'
+    : ''
+})
+
+const refreshFortunePricing = () => {
+  loadPoints()
+}
+
+
 // 获取当前积分和首次排盘状态
-const loadPoints = async () => {
-  try {
-    const response = await getPointsBalance()
-    if (response.code === 0) {
-      currentPoints.value = response.data.balance
-      isFirstBazi.value = response.data.first_bazi !== false
+const loadPoints = async ({ silent = false } = {}) => {
+  accountStatus.value = 'loading'
+  fortunePricingStatus.value = 'loading'
+  aiPricingStatus.value = 'loading'
+
+  const [accountResult, pricingResult, clientConfigResult] = await Promise.allSettled([
+    getPointsBalance(),
+    getFortunePointsCost(),
+    getClientConfig(),
+  ])
+
+
+  const accountResponse = accountResult.status === 'fulfilled' ? accountResult.value : null
+  if (accountResponse?.code === 200) {
+    currentPoints.value = Number(accountResponse.data?.balance ?? 0)
+    isFirstBazi.value = accountResponse.data?.first_bazi !== false
+    accountStatus.value = 'ready'
+  } else {
+    currentPoints.value = 0
+    accountStatus.value = 'error'
+    console.error('获取账户信息失败:', accountResult.status === 'rejected' ? accountResult.reason : accountResponse)
+    if (!silent) {
+      ElMessage.error(accountResponse?.message || '获取账户信息失败，请尝试刷新页面')
     }
-    
-    // 获取运势分析积分消耗
-    const costResponse = await getFortunePointsCost()
-    if (costResponse.code === 0) {
-      fortunePointsCost.value = costResponse.data
+  }
+
+  const pricingResponse = pricingResult.status === 'fulfilled' ? pricingResult.value : null
+  if (pricingResponse?.code === 200) {
+    fortunePointsCost.value = {
+      yearly_fortune: pricingResponse.data?.yearly_fortune ?? null,
+      dayun_analysis: pricingResponse.data?.dayun_analysis ?? null,
+      dayun_chart: pricingResponse.data?.dayun_chart ?? null,
     }
-  } catch (error) {
-    console.error('获取积分失败:', error)
+    fortunePricingStatus.value = 'ready'
+  } else {
+    fortunePointsCost.value = {
+      yearly_fortune: null,
+      dayun_analysis: null,
+      dayun_chart: null,
+    }
+    fortunePricingStatus.value = 'error'
+    console.error('获取深度工具价格失败:', pricingResult.status === 'rejected' ? pricingResult.reason : pricingResponse)
+    if (!silent) {
+      ElMessage.error(pricingResponse?.message || '获取深度工具价格失败，请稍后重试')
+    }
+  }
+
+  const clientConfigResponse = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
+  if (clientConfigResponse?.code === 200) {
+    const resolvedAiCost = resolveAiAnalysisCost(clientConfigResponse.data)
+    if (Number.isFinite(resolvedAiCost)) {
+      aiAnalysisCost.value = resolvedAiCost
+      aiPricingStatus.value = 'ready'
+    } else {
+      aiAnalysisCost.value = AI_ANALYSIS_DEFAULT_COST
+      aiPricingStatus.value = 'fallback'
+      console.warn('客户端配置缺少 AI 解盘价格，已回退默认价格')
+    }
+  } else {
+    aiAnalysisCost.value = AI_ANALYSIS_DEFAULT_COST
+    aiPricingStatus.value = 'fallback'
+    console.warn('获取 AI 解盘价格失败，已回退默认价格', clientConfigResult.status === 'rejected' ? clientConfigResult.reason : clientConfigResponse)
   }
 }
 
+
+
 // 显示积分消耗确认对话框
 const showPointsConfirm = (type, data = {}) => {
-  const costs = {
-    'yearly': fortunePointsCost.value.yearly_fortune,
-    'dayun': fortunePointsCost.value.dayun_analysis,
-    'chart': fortunePointsCost.value.dayun_chart
+  const isAiAction = type === 'ai'
+  const isPricingReady = isAiAction ? isAiPricingReady.value : isFortunePricingReady.value
+
+  if (!isAccountReady.value || !isPricingReady) {
+    ElMessage.warning(isAiAction ? 'AI 解盘价格还在同步，请稍后再试' : '价格信息还在同步，请稍后再试')
+    return
   }
-  
-  if (currentPoints.value < costs[type]) {
-    ElMessage.warning(`积分不足，需要${costs[type]}积分，请先签到领取积分`)
+
+  const cost = getPointsConfirmCost(type)
+  if (!Number.isFinite(cost)) {
+    ElMessage.warning(isAiAction ? 'AI 解盘价格暂不可用，请稍后重试' : '当前价格信息暂不可用，请稍后重试')
+    return
+  }
+
+  if (currentPoints.value < cost) {
+    ElMessage.warning(`积分不足，需要${cost}积分，请先签到领取积分`)
     return
   }
   
@@ -1020,6 +1668,7 @@ const showPointsConfirm = (type, data = {}) => {
   pointsConfirmData.value = data
   pointsConfirmVisible.value = true
 }
+
 
 // 确认消耗积分
 const confirmPointsConsume = async () => {
@@ -1035,8 +1684,12 @@ const confirmPointsConsume = async () => {
     case 'chart':
       await getDayunChartData()
       break
+    case 'ai':
+      await startAiAnalysisCore()
+      break
   }
 }
+
 
 // 获取流年运势分析
 const getYearlyFortuneAnalysis = async () => {
@@ -1049,10 +1702,13 @@ const getYearlyFortuneAnalysis = async () => {
       year: selectedYear.value
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       yearlyFortuneResult.value = response.data
-      currentPoints.value = response.data.remaining_points
+      lastAnalyzedYear.value = selectedYear.value
+      syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('流年运势分析完成！')
+
+
     } else {
       ElMessage.error(response.message || '分析失败')
     }
@@ -1075,10 +1731,13 @@ const getDayunFortuneAnalysis = async () => {
       dayun_index: selectedDayunIndex.value
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       dayunAnalysisResult.value = response.data
-      currentPoints.value = response.data.remaining_points
+      lastAnalyzedDayunIndex.value = selectedDayunIndex.value
+      syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('大运运势分析完成！')
+
+
     } else {
       ElMessage.error(response.message || '分析失败')
     }
@@ -1100,10 +1759,11 @@ const getDayunChartData = async () => {
       bazi_id: result.value.id
     })
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       dayunChartData.value = response.data
-      currentPoints.value = response.data.remaining_points
+      syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('运势K线图生成完成！')
+
     } else {
       ElMessage.error(response.message || '生成失败')
     }
@@ -1133,11 +1793,29 @@ const getScoreClass = (score) => {
 
 // 显示确认对话框
 const showConfirm = () => {
-  if (!birthDate.value) {
+  if (birthTimeAccuracy.value === 'estimated') {
+    if (!estimatedBirthDate.value) {
+      ElMessage.warning('请选择出生日期')
+      return
+    }
+
+    if (!estimatedTimeSlot.value) {
+      ElMessage.warning('请选择一个大概时段，或明确选择“未知时辰”后再继续')
+      return
+    }
+  } else if (!birthDate.value) {
     ElMessage.warning('请选择出生日期')
     return
   }
-  if (!isFirstBazi.value && currentPoints.value < 10) {
+
+
+
+  if (!isAccountReady.value) {
+    ElMessage.warning(accountStatus.value === 'error' ? '账户信息暂不可用，请先刷新价格信息' : '账户信息还在同步，请稍候')
+    return
+  }
+
+  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
@@ -1150,6 +1828,7 @@ const showConfirm = () => {
   }
 }
 
+
 // 确认排盘
 const confirmCalculate = async () => {
   confirmVisible.value = false
@@ -1161,7 +1840,7 @@ const calculateBazi = async () => {
   loadingStep.value = 1
   
   // 模拟步骤动画
-  const stepInterval = setInterval(() => {
+  stepIntervalRef.value = setInterval(() => {
     if (loadingStep.value < 4) {
       loadingStep.value++
     }
@@ -1175,36 +1854,58 @@ const calculateBazi = async () => {
       mode: versionMode.value,
     })
     
-    clearInterval(stepInterval)
+    clearInterval(stepIntervalRef.value)
+    stepIntervalRef.value = null
     loadingStep.value = 4
     
     // 延迟一下让用户看到完成状态
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    if (response.code === 0) {
+    if (response.code === 200) {
       result.value = response.data
-      currentPoints.value = response.data.remaining_points
+      activeNames.value = getDefaultActiveNames()
+      syncCurrentPoints(response.data.remaining_points)
       isFirstBazi.value = false
       ElMessage.success('排盘成功！为你生成详细的命理解读')
+
     } else {
       ElMessage.error(response.message || '排盘失败')
       // 如果是积分不足，刷新积分
       if (response.code === 403) {
-        loadPoints()
+        loadPoints({ silent: true })
       }
     }
   } catch (error) {
-    clearInterval(stepInterval)
     ElMessage.error('网络错误，请稍后重试')
     console.error(error)
   } finally {
+    if (stepIntervalRef.value) {
+      clearInterval(stepIntervalRef.value)
+      stepIntervalRef.value = null
+    }
     loading.value = false
     loadingStep.value = 1
   }
 }
 
 onMounted(() => {
-  loadPoints()
+  updateViewportState()
+  window.addEventListener('resize', updateViewportState)
+  loadPoints({ silent: true })
+})
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  window.removeEventListener('resize', updateViewportState)
+
+  if (aiLoadingTimer.value) {
+    clearInterval(aiLoadingTimer.value)
+    aiLoadingTimer.value = null
+  }
+  if (stepIntervalRef.value) {
+    clearInterval(stepIntervalRef.value)
+    stepIntervalRef.value = null
+  }
 })
 
 // 保存结果
@@ -1232,43 +1933,126 @@ const saveResult = async () => {
   }
 }
 
-// 判断是否当前大运（简化：根据当前年龄判断）
+// 判断是否当前大运（根据出生日期计算当前年龄）
 const isCurrentDaYun = (yun) => {
-  // 简化计算：假设用户当前30岁，实际应根据出生日期计算
-  const currentAge = 30
-  return currentAge >= yun.age_start && currentAge <= yun.age_end
+  if (!birthDate.value) return false
+  
+  // 计算当前年龄
+  const birth = new Date(birthDate.value)
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  
+  // 判断是否已过生日
+  const monthDiff = now.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age--
+  }
+  
+  return age >= yun.age_start && age <= yun.age_end
 }
 
 // 分享结果
-const shareResult = () => {
-  const shareText = `我在太初命理进行了八字排盘\n` +
-    `日主：${result.value.bazi.day_master}（${result.value.bazi.day_master_wuxing}）\n` +
-    `八字：${result.value.bazi.year.gan}${result.value.bazi.year.zhi} ${result.value.bazi.month.gan}${result.value.bazi.month.zhi} ${result.value.bazi.day.gan}${result.value.bazi.day.zhi} ${result.value.bazi.hour.gan}${result.value.bazi.hour.zhi}\n` +
-    `快来测测你的八字吧！`
-  
+const buildBaziShareText = (includeFullDetails = false) => {
+  if (!includeFullDetails) {
+    return [
+      '我刚在太初命理完成了一次八字排盘。',
+      '这次结果主要帮我梳理了性格优势、发展方向和未来节奏。',
+      '如果你也想先做一版低风险参考，可以先从摘要版体验开始。',
+      '快来测测你的八字吧！'
+    ].join('\n')
+  }
+
+  return [
+    '我在太初命理完成了一次八字排盘',
+    `日主：${result.value?.bazi?.day_master || ''}（${result.value?.bazi?.day_master_wuxing || ''}）`,
+    `八字：${result.value?.bazi?.year?.gan || ''}${result.value?.bazi?.year?.zhi || ''} ${result.value?.bazi?.month?.gan || ''}${result.value?.bazi?.month?.zhi || ''} ${result.value?.bazi?.day?.gan || ''}${result.value?.bazi?.day?.zhi || ''} ${result.value?.bazi?.hour?.gan || ''}${result.value?.bazi?.hour?.zhi || ''}`,
+    '快来测测你的八字吧！'
+  ].filter(Boolean).join('\n')
+}
+
+const shareBaziText = async (shareText, clipboardSuccessText) => {
   if (navigator.share) {
-    navigator.share({
+    await navigator.share({
       title: '我的八字排盘结果',
       text: shareText
     })
-  } else {
-    // 复制到剪贴板
-    navigator.clipboard.writeText(shareText).then(() => {
-      ElMessage.success('分享内容已复制到剪贴板')
-    }).catch(() => {
-      ElMessage.error('复制失败，请手动复制')
-    })
+    return
+  }
+
+  if (!navigator.clipboard?.writeText) {
+    throw new Error('clipboard-unavailable')
+  }
+
+  await navigator.clipboard.writeText(shareText)
+  ElMessage.success(clipboardSuccessText)
+}
+
+const shareResult = async () => {
+  if (!result.value?.bazi) {
+    ElMessage.warning('暂无排盘结果可分享')
+    return
+  }
+
+  let includeFullDetails = false
+
+  try {
+    await ElMessageBox.confirm(
+      '为保护隐私，默认推荐摘要分享，不包含完整八字信息。若你确认对方知情且愿意查看完整命盘，再选择“包含完整八字”。',
+      '选择分享方式',
+      {
+        confirmButtonText: '包含完整八字',
+        cancelButtonText: '仅分享摘要',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+
+    includeFullDetails = true
+  } catch (actionOrError) {
+    if (actionOrError === 'cancel') {
+      includeFullDetails = false
+    } else if (actionOrError === 'close' || actionOrError?.name === 'AbortError') {
+      return
+    } else {
+      ElMessage.error('分享失败，请稍后重试')
+      return
+    }
+  }
+
+  try {
+    await shareBaziText(
+      buildBaziShareText(includeFullDetails),
+      includeFullDetails ? '完整八字分享内容已复制到剪贴板' : '摘要分享内容已复制到剪贴板'
+    )
+
+    if (!includeFullDetails) {
+      ElMessage.info('已按摘要版分享，默认省略完整八字信息')
+    }
+  } catch (shareError) {
+    if (shareError?.name !== 'AbortError') {
+      ElMessage.error(shareError?.message === 'clipboard-unavailable' ? '当前环境不支持自动复制，请手动复制分享内容' : '复制失败，请手动复制')
+    }
   }
 }
 
 // AI解盘
-const startAiAnalysis = async () => {
-  if (currentPoints.value < 30) {
+const startAiAnalysis = () => {
+  showPointsConfirm('ai')
+}
+
+const startAiAnalysisCore = async () => {
+  if (!isAccountReady.value || !isAiPricingReady.value) {
+    ElMessage.warning('AI 解盘价格还在同步，请稍后再试')
+    return
+  }
+
+  if (currentPoints.value < aiAnalysisCost.value) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
-  
+
   aiAnalyzing.value = true
+
   aiStreamContent.value = ''
   aiLoadingTime.value = 60
   
@@ -1286,8 +2070,9 @@ const startAiAnalysis = async () => {
   
   try {
     // 尝试使用流式API
-    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value.signal)
-    
+    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
+    let streamRemainingPoints = null
+
     if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
       // 流式响应
       const reader = response.body.getReader()
@@ -1297,7 +2082,7 @@ const startAiAnalysis = async () => {
       
       while (true) {
         // 检查是否被取消
-        if (aiAbortController.value.signal.aborted) {
+        if (aiAbortController.value?.signal?.aborted) {
           reader.cancel()
           break
         }
@@ -1315,6 +2100,13 @@ const startAiAnalysis = async () => {
             
             try {
               const parsed = JSON.parse(data)
+              const parsedRemainingPoints = Number(
+                parsed?.remaining_points ?? parsed?.data?.remaining_points ?? parsed?.result?.remaining_points
+              )
+              if (Number.isFinite(parsedRemainingPoints)) {
+                streamRemainingPoints = parsedRemainingPoints
+              }
+
               if (parsed.choices?.[0]?.delta?.content) {
                 const content = parsed.choices[0].delta.content
                 fullContent += content
@@ -1327,19 +2119,23 @@ const startAiAnalysis = async () => {
         }
       }
       
-      if (!aiAbortController.value.signal.aborted) {
+      if (!aiAbortController.value?.signal?.aborted) {
         aiAnalysisResult.value = {
           analysis: fullContent,
           model: 'AI'
         }
+
+        syncCurrentPoints(streamRemainingPoints, aiAnalysisCost.value)
       }
     } else {
       // 非流式响应
       const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
-      if (res.code === 0) {
+      if (res.code === 200) {
         aiAnalysisResult.value = res.data
-        currentPoints.value = res.data.remaining_points || currentPoints.value - 30
+        syncCurrentPoints(res.data?.remaining_points, aiAnalysisCost.value)
       } else {
+
+
         ElMessage.error(res.message || 'AI解盘失败')
       }
     }
@@ -1390,6 +2186,148 @@ const formatAiContent = (content) => {
 </script>
 
 <style scoped>
+/* Tab Navigation */
+.result-tabs {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  padding: 6px;
+  margin-bottom: 25px;
+  gap: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.tab-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-item.active {
+  background: var(--bg-card);
+  color: var(--primary-color);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content {
+  animation: fadeInUp 0.4s ease;
+}
+
+.tab-pane-content {
+  padding-bottom: 20px;
+}
+
+.pane-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* 结果折叠面板样式 */
+.result-collapse {
+  border: none;
+  background: transparent;
+  --el-collapse-header-bg-color: transparent;
+  --el-collapse-content-bg-color: transparent;
+}
+
+:deep(.el-collapse-item__header) {
+  height: auto;
+  min-height: 60px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+:deep(.el-collapse-item__wrap) {
+  border-bottom: 1px solid var(--border-light);
+}
+
+:deep(.el-collapse-item__content) {
+  padding: 20px 0;
+}
+
+.collapse-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.title-icon {
+  font-size: 20px;
+  color: var(--primary-color);
+  background: rgba(184, 134, 11, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.title-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.title-desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-left: 10px;
+  font-weight: normal;
+}
+
+.section-title-with-tip,
+.section-title-with-tag,
+.section-subtitle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.section-subtitle-wrapper {
+  margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+  .collapse-title-wrapper {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 6px;
+  }
+
+  .title-text {
+    font-size: 16px;
+  }
+  
+  .title-desc {
+    display: block;
+    flex-basis: 100%;
+    margin-left: 0;
+    padding-left: 44px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+}
+
+
 /* 页面级动画 */
 @keyframes fadeInUp {
   from {
@@ -1418,7 +2356,10 @@ const formatAiContent = (content) => {
   margin: 0 auto;
   text-align: center;
   padding: 60px 40px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2));
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
 }
 
 .loading-animation {
@@ -1434,7 +2375,7 @@ const formatAiContent = (content) => {
   background: linear-gradient(to bottom, #fff 50%, #000 50%);
   position: relative;
   animation: yinYangRotate 2s linear infinite;
-  box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 0 30px rgba(184, 134, 11, 0.3);
 }
 
 .yin-yang::before,
@@ -1461,13 +2402,13 @@ const formatAiContent = (content) => {
 }
 
 .loading-state h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 24px;
   margin-bottom: 10px;
 }
 
 .loading-text {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 40px;
 }
@@ -1501,21 +2442,21 @@ const formatAiContent = (content) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .step.active .step-icon {
-  background: rgba(233, 69, 96, 0.3);
-  border-color: #e94560;
-  color: #fff;
-  box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
 }
 
 .step.done .step-icon {
@@ -1526,31 +2467,33 @@ const formatAiContent = (content) => {
 
 .step-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   transition: all 0.3s ease;
 }
 
 .step.active .step-text {
-  color: #fff;
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .step-line {
   width: 40px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-color);
   transition: all 0.3s ease;
 }
 
 .step-line.active {
-  background: linear-gradient(90deg, #67c23a, #e94560);
+  background: linear-gradient(90deg, #67c23a, #D4AF37);
 }
 
 /* 结果头部 */
 .result-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .result-header h2 {
@@ -1560,14 +2503,52 @@ const formatAiContent = (content) => {
 .result-meta {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .meta-tag {
-  background: rgba(103, 194, 58, 0.2);
-  color: #67c23a;
-  padding: 4px 12px;
-  border-radius: 15px;
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+
+.meta-tag--success {
+  background: rgba(var(--success-color-rgb), 0.2);
+  color: var(--success-color);
+}
+
+.meta-tag--info {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-color);
+}
+
+.meta-tag--neutral {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.meta-tag--warning {
+  background: rgba(230, 162, 60, 0.14);
+  border-color: rgba(230, 162, 60, 0.24);
+  color: var(--warning-color);
+}
+
+.result-context-note {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
+  color: var(--text-secondary);
+  line-height: 1.7;
 }
 
 @keyframes pulse {
@@ -1677,7 +2658,7 @@ const formatAiContent = (content) => {
 
 .el-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.3);
 }
 
 .el-button:active {
@@ -1690,20 +2671,20 @@ const formatAiContent = (content) => {
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 0 1px rgba(184, 134, 11, 0.5);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.5);
 }
 
 /* 加载状态 shimmer 效果 */
 .loading-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
+    var(--white-05) 25%,
+    var(--white-10) 50%,
+    var(--white-05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -1730,7 +2711,7 @@ const formatAiContent = (content) => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.2),
+    var(--white-20),
     transparent
   );
   animation: shimmer 2s infinite;
@@ -1759,45 +2740,53 @@ const formatAiContent = (content) => {
   }
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.page-header .section-title {
-  margin: 0;
-}
 
 .bazi-form {
+
   max-width: 600px;
   margin: 0 auto 40px;
 }
 
 .points-hint {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.3);
   border-radius: 10px;
   padding: 15px 20px;
   margin-bottom: 25px;
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  flex-wrap: wrap;
+  color: var(--text-primary);
+}
+
+.points-hint--loading {
+  border-color: rgba(var(--primary-rgb), 0.18);
+  background: rgba(var(--primary-rgb), 0.08);
+}
+
+.points-hint--error {
+  border-color: rgba(245, 108, 108, 0.22);
+  background: rgba(245, 108, 108, 0.08);
 }
 
 .hint-icon {
+
   font-size: 20px;
 }
 
 .current-points {
   margin-left: auto;
-  color: #ffd700;
+  color: var(--primary-light);
   font-weight: 500;
 }
 
+.points-retry {
+  margin-left: auto;
+}
+
 .insufficient-points {
+
   margin-top: 15px;
   padding: 12px;
   background: rgba(245, 108, 108, 0.1);
@@ -1807,31 +2796,65 @@ const formatAiContent = (content) => {
 }
 
 .insufficient-points a {
-  color: #e94560;
+  color: var(--primary-color);
   text-decoration: underline;
 }
 
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 30px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 10px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .help-icon {
   margin-left: 5px;
   cursor: help;
-  opacity: 0.7;
+  color: var(--primary-color);
+  opacity: 0.8;
 }
 
 .form-hint {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
-  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.6;
+}
+
+.time-accuracy-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.switch-label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time-accuracy-group {
+  flex-wrap: wrap;
+}
+
+.estimate-birth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .full-width {
@@ -1846,14 +2869,15 @@ const formatAiContent = (content) => {
 .bazi-result h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .bazi-paipan {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-card);
   border-radius: 15px;
   padding: 30px;
   margin-bottom: 30px;
+  border: 1px solid var(--border-color);
 }
 
 .paipan-row {
@@ -1872,35 +2896,40 @@ const formatAiContent = (content) => {
   padding: 20px;
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
 }
 
 .paipan-cell.header {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-weight: normal;
 }
 
 .paipan-cell.highlight {
-  color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  color: var(--primary-color);
+  background: var(--primary-light-10);
   border-radius: 10px;
 }
 
 .bazi-analysis {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 15px;
   padding: 30px;
 }
 
 .bazi-analysis h3 {
   margin-bottom: 20px;
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
 }
 
 .analysis-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-line;
 }
@@ -1913,8 +2942,8 @@ const formatAiContent = (content) => {
   align-items: center;
   gap: 15px;
   padding: 20px 25px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.2);
 }
 
 .tip-icon {
@@ -1926,59 +2955,68 @@ const formatAiContent = (content) => {
 }
 
 .tip-title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 5px;
 }
 
 .tip-desc {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 /* 版本切换 */
 .version-toggle {
-  margin-bottom: 25px;
+  margin-bottom: 35px;
   text-align: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  padding: 25px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--primary-light-20);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-label {
-  color: rgba(255, 255, 255, 0.7);
-  margin-right: 10px;
-  font-size: 14px;
+  color: var(--text-primary);
+  margin-right: 15px;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .mode-option {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  padding: 0 10px;
 }
 
 .mode-icon {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .version-hint {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  margin-top: 10px;
+  color: var(--primary-color);
+  font-size: 14px;
+  margin-top: 15px;
+  font-weight: 500;
+  background: rgba(184, 134, 11, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+  display: inline-block;
 }
 
 /* 专业解读区域 */
 .professional-reading {
   margin: 30px 0;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.08), rgba(255, 107, 107, 0.05));
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  background: linear-gradient(135deg, var(--primary-light-05), var(--white-05));
+  border: 1px solid var(--primary-light-20);
   border-radius: 20px;
   padding: 30px;
 }
 
 .professional-reading h3 {
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 25px;
   display: flex;
@@ -1988,21 +3026,24 @@ const formatAiContent = (content) => {
 }
 
 .section-badge {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
-  padding: 4px 12px;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
+  padding: 12px 24px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* 日主详情卡片 */
 .day-master-detail {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--bg-secondary);
   border-radius: 16px;
   padding: 25px;
   margin-bottom: 25px;
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  border: 1px solid var(--border-light);
 }
 
 .dm-header {
@@ -2011,23 +3052,23 @@ const formatAiContent = (content) => {
   gap: 20px;
   margin-bottom: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dm-symbol {
   width: 70px;
   height: 70px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(255, 107, 107, 0.2));
+  background: linear-gradient(135deg, var(--primary-light-30), var(--primary-light-20));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  border: 2px solid rgba(233, 69, 96, 0.5);
+  border: 2px solid var(--primary-light-60);
 }
 
 .dm-title h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 20px;
   margin-bottom: 10px;
 }
@@ -2039,11 +3080,14 @@ const formatAiContent = (content) => {
 }
 
 .trait-tag {
-  background: rgba(233, 69, 96, 0.2);
-  color: rgba(255, 255, 255, 0.9);
-  padding: 4px 12px;
-  border-radius: 15px;
-  font-size: 13px;
+  background: var(--primary-light-20);
+  color: var(--text-primary);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .dm-content {
@@ -2053,13 +3097,13 @@ const formatAiContent = (content) => {
 }
 
 .dm-section h5 {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .dm-section p {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   line-height: 1.7;
   font-size: 14px;
 }
@@ -2091,20 +3135,23 @@ const formatAiContent = (content) => {
 }
 
 .ys-info h4 {
-  color: #ffd700;
+  color: var(--primary-light);
   font-size: 18px;
 }
 
 .ys-type {
-  background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
-  padding: 3px 10px;
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--primary-light);
+  padding: 4px 12px;
   border-radius: 10px;
   font-size: 12px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .ys-desc {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
   padding-left: 43px;
@@ -2118,17 +3165,17 @@ const formatAiContent = (content) => {
 }
 
 .reading-card {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-tertiary);
   border-radius: 14px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .reading-card:hover {
   transform: translateY(-5px);
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(233, 69, 96, 0.3);
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
 }
 
 .reading-card.advice-card {
@@ -2149,12 +3196,12 @@ const formatAiContent = (content) => {
 }
 
 .rc-header h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .rc-content {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -2193,8 +3240,7 @@ const formatAiContent = (content) => {
 }
 
 .simple-interpretation h3 {
-  color: #fff;
-  text-align: center;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -2209,7 +3255,7 @@ const formatAiContent = (content) => {
 
 .section-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-weight: normal;
 }
 
@@ -2220,7 +3266,7 @@ const formatAiContent = (content) => {
 }
 
 .interp-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s ease;
@@ -2228,7 +3274,7 @@ const formatAiContent = (content) => {
 
 .interp-card:hover {
   transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-light);
 }
 
 .interp-header {
@@ -2243,18 +3289,18 @@ const formatAiContent = (content) => {
 }
 
 .interp-header h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .interp-content {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
 
 .interp-card.personality {
-  border-left: 3px solid #e94560;
+  border-left: 3px solid var(--primary-color);
 }
 
 .interp-card.career {
@@ -2262,11 +3308,11 @@ const formatAiContent = (content) => {
 }
 
 .interp-card.relationship {
-  border-left: 3px solid #e6a23c;
+  border-left: 3px solid var(--warning-color);
 }
 
 .interp-card.advice {
-  border-left: 3px solid #67c23a;
+  border-left: 3px solid var(--success-color);
 }
 
 @media (max-width: 768px) {
@@ -2283,32 +3329,40 @@ const formatAiContent = (content) => {
 }
 
 .day-master-card {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
-  border: 2px solid rgba(233, 69, 96, 0.5);
-  border-radius: 15px;
-  padding: 20px 40px;
+  background: linear-gradient(135deg, rgba(10, 10, 26, 0.8), rgba(22, 22, 46, 0.8));
+  border: 2px solid var(--primary-color);
+  border-radius: 20px;
+  padding: 24px 50px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 134, 11, 0.3);
+  backdrop-filter: blur(10px);
+  animation: float 4s ease-in-out infinite;
 }
 
 .day-master-card .label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 2px;
 }
 
 .day-master-card .value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #e94560;
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--primary-color);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .day-master-card .wuxing {
-  background: rgba(233, 69, 96, 0.3);
-  padding: 5px 12px;
+  background: var(--primary-gradient);
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 14px;
-  color: #fff;
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(184, 134, 11, 0.4);
 }
 
 /* 排盘表格样式 */
@@ -2318,7 +3372,7 @@ const formatAiContent = (content) => {
   padding: 15px 10px;
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2328,13 +3382,13 @@ const formatAiContent = (content) => {
 
 .paipan-cell.header {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-weight: normal;
   padding: 10px;
 }
 
 .paipan-cell.highlight {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(184, 134, 11, 0.08);
   border-radius: 10px;
 }
 
@@ -2346,15 +3400,15 @@ const formatAiContent = (content) => {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   font-weight: normal;
 }
 
-.wuxing-badge.金 { background: rgba(255, 215, 0, 0.3); color: #ffd700; }
-.wuxing-badge.木 { background: rgba(34, 139, 34, 0.3); color: #90ee90; }
-.wuxing-badge.水 { background: rgba(30, 144, 255, 0.3); color: #87ceeb; }
-.wuxing-badge.火 { background: rgba(255, 69, 0, 0.3); color: #ff6347; }
-.wuxing-badge.土 { background: rgba(139, 69, 19, 0.3); color: #deb887; }
+.wuxing-badge.金 { background: rgba(255, 215, 0, 0.15); color: var(--wuxing-jin); }
+.wuxing-badge.木 { background: rgba(34, 139, 34, 0.15); color: var(--wuxing-mu); }
+.wuxing-badge.水 { background: rgba(30, 144, 255, 0.15); color: var(--wuxing-shui); }
+.wuxing-badge.火 { background: rgba(255, 69, 0, 0.15); color: var(--wuxing-huo); }
+.wuxing-badge.土 { background: rgba(139, 69, 19, 0.15); color: var(--wuxing-tu); }
 
 .wuxing-badge.zhi {
   opacity: 0.8;
@@ -2362,8 +3416,8 @@ const formatAiContent = (content) => {
 
 .rizhu-tag {
   font-size: 10px;
-  background: #e94560;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--text-primary);
   padding: 2px 6px;
   border-radius: 4px;
   position: absolute;
@@ -2373,14 +3427,14 @@ const formatAiContent = (content) => {
 
 /* 十神行 */
 .shishen-row {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
   border-radius: 8px;
   margin: 5px 0;
 }
 
 .shishen-cell {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   padding: 8px;
 }
 
@@ -2402,11 +3456,11 @@ const formatAiContent = (content) => {
 }
 
 .canggan-item {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 .canggan-item small {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 10px;
   margin-left: 2px;
 }
@@ -2420,22 +3474,53 @@ const formatAiContent = (content) => {
 
 .nayin-cell {
   font-size: 12px;
-  color: rgba(255, 215, 0, 0.9);
+  color: var(--primary-light);
   padding: 8px;
 }
 
+/* 旬空行 */
+.xunkong-row {
+  margin-top: 5px;
+  background: var(--bg-hover);
+  border-radius: 8px;
+}
+
+.xunkong-cell {
+  font-size: 11px;
+  color: var(--danger-color);
+  padding: 8px;
+}
+
+.xunkong-label {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+
 /* 五行统计 */
 .wuxing-stats {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 15px;
   padding: 25px;
   margin: 30px 0;
+  border: 1px solid var(--border-light);
+}
+
+.wuxing-header {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .wuxing-stats h3 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #fff;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.wuxing-caption {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .wuxing-bars {
@@ -2445,21 +3530,29 @@ const formatAiContent = (content) => {
 }
 
 .wuxing-bar-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.wuxing-bar-main {
   display: flex;
   align-items: center;
   gap: 15px;
+  min-width: 0;
 }
 
 .wuxing-name {
   width: 30px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .wuxing-bar {
   flex: 1;
   height: 20px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -2470,16 +3563,37 @@ const formatAiContent = (content) => {
   transition: width 0.5s ease;
 }
 
-.wuxing-fill.金 { background: linear-gradient(90deg, #ffd700, #ffec8b); }
-.wuxing-fill.木 { background: linear-gradient(90deg, #228b22, #90ee90); }
-.wuxing-fill.水 { background: linear-gradient(90deg, #1e90ff, #87ceeb); }
-.wuxing-fill.火 { background: linear-gradient(90deg, #ff4500, #ff6347); }
-.wuxing-fill.土 { background: linear-gradient(90deg, #8b4513, #deb887); }
+.wuxing-fill.金 { background: linear-gradient(90deg, var(--wuxing-jin), var(--primary-light-15)); }
+.wuxing-fill.木 { background: linear-gradient(90deg, var(--wuxing-mu), var(--success-light)); }
+.wuxing-fill.水 { background: linear-gradient(90deg, var(--wuxing-shui), var(--info-light)); }
+.wuxing-fill.火 { background: linear-gradient(90deg, var(--wuxing-huo), var(--danger-light)); }
+.wuxing-fill.土 { background: linear-gradient(90deg, var(--wuxing-tu), var(--warning-light)); }
+
+.wuxing-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
 
 .wuxing-count {
-  width: 30px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.8);
+  min-width: 32px;
+  text-align: right;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.wuxing-unit,
+.wuxing-share {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+
+.form-hint--precision {
+  color: var(--warning-color);
+  font-weight: 600;
 }
 
 /* 操作按钮 */
@@ -2491,26 +3605,35 @@ const formatAiContent = (content) => {
   flex-wrap: wrap;
 }
 
+.result-share-hint {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
 .result-actions .btn-icon {
   margin-right: 5px;
 }
 
+
 /* 大运区域样式 */
 .dayun-section {
   margin-top: 30px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-card);
   border-radius: 15px;
   padding: 25px;
+  border: 1px solid var(--border-color);
 }
 
 .dayun-section h3 {
-  color: #fff;
-  margin-bottom: 20px;
-  text-align: center;
+  color: var(--text-primary);
+  margin-bottom: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .dayun-timeline {
@@ -2520,28 +3643,46 @@ const formatAiContent = (content) => {
 }
 
 .dayun-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 12px;
   padding: 15px;
   text-align: center;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--white-10);
+  position: relative;
+  overflow: hidden;
 }
 
 .dayun-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-3px);
+  background: var(--white-10);
+  border-color: var(--primary-light-30);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .dayun-item.current {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: var(--primary-color);
+  background: var(--primary-light-10);
+  box-shadow: 0 0 15px var(--primary-light-20);
+}
+
+.dayun-item.current::after {
+  content: '当前';
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--primary-color);
+  color: #000;
+  font-size: 10px;
+  padding: 2px 8px;
+  font-weight: bold;
+  border-bottom-left-radius: 8px;
 }
 
 .dayun-age {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-80);
   margin-bottom: 10px;
+  font-weight: 500;
 }
 
 .dayun-pillar {
@@ -2553,69 +3694,80 @@ const formatAiContent = (content) => {
 
 .dayun-pillar .gan,
 .dayun-pillar .zhi {
-  font-size: 24px;
-  font-weight: bold;
-  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .dayun-shishen {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  color: var(--primary-light);
   margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .dayun-luck {
   display: inline-block;
-  padding: 3px 12px;
-  border-radius: 15px;
+  padding: 4px 14px;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: bold;
   margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .dayun-luck.吉 {
-  background: rgba(103, 194, 58, 0.3);
-  color: #67c23a;
+  background: var(--success-gradient);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.4);
 }
 
 .dayun-luck.凶 {
-  background: rgba(245, 108, 108, 0.3);
-  color: #f56c6c;
+  background: var(--danger-gradient);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
 }
 
 .dayun-luck.平 {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--white-20);
+  color: var(--white-90);
 }
 
 .dayun-desc {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.4;
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--white-60);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding: 0 5px;
 }
 
 .dayun-nayin {
   font-size: 11px;
-  color: rgba(255, 215, 0, 0.8);
+  color: var(--primary-light);
+  font-style: italic;
+  opacity: 0.9;
 }
 
 /* 流年区域样式 */
 .liunian-section {
-  margin-top: 30px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 15px;
-  padding: 25px;
+  margin-top: 40px;
+  background: var(--white-03);
+  border-radius: 20px;
+  padding: 30px;
+  border: 1px solid var(--white-05);
 }
 
 .liunian-section h3 {
-  color: #fff;
-  margin-bottom: 20px;
+  color: var(--text-primary);
+  margin-bottom: 25px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  font-weight: 800;
 }
 
 .liunian-grid {
@@ -2625,60 +3777,122 @@ const formatAiContent = (content) => {
 }
 
 .liunian-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 15px;
+  background: var(--white-05);
+  border-radius: 14px;
+  padding: 18px 12px;
   text-align: center;
   transition: all 0.3s ease;
-  border: 1px solid transparent;
+  border: 1px solid var(--white-10);
+  position: relative;
 }
 
 .liunian-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-10);
+  border-color: var(--primary-light-20);
+  transform: scale(1.03);
 }
 
 .liunian-item.current {
-  border-color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
+  border-color: var(--primary-color);
+  background: var(--primary-light-15);
+  box-shadow: 0 0 12px var(--primary-light-20);
+  z-index: 1;
+}
+
+.liunian-item.current::before {
+  content: '今年';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-gradient);
+  color: #000;
+  font-size: 10px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 .liunian-year {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 10px;
-  font-weight: 500;
+  font-size: 15px;
+  color: var(--white-90);
+  margin-bottom: 12px;
+  font-weight: 700;
 }
 
 .liunian-pillar {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 10px;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
 .liunian-pillar .gan,
 .liunian-pillar .zhi {
-  font-size: 22px;
-  font-weight: bold;
-  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
 .liunian-wuxing {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .liunian-wuxing .badge {
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: bold;
 }
 
 .liunian-nayin {
   font-size: 11px;
-  color: rgba(255, 215, 0, 0.8);
+  color: var(--primary-light);
+  opacity: 0.8;
+}
+
+/* 排盘确认对话框 */
+.confirm-dialog .confirm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.confirm-dialog .confirm-content p {
+  margin: 0;
+}
+
+.confirm-dialog .confirm-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.confirm-dialog .confirm-title strong {
+  color: var(--star-color);
+}
+
+.confirm-dialog .confirm-note {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--primary-light-05);
+  border: 1px solid var(--primary-light-20);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.confirm-dialog .confirm-content--free .confirm-title {
+  color: var(--success-color);
 }
 
 /* 积分确认对话框 */
@@ -2694,38 +3908,38 @@ const formatAiContent = (content) => {
 
 .points-confirm-dialog .points-title {
   font-size: 20px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
   margin-bottom: 10px;
 }
 
 .points-confirm-dialog .points-desc {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   margin-bottom: 10px;
 }
 
 .points-confirm-dialog .points-desc strong {
-  color: #ffd700;
+  color: var(--star-color);
   font-size: 20px;
 }
 
 .points-confirm-dialog .points-balance {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 /* 流年运势分析 */
 .yearly-fortune-section {
   margin-top: 30px;
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(233, 69, 96, 0.05));
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(184, 134, 11, 0.3);
   border-radius: 20px;
   padding: 30px;
 }
 
 .yearly-fortune-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -2736,30 +3950,52 @@ const formatAiContent = (content) => {
 
 .year-selector {
   display: flex;
-  align-items: center;
-  gap: 15px;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 25px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 12px;
 }
 
+.year-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.year-selector__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .selector-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 14px;
   white-space: nowrap;
 }
 
+.selector-hint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .year-slider {
-  flex: 1;
+  width: 100%;
 }
 
 .selected-year {
-  color: #ff6b6b;
+  color: var(--primary-color);
   font-size: 18px;
   font-weight: bold;
   min-width: 70px;
+  text-align: right;
 }
+
 
 /* 流年分析结果 */
 .yearly-result {
@@ -2772,7 +4008,7 @@ const formatAiContent = (content) => {
   align-items: center;
   margin-bottom: 25px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--bg-tertiary);
   border-radius: 16px;
 }
 
@@ -2785,17 +4021,17 @@ const formatAiContent = (content) => {
 .year-number {
   font-size: 36px;
   font-weight: bold;
-  color: #ff6b6b;
+  color: var(--primary-color);
 }
 
 .year-ganzhi {
   font-size: 20px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .year-nayin {
   font-size: 14px;
-  color: rgba(255, 215, 0, 0.9);
+  color: var(--primary-light);
 }
 
 .score-display {
@@ -2816,20 +4052,20 @@ const formatAiContent = (content) => {
   background: rgba(0, 0, 0, 0.3);
 }
 
-.score-circle.excellent { border-color: #67c23a; }
-.score-circle.good { border-color: #e6a23c; }
-.score-circle.average { border-color: #f56c6c; }
-.score-circle.poor { border-color: #909399; }
+.score-circle.excellent { border-color: var(--success-color); }
+.score-circle.good { border-color: var(--warning-color); }
+.score-circle.average { border-color: var(--danger-color); }
+.score-circle.poor { border-color: var(--info-color); }
 
 .score-value {
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .score-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .rating-badge {
@@ -2837,13 +4073,13 @@ const formatAiContent = (content) => {
   border-radius: 20px;
   font-size: 18px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
-.rating-badge.excellent { background: linear-gradient(135deg, #67c23a, #85ce61); }
-.rating-badge.good { background: linear-gradient(135deg, #e6a23c, #ebb563); }
-.rating-badge.average { background: linear-gradient(135deg, #f56c6c, #f78989); }
-.rating-badge.poor { background: linear-gradient(135deg, #909399, #a6a9ad); }
+.rating-badge.excellent { background: var(--success-gradient); }
+.rating-badge.good { background: var(--warning-gradient); }
+.rating-badge.average { background: var(--danger-gradient); }
+.rating-badge.poor { background: linear-gradient(135deg, var(--info-color), #a6a9ad); }
 
 /* 分析卡片 */
 .yearly-analysis {
@@ -2853,13 +4089,14 @@ const formatAiContent = (content) => {
 }
 
 .analysis-card {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 20px;
+  border: 1px solid var(--border-light);
 }
 
 .analysis-card h4 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   margin-bottom: 12px;
   display: flex;
@@ -2868,14 +4105,14 @@ const formatAiContent = (content) => {
 }
 
 .analysis-card p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 14px;
 }
 
 .analysis-card.overall {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.3);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 .analysis-grid {
@@ -2885,8 +4122,8 @@ const formatAiContent = (content) => {
 }
 
 .analysis-card.advice {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.15), rgba(133, 206, 97, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.3);
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.08), rgba(60, 179, 113, 0.05));
+  border: 1px solid rgba(34, 139, 34, 0.3);
 }
 
 /* 幸运信息 */
@@ -2898,7 +4135,7 @@ const formatAiContent = (content) => {
 }
 
 .lucky-section h5 {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -2927,7 +4164,7 @@ const formatAiContent = (content) => {
 
 .lucky-tag.color {
   background: rgba(255, 215, 0, 0.3);
-  color: #ffd700;
+  color: var(--star-color);
 }
 
 .lucky-tag.number {
@@ -2945,7 +4182,7 @@ const formatAiContent = (content) => {
 }
 
 .dayun-fortune-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -2994,7 +4231,7 @@ const formatAiContent = (content) => {
 
 .dayun-shishen {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   padding: 5px 12px;
   background: rgba(64, 158, 255, 0.2);
   border-radius: 15px;
@@ -3002,7 +4239,7 @@ const formatAiContent = (content) => {
 
 .dayun-age {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .dayun-level-badge {
@@ -3010,13 +4247,13 @@ const formatAiContent = (content) => {
   border-radius: 25px;
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
-.dayun-level-badge.excellent { background: linear-gradient(135deg, #67c23a, #85ce61); }
-.dayun-level-badge.good { background: linear-gradient(135deg, #e6a23c, #ebb563); }
-.dayun-level-badge.average { background: linear-gradient(135deg, #f56c6c, #f78989); }
-.dayun-level-badge.poor { background: linear-gradient(135deg, #909399, #a6a9ad); }
+.dayun-level-badge.excellent { background: var(--success-gradient); }
+.dayun-level-badge.good { background: var(--warning-gradient); }
+.dayun-level-badge.average { background: var(--danger-gradient); }
+.dayun-level-badge.poor { background: linear-gradient(135deg, var(--info-color), #a6a9ad); }
 
 /* 分数条 */
 .dayun-scores {
@@ -3039,7 +4276,7 @@ const formatAiContent = (content) => {
 
 .score-name {
   width: 50px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   font-size: 14px;
 }
 
@@ -3050,7 +4287,7 @@ const formatAiContent = (content) => {
 .score-value {
   width: 40px;
   text-align: right;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
 }
 
@@ -3063,13 +4300,13 @@ const formatAiContent = (content) => {
 }
 
 .text-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 10px;
   padding: 15px;
 }
 
 .text-card p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--white-85);
   line-height: 1.8;
   font-size: 14px;
 }
@@ -3083,7 +4320,7 @@ const formatAiContent = (content) => {
 }
 
 .key-suggestions h4 {
-  color: #ffd700;
+  color: var(--star-color);
   margin-bottom: 15px;
   font-size: 16px;
 }
@@ -3095,7 +4332,7 @@ const formatAiContent = (content) => {
 }
 
 .key-suggestions li {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--white-85);
   padding: 8px 0;
   padding-left: 20px;
   position: relative;
@@ -3103,22 +4340,27 @@ const formatAiContent = (content) => {
 }
 
 .key-suggestions li::before {
-  content: '💡';
+  content: '';
   position: absolute;
   left: 0;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color);
+  border-radius: 50%;
 }
 
 /* 运势K线图 */
 .fortune-chart-section {
   margin-top: 30px;
   background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
-  border: 1px solid rgba(103, 194, 58, 0.3);
+  border: 1px solid rgba(103, 194, 58, 0.2);
   border-radius: 20px;
   padding: 30px;
 }
 
 .fortune-chart-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -3139,7 +4381,7 @@ const formatAiContent = (content) => {
 }
 
 .chart-summary p {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--white-85);
   margin-bottom: 10px;
 }
 
@@ -3148,11 +4390,11 @@ const formatAiContent = (content) => {
   align-items: center;
   gap: 10px;
   padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--white-10);
 }
 
 .best-label {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .best-value {
@@ -3184,7 +4426,7 @@ const formatAiContent = (content) => {
 .dayun-title {
   font-size: 18px;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .dayun-score {
@@ -3194,14 +4436,14 @@ const formatAiContent = (content) => {
   font-weight: bold;
 }
 
-.dayun-score.excellent { background: rgba(103, 194, 58, 0.3); color: #67c23a; }
-.dayun-score.good { background: rgba(230, 162, 60, 0.3); color: #e6a23c; }
-.dayun-score.average { background: rgba(245, 108, 108, 0.3); color: #f56c6c; }
-.dayun-score.poor { background: rgba(144, 147, 153, 0.3); color: #909399; }
+.dayun-score.excellent { background: var(--success-light); color: var(--success-color); }
+.dayun-score.good { background: var(--warning-light); color: var(--warning-color); }
+.dayun-score.average { background: var(--danger-light); color: var(--danger-color); }
+.dayun-score.poor { background: rgba(144, 147, 153, 0.2); color: var(--info-color); }
 
 .dayun-trend {
   margin-left: auto;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   font-size: 14px;
 }
 
@@ -3217,7 +4459,7 @@ const formatAiContent = (content) => {
 .chart-year-bar {
   flex: 1;
   min-width: 20px;
-  background: linear-gradient(to top, #67c23a, #85ce61);
+  background: var(--success-gradient);
   border-radius: 4px 4px 0 0;
   position: relative;
   display: flex;
@@ -3235,7 +4477,7 @@ const formatAiContent = (content) => {
 }
 
 .chart-year-bar.current {
-  background: linear-gradient(to top, #ffd700, #ffec8b);
+  background: linear-gradient(to top, var(--star-color), #ffec8b);
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
@@ -3243,7 +4485,7 @@ const formatAiContent = (content) => {
   position: absolute;
   bottom: -20px;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   white-space: nowrap;
 }
 
@@ -3258,9 +4500,9 @@ const formatAiContent = (content) => {
   justify-content: space-between;
   align-items: center;
   padding-top: 25px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--white-10);
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 /* 分析按钮区域 */
@@ -3270,7 +4512,7 @@ const formatAiContent = (content) => {
 }
 
 .analysis-desc {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   margin-bottom: 20px;
   font-size: 14px;
 }
@@ -3285,7 +4527,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-analysis-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
@@ -3294,7 +4536,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-desc {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   text-align: center;
   margin-bottom: 15px;
 }
@@ -3304,7 +4546,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-result {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 12px;
   padding: 20px;
 }
@@ -3315,7 +4557,7 @@ const formatAiContent = (content) => {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--white-10);
 }
 
 .ai-model {
@@ -3324,7 +4566,7 @@ const formatAiContent = (content) => {
 }
 
 .ai-content {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--white-90);
   line-height: 1.8;
   font-size: 15px;
 }
@@ -3343,7 +4585,7 @@ const formatAiContent = (content) => {
   flex-direction: column;
   align-items: center;
   gap: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
 }
 
 .ai-loading-spinner .spinner {
@@ -3365,7 +4607,7 @@ const formatAiContent = (content) => {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   text-align: left;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--white-80);
   line-height: 1.6;
   min-height: 100px;
   max-height: 400px;
@@ -3375,7 +4617,7 @@ const formatAiContent = (content) => {
 .ai-loading-timeout {
   text-align: center;
   margin: 10px 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 .ai-loading-timeout .timeout-text {
@@ -3389,111 +4631,276 @@ const formatAiContent = (content) => {
 }
 
 @media (max-width: 768px) {
+  .bazi-page {
+    padding: 30px 0;
+  }
+
+  .result-header {
+    flex-direction: column;
+  }
+
+  .result-meta {
+    justify-content: flex-start;
+  }
+
+  .time-accuracy-switch,
+  .year-selector__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .year-selector {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .year-selector__meta,
+  .time-accuracy-group,
+  .estimate-birth-grid {
+    width: 100%;
+  }
+
+  .estimate-birth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-year {
+    text-align: left;
+    min-width: auto;
+  }
+
+  .selector-hint {
+    font-size: 11px;
+  }
+
+
+  .wuxing-bar-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .wuxing-bar-main,
+  .wuxing-meta {
+    width: 100%;
+  }
+
+  .wuxing-meta {
+    justify-content: flex-start;
+  }
+
+  .fortune-recovery-banner {
+
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+
   .paipan-cell {
-    font-size: 18px;
-    padding: 10px 5px;
+    font-size: 16px;
+    padding: 12px 4px;
+    min-height: 80px;
   }
   
   .gan-text, .zhi-text {
-    font-size: 22px;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .wuxing-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+    transform: scale(0.9);
   }
   
   .shishen-cell {
-    font-size: 12px;
+    font-size: 11px;
+    padding: 6px 2px;
   }
   
   .canggan-cell {
-    font-size: 10px;
-    min-height: 50px;
+    font-size: 9px;
+    padding: 8px 2px;
+    min-height: 45px;
+  }
+
+  .canggan-list {
+    gap: 1px;
   }
   
   .nayin-cell {
-    font-size: 10px;
+    font-size: 9px;
+    padding: 6px 2px;
   }
   
+  .day-master-info {
+    margin-bottom: 20px;
+  }
+
+  .day-master-card {
+    padding: 16px 24px;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
   .day-master-card .value {
-    font-size: 28px;
+    font-size: 32px;
+  }
+
+  .day-master-card .label {
+    font-size: 13px;
   }
   
   .dayun-timeline {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding: 10px 5px 20px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
+
+  .dayun-timeline::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .dayun-timeline::-webkit-scrollbar-thumb {
+    background: var(--primary-light-30);
+    border-radius: 2px;
+  }
+
+  .dayun-item {
+    flex: 0 0 220px;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .dayun-age {
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .dayun-pillar {
+    justify-content: flex-start;
+    margin-bottom: 0;
+    gap: 5px;
+  }
+
+  .dayun-pillar .gan, .dayun-pillar .zhi {
+    font-size: 20px;
+  }
+
+  .dayun-shishen,
+  .dayun-luck,
+  .dayun-nayin {
+    margin-bottom: 0;
+  }
+
+  .dayun-luck,
+  .dayun-nayin {
+    align-self: flex-start;
+  }
+
+  .dayun-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+    min-height: calc(1.6em * 3);
+    padding: 0;
+    margin-bottom: 0;
+    color: var(--white-80);
+    line-height: 1.6;
+  }
+
   
   .liunian-grid {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 10px 5px 20px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .liunian-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .liunian-grid::-webkit-scrollbar-thumb {
+    background: var(--primary-light-30);
+    border-radius: 2px;
+  }
+
+  .liunian-item {
+    flex: 0 0 100px;
+    scroll-snap-align: start;
+    padding: 12px;
+  }
+
+  .liunian-year {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .liunian-pillar .gan, .liunian-pillar .zhi {
+    font-size: 18px;
   }
   
-  .ai-analysis-section {
-    padding: 15px;
+  .professional-reading {
+    padding: 20px 15px;
   }
-  
-  .ai-content {
-    font-size: 14px;
-  }
-  
-  /* 流年运势响应式 */
-  .yearly-header {
+
+  .dm-header {
     flex-direction: column;
-    gap: 20px;
-  }
-  
-  .year-info {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .year-number {
-    font-size: 28px;
-  }
-  
-  .analysis-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .lucky-info {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  /* 大运分析响应式 */
-  .dayun-header {
-    flex-direction: column;
+    text-align: center;
     gap: 15px;
   }
+
+  .dm-symbol {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+
+  .dm-title h4 {
+    font-size: 18px;
+  }
+
+  .dm-traits {
+    justify-content: center;
+  }
+
+  .reading-card {
+    padding: 15px;
+  }
+
+  .rc-header {
+    margin-bottom: 8px;
+  }
+
+  .rc-icon {
+    font-size: 20px;
+  }
   
-  .dayun-info {
+  .rc-content {
+    font-size: 13px;
+  }
+
+  .result-actions {
     flex-direction: column;
-    align-items: center;
+    width: 100%;
   }
-  
-  .dayun-name {
-    font-size: 24px;
-  }
-  
-  .score-item {
-    flex-wrap: wrap;
-  }
-  
-  .score-name {
-    width: 40px;
-  }
-  
-  /* K线图响应式 */
-  .chart-years {
-    height: 120px;
-  }
-  
-  .chart-year-bar {
-    min-width: 15px;
-  }
-  
-  .year-label {
-    font-size: 8px;
-    transform: rotate(-45deg);
-    bottom: -15px;
-  }
-  
-  .year-score {
-    font-size: 8px;
+
+  .result-actions .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-bottom: 10px;
   }
 }
 </style>

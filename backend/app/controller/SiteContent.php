@@ -13,6 +13,7 @@ use app\model\QuestionTemplate;
 use app\model\DailyFortuneTemplate;
 use think\Request;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 网站内容管理控制器
@@ -29,14 +30,10 @@ class SiteContent extends BaseController
         // 获取启用的用户评价
         $testimonials = Testimonial::getEnabledList(6);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'content' => $content,
-                'testimonials' => $testimonials,
-            ],
-        ]);
+        return $this->success([
+            'content' => $content,
+            'testimonials' => $testimonials,
+        ], '获取成功');
     }
     
     /**
@@ -48,11 +45,7 @@ class SiteContent extends BaseController
         
         $content = SiteContentModel::getPageContent($page);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $content,
-        ]);
+        return $this->success($content, '获取成功');
     }
     
     /**
@@ -60,23 +53,30 @@ class SiteContent extends BaseController
      */
     public function updatePageContent(Request $request)
     {
-        $userId = $request->userId ?? 0;
+        $operatorId = $this->getOperatorId();
         $page = $request->param('page', 'home');
         $contents = $request->param('contents', []);
         
+        // 验证page参数格式，防止路径遍历和非法字符
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
+            return $this->error('页面标识格式无效，只能包含字母、数字、下划线和横线', 400);
+        }
+        
         if (empty($contents)) {
-            return json(['code' => 400, 'message' => '内容不能为空']);
+            return $this->error('内容不能为空', 400);
         }
         
         try {
-            SiteContentModel::batchUpdate($contents, $page, $userId);
+            SiteContentModel::batchUpdate($contents, $page, $operatorId);
             
-            return json([
-                'code' => 0,
-                'message' => '更新成功',
-            ]);
+            return $this->success(null, '更新成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '更新失败：' . $e->getMessage()]);
+            Log::error('批量更新站点内容失败', [
+                'page' => $page,
+                'operator_id' => $operatorId,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('更新失败，请稍后重试', 500);
         }
     }
     
@@ -87,23 +87,38 @@ class SiteContent extends BaseController
     {
         $page = $request->param('page', 'home');
         $key = $request->param('key');
+        $pagination = $this->getPaginationParams('current', 'pageSize', 20, 100);
+        
+        // 验证page参数格式，防止路径遍历和非法字符
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
+            return $this->error('页面标识格式无效，只能包含字母、数字、下划线和横线', 400);
+        }
         
         $query = SiteContentModel::where('page', $page);
         
         if ($key) {
-            $query->where('key', 'like', "%{$key}%");
+            // 使用参数绑定防止SQL注入
+            $key = preg_replace('/[%_\\\\]/', '', $key);
+            $query->whereLike('key', '%' . $key . '%');
         }
-        
+
+        $total = $query->count();
         $list = $query->order('sort_order', 'asc')
             ->order('created_at', 'desc')
-            ->select();
+            ->page($pagination['page'], $pagination['pageSize'])
+            ->select()
+            ->toArray();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+            'page' => $pagination['page'],
+            'pageSize' => $pagination['pageSize'],
+            'page_key' => $page,
+            'keyword' => $key ?: '',
+        ], '获取成功');
     }
+
     
     /**
      * 更新单条内容（后台）
@@ -111,42 +126,70 @@ class SiteContent extends BaseController
     public function updateContent(Request $request)
     {
         $id = $request->param('id');
+        $operatorId = $this->getOperatorId();
         $data = $request->only(['key', 'page', 'value', 'description', 'is_enabled', 'sort_order']);
-        $data['updated_by'] = $request->userId ?? 0;
+        $data['updated_by'] = $operatorId;
         
         try {
             if ($id) {
                 $content = SiteContentModel::find($id);
                 if (!$content) {
-                    return json(['code' => 404, 'message' => '内容不存在']);
+                    return $this->error('内容不存在', 404);
                 }
                 $content->save($data);
             } else {
-                $data['created_by'] = $request->userId ?? 0;
+                $data['created_by'] = $operatorId;
                 SiteContentModel::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            Log::error('保存站点内容失败', [
+                'content_id' => $id,
+                'operator_id' => $operatorId,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('保存失败，请稍后重试', 500);
         }
+    }
+
+    protected function saveManagedRecord(
+        ?int $id,
+        array $data,
+        callable $finder,
+        callable $creator,
+        string $notFoundMessage
+    ): ?\think\response\Json {
+        if ($id) {
+            $item = $finder($id);
+            if (!$item) {
+                return $this->error($notFoundMessage, 404);
+            }
+            $item->save($data);
+            return null;
+        }
+
+        $creator($data);
+
+        return null;
     }
     
     /**
      * 删除内容（后台）
      */
+
     public function deleteContent(Request $request)
     {
         $id = $request->param('id');
         
         $content = SiteContentModel::find($id);
         if (!$content) {
-            return json(['code' => 404, 'message' => '内容不存在']);
+            return $this->error('内容不存在', 404);
         }
         
         $content->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     // ==================== 用户评价管理 ====================
@@ -169,14 +212,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -186,11 +225,7 @@ class SiteContent extends BaseController
     {
         $list = Testimonial::getEnabledList(10);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -198,28 +233,31 @@ class SiteContent extends BaseController
      */
     public function saveTestimonial(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'name', 'avatar', 'content', 'service_type',
             'sort_order', 'is_enabled'
         ]);
         
         try {
-            if ($id) {
-                $item = Testimonial::find($id);
-                if (!$item) {
-                    return json(['code' => 404, 'message' => '评价不存在']);
-                }
-                $item->save($data);
-            } else {
-                Testimonial::create($data);
-            }
-            
-            return json(['code' => 0, 'message' => '保存成功']);
-        } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => Testimonial::find($recordId),
+                static fn (array $payload) => Testimonial::create($payload),
+                '评价不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_testimonial', $e, '保存评价失败，请稍后重试', [
+                'testimonial_id' => $id,
+                'service_type' => $data['service_type'] ?? '',
+                'field_keys' => array_values(array_keys($data)),
+            ]);
         }
     }
+
     
     /**
      * 删除评价（后台）
@@ -230,12 +268,12 @@ class SiteContent extends BaseController
         
         $item = Testimonial::find($id);
         if (!$item) {
-            return json(['code' => 404, 'message' => '评价不存在']);
+            return $this->error('评价不存在', 404);
         }
         
         $item->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     // ==================== FAQ管理 ====================
@@ -262,14 +300,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -280,11 +314,7 @@ class SiteContent extends BaseController
         $category = $request->param('category');
         $list = Faq::getEnabledList($category);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -292,28 +322,31 @@ class SiteContent extends BaseController
      */
     public function saveFaq(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'category', 'question', 'answer',
             'sort_order', 'is_enabled'
         ]);
         
         try {
-            if ($id) {
-                $item = Faq::find($id);
-                if (!$item) {
-                    return json(['code' => 404, 'message' => 'FAQ不存在']);
-                }
-                $item->save($data);
-            } else {
-                Faq::create($data);
-            }
-            
-            return json(['code' => 0, 'message' => '保存成功']);
-        } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => Faq::find($recordId),
+                static fn (array $payload) => Faq::create($payload),
+                'FAQ不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_faq', $e, '保存FAQ失败，请稍后重试', [
+                'faq_id' => $id,
+                'category' => $data['category'] ?? '',
+                'question_length' => mb_strlen((string) ($data['question'] ?? '')),
+            ]);
         }
     }
+
     
     /**
      * 删除FAQ（后台）
@@ -324,12 +357,12 @@ class SiteContent extends BaseController
         
         $item = Faq::find($id);
         if (!$item) {
-            return json(['code' => 404, 'message' => 'FAQ不存在']);
+            return $this->error('FAQ不存在', 404);
         }
         
         $item->delete();
         
-        return json(['code' => 0, 'message' => '删除成功']);
+        return $this->success(null, '删除成功');
     }
     
     // ==================== 塔罗牌管理 ====================
@@ -352,14 +385,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -367,7 +396,7 @@ class SiteContent extends BaseController
      */
     public function saveTarotCard(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'name', 'name_en', 'image_url', 'is_major',
             'upright_meaning', 'reversed_meaning',
@@ -375,21 +404,25 @@ class SiteContent extends BaseController
         ]);
         
         try {
-            if ($id) {
-                $item = TarotCard::find($id);
-                if (!$item) {
-                    return json(['code' => 404, 'message' => '塔罗牌不存在']);
-                }
-                $item->save($data);
-            } else {
-                TarotCard::create($data);
-            }
-            
-            return json(['code' => 0, 'message' => '保存成功']);
-        } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => TarotCard::find($recordId),
+                static fn (array $payload) => TarotCard::create($payload),
+                '塔罗牌不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_tarot_card', $e, '保存塔罗牌失败，请稍后重试', [
+                'card_id' => $id,
+                'card_name' => $data['name'] ?? '',
+                'is_major' => (int) ($data['is_major'] ?? 0),
+                'has_image' => !empty($data['image_url']),
+            ]);
         }
     }
+
     
     // ==================== 塔罗牌阵管理 ====================
     
@@ -406,14 +439,10 @@ class SiteContent extends BaseController
             ->page($page, $limit)
             ->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -423,11 +452,7 @@ class SiteContent extends BaseController
     {
         $list = TarotSpread::getEnabledList();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -446,16 +471,20 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = TarotSpread::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '牌阵不存在']);
+                    return $this->error('牌阵不存在', 404);
                 }
                 $item->save($data);
             } else {
                 TarotSpread::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
+            return $this->success(null, '保存成功');
         } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            Log::error('保存牌阵失败', [
+                'spread_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('保存失败，请稍后重试', 500);
         }
     }
     
@@ -479,14 +508,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -497,11 +522,7 @@ class SiteContent extends BaseController
         $category = $request->param('category');
         $list = QuestionTemplate::getEnabledList($category);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $list,
-        ]);
+        return $this->success($list, '获取成功');
     }
     
     /**
@@ -518,17 +539,24 @@ class SiteContent extends BaseController
             if ($id) {
                 $item = QuestionTemplate::find($id);
                 if (!$item) {
-                    return json(['code' => 404, 'message' => '模板不存在']);
+                    return $this->error('模板不存在', 404);
                 }
                 $item->save($data);
             } else {
                 QuestionTemplate::create($data);
             }
             
-            return json(['code' => 0, 'message' => '保存成功']);
-        } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            return $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            Log::error('保存问题模板失败', [
+                'template_id' => $id ? (int) $id : null,
+                'category' => $data['category'] ?? '',
+                'operator_id' => $this->getOperatorId(),
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('保存问题模板失败，请稍后重试', 500);
         }
+
     }
     
     // ==================== 每日运势模板管理 ====================
@@ -551,14 +579,10 @@ class SiteContent extends BaseController
         $total = $query->count();
         $list = $query->page($page, $limit)->select();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $list,
-                'total' => $total,
-            ],
-        ]);
+        return $this->success([
+            'list' => $list,
+            'total' => $total,
+        ], '获取成功');
     }
     
     /**
@@ -566,44 +590,44 @@ class SiteContent extends BaseController
      */
     public function saveFortuneTemplate(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'type', 'level', 'title', 'content', 'is_enabled'
         ]);
         
         try {
-            if ($id) {
-                $item = DailyFortuneTemplate::find($id);
-                if (!$item) {
-                    return json(['code' => 404, 'message' => '模板不存在']);
-                }
-                $item->save($data);
-            } else {
-                DailyFortuneTemplate::create($data);
-            }
-            
-            return json(['code' => 0, 'message' => '保存成功']);
-        } catch (\Exception $e) {
-            return json(['code' => 500, 'message' => '保存失败：' . $e->getMessage()]);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => DailyFortuneTemplate::find($recordId),
+                static fn (array $payload) => DailyFortuneTemplate::create($payload),
+                '模板不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_fortune_template', $e, '保存运势模板失败，请稍后重试', [
+                'template_id' => $id,
+                'type' => $data['type'] ?? '',
+                'level' => $data['level'] ?? '',
+                'title_length' => mb_strlen((string) ($data['title'] ?? '')),
+            ]);
         }
     }
+
     
     /**
      * 获取所有分类和类型选项
      */
     public function getEnums()
     {
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'faq_categories' => Faq::CATEGORIES,
-                'testimonial_service_types' => Testimonial::SERVICE_TYPES,
-                'spread_types' => TarotSpread::SPREAD_TYPES,
-                'question_categories' => QuestionTemplate::CATEGORIES,
-                'fortune_types' => DailyFortuneTemplate::TYPES,
-                'fortune_levels' => DailyFortuneTemplate::LEVEL_NAMES,
-            ],
+        return $this->success([
+            'faq_categories' => Faq::CATEGORIES,
+            'testimonial_service_types' => Testimonial::SERVICE_TYPES,
+            'spread_types' => TarotSpread::SPREAD_TYPES,
+            'question_categories' => QuestionTemplate::CATEGORIES,
+            'fortune_types' => DailyFortuneTemplate::TYPES,
+            'fortune_levels' => DailyFortuneTemplate::LEVEL_NAMES,
         ]);
     }
 }

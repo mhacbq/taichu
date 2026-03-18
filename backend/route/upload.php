@@ -20,5 +20,6 @@ Route::group('api/upload', function () {
     // 删除文件
     Route::delete('file/:id', 'upload/delete');
 })->middleware([
-    \app\middleware\AdminAuth::class
+    \app\middleware\AdminAuth::class,
+    \app\middleware\RateLimit::class
 ]);

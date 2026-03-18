@@ -65,8 +65,14 @@ class TarotCard extends Model
      */
     public static function drawRandom(): ?self
     {
+        // 使用更安全的随机排序方式，避免orderRaw潜在的SQL注入风险
+        $count = self::where('is_enabled', 1)->count();
+        if ($count === 0) {
+            return null;
+        }
+        $offset = mt_rand(0, $count - 1);
         return self::where('is_enabled', 1)
-            ->orderRaw('RAND()')
+            ->limit($offset, 1)
             ->find();
     }
 }

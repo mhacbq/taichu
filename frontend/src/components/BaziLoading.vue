@@ -138,12 +138,12 @@ onUnmounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(to bottom, #e94560 50%, #16213e 50%);
+  background: linear-gradient(to bottom, #b8860b 50%, #16213e 50%);
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 30px rgba(184, 134, 11, 0.5);
 }
 
 .yin-yang::before,
@@ -156,7 +156,7 @@ onUnmounted(() => {
 }
 
 .yin-yang::before {
-  background: #e94560;
+  background: #b8860b;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
@@ -180,7 +180,7 @@ onUnmounted(() => {
   position: absolute;
   width: 4px;
   height: 20px;
-  background: linear-gradient(to bottom, #e94560, #ff6b6b);
+  background: linear-gradient(to bottom, #b8860b, #daa520);
   border-radius: 2px;
   top: 50%;
   left: 50%;
@@ -213,7 +213,7 @@ onUnmounted(() => {
 
 .sub-text {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
 }
 
 @keyframes pulse {
@@ -236,36 +236,36 @@ onUnmounted(() => {
 .progress-bar {
   flex: 1;
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-10);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  background: var(--primary-gradient);
   border-radius: 4px;
   transition: width 0.1s ease;
-  box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+  box-shadow: 0 0 10px rgba(184, 134, 11, 0.5);
 }
 
 .progress-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--white-60);
   min-width: 40px;
 }
 
 /* 提示文字 */
 .tips-container {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white-05);
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--white-10);
 }
 
 .tip-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--white-70);
   line-height: 1.6;
   margin: 0;
 }

@@ -19,11 +19,7 @@ class Config extends BaseController
     {
         $config = ConfigService::getClientConfig();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $config,
-        ]);
+        return $this->success($config);
     }
     
     /**
@@ -33,10 +29,6 @@ class Config extends BaseController
     {
         $features = ConfigService::getFeatureSwitches();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $features,
-        ]);
+        return $this->success($features);
     }
 }

@@ -3,69 +3,116 @@
     <GuideModal />
     <!-- Hero Section -->
     <section class="hero">
-      <div class="container">
-        <!-- 暖心问候语 - 已登录 -->
-        <div v-if="isLoggedIn" class="warm-greeting">
-          <div class="greeting-content">
-            <span class="greeting-icon">{{ greetingIcon }}</span>
-            <div class="greeting-text">
-              <h3>{{ greetingText }}</h3>
-              <p class="daily-quote">{{ dailyQuote }}</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 用户积分卡片 - 已登录 -->
-        <div v-if="isLoggedIn" class="user-points-card">
-          <div class="points-display">
-            <span class="points-icon">💎</span>
-            <div class="points-info">
-              <span class="points-label">我的积分</span>
-              <span class="points-value">{{ userPoints }}</span>
-            </div>
-          </div>
-          <div class="points-actions">
-            <router-link to="/profile" class="points-btn checkin">签到领积分</router-link>
-            <router-link to="/bazi" class="points-btn">去排盘</router-link>
-          </div>
-        </div>
-        
-        <!-- 未登录引导卡片 -->
-        <div v-else class="guest-welcome-card">
-          <div class="welcome-content">
-            <span class="welcome-icon">🌸</span>
-            <div class="welcome-text">
-              <h3>嗨，你好呀</h3>
-              <p>迷茫的时候，来这里找找答案吧</p>
-            </div>
-          </div>
-          <div class="welcome-actions">
-            <router-link to="/login" class="welcome-btn primary">立即登录</router-link>
-            <router-link to="/login" class="welcome-btn secondary">注册领100积分</router-link>
-          </div>
-          <div class="welcome-features">
-            <span class="feature-tag">🎁 新用户送100积分</span>
-            <span class="feature-tag">✨ 首次排盘免费</span>
-            <span class="feature-tag">🔮 八字塔罗每日运势</span>
-          </div>
-        </div>
-        
-        <div class="hero-content">
+      <div class="container hero-shell">
+        <div class="hero-main">
+          <span class="hero-kicker">传统文化探索 · 年轻人的人生参考</span>
           <h1 class="hero-title">在迷茫中找到方向</h1>
-          <p class="hero-subtitle">不是预测命运，而是帮你更懂自己<br>八字、塔罗、运势，为你的困惑寻找答案</p>
+          <p class="hero-subtitle">不是替你决定命运，而是帮你看清自己。<br>从八字、塔罗到每日运势，把困惑拆成更容易行动的下一步。</p>
           <div class="hero-actions">
             <router-link to="/bazi" class="btn-primary">
-              <span class="btn-icon">📅</span>
+              <el-icon class="btn-icon"><Calendar /></el-icon>
               开始排盘
-              <span class="btn-badge">首测免费</span>
+              <span v-if="!isLoggedIn" class="btn-badge btn-badge--login">需登录</span>
+              <span v-if="heroPrimaryBadge" :class="['btn-badge', heroPrimaryBadge.className]">{{ heroPrimaryBadge.text }}</span>
             </router-link>
             <router-link to="/tarot" class="btn-secondary">
-              <span class="btn-icon">🎴</span>
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
               塔罗占卜
+              <span v-if="!isLoggedIn" class="btn-badge btn-badge--login btn-badge--outline">需登录</span>
             </router-link>
           </div>
-          <p class="hero-hint">💡 已有 {{ userCount }}+ 用户在这里找到答案</p>
+          <p class="hero-hint" :class="{ 'hero-hint--muted': statsLoading || statsError }"><el-icon><Star /></el-icon> {{ heroHintText }}</p>
+
+          <div class="hero-highlights" :class="{ 'hero-highlights--muted': statsLoading || statsError }">
+            <article class="hero-highlight" v-for="item in heroProofItems" :key="item.key">
+              <span class="hero-highlight-icon">
+                <el-icon><component :is="item.icon" /></el-icon>
+              </span>
+              <div class="hero-highlight-copy">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.description }}</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="hero-access-list">
+            <article class="hero-access-item" v-for="item in heroAccessItems" :key="item.key">
+              <span class="hero-access-icon">
+                <el-icon><component :is="item.icon" /></el-icon>
+              </span>
+              <div class="hero-access-copy">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.detail }}</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="hero-trust-list">
+            <span class="hero-trust-pill" v-for="item in heroTrustItems" :key="item.key">
+              <el-icon><component :is="item.icon" /></el-icon>
+              {{ item.text }}
+            </span>
+          </div>
         </div>
+
+        <aside class="hero-side">
+          <div v-if="isLoggedIn" class="hero-status-card card">
+            <div class="hero-status-head">
+              <span class="hero-status-icon">
+                <el-icon v-if="greetingIcon === 'morning'" :size="24"><Sunrise /></el-icon>
+                <el-icon v-else-if="greetingIcon === 'afternoon'" :size="24"><Sunny /></el-icon>
+                <el-icon v-else :size="24"><Moon /></el-icon>
+              </span>
+              <div class="hero-status-copy">
+                <p class="hero-status-eyebrow">今日状态</p>
+                <h3>{{ greetingText }}</h3>
+              </div>
+              <span class="hero-status-badge">已登录</span>
+            </div>
+            <p class="hero-status-quote">{{ dailyQuote }}</p>
+            <div class="hero-points-panel">
+              <div class="hero-points-display">
+                <el-icon class="hero-points-icon" :size="28"><Coin /></el-icon>
+                <div>
+                  <span class="hero-points-label">我的积分</span>
+                  <strong class="hero-points-value">{{ formattedUserPoints }}</strong>
+                </div>
+              </div>
+              <p class="hero-points-note">{{ heroPointsCardNote }}</p>
+            </div>
+            <div class="hero-panel-actions">
+              <router-link to="/profile" class="hero-panel-btn hero-panel-btn--primary">签到领积分</router-link>
+              <router-link to="/bazi" class="hero-panel-btn hero-panel-btn--secondary">去排盘</router-link>
+            </div>
+          </div>
+
+          <div v-else class="hero-status-card card">
+            <div class="hero-status-head">
+              <span class="hero-status-icon hero-status-icon--guest">
+                <el-icon :size="24"><Cherry /></el-icon>
+              </span>
+              <div class="hero-status-copy">
+                <p class="hero-status-eyebrow">新用户欢迎</p>
+                <h3>先领积分，再慢慢探索</h3>
+              </div>
+              <span class="hero-status-badge hero-status-badge--soft">未登录</span>
+            </div>
+            <p class="hero-status-quote hero-status-quote--guest">先登录领取体验积分，再从八字、塔罗或每日运势里挑一个最想解决的问题开始。</p>
+            <div class="hero-benefits">
+              <article class="hero-benefit" v-for="item in guestBenefits" :key="item.key">
+                <el-icon><component :is="item.icon" /></el-icon>
+                <div class="hero-benefit-copy">
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.description }}</span>
+                </div>
+              </article>
+            </div>
+            <div class="hero-panel-actions">
+              <router-link to="/login" class="hero-panel-btn hero-panel-btn--primary">立即登录</router-link>
+              <router-link :to="registerIntentRoute" class="hero-panel-btn hero-panel-btn--secondary">注册领积分</router-link>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -74,41 +121,66 @@
       <div class="container">
         <h2 class="section-title">我们的服务</h2>
         <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">☯</div>
-            <h3>八字分析</h3>
-            <p>基于传统文化的性格分析，了解您的个性特点、发展方向、人际关系</p>
-            <router-link to="/bazi" class="feature-link">立即体验 →</router-link>
+          <div class="feature-card card-hover">
+            <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
+            <h3>八字排盘</h3>
+            <p>基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考</p>
+            <div class="feature-access">
+              <span class="feature-note">{{ isLoggedIn ? '已登录可用' : '需登录' }}</span>
+              <span v-if="baziFeatureBadge" :class="['feature-note', baziFeatureBadge.className]">{{ baziFeatureBadge.text }}</span>
+            </div>
+            <router-link to="/bazi" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🎴</div>
-            <h3>塔罗测试</h3>
-            <p>趣味塔罗牌阵探索，为您的困惑提供思考角度，发现内心可能</p>
-            <router-link to="/tarot" class="feature-link">立即体验 →</router-link>
+          <div class="feature-card card-hover">
+            <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
+            <h3>塔罗占卜</h3>
+            <p>通过牌阵与问题模板梳理关系、工作与决策困惑，获得更聚焦的思路</p>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+            </div>
+            <router-link to="/tarot" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">☯</div>
+          <div class="feature-card card-hover">
+            <div class="feature-icon"><el-icon :size="48"><Switch /></el-icon></div>
             <h3>六爻占卜</h3>
             <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
-            <router-link to="/liuyao" class="feature-link">立即体验 →</router-link>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+            </div>
+            <router-link to="/liuyao" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">💕</div>
+          <div class="feature-card card-hover">
+            <div class="feature-icon"><el-icon :size="48"><Link /></el-icon></div>
             <h3>八字合婚</h3>
             <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
-            <router-link to="/hehun" class="feature-link">立即体验 →</router-link>
+            <div class="feature-access">
+              <span class="feature-note">需登录</span>
+            </div>
+            <router-link to="/hehun" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🌟</div>
-            <h3>每日指南</h3>
-            <p>基于出生日期的每日幸运指数，生活参考，娱乐消遣</p>
-            <router-link to="/daily" class="feature-link">立即体验 →</router-link>
+          <div class="feature-card card-hover">
+            <div class="feature-icon"><el-icon :size="48"><Star /></el-icon></div>
+            <h3>每日运势</h3>
+            <p>查看今日宜忌、幸运提示与节奏建议，作为轻量的日常状态参考</p>
+            <router-link to="/daily" class="feature-link">
+              立即体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🎯</div>
-            <h3>更多功能</h3>
-            <p>取名建议、吉日查询等更多命理功能，满足您的不同需求</p>
-            <router-link to="/profile" class="feature-link">探索更多 →</router-link>
+          <div class="feature-card card-hover">
+            <div class="feature-icon"><el-icon :size="48"><Aim /></el-icon></div>
+            <h3>个人中心</h3>
+            <p>在这里查看历史记录、积分权益与签到入口，也能继续管理你的命理体验进度</p>
+            <router-link to="/profile" class="feature-link">
+              进入个人中心 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
         </div>
       </div>
@@ -117,24 +189,38 @@
     <!-- 用户评价 Section -->
     <section class="testimonials">
       <div class="container">
-        <h2 class="section-title">用户心声</h2>
-        <div class="testimonials-grid">
-          <div class="testimonial-card" v-for="(item, index) in testimonials" :key="index">
-            <div class="testimonial-header">
-              <div class="testimonial-avatar">{{ item.avatar }}</div>
-              <div class="testimonial-info">
-                <h4>{{ item.name }}</h4>
-                <div class="testimonial-rating">
-                  <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= item.rating }">★</span>
-                </div>
-              </div>
-            </div>
-            <p class="testimonial-content">{{ item.content }}</p>
-            <div class="testimonial-service">
-              <span class="service-tag">{{ item.service }}</span>
-            </div>
+        <div class="section-heading">
+          <div>
+            <p class="section-eyebrow">体验故事</p>
+            <h2 class="section-title">体验案例</h2>
+            <p class="section-description">以下内容为整理后的体验案例，用来展示不同服务更适合帮助梳理哪类困惑，并不代表对个人结果的直接承诺。</p>
+          </div>
+          <div class="testimonials-summary card">
+            <span class="testimonials-summary-label">说明</span>
+            <p>示例内容按服务场景整理展示，不使用实时评分、具体昵称或头像式背书，重点只放在“这类问题更适合怎么用”。</p>
           </div>
         </div>
+        <div class="testimonials-grid">
+          <article class="testimonial-card card-hover" v-for="(item, index) in testimonials" :key="index">
+            <div class="testimonial-topline">
+              <span class="testimonial-badge">{{ item.storyTag }}</span>
+              <span class="service-tag">{{ item.service }}</span>
+            </div>
+            <div class="testimonial-header">
+              <div class="testimonial-scene">
+                <span class="testimonial-scene-label">适用场景</span>
+                <h4>{{ item.persona }}</h4>
+              </div>
+              <span class="testimonial-note">{{ item.note }}</span>
+            </div>
+            <p class="testimonial-content">{{ item.content }}</p>
+            <div class="testimonial-footer">
+              <span class="testimonial-outcome">{{ item.outcome }}</span>
+              <span class="testimonial-service-copy">适合先从 {{ item.service }} 入手</span>
+            </div>
+          </article>
+        </div>
+
       </div>
     </section>
 
@@ -146,18 +232,27 @@
             <h2 class="section-title">关于太初文化</h2>
             <p>太初文化是一款结合传统文化与人工智能技术的趣味探索平台。我们致力于：</p>
             <ul class="about-list">
-              <li>传承中华传统历法文化</li>
-              <li>运用AI技术提供趣味分析</li>
-              <li>为用户提供个性化的性格参考</li>
-              <li>让传统文化探索更加有趣、便捷</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 传承中华传统历法文化</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 运用AI技术提供趣味分析</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 为用户提供个性化的性格参考</li>
+              <li><el-icon class="about-icon"><Check /></el-icon> 让传统文化探索更加有趣、便捷</li>
             </ul>
           </div>
-          <div class="about-stats">
-            <div class="stat-item" v-for="stat in stats" :key="stat.label">
-              <span class="stat-number">{{ stat.number }}</span>
+          <div class="about-stats" :class="{ 'about-stats--loading': statsLoading, 'about-stats--error': statsError }">
+            <div class="stat-item card-hover" v-for="stat in stats" :key="stat.label">
+              <div class="stat-icon-wrapper">
+                <el-icon class="stat-icon"><component :is="stat.icon" /></el-icon>
+              </div>
+              <span class="stat-number" :class="{ 'stat-number--placeholder': !stat.isLive }">{{ stat.number }}</span>
               <span class="stat-label">{{ stat.label }}</span>
+              <span v-if="stat.caption" class="stat-caption">{{ stat.caption }}</span>
             </div>
           </div>
+          <div v-if="statsError" class="stats-feedback">
+            <p>统计数据暂时不可用，先体验核心功能也不耽误。</p>
+            <button class="stats-retry" type="button" @click="loadStats">刷新统计</button>
+          </div>
+
         </div>
       </div>
     </section>
@@ -165,31 +260,340 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
+import { Sunrise, Sunny, Moon, Coin, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
 
-const stats = ref([
-  { number: '加载中...', label: '服务用户' },
-  { number: '加载中...', label: '分析次数' },
-  { number: '98%', label: '好评率' },
-])
+const statIconMap = {
+  UserFilled,
+  DataLine,
+  ChatLineRound,
+}
+
+const createFallbackStats = (caption = '数据更新中') => [
+  { number: '--', label: '服务用户', icon: UserFilled, caption, isLive: false },
+  { number: '--', label: '分析次数', icon: DataLine, caption, isLive: false },
+  { number: '--', label: '好评率', icon: ChatLineRound, caption, isLive: false },
+]
+
+const hasDisplayValue = (value) => value !== undefined && value !== null && `${value}`.trim() !== ''
+
+const formatDisplayValue = (value) => {
+  if (!hasDisplayValue(value)) {
+    return '--'
+  }
+
+  if (typeof value === 'number') {
+    return value.toLocaleString('zh-CN')
+  }
+
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue.toLocaleString('zh-CN') : value
+}
+
+const resolveStatIcon = (icon, fallbackIcon = UserFilled) => {
+  if (typeof icon === 'object' || typeof icon === 'function') {
+    return icon
+  }
+
+  return statIconMap[icon] || fallbackIcon
+}
+
+const buildStats = (incomingStats = []) => {
+  const fallbackStats = createFallbackStats()
+
+  return fallbackStats.map((fallback, index) => {
+    const item = incomingStats[index]
+
+    if (!item) {
+      return fallback
+    }
+
+    return {
+      ...fallback,
+      ...item,
+      number: hasDisplayValue(item.number) ? formatDisplayValue(item.number) : '--',
+      label: item.label || fallback.label,
+      icon: resolveStatIcon(item.icon, fallback.icon),
+      caption: hasDisplayValue(item.number) ? '' : fallback.caption,
+      isLive: hasDisplayValue(item.number),
+    }
+  })
+}
+
+const stats = ref(createFallbackStats('统计同步中'))
+const statsLoading = ref(true)
+const statsError = ref(false)
 
 const isLoggedIn = ref(false)
-const userPoints = ref(0)
-const userCount = ref(12000)
+const userPoints = ref(null)
+const userCount = ref(null)
+const isFirstBaziEligible = ref(null)
+
+const baziOfferState = computed(() => {
+  if (!isLoggedIn.value) {
+    return 'guest'
+  }
+
+  if (isFirstBaziEligible.value == null) {
+    return 'loading'
+  }
+
+  return isFirstBaziEligible.value ? 'free' : 'priced'
+})
+
+const heroPrimaryBadge = computed(() => {
+  if (baziOfferState.value === 'guest') {
+    return {
+      text: '登录后首测免费',
+      className: 'btn-badge--free'
+    }
+  }
+
+  if (baziOfferState.value === 'free') {
+    return {
+      text: '首测免费',
+      className: 'btn-badge--free'
+    }
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return {
+      text: '查看当前价格',
+      className: 'btn-badge--pricing'
+    }
+  }
+
+  return {
+    text: '权益确认中',
+    className: 'btn-badge--muted'
+  }
+})
+
+const baziFeatureBadge = computed(() => {
+  if (baziOfferState.value === 'guest') {
+    return {
+      text: '登录后首测免费',
+      className: 'feature-note--free'
+    }
+  }
+
+  if (baziOfferState.value === 'free') {
+    return {
+      text: '首测免费',
+      className: 'feature-note--free'
+    }
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return {
+      text: '查看当前价格',
+      className: 'feature-note--price'
+    }
+  }
+
+  return {
+    text: '权益确认中',
+    className: 'feature-note--muted'
+  }
+})
+
+const baziAccessDetail = computed(() => {
+  if (baziOfferState.value === 'guest') {
+    return '登录后可保存体验进度，并确认你是否还保留八字首测免费资格。'
+  }
+
+  if (baziOfferState.value === 'free') {
+    return '八字、塔罗、六爻与合婚现在都能直接进入，你的八字首测资格也还在。'
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return '八字、塔罗、六爻与合婚现在都能直接进入；八字首测资格已使用，可直接查看当前价格。'
+  }
+
+  return '八字、塔罗、六爻与合婚现在都能直接进入，八字权益正在同步。'
+})
+
+const heroHintText = computed(() => {
+  if (statsLoading.value) {
+    return '站内数据正在同步中，请稍候'
+  }
+
+  if (statsError.value) {
+    return '统计数据暂时不可用，先体验核心功能也不耽误'
+  }
+
+  if (hasDisplayValue(userCount.value)) {
+    return `已有 ${formatDisplayValue(userCount.value)} 位用户在这里找到答案`
+  }
+
+  return '站内数据每日更新，欢迎先体验核心功能'
+})
+
+const formattedUserPoints = computed(() => formatDisplayValue(userPoints.value))
+const registerIntentRoute = { path: '/login', query: { intent: 'register' } }
+
+const heroPointsDetail = computed(() => {
+  if (!isLoggedIn.value) {
+    return '登录后可领取 100 积分，用更轻量的方式开始第一次体验。'
+  }
+
+  if (!hasDisplayValue(userPoints.value)) {
+    return '积分正在同步中，也可以先去个人中心确认今日签到状态。'
+  }
+
+  if (baziOfferState.value === 'free') {
+    return `当前可用 ${formattedUserPoints.value} 积分，你的八字首测资格仍在，适合先从一次免费排盘开始。`
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return `当前可用 ${formattedUserPoints.value} 积分，八字首测资格已使用，可先查看当前价格再决定是否继续深入解读。`
+  }
+
+  return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
+})
+
+const heroPointsCardNote = computed(() => {
+  if (!isLoggedIn.value) {
+    return '登录后即可同步积分权益与八字首测资格。'
+  }
+
+  if (!hasDisplayValue(userPoints.value)) {
+    return '积分正在同步中，也可以先去个人中心确认今日签到状态。'
+  }
+
+  if (baziOfferState.value === 'free') {
+    return `当前可用 ${formattedUserPoints.value} 积分，你的八字首测资格仍在，适合先从一次免费排盘开始。`
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return `当前可用 ${formattedUserPoints.value} 积分，八字首测资格已使用；想补充额度时，可去签到页领取今日积分。`
+  }
+
+  return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
+})
+
+
+const heroProofItems = computed(() => [
+  {
+    key: 'users',
+    icon: UserFilled,
+    label: hasDisplayValue(userCount.value) ? `${formatDisplayValue(userCount.value)}+ 用户正在体验` : '持续为用户提供参考',
+    description: '把人生阶段、当下困惑和下一步行动拆开来看，先理解自己再做决定。'
+  },
+  {
+    key: 'services',
+    icon: MagicStick,
+    label: '5 类核心服务一站体验',
+    description: '八字、塔罗、六爻、合婚与每日运势统一从首页进入，路径更清楚。'
+  },
+  {
+    key: 'clarity',
+    icon: ChatLineRound,
+    label: statsError.value ? '体验说明已单独呈现' : '权益与说明更透明',
+    description: '登录门槛、示例反馈和积分权益分开展示，避免把提示误读成结果承诺。'
+  }
+])
+
+const heroAccessItems = computed(() => [
+  {
+    key: 'entry',
+    icon: isLoggedIn.value ? Check : Present,
+    title: isLoggedIn.value ? '完整入口已为你解锁' : '登录后开启完整体验',
+    detail: baziAccessDetail.value
+  },
+  {
+    key: 'daily',
+    icon: Star,
+    title: '每日运势可随时浏览',
+    detail: '今日宜忌、节奏提醒和轻量建议无需登录即可查看。'
+  },
+  {
+    key: 'points',
+    icon: Coin,
+    title: isLoggedIn.value ? '账户积分状态' : '新用户积分权益',
+    detail: heroPointsDetail.value
+  }
+])
+
+const heroTrustItems = computed(() => [
+  {
+    key: 'clarity',
+    icon: Check,
+    text: '先用一句话说清每项服务能帮你解决什么问题'
+  },
+  {
+    key: 'benefits',
+    icon: Present,
+    text: isLoggedIn.value ? '积分、入口与下一步操作收在同一张状态卡里' : '新用户福利、登录门槛和入口路径一次说明白'
+  },
+  {
+    key: 'rhythm',
+    icon: Star,
+    text: '先告诉你能做什么，再决定要不要深入探索'
+  }
+])
+
+const guestBenefits = [
+  {
+    key: 'points',
+    icon: Present,
+    title: '登录即领 100 积分',
+    description: '先拿到体验额度，再决定最想优先探索哪一项服务。'
+  },
+  {
+    key: 'free',
+    icon: Star,
+    title: '八字首测免费',
+    description: '第一次排盘零门槛，适合先看看自己的整体节奏。'
+  },
+  {
+    key: 'services',
+    icon: MagicStick,
+    title: '多种方式探索自己',
+    description: '八字、塔罗与每日运势等入口现在都从首页顺着往下走。'
+  }
+]
 
 // 问候语数据
-const hour = new Date().getHours()
+const currentHour = ref(new Date().getHours())
+let greetingRefreshTimer = null
+
+const syncCurrentHour = () => {
+  currentHour.value = new Date().getHours()
+}
+
+const scheduleGreetingRefresh = () => {
+  syncCurrentHour()
+
+  if (greetingRefreshTimer) {
+    window.clearTimeout(greetingRefreshTimer)
+  }
+
+  const now = new Date()
+  const nextHour = new Date(now)
+  nextHour.setHours(now.getHours() + 1, 0, 0, 0)
+  greetingRefreshTimer = window.setTimeout(() => {
+    scheduleGreetingRefresh()
+  }, Math.max(1000, nextHour.getTime() - now.getTime() + 1000))
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    scheduleGreetingRefresh()
+  }
+}
+
 const greetingIcon = computed(() => {
-  if (hour < 12) return '🌅'
-  if (hour < 18) return '☀️'
-  return '🌙'
+  if (currentHour.value < 12) return 'morning'
+  if (currentHour.value < 18) return 'afternoon'
+  return 'evening'
 })
 
 const greetingText = computed(() => {
-  if (hour < 12) return '早上好，愿你今天充满希望'
-  if (hour < 18) return '下午好，愿你的努力都有收获'
+  if (currentHour.value < 12) return '早上好，愿你今天充满希望'
+  if (currentHour.value < 18) return '下午好，愿你的努力都有收获'
   return '晚上好，愿你今夜好梦'
 })
 
@@ -208,350 +612,323 @@ const dailyQuote = computed(() => {
   return quotes[dayOfYear % quotes.length]
 })
 
-// 用户评价数据 - 更贴近迷茫年轻人的真实感受
+// 用户心声示例 - 以体验故事形式展示，避免与实时评价混淆
 const testimonials = ref([
   {
     name: '小雨',
-    avatar: '👩',
+    avatar: '雨',
+    avatarColor: 'var(--primary-light-20)',
     rating: 5,
-    content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到我的喜用神和适合的发展方向，突然有了方向感，现在已经在准备转行了！',
+    ratingLabel: '4.9 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '毕业转行期 · 职业方向迷茫',
+    content: '毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到自己的优势节奏和适合的发展方向，至少先知道下一步该往哪走。',
+    outcome: '更适合用来梳理职业方向',
+    note: '示例反馈',
     service: '八字排盘'
   },
   {
     name: '阿杰',
-    avatar: '👨',
+    avatar: '杰',
+    avatarColor: 'var(--warning-light)',
     rating: 5,
-    content: '感情遇到瓶颈期，塔罗给了我很大的启发。不是告诉我该怎么做，而是帮我理清了自己真正想要的是什么。现在已经和女友和好了。',
+    ratingLabel: '4.8 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '关系调整期 · 想看清真实需求',
+    content: '感情遇到瓶颈期时，塔罗没有替我做决定，而是帮我把真正纠结的点拆开来看，最后更清楚自己到底在意什么。',
+    outcome: '更适合梳理关系里的优先级',
+    note: '示例反馈',
     service: '塔罗占卜'
   },
   {
     name: '小陈',
-    avatar: '👦',
-    rating: 5,
-    content: '工作压力很大的时候，每天早上的运势推送成了我的精神支柱。有时候看到"今天适合休息"就会给自己放个假，感觉被理解了。',
+    avatar: '陈',
+    avatarColor: 'var(--success-light)',
+    rating: 4,
+    ratingLabel: '4.7 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '高压上班族 · 需要每日提醒',
+    content: '工作压力大的时候，我更在意有没有一个轻量提醒告诉我今天该冲还是该缓。每日运势给我的价值，是让我在忙乱里停一下。',
+    outcome: '适合做日常节奏提醒',
+    note: '示例反馈',
     service: '每日运势'
   },
   {
     name: '琳琳',
-    avatar: '👩‍💼',
+    avatar: '琳',
+    avatarColor: 'var(--primary-light-15)',
     rating: 5,
-    content: '作为INFJ，常常陷入自我怀疑。八字分析让我更接纳自己的性格特点，原来我生来就是这样，不是我有问题。',
+    ratingLabel: '4.9 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '自我探索期 · 容易反复内耗',
+    content: '以前总觉得自己想太多，八字分析反而让我先理解自己的性格底色。被看见之后，很多自我怀疑就没那么重了。',
+    outcome: '适合建立更稳定的自我认知',
+    note: '示例反馈',
     service: '八字排盘'
   },
   {
     name: '大鹏',
-    avatar: '👨‍💻',
-    rating: 5,
-    content: '一直纠结要不要跳槽，塔罗占卜给了我很中肯的建议。现在的新工作虽然累但是很开心，很感谢当时的指引。',
+    avatar: '鹏',
+    avatarColor: 'var(--info-light)',
+    rating: 4,
+    ratingLabel: '4.7 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '跳槽决策期 · 需要理清取舍',
+    content: '一直纠结要不要换工作，塔罗最大的帮助不是“准不准”，而是把风险、期待和顾虑都摆到了明面上，决策时没那么乱。',
+    outcome: '更适合辅助做阶段性判断',
+    note: '示例反馈',
     service: '塔罗占卜'
   },
   {
     name: '思思',
-    avatar: '👩‍🎨',
+    avatar: '思',
+    avatarColor: 'var(--warning-light)',
     rating: 5,
-    content: '第一次用的时候还半信半疑，但结果真的挺准的。尤其是大运分析，让我知道未来几年需要注意什么，心里有底多了。',
+    ratingLabel: '4.8 / 5 · 示例反馈',
+    storyTag: '体验故事',
+    persona: '长期规划期 · 想看未来节奏',
+    content: '第一次接触时本来只是抱着试试看的心态，但长周期分析给我的感觉是：至少能把未来几年要留意的节点先放进心里。',
+    outcome: '适合做长期规划参考',
+    note: '示例反馈',
     service: '八字排盘'
   }
 ])
 
+
 const loadStats = async () => {
+  statsLoading.value = true
+  statsError.value = false
+
   try {
     const response = await getHomeStats()
-    if (response.code === 0) {
-      stats.value = response.data.stats
-      userCount.value = response.data.userCount || 12000
+
+    if (response.code !== 200) {
+      throw new Error(response.message || '加载统计数据失败')
+    }
+
+    const incomingStats = Array.isArray(response.data?.stats) ? response.data.stats : []
+    stats.value = buildStats(incomingStats)
+    userCount.value = hasDisplayValue(response.data?.userCount) ? response.data.userCount : null
+
+    if (!incomingStats.length && !hasDisplayValue(userCount.value)) {
+      statsError.value = true
+      stats.value = createFallbackStats('数据更新中')
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
+    stats.value = createFallbackStats('数据更新中')
+    userCount.value = null
+    statsError.value = true
+  } finally {
+    statsLoading.value = false
   }
 }
+
+
 
 const loadUserPoints = async () => {
   const token = localStorage.getItem('token')
   if (!token) {
     isLoggedIn.value = false
+    userPoints.value = null
+    isFirstBaziEligible.value = null
     return
   }
   
   isLoggedIn.value = true
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
+    if (response.code === 200) {
       userPoints.value = response.data.balance
+      isFirstBaziEligible.value = resolveFirstBaziFlag(response.data?.first_bazi)
+    } else {
+      userPoints.value = null
+      isFirstBaziEligible.value = null
     }
   } catch (error) {
     console.error('加载积分失败:', error)
+    userPoints.value = null
+    isFirstBaziEligible.value = null
   }
+}
+
+const refreshHomeAccountState = () => {
+  loadUserPoints()
 }
 
 onMounted(() => {
   loadStats()
   loadUserPoints()
+  scheduleGreetingRefresh()
+  window.addEventListener('points-updated', refreshHomeAccountState)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('points-updated', refreshHomeAccountState)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  if (greetingRefreshTimer) {
+    window.clearTimeout(greetingRefreshTimer)
+    greetingRefreshTimer = null
+  }
 })
 </script>
 
 <style scoped>
 .hero {
-  padding: 60px 0 100px;
-  text-align: center;
-  background: radial-gradient(ellipse at center, rgba(233, 69, 96, 0.15) 0%, transparent 70%);
+  padding: 56px 0 88px;
+  background:
+    radial-gradient(circle at top left, rgba(245, 197, 110, 0.24), transparent 42%),
+    radial-gradient(circle at right top, rgba(250, 224, 173, 0.35), transparent 34%),
+    linear-gradient(180deg, #fffefb 0%, #fffaf1 56%, #fff7e9 100%);
 }
 
-/* 暖心问候 */
-.warm-greeting {
-  max-width: 600px;
-  margin: 0 auto 20px;
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.15), rgba(133, 206, 97, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.3);
-  border-radius: 16px;
-  padding: 20px 25px;
-  backdrop-filter: blur(10px);
-  animation: fadeInDown 0.6s ease;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.greeting-content {
-  display: flex;
+.hero-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 420px);
+  gap: 36px;
   align-items: center;
-  gap: 15px;
 }
 
-.greeting-icon {
-  font-size: 36px;
-  animation: gentlePulse 2s ease-in-out infinite;
-}
-
-@keyframes gentlePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-.greeting-text {
+.hero-main {
   text-align: left;
+  color: #2f2a22;
 }
 
-.greeting-text h3 {
-  color: #fff;
-  font-size: 18px;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.daily-quote {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-  font-style: italic;
-}
-
-/* 用户积分卡片 */
-.user-points-card {
-  max-width: 400px;
-  margin: 0 auto 40px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
-  border: 1px solid rgba(233, 69, 96, 0.3);
-  border-radius: 20px;
-  padding: 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  backdrop-filter: blur(10px);
-}
-
-.points-display {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.points-icon {
-  font-size: 36px;
-}
-
-.points-info {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-.points-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.points-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #ffd700;
-}
-
-.points-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.points-btn {
-  padding: 8px 16px;
-  border-radius: 20px;
-  text-decoration: none;
-  font-size: 13px;
-  transition: all 0.3s ease;
-  text-align: center;
-}
-
-.points-btn.checkin {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
-}
-
-.points-btn:not(.checkin) {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.points-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* 未登录欢迎卡片 */
-.guest-welcome-card {
-  max-width: 600px;
-  margin: 0 auto 40px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.15), rgba(255, 107, 107, 0.15));
-  border: 1px solid rgba(233, 69, 96, 0.3);
-  border-radius: 20px;
-  padding: 30px;
-  backdrop-filter: blur(10px);
-}
-
-.welcome-content {
-  display: flex;
+.hero-kicker {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.welcome-icon {
-  font-size: 48px;
-}
-
-.welcome-text {
-  text-align: left;
-}
-
-.welcome-text h3 {
-  color: #fff;
-  font-size: 22px;
-  margin-bottom: 5px;
-}
-
-.welcome-text p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-}
-
-.welcome-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.welcome-btn {
-  padding: 12px 30px;
-  border-radius: 25px;
-  text-decoration: none;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.welcome-btn.primary {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
-}
-
-.welcome-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.welcome-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.3);
-}
-
-.welcome-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.feature-tag {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 6px 12px;
-  border-radius: 15px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  min-height: 36px;
+  padding: 6px 14px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: rgba(245, 196, 103, 0.16);
+  border: 1px solid rgba(212, 156, 62, 0.34);
+  color: #8a6121;
+  font-size: var(--font-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
 }
 
 .hero-title {
-  font-size: 56px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #fff 0%, #e94560 50%, #ffd700 100%);
+  font-size: clamp(42px, 7vw, 60px);
+  font-weight: var(--weight-black);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 18px;
+  max-width: 11ch;
+  color: #916018;
+  background: linear-gradient(135deg, #7f5415 0%, #bf8428 45%, #f0c566 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .hero-subtitle {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 40px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: var(--font-body-lg);
+  color: #4a4236;
+  margin-bottom: 30px;
+  max-width: 620px;
+  line-height: var(--line-height-base);
 }
 
 .hero-actions {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-secondary {
+  min-width: 204px;
+  min-height: 52px;
+}
+
+.btn-primary,
+.btn-secondary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 0 22px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: var(--font-btn);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, color 0.25s ease;
+  overflow: hidden;
+}
+
+.btn-primary::after,
+.btn-secondary::after,
+.hero-panel-btn::after,
+.stats-retry::after,
+.feature-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.38) 50%, transparent 80%);
+  transform: translateX(-130%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+
+.btn-primary {
+  color: #5f4317;
+  background: linear-gradient(135deg, #e3b254 0%, #f6d484 52%, #ffe5aa 100%);
+  border-color: rgba(203, 149, 55, 0.48);
+  box-shadow: 0 12px 24px rgba(186, 134, 39, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .btn-secondary {
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 12px 32px;
-  border-radius: 25px;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  color: #6f4a17;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 228, 0.98));
+  border-color: rgba(203, 149, 55, 0.34);
+  box-shadow: 0 10px 20px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 16px 30px rgba(186, 134, 39, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .btn-secondary:hover {
-  border-color: #e94560;
-  background: rgba(233, 69, 96, 0.1);
+  border-color: rgba(203, 149, 55, 0.44);
+  box-shadow: 0 14px 26px rgba(149, 111, 45, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.btn-primary:hover::after,
+.btn-secondary:hover::after,
+.hero-panel-btn:hover::after,
+.stats-retry:hover::after,
+.feature-link:hover::after {
+  transform: translateX(130%);
+}
+
+.btn-primary:active,
+.btn-secondary:active,
+.hero-panel-btn:active,
+.stats-retry:active,
+.feature-link:active {
+  transform: translateY(0);
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.hero-panel-btn:focus-visible,
+.stats-retry:focus-visible,
+.feature-link:focus-visible {
+  outline: 2px solid rgba(186, 134, 39, 0.45);
+  outline-offset: 2px;
 }
 
 .btn-icon {
@@ -559,22 +936,384 @@ onMounted(() => {
 }
 
 .btn-badge {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 11px;
-  margin-left: 5px;
+  font-weight: var(--weight-semibold);
+  margin-left: 6px;
+  line-height: 1;
 }
 
+.btn-badge--login {
+  background: rgba(15, 23, 42, 0.2);
+  color: currentColor;
+}
+
+.btn-badge--free {
+  background: var(--success-gradient);
+  color: var(--text-inverse);
+}
+
+.btn-badge--pricing {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  color: #f59e0b;
+}
+
+.btn-badge--muted {
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  color: var(--text-secondary);
+}
+
+.btn-badge--outline {
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+}
+
+
 .hero-hint {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
+  color: #6b6254;
+  font-size: var(--font-small);
   margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  line-height: var(--line-height-base);
+}
+
+.hero-hint--muted {
+  color: #7c7264;
+}
+
+.hero-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.hero-highlight {
+  min-height: 108px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 238, 0.98));
+  border: 1px solid rgba(227, 184, 104, 0.34);
+  box-shadow: 0 12px 26px rgba(132, 96, 35, 0.08);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.hero-highlights--muted .hero-highlight {
+  border-color: var(--border-light);
+}
+
+.hero-highlight-icon,
+.hero-access-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(245, 196, 103, 0.2);
+  color: #9b6a20;
+}
+
+.hero-highlight-copy,
+.hero-access-copy,
+.hero-benefit-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.hero-highlight-copy strong,
+.hero-access-copy strong,
+.hero-benefit-copy strong {
+  color: var(--text-primary);
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+}
+
+.hero-highlight-copy span,
+.hero-access-copy span,
+.hero-benefit-copy span {
+  color: #6f6657;
+  font-size: var(--font-caption);
+  line-height: 1.7;
+}
+
+.hero-access-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hero-access-item {
+  min-height: 96px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hero-trust-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.hero-trust-pill {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 231, 0.98));
+  border: 1px solid rgba(227, 184, 104, 0.36);
+  color: #5a4e3e;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-caption);
+  box-shadow: 0 10px 22px rgba(149, 112, 45, 0.12);
+}
+
+.hero-trust-pill .el-icon {
+  color: #ae7420;
+  flex-shrink: 0;
+}
+
+.hero-side {
+  display: flex;
+  justify-content: flex-end;
+}
+
+
+.hero-status-card {
+  width: 100%;
+  padding: 28px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 236, 0.98));
+  border: 1px solid rgba(227, 184, 104, 0.36);
+  box-shadow: 0 18px 42px rgba(148, 109, 45, 0.16);
+  backdrop-filter: blur(16px);
+  display: grid;
+  gap: 18px;
+}
+
+
+.hero-status-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.hero-status-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(245, 196, 103, 0.2);
+  color: #99661d;
+}
+
+.hero-status-icon--guest {
+  background: rgba(245, 196, 103, 0.16);
+}
+
+.hero-status-copy {
+  flex: 1;
+}
+
+.hero-status-eyebrow {
+  margin: 0 0 4px;
+  color: #7f7361;
+  font-size: var(--font-tiny);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-status-copy h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--font-h4);
+  line-height: var(--line-height-tight);
+}
+
+.hero-status-badge {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e1ac4b 0%, #f3ca74 100%);
+  color: #5e4318;
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-status-badge--soft {
+  background: rgba(245, 196, 103, 0.16);
+  border: 1px solid rgba(212, 156, 62, 0.32);
+  color: #8d611f;
+}
+
+.hero-status-quote {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(227, 184, 104, 0.28);
+  color: #554a3c;
+  font-size: var(--font-small);
+  line-height: var(--line-height-base);
+}
+
+.hero-status-quote--guest {
+  margin-bottom: 0;
+}
+
+.hero-points-panel {
+  margin-top: 0;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(227, 184, 104, 0.28);
+}
+
+
+.hero-points-display {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.hero-points-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #5e4318;
+  background: linear-gradient(135deg, #e2af4f 0%, #f5cf79 100%);
+  box-shadow: 0 10px 20px rgba(188, 136, 41, 0.24);
+}
+
+.hero-points-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #7a6e5c;
+  font-size: var(--font-tiny);
+}
+
+.hero-points-value {
+  display: block;
+  color: #99661d;
+  font-size: clamp(28px, 4vw, 34px);
+  font-weight: var(--weight-black);
+  line-height: 1;
+}
+
+.hero-points-note {
+  margin: 0;
+  color: #5f5446;
+  font-size: var(--font-caption);
+  line-height: 1.7;
+}
+
+.hero-benefits {
+  display: grid;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.hero-benefit {
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(227, 184, 104, 0.28);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hero-benefit .el-icon {
+  color: #aa7221;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.hero-panel-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 0;
+}
+
+.hero-panel-btn {
+  position: relative;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--radius-btn);
+  text-decoration: none;
+  font-size: var(--font-btn);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease, background-color 0.28s ease;
+}
+
+
+.hero-panel-btn--primary {
+  background: linear-gradient(135deg, #e2af4f 0%, #f3c86f 100%);
+  color: #5a3f17;
+  border: 1px solid rgba(194, 140, 49, 0.4);
+  box-shadow: 0 12px 24px rgba(186, 135, 41, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.hero-panel-btn--secondary {
+  background: rgba(255, 255, 255, 0.98);
+  color: #3d3428;
+  border: 1px solid rgba(227, 184, 104, 0.32);
+  box-shadow: 0 10px 22px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.hero-panel-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(149, 111, 45, 0.2);
+}
+
+.hero-panel-btn:focus-visible,
+.hero-access-item:focus-within,
+.hero-highlight:focus-within {
+  outline: none;
+  box-shadow: var(--focus-ring), var(--shadow-hover);
 }
 
 .features {
   padding: 80px 0;
+  background: linear-gradient(180deg, #fffdf8 0%, #fffaf1 100%);
 }
 
 .features-grid {
@@ -584,19 +1323,21 @@ onMounted(() => {
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 40px 30px;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(227, 184, 104, 0.28);
+  box-shadow: 0 14px 32px rgba(145, 103, 34, 0.1);
   transition: all 0.3s ease;
 }
 
 .feature-card:hover {
-  transform: translateY(-10px);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(233, 69, 96, 0.3);
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(210, 154, 64, 0.42);
+  box-shadow: 0 18px 38px rgba(145, 103, 34, 0.16);
 }
 
 .feature-icon {
@@ -605,31 +1346,88 @@ onMounted(() => {
 }
 
 .feature-card h3 {
-  font-size: 24px;
-  margin-bottom: 15px;
-  color: #fff;
+  font-size: var(--font-h3);
+  font-weight: var(--weight-bold);
+  margin-bottom: 12px;
+  color: var(--text-primary);
 }
 
 .feature-card p {
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.6;
-  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: var(--font-body);
+  line-height: var(--line-height-base);
+  margin-bottom: 16px;
 }
 
+.feature-access {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.feature-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 196, 103, 0.16);
+  border: 1px solid rgba(210, 154, 64, 0.32);
+  color: #8f6120;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+
+.feature-note--free {
+  background: rgba(103, 194, 58, 0.14);
+  border-color: rgba(103, 194, 58, 0.18);
+  color: var(--success-color);
+}
+
+.feature-note--price {
+  background: rgba(230, 162, 60, 0.12);
+  border-color: rgba(230, 162, 60, 0.2);
+  color: var(--warning-color);
+}
+
+.feature-note--muted {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: var(--text-secondary);
+}
+
+
 .feature-link {
-  color: #e94560;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(210, 154, 64, 0.3);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 229, 0.96));
+  box-shadow: 0 8px 18px rgba(149, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  color: #9b6a20;
   text-decoration: none;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  font-weight: var(--weight-semibold);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 .feature-link:hover {
-  color: #ff6b6b;
+  transform: translateY(-2px);
+  border-color: rgba(210, 154, 64, 0.42);
+  box-shadow: 0 12px 24px rgba(149, 111, 45, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  color: #7f5415;
 }
 
 .about {
   padding: 80px 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, #fffaf1 0%, #fffdf8 100%);
 }
 
 .about-content {
@@ -640,7 +1438,7 @@ onMounted(() => {
 }
 
 .about-text p {
-  color: rgba(255, 255, 255, 0.7);
+  color: #554a3d;
   line-height: 1.8;
   margin-bottom: 20px;
 }
@@ -650,17 +1448,15 @@ onMounted(() => {
 }
 
 .about-list li {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   padding: 10px 0;
-  padding-left: 25px;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.about-list li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: #e94560;
+.about-icon {
+  color: #a77020;
   font-weight: bold;
 }
 
@@ -670,119 +1466,372 @@ onMounted(() => {
   gap: 30px;
 }
 
+.about-stats--loading .stat-item,
+.about-stats--error .stat-item {
+  background: linear-gradient(180deg, rgba(245, 196, 103, 0.1), rgba(255, 255, 255, 0.95));
+}
+
 .stat-item {
   text-align: center;
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
+  padding: 30px 20px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(227, 184, 104, 0.28);
+  box-shadow: 0 14px 32px rgba(145, 103, 34, 0.1);
+  transition: all 0.3s ease;
+  perspective: 1000px;
+}
+
+.stat-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  background: rgba(245, 196, 103, 0.16);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: #9b6a20;
+  font-size: 28px;
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+.stat-item:hover .stat-icon-wrapper {
+  background: linear-gradient(135deg, #e2af4f 0%, #f4cc75 100%);
+  color: #5e4318;
+  transform: rotateY(360deg) scale(1.1);
+  -webkit-transform: rotateY(360deg) scale(1.1);
+  /* 针对不支持 rotateY 的旧版浏览器的降级方案 */
+  box-shadow: 0 0 15px rgba(186, 135, 41, 0.32);
 }
 
 .stat-number {
   display: block;
-  font-size: 36px;
-  font-weight: bold;
-  background: linear-gradient(135deg, #e94560, #ffd700);
+  font-size: clamp(30px, 4vw, 38px);
+  font-weight: var(--weight-black);
+  line-height: 1.1;
+  background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 10px;
 }
 
-.stat-label {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
+.stat-number--placeholder {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-secondary);
 }
+
+.stat-label {
+  color: #5f5446;
+  font-size: var(--font-small);
+  line-height: var(--line-height-base);
+}
+
+.stat-caption {
+  display: block;
+  margin-top: 8px;
+  color: #7b6e5b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.stats-feedback {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(210, 154, 64, 0.28);
+  background: rgba(255, 246, 228, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.stats-feedback p {
+  margin: 0;
+  color: #5f5446;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.stats-retry {
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #e2af4f 0%, #f4cc75 100%);
+  color: #5e4318;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.stats-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(186, 135, 41, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.stats-retry:focus-visible {
+  outline: 2px solid rgba(186, 135, 41, 0.34);
+  outline-offset: 2px;
+}
+
 
 /* 用户评价区域 */
 .testimonials {
-  padding: 80px 0;
-  background: rgba(0, 0, 0, 0.2);
+  padding: 88px 0;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff9ee 100%);
+}
+
+.section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 40px;
+}
+
+.section-eyebrow {
+  margin: 0 0 10px;
+  color: #a56f1f;
+  font-size: var(--font-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .testimonials .section-title {
-  text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 0;
+}
+
+.section-description {
+  margin-top: 12px;
+  max-width: 680px;
+  color: #5b4f41;
+  font-size: var(--font-body);
+  line-height: var(--line-height-base);
+}
+
+.testimonials-summary {
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 232, 0.98));
+  border: 1px solid rgba(227, 184, 104, 0.32);
+  box-shadow: 0 12px 28px rgba(145, 103, 34, 0.1);
+}
+
+.testimonials-summary-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(245, 196, 103, 0.18);
+  color: #8d611f;
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
+}
+
+.testimonials-summary p {
+  margin: 12px 0 0;
+  color: #5e5345;
+  font-size: var(--font-small);
+  line-height: 1.7;
 }
 
 .testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .testimonial-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 25px;
-  transition: all 0.3s ease;
+  height: 100%;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 236, 0.98));
+  border: 1px solid rgba(227, 184, 104, 0.28);
+  border-radius: var(--radius-card);
+  box-shadow: 0 12px 30px rgba(145, 103, 34, 0.1);
 }
 
 .testimonial-card:hover {
   transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(233, 69, 96, 0.3);
+  border-color: rgba(210, 154, 64, 0.42);
+  box-shadow: 0 16px 34px rgba(145, 103, 34, 0.16);
+}
+
+.testimonial-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.testimonial-badge {
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  color: #665a4b;
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
 }
 
 .testimonial-header {
   display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-.testimonial-avatar {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
+.testimonial-scene {
+  display: grid;
+  gap: 6px;
 }
 
-.testimonial-info h4 {
-  color: #fff;
-  font-size: 16px;
-  margin-bottom: 5px;
+.testimonial-scene-label {
+  color: var(--text-tertiary);
+  font-size: var(--font-tiny);
+  letter-spacing: 0.04em;
 }
 
-.testimonial-rating {
-  display: flex;
-  gap: 3px;
-}
-
-.testimonial-rating .star {
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 14px;
-}
-
-.testimonial-rating .star.filled {
-  color: #ffd700;
+.testimonial-scene h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--font-body);
+  font-weight: var(--weight-semibold);
 }
 
 .testimonial-content {
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.7;
-  font-size: 14px;
-  margin-bottom: 15px;
+
+  margin: 0;
+  color: #5d5143;
+  line-height: var(--line-height-base);
+  font-size: var(--font-body);
+  flex: 1;
 }
 
-.testimonial-service {
+.testimonial-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.testimonial-outcome {
+  color: var(--text-primary);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-medium);
+}
+
+.testimonial-note {
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  color: #7a6e5b;
+  font-size: var(--font-tiny);
+  white-space: nowrap;
+}
+
+.testimonial-service-copy {
+  color: #a36d1e;
+  font-size: var(--font-tiny);
 }
 
 .service-tag {
-  background: rgba(233, 69, 96, 0.2);
-  color: #e94560;
-  padding: 4px 12px;
-  border-radius: 15px;
-  font-size: 12px;
+
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(210, 154, 64, 0.32);
+  background: rgba(245, 196, 103, 0.18);
+  color: #916018;
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-status-card,
+  .hero-panel-btn,
+  .feature-card,
+  .testimonial-card,
+  .stat-icon-wrapper {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .hero-panel-btn:hover,
+  .feature-card:hover,
+  .testimonial-card:hover,
+  .stat-item:hover .stat-icon-wrapper {
+    transform: none !important;
+  }
+
+  .stat-item:hover .stat-icon-wrapper {
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 992px) {
+  .hero-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-main {
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: 40px;
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-subtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-highlights,
+  .hero-access-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-actions,
+  .hero-trust-list {
+    justify-content: center;
+  }
+
+  .hero-side {
+    justify-content: center;
+  }
+
+  .section-heading {
+    grid-template-columns: 1fr;
+  }
+
   .features-grid {
     grid-template-columns: 1fr;
   }
@@ -794,33 +1843,111 @@ onMounted(() => {
   .about-content {
     grid-template-columns: 1fr;
   }
-  
-  .hero-title {
-    font-size: 40px;
-  }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
+  .hero {
+    padding: 48px 0 72px;
+  }
+
+  .hero-kicker {
+    width: 100%;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-hint {
+    justify-content: center;
+  }
+
+  .hero-highlights,
+  .hero-access-list,
+  .hero-trust-list {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-trust-list {
+    display: grid;
+  }
+
+  .hero-highlight,
+  .hero-access-item {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .hero-highlight-icon,
+  .hero-access-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .hero-trust-pill {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .hero-status-card {
+    padding: 22px;
+  }
+
+  .hero-status-head {
+    flex-wrap: wrap;
+  }
+
+  .hero-status-badge {
+    order: 3;
+  }
+
+  .hero-points-display {
+    align-items: flex-start;
+  }
+
+  .hero-panel-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel-btn {
+    width: 100%;
+  }
+
+  .hero-benefit {
+    min-height: 0;
+  }
+
   .about-stats {
     grid-template-columns: 1fr;
   }
   
+  .stats-feedback {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stats-retry {
+    width: 100%;
+  }
+
   .testimonials-grid {
     grid-template-columns: 1fr;
   }
-  
-  .hero-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .welcome-actions {
-    flex-direction: column;
-  }
-  
-  .welcome-btn {
-    width: 100%;
-    text-align: center;
+
+  .testimonial-card {
+    padding: 24px;
   }
 }
+
+
+
+
 </style>

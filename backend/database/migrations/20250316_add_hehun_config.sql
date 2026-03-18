@@ -1,5 +1,5 @@
 -- 添加合婚相关配置
-INSERT INTO `system_configs` (`config_key`, `config_value`, `value_type`, `description`, `category`, `sort_order`) VALUES
+INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `description`, `category`, `sort_order`) VALUES
 -- 合婚功能开关
 ('feature_hehun_enabled', '1', 'bool', '八字合婚功能开关', 'feature', 7),
 

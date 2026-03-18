@@ -6,6 +6,8 @@ namespace app\controller;
 use app\BaseController;
 use app\model\PaymentConfig;
 use app\model\RechargeOrder;
+use think\facade\Log;
+
 
 /**
  * 支付宝支付控制器
@@ -13,79 +15,22 @@ use app\model\RechargeOrder;
 class Alipay extends BaseController
 {
     protected $middleware = [\app\middleware\Auth::class];
+
+    protected const RECHARGE_OPTIONS = [
+        10 => 100,
+        30 => 330,
+        50 => 580,
+        100 => 1200,
+        200 => 2500,
+        500 => 6500,
+    ];
     
     /**
      * 创建支付宝订单（PC网站支付）
      */
     public function createOrder()
     {
-        $data = $this->request->post();
-        $user = $this->request->user;
-        
-        // 参数验证
-        if (empty($data['amount'])) {
-            return $this->error('请选择充值金额');
-        }
-        
-        $amount = (float) $data['amount'];
-        
-        // 获取充值配置
-        $rechargeOptions = [
-            10 => 100,
-            30 => 330,
-            50 => 580,
-            100 => 1200,
-            200 => 2500,
-            500 => 6500,
-        ];
-        
-        // 验证金额是否在允许列表中
-        if (!isset($rechargeOptions[$amount])) {
-            return $this->error('充值金额不正确');
-        }
-        
-        $points = $rechargeOptions[$amount];
-        
-        // 获取支付宝配置
-        $config = PaymentConfig::getAlipayConfig();
-        if (!$config) {
-            return $this->error('支付宝支付未配置', 503);
-        }
-        
-        // 创建订单
-        $order = RechargeOrder::createOrder(
-            (int) $user['sub'],
-            $amount,
-            $points,
-            $this->request->ip(),
-            $this->request->header('User-Agent'),
-            'alipay'
-        );
-        
-        if (empty($order)) {
-            return $this->error('订单创建失败');
-        }
-        
-        // 生成支付宝订单
-        try {
-            $payForm = $this->createAlipayForm($order, $config);
-            
-            return $this->success([
-                'order_no' => $order['order_no'],
-                'amount' => $order['amount'],
-                'points' => $order['points'],
-                'pay_form' => $payForm,
-                'expire_time' => $order['expire_time'],
-            ]);
-        } catch (\Exception $e) {
-            // 创建支付失败，标记订单为取消
-            $orderModel = RechargeOrder::findByOrderNo($order['order_no']);
-            if ($orderModel) {
-                $orderModel->cancel();
-            }
-            
-            return $this->error('创建支付订单失败：' . $e->getMessage());
-        }
+        return $this->createRechargeOrderResponse('pc');
     }
     
     /**
@@ -93,72 +38,151 @@ class Alipay extends BaseController
      */
     public function createMobileOrder()
     {
+        return $this->createRechargeOrderResponse('mobile');
+    }
+
+    protected function createRechargeOrderResponse(string $scene): \think\response\Json
+    {
         $data = $this->request->post();
-        $user = $this->request->user;
-        
-        // 参数验证
+        $user = $this->request->user ?? [];
+        $userId = (int) ($user['sub'] ?? 0);
+
         if (empty($data['amount'])) {
             return $this->error('请选择充值金额');
         }
-        
+
         $amount = (float) $data['amount'];
-        
-        // 获取充值配置
-        $rechargeOptions = [
-            10 => 100,
-            30 => 330,
-            50 => 580,
-            100 => 1200,
-            200 => 2500,
-            500 => 6500,
-        ];
-        
-        if (!isset($rechargeOptions[$amount])) {
+        $points = $this->resolveRechargePoints($amount);
+        if ($points === null) {
             return $this->error('充值金额不正确');
         }
-        
-        $points = $rechargeOptions[$amount];
-        
-        // 获取支付宝配置
+
         $config = PaymentConfig::getAlipayConfig();
         if (!$config) {
             return $this->error('支付宝支付未配置', 503);
         }
-        
-        // 创建订单
+
         $order = RechargeOrder::createOrder(
-            (int) $user['sub'],
+            $userId,
             $amount,
             $points,
             $this->request->ip(),
-            $this->request->header('User-Agent'),
+            (string) $this->request->header('User-Agent'),
             'alipay'
         );
-        
+
         if (empty($order)) {
             return $this->error('订单创建失败');
         }
-        
-        // 生成支付宝手机网站支付参数
+
         try {
-            $payParams = $this->createAlipayMobileParams($order, $config);
-            
+            if ($scene === 'mobile') {
+                $payParams = $this->createAlipayMobileParams($order, $config);
+
+                return $this->success([
+                    'order_no' => $order['order_no'],
+                    'amount' => $order['amount'],
+                    'points' => $order['points'],
+                    'pay_url' => $payParams['pay_url'],
+                    'expire_time' => $order['expire_time'],
+                ]);
+            }
+
+            $payForm = $this->createAlipayForm($order, $config);
+
             return $this->success([
                 'order_no' => $order['order_no'],
                 'amount' => $order['amount'],
                 'points' => $order['points'],
-                'pay_url' => $payParams['pay_url'],
+                'pay_form' => $payForm,
                 'expire_time' => $order['expire_time'],
             ]);
-        } catch (\Exception $e) {
-            $orderModel = RechargeOrder::findByOrderNo($order['order_no']);
-            if ($orderModel) {
-                $orderModel->cancel();
-            }
-            
-            return $this->error('创建支付订单失败：' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->cancelRechargeOrder((string) ($order['order_no'] ?? ''));
+
+            return $this->respondSystemException(
+                'alipay.create_' . $scene . '_order',
+                $e,
+                '创建支付订单失败，请稍后重试',
+                [
+                    'scene' => $scene,
+                    'channel' => 'alipay',
+                    'user_id' => $userId,
+                    'order_no' => $order['order_no'] ?? '',
+                    'amount' => $amount,
+                    'points' => $points,
+                ]
+            );
         }
     }
+
+    protected function logNotifyEvent(string $level, string $message, array $context = []): void
+    {
+        $payload = $this->sanitizeLogContext($context);
+
+        switch (strtolower($level)) {
+            case 'warning':
+                Log::warning($message, $payload);
+                break;
+            case 'info':
+                Log::info($message, $payload);
+                break;
+            default:
+                Log::error($message, $payload);
+                break;
+        }
+    }
+
+    protected function buildNotifyLogContext(array $data, array $extra = []): array
+    {
+        return array_merge([
+            'channel' => 'alipay',
+            'order_no' => $this->maskTradeNo((string) ($data['out_trade_no'] ?? '')),
+            'trade_no' => $this->maskTradeNo((string) ($data['trade_no'] ?? '')),
+            'trade_status' => (string) ($data['trade_status'] ?? ''),
+            'notify_key_count' => count($data),
+        ], $extra);
+    }
+
+    protected function maskTradeNo(string $value): string
+    {
+        $normalized = trim($value);
+        if ($normalized === '') {
+            return '';
+        }
+
+        $length = strlen($normalized);
+        if ($length <= 8) {
+            return str_repeat('*', max($length - 2, 1)) . substr($normalized, -2);
+        }
+
+        return substr($normalized, 0, 4) . str_repeat('*', min($length - 8, 8)) . substr($normalized, -4);
+    }
+
+    protected function resolveRechargePoints(float $amount): ?int
+
+    {
+        $normalizedAmount = (int) $amount;
+        if ((float) $normalizedAmount !== $amount) {
+            return null;
+        }
+
+        return self::RECHARGE_OPTIONS[$normalizedAmount] ?? null;
+    }
+
+
+    protected function cancelRechargeOrder(string $orderNo): void
+    {
+        if ($orderNo === '') {
+            return;
+        }
+
+        $orderModel = RechargeOrder::findByOrderNo($orderNo);
+        if ($orderModel) {
+            $orderModel->cancel();
+        }
+    }
+
     
     /**
      * 生成支付宝PC网站支付表单
@@ -305,9 +329,12 @@ class Alipay extends BaseController
         
         // 验证签名
         if (!$this->verifyAlipaySign($data, $sign, $config['alipay_public_key'])) {
-            trace('支付宝签名验证失败', 'error');
+            $this->logNotifyEvent('warning', '支付宝回调签名验证失败', $this->buildNotifyLogContext($data, [
+                'notify_source' => 'async',
+            ]));
             return response('fail', 200);
         }
+
         
         // 验证交易状态
         if ($data['trade_status'] !== 'TRADE_SUCCESS' && $data['trade_status'] !== 'TRADE_FINISHED') {
@@ -319,9 +346,12 @@ class Alipay extends BaseController
         $order = RechargeOrder::findByOrderNo($orderNo);
         
         if (!$order) {
-            trace("支付宝回调：订单不存在 - {$orderNo}", 'error');
+            $this->logNotifyEvent('error', '支付宝回调订单不存在', $this->buildNotifyLogContext($data, [
+                'notify_source' => 'async',
+            ]));
             return response('fail', 200);
         }
+
         
         // 如果订单已处理，直接返回成功
         if ($order->status === RechargeOrder::STATUS_PAID) {
@@ -331,9 +361,14 @@ class Alipay extends BaseController
         // 验证订单金额
         $totalAmount = (float) $data['total_amount'];
         if (abs($totalAmount - $order->amount) > 0.01) {
-            trace("订单金额不匹配：订单{$orderNo}，支付宝支付{$totalAmount}元，系统记录{$order->amount}元", 'error');
+            $this->logNotifyEvent('error', '支付宝回调金额不匹配', $this->buildNotifyLogContext($data, [
+                'notify_source' => 'async',
+                'paid_amount' => $totalAmount,
+                'expected_amount' => (float) $order->amount,
+            ]));
             return response('fail', 200);
         }
+
         
         // 标记订单为已支付
         $tradeNo = $data['trade_no'] ?? '';

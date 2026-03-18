@@ -99,3 +99,49 @@ html, body, #app {
   justify-content: flex-end;
   margin-top: 20px;
 }
+
+// 全站日期/时间选择器统一样式
+.el-date-editor.el-input,
+.el-date-editor.el-range-editor {
+  border-radius: 10px;
+}
+
+.el-date-editor .el-input__wrapper,
+.el-date-editor.el-range-editor {
+  border: 1px solid #d9dee7;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.el-date-editor .el-input__wrapper:hover,
+.el-date-editor.el-range-editor:hover {
+  border-color: #80b6ff;
+}
+
+.el-date-editor.is-active .el-input__wrapper,
+.el-date-editor.el-range-editor.is-active {
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.el-picker-panel {
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+}
+
+.el-date-table td.current:not(.disabled) .el-date-table-cell__text {
+  background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+  color: #fff;
+  font-weight: 700;
+}
+
+.el-date-table td.available:hover,
+.el-year-table td .cell:hover,
+.el-month-table td .cell:hover,
+.el-time-spinner__item:hover:not(.disabled) {
+  color: #409eff;
+  background: rgba(64, 158, 255, 0.08);
+}
+

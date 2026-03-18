@@ -1,12 +1,14 @@
 import request from './request'
 
-export function login(data) {
+export function login(data, options = {}) {
   return request({
     url: '/auth/login',
     method: 'post',
-    data
+    data,
+    ...options
   })
 }
+
 
 export function getInfo() {
   return request({
@@ -22,28 +24,53 @@ export function logout() {
   })
 }
 
-export function getUserList(params) {
+export function getUserList(params, options = {}) {
   return request({
     url: '/users',
     method: 'get',
-    params
+    params,
+    ...options
   })
 }
 
-export function getUserDetail(id) {
+
+export function getUserDetail(id, options = {}) {
   return request({
     url: `/users/${id}`,
-    method: 'get'
+    method: 'get',
+    ...options
   })
 }
 
-export function updateUserStatus(id, status) {
+export function updateUserProfile(id, data, options = {}) {
+  return request({
+    url: `/users/${id}`,
+    method: 'put',
+    data,
+    ...options
+  })
+}
+
+export function updateUserStatus(id, status, options = {}) {
+
   return request({
     url: `/users/${id}/status`,
     method: 'put',
-    data: { status }
+    data: { status },
+    ...options
   })
 }
+
+export function batchUpdateUserStatus(ids, status, options = {}) {
+  return request({
+    url: '/users/batch-status',
+    method: 'put',
+    data: { ids, status },
+    ...options
+  })
+}
+
+
 
 export function getUserBehavior(params) {
   return request({

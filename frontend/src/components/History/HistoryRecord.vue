@@ -19,7 +19,7 @@
         <el-input
           v-model="searchKeyword"
           placeholder="搜索历史记录..."
-          prefix-icon="Search"
+          :prefix-icon="Search"
           clearable
           class="search-input"
         />
@@ -40,7 +40,7 @@
 
       <TransitionGroup name="list" tag="div">
         <div
-          v-for="record in filteredRecords"
+          v-for="record in paginatedRecords"
           :key="record.id"
           class="history-item"
           @click="viewDetail(record)"
@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -129,9 +129,8 @@ import {
   Clock,
   RefreshRight,
   Calendar,
-  Magic,
-  Star,
-  User
+  MagicStick,
+  Star
 } from '@element-plus/icons-vue'
 import { useAnalytics } from '@/utils/analytics'
 
@@ -151,25 +150,41 @@ const activeTab = ref('all')
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(0)
 const detailVisible = ref(false)
 const currentRecord = ref(null)
+const hiddenExternalRecordIds = ref([])
+const externalRecordsCleared = ref(false)
 
-// 标签配置
-const tabs = [
-  { key: 'all', label: '全部', icon: 'Document', count: 0 },
-  { key: 'bazi', label: '八字排盘', icon: 'Calendar', count: 0 },
-  { key: 'tarot', label: '塔罗占卜', icon: 'Magic', count: 0 },
-  { key: 'fortune', label: '每日运势', icon: 'Star', count: 0 }
-]
+const recordTypeMeta = {
+  all: {
+    label: '全部',
+    icon: Document,
+    route: '/'
+  },
+  bazi: {
+    label: '八字排盘',
+    icon: Calendar,
+    route: '/bazi',
+    color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  },
+  tarot: {
+    label: '塔罗占卜',
+    icon: MagicStick,
+    route: '/tarot',
+    color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+  },
+  fortune: {
+    label: '每日运势',
+    icon: Star,
+    route: '/daily',
+    color: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+  }
+}
 
-// 模拟历史记录数据
-const mockRecords = ref([
+const fallbackRecords = ref([
   {
     id: '1',
     type: 'bazi',
-    typeIcon: 'Calendar',
-    typeColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     title: '八字排盘分析',
     description: '阳历1995年8月15日 10:30 北京',
     createTime: Date.now() - 3600000,
@@ -179,8 +194,6 @@ const mockRecords = ref([
   {
     id: '2',
     type: 'tarot',
-    typeIcon: 'Magic',
-    typeColor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     title: '塔罗占卜 - 事业发展',
     description: '抽牌结果：太阳正位、星星正位、命运之轮',
     createTime: Date.now() - 86400000,
@@ -190,8 +203,6 @@ const mockRecords = ref([
   {
     id: '3',
     type: 'fortune',
-    typeIcon: 'Star',
-    typeColor: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
     title: '2024年3月15日运势',
     description: '今日运势指数：85分，贵人运旺',
     createTime: Date.now() - 172800000,
@@ -200,45 +211,156 @@ const mockRecords = ref([
   }
 ])
 
-// 筛选后的记录
-const filteredRecords = computed(() => {
-  let result = mockRecords.value
+const usingExternalRecords = computed(() => Array.isArray(props.records) && props.records.length > 0)
 
-  // 按类型筛选
-  if (activeTab.value !== 'all') {
-    result = result.filter(r => r.type === activeTab.value)
+const resolveTimestamp = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
   }
 
-  // 按关键词搜索
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(r =>
-      r.title.toLowerCase().includes(keyword) ||
-      r.description.toLowerCase().includes(keyword)
+  const parsedValue = new Date(value || '').getTime()
+  return Number.isFinite(parsedValue) ? parsedValue : Date.now()
+}
+
+const normalizeRecord = (record, index = 0) => {
+  const source = record && typeof record === 'object' ? record : {}
+  const type = typeof source.type === 'string' && recordTypeMeta[source.type] ? source.type : 'fortune'
+  const typeMeta = recordTypeMeta[type]
+  const description = typeof source.description === 'string' && source.description.trim()
+    ? source.description.trim()
+    : '暂无摘要'
+
+  return {
+    ...source,
+    id: source.id ?? `${type}-${index}`,
+    type,
+    typeIcon: source.typeIcon || typeMeta.icon,
+    typeColor: source.typeColor || typeMeta.color,
+    title: typeof source.title === 'string' && source.title.trim() ? source.title.trim() : `${typeMeta.label}记录`,
+    description,
+    createTime: resolveTimestamp(source.createTime ?? source.created_at ?? source.createdAt),
+    tags: Array.isArray(source.tags) ? source.tags : [],
+    data: source.data ?? source
+  }
+}
+
+const normalizedSourceRecords = computed(() => {
+  const sourceList = usingExternalRecords.value ? props.records : fallbackRecords.value
+  if (!Array.isArray(sourceList)) {
+    return []
+  }
+
+  return sourceList.map((record, index) => normalizeRecord(record, index))
+})
+
+const visibleRecords = computed(() => {
+  if (!usingExternalRecords.value) {
+    return normalizedSourceRecords.value
+  }
+
+  if (externalRecordsCleared.value) {
+    return []
+  }
+
+  const hiddenIds = new Set(hiddenExternalRecordIds.value)
+  return normalizedSourceRecords.value.filter((record) => !hiddenIds.has(String(record.id)))
+})
+
+const tabs = computed(() => ([
+  {
+    key: 'all',
+    label: recordTypeMeta.all.label,
+    icon: recordTypeMeta.all.icon,
+    count: visibleRecords.value.length
+  },
+  ...Object.entries(recordTypeMeta)
+    .filter(([key]) => key !== 'all')
+    .map(([key, meta]) => ({
+      key,
+      label: meta.label,
+      icon: meta.icon,
+      count: visibleRecords.value.filter((record) => record.type === key).length
+    }))
+]))
+
+const filteredRecords = computed(() => {
+  let result = visibleRecords.value
+
+  if (activeTab.value !== 'all') {
+    result = result.filter((record) => record.type === activeTab.value)
+  }
+
+  const keyword = searchKeyword.value.trim().toLowerCase()
+  if (keyword) {
+    result = result.filter((record) =>
+      record.title.toLowerCase().includes(keyword) ||
+      record.description.toLowerCase().includes(keyword)
     )
   }
 
   return result
 })
 
-// 格式化时间
+const total = computed(() => filteredRecords.value.length)
+const paginatedRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredRecords.value.slice(start, start + pageSize.value)
+})
+
+const syncPagination = () => {
+  const maxPage = Math.max(1, Math.ceil(total.value / pageSize.value) || 1)
+  if (currentPage.value > maxPage) {
+    currentPage.value = maxPage
+  }
+}
+
+watch([activeTab, searchKeyword], () => {
+  currentPage.value = 1
+})
+
+watch([total, pageSize], () => {
+  syncPagination()
+})
+
+watch(() => props.records, () => {
+  hiddenExternalRecordIds.value = []
+  externalRecordsCleared.value = false
+  syncPagination()
+}, { deep: true })
+
+const hideRecordLocally = (recordId) => {
+  if (usingExternalRecords.value) {
+    hiddenExternalRecordIds.value = [...new Set([...hiddenExternalRecordIds.value, String(recordId)])]
+    return
+  }
+
+  fallbackRecords.value = fallbackRecords.value.filter((record) => String(record.id) !== String(recordId))
+}
+
+const clearRecordsLocally = () => {
+  if (usingExternalRecords.value) {
+    externalRecordsCleared.value = true
+    hiddenExternalRecordIds.value = visibleRecords.value.map((record) => String(record.id))
+    return
+  }
+
+  fallbackRecords.value = []
+}
+
 const formatTime = (timestamp) => {
-  const now = Date.now()
-  const diff = now - timestamp
+  const normalizedTimestamp = resolveTimestamp(timestamp)
+  const diff = Date.now() - normalizedTimestamp
 
   if (diff < 60000) return '刚刚'
   if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
   if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`
 
-  return new Date(timestamp).toLocaleDateString()
+  return new Date(normalizedTimestamp).toLocaleDateString()
 }
 
-const formatFullTime = (timestamp) => {
-  return new Date(timestamp).toLocaleString()
-}
+const formatFullTime = (timestamp) => new Date(resolveTimestamp(timestamp)).toLocaleString()
 
-// 查看详情
 const viewDetail = (record) => {
   currentRecord.value = record
   detailVisible.value = true
@@ -249,7 +371,6 @@ const viewDetail = (record) => {
   })
 }
 
-// 分享记录
 const shareRecord = (record) => {
   emit('share', record)
 
@@ -259,7 +380,6 @@ const shareRecord = (record) => {
   })
 }
 
-// 删除记录
 const deleteRecord = async (record) => {
   try {
     await ElMessageBox.confirm('确定要删除这条记录吗？', '提示', {
@@ -268,12 +388,8 @@ const deleteRecord = async (record) => {
       type: 'warning'
     })
 
-    const index = mockRecords.value.findIndex(r => r.id === record.id)
-    if (index > -1) {
-      mockRecords.value.splice(index, 1)
-      ElMessage.success('删除成功')
-    }
-
+    hideRecordLocally(record.id)
+    ElMessage.success('删除成功')
     emit('delete', record)
 
     analytics.track('history_delete', {
@@ -285,7 +401,6 @@ const deleteRecord = async (record) => {
   }
 }
 
-// 清空所有
 const clearAll = async () => {
   try {
     await ElMessageBox.confirm('确定要清空所有历史记录吗？此操作不可恢复', '警告', {
@@ -294,7 +409,7 @@ const clearAll = async () => {
       type: 'danger'
     })
 
-    mockRecords.value = []
+    clearRecordsLocally()
     ElMessage.success('已清空所有记录')
 
     analytics.track('history_clear_all')
@@ -303,19 +418,12 @@ const clearAll = async () => {
   }
 }
 
-// 重新测算
 const redoAction = (record) => {
   emit('redo', record)
 
-  // 根据类型跳转到对应页面
-  const routes = {
-    bazi: '/bazi',
-    tarot: '/tarot',
-    fortune: '/daily'
-  }
-
-  if (routes[record.type]) {
-    router.push(routes[record.type])
+  const route = recordTypeMeta[record.type]?.route
+  if (route) {
+    router.push(route)
   }
 
   analytics.track('history_redo', {
@@ -324,22 +432,11 @@ const redoAction = (record) => {
   })
 }
 
-// 去探索
 const goToExplore = () => {
   router.push('/')
 }
 
-// 加载记录
-const loadRecords = async () => {
-  loading.value = true
-  // 实际项目中这里调用API
-  await new Promise(resolve => setTimeout(resolve, 500))
-  loading.value = false
-}
-
 onMounted(() => {
-  loadRecords()
-
   analytics.track('history_page_view')
 })
 </script>

@@ -12,7 +12,8 @@ use think\facade\Cache;
 class InviteRecord extends Model
 {
     // 表名
-    protected $name = 'tc_invite_record';
+    protected $table = 'tc_invite_record';
+
     
     // 自动时间戳
     protected $autoWriteTimestamp = true;

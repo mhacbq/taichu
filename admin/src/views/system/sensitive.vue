@@ -148,7 +148,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSensitiveWords, addSensitiveWord, deleteSensitiveWord, importSensitiveWords } from '@/api/system'
+import { getSensitiveWords, addSensitiveWord, updateSensitiveWord, deleteSensitiveWord, importSensitiveWords } from '@/api/system'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const wordList = ref([])
@@ -229,12 +230,20 @@ async function submitForm() {
   if (!valid) return
 
   try {
-    await addSensitiveWord(dialog.form)
+    if (dialog.isEdit) {
+      await updateSensitiveWord(dialog.form.id, dialog.form)
+    } else {
+      await addSensitiveWord(dialog.form)
+    }
     ElMessage.success(dialog.isEdit ? '修改成功' : '添加成功')
     dialog.visible = false
     loadWordList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('system_sensitive', 'save_word_failed', error, {
+      mode: dialog.isEdit ? 'edit' : 'create',
+      sensitive_word_id: dialog.form.id ?? null,
+      word_length: dialog.form.word?.trim().length || 0
+    })
   }
 }
 
@@ -266,7 +275,12 @@ async function submitImport() {
     importDialog.visible = false
     loadWordList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('system_sensitive', 'import_words_failed', error, {
+      batch_size: importDialog.words
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean).length
+    })
   }
 }
 

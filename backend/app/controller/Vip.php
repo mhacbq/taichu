@@ -4,17 +4,45 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
-use app\model\UserVip;
 use app\model\VipOrder;
 use app\service\ConfigService;
 use app\service\VipService;
 use think\response\Json;
+
 
 /**
  * VIP会员控制器
  */
 class Vip extends BaseController
 {
+    protected function ensureVipFeatureEnabled(): ?Json
+    {
+        if (ConfigService::isFeatureEnabled('vip')) {
+            return null;
+        }
+
+        return $this->error('VIP功能暂未开放', 403);
+    }
+
+    protected function buildVipLogContext(array $user = [], string $vipType = '', string $payMethod = '', array $extra = []): array
+    {
+        $context = array_filter([
+            'user_id' => (int) ($user['sub'] ?? 0),
+            'vip_type' => $vipType,
+            'pay_method' => $payMethod,
+        ], static fn ($value) => !($value === '' || $value === 0 || $value === null));
+
+        return array_merge($context, $extra);
+    }
+
+    /**
+     * 中间件配置
+     */
+
+    protected $middleware = [
+        \app\middleware\Auth::class,
+    ];
+    
     /**
      * 获取VIP信息
      */
@@ -25,19 +53,12 @@ class Vip extends BaseController
         
         // 检查VIP功能是否开启
         if (!ConfigService::isFeatureEnabled('vip')) {
-            return json([
-                'code' => 403,
-                'message' => 'VIP功能暂未开放',
-            ], 403);
+            return $this->error('VIP功能暂未开放', 403);
         }
         
         $vipInfo = VipService::getUserVipInfo($userId);
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $vipInfo,
-        ]);
+        return $this->success($vipInfo);
     }
     
     /**
@@ -45,15 +66,12 @@ class Vip extends BaseController
      */
     public function benefits(): Json
     {
-        // 检查VIP功能是否开启
-        if (!ConfigService::isFeatureEnabled('vip')) {
-            return json([
-                'code' => 403,
-                'message' => 'VIP功能暂未开放',
-            ], 403);
+        if ($disabledResponse = $this->ensureVipFeatureEnabled()) {
+            return $disabledResponse;
         }
         
         $benefits = [
+
             'prices' => [
                 'month' => ConfigService::get('vip_month_price', 19.9),
                 'quarter' => ConfigService::get('vip_quarter_price', 49),
@@ -61,43 +79,39 @@ class Vip extends BaseController
             ],
             'features' => [
                 [
-                    'icon' => '✨',
+                    'icon' => 'star',
                     'title' => '无限次排盘',
                     'desc' => '不受次数限制，随时想看就看',
                 ],
                 [
-                    'icon' => '📊',
+                    'icon' => 'document',
                     'title' => '解锁专业报告',
                     'desc' => '详细命盘解读、性格分析',
                 ],
                 [
-                    'icon' => '💎',
+                    'icon' => 'diamond',
                     'title' => '积分加倍',
                     'desc' => '签到积分x' . ConfigService::get('vip_daily_points_multiplier', 2) . '倍',
                 ],
                 [
-                    'icon' => '💕',
+                    'icon' => 'heart',
                     'title' => '八字合婚',
                     'desc' => '免费使用合婚功能',
                 ],
                 [
-                    'icon' => '🎯',
+                    'icon' => 'service',
                     'title' => '优先客服',
                     'desc' => '专属客服通道',
                 ],
                 [
-                    'icon' => '🎁',
+                    'icon' => 'gift',
                     'title' => '新功能抢先',
                     'desc' => '优先体验新功能',
                 ],
             ],
         ];
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => $benefits,
-        ]);
+        return $this->success($benefits);
     }
     
     /**
@@ -110,39 +124,31 @@ class Vip extends BaseController
         $vipType = $this->request->post('type', '');
         $payMethod = $this->request->post('pay_method', 'wechat');
         
-        // 检查VIP功能是否开启
-        if (!ConfigService::isFeatureEnabled('vip')) {
-            return json([
-                'code' => 403,
-                'message' => 'VIP功能暂未开放',
-            ], 403);
+        if ($disabledResponse = $this->ensureVipFeatureEnabled()) {
+            return $disabledResponse;
         }
         
-        if (!in_array($vipType, ['month', 'quarter', 'year'])) {
-            return json([
-                'code' => 400,
-                'message' => '无效的VIP类型',
-            ], 400);
+        if (!in_array($vipType, ['month', 'quarter', 'year'], true)) {
+            return $this->error('无效的VIP类型', 400);
         }
         
         try {
             $order = VipService::createOrder($userId, $vipType, $payMethod);
             
-            return json([
-                'code' => 0,
-                'message' => '订单创建成功',
-                'data' => [
-                    'order_no' => $order['order_no'],
-                    'amount' => $order['amount'],
-                    'pay_params' => $order['pay_params'] ?? null,
-                ],
-            ]);
+            return $this->success([
+                'order_no' => $order['order_no'],
+                'amount' => $order['amount'],
+                'pay_params' => $order['pay_params'] ?? null,
+            ], '订单创建成功');
         } catch (\Exception $e) {
-            return json([
-                'code' => 500,
-                'message' => $e->getMessage(),
-            ], 500);
+            return $this->respondSystemException(
+                'vip_subscribe_create_order',
+                $e,
+                '创建VIP订单失败，请稍后重试',
+                $this->buildVipLogContext($user, $vipType, $payMethod)
+            );
         }
+
     }
     
     /**
@@ -155,6 +161,10 @@ class Vip extends BaseController
         $page = (int) $this->request->get('page', 1);
         $limit = (int) $this->request->get('limit', 10);
         
+        // 限制分页参数范围
+        $page = max(1, $page);
+        $limit = min(100, max(1, $limit));
+        
         $orders = VipOrder::where('user_id', $userId)
             ->order('created_at', 'desc')
             ->page($page, $limit)
@@ -162,15 +172,11 @@ class Vip extends BaseController
         
         $total = VipOrder::where('user_id', $userId)->count();
         
-        return json([
-            'code' => 0,
-            'message' => 'success',
-            'data' => [
-                'list' => $orders,
-                'total' => $total,
-                'page' => $page,
-                'limit' => $limit,
-            ],
+        return $this->success([
+            'list' => $orders,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
         ]);
     }
 }

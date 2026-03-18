@@ -3,17 +3,29 @@
     <nav class="navbar">
       <div class="container nav-container">
         <router-link to="/" class="logo">
-          <span class="logo-icon">☯</span>
+          <el-icon class="logo-icon" :size="26"><YinYang /></el-icon>
           <span>太初命理</span>
         </router-link>
         
         <!-- 桌面端导航 -->
         <div class="nav-links desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/bazi" class="nav-link">八字排盘</router-link>
-          <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
-          <router-link to="/liuyao" class="nav-link">六爻占卜</router-link>
-          <router-link to="/hehun" class="nav-link">八字合婚</router-link>
+          <router-link to="/bazi" class="nav-link nav-link--gated">
+            <span>八字排盘</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
+          <router-link to="/tarot" class="nav-link nav-link--gated">
+            <span>塔罗占卜</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
+          <router-link to="/liuyao" class="nav-link nav-link--gated">
+            <span>六爻占卜</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
+          <router-link to="/hehun" class="nav-link nav-link--gated">
+            <span>八字合婚</span>
+            <span class="nav-require-badge">需登录</span>
+          </router-link>
           <router-link to="/daily" class="nav-link">每日运势</router-link>
         </div>
 
@@ -21,22 +33,22 @@
         <div class="user-actions">
           <template v-if="isLoggedIn">
             <span class="points-badge">
-              <span class="points-icon">💎</span>
+              <el-icon class="points-icon" :size="16"><Star /></el-icon>
               <span class="points-value">{{ userPoints }}</span>
             </span>
             <el-dropdown @command="handleCommand" trigger="click">
               <span class="user-info">
                 <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
-                <span class="nickname">{{ userNickname }}</span>
-                <span class="dropdown-arrow">▼</span>
+                <span class="nickname">{{ userNickname || '用户' }}</span>
+                <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">
-                    <span class="dropdown-icon">👤</span> 个人中心
+                    <el-icon class="dropdown-icon" :size="14"><User /></el-icon> 个人中心
                   </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
-                    <span class="dropdown-icon">🚪</span> 退出登录
+                    <el-icon class="dropdown-icon" :size="14"><SwitchButton /></el-icon> 退出登录
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -46,7 +58,14 @@
         </div>
 
         <!-- 移动端汉堡菜单按钮 -->
-        <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu" :class="{ active: showMobileMenu }">
+        <button
+          class="mobile-menu-btn"
+          @click="toggleMobileMenu"
+          :class="{ active: showMobileMenu }"
+          :aria-expanded="showMobileMenu ? 'true' : 'false'"
+          aria-controls="app-mobile-nav"
+          aria-label="打开菜单"
+        >
           <span></span>
           <span></span>
           <span></span>
@@ -54,61 +73,79 @@
       </div>
 
       <!-- 移动端导航菜单 -->
-      <div class="mobile-nav" :class="{ active: showMobileMenu }">
+      <div id="app-mobile-nav" class="mobile-nav" :class="{ active: showMobileMenu }">
         <div class="mobile-nav-header">
           <span class="mobile-nav-title">菜单</span>
-          <button class="mobile-nav-close" @click="showMobileMenu = false">✕</button>
+          <button class="mobile-nav-close" @click="closeMobileMenu" aria-label="关闭菜单">
+            <el-icon><CloseBold /></el-icon>
+          </button>
         </div>
         <div class="mobile-nav-links">
-          <router-link to="/" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">🏠</span> 首页
+          <router-link to="/" class="mobile-nav-link" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><House /></el-icon>
+            <span>首页</span>
           </router-link>
-          <router-link to="/bazi" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">📅</span> 八字排盘
+          <router-link to="/bazi" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Calendar /></el-icon>
+            <span>八字排盘</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/tarot" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">🎴</span> 塔罗占卜
+          <router-link to="/tarot" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon>
+            <span>塔罗占卜</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/liuyao" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">☯</span> 六爻占卜
+          <router-link to="/liuyao" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><YinYang /></el-icon>
+            <span>六爻占卜</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/hehun" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">💕</span> 八字合婚
+          <router-link to="/hehun" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Link /></el-icon>
+            <span>八字合婚</span>
+            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/daily" class="mobile-nav-link" @click="showMobileMenu = false">
-            <span class="nav-icon">🌟</span> 每日运势
+          <router-link to="/daily" class="mobile-nav-link" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Star /></el-icon>
+            <span>每日运势</span>
           </router-link>
         </div>
         <div class="mobile-nav-footer">
           <template v-if="isLoggedIn">
             <div class="mobile-user-info">
               <span class="mobile-avatar">{{ userNickname?.[0] || '用' }}</span>
-              <span class="mobile-nickname">{{ userNickname }}</span>
-              <span class="mobile-points">💎 {{ userPoints }}</span>
+              <span class="mobile-nickname">{{ userNickname || '用户' }}</span>
+              <span class="mobile-points"><el-icon :size="14"><Star /></el-icon> {{ userPoints }}</span>
             </div>
             <a href="#" class="mobile-logout-btn" @click.prevent="handleLogout">
-              <span>🚪</span> 退出登录
+              <el-icon :size="16"><SwitchButton /></el-icon> 退出登录
             </a>
           </template>
-          <router-link v-else to="/login" class="mobile-login-btn" @click="showMobileMenu = false">
+          <router-link v-else to="/login" class="mobile-login-btn" @click="closeMobileMenu">
             登录 / 注册
           </router-link>
         </div>
       </div>
       
       <!-- 遮罩层 -->
-      <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="showMobileMenu = false"></div>
+      <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
     </nav>
     
-    <main class="main-content">
-      <router-view />
+    <main class="main-content" :class="{ 'main-content--companion-safe': shouldReserveCompanionSpace }">
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component v-if="Component" :is="Component" />
+          <div v-else class="route-loading-placeholder" aria-live="polite"></div>
+        </transition>
+      </router-view>
     </main>
+
     
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <span class="footer-logo">☯ 太初命理</span>
+            <span class="footer-logo"><YinYangIcon :size="24" style="margin-right: 10px;" /> 太初命理</span>
             <p class="footer-tagline">传承千年智慧，指引人生方向</p>
           </div>
           <div class="footer-quote">
@@ -121,36 +158,36 @@
             <a href="#" @click.prevent="showAbout">关于我们</a>
           </div>
           <div class="footer-divider"></div>
-          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向 ✨</p>
+          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向</p>
         </div>
       </div>
     </footer>
     
     <!-- 浮动心情陪伴组件 -->
-    <div v-if="isLoggedIn" class="floating-companion" :class="{ expanded: showCompanion }" @click="toggleCompanion">
+    <div v-if="shouldShowCompanion" class="floating-companion" :class="{ expanded: showCompanion }" @click="toggleCompanion">
       <div class="companion-avatar">
-        <span class="companion-icon">🌸</span>
+        <el-icon class="companion-icon" :size="28"><Collection /></el-icon>
         <span v-if="!showCompanion" class="companion-pulse"></span>
       </div>
       <div v-if="showCompanion" class="companion-content" @click.stop>
         <div class="companion-header">
-          <span class="companion-title">💝 今日陪伴</span>
-          <button class="close-btn" @click="showCompanion = false">✕</button>
+          <span class="companion-title"><el-icon :size="16"><Present /></el-icon> 今日陪伴</span>
+          <button class="close-btn" @click="showCompanion = false"><el-icon :size="14"><Close /></el-icon></button>
         </div>
         <div class="companion-message">
           <p>{{ companionMessage }}</p>
         </div>
         <div class="companion-actions">
           <router-link to="/daily" class="companion-btn" @click="showCompanion = false">
-            <span>🌟</span>
+            <el-icon :size="16"><Sunrise /></el-icon>
             <span>查看运势</span>
           </router-link>
           <router-link to="/bazi" class="companion-btn" @click="showCompanion = false">
-            <span>📅</span>
+            <el-icon :size="16"><Calendar /></el-icon>
             <span>八字排盘</span>
           </router-link>
           <router-link to="/tarot" class="companion-btn" @click="showCompanion = false">
-            <span>🎴</span>
+            <el-icon :size="16"><Magic /></el-icon>
             <span>塔罗占卜</span>
           </router-link>
         </div>
@@ -160,10 +197,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
+import { 
+  ArrowDown,
+  Calendar, 
+  MagicStick, 
+  Star, 
+  User, 
+  SwitchButton, 
+  Close,
+  CloseBold,
+  Present,
+  Collection,
+  Sunrise,
+  Link,
+  House
+} from '@element-plus/icons-vue'
+
+// 自定义太极图标组件
+const YinYang = {
+  render() {
+    return h('svg', { viewBox: '0 0 24 24', width: '1em', height: '1em' }, [
+      h('circle', { cx: '12', cy: '12', r: '10', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5' }),
+      h('path', { d: 'M12 2a10 10 0 0 1 0 20 5 5 0 0 1 0-10 5 5 0 0 0 0-10z', fill: 'currentColor' }),
+      h('circle', { cx: '12', cy: '7', r: '1.5', fill: 'currentColor' }),
+      h('circle', { cx: '12', cy: '17', r: '1.5', fill: 'none', stroke: 'currentColor', 'stroke-width': '1' })
+    ])
+  }
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -173,6 +237,7 @@ const userNickname = ref('')
 const userPoints = ref(0)
 const showMobileMenu = ref(false)
 const showCompanion = ref(false)
+const scrollLockTop = ref(0)
 
 // 暖心语录
 const companionMessages = [
@@ -194,11 +259,11 @@ const companionMessage = computed(() => {
 })
 
 const footerQuotes = [
-  '✨ 愿你在迷茫中找到方向',
-  '🌸 迷茫不是软弱，而是成长的开始',
-  '💝 你值得被这个世界温柔以待',
-  '🌟 相信自己，你比想象中更有力量',
-  '🌱 慢慢来，没关系',
+  '愿你在迷茫中找到方向',
+  '迷茫不是软弱，而是成长的开始',
+  '你值得被这个世界温柔以待',
+  '相信自己，你比想象中更有力量',
+  '慢慢来，没关系',
 ]
 
 const randomQuote = computed(() => {
@@ -206,12 +271,120 @@ const randomQuote = computed(() => {
   return footerQuotes[dayOfYear % footerQuotes.length]
 })
 
+const shouldShowCompanion = computed(() => isLoggedIn.value && !showMobileMenu.value && route.path !== '/login')
+const shouldReserveCompanionSpace = computed(() => shouldShowCompanion.value)
+
 const toggleCompanion = () => {
+  if (!shouldShowCompanion.value) {
+    showCompanion.value = false
+    return
+  }
+
   showCompanion.value = !showCompanion.value
+}
+
+
+const lockPageScroll = () => {
+  if (typeof document === 'undefined') return
+
+  const body = document.body
+  const html = document.documentElement
+  scrollLockTop.value = window.scrollY || window.pageYOffset || html.scrollTop || body.scrollTop || 0
+
+  body.style.position = 'fixed'
+  body.style.top = `-${scrollLockTop.value}px`
+  body.style.left = '0'
+  body.style.right = '0'
+  body.style.width = '100%'
+  body.style.overflow = 'hidden'
+  body.style.touchAction = 'none'
+  html.style.overflow = 'hidden'
+}
+
+const unlockPageScroll = () => {
+  if (typeof document === 'undefined') return
+
+  const body = document.body
+  const html = document.documentElement
+  const offset = scrollLockTop.value || 0
+  const wasLocked = body.style.position === 'fixed'
+
+  body.style.position = ''
+  body.style.top = ''
+  body.style.left = ''
+  body.style.right = ''
+  body.style.width = ''
+  body.style.overflow = ''
+  body.style.touchAction = ''
+  html.style.overflow = ''
+
+  if (wasLocked) {
+    window.scrollTo(0, offset)
+  }
+}
+
+const closeMobileMenu = () => {
+  showMobileMenu.value = false
+}
+
+const openMobileMenu = () => {
+  showMobileMenu.value = true
+}
+
+const toggleMobileMenu = () => {
+  if (showMobileMenu.value) {
+    closeMobileMenu()
+    return
+  }
+
+  openMobileMenu()
+}
+
+const truncateAppShellMessage = (value, maxLength = 160) => {
+  const text = typeof value === 'string' ? value.trim() : ''
+  if (!text) {
+    return ''
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+}
+
+const logAppShellError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[AppShell]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateAppShellMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')) || 'unknown',
+    ...extra
+  })
+}
+
+const readStoredUserInfo = () => {
+  const rawValue = localStorage.getItem('userInfo')
+  if (!rawValue) {
+    return null
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue)
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : null
+  } catch (error) {
+    logAppShellError('parse_user_info_failed', error)
+    return null
+  }
+}
+
+const clearStoredUserSession = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
 }
 
 // 检查登录状态
 const checkLoginStatus = () => {
+
   const token = localStorage.getItem('token')
   const userInfo = localStorage.getItem('userInfo')
   
@@ -238,22 +411,46 @@ const checkLoginStatus = () => {
   }
 }
 
+const syncStoredPoints = (balance) => {
+  const parsedBalance = Number(balance)
+  if (!Number.isFinite(parsedBalance)) {
+    return false
+  }
+
+  userPoints.value = parsedBalance
+  const userInfo = readStoredUserInfo() || {}
+  userInfo.points = parsedBalance
+  localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  return true
+}
+
 // 刷新积分
 const refreshPoints = async () => {
   try {
     const response = await getPointsBalance()
-    if (response.code === 0) {
-      userPoints.value = response.data.balance
-      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-      userInfo.points = response.data.balance
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    if (response.code === 200) {
+      syncStoredPoints(response.data.balance)
     }
   } catch (error) {
-    console.error('刷新积分失败:', error)
+    logAppShellError('refresh_points_failed', error)
   }
 }
 
+const handlePointsUpdated = async (event) => {
+  if (!isLoggedIn.value) {
+    return
+  }
+
+  const eventBalance = Number(event?.detail?.balance)
+  if (syncStoredPoints(eventBalance)) {
+    return
+  }
+
+  await refreshPoints()
+}
+
 // 处理下拉菜单命令
+
 const handleCommand = (command) => {
   if (command === 'profile') {
     router.push('/profile')
@@ -264,13 +461,13 @@ const handleCommand = (command) => {
 
 // 退出登录
 const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
+  clearStoredUserSession()
   isLoggedIn.value = false
   ElMessage.success('已退出登录')
   router.push('/')
-  showMobileMenu.value = false
+  closeMobileMenu()
 }
+
 
 // 显示反馈
 const showFeedback = () => {
@@ -282,15 +479,38 @@ const showAbout = () => {
   ElMessage.info('关于我们页面开发中')
 }
 
+watch(showMobileMenu, (visible) => {
+  if (visible) {
+    lockPageScroll()
+  } else {
+    unlockPageScroll()
+  }
+})
+
+watch(shouldShowCompanion, (visible) => {
+  if (!visible) {
+    showCompanion.value = false
+  }
+})
+
 // 监听路由变化
 watch(() => route.path, () => {
   checkLoginStatus()
-  showMobileMenu.value = false
+  closeMobileMenu()
+  showCompanion.value = false
 })
+
 
 onMounted(() => {
   checkLoginStatus()
+  window.addEventListener('points-updated', handlePointsUpdated)
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('points-updated', handlePointsUpdated)
+  unlockPageScroll()
+})
+
 </script>
 
 <style scoped>
@@ -300,16 +520,16 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* 导航栏 - 白色风格 */
+/* 导航栏 - 深色风格 */
 .navbar {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-primary);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
 }
 
@@ -349,21 +569,45 @@ onMounted(() => {
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
+  padding: 10px 16px;
+  border-radius: var(--radius-btn);
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.nav-link--gated {
+  gap: 10px;
+}
+
+.nav-require-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
 
 .nav-link:hover {
   color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.05);
+  background: var(--surface-hover);
 }
 
 .nav-link.router-link-active {
   color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.1);
+  background: var(--surface-strong);
+  box-shadow: inset 0 0 0 1px var(--primary-light-20);
 }
 
 /* 用户操作区 */
@@ -377,13 +621,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(255, 107, 107, 0.1));
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(184, 134, 11, 0.08));
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   color: var(--primary-color);
-  border: 1px solid rgba(233, 69, 96, 0.2);
+  border: 1px solid rgba(184, 134, 11, 0.25);
 }
 
 .points-icon {
@@ -398,11 +642,14 @@ onMounted(() => {
   padding: 6px 12px 6px 6px;
   border-radius: 25px;
   background: var(--bg-tertiary);
+  border: 1px solid transparent;
   transition: all 0.3s ease;
 }
 
 .user-info:hover {
-  background: var(--border-color);
+  background: var(--bg-card);
+  border-color: var(--primary-light-20);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .avatar {
@@ -414,14 +661,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: white;
-  font-weight: 500;
+  color: var(--text-accent-contrast);
+  font-weight: 600;
 }
 
 .nickname {
-  font-size: 14px;
+  font-size: var(--font-small);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -429,8 +676,16 @@ onMounted(() => {
 }
 
 .dropdown-arrow {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.user-info:hover .dropdown-arrow {
+  transform: translateY(1px);
 }
 
 .dropdown-icon {
@@ -439,26 +694,27 @@ onMounted(() => {
 
 .login-btn {
   background: var(--primary-gradient);
-  color: #fff;
+  color: var(--text-accent-contrast);
   padding: 10px 24px;
   border-radius: 25px;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--primary-light-20);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
+  box-shadow: 0 8px 22px rgba(var(--primary-rgb), 0.18);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.35);
+  box-shadow: 0 12px 26px rgba(var(--primary-rgb), 0.24);
 }
 
 /* 移动端菜单按钮 */
 .mobile-menu-btn {
   display: none;
-  background: none;
-  border: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   cursor: pointer;
   padding: 10px;
   width: 44px;
@@ -467,8 +723,14 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   gap: 6px;
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   transition: all 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+  border-color: var(--primary-light-20);
+  box-shadow: 0 12px 22px rgba(var(--primary-rgb), 0.12);
 }
 
 .mobile-menu-btn span {
@@ -498,14 +760,17 @@ onMounted(() => {
   position: fixed;
   top: 0;
   right: -100%;
-  width: 80%;
-  max-width: 320px;
+  width: min(84vw, 340px);
   height: 100vh;
-  background: white;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   z-index: 1001;
   flex-direction: column;
-  transition: right 0.3s ease;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -20px 0 48px rgba(15, 23, 42, 0.16);
+  border-left: 1px solid var(--border-light);
+  overscroll-behavior: contain;
 }
 
 .mobile-nav.active {
@@ -516,95 +781,137 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 30px 24px 24px;
   border-bottom: 1px solid var(--border-light);
 }
 
 .mobile-nav-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: var(--font-h4);
+  font-weight: var(--weight-bold);
+  color: var(--primary-color);
+  letter-spacing: var(--tracking-normal);
 }
 
 .mobile-nav-close {
-  background: none;
-  border: none;
-  font-size: 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 5px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.mobile-nav-close:hover {
+  background: var(--surface-hover);
+  color: var(--primary-color);
+  border-color: var(--primary-light-20);
+  transform: rotate(90deg);
 }
 
 .mobile-nav-links {
   flex: 1;
-  padding: 10px 0;
+  padding: 20px 0;
   overflow-y: auto;
 }
 
 .mobile-nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 16px 20px;
-  font-size: 15px;
-  font-weight: 500;
+  padding: 16px 28px;
+  font-size: var(--font-body);
+  font-weight: var(--weight-medium);
   transition: all 0.3s ease;
-  border-left: 3px solid transparent;
+  border-left: 4px solid transparent;
 }
+
+.mobile-nav-link > span:not(.mobile-nav-badge) {
+  flex: 1;
+}
+
+.mobile-nav-link--gated {
+  padding-right: 24px;
+}
+
+.mobile-nav-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
   color: var(--primary-color);
-  background: rgba(233, 69, 96, 0.05);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12), transparent 85%);
   border-left-color: var(--primary-color);
+  padding-left: 34px;
 }
 
 .nav-icon {
   font-size: 20px;
-  width: 28px;
-  text-align: center;
+  color: var(--primary-color);
 }
 
 .mobile-nav-footer {
-  padding: 20px;
+  padding: 28px 24px;
   border-top: 1px solid var(--border-light);
-  background: var(--bg-secondary);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.03), rgba(var(--primary-rgb), 0.08));
 }
 
 .mobile-user-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .mobile-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--primary-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 500;
+  color: var(--text-accent-contrast);
+  font-weight: 600;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.28);
 }
 
 .mobile-nickname {
   flex: 1;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
+  font-size: 15px;
 }
 
 .mobile-points {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(var(--primary-rgb), 0.1);
   padding: 6px 12px;
-  border-radius: 15px;
+  border-radius: 20px;
   color: var(--primary-color);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
 }
 
 .mobile-login-btn,
@@ -612,24 +919,26 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 25px;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 15px;
   transition: all 0.3s ease;
+  min-height: 48px;
 }
 
 .mobile-login-btn {
   background: var(--primary-gradient);
-  color: white;
-  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.25);
+  color: var(--text-accent-contrast);
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.2);
 }
 
 .mobile-logout-btn {
-  background: white;
+  background: var(--bg-card);
   color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-light);
 }
 
 .mobile-overlay {
@@ -639,10 +948,13 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 999;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.4s ease;
+  touch-action: none;
 }
 
 .mobile-overlay.active {
@@ -655,11 +967,15 @@ onMounted(() => {
   flex: 1;
 }
 
-/* 页脚 - 白色风格 */
+.route-loading-placeholder {
+  min-height: 120px;
+}
+
+/* 页脚 - 深色风格 */
 .footer {
-  background: white;
+  background: var(--bg-primary);
   padding: 60px 0 30px;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--border-color);
 }
 
 .footer-content {
@@ -689,11 +1005,12 @@ onMounted(() => {
 .footer-quote {
   margin-bottom: 30px;
   padding: 20px;
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.05), rgba(255, 107, 107, 0.05));
+  background: rgba(184, 134, 11, 0.05);
   border-radius: 12px;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+  border: 1px solid rgba(184, 134, 11, 0.1);
 }
 
 .footer-quote p {
@@ -751,18 +1068,19 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+  box-shadow: 0 4px 20px rgba(184, 134, 11, 0.35);
   transition: all 0.3s ease;
   position: relative;
 }
 
 .companion-avatar:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 25px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 6px 25px rgba(184, 134, 11, 0.45);
 }
 
 .companion-icon {
   font-size: 28px;
+  color: var(--text-primary);
 }
 
 .companion-pulse {
@@ -770,7 +1088,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(233, 69, 96, 0.4);
+  background: rgba(184, 134, 11, 0.4);
   animation: pulse-ring 2s ease-out infinite;
 }
 
@@ -790,12 +1108,13 @@ onMounted(() => {
   bottom: 70px;
   right: 0;
   width: 300px;
-  background: white;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 24px;
   box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-color);
 }
 
 @keyframes slideUp {
@@ -828,8 +1147,8 @@ onMounted(() => {
   color: var(--text-muted);
   cursor: pointer;
   font-size: 14px;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -843,11 +1162,11 @@ onMounted(() => {
 }
 
 .companion-message {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.05), rgba(255, 107, 107, 0.05));
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(184, 134, 11, 0.05));
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid rgba(233, 69, 96, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.1);
 }
 
 .companion-message p {
@@ -878,9 +1197,25 @@ onMounted(() => {
 }
 
 .companion-btn:hover {
-  background: rgba(233, 69, 96, 0.1);
+  background: rgba(212, 175, 55, 0.1);
   color: var(--primary-color);
   transform: translateX(5px);
+}
+
+/* 页面过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-20px) scale(1.02);
 }
 
 /* 响应式 */
