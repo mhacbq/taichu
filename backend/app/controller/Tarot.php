@@ -196,9 +196,10 @@ class Tarot extends BaseController
             ]);
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->respondSystemException('tarot_draw_failed', $e, '抽牌失败，请稍后重试', [
+            return $this->respondSystemException('执行塔罗抽牌', $e, '抽牌失败，请稍后重试', [
                 'user_id' => (int) ($user['sub'] ?? 0),
                 'spread' => (string) $spread,
+                'points_cost' => self::TAROT_POINTS_COST,
             ], 500);
         }
     }

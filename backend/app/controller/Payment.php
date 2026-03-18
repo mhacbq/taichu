@@ -293,7 +293,9 @@ class Payment extends BaseController
         try {
             $data = $this->xmlToArray($xml);
         } catch (\Exception $e) {
-            \think\facade\Log::error('支付回调：XML解析失败 - ' . $e->getMessage());
+            $this->logControllerException('解析支付回调 XML', $e, [
+                'payload_length' => strlen($xml),
+            ]);
             return $this->xmlResponse('FAIL', '解析失败');
         }
         
@@ -394,10 +396,11 @@ class Payment extends BaseController
                 return $this->xmlResponse('FAIL', $result['message']);
             }
         } catch (\Exception $e) {
-            \think\facade\Log::error('支付回调：处理异常', [
+            $this->logControllerException('处理支付回调', $e, [
                 'order_no' => $orderNo,
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'pay_order_no' => $payOrderNo,
+                'notify_id' => $notifyId,
+                'total_fee' => $totalFee,
             ]);
             // 发生异常返回FAIL，让微信重试
             return $this->xmlResponse('FAIL', '处理异常');

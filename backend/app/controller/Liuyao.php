@@ -400,13 +400,10 @@ class Liuyao extends BaseController
             
             return $this->success(['interpretation' => $interpretation]);
         } catch (\Exception $e) {
-            // 记录详细错误日志，但返回通用错误消息
-            \think\facade\Log::error('六爻AI解读失败: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+            return $this->respondSystemException('六爻 AI 解读', $e, 'AI解读失败，请稍后重试', [
+                'record_id' => (int) ($data['record_id'] ?? 0),
+                'question_length' => mb_strlen((string) ($data['question'] ?? '')),
             ]);
-            return $this->error('AI解读失败，请稍后重试', 500);
         }
     }
     
@@ -482,8 +479,11 @@ PROMPT;
                 'list' => $list,
             ]);
         } catch (\Exception $e) {
-            Log::error('获取六爻记录失败: ' . $e->getMessage());
-            return $this->error('获取记录失败，请稍后重试', 500);
+            return $this->respondSystemException('获取六爻记录列表', $e, '获取记录失败，请稍后重试', [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'user_id' => $userId !== null && $userId !== '' ? (int) $userId : null,
+            ]);
         }
     }
 
@@ -511,8 +511,9 @@ PROMPT;
 
             return $this->success($record);
         } catch (\Exception $e) {
-            Log::error('获取六爻记录详情失败: ' . $e->getMessage());
-            return $this->error('获取记录详情失败，请稍后重试', 500);
+            return $this->respondSystemException('获取六爻记录详情', $e, '获取记录详情失败，请稍后重试', [
+                'record_id' => $id,
+            ]);
         }
     }
 
@@ -542,8 +543,7 @@ PROMPT;
 
             return $this->success($list);
         } catch (\Exception $e) {
-            Log::error('获取卦象列表失败: ' . $e->getMessage());
-            return $this->error('获取卦象列表失败，请稍后重试', 500);
+            return $this->respondSystemException('获取六爻卦象列表', $e, '获取卦象列表失败，请稍后重试');
         }
     }
 
@@ -583,8 +583,9 @@ PROMPT;
 
             return $this->success($gua);
         } catch (\Exception $e) {
-            Log::error('获取卦象详情失败: ' . $e->getMessage());
-            return $this->error('获取卦象详情失败，请稍后重试', 500);
+            return $this->respondSystemException('获取六爻卦象详情', $e, '获取卦象详情失败，请稍后重试', [
+                'gua_name' => $name,
+            ]);
         }
     }
 

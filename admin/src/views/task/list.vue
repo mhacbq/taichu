@@ -257,7 +257,10 @@ async function handleRun(row) {
     ElMessage.success('任务已触发执行')
     loadTaskList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('task_list', 'run_task_failed', error, {
+      task_id: row.id,
+      status: row.status
+    })
   }
 }
 
