@@ -1322,8 +1322,23 @@ const loadPricing = async () => {
   }
 }
 
+const syncHistorySelection = async (preferredId = null) => {
+  await loadHistory()
+
+  if (!history.value.length) {
+    activeHistoryId.value = null
+    return null
+  }
+
+  const matchedItem = preferredId ? history.value.find((item) => item.id === preferredId) : null
+  const targetItem = matchedItem || history.value[0]
+  activeHistoryId.value = targetItem?.id || null
+  return targetItem || null
+}
+
 // 提交表单（免费预览）
 const submitForm = async () => {
+
   if (!isFormValid.value) {
     ElMessage.warning('请完整填写双方出生信息；若选择“大概时段”，还需显式选择对应时段')
     return
@@ -1337,18 +1352,20 @@ const submitForm = async () => {
     }))
 
     if (response.code === 200) {
+      const normalizedFreeResult = normalizeFreeResultData(response.data)
       premiumResult.value = null
-      freeResult.value = normalizeFreeResultData(response.data)
+      freeResult.value = normalizedFreeResult
 
       clearUnlockFeedback()
       ElMessage.success('基础合婚分析完成')
 
       try {
-        await loadHistory() // 刷新历史记录
+        await syncHistorySelection(normalizedFreeResult.id)
       } catch (historyError) {
         console.warn('合婚结果已生成，但历史记录刷新失败:', historyError)
       }
     } else {
+
       ElMessage.error(response.message)
     }
 
@@ -1387,11 +1404,20 @@ const unlockPremium = async () => {
     }))
     
     if (response.code === 200) {
+      const normalizedPremiumResult = normalizePremiumResultData(response.data)
       freeResult.value = null
-      premiumResult.value = normalizePremiumResultData(response.data)
+      premiumResult.value = normalizedPremiumResult
       window.dispatchEvent(new Event('points-updated'))
+
+      try {
+        await syncHistorySelection(normalizedPremiumResult.id)
+      } catch (historyError) {
+        console.warn('详细报告已解锁，但历史记录刷新失败:', historyError)
+      }
+
       ElMessage.success('解锁成功！')
     } else {
+
 
       unlockError.value = response.code === 403
         ? '积分不足，请先充值后再解锁详细报告。'

@@ -367,17 +367,27 @@
             
             <!-- 五行统计 -->
             <div class="wuxing-stats">
-              <h3>五行分布</h3>
+              <div class="wuxing-header">
+                <h3>五行分布</h3>
+                <p class="wuxing-caption">以下为加权值，综合了天干透出、地支藏干与月令司令权重，并非简单计数。</p>
+              </div>
               <div class="wuxing-bars">
-                <div v-for="(count, wx) in result.bazi?.wuxing_stats" :key="wx" class="wuxing-bar-item">
-                  <span class="wuxing-name">{{ wx }}</span>
-                  <div class="wuxing-bar">
-                    <div class="wuxing-fill" :class="wx" :style="{ width: (count / 8 * 100) + '%', '--target-width': (count / 8 * 100) + '%' }"></div>
+                <div v-for="item in wuxingDistributionItems" :key="item.name" class="wuxing-bar-item">
+                  <div class="wuxing-bar-main">
+                    <span class="wuxing-name">{{ item.name }}</span>
+                    <div class="wuxing-bar">
+                      <div class="wuxing-fill" :class="item.name" :style="{ width: `${item.width}%`, '--target-width': `${item.width}%` }"></div>
+                    </div>
                   </div>
-                  <span class="wuxing-count">{{ count }}</span>
+                  <div class="wuxing-meta">
+                    <span class="wuxing-count">{{ item.displayValue }}</span>
+                    <span class="wuxing-unit">加权值</span>
+                    <span class="wuxing-share">{{ item.shareText }}</span>
+                  </div>
                 </div>
               </div>
             </div>
+
           </el-collapse-item>
         
           <!-- 性格与解读部分 -->
@@ -1029,6 +1039,8 @@ import { CHINA_CITIES } from '../utils/constants'
 
 const BAZI_BASE_COST = 10
 const AI_ANALYSIS_DEFAULT_COST = 30
+const WUXING_WEIGHT_MAX = 9.5
+
 
 const estimatedTimeOptions = [
   { value: 'before-dawn', label: '凌晨（约 01:30）', time: '01:30:00', shortLabel: '凌晨' },
@@ -1206,7 +1218,42 @@ const cityOptions = computed(() => {
   }))
 })
 
+const formatWuxingScore = (value) => {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) {
+    return '0'
+  }
+
+  return Number(numericValue.toFixed(2)).toString()
+}
+
+const wuxingDistributionItems = computed(() => {
+  const wuxingOrder = ['金', '木', '水', '火', '土']
+  const stats = result.value?.bazi?.wuxing_stats || {}
+  const normalizedStats = wuxingOrder.map((name) => {
+    const numericValue = Number(stats[name] ?? 0)
+    return {
+      name,
+      value: Number.isFinite(numericValue) ? Math.max(0, numericValue) : 0,
+    }
+  })
+  const total = normalizedStats.reduce((sum, item) => sum + item.value, 0)
+
+  return normalizedStats.map((item) => {
+    const width = Math.min(100, (item.value / WUXING_WEIGHT_MAX) * 100)
+    const share = total > 0 ? (item.value / total) * 100 : 0
+
+    return {
+      ...item,
+      width: Number.isFinite(width) ? Number(width.toFixed(1)) : 0,
+      displayValue: formatWuxingScore(item.value),
+      shareText: total > 0 ? `占比 ${share.toFixed(1)}%` : '占比 0%',
+    }
+  })
+})
+
 const isAccountReady = computed(() => accountStatus.value === 'ready')
+
 const isFortunePricingReady = computed(() => fortunePricingStatus.value === 'ready')
 const isAiPricingReady = computed(() => aiPricingStatus.value === 'ready' || aiPricingStatus.value === 'fallback')
 
@@ -3316,10 +3363,21 @@ const formatAiContent = (content) => {
   border: 1px solid var(--border-light);
 }
 
-.wuxing-stats h3 {
+.wuxing-header {
   text-align: center;
   margin-bottom: 20px;
+}
+
+.wuxing-stats h3 {
+  margin-bottom: 8px;
   color: var(--text-primary);
+}
+
+.wuxing-caption {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .wuxing-bars {
@@ -3329,9 +3387,17 @@ const formatAiContent = (content) => {
 }
 
 .wuxing-bar-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.wuxing-bar-main {
   display: flex;
   align-items: center;
   gap: 15px;
+  min-width: 0;
 }
 
 .wuxing-name {
@@ -3360,11 +3426,27 @@ const formatAiContent = (content) => {
 .wuxing-fill.火 { background: linear-gradient(90deg, var(--wuxing-huo), var(--danger-light)); }
 .wuxing-fill.土 { background: linear-gradient(90deg, var(--wuxing-tu), var(--warning-light)); }
 
-.wuxing-count {
-  width: 30px;
-  text-align: center;
-  color: var(--text-secondary);
+.wuxing-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
+
+.wuxing-count {
+  min-width: 32px;
+  text-align: right;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.wuxing-unit,
+.wuxing-share {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 
 .form-hint--precision {
   color: var(--warning-color);
@@ -4424,7 +4506,22 @@ const formatAiContent = (content) => {
     text-align: left;
   }
 
+  .wuxing-bar-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .wuxing-bar-main,
+  .wuxing-meta {
+    width: 100%;
+  }
+
+  .wuxing-meta {
+    justify-content: flex-start;
+  }
+
   .fortune-recovery-banner {
+
     flex-direction: column;
     align-items: flex-start;
   }

@@ -1,6 +1,26 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Sixteenth round of UI consistency fixes focused on Tarot result-context locking and accessibility, Liuyao history-dialog semantics, Hehun history refresh consistency, and Bazi weighted wuxing visualization.
+- Status: Completed (5 UI issues resolved).
+- Date: 2026-03-18
+
+## Summary
+- `frontend/src/views/Tarot.vue`: 为抽牌结果新增 `submittedQuestion / submittedSpread` 快照，抽牌完成后锁定问题与牌阵上下文；保存记录、分享文案、详情弹窗和结果摘要统一读取锁定态，避免结果与当前输入漂移。
+- `frontend/src/views/Tarot.vue`: 将结果卡外层改为可聚焦 `button`，补齐 `aria-label`、键盘触达和焦点样式，让读牌入口不再只对鼠标可用。
+- `frontend/src/views/Liuyao.vue`: 历史记录层改用 `el-dialog`，支持 Esc 关闭、打开后首焦点进入弹窗、关闭后焦点回到触发按钮，并把历史项主操作改成语义化按钮。
+- `frontend/src/views/Hehun.vue`: 新增 `syncHistorySelection()`，在免费预览和解锁完整版成功后立即刷新底部历史列表并同步高亮当前记录。
+- `frontend/src/views/Bazi.vue`: 五行分布改为按后端 `wuxing_stats` 的加权值渲染，采用 9.5 上限进度条并展示“加权值 + 占比”，修复旧 `count / 8` 口径失真。
+- `TODO.md`: 删除本轮已完成的 5 条 `[UI]` 待办，仅保留未处理的其他 UI 项。
+
+## Validation
+- `read_lints`: `frontend/src/views/Tarot.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Bazi.vue`、`TODO.md` 0 diagnostics。
+- `git diff --check -- frontend/src/views/Tarot.vue frontend/src/views/Liuyao.vue frontend/src/views/Hehun.vue frontend/src/views/Bazi.vue TODO.md`: 通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 当前本机 Node 运行时仍报 `Unexpected token '??='`，与此前环境问题一致，暂未见由本轮改动引入的新构建错误。
+
+---
+
+## Previous Run
 - Task: Fifteenth round of UI consistency fixes focused on Daily personalization clarity, score/expansion consistency, and Liuyao result context visibility.
 - Status: Completed (5 UI issues resolved).
 - Date: 2026-03-18
@@ -17,6 +37,8 @@
 - `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 当前本机 Node 运行时仍报 `Unexpected token '??='`，与此前环境问题一致，暂未见由本轮改动引入的新构建错误。
 
 ---
+
+
 
 
 

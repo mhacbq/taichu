@@ -29,10 +29,13 @@
             :key="spread.id"
             type="button"
             class="spread-card card-hover"
-            :class="{ active: selectedSpread === spread.id }"
-            :aria-pressed="selectedSpread === spread.id"
+            :class="{ active: displayedSpread === spread.id }"
+            :aria-pressed="displayedSpread === spread.id"
+            :disabled="isTarotContextLocked"
+            :aria-disabled="isTarotContextLocked"
             @click="selectSpread(spread.id)"
           >
+
             <div class="spread-icon">
               <el-icon v-if="spread.icon === 'card'"><Document /></el-icon>
               <el-icon v-else-if="spread.icon === 'cards'"><ChatDotRound /></el-icon>
@@ -104,17 +107,22 @@
       </div>
 
 
-      <div class="question-section card card-hover">
+      <div class="question-section card card-hover" :class="{ 'question-section--locked': isResultLocked }">
         <h3>您想咨询的问题</h3>
         <el-input
           v-model="question"
           type="textarea"
           :rows="3"
+          :readonly="isTarotContextLocked"
           placeholder="描述你的困惑，越具体越好。比如：'我应该接受这份新工作吗？'"
         />
-        <div class="question-hint" v-if="question">
+        <div class="question-hint" v-if="question && !isResultLocked">
           <el-icon class="hint-icon"><MagicStick /></el-icon>
           <span>好的问题通常是开放性的，以"我应该..."或"我该如何..."开头</span>
+        </div>
+        <div v-else-if="isResultLocked" class="question-lock-note" role="status" aria-live="polite">
+          <el-icon class="hint-icon"><Select /></el-icon>
+          <span>本次抽牌已锁定问题与牌阵，保存记录、分享与详情弹窗都会沿用当前上下文。想修改的话，直接点“重新占卜”。</span>
         </div>
         <el-button
           type="primary"
@@ -128,6 +136,7 @@
           开始抽牌
         </el-button>
       </div>
+
 
       <div v-if="flowError && cards.length === 0" class="flow-error card card-hover">
         <EmptyState
@@ -147,27 +156,44 @@
 
       <div v-if="cards.length > 0" class="cards-result card card-hover">
         <h3>您的牌阵</h3>
-        <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击任意牌查看详细解读</p>
+        <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击或按回车查看详细解读</p>
+        <div v-if="submittedQuestionDisplay" class="result-context-summary" aria-label="本次塔罗结果上下文">
+          <span class="result-context-chip">
+            <strong>牌阵</strong>
+            <span>{{ submittedSpreadName }}</span>
+          </span>
+          <span class="result-context-chip result-context-chip--question">
+            <strong>问题</strong>
+            <span>{{ submittedQuestionDisplay }}</span>
+          </span>
+        </div>
         <div class="cards-display">
           <div
             v-for="(card, index) in cards"
             :key="`${card.name}-${index}`"
             class="card-stack"
           >
-            <TarotCard
-              :name="card.name"
-              :emoji="card.emoji"
-              :reversed="card.reversed"
-              :element="card.element"
-              :color="card.color"
-              :index="index"
+            <button
+              type="button"
+              class="card-detail-trigger"
+              :aria-label="getCardDetailAriaLabel(card, index)"
+              aria-haspopup="dialog"
               @click="showCardDetail(card, index)"
-            />
+            >
+              <TarotCard
+                :name="card.name"
+                :emoji="card.emoji"
+                :reversed="card.reversed"
+                :element="card.element"
+                :color="card.color"
+                :index="index"
+              />
 
-            <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(displayedSpread, index) }}</span>
-
+              <span v-if="cards.length > 1" class="card-position">{{ getPositionLabel(displayedSpread, index) }}</span>
+            </button>
           </div>
         </div>
+
 
         <div v-if="flowError && cards.length > 0" class="flow-error flow-error--inline card card-hover">
           <EmptyState
@@ -337,11 +363,19 @@ const selectedCard = ref(null)
 const selectedTopic = ref('')
 const questionGuideExpanded = ref(true)
 const flowError = ref(null)
+const submittedQuestion = ref('')
+const submittedSpread = ref('')
 
 
 const getSpreadName = (spreadType) => {
   return spreads.find((spread) => spread.id === spreadType)?.name || '当前牌阵'
 }
+
+const isResultLocked = computed(() => cards.value.length > 0)
+const isTarotContextLocked = computed(() => loading.value || isResultLocked.value)
+const submittedQuestionDisplay = computed(() => submittedQuestion.value || question.value.trim())
+const submittedSpreadName = computed(() => getSpreadName(displayedSpread.value))
+
 
 const reportUiError = (action, error, userMessage = '') => {
 
@@ -364,7 +398,7 @@ const pointsDisplayText = computed(() => {
 })
 
 const canDrawTarot = computed(() => {
-  if (!question.value.trim() || pointsLoading.value || loading.value) {
+  if (isResultLocked.value || !question.value.trim() || pointsLoading.value || loading.value) {
     return false
   }
 
@@ -374,6 +408,7 @@ const canDrawTarot = computed(() => {
 
   return currentPoints.value >= 5
 })
+
 
 
 const setFlowError = (stage, message) => {
@@ -427,11 +462,15 @@ const toggleQuestionGuide = () => {
 }
 
 const selectSpread = (spreadId) => {
+  if (isTarotContextLocked.value) {
+    return
+  }
 
   selectedSpread.value = spreadId
 }
 
-const displayedSpread = computed(() => selectedSpread.value)
+const displayedSpread = computed(() => submittedSpread.value || selectedSpread.value)
+
 
 const flowErrorTitle = computed(() => {
 
@@ -497,9 +536,24 @@ const selectTopic = (topicId) => {
 }
 
 const selectQuestion = (template) => {
+  if (isTarotContextLocked.value) {
+    return
+  }
+
   question.value = template
   questionGuideExpanded.value = false
 }
+
+const getCurrentTarotQuestion = () => submittedQuestion.value || question.value.trim()
+const getCurrentTarotSpread = () => submittedSpread.value || selectedSpread.value
+const getCurrentCardNamesText = () => cards.value.map((card) => `${card.name}${card.reversed ? '(逆位)' : '(正位)'}`).join('、')
+
+const getCardDetailAriaLabel = (card, index) => {
+  const positionLabel = getPositionLabel(displayedSpread.value, index)
+  const directionLabel = card.reversed ? '逆位' : '正位'
+  return `查看${positionLabel}${card.name}${directionLabel}的详细解读`
+}
+
 
 
 // 塔罗牌详细解读数据
@@ -622,9 +676,10 @@ const loadPoints = async () => {
 }
 
 const interpretCurrentCards = async () => {
+  const interpretQuestion = getCurrentTarotQuestion()
   const interpretResponse = await interpretTarot({
     cards: cards.value,
-    question: question.value,
+    question: interpretQuestion,
   })
 
   if (interpretResponse.code === 200) {
@@ -642,6 +697,7 @@ const interpretCurrentCards = async () => {
 
   return false
 }
+
 
 // 显示确认对话框
 const showConfirm = async () => {
@@ -686,16 +742,23 @@ const showConfirm = async () => {
 
 
 const drawCards = async () => {
+  const lockedQuestion = question.value.trim()
+  const lockedSpread = selectedSpread.value
+
   loading.value = true
   try {
     const drawResponse = await drawTarot({
-      spread: selectedSpread.value,
-      question: question.value,
+      spread: lockedSpread,
+      question: lockedQuestion,
     })
 
     if (drawResponse.code === 200) {
       cards.value = drawResponse.data.cards
       interpretation.value = ''
+      submittedQuestion.value = lockedQuestion
+      submittedSpread.value = lockedSpread
+      question.value = lockedQuestion
+      selectedSpread.value = lockedSpread
       savedRecordId.value = null
       savedShareCode.value = null
       sharePublicConfirmed.value = false
@@ -716,6 +779,7 @@ const drawCards = async () => {
       await interpretCurrentCards()
       return
     }
+
 
     setFlowError('draw', drawResponse.message || '抽牌失败')
     ElMessage.error(drawResponse.message || '抽牌失败')
@@ -779,12 +843,13 @@ const saveTarotResult = async () => {
   
   try {
     const response = await saveTarotRecord({
-      spread_type: displayedSpread.value,
-      question: question.value,
+      spread_type: getCurrentTarotSpread(),
+      question: getCurrentTarotQuestion(),
       cards: cards.value,
       interpretation: interpretation.value,
       ai_analysis: ''
     })
+
 
     if (response.code === 200) {
       savedRecordId.value = response.data.record_id
@@ -892,11 +957,12 @@ const shareTarotResult = async () => {
 
   // 生成分享链接
   const shareUrl = `${window.location.origin}/tarot/share/${savedShareCode.value}`
-  const cardNames = cards.value.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
+  const cardNames = getCurrentCardNamesText()
   const shareText = `我在太初命理进行了塔罗占卜\n` +
-    `问题：${question.value}\n` +
+    `问题：${getCurrentTarotQuestion()}\n` +
     `抽到的牌：${cardNames}\n` +
     `查看详情：${shareUrl}`
+
   
   if (navigator.share) {
     try {
@@ -940,6 +1006,8 @@ const resetTarot = () => {
   cards.value = []
   interpretation.value = ''
   question.value = ''
+  submittedQuestion.value = ''
+  submittedSpread.value = ''
   selectedTopic.value = ''
   questionGuideExpanded.value = true
   savedRecordId.value = null
@@ -952,15 +1020,17 @@ const resetTarot = () => {
 
 // 显示卡片详情
 const showCardDetail = (card, index = 0) => {
+  const currentSpread = getCurrentTarotSpread()
   selectedCard.value = {
     ...card,
     positionIndex: index,
-    positionLabel: getPositionLabel(selectedSpread.value, index),
-    spreadType: selectedSpread.value,
-    spreadName: getSpreadName(selectedSpread.value),
+    positionLabel: getPositionLabel(currentSpread, index),
+    spreadType: currentSpread,
+    spreadName: getSpreadName(currentSpread),
   }
   cardDetailVisible.value = true
 }
+
 
 
 // 获取卡片详细含义
@@ -1113,6 +1183,20 @@ const getCardAdvice = (card) => {
   outline-offset: 3px;
   border-color: var(--primary-color);
 }
+
+.spread-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.spread-card:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--surface-raised);
+  border-color: var(--border-light);
+}
+
 
 .spread-status-badge {
   position: absolute;
@@ -1298,7 +1382,26 @@ const getCardAdvice = (card) => {
   line-height: var(--line-height-base);
 }
 
+.question-section--locked {
+  border-color: rgba(var(--primary-rgb), 0.22);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1), var(--shadow-md);
+}
+
+.question-lock-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.04));
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
 .cards-result {
+
   max-width: 900px;
   margin: 0 auto;
 }
@@ -1317,12 +1420,63 @@ const getCardAdvice = (card) => {
   margin-bottom: 40px;
 }
 
+.result-context-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 22px;
+}
+
+.result-context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.result-context-chip strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.result-context-chip--question {
+  max-width: min(100%, 520px);
+}
+
 .card-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
 }
+
+.card-detail-trigger {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+.card-detail-trigger:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 6px;
+}
+
 
 .tarot-card {
   width: 150px;

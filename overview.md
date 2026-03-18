@@ -2,6 +2,42 @@
 
 ## 最近更新
 
+### UI 修复批次（ui-15 自动化执行，2026-03-18 继续修复）
+
+- 本轮先复查 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，随后继续收口剩余 `[UI]` 待办，围绕塔罗、六爻、合婚与八字结果态一致性完成了 **5 个前台 UI/UX 修复**。
+- 已同步从 `TODO.md` 删除本轮完成的 5 条 `[UI]` 待办，并补写本轮自动化记忆与状态概览。
+
+#### 本轮主要改动文件
+- `frontend/src/views/Tarot.vue`
+- `frontend/src/views/Liuyao.vue`
+- `frontend/src/views/Hehun.vue`
+- `frontend/src/views/Bazi.vue`
+- `TODO.md`
+- `.codebuddy/automations/ui-15/memory.md`
+- `overview.md`
+
+#### 关键修复点
+1. **塔罗结果态上下文锁定 + 键盘可达**
+   - 为抽牌结果新增 `submittedQuestion / submittedSpread` 快照；抽牌完成后问题输入改为只读、牌阵切换禁用，保存 / 分享 / 详情统一读取锁定态。
+   - 结果卡外层改成原生 `button`，补齐 `aria-label` 与焦点态，支持键盘逐张查看详细解读。
+2. **六爻历史弹窗语义与焦点管理补齐**
+   - 历史记录从自绘弹层切到 `el-dialog`，支持 Esc 关闭、打开后聚焦弹窗首个可操作项、关闭后把焦点还给触发按钮。
+   - 历史项主操作统一改成语义化按钮，移动端列表和删除操作的触达反馈也一并整理。
+3. **合婚解锁后历史列表立即同步**
+   - 新增 `syncHistorySelection()`，在免费预览和解锁完整版成功后重新拉取历史、同步 `activeHistoryId`，保证上方结果区和底部历史列表指向同一条记录。
+4. **八字五行分布改为后端加权口径**
+   - 五行进度条不再按旧 `count / 8` 计算，而是按 `wuxing_stats` 加权值和 9.5 上限渲染，并额外展示“加权值 / 占比”说明，避免核心图表继续失真。
+
+#### 验证情况
+- `read_lints`：`frontend/src/views/Tarot.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Bazi.vue`、`TODO.md` 均为 0 diagnostics。
+- `git diff --check -- frontend/src/views/Tarot.vue frontend/src/views/Liuyao.vue frontend/src/views/Hehun.vue frontend/src/views/Bazi.vue TODO.md`：通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`：当前本机 Node 运行时仍报 `SyntaxError: Unexpected token '??='`，与此前环境问题一致，暂未见由本轮改动新增的构建错误。
+- 截图 / 录屏：本轮未新增 UI 截图；当前环境仍受本机 Node 版本限制，未补跑前台本地预览。
+
+### 命理算法修复（自动化执行，2026-03-18）
+
+
+
 ### 命理算法修复（自动化执行，2026-03-18）
 
 - 本轮先复查 `.codebuddy/automations/automation/memory.md` 与 `TODO.md`，确认当前 `TODO.md` 已无残留 `[占卜]` 待办；随后继续针对 `backend/app/service/` 做算法级收口，而不是机械重复改 TODO。
@@ -862,3 +898,30 @@
 - 说明：新建的 `OptionalAuth.php` 尚未同步进当前运行中的容器，因此该文件以本地 IDE / LSP 诊断作为语法校验依据；本机 `where.exe php` 仍未找到可直接调用的 PHP CLI。
 - 截图 / 录屏：本轮为后端规则与前端文案/状态修复，未新增界面截图。
 
+### 占卜深度体验巡检（自动化执行，2026-03-18 第三十次）
+
+- 本轮先读取 `.codebuddy/automations/30-4/memory.md` 与 `TODO.md`，随后在本地运行态用真实接口批量复测八字、六爻、塔罗、合婚、每日运势，并把原始响应与积分流水保存到产物目录下的 `divination-probe-output/` 以便交叉核验。
+- 本轮未改动业务代码，主要更新了 `TODO.md`、`.codebuddy/automations/30-4/memory.md` 与本文件；另在产物目录下临时生成了 `divination_probe.py`、`extra_tarot_probe.py`、`points_probe.py` 及其 JSON 输出，作为本轮审计证据。
+
+#### 关键发现
+1. **登录前置链路再次阻断**
+   - `POST /api/sms/send-code` 直接 500，错误体明确指向 `Table 'taichu.tc_sms_code' doesn't exist`；游客无法通过验证码登录进入八字、六爻、塔罗、合婚页面。
+2. **八字深度分析存在“失败仍扣费”**
+   - `POST /api/fortune/yearly` 返回 `HTTP 200 + code 500`，但 `tc_points_record` 新增 `yearly_fortune -30`。
+   - `POST /api/fortune/dayun-chart` 触发 `DayunFortuneService::calculateYearScoreInDayun(int $dayunScore, ...)` 的 float/int 类型错误，同样已写入 `dayun_chart -30`。
+3. **六爻主链路已能出卦，但保存与专业展示仍断**
+   - 时间起卦、手动摇卦都能返回 200 和基础摘要，但返回体 `id=null`，随后 `GET /api/liuyao/history` 仍为空；结果区同时缺少结构化的变卦、动爻、六亲、六神字段。
+4. **塔罗三种牌阵抽牌可用，但解读主链路全灭**
+   - 单张牌、三张牌、凯尔特十字都能成功抽牌并扣费；但 `POST /api/tarot/interpret` 三次均返回“解读失败，请稍后重试”，用户拿不到完整解牌结果。
+5. **合婚与每日运势本轮未发现比现有 TODO 更高价值的新阻塞**
+   - 合婚 free / premium 结果已能保持“九宫五鬼 → 谨慎考虑”的总评一致性，且 AI 降级状态已明确披露。
+   - 每日运势登录态已能返回 `personalized.hasBazi=true` 的专属字段，不再复现此前“登录用户与游客同结果”的问题。
+
+#### 验证结果
+- 原始返回已落盘：`divination-probe-output/bazi.json`、`fortune_yearly.json`、`fortune_dayun_chart.json`、`liuyao_time.json`、`liuyao_manual.json`、`tarot.json`、`extra_tarot.json`、`daily_login.json`、`hehun_premium.json`、`points_probe.json`。
+- 关键证据：
+  - `sms_send_code.json`：缺表报错 `tc_sms_code`。
+  - `points_probe.json`：确认 `yearly_fortune` 与 `dayun_chart` 在失败态下仍各扣 30 分。
+  - `liuyao_time.json` / `liuyao_manual.json`：均返回 `id: null`；`liuyao_history.json` 同轮仍为空。
+  - `tarot.json` / `extra_tarot.json`：单张牌、三张牌、凯尔特十字的 `interpret` 全部失败。
+- 截图 / 录屏：当前 Windows 环境下未能启用浏览器自动化插件，故本轮以真实接口返回、数据库积分流水与代码实现交叉核验为主，未新增 UI 截图。

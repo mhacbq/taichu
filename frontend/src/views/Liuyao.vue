@@ -106,9 +106,10 @@
               <el-icon><Collection v-if="result.is_history" /><CircleCheckFilled v-else /></el-icon>
               <span>{{ savedStatusText }}</span>
             </div>
-            <el-button v-if="historyLoaded || historyLoading || historyError" round size="large" @click="showHistory = true">
+            <el-button v-if="historyLoaded || historyLoading || historyError" round size="large" @click="openHistoryDialog($event)">
               <el-icon><Collection /></el-icon> {{ historyTriggerText }}
             </el-button>
+
 
           </div>
         </div>
@@ -256,61 +257,71 @@
 
 
           <div class="history-link" v-if="historyLoaded || historyLoading || historyError">
-            <a @click="showHistory = true">{{ historyTriggerText }}</a>
+            <button type="button" class="history-link__button" @click="openHistoryDialog($event)">{{ historyTriggerText }}</button>
           </div>
+
 
         </div>
       </div>
 
       <!-- 历史记录弹窗 -->
-      <div v-if="showHistory" class="modal-overlay" @click.self="showHistory = false">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>历史记录</h3>
-            <button class="close-btn" @click="showHistory = false">
-              <el-icon><Close /></el-icon>
-            </button>
+      <el-dialog
+        v-model="showHistory"
+        title="历史记录"
+        width="min(92vw, 560px)"
+        append-to-body
+        class="history-dialog"
+        :close-on-click-modal="true"
+        :close-on-press-escape="true"
+        @closed="restoreHistoryTriggerFocus"
+      >
+        <div ref="historyListRef" class="history-list" aria-label="六爻历史记录列表">
+          <div v-if="historyLoading" class="history-state" role="status" aria-live="polite">
+            <p>历史记录加载中...</p>
+            <span>最近的占卜记录会在这里出现。</span>
           </div>
-          <div class="history-list">
-            <div v-if="historyLoading" class="history-state" role="status" aria-live="polite">
-              <p>历史记录加载中...</p>
-              <span>最近的占卜记录会在这里出现。</span>
-            </div>
-            <div v-else-if="historyError" class="history-state history-state--error" role="alert">
-              <p>历史记录暂时没加载出来</p>
-              <span>{{ historyError }}</span>
-              <el-button type="primary" link @click="loadHistory">重新加载</el-button>
-            </div>
-            <div v-else-if="historyLoaded && history.length === 0" class="history-state" role="status" aria-live="polite">
-              <p>暂时还没有历史记录</p>
-              <span>完成一次占卜后，这里会自动保存你的记录。</span>
-            </div>
-            <template v-else>
-              <div v-for="item in history" :key="item.id" class="history-item" @click="loadHistoryDetail(item)">
+          <div v-else-if="historyError" class="history-state history-state--error" role="alert">
+            <p>历史记录暂时没加载出来</p>
+            <span>{{ historyError }}</span>
+            <el-button type="primary" link @click="loadHistory">重新加载</el-button>
+          </div>
+          <div v-else-if="historyLoaded && history.length === 0" class="history-state" role="status" aria-live="polite">
+            <p>暂时还没有历史记录</p>
+            <span>完成一次占卜后，这里会自动保存你的记录。</span>
+          </div>
+          <template v-else>
+            <div v-for="item in history" :key="item.id" class="history-item">
+              <button
+                type="button"
+                class="history-select"
+                :title="item.question"
+                @click="loadHistoryDetail(item)"
+              >
                 <div class="history-main">
                   <p class="history-question">{{ item.question }}</p>
                   <p class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</p>
                 </div>
-                <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
-                  <el-icon><Delete /></el-icon>
-                  <span class="delete-label">删除</span>
-                </button>
-              </div>
-            </template>
-          </div>
-
+              </button>
+              <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
+                <el-icon><Delete /></el-icon>
+                <span class="delete-label">删除</span>
+              </button>
+            </div>
+          </template>
         </div>
-      </div>
+      </el-dialog>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { RefreshRight, Delete, MagicStick, Present, Trophy, Close, CircleCheckFilled, Collection } from '@element-plus/icons-vue'
+import { RefreshRight, Delete, MagicStick, Present, Trophy, CircleCheckFilled, Collection } from '@element-plus/icons-vue'
 import BackButton from '../components/BackButton.vue'
+
 
 const methodOptions = [
   { label: '时间起卦', value: 'time', description: '按当前北京时间起卦，适合快速问事。' },
@@ -357,8 +368,11 @@ const historyLoaded = ref(false)
 const historyError = ref('')
 const submitError = ref('')
 const showHistory = ref(false)
+const historyListRef = ref(null)
 const currentBeijingTimestamp = ref(Date.now())
 let beijingTimer = null
+let historyTriggerEl = null
+
 
 
 const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
@@ -441,7 +455,34 @@ const historyTriggerText = computed(() => (
   history.value.length > 0 ? `查看历史记录 (${history.value.length}条)` : '查看历史记录'
 ))
 
+const openHistoryDialog = (event) => {
+  historyTriggerEl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  showHistory.value = true
+}
+
+const restoreHistoryTriggerFocus = () => {
+  if (historyTriggerEl instanceof HTMLElement) {
+    historyTriggerEl.focus()
+  }
+  historyTriggerEl = null
+}
+
+const focusHistoryDialogPrimaryAction = async () => {
+  await nextTick()
+  const target = historyListRef.value?.querySelector('.history-select, .delete-btn, .el-button')
+  if (target instanceof HTMLElement) {
+    target.focus()
+  }
+}
+
+watch(showHistory, (visible) => {
+  if (visible) {
+    focusHistoryDialogPrimaryAction()
+  }
+})
+
 const formatDateTime = (dateStr) => {
+
   const rawValue = typeof dateStr === 'string' ? dateStr.trim() : ''
   if (!rawValue) {
     return ''
@@ -1072,16 +1113,28 @@ onUnmounted(() => {
   margin-top: 20px;
 }
 
-.history-link a {
+.history-link__button {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
   color: var(--text-secondary);
   cursor: pointer;
   text-decoration: underline;
   font-size: 14px;
+  font: inherit;
 }
 
-.history-link a:hover {
+.history-link__button:hover {
   color: var(--primary-color);
 }
+
+.history-link__button:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 
 /* 结果卡片 */
 .result-section {
@@ -1551,69 +1604,48 @@ onUnmounted(() => {
   background: var(--bg-hover);
 }
 
-/* 弹窗 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: var(--bg-card);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow: hidden;
+/* 历史对话框 */
+.history-dialog :deep(.el-dialog) {
+  border-radius: 20px;
   border: 1px solid var(--border-light);
+  background: var(--bg-card);
   box-shadow: var(--shadow-xl);
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
+.history-dialog :deep(.el-dialog__header) {
+  padding: 20px 20px 16px;
+  margin: 0;
   border-bottom: 1px solid var(--border-light);
 }
 
-.modal-header h3 {
+.history-dialog :deep(.el-dialog__title) {
   color: var(--text-primary);
-  margin: 0;
+  font-weight: 700;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 20px;
-  cursor: pointer;
+.history-dialog :deep(.el-dialog__body) {
+  padding: 16px 20px 20px;
+}
+
+.history-dialog :deep(.el-dialog__headerbtn) {
   width: 44px;
   height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
+  top: 12px;
+  right: 14px;
 }
 
-.close-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-  border-radius: 50%;
+.history-dialog :deep(.el-dialog__headerbtn:focus-visible) {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .history-list {
-  max-height: 60vh;
+  max-height: min(60vh, 520px);
   overflow-y: auto;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .history-state {
@@ -1635,18 +1667,36 @@ onUnmounted(() => {
 }
 
 .history-item {
-
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
+  align-items: stretch;
+  gap: 12px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), var(--bg-card));
 }
 
-.history-item:hover {
+.history-select {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.history-select:hover {
   background: var(--bg-secondary);
+}
+
+.history-select:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
 }
 
 .history-main {
@@ -1672,8 +1722,11 @@ onUnmounted(() => {
 .delete-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-height: 36px;
+  align-self: center;
+  min-height: 40px;
+  min-width: 40px;
   padding: 8px 12px;
   background: var(--error-bg);
   border: 1px solid rgba(239, 68, 68, 0.18);
@@ -1682,7 +1735,6 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  opacity: 1;
   transition: all 0.3s;
 }
 
@@ -1691,9 +1743,15 @@ onUnmounted(() => {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+.delete-btn:focus-visible {
+  outline: 2px solid rgba(239, 68, 68, 0.4);
+  outline-offset: 2px;
+}
+
 .delete-label {
   line-height: 1;
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .loading,
@@ -1809,9 +1867,19 @@ onUnmounted(() => {
     font-size: 13px;
   }
 
+  .history-item {
+    flex-direction: column;
+  }
+
+  .delete-btn {
+    align-self: stretch;
+    width: 100%;
+  }
+
   .action-buttons {
     flex-direction: column;
   }
 }
+
 
 </style>
