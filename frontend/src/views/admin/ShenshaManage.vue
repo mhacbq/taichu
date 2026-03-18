@@ -13,7 +13,7 @@
       <el-input
         v-model="searchKeyword"
         placeholder="搜索神煞名称"
-        prefix-icon="Search"
+        :prefix-icon="Search"
         clearable
         style="width: 250px"
       />

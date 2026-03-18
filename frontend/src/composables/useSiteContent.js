@@ -13,42 +13,79 @@ import {
  * 用于在组件中获取动态内容
  */
 
+const truncateSiteContentMessage = (message) => {
+  const normalizedMessage = typeof message === 'string' ? message.trim() : ''
+  if (!normalizedMessage) {
+    return 'unknown'
+  }
+
+  return normalizedMessage.length > 160 ? `${normalizedMessage.slice(0, 157)}...` : normalizedMessage
+}
+
+const reportSiteContentError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[SiteContent]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateSiteContentMessage(error?.message || String(error ?? '')),
+    ...extra
+  })
+}
+
+const createContentLoader = (action, request, applyData, buildExtra = () => ({})) => {
+  const loading = ref(false)
+  const error = ref(null)
+
+  const load = async () => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const res = await request()
+      if (res.code === 200) {
+        applyData(res.data)
+      }
+    } catch (err) {
+      error.value = err
+      reportSiteContentError(action, err, buildExtra())
+    } finally {
+      loading.value = false
+    }
+  }
+
+  onMounted(load)
+
+  return {
+    loading,
+    error,
+    refresh: load
+  }
+}
+
 /**
  * 获取首页内容
  */
 export function useHomeContent() {
   const content = ref({})
   const testimonials = ref([])
-  const loading = ref(false)
-  const error = ref(null)
-
-  const loadContent = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getHomeContent()
-      if (res.code === 200) {
-        content.value = res.data.content || {}
-        testimonials.value = res.data.testimonials || []
-      }
-    } catch (err) {
-      error.value = err
-      console.error('加载首页内容失败:', err)
-    } finally {
-      loading.value = false
+  const { loading, error, refresh } = createContentLoader(
+    'load_home_content',
+    () => getHomeContent(),
+    (data = {}) => {
+      content.value = data.content || {}
+      testimonials.value = data.testimonials || []
     }
-  }
-
-  onMounted(() => {
-    loadContent()
-  })
+  )
 
   return {
     content,
     testimonials,
     loading,
     error,
-    refresh: loadContent
+    refresh
   }
 }
 
@@ -58,34 +95,20 @@ export function useHomeContent() {
  */
 export function usePageContent(page) {
   const content = ref({})
-  const loading = ref(false)
-  const error = ref(null)
-
-  const loadContent = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getPageContent(page)
-      if (res.code === 200) {
-        content.value = res.data || {}
-      }
-    } catch (err) {
-      error.value = err
-      console.error(`加载${page}页面内容失败:`, err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  onMounted(() => {
-    loadContent()
-  })
+  const { loading, error, refresh } = createContentLoader(
+    'load_page_content',
+    () => getPageContent(page),
+    (data = {}) => {
+      content.value = data || {}
+    },
+    () => ({ page })
+  )
 
   return {
     content,
     loading,
     error,
-    refresh: loadContent
+    refresh
   }
 }
 
@@ -94,34 +117,19 @@ export function usePageContent(page) {
  */
 export function useTestimonials() {
   const testimonials = ref([])
-  const loading = ref(false)
-  const error = ref(null)
-
-  const loadTestimonials = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getTestimonials()
-      if (res.code === 200) {
-        testimonials.value = res.data || []
-      }
-    } catch (err) {
-      error.value = err
-      console.error('加载用户评价失败:', err)
-    } finally {
-      loading.value = false
+  const { loading, error, refresh } = createContentLoader(
+    'load_testimonials',
+    () => getTestimonials(),
+    (data = []) => {
+      testimonials.value = data || []
     }
-  }
-
-  onMounted(() => {
-    loadTestimonials()
-  })
+  )
 
   return {
     testimonials,
     loading,
     error,
-    refresh: loadTestimonials
+    refresh
   }
 }
 
@@ -131,34 +139,20 @@ export function useTestimonials() {
  */
 export function useFaqs(category = null) {
   const faqs = ref([])
-  const loading = ref(false)
-  const error = ref(null)
-
-  const loadFaqs = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getFaqs(category)
-      if (res.code === 200) {
-        faqs.value = res.data || []
-      }
-    } catch (err) {
-      error.value = err
-      console.error('加载FAQ失败:', err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  onMounted(() => {
-    loadFaqs()
-  })
+  const { loading, error, refresh } = createContentLoader(
+    'load_faqs',
+    () => getFaqs(category),
+    (data = []) => {
+      faqs.value = data || []
+    },
+    () => ({ category: category || 'all' })
+  )
 
   return {
     faqs,
     loading,
     error,
-    refresh: loadFaqs
+    refresh
   }
 }
 
@@ -167,34 +161,19 @@ export function useFaqs(category = null) {
  */
 export function useSpreads() {
   const spreads = ref([])
-  const loading = ref(false)
-  const error = ref(null)
-
-  const loadSpreads = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getSpreads()
-      if (res.code === 200) {
-        spreads.value = res.data || []
-      }
-    } catch (err) {
-      error.value = err
-      console.error('加载牌阵失败:', err)
-    } finally {
-      loading.value = false
+  const { loading, error, refresh } = createContentLoader(
+    'load_spreads',
+    () => getSpreads(),
+    (data = []) => {
+      spreads.value = data || []
     }
-  }
-
-  onMounted(() => {
-    loadSpreads()
-  })
+  )
 
   return {
     spreads,
     loading,
     error,
-    refresh: loadSpreads
+    refresh
   }
 }
 
@@ -204,33 +183,19 @@ export function useSpreads() {
  */
 export function useQuestions(category = null) {
   const questions = ref([])
-  const loading = ref(false)
-  const error = ref(null)
-
-  const loadQuestions = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getQuestions(category)
-      if (res.code === 200) {
-        questions.value = res.data || []
-      }
-    } catch (err) {
-      error.value = err
-      console.error('加载问题模板失败:', err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  onMounted(() => {
-    loadQuestions()
-  })
+  const { loading, error, refresh } = createContentLoader(
+    'load_questions',
+    () => getQuestions(category),
+    (data = []) => {
+      questions.value = data || []
+    },
+    () => ({ category: category || 'all' })
+  )
 
   return {
     questions,
     loading,
     error,
-    refresh: loadQuestions
+    refresh
   }
 }

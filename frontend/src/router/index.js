@@ -266,21 +266,47 @@ const router = createRouter({
 
 const dynamicImportErrorPattern = /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk [\d]+ failed/i
 
+const truncateRouterErrorMessage = (message) => {
+  const normalizedMessage = typeof message === 'string' ? message.trim() : ''
+  if (!normalizedMessage) {
+    return 'unknown'
+  }
+
+  return normalizedMessage.length > 160 ? `${normalizedMessage.slice(0, 157)}...` : normalizedMessage
+}
+
+const resolveRouteTarget = (to) => {
+  const candidate = typeof to?.fullPath === 'string' && to.fullPath
+    ? to.fullPath
+    : (typeof to?.path === 'string' ? to.path : '')
+
+  return candidate.split('?')[0]
+}
+
+const collectMatchedRouteInfo = (to) => (Array.isArray(to?.matched)
+  ? to.matched.map((record) => ({
+      name: record.name,
+      path: record.path,
+      hasComponent: !!record.components?.default || !!record.component,
+    }))
+  : [])
+
+const reportRouterLoadError = (error, to) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[RouterLoad]', {
+    target: resolveRouteTarget(to),
+    matched: collectMatchedRouteInfo(to),
+    error_type: error?.name || typeof error,
+    message: truncateRouterErrorMessage(error?.message)
+  })
+}
+
 router.onError((error, to) => {
   if (!dynamicImportErrorPattern.test(String(error?.message || ''))) {
-    const matchedInfo = Array.isArray(to?.matched)
-      ? to.matched.map((record) => ({
-          name: record.name,
-          path: record.path,
-          hasComponent: !!record.components?.default || !!record.component,
-        }))
-      : []
-
-    console.error('路由加载失败:', {
-      error,
-      to: to?.fullPath || to?.path || '',
-      matched: matchedInfo,
-    })
+    reportRouterLoadError(error, to)
     return
   }
 
