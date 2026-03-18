@@ -107,6 +107,36 @@ const primaryTipText = computed(() => isRegisterIntent.value ? '验证成功后�
 const isValidPhone = computed(() => validatePhone(phoneForm.value.phone))
 const isValidCode = computed(() => /^\d{6}$/.test(phoneForm.value.code))
 
+const maskPhone = (phone) => {
+  const normalizedPhone = String(phone ?? '').trim()
+  if (normalizedPhone.length < 7) {
+    return normalizedPhone
+  }
+
+  return `${normalizedPhone.slice(0, 3)}****${normalizedPhone.slice(-4)}`
+}
+
+const truncateLoginMessage = (message) => {
+  if (!message) {
+    return 'unknown'
+  }
+
+  return message.length > 160 ? `${message.slice(0, 157)}...` : message
+}
+
+const reportLoginError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[Login]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateLoginMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')),
+    ...extra
+  })
+}
+
 // 显示用户协议
 const showAgreement = () => {
   ElMessage.info('用户协议功能开发中')
@@ -139,7 +169,9 @@ const sendCode = async () => {
       ElMessage.error(response.message || '发送失败')
     }
   } catch (error) {
-    console.error('发送验证码失败:', error)
+    reportLoginError('send_sms_code_failed', error, {
+      phone: maskPhone(phoneForm.value.phone)
+    })
     ElMessage.error('发送失败，请稍后重试')
   }
 }
@@ -183,8 +215,11 @@ const handlePhoneLogin = async () => {
       ElMessage.error(response.message || '登录失败')
     }
   } catch (error) {
+    reportLoginError('phone_login_failed', error, {
+      phone: maskPhone(phoneForm.value.phone),
+      intent: isRegisterIntent.value ? 'register' : 'login'
+    })
     ElMessage.error('登录失败，请稍后重试')
-    console.error(error)
   } finally {
     loading.value = false
   }

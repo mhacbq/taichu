@@ -151,6 +151,32 @@ const shareOptions = [
   { type: 'weibo', name: '微博', icon: Promotion }
 ]
 
+const truncateShareMessage = (message) => {
+  if (!message) {
+    return 'unknown'
+  }
+
+  return message.length > 160 ? `${message.slice(0, 157)}...` : message
+}
+
+const reportShareError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[ShareModal]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateShareMessage(typeof error?.message === 'string' ? error.message : String(error ?? '')),
+    ...extra
+  })
+}
+
+const isShareCancelled = (error) => {
+  const message = typeof error?.message === 'string' ? error.message : ''
+  return error?.name === 'AbortError' || /cancel|abort/i.test(message)
+}
+
 const handleShare = async (type) => {
   sharing.value = true
   
@@ -170,8 +196,15 @@ const handleShare = async (type) => {
       ElMessage.success('分享内容已复制，请粘贴到' + shareOptions.find(o => o.type === type)?.name)
     }
   } catch (error) {
-    // 用户取消分享
-    console.log('分享取消')
+    if (isShareCancelled(error)) {
+      return
+    }
+
+    reportShareError('share_failed', error, {
+      type,
+      share_mode: navigator.share ? 'native' : 'clipboard'
+    })
+    ElMessage.error(navigator.share ? '分享失败，请稍后重试' : '复制分享内容失败，请手动重试')
   } finally {
     sharing.value = false
   }

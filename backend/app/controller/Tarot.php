@@ -8,7 +8,6 @@ use app\model\PointsRecord;
 use app\model\TarotRecord;
 use app\service\TarotElementService;
 use think\facade\Db;
-use think\facade\Log;
 
 
 class Tarot extends BaseController

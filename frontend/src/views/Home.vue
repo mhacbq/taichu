@@ -339,15 +339,11 @@ const baziOfferState = computed(() => {
     return 'guest'
   }
 
-  if (isFirstBaziEligible.value === true) {
-    return 'free'
+  if (isFirstBaziEligible.value == null) {
+    return 'loading'
   }
 
-  if (isFirstBaziEligible.value === false) {
-    return 'priced'
-  }
-
-  return 'loading'
+  return isFirstBaziEligible.value ? 'free' : 'priced'
 })
 
 const heroPrimaryBadge = computed(() => {
