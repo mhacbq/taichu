@@ -5,7 +5,8 @@
 - 本轮完成 5 个后端/运营收口项：系统设置功能开关保存后立即回读失效、用户详情资料编辑入口缺失、神煞历史乱码展示不可读、后台缺少独立通知配置入口、后台缺少测试通知能力；并补了神煞历史脏数据回填 SQL。
 - 关键代码：`backend/app/model/SystemConfig.php` 统一解析 `tc_system_config/system_config` 真表并按最新记录回读，`backend/app/controller/Admin.php` 为系统设置保存补齐布尔类型和分类映射；`backend/route/admin.php` + `admin/src/views/user/detail.vue` + `admin/src/api/user.js` 接通用户资料编辑；新增 `backend/app/controller/admin/NotificationConfig.php`、`admin/src/views/system/notification.vue`、`admin/src/api/system.js`、`admin/src/router/index.js`，落地通知默认开关/免打扰/测试通知；`backend/app/controller/admin/Shensha.php` + `backend/app/service/DisplayTextRepairService.php` 兜底修复神煞乱码，并新增 `database/20260318_fix_shensha_display_encoding.sql` 接入 `20260318_master_migration.sql`。
 - 验证：`docker exec taichu-app php /var/www/html/tests/run.php` 已通过；`docker exec taichu-app php -l` 对 `Admin.php`、`Notification.php`、`admin/Shensha.php`、`admin/NotificationConfig.php`、`SystemConfig.php`、`DisplayTextRepairService.php`、`route/admin.php` 均语法通过；`npm --prefix admin run build` 通过，仅保留既有 Sass legacy JS API 与 chunk 体积告警；`git diff --check`（目标文件）通过。
-- Git：待本轮收尾提交，并只纳入本轮目标文件。
+- Git：已提交 `b92d1aa`，提交信息为 `"fix-backend-user-config-notification-20260318"`；提交仅包含本轮目标文件，工作区中其余无关改动未纳入。
+
 
 ## 2026-03-18 积分 / 敏感配置 / 索引修复记录（本次）
 
