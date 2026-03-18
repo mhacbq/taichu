@@ -3150,6 +3150,10 @@ onMounted(() => {
   }
 
   .option-item {
+    padding: 0;
+  }
+
+  .option-checkbox {
     padding: 14px 16px;
   }
   
