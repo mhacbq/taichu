@@ -77,16 +77,14 @@
             </p>
             <p v-if="unlockLoading" class="upgrade-status upgrade-status--loading">正在解锁详细报告，请稍候...</p>
             <p v-else-if="unlockError" class="upgrade-status upgrade-status--error">{{ unlockError }}</p>
-            <button class="btn-upgrade" :disabled="!canUnlockPremium" @click="unlockPremium">
-              <template v-if="unlockLoading">
-                正在解锁详细报告...
-              </template>
-              <template v-else>
+            <el-button class="btn-upgrade" type="primary" :disabled="!canUnlockPremium" :loading="unlockLoading" @click="unlockPremium">
+              <template v-if="!unlockLoading">
                 <el-icon><Unlock /></el-icon>
-                解锁详细报告
-                <span class="points-tag">{{ pricingDisplayText }}</span>
               </template>
-            </button>
+              <span>{{ unlockLoading ? '正在解锁详细报告...' : '解锁详细报告' }}</span>
+              <span v-if="!unlockLoading" class="points-tag">{{ pricingDisplayText }}</span>
+            </el-button>
+
           </div>
 
           <div class="action-buttons action-buttons--free">
@@ -197,58 +195,63 @@
             <div class="form-row">
               <div class="form-group">
                 <label>姓名（可选）</label>
-                <input 
-                  v-model="form.maleName" 
-                  type="text" 
+                <el-input
+                  v-model="form.maleName"
+                  class="hehun-field-control"
                   placeholder="输入姓名"
                   maxlength="10"
+                  clearable
+                  show-word-limit
                 />
               </div>
             </div>
             <div class="birth-precision-panel">
               <label class="precision-heading">出生时刻精度</label>
-              <div class="precision-options">
-                <button
+              <el-radio-group
+                v-model="form.maleBirthPrecision"
+                class="precision-options precision-options--group"
+                @change="(value) => handleBirthPrecisionChange('male', value)"
+              >
+                <el-radio-button
                   v-for="option in birthPrecisionOptions"
                   :key="`male-${option.value}`"
-                  type="button"
-                  class="precision-option"
-                  :class="{ active: form.maleBirthPrecision === option.value }"
-                  @click="handleBirthPrecisionChange('male', option.value)"
+                  :label="option.value"
+                  class="precision-option-button"
                 >
-
                   <span class="precision-option-title">{{ option.label }}</span>
                   <span class="precision-option-desc">{{ option.desc }}</span>
-                </button>
-              </div>
+                </el-radio-button>
+              </el-radio-group>
               <p class="precision-helper">{{ getBirthPrecisionHint(form.maleBirthPrecision) }}</p>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label>{{ getBirthInputLabel(form.maleBirthPrecision) }} <span class="required">*</span></label>
-                <input 
+                <el-date-picker
                   v-model="form.maleBirthDate"
-                  :type="getBirthInputType(form.maleBirthPrecision)"
-                  required
+                  class="hehun-field-control"
+                  :type="getBirthPickerType(form.maleBirthPrecision)"
+                  :placeholder="getBirthPickerPlaceholder(form.maleBirthPrecision)"
+                  :format="getBirthPickerFormat(form.maleBirthPrecision)"
+                  :value-format="getBirthPickerValueFormat(form.maleBirthPrecision)"
+                  clearable
                 />
                 <p class="field-helper">{{ getBirthFieldHelper(form.maleBirthPrecision) }}</p>
               </div>
             </div>
             <div v-if="form.maleBirthPrecision === 'range'" class="time-range-panel">
               <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
-              <div class="time-range-options">
-                <button
+              <el-radio-group v-model="form.maleBirthTimeRange" class="time-range-options time-range-options--group">
+                <el-radio-button
                   v-for="option in birthTimeRangeOptions"
                   :key="`male-range-${option.value}`"
-                  type="button"
-                  class="time-range-chip"
-                  :class="{ active: form.maleBirthTimeRange === option.value }"
-                  @click="form.maleBirthTimeRange = option.value"
+                  :label="option.value"
+                  class="time-range-chip-button"
                 >
                   <span>{{ option.label }}</span>
                   <small>{{ option.hint }}</small>
-                </button>
-              </div>
+                </el-radio-button>
+              </el-radio-group>
               <p v-if="!form.maleBirthTimeRange" class="field-helper field-helper--warning">请选择男方的大概出生时段后再开始分析。</p>
             </div>
 
@@ -257,6 +260,7 @@
               <p>{{ getBirthConfidenceCopy(form.maleBirthPrecision, '男方') }}</p>
             </div>
           </div>
+
           
           <!-- 女方信息 -->
           <div class="person-section">
@@ -267,58 +271,63 @@
             <div class="form-row">
               <div class="form-group">
                 <label>姓名（可选）</label>
-                <input 
-                  v-model="form.femaleName" 
-                  type="text" 
+                <el-input
+                  v-model="form.femaleName"
+                  class="hehun-field-control"
                   placeholder="输入姓名"
                   maxlength="10"
+                  clearable
+                  show-word-limit
                 />
               </div>
             </div>
             <div class="birth-precision-panel">
               <label class="precision-heading">出生时刻精度</label>
-              <div class="precision-options">
-                <button
+              <el-radio-group
+                v-model="form.femaleBirthPrecision"
+                class="precision-options precision-options--group"
+                @change="(value) => handleBirthPrecisionChange('female', value)"
+              >
+                <el-radio-button
                   v-for="option in birthPrecisionOptions"
                   :key="`female-${option.value}`"
-                  type="button"
-                  class="precision-option"
-                  :class="{ active: form.femaleBirthPrecision === option.value }"
-                  @click="handleBirthPrecisionChange('female', option.value)"
+                  :label="option.value"
+                  class="precision-option-button"
                 >
-
                   <span class="precision-option-title">{{ option.label }}</span>
                   <span class="precision-option-desc">{{ option.desc }}</span>
-                </button>
-              </div>
+                </el-radio-button>
+              </el-radio-group>
               <p class="precision-helper">{{ getBirthPrecisionHint(form.femaleBirthPrecision) }}</p>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label>{{ getBirthInputLabel(form.femaleBirthPrecision) }} <span class="required">*</span></label>
-                <input 
+                <el-date-picker
                   v-model="form.femaleBirthDate"
-                  :type="getBirthInputType(form.femaleBirthPrecision)"
-                  required
+                  class="hehun-field-control"
+                  :type="getBirthPickerType(form.femaleBirthPrecision)"
+                  :placeholder="getBirthPickerPlaceholder(form.femaleBirthPrecision)"
+                  :format="getBirthPickerFormat(form.femaleBirthPrecision)"
+                  :value-format="getBirthPickerValueFormat(form.femaleBirthPrecision)"
+                  clearable
                 />
                 <p class="field-helper">{{ getBirthFieldHelper(form.femaleBirthPrecision) }}</p>
               </div>
             </div>
             <div v-if="form.femaleBirthPrecision === 'range'" class="time-range-panel">
               <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
-              <div class="time-range-options">
-                <button
+              <el-radio-group v-model="form.femaleBirthTimeRange" class="time-range-options time-range-options--group">
+                <el-radio-button
                   v-for="option in birthTimeRangeOptions"
                   :key="`female-range-${option.value}`"
-                  type="button"
-                  class="time-range-chip"
-                  :class="{ active: form.femaleBirthTimeRange === option.value }"
-                  @click="form.femaleBirthTimeRange = option.value"
+                  :label="option.value"
+                  class="time-range-chip-button"
                 >
                   <span>{{ option.label }}</span>
                   <small>{{ option.hint }}</small>
-                </button>
-              </div>
+                </el-radio-button>
+              </el-radio-group>
               <p v-if="!form.femaleBirthTimeRange" class="field-helper field-helper--warning">请选择女方的大概出生时段后再开始分析。</p>
             </div>
             <div class="precision-confidence" :class="`precision-confidence--${form.femaleBirthPrecision}`">
@@ -326,6 +335,7 @@
               <p>{{ getBirthConfidenceCopy(form.femaleBirthPrecision, '女方') }}</p>
             </div>
           </div>
+
           
           <!-- 选项 -->
           <div class="options-section">
@@ -336,14 +346,14 @@
               </div>
               <p class="plan-summary">免费预览仅返回基础匹配分与简要建议；解锁完整版后会优先启用 AI 深度分析，若 AI 暂不可用则自动切换为规则解读。</p>
             </div>
-            <label class="option-item" :class="{ active: form.useAi }">
-              <input type="checkbox" v-model="form.useAi" />
-              <span class="option-copy">
+            <div class="option-item" :class="{ active: form.useAi }">
+              <el-checkbox v-model="form.useAi" class="option-checkbox">
                 <span class="option-title">解锁完整版时启用 AI 深度分析</span>
                 <span class="option-desc">当前免费预览固定不启用 AI；勾选后会优先使用 AI，若服务不可用则在结果页明确标注为规则解读。</span>
-              </span>
-            </label>
+              </el-checkbox>
+            </div>
           </div>
+
           
           <!-- 定价信息 -->
           <div class="pricing-info" v-if="pricingLoading || normalizedPricing || pricingError">
@@ -378,14 +388,19 @@
 
           
           <!-- 提交按钮 -->
-          <button 
-            class="btn-submit" 
+          <el-button
+            class="btn-submit"
+            type="primary"
+            :loading="isLoading"
+            :disabled="!isFormValid"
             @click="submitForm"
-            :disabled="isLoading || !isFormValid"
           >
-            <div v-if="isLoading" class="loading-taiji mini"></div>
-            <span v-else><el-icon><Link /></el-icon> 开始合婚分析</span>
-          </button>
+            <template v-if="!isLoading">
+              <el-icon><Link /></el-icon>
+            </template>
+            <span>{{ isLoading ? '正在分析中...' : '开始合婚分析' }}</span>
+          </el-button>
+
           
           <p class="form-hint">
             <el-icon><Collection /></el-icon> 首次查看基础分析免费，详细报告需消耗积分或开通VIP
@@ -552,7 +567,11 @@ const getBirthPrecisionBadge = (precision) => {
 }
 
 const getBirthInputLabel = (precision) => (precision === 'exact' ? '出生日期与时间' : '出生日期')
-const getBirthInputType = (precision) => (precision === 'exact' ? 'datetime-local' : 'date')
+const getBirthPickerType = (precision) => (precision === 'exact' ? 'datetime' : 'date')
+const getBirthPickerPlaceholder = (precision) => (precision === 'exact' ? '选择出生日期时间（精确到分钟）' : '选择出生日期')
+const getBirthPickerFormat = (precision) => (precision === 'exact' ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD')
+const getBirthPickerValueFormat = (precision) => (precision === 'exact' ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD')
+
 
 const getBirthPrecisionHint = (precision) => {
   if (precision === 'range') {
@@ -587,8 +606,9 @@ const normalizeBirthInputValue = (value, nextPrecision) => {
 
   const [, date, hour, minute] = match
   if (nextPrecision === 'exact') {
-    return hour && minute ? `${date}T${hour}:${minute}` : ''
+    return hour && minute ? `${date} ${hour}:${minute}` : ''
   }
+
 
   return date
 }
@@ -609,14 +629,11 @@ const handleBirthPrecisionChange = (role, nextPrecision) => {
   const timeRangeKey = `${role}BirthTimeRange`
   const currentValue = form[birthDateKey]
 
-  if (form[precisionKey] === nextPrecision) {
-    return
-  }
-
   form[precisionKey] = nextPrecision
   form[birthDateKey] = normalizeBirthInputValue(currentValue, nextPrecision)
   form[timeRangeKey] = ''
 }
+
 
 const getBirthConfidenceCopy = (precision, roleLabel) => {
   if (precision === 'range') {
@@ -689,11 +706,12 @@ const hydrateBirthState = (birthDate) => {
 
   const [, date, hour, minute] = match
   return {
-    value: `${date}T${hour}:${minute}`,
+    value: `${date} ${hour}:${minute}`,
     precision: 'exact',
     timeRange: resolveTimeRangeByClock(`${hour}:${minute}`),
   }
 }
+
 
 
 const precisionSummaryList = computed(() => ([
@@ -1581,7 +1599,7 @@ const toDatetimeLocalValue = (value = '') => {
     return trimmed
   }
 
-  return `${match[1]}T${match[2]}:${match[3]}`
+  return `${match[1]} ${match[2]}:${match[3]}`
 }
 
 const resolveHistoryBirthState = (item, role) => {
@@ -1812,23 +1830,36 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.form-group input {
+.hehun-field-control {
   width: 100%;
-  padding: 14px 16px;
-  min-height: 48px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 15px;
-  transition: all 0.3s;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: var(--focus-ring);
+.hehun-field-control :deep(.el-input__wrapper) {
+  min-height: 48px;
+  padding: 0 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--border-light);
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
 }
+
+.hehun-field-control :deep(.el-input__inner) {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.hehun-field-control :deep(.el-input__count-inner),
+.hehun-field-control :deep(.el-range-separator),
+.hehun-field-control :deep(.el-input__icon) {
+  color: var(--text-tertiary);
+}
+
+.hehun-field-control :deep(.el-input__wrapper.is-focus),
+.hehun-field-control :deep(.el-input__wrapper:hover) {
+  background: var(--bg-tertiary);
+  box-shadow: inset 0 0 0 1px var(--primary-color), var(--focus-ring);
+}
+
 
 .required {
   color: var(--primary-color);
@@ -1866,7 +1897,16 @@ onMounted(() => {
   gap: 10px;
 }
 
-.precision-option {
+.precision-options--group {
+  width: 100%;
+}
+
+.precision-options--group :deep(.el-radio-button),
+.precision-options--group :deep(.el-radio-button__inner) {
+  width: 100%;
+}
+
+.precision-options--group :deep(.el-radio-button__inner) {
   min-height: 88px;
   padding: 14px 16px;
   border-radius: var(--radius-md);
@@ -1877,17 +1917,26 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
-  cursor: pointer;
+  white-space: normal;
+  line-height: 1.5;
+  box-shadow: none;
   transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.precision-option:hover,
-.precision-option.active {
+.precision-options--group :deep(.el-radio-button:first-child .el-radio-button__inner),
+.precision-options--group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: var(--radius-md);
+}
+
+.precision-options--group :deep(.el-radio-button__inner:hover),
+.precision-options--group :deep(.el-radio-button.is-active .el-radio-button__inner) {
   transform: translateY(-2px);
   border-color: var(--primary-light-30);
   background: rgba(var(--primary-rgb), 0.08);
   box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
 }
 
 .precision-option-title {
@@ -1901,6 +1950,7 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.6;
 }
+
 
 .precision-helper {
   margin-top: 10px;
@@ -1919,7 +1969,16 @@ onMounted(() => {
   gap: 10px;
 }
 
-.time-range-chip {
+.time-range-options--group {
+  width: 100%;
+}
+
+.time-range-options--group :deep(.el-radio-button),
+.time-range-options--group :deep(.el-radio-button__inner) {
+  width: 100%;
+}
+
+.time-range-options--group :deep(.el-radio-button__inner) {
   min-height: 56px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
@@ -1931,22 +1990,31 @@ onMounted(() => {
   align-items: flex-start;
   justify-content: center;
   gap: 4px;
-  cursor: pointer;
+  white-space: normal;
+  line-height: 1.4;
+  box-shadow: none;
   transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.time-range-chip small {
+.time-range-options--group :deep(.el-radio-button:first-child .el-radio-button__inner),
+.time-range-options--group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: var(--radius-md);
+}
+
+.time-range-options--group :deep(.el-radio-button__inner small) {
   color: var(--text-tertiary);
   font-size: 11px;
 }
 
-.time-range-chip:hover,
-.time-range-chip.active {
+.time-range-options--group :deep(.el-radio-button__inner:hover),
+.time-range-options--group :deep(.el-radio-button.is-active .el-radio-button__inner) {
   transform: translateY(-2px);
   border-color: var(--primary-light-30);
   background: rgba(var(--primary-rgb), 0.08);
   box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
 }
+
 
 .precision-confidence {
   display: flex;
@@ -2045,11 +2113,7 @@ onMounted(() => {
 }
 
 .option-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
   color: var(--text-secondary);
-  cursor: pointer;
   padding: 16px 18px;
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
@@ -2063,17 +2127,29 @@ onMounted(() => {
   box-shadow: var(--shadow-sm);
 }
 
-.option-item input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  accent-color: var(--primary-color);
+.option-checkbox {
+  width: 100%;
 }
 
-.option-copy {
+.option-checkbox :deep(.el-checkbox__label) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  white-space: normal;
+  padding-left: 10px;
+}
+
+.option-checkbox :deep(.el-checkbox__input) {
+  margin-top: 2px;
+}
+
+.option-checkbox :deep(.el-checkbox__inner) {
+  width: 18px;
+  height: 18px;
+}
+
+.option-checkbox :deep(.el-checkbox__inner::after) {
+  left: 5px;
 }
 
 .option-title {
@@ -2086,6 +2162,7 @@ onMounted(() => {
   font-size: 13px;
   line-height: 1.6;
 }
+
 
 .pricing-info {
   text-align: center;
@@ -2217,33 +2294,29 @@ onMounted(() => {
 
 .btn-submit {
   width: 100%;
-  padding: 16px;
   min-height: 48px;
-  background: var(--primary-gradient);
-  color: var(--text-accent-contrast);
-  border: 1px solid var(--primary-light-30);
   border-radius: var(--radius-btn);
+  border: 1px solid var(--primary-light-30);
+  background: var(--primary-gradient);
+  box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+}
+
+.btn-submit :deep(span) {
   font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
 }
 
-
-.btn-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-submit:not(:disabled):hover {
+.btn-submit:not(.is-disabled):hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(184, 134, 11, 0.4);
 }
+
+.btn-submit.is-disabled {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
 
 .form-hint {
   text-align: center;
@@ -2474,33 +2547,30 @@ onMounted(() => {
 }
 
 .btn-upgrade {
-
-  padding: 14px 32px;
   min-height: 48px;
-  background: var(--primary-gradient);
-  color: var(--text-accent-contrast);
-  border: 1px solid var(--primary-light-30);
+  padding: 14px 32px;
   border-radius: var(--radius-btn);
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
+  border: 1px solid var(--primary-light-30);
+  background: var(--primary-gradient);
   box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.24);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
-.btn-upgrade:disabled {
+.btn-upgrade :deep(span) {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.btn-upgrade.is-disabled {
   opacity: 0.6;
-  cursor: not-allowed;
   box-shadow: none;
 }
 
-.btn-upgrade:not(:disabled):hover {
+.btn-upgrade:not(.is-disabled):hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px var(--primary-light-40);
 }
+
 
 .points-tag {
   background: var(--white-20);
@@ -3024,10 +3094,11 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .precision-option,
-  .time-range-chip {
+  .precision-options--group :deep(.el-radio-button__inner),
+  .time-range-options--group :deep(.el-radio-button__inner) {
     min-height: 52px;
   }
+
 
   .precision-confidence,
   .precision-summary-item {

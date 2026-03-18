@@ -2,7 +2,37 @@
 
 ## 最近更新
 
+### UI 修复批次（ui-15 自动化执行，2026-03-18 继续修复-2）
+
+- 本轮先复查 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，确认待办里只剩最后一条 `[UI]`：合婚页表单控件风格不统一。随后围绕这一条待办继续下钻，按 **5 个表单层级 UI 子问题** 一次性收口。
+- 已同步从 `TODO.md` 删除这条剩余 `[UI]` 待办；当前 `TODO.md` 中 `[UI]` 搜索结果为 **0**。
+
+#### 本轮主要改动文件
+- `frontend/src/views/Hehun.vue`
+- `TODO.md`
+- `.codebuddy/automations/ui-15/memory.md`
+- `overview.md`
+
+#### 关键修复点
+1. **姓名输入统一到 Element Plus**
+   - 男方 / 女方姓名输入改为 `el-input`，补齐清空、字数提示与统一聚焦态，避免继续混用原生输入框。
+2. **日期 / 时间选择器统一到 Element Plus**
+   - 双方出生时间改为 `el-date-picker`；精确时间走 `datetime`，非精确模式走 `date`，同时调整内部格式，让历史回填和精度切换继续兼容。
+3. **出生时刻精度改成组件化单选组**
+   - “精确时分 / 大概时段 / 未知时辰”统一为 `el-radio-group + el-radio-button` 卡片样式，男女两侧选项状态和触达反馈一致。
+4. **大概出生时段改成组件化单选组**
+   - 凌晨 / 早晨 / 上午 / 中午 / 下午 / 晚上统一使用组件化时段选择，移动端不再出现自绘按钮和其他命理页控件风格脱节。
+5. **AI 勾选与主 CTA 统一按钮体系**
+   - AI 深度分析改用 `el-checkbox`；“开始合婚分析”和“解锁详细报告”改为 `el-button`，加载态、禁用态、主按钮视觉层级和站内其他页对齐。
+
+#### 验证情况
+- `read_lints`：`frontend/src/views/Hehun.vue`、`TODO.md` 均为 0 diagnostics。
+- `git diff --check -- frontend/src/views/Hehun.vue TODO.md`：通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`：通过；仅剩既有 chunk size warning 与 `NativeSymbolResolver` 提示，不影响产物。
+- 截图 / 录屏：本轮未新增前台截图；当前主要以代码、lint 与正式构建结果完成校验。
+
 ### 后台运营巡检（第三十三轮自动化执行，2026-03-18 14:57）
+
 
 - 本轮先读取 `.codebuddy/automations/30-3/memory.md` 与 `TODO.md`，随后重新访问后台登录页 `http://localhost:3001/login`，并用默认管理员 `admin / admin123` 直连当前运行中的后台接口做最小化真机冒烟；巡检覆盖登录、Dashboard、用户、黄历、知识库、神煞、SEO、订单、积分记录、系统设置与系统公告。
 - 本轮未修改业务代码；仅更新了 `TODO.md`、`.codebuddy/automations/30-3/memory.md` 与 `overview.md`。巡检中临时生成的脚本与结果文件已删除，未留下测试工具残留；黄历、知识库、神煞、SEO、公告的测试数据也都已回滚清理。

@@ -1,6 +1,26 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Seventeenth round of UI consistency fixes focused on Hehun form component consistency and unified input/button behavior.
+- Status: Completed (5 UI issues resolved under the last remaining Hehun UI TODO).
+- Date: 2026-03-18
+
+## Summary
+- `frontend/src/views/Hehun.vue`: 将男方与女方姓名输入统一改为 `el-input`，补齐清空、字数提示与统一聚焦态，去掉原生输入框在站内的割裂感。
+- `frontend/src/views/Hehun.vue`: 将双方出生日期 / 出生日期时间切到 `el-date-picker`，统一日期选择器视觉与交互，并让历史回填、精度切换都兼容组件格式。
+- `frontend/src/views/Hehun.vue`: 将“出生时刻精度”从自绘按钮改为 `el-radio-group + el-radio-button` 卡片样式，男女两侧保持同一套选择反馈。
+- `frontend/src/views/Hehun.vue`: 将“大概出生时段”也统一为组件化单选组，减少自绘时段按钮与其他命理页控件风格错位。
+- `frontend/src/views/Hehun.vue`: 将 AI 选项、提交按钮、解锁详细报告按钮统一为 `el-checkbox` / `el-button`，让主 CTA 的加载态、禁用态和站内其他页面一致。
+- `TODO.md`: 删除最后一条 `[UI]` 待办；当前搜索 `[UI]` 结果为 0。
+
+## Validation
+- `read_lints`: `frontend/src/views/Hehun.vue`、`TODO.md` 0 diagnostics。
+- `git diff --check -- frontend/src/views/Hehun.vue TODO.md`: 通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 通过；仅剩既有 chunk size warning 与 `NativeSymbolResolver` 提示，不影响产物。
+
+---
+
+## Previous Run
 - Task: Sixteenth round of UI consistency fixes focused on Tarot result-context locking and accessibility, Liuyao history-dialog semantics, Hehun history refresh consistency, and Bazi weighted wuxing visualization.
 - Status: Completed (5 UI issues resolved).
 - Date: 2026-03-18
@@ -19,6 +39,8 @@
 - `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 当前本机 Node 运行时仍报 `Unexpected token '??='`，与此前环境问题一致，暂未见由本轮改动引入的新构建错误。
 
 ---
+
+
 
 ## Previous Run
 - Task: Fifteenth round of UI consistency fixes focused on Daily personalization clarity, score/expansion consistency, and Liuyao result context visibility.
