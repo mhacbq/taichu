@@ -1,4 +1,4 @@
--- 修复合婚积分配置缺失/写入错误表导致的 pricing/calculate 500
+﻿-- 修复合婚积分配置缺失/写入错误表导致的 pricing/calculate 500
 -- 适用范围：system_config 表已存在，但缺少合婚相关默认配置的环境
 
 INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `description`, `category`, `is_editable`, `sort_order`, `created_at`, `updated_at`) VALUES

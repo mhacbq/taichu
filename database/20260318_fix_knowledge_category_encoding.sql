@@ -1,4 +1,4 @@
-SET NAMES utf8mb4;
+﻿SET NAMES utf8mb4;
 USE taichu;
 
 UPDATE `tc_article_category`

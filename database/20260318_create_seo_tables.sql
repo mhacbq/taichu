@@ -1,4 +1,5 @@
-SET NAMES utf8mb4;
+﻿SET NAMES utf8mb4;
+USE taichu;
 
 CREATE TABLE IF NOT EXISTS `tc_seo_config` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
