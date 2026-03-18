@@ -191,5 +191,6 @@ Route::group('api/admin', function () {
 })->middleware([
     \app\middleware\HttpsEnforce::class,
     \app\middleware\Cors::class,
+    \app\middleware\SensitiveDataFilter::class,
     \app\middleware\RateLimit::class,
 ]);

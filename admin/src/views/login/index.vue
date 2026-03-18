@@ -96,7 +96,10 @@ async function handleLogin() {
     ElMessage.success('登录成功')
     router.push('/')
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('login', 'submit_failed', error, {
+      has_username: Boolean(loginForm.username)
+    })
+    ElMessage.error('登录失败，请检查账号信息后重试')
   } finally {
     loading.value = false
   }

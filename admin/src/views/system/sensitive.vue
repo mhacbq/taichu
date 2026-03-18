@@ -149,6 +149,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSensitiveWords, addSensitiveWord, updateSensitiveWord, deleteSensitiveWord, importSensitiveWords } from '@/api/system'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const wordList = ref([])
@@ -270,7 +271,12 @@ async function submitImport() {
     importDialog.visible = false
     loadWordList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('system_sensitive', 'import_words_failed', error, {
+      batch_size: importDialog.words
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean).length
+    })
   }
 }
 

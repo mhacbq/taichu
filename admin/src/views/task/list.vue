@@ -148,6 +148,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTaskList, createTask, updateTask, deleteTask, runTask, toggleTaskStatus, getTaskScripts, saveTaskScript } from '@/api/task'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const taskList = ref([])
@@ -234,7 +235,10 @@ async function submitForm() {
     dialog.visible = false
     loadTaskList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('task_list', 'submit_task_failed', error, {
+      mode: dialog.isEdit ? 'edit' : 'create',
+      task_id: dialog.form.id ?? null
+    })
   }
 }
 
@@ -280,7 +284,10 @@ async function submitScript() {
     scriptDialog.visible = false
     loadScriptList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('task_list', 'save_script_failed', error, {
+      script_id: scriptDialog.form.id ?? null,
+      script_name: scriptDialog.form.name || ''
+    })
   }
 }
 

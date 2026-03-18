@@ -132,10 +132,11 @@ class AdminAuth
             $data['params'] = $detail;
         }
 
+        $requestPath = SensitiveDataSanitizer::sanitizeRequestPath((string) $request->url());
         if (isset($columns['request_url'])) {
-            $data['request_url'] = (string) $request->url();
+            $data['request_url'] = $requestPath;
         } elseif (isset($columns['url'])) {
-            $data['url'] = (string) $request->url();
+            $data['url'] = $requestPath;
         }
 
         if (isset($columns['request_method'])) {
@@ -160,57 +161,12 @@ class AdminAuth
             Db::table($table)->insert($data);
         } catch (\Exception $e) {
             Log::error('后台操作日志写入失败', [
-                'url' => $request->url(),
+                'path' => SensitiveDataSanitizer::sanitizeRequestPath((string) $request->url()),
                 'method' => $request->method(),
                 'table' => $table,
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    /**
-     * 递归脱敏请求参数
-     */
-    protected function sanitizeParams(mixed $value, ?string $field = null): mixed
-    {
-        if ($field !== null && $this->isSensitiveField($field)) {
-            return '***';
-        }
-
-        if (is_array($value)) {
-            $sanitized = [];
-            foreach ($value as $key => $item) {
-                $sanitized[$key] = $this->sanitizeParams($item, is_string($key) ? $key : null);
-            }
-            return $sanitized;
-        }
-
-        if (is_object($value)) {
-            return $this->sanitizeParams(get_object_vars($value), $field);
-        }
-
-        return $value;
-    }
-
-    /**
-     * 判断字段名是否包含敏感信息
-     */
-    protected function isSensitiveField(string $field): bool
-    {
-        $normalized = strtolower($field);
-        $compact = preg_replace('/[^a-z0-9]/', '', $normalized) ?: '';
-
-        if (in_array($compact, ['password', 'pwd', 'token', 'secret', 'key', 'authorization'], true)) {
-            return true;
-        }
-
-        foreach (['secret', 'token', 'apikey', 'appkey', 'privatekey', 'publickey', 'accesskey', 'secretid', 'cert', 'pem', 'signature'] as $keyword) {
-            if (str_contains($compact, $keyword)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

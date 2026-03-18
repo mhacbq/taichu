@@ -154,6 +154,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRiskEvents, getRiskEventDetail, handleRiskEvent } from '@/api/anticheat'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const eventList = ref([])
@@ -237,7 +238,9 @@ async function handleDetail(row) {
     detailDialog.data = data
     detailDialog.visible = true
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('anticheat_events', 'load_detail_failed', error, {
+      event_id: row?.id ?? null
+    })
   }
 }
 
