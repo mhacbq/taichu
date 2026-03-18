@@ -119,9 +119,14 @@ class Auth extends BaseController
     public function phoneRegister()
     {
         $data = $this->request->post();
+
+        if (!$this->isRegisterEnabled()) {
+            return $this->error('当前暂未开放新用户注册', 403);
+        }
         
         // 验证参数
         if (empty($data['phone'])) {
+
             return $this->error('请输入手机号');
         }
         if (empty($data['code'])) {
@@ -240,10 +245,16 @@ class Auth extends BaseController
         $configuredPoints = ConfigService::get('register_points', self::REGISTER_POINTS);
         return max(0, (int) $configuredPoints);
     }
+
+    protected function isRegisterEnabled(): bool
+    {
+        return (bool) ConfigService::isFeatureEnabled('register');
+    }
     
     /**
      * 生成Token响应
      */
+
 
     protected function generateTokenResponse(User $user, bool $isNewUser = false, string $message = '登录成功')
     {

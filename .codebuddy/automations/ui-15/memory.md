@@ -1,6 +1,26 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Twelfth round of UI consistency fixes focused on homepage first-free trust cues, Bazi privacy sharing, Liuyao history semantics, and check-in icon/calendar polish.
+- Status: Completed (5 UI issues resolved and pushed).
+- Date: 2026-03-18
+- Commits: `fe983e7` (`"fix-ui-multiple-issues-20260318-0936"`), `d9b158e` (`"fix-ui-todo-cleanup-20260318-0939"`)
+
+## Summary
+- `frontend/src/views/Home.vue`: 让首页八字 CTA、权益徽标与账户说明按 `first_bazi` 动态切换，老用户不再继续看到固定“首测免费”承诺，并在积分事件后自动刷新首屏状态。
+- `frontend/src/views/Bazi.vue`: 将分享入口改成更明确的“隐私分享”，默认走摘要版并在包含完整八字前弹出确认；同时把出生时间提示改成明确要求精确到分钟的文案。
+- `frontend/src/views/Liuyao.vue`: 历史回看时把保存提示改成“来自历史记录”，并同步切换提示图标和视觉状态，避免把旧记录误读成刚保存成功。
+- `frontend/src/components/CheckinCard.vue`: 统一连签与按钮图标为 Element Plus 风格，并细化月历日期点、空白占位和今天态层级，提升签到区的可读性与一致性。
+- `TODO.md`: 清理本轮已完成或已确认过期的 `[UI]` 待办，仅保留合婚历史精度回放这条未处理项。
+
+## Validation
+- `read_lints`: `frontend/src/views/Home.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/components/CheckinCard.vue` 0 diagnostics。
+- `npm run build --prefix frontend`: 通过（仅剩 Vite chunk size warning，不影响产物）。
+- `git push origin master`: 已推送 `fe983e7` 与 `d9b158e` 到 `origin/master`。
+
+---
+
+## Previous Run
 - Task: Eleventh round of UI consistency fixes focused on Hehun history card semantics, replay branching, AI content rendering, and responsive touch targets.
 - Status: Completed (5 UI issues resolved and pushed).
 - Date: 2026-03-18
@@ -20,7 +40,8 @@
 
 ---
 
-## Previous Run
+## Earlier Run
+
 - Task: Tenth round of UI consistency fixes focused on the homepage Hero value expression, card hierarchy, responsive touch targets, and preview blocking issue.
 - Status: Completed (5 UI issues resolved).
 - Date: 2026-03-18

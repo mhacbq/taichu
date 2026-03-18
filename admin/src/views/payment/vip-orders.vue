@@ -307,7 +307,8 @@ async function loadOrders() {
     return true
   } catch (error) {
     resetPageState()
-    pageError.value = createReadonlyErrorState(error, 'VIP 订单')
+    pageError.value = createReadonlyErrorState(error, 'VIP 订单', 'stats_view / config_manage')
+
     return false
   } finally {
     pageLoading.value = false

@@ -11,6 +11,7 @@ BOOTSTRAP_SQL_FILES=(
     "20260318_create_almanac_table.sql"
     "20260318_create_seo_tables.sql"
     "20260318_add_points_record_audit_fields.sql"
+    "20260318_fix_admin_role_permissions.sql"
     "20260318_fix_knowledge_category_encoding.sql"
 )
 

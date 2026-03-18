@@ -289,8 +289,8 @@ class HehunRecord extends Model
         $level = (string)($row['level'] ?? ($result['level'] ?? ''));
         $score = (int)($row['score'] ?? ($result['score'] ?? 0));
         $pointsCost = $pointsField !== null ? (int)($row[$pointsField] ?? 0) : 0;
-        $maleBirthDate = self::resolveBirthDateValue($row, 'male');
-        $femaleBirthDate = self::resolveBirthDateValue($row, 'female');
+        $maleBirthState = self::resolveBirthState($row, 'male', $result);
+        $femaleBirthState = self::resolveBirthState($row, 'female', $result);
         $hasAiAnalysis = self::resolveAiAnalysisFlag($row);
         $isPremium = self::resolvePremiumFlag($row, $result, $pointsCost, $hasAiAnalysis);
         $tier = $isPremium ? ($pointsCost > 0 ? 'premium' : 'vip') : 'free';
@@ -301,8 +301,14 @@ class HehunRecord extends Model
             'user_id' => (int)($row['user_id'] ?? 0),
             'male_name' => (string)($row['male_name'] ?? '男方'),
             'female_name' => (string)($row['female_name'] ?? '女方'),
-            'male_birth_date' => $maleBirthDate,
-            'female_birth_date' => $femaleBirthDate,
+            'male_birth_date' => $maleBirthState['value'],
+            'female_birth_date' => $femaleBirthState['value'],
+            'male_birth_time' => $maleBirthState['time'],
+            'female_birth_time' => $femaleBirthState['time'],
+            'male_birth_precision' => $maleBirthState['precision'],
+            'female_birth_precision' => $femaleBirthState['precision'],
+            'male_birth_time_range' => $maleBirthState['time_range'],
+            'female_birth_time_range' => $femaleBirthState['time_range'],
             'male_bazi' => self::decodeJsonField($row['male_bazi'] ?? null),
             'female_bazi' => self::decodeJsonField($row['female_bazi'] ?? null),
             'result' => $result,
@@ -352,21 +358,118 @@ class HehunRecord extends Model
         ];
     }
 
-    protected static function resolveBirthDateValue(array $row, string $role): string
+    protected static function resolveBirthState(array $row, string $role, array $result): array
     {
-        $splitField = $role . '_birth_date';
-        if (!empty($row[$splitField])) {
-            return (string)$row[$splitField];
+        $date = trim((string)($row[$role . '_birth_date'] ?? ''));
+        $time = trim((string)($row[$role . '_birth_time'] ?? ''));
+        $legacyValue = trim((string)($row[$role . '_birth'] ?? ''));
+
+        if ($legacyValue !== '') {
+            $legacyParts = preg_split('/\s+/', $legacyValue);
+            $date = $date !== '' ? $date : (string)($legacyParts[0] ?? '');
+            $time = $time !== '' ? $time : (string)($legacyParts[1] ?? '');
         }
 
-        $legacyField = $role . '_birth';
-        $legacyValue = trim((string)($row[$legacyField] ?? ''));
-        if ($legacyValue === '') {
-            return '';
+        if (strlen($time) === 5) {
+            $time .= ':00';
         }
 
-        $parts = preg_split('/\s+/', $legacyValue);
-        return (string)($parts[0] ?? $legacyValue);
+        $inputMeta = is_array($result['input_meta'] ?? null) ? $result['input_meta'] : [];
+        $precision = self::normalizeBirthPrecision($inputMeta[$role . '_birth_precision'] ?? null);
+        $timeRange = self::normalizeBirthTimeRange($inputMeta[$role . '_birth_time_range'] ?? null);
+
+        if ($precision === null) {
+            $inferred = self::inferBirthStateFromStoredTime($time);
+            $precision = $inferred['precision'];
+            $timeRange = $timeRange ?: $inferred['time_range'];
+        }
+
+        $precision = $precision ?? 'unknown';
+        $timeRange = $timeRange ?: 'forenoon';
+        $hasExactTime = $time !== '' && $time !== '00:00:00';
+        $value = $date;
+
+        if ($precision === 'exact' && $date !== '' && $hasExactTime) {
+            $value = trim($date . ' ' . substr($time, 0, 5));
+        }
+
+        return [
+            'value' => $value,
+            'precision' => $precision,
+            'time_range' => $timeRange,
+            'time' => $hasExactTime ? $time : '',
+        ];
+    }
+
+    protected static function normalizeBirthPrecision(mixed $value): ?string
+    {
+        $precision = strtolower(trim((string)$value));
+        return in_array($precision, ['exact', 'range', 'unknown'], true) ? $precision : null;
+    }
+
+    protected static function normalizeBirthTimeRange(mixed $value): ?string
+    {
+        $timeRange = strtolower(trim((string)$value));
+        return array_key_exists($timeRange, self::getBirthTimeRangeMap()) ? $timeRange : null;
+    }
+
+    protected static function inferBirthStateFromStoredTime(string $time): array
+    {
+        if ($time === '' || $time === '00:00:00') {
+            return [
+                'precision' => 'unknown',
+                'time_range' => 'forenoon',
+            ];
+        }
+
+        $normalizedTime = strlen($time) === 5 ? $time . ':00' : $time;
+        foreach (self::getBirthTimeRangeMap() as $range => $presetTime) {
+            if ($normalizedTime === $presetTime) {
+                return [
+                    'precision' => 'range',
+                    'time_range' => $range,
+                ];
+            }
+        }
+
+        return [
+            'precision' => 'exact',
+            'time_range' => self::resolveBirthTimeRangeByClock($normalizedTime),
+        ];
+    }
+
+    protected static function resolveBirthTimeRangeByClock(string $time): string
+    {
+        $hour = (int)substr($time, 0, 2);
+        if ($hour < 6) {
+            return 'before-dawn';
+        }
+        if ($hour < 9) {
+            return 'morning';
+        }
+        if ($hour < 12) {
+            return 'forenoon';
+        }
+        if ($hour < 14) {
+            return 'noon';
+        }
+        if ($hour < 18) {
+            return 'afternoon';
+        }
+
+        return 'evening';
+    }
+
+    protected static function getBirthTimeRangeMap(): array
+    {
+        return [
+            'before-dawn' => '03:30:00',
+            'morning' => '07:30:00',
+            'forenoon' => '10:30:00',
+            'noon' => '12:30:00',
+            'afternoon' => '15:30:00',
+            'evening' => '19:30:00',
+        ];
     }
 
     protected static function resolveAiAnalysisFlag(array $row): bool

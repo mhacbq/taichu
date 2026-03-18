@@ -110,6 +110,24 @@ class Hehun extends BaseController
 
         return substr(md5($maleBirthDate . '|' . $femaleBirthDate), 0, 12);
     }
+
+    protected function buildBirthInputMeta(array $data): array
+    {
+        $allowedPrecision = ['exact', 'range', 'unknown'];
+        $allowedTimeRanges = ['before-dawn', 'morning', 'forenoon', 'noon', 'afternoon', 'evening'];
+
+        $malePrecision = strtolower(trim((string) ($data['maleBirthPrecision'] ?? 'exact')));
+        $femalePrecision = strtolower(trim((string) ($data['femaleBirthPrecision'] ?? 'exact')));
+        $maleTimeRange = strtolower(trim((string) ($data['maleBirthTimeRange'] ?? 'forenoon')));
+        $femaleTimeRange = strtolower(trim((string) ($data['femaleBirthTimeRange'] ?? 'forenoon')));
+
+        return [
+            'male_birth_precision' => in_array($malePrecision, $allowedPrecision, true) ? $malePrecision : 'exact',
+            'female_birth_precision' => in_array($femalePrecision, $allowedPrecision, true) ? $femalePrecision : 'exact',
+            'male_birth_time_range' => in_array($maleTimeRange, $allowedTimeRanges, true) ? $maleTimeRange : 'forenoon',
+            'female_birth_time_range' => in_array($femaleTimeRange, $allowedTimeRanges, true) ? $femaleTimeRange : 'forenoon',
+        ];
+    }
     
     /**
      * 天干五行
@@ -419,6 +437,8 @@ class Hehun extends BaseController
         $costInfo = ConfigService::calculatePointsCost('hehun', $basePoints, $isNewUser);
         $finalPoints = $costInfo['final'];
         
+        $birthInputMeta = $this->buildBirthInputMeta($data);
+
         // ===== 使用数据库行锁防止并发问题 =====
         Db::startTrans();
         try {
@@ -485,7 +505,9 @@ class Hehun extends BaseController
                 'female_bazi' => $femaleBazi,
                 'score' => $hehunResult['score'],
                 'level' => $hehunResult['level'],
-                'result' => $hehunResult,
+                'result' => array_merge($hehunResult, [
+                    'input_meta' => $birthInputMeta,
+                ]),
                 'ai_analysis' => $aiAnalysis,
                 'is_ai_analysis' => $useAi,
                 'points_cost' => $needPoints ? $finalPoints : 0,

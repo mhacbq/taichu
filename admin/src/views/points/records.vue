@@ -23,22 +23,27 @@
         <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="user_id" label="用户ID" width="100" />
-        <el-table-column prop="type" label="类型" width="100">
+        <el-table-column prop="direction" label="增减方向" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.type === 'add' ? 'success' : 'danger'">
-              {{ row.type === 'add' ? '增加' : '减少' }}
+            <el-tag :type="row.direction === 'add' ? 'success' : 'danger'">
+              {{ row.direction_label }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="amount" label="变动数量" width="100">
+        <el-table-column prop="business_label" label="记录类型" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="amount" label="变动数量" width="110">
           <template #default="{ row }">
-            <span :class="row.type === 'add' ? 'text-success' : 'text-danger'">
-              {{ row.type === 'add' ? '+' : '-' }}{{ row.amount }}
+            <span :class="row.direction === 'add' ? 'text-success' : 'text-danger'">
+              {{ formatAmount(row) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="balance" label="变动后余额" width="100" />
-        <el-table-column prop="reason" label="变动原因" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="balance" label="变动后余额" width="120">
+          <template #default="{ row }">
+            <span>{{ formatBalance(row.balance) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="reason" label="变动原因" min-width="220" show-overflow-tooltip />
         <el-table-column prop="created_at" label="时间" width="160" />
       </el-table>
 
@@ -117,11 +122,19 @@ function handleCurrentChange(val) {
   margin-bottom: 20px;
 }
 
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
 .text-success {
   color: #67c23a;
+  font-weight: 600;
 }
 
 .text-danger {
   color: #f56c6c;
+  font-weight: 600;
 }
 </style>

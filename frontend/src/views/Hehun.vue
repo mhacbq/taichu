@@ -643,8 +643,12 @@ const hasReducedPrecision = computed(() => {
 const buildHehunPayload = ({ tier, useAi }) => ({
   maleName: form.maleName || '男方',
   maleBirthDate: resolveBirthDatePayload(form.maleBirthDate, form.maleBirthPrecision, form.maleBirthTimeRange),
+  maleBirthPrecision: form.maleBirthPrecision,
+  maleBirthTimeRange: form.maleBirthTimeRange,
   femaleName: form.femaleName || '女方',
   femaleBirthDate: resolveBirthDatePayload(form.femaleBirthDate, form.femaleBirthPrecision, form.femaleBirthTimeRange),
+  femaleBirthPrecision: form.femaleBirthPrecision,
+  femaleBirthTimeRange: form.femaleBirthTimeRange,
   tier,
   useAi,
 })
@@ -1056,12 +1060,20 @@ const normalizeHistoryItem = (item = {}) => {
   const createdAt = item.create_time || item.created_at || ''
   const hasAiAnalysis = Boolean(item.is_ai_analysis) || hasAiContent(aiAnalysis)
 
+  const inputMeta = resultData.input_meta || {}
+
   return {
     ...item,
     result: resultData,
     ai_analysis: aiAnalysis,
     male_bazi: normalizeObjectField(item.male_bazi, {}),
     female_bazi: normalizeObjectField(item.female_bazi, {}),
+    male_birth_precision: item.male_birth_precision || inputMeta.male_birth_precision || '',
+    female_birth_precision: item.female_birth_precision || inputMeta.female_birth_precision || '',
+    male_birth_time_range: item.male_birth_time_range || inputMeta.male_birth_time_range || defaultBirthTimeRange,
+    female_birth_time_range: item.female_birth_time_range || inputMeta.female_birth_time_range || defaultBirthTimeRange,
+    male_birth_time: item.male_birth_time || '',
+    female_birth_time: item.female_birth_time || '',
     score: Number(item.score ?? resultData.score ?? 0),
     level: item.level || resultData.level || '',
     level_text: item.level_text || resultData.level_text || '',
@@ -1315,6 +1327,40 @@ const buildHistoryPremiumResult = (item, hehunData, aiAnalysisData, maleBaziData
   female_bazi: femaleBaziData,
 })
 
+const toDatetimeLocalValue = (value = '') => {
+  const trimmed = String(value || '').trim()
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})/)
+  if (!match) {
+    return trimmed
+  }
+
+  return `${match[1]}T${match[2]}:${match[3]}`
+}
+
+const resolveHistoryBirthState = (item, role) => {
+  const birthValue = String(item?.[`${role}_birth_date`] || '').trim()
+  const precision = item?.[`${role}_birth_precision`] || ''
+  const timeRange = item?.[`${role}_birth_time_range`] || defaultBirthTimeRange
+
+  if (precision === 'exact') {
+    return {
+      value: toDatetimeLocalValue(birthValue),
+      precision: 'exact',
+      timeRange,
+    }
+  }
+
+  if (precision === 'range' || precision === 'unknown') {
+    return {
+      value: birthValue.slice(0, 10),
+      precision,
+      timeRange,
+    }
+  }
+
+  return hydrateBirthState(birthValue)
+}
+
 // 加载历史记录详情
 const loadHistoryDetail = (item) => {
   const normalizedItem = normalizeHistoryItem(item)
@@ -1326,12 +1372,12 @@ const loadHistoryDetail = (item) => {
     form.maleName = normalizedItem.male_name || ''
     form.femaleName = normalizedItem.female_name || ''
 
-    const maleBirthState = hydrateBirthState(normalizedItem.male_birth_date)
+    const maleBirthState = resolveHistoryBirthState(normalizedItem, 'male')
     form.maleBirthDate = maleBirthState.value
     form.maleBirthPrecision = maleBirthState.precision
     form.maleBirthTimeRange = maleBirthState.timeRange
 
-    const femaleBirthState = hydrateBirthState(normalizedItem.female_birth_date)
+    const femaleBirthState = resolveHistoryBirthState(normalizedItem, 'female')
     form.femaleBirthDate = femaleBirthState.value
     form.femaleBirthPrecision = femaleBirthState.precision
     form.femaleBirthTimeRange = femaleBirthState.timeRange

@@ -182,18 +182,17 @@ class LunarService
         $monthGanZhi = '';
         $dayGanZhi = '';
         $baziService = new BaziCalculationService();
+        $referenceDateTime = self::resolveGanZhiReferenceDateTime($date, $baziService);
 
-        try {
-            $bazi = $baziService->calculateBazi($date . ' 12:00:00', '男');
-            $yearGanZhi = self::normalizePillar($bazi['year'] ?? []) ?: $fallbackYearGanZhi;
-            $monthGanZhi = self::normalizePillar($bazi['month'] ?? []);
-            $dayGanZhi = self::normalizePillar($bazi['day'] ?? []);
-        } catch (\Throwable $e) {
-            // 保持静默回退，继续使用简化算法兜底。
+        $pillars = self::extractGanZhiPillarsByMoment($baziService, $referenceDateTime);
+        if ($pillars !== null) {
+            $yearGanZhi = $pillars['year'] !== '' ? $pillars['year'] : $fallbackYearGanZhi;
+            $monthGanZhi = $pillars['month'];
+            $dayGanZhi = $pillars['day'];
         }
 
         if ($dayGanZhi === '') {
-            $timestamp = strtotime($date . ' 12:00:00');
+            $timestamp = strtotime($referenceDateTime);
             $dayPillar = $baziService->calculateDayPillar(
                 (int)date('Y', $timestamp),
                 (int)date('n', $timestamp),
@@ -208,6 +207,45 @@ class LunarService
             'day' => $dayGanZhi,
         ];
     }
+
+    /**
+     * 黄历接口只有日期没有时辰时，常态取中午；若当日年柱或月柱发生交节切换，则改取入节后的日末口径。
+     * 这样既保留日历展示的稳定性，也避免节气当天被固定中午误判在旧节令。
+     */
+    private static function resolveGanZhiReferenceDateTime(string $date, BaziCalculationService $baziService): string
+    {
+        $startSnapshot = self::extractGanZhiPillarsByMoment($baziService, $date . ' 00:00:00');
+        $endSnapshot = self::extractGanZhiPillarsByMoment($baziService, $date . ' 23:59:59');
+
+        if ($startSnapshot !== null && $endSnapshot !== null) {
+            $yearChanged = ($startSnapshot['year'] ?? '') !== ($endSnapshot['year'] ?? '');
+            $monthChanged = ($startSnapshot['month'] ?? '') !== ($endSnapshot['month'] ?? '');
+            if ($yearChanged || $monthChanged) {
+                return $date . ' 23:59:59';
+            }
+        }
+
+        return $date . ' 12:00:00';
+    }
+
+    /**
+     * 读取某个参考时刻对应的干支快照。
+     */
+    private static function extractGanZhiPillarsByMoment(BaziCalculationService $baziService, string $dateTime): ?array
+    {
+        try {
+            $bazi = $baziService->calculateBazi($dateTime, '男');
+
+            return [
+                'year' => self::normalizePillar($bazi['year'] ?? []),
+                'month' => self::normalizePillar($bazi['month'] ?? []),
+                'day' => self::normalizePillar($bazi['day'] ?? []),
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
 
     /**
      * 规范四柱结构为干支文本。

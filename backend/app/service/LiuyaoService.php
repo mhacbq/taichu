@@ -321,6 +321,24 @@ class LiuyaoService
     }
 
     /**
+     * 归一化六神起例所需日干。
+     * 兼容输入完整日柱（如“甲子”“庚寅日”），但若完全提不出合法天干，则返回 null，避免静默误判为甲乙日起青龙。
+     */
+    protected static function normalizeRiGanForLiuShen(string $riGan): ?string
+    {
+        $riGan = trim($riGan);
+        if ($riGan === '') {
+            return null;
+        }
+
+        if (preg_match('/[甲乙丙丁戊己庚辛壬癸]/u', $riGan, $matches) === 1) {
+            return $matches[0];
+        }
+
+        return null;
+    }
+
+    /**
      * 计算六神
      * 根据日辰天干确定起始六神，然后按顺序配到六爻
      * 
@@ -329,9 +347,9 @@ class LiuyaoService
      */
     public static function getLiuShen(string $riGan): array
     {
-        $riGan = trim($riGan);
-        if (mb_strlen($riGan, 'UTF-8') > 1) {
-            $riGan = mb_substr($riGan, 0, 1, 'UTF-8');
+        $riGan = self::normalizeRiGanForLiuShen($riGan);
+        if ($riGan === null) {
+            return [];
         }
 
         // 日干对应起始六神
@@ -345,7 +363,7 @@ class LiuyaoService
         ];
 
         $liuShenOrder = self::LIU_SHEN;
-        $start = $startLiuShen[$riGan] ?? '青龙';
+        $start = $startLiuShen[$riGan];
         $startIndex = array_search($start, $liuShenOrder, true);
         if ($startIndex === false) {
             $startIndex = 0;
@@ -360,6 +378,7 @@ class LiuyaoService
 
         return $result;
     }
+
 
 
     /**

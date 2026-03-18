@@ -729,8 +729,18 @@ class Admin extends BaseController
         if (!$this->checkPermission('points_view')) {
             return $this->error('无权限查看积分记录', 403);
         }
-        
+
+        $userId = trim((string) $request->get('user_id', ''));
+        $type = trim((string) $request->get('type', ''));
+
         try {
+            if (!SchemaInspector::tableExists('tc_points_record')) {
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                ], '获取成功');
+            }
+
             $pagination = $this->normalizePagination(
                 $request->get('page', 1),
                 $request->get('pageSize', self::DEFAULT_PAGE_SIZE),
@@ -739,28 +749,34 @@ class Admin extends BaseController
             );
             $page = $pagination['page'];
             $pageSize = $pagination['pageSize'];
-            $userId = $request->get('user_id', '');
-            $type = $request->get('type', '');
+            $columns = SchemaInspector::getTableColumns('tc_points_record');
+            $query = Db::table('tc_points_record')->order('id', 'desc');
 
-
-            $query = PointsRecord::order('id', 'desc');
-            
-            if ($userId) {
-                $query->where('user_id', $userId);
+            if ($userId !== '') {
+                $query->where('user_id', (int) $userId);
             }
-            if ($type) {
-                $query->where('type', $type);
+            if ($type !== '') {
+                $this->applyPointsRecordDirectionFilter($query, $type, $columns);
             }
 
-            $total = $query->count();
-            $list = $query->page($page, $pageSize)->select();
+            $total = (int) (clone $query)->count();
+            $rows = $query->page($page, $pageSize)->select()->toArray();
+            $list = array_map(function (array $row) use ($columns): array {
+                return $this->normalizePointsRecordRow($row, $columns);
+            }, $rows);
 
             return $this->success([
                 'list' => $list,
-                'total' => $total
+                'total' => $total,
             ], '获取成功');
-        } catch (\Exception $e) {
-            Log::error('获取积分记录失败: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('后台积分记录列表加载失败', [
+                'admin_id' => $this->adminId,
+                'user_id' => $userId !== '' ? (int) $userId : null,
+                'direction' => $type !== '' ? $type : null,
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
             return $this->error('获取积分记录失败，请稍后重试', 500);
         }
     }
@@ -791,12 +807,19 @@ class Admin extends BaseController
             $rawAmount = abs($delta);
         }
 
+        $businessType = trim((string) ($row['type'] ?? ''));
+        $businessLabel = trim((string) (
+            $row['action']
+            ?? $row['description']
+            ?? $businessType
+            ?? '积分变动'
+        ));
         $reason = trim((string) (
             $row['reason']
             ?? $row['remark']
             ?? $row['description']
             ?? $row['action']
-            ?? $row['type']
+            ?? $businessType
             ?? '积分变动'
         ));
 
@@ -806,6 +829,10 @@ class Admin extends BaseController
 
         return array_merge($row, [
             'type' => $type,
+            'direction' => $type,
+            'direction_label' => $type === 'reduce' ? '减少' : '增加',
+            'business_type' => $businessType,
+            'business_label' => $businessLabel !== '' ? $businessLabel : '积分变动',
             'amount' => abs((int) $rawAmount),
             'balance' => $balance,
             'reason' => $reason !== '' ? $reason : '积分变动',

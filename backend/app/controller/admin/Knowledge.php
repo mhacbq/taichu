@@ -386,7 +386,9 @@ class Knowledge extends BaseController
             Db::table('tc_article_category')->where('id', $categoryId)->delete();
             return $this->success(null, '删除成功');
         } catch (\Throwable $e) {
-            Log::error('删除文章分类失败: ' . $e->getMessage(), ['category_id' => $categoryId]);
+            $this->logKnowledgeError('category_delete', $e, [
+                'category_id' => $categoryId,
+            ]);
             return $this->error('删除失败，请稍后重试', 500);
         }
     }
@@ -438,12 +440,7 @@ class Knowledge extends BaseController
 
         $rows = $query->select()->toArray();
         $list = array_map(function (array $row): array {
-            $row['id'] = (int) ($row['id'] ?? 0);
-            $row['parent_id'] = (int) ($row['parent_id'] ?? 0);
-            $row['status'] = (int) ($row['status'] ?? 0);
-            $row['sort_order'] = (int) ($row['sort_order'] ?? 0);
-            $row['article_count'] = (int) ($row['article_count'] ?? 0);
-            return $row;
+            return $this->normalizeArticleCategoryRow($row);
         }, $rows);
 
         $map = [];
@@ -613,6 +610,17 @@ class Knowledge extends BaseController
         }
 
         return $query->count() === 0;
+    }
+
+    protected function logKnowledgeError(string $action, \Throwable $e, array $context = []): void
+    {
+        Log::error('后台知识库接口异常', [
+            'action' => $action,
+            'admin_id' => $this->getAdminId(),
+            'context' => $context,
+            'error' => $e->getMessage(),
+            'exception' => get_class($e),
+        ]);
     }
 
     /**

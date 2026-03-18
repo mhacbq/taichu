@@ -341,35 +341,39 @@ class AdminStatsService
         if (self::tableExists('site_daily_stats')) {
             $monthStats = Db::table('site_daily_stats')
                 ->whereLike('stat_date', $thisMonth . '%')
-                ->field('SUM(order_count) as total_orders, SUM(paid_amount) as total_amount')
+                ->field('SUM(order_count) as total_orders, SUM(paid_count) as paid_orders, SUM(paid_amount) as total_amount')
                 ->find() ?: [];
 
             return [
                 'total_orders' => (int) ($monthStats['total_orders'] ?? 0),
+                'paid_orders' => (int) ($monthStats['paid_orders'] ?? 0),
                 'total_amount' => (float) ($monthStats['total_amount'] ?? 0),
             ];
         }
 
         $orderTable = self::resolveRechargeOrderTable();
         if ($orderTable === null) {
-            return ['total_orders' => 0, 'total_amount' => 0];
+            return ['total_orders' => 0, 'paid_orders' => 0, 'total_amount' => 0];
         }
 
         $paidAmount = 0;
+        $paidCount = 0;
         if (self::tableHasColumn($orderTable, 'pay_time')) {
-            $paidAmountQuery = Db::table($orderTable)
+            $paidBaseQuery = Db::table($orderTable)
                 ->whereLike('pay_time', $thisMonth . '%');
 
             foreach (self::getRechargePaidConditions($orderTable) as $condition) {
                 [$field, $operator, $value] = $condition;
-                $paidAmountQuery->where($field, $operator, $value);
+                $paidBaseQuery->where($field, $operator, $value);
             }
 
-            $paidAmount = (float) ($paidAmountQuery->sum('amount') ?? 0);
+            $paidCount = (int) (clone $paidBaseQuery)->count();
+            $paidAmount = (float) ((clone $paidBaseQuery)->sum('amount') ?? 0);
         }
 
         return [
             'total_orders' => (int) Db::table($orderTable)->whereLike('created_at', $thisMonth . '%')->count(),
+            'paid_orders' => $paidCount,
             'total_amount' => $paidAmount,
         ];
     }

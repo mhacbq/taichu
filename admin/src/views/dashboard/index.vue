@@ -424,19 +424,15 @@ function getSeriesChange(series = []) {
   }
 }
 
-function updateTrendStatistics(baziTrend, tarotTrend) {
-  const baziChange = getSeriesChange(baziTrend)
-  const tarotChange = getSeriesChange(tarotTrend)
+function formatCurrency(value) {
+  return Number(value || 0).toFixed(2)
+}
 
-  statistics.value = statistics.value.map(item => {
-    if (item.title === '八字排盘') {
-      return { ...item, trend: baziChange.value, trendType: baziChange.type }
-    }
-    if (item.title === '塔罗占卜') {
-      return { ...item, trend: tarotChange.value, trendType: tarotChange.type }
-    }
-    return item
-  })
+function formatStatValue(item) {
+  if (item.valueType === 'currency') {
+    return `¥${formatCurrency(item.value)}`
+  }
+  return Number(item.value || 0)
 }
 
 function initCharts() {
