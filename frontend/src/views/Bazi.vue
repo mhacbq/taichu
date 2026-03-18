@@ -238,17 +238,27 @@
         </div>
         <p v-if="resultContextNote" class="result-context-note">{{ resultContextNote }}</p>
 
-        <el-collapse v-model="activeNames" class="result-collapse">
+        <div class="result-tabs">
+          <div class="tab-item" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">
+             <el-icon><Grid /></el-icon> 本命局
+          </div>
+          <div class="tab-item" :class="{ active: activeTab === 'personality' }" @click="activeTab = 'personality'">
+             <el-icon><UserFilled /></el-icon> 性格内观
+          </div>
+          <div class="tab-item" :class="{ active: activeTab === 'career' }" @click="activeTab = 'career'">
+             <el-icon><Briefcase /></el-icon> 事业财运
+          </div>
+        </div>
+
+        <div class="tab-content" v-show="activeTab === 'chart'">
           <!-- 命盘基础部分 -->
-          <el-collapse-item name="basic">
-            <template #title>
-              <div class="collapse-title-wrapper">
+          <div class="tab-pane-content">
+            <div class="pane-title">
                 <el-icon class="title-icon"><Grid /></el-icon>
                 <span class="title-text">命盘核心数据</span>
                 <span class="title-desc">日主、八字、五行分布</span>
-              </div>
-            </template>
-            
+            </div>
+
             <!-- 日主信息 -->
             <div class="day-master-info">
               <div class="day-master-card">
@@ -391,17 +401,22 @@
               </div>
             </div>
 
-          </el-collapse-item>
-        
-          <!-- 性格与解读部分 -->
-          <el-collapse-item name="interpretation">
-            <template #title>
-              <div class="collapse-title-wrapper">
-                <el-icon class="title-icon"><Document /></el-icon>
-                <span class="title-text">性格与命理解读</span>
-                <span class="title-desc">专业精解、通俗解读、详细分析</span>
-              </div>
-            </template>
+          </div>
+        </div>
+
+        <div class="tab-content" v-show="activeTab === 'personality' || activeTab === 'career'">
+          <div class="tab-pane-content">
+            <div class="pane-title" v-if="activeTab === 'personality'">
+                <el-icon class="title-icon"><UserFilled /></el-icon>
+                <span class="title-text">性格内观</span>
+            </div>
+            <div class="pane-title" v-if="activeTab === 'career'">
+                <el-icon class="title-icon"><Briefcase /></el-icon>
+                <span class="title-text">事业财运</span>
+            </div>
+
+          <!-- 性格与解读部分 (Shared Content with v-show logic inside) -->
+            <!-- Note: professional-reading and simple-interpretation logic will be patched later -->
 
             <!-- 专业解读卡片 -->
             <div class="professional-reading" v-if="result.fullInterpretation">
@@ -410,7 +425,7 @@
               </div>
               
               <!-- 日主信息卡片 -->
-              <div class="day-master-detail" v-if="result.fullInterpretation.basic">
+              <div class="day-master-detail" v-if="result.fullInterpretation.basic" v-show="activeTab === 'personality'">
                 <div class="dm-header">
                   <div class="dm-symbol">{{ result.fullInterpretation.basic.day_master_symbol }}</div>
                   <div class="dm-title">
@@ -433,7 +448,7 @@
               </div>
 
               <!-- 喜用神分析 -->
-              <div class="yongshen-section" v-if="result.fullInterpretation.yongshen">
+              <div class="yongshen-section" v-if="result.fullInterpretation.yongshen" v-show="activeTab === 'personality'">
                 <div class="ys-header">
                   <el-icon class="ys-icon"><StarFilled /></el-icon>
                   <div class="ys-info">
@@ -446,7 +461,7 @@
 
               <!-- 详细解读卡片网格 -->
               <div class="reading-cards-grid">
-                <div class="reading-card card-hover" v-if="result.fullInterpretation.personality">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.personality" v-show="activeTab === 'personality'">
                   <div class="rc-header">
                     <el-icon class="rc-icon"><UserFilled /></el-icon>
                     <h4>性格详解</h4>
@@ -454,7 +469,7 @@
                   <p class="rc-content">{{ result.fullInterpretation.personality }}</p>
                 </div>
                 
-                <div class="reading-card card-hover" v-if="result.fullInterpretation.career">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.career" v-show="activeTab === 'career'">
                   <div class="rc-header">
                     <el-icon class="rc-icon"><Briefcase /></el-icon>
                     <h4>事业财运</h4>
@@ -462,7 +477,7 @@
                   <p class="rc-content">{{ result.fullInterpretation.career }}</p>
                 </div>
                 
-                <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.wealth" v-show="activeTab === 'career'">
                   <div class="rc-header">
                     <el-icon class="rc-icon"><Money /></el-icon>
                     <h4>财富分析</h4>
@@ -470,7 +485,7 @@
                   <p class="rc-content">{{ result.fullInterpretation.wealth }}</p>
                 </div>
                 
-                <div class="reading-card card-hover" v-if="result.fullInterpretation.relationship">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.relationship" v-show="activeTab === 'personality'">
                   <div class="rc-header">
                     <el-icon class="rc-icon"><UserFilled /></el-icon>
                     <h4>感情婚姻</h4>
@@ -478,7 +493,7 @@
                   <p class="rc-content">{{ result.fullInterpretation.relationship }}</p>
                 </div>
                 
-                <div class="reading-card card-hover" v-if="result.fullInterpretation.health">
+                <div class="reading-card card-hover" v-if="result.fullInterpretation.health" v-show="activeTab === 'personality'">
                   <div class="rc-header">
                     <el-icon class="rc-icon"><Aim /></el-icon>
                     <h4>健康提醒</h4>
@@ -486,7 +501,7 @@
                   <p class="rc-content">{{ result.fullInterpretation.health }}</p>
                 </div>
                 
-                <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice">
+                <div class="reading-card advice-card card-hover" v-if="result.fullInterpretation.advice" v-show="activeTab === 'personality'">
                   <div class="rc-header">
                     <el-icon class="rc-icon"><StarFilled /></el-icon>
                     <h4>开运建议</h4>
@@ -502,28 +517,28 @@
                 <span class="section-subtitle">通俗解读</span>
               </div>
               <div class="interpretation-cards">
-                <div class="interp-card personality card-hover">
+                <div class="interp-card personality card-hover" v-show="activeTab === 'personality'">
                   <div class="interp-header">
                     <el-icon class="interp-icon"><UserFilled /></el-icon>
                     <h4>我的性格特点</h4>
                   </div>
                   <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
                 </div>
-                <div class="interp-card career card-hover">
+                <div class="interp-card career card-hover" v-show="activeTab === 'career'">
                   <div class="interp-header">
                     <el-icon class="interp-icon"><Briefcase /></el-icon>
                     <h4>适合的发展方向</h4>
                   </div>
                   <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
                 </div>
-                <div class="interp-card relationship card-hover">
+                <div class="interp-card relationship card-hover" v-show="activeTab === 'personality'">
                   <div class="interp-header">
                     <el-icon class="interp-icon"><UserFilled /></el-icon>
                     <h4>人际关系建议</h4>
                   </div>
                   <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
                 </div>
-                <div class="interp-card advice card-hover">
+                <div class="interp-card advice card-hover" v-show="activeTab === 'personality'">
                   <div class="interp-header">
                     <el-icon class="interp-icon"><StarFilled /></el-icon>
                     <h4>给你的建议</h4>
@@ -533,21 +548,18 @@
               </div>
             </div>
 
-            <div class="bazi-analysis">
+            <div class="bazi-analysis" v-show="activeTab === 'personality'">
               <h3>详细命理分析</h3>
               <div class="analysis-content">{{ result.analysis }}</div>
             </div>
-          </el-collapse-item>
-
-          <!-- 运势趋势部分 -->
-          <el-collapse-item v-if="showAdvancedResultSections" name="fortune">
-            <template #title>
-              <div class="collapse-title-wrapper">
+          <!-- 运势趋势部分 (For Career Tab) -->
+          <div class="fortune-section-wrapper" v-if="showAdvancedResultSections" v-show="activeTab === 'career'">
+            <div class="section-divider"></div>
+            <div class="pane-title">
                 <el-icon class="title-icon"><TrendCharts /></el-icon>
                 <span class="title-text">大运与流年走势</span>
                 <span class="title-desc">十年大运、逐年流年参考</span>
-              </div>
-            </template>
+            </div>
 
             <!-- 大运分析 -->
             <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
@@ -605,18 +617,16 @@
                 </div>
               </div>
             </div>
-          </el-collapse-item>
-        
-          <!-- 深度预测部分 -->
-          <el-collapse-item v-if="showAdvancedResultSections" name="tools">
-            <template #title>
-              <div class="collapse-title-wrapper">
+          <!-- 深度预测部分 (For Career Tab) -->
+          </div>
+          <div class="tools-section-wrapper" v-if="showAdvancedResultSections" v-show="activeTab === 'career'">
+            <div class="section-divider"></div>
+            <div class="pane-title">
                 <el-icon class="title-icon"><Aim /></el-icon>
                 <span class="title-text">深度预测工具</span>
                 <span class="title-desc">流年深度分析、大运评分、运势K线</span>
-              </div>
-            </template>
-            
+            </div>
+
             <!-- 流年运势分析 -->
             <div class="yearly-fortune-section" v-if="result.bazi">
               <div class="section-title-with-tag">
@@ -931,17 +941,15 @@
                 </el-button>
               </div>
             </div>
-          </el-collapse-item>
-
-          <!-- AI 解盘部分 -->
-          <el-collapse-item name="ai">
-            <template #title>
-              <div class="collapse-title-wrapper">
+          <!-- AI 解盘部分 (For Personality Tab) -->
+          </div>
+          <div class="ai-section-wrapper" v-show="activeTab === 'personality'">
+            <div class="section-divider"></div>
+            <div class="pane-title">
                 <el-icon class="title-icon"><Cpu /></el-icon>
                 <span class="title-text">AI 智能解盘</span>
                 <span class="title-desc">基于 AI 的深度命理对话与分析</span>
-              </div>
-            </template>
+            </div>
 
             <!-- AI智能解盘 -->
             <div class="ai-analysis-section" v-if="result.bazi">
@@ -1002,8 +1010,8 @@
                 </div>
               </div>
             </div>
-          </el-collapse-item>
-        </el-collapse>
+          </div>
+        </div> <!-- End of Tab 2/3 container -->
 
         <!-- 操作按钮 -->
         <div class="result-actions">
@@ -1044,6 +1052,7 @@ import { sanitizeHtml } from '../utils/sanitize'
 
 import { CHINA_CITIES } from '../utils/constants'
 
+const activeTab = ref('chart')
 
 const BAZI_BASE_COST = 10
 const AI_ANALYSIS_DEFAULT_COST = 30
@@ -2177,6 +2186,61 @@ const formatAiContent = (content) => {
 </script>
 
 <style scoped>
+/* Tab Navigation */
+.result-tabs {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  padding: 6px;
+  margin-bottom: 25px;
+  gap: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.tab-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-item.active {
+  background: var(--bg-card);
+  color: var(--primary-color);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content {
+  animation: fadeInUp 0.4s ease;
+}
+
+.tab-pane-content {
+  padding-bottom: 20px;
+}
+
+.pane-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-light);
+}
+
 /* 结果折叠面板样式 */
 .result-collapse {
   border: none;
@@ -2833,11 +2897,16 @@ const formatAiContent = (content) => {
   font-size: 28px;
   font-weight: bold;
   color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
 }
 
 .paipan-cell.header {
   font-size: 16px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   font-weight: normal;
 }
 
@@ -3172,7 +3241,6 @@ const formatAiContent = (content) => {
 
 .simple-interpretation h3 {
   color: var(--text-primary);
-  text-align: center;
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -3560,12 +3628,12 @@ const formatAiContent = (content) => {
 
 .dayun-section h3 {
   color: var(--text-primary);
-  margin-bottom: 20px;
-  text-align: center;
+  margin-bottom: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .dayun-timeline {
@@ -3587,7 +3655,6 @@ const formatAiContent = (content) => {
 
 .dayun-item:hover {
   background: var(--white-10);
-  transform: translateY(-5px);
   border-color: var(--primary-light-30);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
@@ -4287,7 +4354,7 @@ const formatAiContent = (content) => {
 .fortune-chart-section {
   margin-top: 30px;
   background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(133, 206, 97, 0.05));
-  border: 1px solid rgba(103, 194, 58, 0.3);
+  border: 1px solid rgba(103, 194, 58, 0.2);
   border-radius: 20px;
   padding: 30px;
 }

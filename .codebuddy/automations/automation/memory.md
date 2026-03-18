@@ -1,5 +1,16 @@
 # 自动化任务执行内存
 
+## 2026-03-18 继续修复每日运势底盘
+- **任务目标**: 只处理 1 个有实证支撑的高优先级 `[占卜]` 算法问题，优先修复每日运势公共底盘的随机结果矛盾。
+- **执行摘要**:
+    1. 先用 `GET /api/daily/fortune` 复现真实样例：`2026-03-18` 返回 `感情运 97 分` 但文案却是“平淡，需要主动”，确认问题来自 `DailyFortune::generateFortune()` 的随机分数 + 随机文案。
+    2. 将 `backend/app/model/DailyFortune.php` 改为基于黄历干支、值日、宜忌的确定性生成；四项文案统一按分数档位产出，不再独立随机。
+    3. `getToday()` 新增旧随机样本自动修复逻辑，已有当天落库数据会在读取时按新规则刷新。
+    4. 新增 `backend/tests/daily_fortune_probe.php` 作为轻量回归探针，验证同日稳定性与“分数-文案”一致性。
+- **验证摘要**: `docker exec taichu-app php -l /var/www/html/app/model/DailyFortune.php` 通过；探针脚本 3 个日期样例全部 `ok=true`；`GET /api/daily/fortune` 复测后同日已改为 71/67/72/68 分并对应一致文案；`git diff --check` 通过。
+- **状态**: 已完成代码修复与 TODO 勾选，未执行 Git 提交。
+
+
 ## 2026-03-17 14:30
 - **任务目标**: 修复 TODO.md 中标记为 [占卜] 的逻辑错误。
 - **修复内容 (第一批)**:

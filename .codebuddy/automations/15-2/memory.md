@@ -1,6 +1,14 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-18 16:31 执行摘要（本轮）
+
+- 本轮完成 5 个前端修复并清理对应 TODO：八字估算模式取消默认“中午”并新增“未知时辰”显式口径、每日运势页将签到入口下沉且游客改为轻量登录引导、合婚免费预览建议改为最多先展示 3 条并支持展开、合婚页新增“男方/女方”与“A方/B方”显示模式切换、八字/塔罗/每日运势页统一接入新的 `PageHeroHeader` 富页头。
+- 关键文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Daily.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/components/PageHeroHeader.vue`、`TODO.md`。
+- 验证结果：上述文件 `read_lints` 均为 0 条新增诊断，`git diff --check -- frontend/src/views/Bazi.vue frontend/src/views/Daily.vue frontend/src/views/Tarot.vue frontend/src/views/Hehun.vue frontend/src/components/PageHeroHeader.vue TODO.md` 通过，`npm run build --prefix frontend` 成功；仍有既有大包体告警，但不影响构建。
+- Git：已提交并推送 `566e701`，提交信息为 `"fix-frontend-multiple-issues-20260318-1632"`。
+
 ## 2026-03-18 15:15 执行摘要（本轮）
+
 
 - 本轮聚焦合婚页表单一致性与回改链路，实质落地 5 个前端修复点：返回修改保留输入、结果区按钮统一、姓名输入改为 `el-input`、出生日期/时间改为 `el-date-picker`、AI 选项与主 CTA 统一到 Element Plus 交互。
 - 关键文件：`frontend/src/views/Hehun.vue`、`TODO.md`。

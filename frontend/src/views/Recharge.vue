@@ -23,11 +23,21 @@
             v-for="option in rechargeOptions" 
             :key="option.amount"
             class="option-item"
-            :class="{ active: selectedAmount === option.amount, hot: option.bonus > 0 }"
+            :class="{
+              active: selectedAmount === option.amount,
+              hot: option.bonus > 0,
+              vip: option.type === 'vip'
+            }"
             @click="selectAmount(option.amount)"
           >
+            <div v-if="option.type === 'vip'" class="vip-crown-icon">👑</div>
             <div class="amount">¥{{ option.amount }}</div>
-            <div class="points">{{ option.points }}积分</div>
+            <div class="points" :class="{ 'vip-points': option.type === 'vip' }">
+              {{ option.type === 'vip' ? option.label : option.points + '积分' }}
+            </div>
+
+            <div v-if="option.desc" class="desc">{{ option.desc }}</div>
+
             <div v-if="option.bonus > 0" class="bonus">+{{ option.bonus }}赠送</div>
             <div v-if="option.bonus > 0" class="hot-tag">HOT</div>
           </div>
@@ -258,11 +268,25 @@ const loadRechargeOptions = async () => {
   try {
     const res = await getRechargeOptions()
     if (res.code === 200) {
-      rechargeOptions.value = res.data.options
-      // 默认选中第一个
-      if (rechargeOptions.value.length > 0) {
-        selectedAmount.value = rechargeOptions.value[0].amount
+      // 过滤掉旧的100元选项，添加新的68元会员选项
+      let options = res.data.options.filter(opt => opt.amount !== 100)
+
+      const membershipOption = {
+        amount: 68,
+        points: 500,
+        bonus: 0,
+        type: 'vip',
+        label: '年度会员',
+        desc: '含500积分 + 解锁深度报告'
       }
+
+      // 将会员选项放在第一位
+      options.unshift(membershipOption)
+
+      rechargeOptions.value = options
+
+      // 默认选中会员选项
+      selectedAmount.value = 68
     }
   } catch (error) {
     reportRechargeError('load_recharge_options_failed', error)
@@ -613,34 +637,66 @@ const getStatusText = (status) => {
   border-color: var(--primary-light);
 }
 
-.option-item .amount {
+.option-item.vip {
+  background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+  border: 2px solid #D4AF37;
+  grid-column: span 3; /* Make it full width if possible, or handle grid */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 25px 40px;
+}
+
+@media (max-width: 768px) {
+  .option-item.vip {
+    grid-column: span 2;
+    flex-direction: column;
+    padding: 20px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .option-item.vip {
+    grid-column: span 1;
+  }
+}
+
+.option-item.vip.active {
+  background: linear-gradient(135deg, #3d3d3d, #252525);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.vip-crown-icon {
+  font-size: 32px;
+  margin-right: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.option-item.vip .amount {
+  color: #D4AF37;
+  font-size: 36px;
+  margin-bottom: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.option-item.vip .points {
+  color: #f0e68c;
   font-size: 24px;
   font-weight: bold;
-  color: var(--text-primary);
-  margin-bottom: 5px;
 }
 
-.option-item .points {
+.option-item.vip .desc {
+  color: #bdbdbd;
   font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.option-item .bonus {
-  font-size: 12px;
-  color: var(--primary-light);
   margin-top: 5px;
 }
 
-.hot-tag {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: var(--primary-gradient);
-  color: var(--text-primary);
-  font-size: 10px;
-  font-weight: bold;
-  padding: 4px 8px;
-  border-radius: 10px;
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .payment-info {

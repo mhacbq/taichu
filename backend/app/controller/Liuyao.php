@@ -1057,8 +1057,8 @@ PROMPT;
                 'user_id' => (int) ($data['user_id'] ?? 0),
                 'question' => (string) ($data['question'] ?? ''),
                 'method' => (string) ($data['method'] ?? 'time'),
-                'yao_result' => $coreResult['yao_code'] ?? json_encode($coreResult['yao_result'] ?? [], JSON_UNESCAPED_UNICODE),
-                'gua_code' => (string) ($coreResult['clean_gua_code'] ?? ''),
+                'yao_result' => (string) ($coreResult['yao_code'] ?? json_encode($coreResult['yao_result'] ?? [], JSON_UNESCAPED_UNICODE)),
+                'gua_code' => $this->buildLegacyGuaCode($coreResult),
                 'gua_name' => (string) ($coreResult['main_gua'] ?? ''),
                 'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
                 'yao_ci' => '',
@@ -1069,6 +1069,7 @@ PROMPT;
                 'created_at' => $createdAt,
             ];
         }
+
 
         $recordData = $this->filterRecordDataByColumns($recordData, $columns);
 
@@ -1103,9 +1104,14 @@ PROMPT;
         $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? $originalGua['name'] ?? '');
         $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? $originalGua['code'] ?? '');
         $bianGuaName = (string) ($record['bian_gua_name'] ?? $changedGua['name'] ?? '');
-        $yaoCode = (string) ($record['yao_code'] ?? $originalGua['yao_code'] ?? '');
         $yaoSeed = $record['yao_result'] ?? ($originalGua['yao_result'] ?? '');
+        $legacyYaoCode = is_string($yaoSeed) && preg_match('/^[0-3]{6}$/', trim($yaoSeed)) ? trim($yaoSeed) : '';
+        $yaoCode = (string) ($record['yao_code'] ?? $originalGua['yao_code'] ?? $legacyYaoCode);
         $yaoResult = $this->normalizeYaoResult($yaoSeed, $yaoCode);
+        if (strlen($mainGuaCode) <= 2 && $yaoCode !== '') {
+            $mainGuaCode = strtr($yaoCode, ['0' => '0', '1' => '1', '2' => '0', '3' => '1']);
+        }
+
         $guaInfo = $this->getGuaInfo($mainGuaName, $bianGuaName);
         $method = $this->resolveMethodByCode($record['method'] ?? 1);
         $aiContent = (string) ($record['ai_interpretation'] ?? $record['ai_analysis'] ?? '');
@@ -1364,6 +1370,34 @@ PROMPT;
         $decoded = json_decode($value, true);
         return is_array($decoded) ? $decoded : [];
     }
+
+    /**
+     * 兼容旧版 liuyao_records 两位卦码结构。
+     */
+    private function buildLegacyGuaCode(array $coreResult): string
+    {
+        $cleanCode = (string) ($coreResult['clean_gua_code'] ?? '');
+        if (strlen($cleanCode) !== 6) {
+            return '';
+        }
+
+        $trigramMap = [
+            '000' => '0', // 坤
+            '100' => '1', // 震
+            '010' => '2', // 坎
+            '110' => '3', // 兑
+            '011' => '4', // 巽
+            '111' => '5', // 乾
+            '101' => '6', // 离
+            '001' => '7', // 艮
+        ];
+
+        $lower = substr($cleanCode, 0, 3);
+        $upper = substr($cleanCode, 3, 3);
+
+        return ($trigramMap[$upper] ?? '') . ($trigramMap[$lower] ?? '');
+    }
+
 
     /**
      * 仅在存在软删字段时追加过滤。

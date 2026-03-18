@@ -45,6 +45,28 @@
       </ScrollReveal>
     </section>
 
+    <!-- 2026流年运势 Banner -->
+    <section class="section annual-fortune-banner">
+      <div class="container">
+        <ScrollReveal animation="fade-up">
+          <div class="fortune-banner-card">
+            <div class="banner-content">
+              <div class="banner-tag">2026 丙午年</div>
+              <h2>流年运势抢先看</h2>
+              <p>洞悉流年机遇，把握人生转折点。AI 深度解析你的 2026 事业、财运与感情走势。</p>
+              <router-link to="/bazi" class="btn-primary banner-btn">
+                <el-icon><Calendar /></el-icon>
+                立即测算 2026 运势
+              </router-link>
+            </div>
+            <div class="banner-visual">
+               <div class="year-symbol">丙午</div>
+            </div>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
+
     <!-- 快捷入口 -->
     <section class="section">
       <div class="container">
@@ -170,8 +192,8 @@
                 <el-icon v-else-if="feature.icon === 'magic'"><MagicStick /></el-icon>
                 <el-icon v-else-if="feature.icon === 'cpu'"><Cpu /></el-icon>
                 <el-icon v-else-if="feature.icon === 'cellphone'"><Cellphone /></el-icon>
-                <el-icon v-else-if="feature.icon === 'lock'"><Lock /></el-icon>
-                <el-icon v-else-if="feature.icon === 'present'"><Present /></el-icon>
+                <el-icon v-else-if="feature.icon === 'lock'"><Present /></el-icon>
+                <el-icon v-else-if="feature.icon === 'present'"><Lock /></el-icon>
               </div>
               <h3 class="feature-title">{{ feature.title }}</h3>
               <p class="feature-desc">{{ feature.description }}</p>
@@ -631,7 +653,100 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* Responsive */
+/* Annual Fortune Banner */
+.annual-fortune-banner {
+  padding: 40px 0;
+}
+
+.fortune-banner-card {
+  background: linear-gradient(135deg, #8B0000, #B22222); /* Fire colors for Bing Wu */
+  border-radius: 20px;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(139, 0, 0, 0.3);
+  border: 1px solid rgba(255, 69, 0, 0.3);
+}
+
+.fortune-banner-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.banner-content {
+  flex: 1;
+  z-index: 1;
+}
+
+.banner-tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fortune-banner-card h2 {
+  font-size: 32px;
+  color: #fff;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.fortune-banner-card p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  margin-bottom: 25px;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.banner-btn {
+  background: #fff;
+  color: #8B0000;
+  border: none;
+}
+
+.banner-btn:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.banner-visual {
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  margin-left: 40px;
+  animation: pulse 3s infinite ease-in-out;
+}
+
+.year-symbol {
+  font-size: 48px;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  font-family: "Kaiti", "STKaiti", serif;
+}
+
 @media (max-width: 992px) {
   .overview-cards {
     grid-template-columns: repeat(2, 1fr);
@@ -693,6 +808,22 @@ onMounted(() => {
   
   .cta-content {
     padding: 40px 20px;
+  }
+
+  .fortune-banner-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .banner-visual {
+    margin: 30px auto 0;
+  }
+
+  .banner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 }
 </style>
