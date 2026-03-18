@@ -4,6 +4,7 @@ declare (strict_types = 1);
 namespace app\controller;
 
 use app\BaseController;
+use app\model\SystemConfig;
 use app\model\AiPrompt;
 use think\Request;
 use think\facade\Config;
@@ -22,6 +23,25 @@ class AiAnalysis extends BaseController
      */
     private function getAiConfig(): array
     {
+        // 优先从数据库获取配置
+        try {
+            $dbConfig = [];
+            $keys = ['ai_api_key', 'ai_api_url', 'ai_model', 'ai_enable_thinking', 'ai_enable_streaming'];
+            foreach ($keys as $key) {
+                $value = SystemConfig::getByKey($key);
+                if ($value !== null) {
+                    $configKey = str_replace('ai_', '', $key);
+                    $dbConfig[$configKey] = $value;
+                }
+            }
+            
+            if (!empty($dbConfig)) {
+                return array_merge(Config::get('ai', []), $dbConfig);
+            }
+        } catch (\Exception $e) {
+            // 数据库配置获取失败，降级使用文件配置
+        }
+
         return Config::get('ai', []);
     }
 
@@ -336,9 +356,13 @@ class AiAnalysis extends BaseController
                     'content' => $userPrompt
                 ]
             ],
-            'stream' => false,
-            'extra_body' => [
-                'enable_thinking' => $config['enable_thinking'] ?? false,
+            'stream' => false
+        ];
+
+        // 仅在明确启用thinking时添加extra_body
+        if (!empty($config['enable_thinking'])) {
+             $payload['extra_body'] = [
+                'enable_thinking' => true,
                 'provider' => [
                     'only' => [],
                     'order' => [],
@@ -350,8 +374,8 @@ class AiAnalysis extends BaseController
                     'throughput_range' => [],
                     'latency_range' => []
                 ]
-            ]
-        ];
+            ];
+        }
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
@@ -417,9 +441,13 @@ class AiAnalysis extends BaseController
                     'content' => $userPrompt
                 ]
             ],
-            'stream' => true,
-            'extra_body' => [
-                'enable_thinking' => $config['enable_thinking'] ?? false,
+            'stream' => true
+        ];
+        
+        // 仅在明确启用thinking时添加extra_body
+        if (!empty($config['enable_thinking'])) {
+             $payload['extra_body'] = [
+                'enable_thinking' => true,
                 'provider' => [
                     'only' => [],
                     'order' => [],
@@ -431,8 +459,8 @@ class AiAnalysis extends BaseController
                     'throughput_range' => [],
                     'latency_range' => []
                 ]
-            ]
-        ];
+            ];
+        }
 
         $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE);
         if ($payloadJson === false) {
@@ -555,28 +583,47 @@ class AiAnalysis extends BaseController
             return $this->error('API地址和模型名称不能为空', 400);
         }
 
+        // 移除API Key掩码处理，如果提交的是掩码，则不更新
+        if (isset($config['api_key']) && strpos($config['api_key'], '****') !== false) {
+            unset($config['api_key']);
+        }
+
         try {
-            $config['api_url'] = $this->normalizeExternalApiUrl((string) $config['api_url']);
+            // 允许本地地址，但在保存前进行格式检查
+            $config['api_url'] = $this->normalizeExternalApiUrl((string) $config['api_url'], true);
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 400);
         }
-        
-        // 获取旧配置
-        $oldConfig = $this->getAiConfig();
-        
-        // 如果API Key未提供或为空，保留原值
-        if (!isset($config['api_key']) || empty($config['api_key'])) {
-            $config['api_key'] = $oldConfig['api_key'] ?? '';
-        }
-        // 如果API Key是掩码格式，不更新
-        elseif (strpos($config['api_key'], '****') !== false) {
-            $config['api_key'] = $oldConfig['api_key'] ?? '';
-        }
-        
-        // 保存到配置文件（实际项目中应该保存到数据库或安全存储）
-        // 这里简化处理，实际应该使用数据库表来存储
 
-        $responseConfig = $config;
+        // 保存到数据库
+        $saveData = [];
+        if (isset($config['api_url'])) $saveData['ai_api_url'] = $config['api_url'];
+        if (isset($config['api_key'])) $saveData['ai_api_key'] = $config['api_key']; // 注意：最好加密存储
+        if (isset($config['model'])) $saveData['ai_model'] = $config['model'];
+        if (isset($config['enable_thinking'])) $saveData['ai_enable_thinking'] = $config['enable_thinking'];
+        
+        foreach ($saveData as $key => $value) {
+            // 尝试更新现有配置，如果不存在则创建
+            $existing = SystemConfig::where('config_key', $key)->find();
+            if ($existing) {
+                $existing->config_value = (string)$value;
+                $existing->save();
+            } else {
+                SystemConfig::create([
+                    'config_key' => $key,
+                    'config_value' => (string)$value,
+                    'config_type' => 'string',
+                    'category' => 'ai',
+                    'description' => 'AI Configuration ' . $key,
+                    'is_editable' => 1
+                ]);
+            }
+        }
+        
+        // 重新获取完整配置返回
+        $newConfig = $this->getAiConfig();
+        
+        $responseConfig = $newConfig;
         if (!empty($responseConfig['api_key'])) {
             $responseConfig['api_key'] = substr($responseConfig['api_key'], 0, 10) . '****' . substr($responseConfig['api_key'], -4);
         }
@@ -708,7 +755,7 @@ class AiAnalysis extends BaseController
     /**
      * 规范并校验外部AI接口地址，阻断明显的SSRF目标
      */
-    private function normalizeExternalApiUrl(string $apiUrl): string
+    private function normalizeExternalApiUrl(string $apiUrl, bool $allowLocal = false): string
     {
         if (!filter_var($apiUrl, FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('API地址格式无效');
@@ -726,7 +773,7 @@ class AiAnalysis extends BaseController
             throw new \InvalidArgumentException('API地址缺少主机名');
         }
 
-        if ($this->isForbiddenAiHost($host)) {
+        if (!$allowLocal && $this->isForbiddenAiHost($host)) {
             throw new \InvalidArgumentException('API地址指向受限主机，请使用公网HTTPS接口');
         }
 
