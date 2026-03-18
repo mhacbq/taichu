@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { ref, onErrorCaptured, onMounted } from 'vue'
+import { ref, onErrorCaptured, onMounted, onUnmounted } from 'vue'
 import EmptyState from './EmptyState.vue'
 
 export default {
@@ -63,72 +63,114 @@ export default {
     const error = ref(null)
     const errorInfo = ref('')
     const isDev = ref(import.meta.env.DEV)
-    
+
     const errorTitle = ref(props.title)
     const errorDescription = ref(props.description)
-    
-    onErrorCaptured((err, instance, info) => {
-      hasError.value = true
-      error.value = err
-      errorInfo.value = `${err.message}\n\n${err.stack || ''}`
-      
-      // 上报错误
-      reportError(err, info)
-      
-      emit('error', { error: err, info })
-      
-      return false // 阻止错误继续传播
+
+    const truncateText = (value, maxLength = 200) => {
+      const text = typeof value === 'string' ? value.trim() : ''
+      if (!text) {
+        return ''
+      }
+
+      return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+    }
+
+    const getErrorSummary = (err) => {
+      const message = typeof err?.message === 'string'
+        ? err.message
+        : String(err ?? '未知错误')
+      const stack = typeof err?.stack === 'string'
+        ? err.stack.split('\n').slice(0, 3).join('\n')
+        : ''
+
+      return {
+        name: typeof err?.name === 'string' ? err.name : 'Error',
+        message: truncateText(message, 200) || '未知错误',
+        stack: truncateText(stack, 600)
+      }
+    }
+
+    const buildReporterMeta = (info) => ({
+      component: info,
+      path: window.location.pathname,
+      hasQuery: Boolean(window.location.search),
+      timestamp: new Date().toISOString()
     })
-    
-    const reportError = (err, info) => {
-      // 发送到错误监控服务
+
+    const reportError = (err, info, summary = getErrorSummary(err)) => {
       if (window.$errorReporter) {
         window.$errorReporter.captureException(err, {
           tags: { component: info },
-          extra: { 
-            url: window.location.href,
-            userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString()
-          }
+          extra: buildReporterMeta(info)
         })
       }
-      
-      // 控制台输出
-      console.error('[ErrorBoundary]', err, info)
+
+      if (isDev.value) {
+        console.error('[ErrorBoundary]', {
+          info,
+          ...summary
+        })
+      }
     }
-    
+
+    onErrorCaptured((err, instance, info) => {
+      const summary = getErrorSummary(err)
+
+      hasError.value = true
+      error.value = err
+      errorInfo.value = [summary.message, summary.stack].filter(Boolean).join('\n\n')
+
+      reportError(err, info, summary)
+      emit('error', { error: err, info, summary })
+
+      return false // 阻止错误继续传播
+    })
+
     const handleRetry = () => {
       hasError.value = false
       error.value = null
-      
+
       if (props.onRetry) {
         props.onRetry()
       }
-      
+
       emit('retry')
     }
-    
+
     const handleReport = () => {
       // 打开反馈页面或弹窗
       const feedbackUrl = '/feedback?type=error'
       window.open(feedbackUrl, '_blank')
     }
-    
+
+    const handleGlobalError = (event) => {
+      if (hasError.value) {
+        return
+      }
+
+      reportError(event?.error || new Error(event?.message || 'global error'), 'global')
+    }
+
+    const handleUnhandledRejection = (event) => {
+      if (hasError.value) {
+        return
+      }
+
+      reportError(event?.reason, 'promise')
+    }
+
     // 全局错误监听
     onMounted(() => {
-      window.addEventListener('error', (event) => {
-        if (!hasError.value) {
-          reportError(event.error, 'global')
-        }
-      })
-      
-      window.addEventListener('unhandledrejection', (event) => {
-        if (!hasError.value) {
-          reportError(event.reason, 'promise')
-        }
-      })
+      window.addEventListener('error', handleGlobalError)
+      window.addEventListener('unhandledrejection', handleUnhandledRejection)
     })
-    
+
+    onUnmounted(() => {
+      window.removeEventListener('error', handleGlobalError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    })
+
     return {
       hasError,
       errorTitle,
@@ -141,6 +183,7 @@ export default {
   }
 }
 </script>
+
 
 <style scoped>
 .error-boundary {

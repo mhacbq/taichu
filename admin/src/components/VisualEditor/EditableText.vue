@@ -87,7 +87,8 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
 import { Edit, Check, Close } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
 
 const props = defineProps({
   modelValue: {
@@ -157,8 +158,20 @@ const displayValue = computed(() => {
   return props.modelValue
 })
 
+const resolveSaveErrorMessage = (error) => {
+  const message = typeof error?.message === 'string' ? error.message.trim() : ''
+  const errorCode = Number(error?.code) || 0
+
+  if (message && [400, 403, 404, 409, 422].includes(errorCode)) {
+    return message
+  }
+
+  return '保存失败，请稍后重试'
+}
+
 // 开始编辑
 const startEdit = () => {
+
   if (!props.canEdit) return
   
   editValue.value = props.modelValue
@@ -204,8 +217,9 @@ const confirmEdit = async () => {
     ElMessage.success('保存成功')
     isEditing.value = false
   } catch (error) {
-    ElMessage.error('保存失败: ' + error.message)
+    ElMessage.error(resolveSaveErrorMessage(error))
   } finally {
+
     saving.value = false
   }
 }

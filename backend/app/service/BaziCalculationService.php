@@ -162,10 +162,25 @@ class BaziCalculationService
         $is21st = ($year >= 2000);
         $constants = $is21st ? $jieQiConstants21 : $jieQiConstants20;
         $termAdjustments = [
-            '立春' => [1902 => 1, 1918 => 1, 1982 => 1, 2019 => -1],
-            '惊蛰' => [1906 => 1],
             '雨水' => [2026 => -1],
+            '春分' => [2084 => 1],
+            '小满' => [2008 => 1],
+            '芒种' => [1902 => 1],
+            '夏至' => [1928 => 1],
+            '小暑' => [1925 => 1, 2016 => 1],
+            '大暑' => [1922 => 1],
+            '立秋' => [2002 => 1],
+            '白露' => [1927 => 1],
+            '秋分' => [1942 => 1],
+            '霜降' => [2089 => 1],
+            '立冬' => [2089 => 1],
+            '小雪' => [1978 => 1],
+            '大雪' => [1954 => 1],
+            '冬至' => [1918 => -1, 2021 => -1],
+            '小寒' => [1982 => 1, 2019 => -1],
+            '大寒' => [2082 => 1],
         ];
+
 
         if (!isset($constants[$name])) {
             return [
@@ -609,18 +624,18 @@ class BaziCalculationService
     {
         $dm = $pillars['day']['gan'];
         $dmWx = $this->ganWuXing[$dm];
-        
-        // 定义五行关系：生我、同我、克我、我克、我生
+
+        // 定义五行关系：生我、同我
         $relations = [
-            '木' => ['supporting' => ['木', '水'], 'opposing' => ['金', '土', '火']],
-            '火' => ['supporting' => ['火', '木'], 'opposing' => ['水', '金', '土']],
-            '土' => ['supporting' => ['土', '火'], 'opposing' => ['木', '水', '金']],
-            '金' => ['supporting' => ['金', '土'], 'opposing' => ['火', '木', '水']],
-            '水' => ['supporting' => ['水', '金'], 'opposing' => ['土', '火', '木']]
+            '木' => ['supporting' => ['木', '水']],
+            '火' => ['supporting' => ['火', '木']],
+            '土' => ['supporting' => ['土', '火']],
+            '金' => ['supporting' => ['金', '土']],
+            '水' => ['supporting' => ['水', '金']],
         ];
-        
+
         $supporting = $relations[$dmWx]['supporting'];
-        
+
         // 1. 地支藏干分值表 (能量权重)
         // 月令(Month)总分40, 其他地支各10, 天干各10 (总分100)
         $branchWeights = [
@@ -644,7 +659,7 @@ class BaziCalculationService
                 $ganScore += 10;
             }
         }
-        
+
         $branchScore = 0;
         $branchPositions = [
             'month' => 40,
@@ -652,7 +667,7 @@ class BaziCalculationService
             'hour' => 10,
             'year' => 10
         ];
-        
+
         foreach ($branchPositions as $pos => $maxWeight) {
             $zhi = $pillars[$pos]['zhi'];
             $cangGans = $branchWeights[$zhi] ?? [];
@@ -667,31 +682,113 @@ class BaziCalculationService
         $interaction = $this->calculateBranchInteractionScore($pillars, $supporting, $branchWeights);
         $totalScore = max(0, min(100, $ganScore + $branchScore + $interaction['score']));
         $wuxingStats = $this->calculateWuxingStats($pillars);
-        
+
         $status = '中和';
-        if ($totalScore >= 55) $status = '身旺';
-        elseif ($totalScore >= 45) $status = '中和偏旺';
-        elseif ($totalScore >= 35) $status = '中和偏弱';
-        else $status = '身弱';
-        
-        $favoriteWuxing = in_array($status, ['身旺', '中和偏旺'], true)
-            ? $relations[$dmWx]['opposing']
-            : $relations[$dmWx]['supporting'];
+        if ($totalScore >= 55) {
+            $status = '身旺';
+        } elseif ($totalScore >= 45) {
+            $status = '中和偏旺';
+        } elseif ($totalScore >= 35) {
+            $status = '中和偏弱';
+        } else {
+            $status = '身弱';
+        }
+
+        $isStrong = in_array($status, ['身旺', '中和偏旺'], true);
+        $favoriteDetails = $this->buildFavoriteWuxingDetails($dmWx, $isStrong, $wuxingStats);
 
         return [
             'score' => round($totalScore, 1),
             'status' => $status,
-            'favorite_wuxing' => $favoriteWuxing,
+            'favorite_wuxing' => array_column($favoriteDetails, 'element'),
+            'favorite_wuxing_details' => $favoriteDetails,
             'details' => [
-
                 'gan_support_score' => round($ganScore, 1),
                 'branch_support_score' => round($branchScore, 1),
                 'interaction_score' => round($interaction['score'], 1),
                 'branch_interactions' => $interaction['notes'],
                 'wuxing_stats' => $wuxingStats,
+                'regulation_strategy' => $isStrong
+                    ? '身强按“官杀→食伤→财星”次序取用，先制后泄再耗'
+                    : '身弱按“印星→比劫”次序取用，先扶后助',
             ],
         ];
     }
+
+    /**
+     * 构建喜用五行优先级。
+     * 身强遵循“先官杀、次食伤、后财星”，身弱遵循“先印星、次比劫”。
+     */
+    protected function buildFavoriteWuxingDetails(string $dayMasterWuxing, bool $isStrong, array $wuxingStats): array
+    {
+        $priorityMap = [
+            '木' => [
+                'strong' => [
+                    ['element' => '金', 'relation' => '官杀', 'priority' => 1, 'principle' => '克'],
+                    ['element' => '火', 'relation' => '食伤', 'priority' => 2, 'principle' => '泄'],
+                    ['element' => '土', 'relation' => '财星', 'priority' => 3, 'principle' => '耗'],
+                ],
+                'weak' => [
+                    ['element' => '水', 'relation' => '印星', 'priority' => 1, 'principle' => '生'],
+                    ['element' => '木', 'relation' => '比劫', 'priority' => 2, 'principle' => '扶'],
+                ],
+            ],
+            '火' => [
+                'strong' => [
+                    ['element' => '水', 'relation' => '官杀', 'priority' => 1, 'principle' => '克'],
+                    ['element' => '土', 'relation' => '食伤', 'priority' => 2, 'principle' => '泄'],
+                    ['element' => '金', 'relation' => '财星', 'priority' => 3, 'principle' => '耗'],
+                ],
+                'weak' => [
+                    ['element' => '木', 'relation' => '印星', 'priority' => 1, 'principle' => '生'],
+                    ['element' => '火', 'relation' => '比劫', 'priority' => 2, 'principle' => '扶'],
+                ],
+            ],
+            '土' => [
+                'strong' => [
+                    ['element' => '木', 'relation' => '官杀', 'priority' => 1, 'principle' => '克'],
+                    ['element' => '金', 'relation' => '食伤', 'priority' => 2, 'principle' => '泄'],
+                    ['element' => '水', 'relation' => '财星', 'priority' => 3, 'principle' => '耗'],
+                ],
+                'weak' => [
+                    ['element' => '火', 'relation' => '印星', 'priority' => 1, 'principle' => '生'],
+                    ['element' => '土', 'relation' => '比劫', 'priority' => 2, 'principle' => '扶'],
+                ],
+            ],
+            '金' => [
+                'strong' => [
+                    ['element' => '火', 'relation' => '官杀', 'priority' => 1, 'principle' => '克'],
+                    ['element' => '水', 'relation' => '食伤', 'priority' => 2, 'principle' => '泄'],
+                    ['element' => '木', 'relation' => '财星', 'priority' => 3, 'principle' => '耗'],
+                ],
+                'weak' => [
+                    ['element' => '土', 'relation' => '印星', 'priority' => 1, 'principle' => '生'],
+                    ['element' => '金', 'relation' => '比劫', 'priority' => 2, 'principle' => '扶'],
+                ],
+            ],
+            '水' => [
+                'strong' => [
+                    ['element' => '土', 'relation' => '官杀', 'priority' => 1, 'principle' => '克'],
+                    ['element' => '木', 'relation' => '食伤', 'priority' => 2, 'principle' => '泄'],
+                    ['element' => '火', 'relation' => '财星', 'priority' => 3, 'principle' => '耗'],
+                ],
+                'weak' => [
+                    ['element' => '金', 'relation' => '印星', 'priority' => 1, 'principle' => '生'],
+                    ['element' => '水', 'relation' => '比劫', 'priority' => 2, 'principle' => '扶'],
+                ],
+            ],
+        ];
+
+        $mode = $isStrong ? 'strong' : 'weak';
+        $details = $priorityMap[$dayMasterWuxing][$mode] ?? [];
+        foreach ($details as &$detail) {
+            $detail['current_score'] = round((float)($wuxingStats[$detail['element']] ?? 0), 2);
+        }
+        unset($detail);
+
+        return $details;
+    }
+
 
     /**
      * 计算地支冲合对日主力量的修正

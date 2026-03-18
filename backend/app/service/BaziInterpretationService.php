@@ -334,19 +334,25 @@ class BaziInterpretationService
             ];
         }
 
+        $ideal = $total / 5;
         foreach ($stats as $wx => $count) {
             $percentage = ($count / $total) * 100;
-            if ($count <= 0.15 || $percentage < 5) {
+            $lackThreshold = max(0.08, $ideal * 0.18);
+            $weakThreshold = max(0.45, $ideal * 0.72);
+            $strongThreshold = $ideal * 1.25;
+            $overStrongThreshold = $ideal * 1.55;
+
+            if ($count <= $lackThreshold && $percentage < 4) {
                 $strength = '缺';
                 $desc = '明显不足';
                 $lack[] = $wx;
-            } elseif ($percentage >= 30 || $count >= 3.2) {
+            } elseif ($percentage >= 30 || $count >= $overStrongThreshold) {
                 $strength = '旺';
                 $desc = '过旺';
-            } elseif ($percentage >= 22 || $count >= 2.2) {
+            } elseif ($percentage >= 24 || $count >= $strongThreshold) {
                 $strength = '强';
                 $desc = '偏强';
-            } elseif ($percentage >= 12 || $count >= 1.0) {
+            } elseif ($percentage >= 12 || $count >= $weakThreshold) {
                 $strength = '平';
                 $desc = '中和';
             } else {
@@ -375,6 +381,7 @@ class BaziInterpretationService
             'weak' => $weak,
         ];
     }
+
 
     /**
      * 根据分值取首个对应五行。
@@ -413,17 +420,34 @@ class BaziInterpretationService
     protected function calculateBalanceScore(array $wuxingStats): int
     {
         $wuxingStats = $this->normalizeWuxingStats($wuxingStats);
-        $values = array_values($wuxingStats);
-        $max = max($values);
-        $min = min($values);
-        $diff = $max - $min;
-        
-        // 差值越小越平衡（适配加权后的浮点分值）
-        if ($diff <= 0.8) return 90;
-        if ($diff <= 1.6) return 75;
-        if ($diff <= 2.5) return 60;
-        return 45;
+        $total = array_sum($wuxingStats);
+        if ($total <= 0.001) {
+            return 0;
+        }
+
+        $percentages = array_map(
+            static fn(float $value): float => ($value / $total) * 100,
+            $wuxingStats
+        );
+        $values = array_values($percentages);
+        $average = 20.0;
+        $meanAbsoluteDeviation = array_sum(array_map(
+            static fn(float $value): float => abs($value - $average),
+            $values
+        )) / count($values);
+        $maxGap = max($values) - min($values);
+        $lackCount = count(array_filter($values, static fn(float $value): bool => $value < 6));
+        $overStrongCount = count(array_filter($values, static fn(float $value): bool => $value > 34));
+
+        $score = 100
+            - ($meanAbsoluteDeviation * 2.1)
+            - ($maxGap * 0.35)
+            - ($lackCount * 5)
+            - ($overStrongCount * 3);
+
+        return (int) round(max(20, min(98, $score)));
     }
+
 
     /**
      * 确定喜用神 - 复用核心强弱评分，并纳入地支冲合结果
@@ -443,32 +467,58 @@ class BaziInterpretationService
             $status = $isStrong ? '身强' : '身弱';
         }
 
-        $favoriteCandidates = array_values(array_filter(
-            $strength['favorite_wuxing'] ?? [],
-            static fn($item) => is_string($item) && $item !== ''
+        $favoriteDetails = array_values(array_filter(
+            $strength['favorite_wuxing_details'] ?? [],
+            static fn($item): bool => is_array($item) && is_string($item['element'] ?? null) && ($item['element'] ?? '') !== ''
         ));
 
-        if (empty($favoriteCandidates)) {
-            $favoriteCandidates = $isStrong
-                ? [$relations['被克'], $relations['克'], $relations['生']]
-                : [$relations['被生'], $dayMasterWuxing];
+        if (empty($favoriteDetails)) {
+            $favoriteDetails = $isStrong
+                ? [
+                    ['element' => $relations['被克'], 'relation' => '官杀', 'priority' => 1],
+                    ['element' => $relations['生'], 'relation' => '食伤', 'priority' => 2],
+                    ['element' => $relations['克'], 'relation' => '财星', 'priority' => 3],
+                ]
+                : [
+                    ['element' => $relations['被生'], 'relation' => '印星', 'priority' => 1],
+                    ['element' => $dayMasterWuxing, 'relation' => '比劫', 'priority' => 2],
+                ];
         }
 
-        $favoriteCandidates = array_values(array_unique($favoriteCandidates));
         $normalizedStats = $this->normalizeWuxingStats($wuxingStats);
-        usort($favoriteCandidates, function (string $left, string $right) use ($normalizedStats, $favoriteCandidates): int {
-            $leftValue = (float) ($normalizedStats[$left] ?? 0);
-            $rightValue = (float) ($normalizedStats[$right] ?? 0);
-            if (abs($leftValue - $rightValue) < 0.0001) {
-                return array_search($left, $favoriteCandidates, true) <=> array_search($right, $favoriteCandidates, true);
+        usort($favoriteDetails, function (array $left, array $right) use ($normalizedStats): int {
+            $priorityCompare = ((int) ($left['priority'] ?? 99)) <=> ((int) ($right['priority'] ?? 99));
+            if ($priorityCompare !== 0) {
+                return $priorityCompare;
             }
 
-            return $leftValue <=> $rightValue;
+            $leftValue = (float) ($normalizedStats[$left['element'] ?? ''] ?? 0);
+            $rightValue = (float) ($normalizedStats[$right['element'] ?? ''] ?? 0);
+            if (abs($leftValue - $rightValue) >= 0.0001) {
+                return $leftValue <=> $rightValue;
+            }
+
+            return strcmp((string) ($left['element'] ?? ''), (string) ($right['element'] ?? ''));
         });
 
-        $primary = $favoriteCandidates[0] ?? $dayMasterWuxing;
+        $favoriteCandidates = [];
+        foreach ($favoriteDetails as $detail) {
+            $element = (string) ($detail['element'] ?? '');
+            if ($element !== '' && !in_array($element, $favoriteCandidates, true)) {
+                $favoriteCandidates[] = $element;
+            }
+        }
+
+        if (empty($favoriteCandidates)) {
+            $favoriteCandidates = [$dayMasterWuxing];
+        }
+
+        $primary = $favoriteCandidates[0];
         $secondary = $favoriteCandidates[1] ?? $primary;
         $favoriteText = implode('、', $favoriteCandidates);
+        $strategyText = $isStrong
+            ? '依“身强先官杀、次食伤、后财星”的次序疏泄制衡'
+            : '依“身弱先印星、次比劫”的次序扶身培元';
 
         if ($isStrong) {
             $yongshen = [
@@ -477,7 +527,8 @@ class BaziInterpretationService
                 'type' => '身强',
                 'score' => $score,
                 'favorable_elements' => $favoriteCandidates,
-                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。依身强取克、泄、耗的常法，应以{$favoriteText}来疏泄制衡，其中当前更急需先借{$primary}发力。",
+                'favorable_element_details' => $favoriteDetails,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。{$strategyText}，宜以{$favoriteText}来疏泄制衡，其中当前更急需先借{$primary}发力。",
             ];
         } else {
             $yongshen = [
@@ -486,10 +537,10 @@ class BaziInterpretationService
                 'type' => '身弱',
                 'score' => $score,
                 'favorable_elements' => $favoriteCandidates,
-                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。依身弱取生扶比助的常法，应以{$favoriteText}来扶身培元，其中当前更急需先补{$primary}。",
+                'favorable_element_details' => $favoriteDetails,
+                'desc' => "综合月令、透干、藏干及地支冲合后，命局强度得分为{$score}，当前偏{$status}。{$strategyText}，宜以{$favoriteText}来扶身培元，其中当前更急需先补{$primary}。",
             ];
         }
-
 
         if (!empty($interactionNotes)) {
             $yongshen['desc'] .= '地支作用要点：' . implode('；', array_slice($interactionNotes, 0, 3)) . '。';
@@ -503,9 +554,10 @@ class BaziInterpretationService
             $yongshen['weak'] = $profile['weak'][0];
             $yongshen['desc'] .= "另外，命局中{$profile['weak'][0]}偏弱，可作为调和时的重点参考。";
         }
-        
+
         return $yongshen;
     }
+
 
     /**
      * 分析日主

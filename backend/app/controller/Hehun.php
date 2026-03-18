@@ -82,10 +82,39 @@ class Hehun extends BaseController
 
         return self::HEHUN_EXPORT_COST;
     }
+
+    protected function buildHehunLogContext(array $user = [], array $data = [], array $extra = []): array
+    {
+        $context = array_filter([
+            'user_id' => (int) ($user['sub'] ?? 0),
+            'record_id' => isset($data['record_id']) ? (int) $data['record_id'] : 0,
+            'format' => (string) ($data['format'] ?? ''),
+            'template' => (string) ($data['template'] ?? ''),
+            'use_ai' => (bool) ($data['useAi'] ?? false),
+            'male_name_length' => mb_strlen((string) ($data['maleName'] ?? '')),
+            'female_name_length' => mb_strlen((string) ($data['femaleName'] ?? '')),
+            'birth_pair_hash' => $this->buildBirthPairHash($data),
+        ], static fn ($value) => !($value === '' || $value === 0 || $value === false || $value === null));
+
+        return array_merge($context, $extra);
+    }
+
+    protected function buildBirthPairHash(array $data): string
+    {
+        $maleBirthDate = trim((string) ($data['maleBirthDate'] ?? ''));
+        $femaleBirthDate = trim((string) ($data['femaleBirthDate'] ?? ''));
+
+        if ($maleBirthDate === '' && $femaleBirthDate === '') {
+            return '';
+        }
+
+        return substr(md5($maleBirthDate . '|' . $femaleBirthDate), 0, 12);
+    }
     
     /**
      * 天干五行
      */
+
     protected $ganWuXing = [
         '甲' => '木', '乙' => '木',
         '丙' => '火', '丁' => '火',
@@ -501,8 +530,19 @@ class Hehun extends BaseController
             
         } catch (\Exception $e) {
             Db::rollback();
-            return $this->error('合婚分析失败: ' . $e->getMessage());
+            return $this->respondSystemException(
+                '合婚高级分析失败',
+                $e,
+                '合婚分析失败，请稍后重试',
+                $this->buildHehunLogContext($user, $data, [
+                    'step' => 'process_premium',
+                    'final_points' => $finalPoints,
+                    'need_points' => $needPoints,
+                    'is_new_user' => $isNewUser,
+                ])
+            );
         }
+
     }
     
     /**
@@ -1438,8 +1478,18 @@ PROMPT;
                 Db::commit();
             } catch (\Exception $e) {
                 Db::rollback();
-                return $this->error('处理失败: ' . $e->getMessage());
+                return $this->respondSystemException(
+                    '合婚缓存结果处理失败',
+                    $e,
+                    '处理失败，请稍后重试',
+                    $this->buildHehunLogContext($user, $data, [
+                        'step' => 'process_cached',
+                        'points_cost' => $pointsCost,
+                        'need_points' => $needPoints,
+                    ])
+                );
             }
+
         }
         
         $result = $cachedResult;
@@ -1520,8 +1570,16 @@ PROMPT;
             $exportResult = $this->generateReport($reportData, $format);
             
             if (!$exportResult['success']) {
-                return $this->error('报告生成失败: ' . $exportResult['message']);
+                Log::warning('合婚报告生成结果异常', $this->buildHehunLogContext($user, $data, [
+                    'step' => 'generate_report_result',
+                    'export_points' => $exportPoints,
+                    'need_points' => $needPoints,
+                    'has_result_message' => !empty($exportResult['message']),
+                ]));
+
+                return $this->error('报告生成失败，请稍后重试', 500);
             }
+
             
             // 扣除积分（非VIP）
             if ($needPoints) {
@@ -1548,8 +1606,19 @@ PROMPT;
             ]);
             
         } catch (\Exception $e) {
-            return $this->error('报告生成失败: ' . $e->getMessage());
+            return $this->respondSystemException(
+                '合婚报告导出失败',
+                $e,
+                '报告生成失败，请稍后重试',
+                $this->buildHehunLogContext($user, $data, [
+                    'step' => 'export',
+                    'record_id' => (int) $record->id,
+                    'export_points' => $exportPoints,
+                    'need_points' => $needPoints,
+                ])
+            );
         }
+
     }
     
     /**

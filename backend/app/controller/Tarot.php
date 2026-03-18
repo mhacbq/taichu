@@ -769,14 +769,9 @@ class Tarot extends BaseController
      */
     protected function getElementAspect(string $element): string
     {
-        return match($element) {
-            '风' => '理性思考',
-            '水' => '情感感受',
-            '火' => '行动执行',
-            '土' => '物质现实',
-            default => '内在能量',
-        };
+        return TarotElementService::getAspect($element);
     }
+
     
     /**
      * 获取两张牌过渡的描述

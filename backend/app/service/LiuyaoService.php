@@ -329,6 +329,11 @@ class LiuyaoService
      */
     public static function getLiuShen(string $riGan): array
     {
+        $riGan = trim($riGan);
+        if (mb_strlen($riGan, 'UTF-8') > 1) {
+            $riGan = mb_substr($riGan, 0, 1, 'UTF-8');
+        }
+
         // 日干对应起始六神
         $startLiuShen = [
             '甲' => '青龙', '乙' => '青龙',
@@ -338,20 +343,24 @@ class LiuyaoService
             '庚' => '白虎', '辛' => '白虎',
             '壬' => '玄武', '癸' => '玄武',
         ];
-        
+
         $liuShenOrder = self::LIU_SHEN;
         $start = $startLiuShen[$riGan] ?? '青龙';
-        $startIndex = array_search($start, $liuShenOrder);
-        
+        $startIndex = array_search($start, $liuShenOrder, true);
+        if ($startIndex === false) {
+            $startIndex = 0;
+        }
+
         $result = [];
         for ($i = 0; $i < 6; $i++) {
             $position = $i + 1;  // 爻位（1-6，从下到上）
             $shenIndex = ($startIndex + $i) % 6;
             $result[$position] = $liuShenOrder[$shenIndex];
         }
-        
+
         return $result;
     }
+
 
     /**
      * 确定世应
@@ -469,13 +478,89 @@ class LiuyaoService
             'is_moving' => $isMoving,
             'is_fushen' => false,
             'xunkong' => $xunkong,
+            'selection_reason' => $selectionReason,
             'status' => implode('、', $status),
-            'description' => "以第{$position}爻【{$targetLiuqin}】为用神。状态： " . (implode('、', $status) ?: '安静')
+            'description' => "以第{$position}爻【{$targetLiuqin}】为用神。状态： " . (implode('、', $status) ?: '安静') . ($selectionReason !== '' ? "。取用依据：{$selectionReason}" : '')
+        ];
+    }
+
+    /**
+     * 多重同类用神并见时，按动爻、世应、旬空综合取象。
+     */
+    protected static function selectBestYongShenPosition(array $positions, array $shiYing, string $yaoCode, array $xunkong = []): array
+    {
+        if (empty($positions)) {
+            return [
+                'position' => (int)($shiYing['ying'] ?? 1),
+                'reason' => '候选爻位缺失，暂以应位代看',
+            ];
+        }
+
+        $yaoArray = str_split($yaoCode);
+        $yaoDiZhi = self::getYaoDiZhi(self::getGuaName($yaoCode), $yaoCode);
+        $shiPos = (int)($shiYing['shi'] ?? 0);
+        $yingPos = (int)($shiYing['ying'] ?? 0);
+        $candidates = [];
+
+        foreach ($positions as $position) {
+            $position = (int)$position;
+            $isMoving = isset($yaoArray[$position - 1]) && in_array($yaoArray[$position - 1], ['0', '3'], true);
+            $diZhi = $yaoDiZhi[$position] ?? '';
+            $isXunkong = $diZhi !== '' && in_array($diZhi, $xunkong, true);
+            $score = 0;
+            $reasons = [];
+
+            if ($isMoving) {
+                $score += 40;
+                $reasons[] = '发动';
+            }
+            if ($position === $shiPos) {
+                $score += 22;
+                $reasons[] = '临世';
+            }
+            if ($position === $yingPos) {
+                $score += 14;
+                $reasons[] = '临应';
+            }
+            if ($isXunkong) {
+                $score -= 8;
+                $reasons[] = '旬空减力';
+            } else {
+                $score += 8;
+                $reasons[] = '不空';
+            }
+            if ($shiPos > 0) {
+                $score += max(0, 6 - abs($position - $shiPos));
+            }
+
+            $candidates[] = [
+                'position' => $position,
+                'score' => $score,
+                'reasons' => $reasons,
+            ];
+        }
+
+        usort($candidates, static function (array $left, array $right): int {
+            $scoreCompare = $right['score'] <=> $left['score'];
+            if ($scoreCompare !== 0) {
+                return $scoreCompare;
+            }
+
+            return $left['position'] <=> $right['position'];
+        });
+
+        $best = $candidates[0];
+        $reasonText = !empty($best['reasons']) ? implode('、', $best['reasons']) : '先见';
+
+        return [
+            'position' => $best['position'],
+            'reason' => '同类用神并见，优先取' . $reasonText . '之爻',
         ];
     }
 
     /**
      * 获取伏神信息
+
      * 当用神不现于本卦时，从所属卦宫的首卦中寻找
      */
     public static function getFuShen(string $gong, string $missingLiuqin): ?array

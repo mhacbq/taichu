@@ -291,19 +291,27 @@ class Daily extends BaseController
     {
         $birthDate = (string)($baziRecord['birth_date'] ?? '');
         $gender = (string)($baziRecord['gender'] ?? '男');
-        $seed = crc32($userId . date('Ymd') . 'favorite-wuxing');
 
         if ($birthDate !== '') {
             try {
                 $bazi = $this->baziCalculationService->calculateBazi($birthDate, $gender);
+                $favoriteDetails = array_values(array_filter(
+                    $bazi['strength']['favorite_wuxing_details'] ?? [],
+                    static fn($item): bool => is_array($item) && is_string($item['element'] ?? null) && ($item['element'] ?? '') !== ''
+                ));
+                if (!empty($favoriteDetails)) {
+                    return (string) $favoriteDetails[0]['element'];
+                }
+
                 $favoriteWuxing = array_values(array_filter(
                     $bazi['strength']['favorite_wuxing'] ?? [],
                     static fn($item) => is_string($item) && $item !== ''
                 ));
 
                 if (!empty($favoriteWuxing)) {
-                    return $favoriteWuxing[$seed % count($favoriteWuxing)];
+                    return $favoriteWuxing[0];
                 }
+
 
                 $dayMasterWuxing = (string)($bazi['day_master_wuxing'] ?? ($bazi['day']['gan_wuxing'] ?? ''));
                 if ($dayMasterWuxing !== '') {
@@ -330,19 +338,20 @@ class Daily extends BaseController
         $isStrong = ($monthWx === $dmWx || $monthWx === ($sheng[$dmWx] ?? ''));
 
         if (!$isStrong) {
-            return ($seed % 2 === 0) ? $dmWx : ($sheng[$dmWx] ?? $dmWx);
+            return $sheng[$dmWx] ?? $dmWx;
         }
 
         $options = [
-            '木' => ['火', '土', '金'],
-            '火' => ['土', '金', '水'],
-            '土' => ['金', '水', '木'],
-            '金' => ['水', '木', '火'],
-            '水' => ['木', '火', '土'],
+            '木' => ['金', '火', '土'],
+            '火' => ['水', '土', '金'],
+            '土' => ['木', '金', '水'],
+            '金' => ['火', '水', '木'],
+            '水' => ['土', '木', '火'],
         ];
         $choices = $options[$dmWx] ?? ['土'];
 
-        return $choices[$seed % count($choices)];
+        return $choices[0];
+
     }
 
     

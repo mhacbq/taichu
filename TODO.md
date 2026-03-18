@@ -30,7 +30,26 @@
 
 ---
 
+## 🔍 代码逻辑检查报告 - 第二十九轮 (2026-03-18)
+
+作为代码重构与质量维护负责人，我继续聚焦 `TODO.md` 中的 `[代码]` 维护方向，完成以下 5 个不重复的日常优化点：
+
+### 🟡 中优先级
+- [x] [代码] 可视化编辑器 `EditableText.vue` 在开启 `confirmBeforeSave` 时直接调用未导入的 `ElMessageBox`，会触发运行时报错；同时保存失败提示仍会直接拼接原始异常文本 - `admin/src/components/VisualEditor/EditableText.vue` - 已补齐 `ElMessageBox` 导入，并将保存失败提示收敛为业务错误透传 + 系统异常通用兜底，避免运行时炸弹和敏感异常直出。
+- [x] [代码] 后台公共请求层仍把完整 axios 错误对象打到控制台，并把后端 500 原文直接透给 toast / 调用方，日志噪音和异常透出风险都偏高 - `admin/src/api/request.js` - 已改为仅在开发环境输出裁剪后的 `method/path/code/requestId` 摘要，401 统一触发重新登录提示，5xx 前端展示改为通用失败文案。
+- [x] [代码] 合婚支付/导出链路在事务失败、缓存扣积分失败和报告生成失败时，会直接把 `$e->getMessage()` 或下游生成失败原文回给前端 - `backend/app/controller/Hehun.php` - 已补充 `birth_pair_hash / user_id / step / points` 等脱敏上下文，并统一切换到 `respondSystemException()` / warning 日志，前端不再接收底层异常细节。
+
+### 🟢 低优先级
+- [x] [代码] 分享组件把 `ChatDotRound/Postcard/Link` 图标写成字符串组件名，前台入口又未全局注册图标，导致图标存在渲染失败与“导入未使用”噪音；二维码/复制/海报失败还会直接落原始控制台异常 - `frontend/src/components/Share/ShareButton.vue` - 已改为直接传递图标组件引用，并将失败记录改成脱敏埋点事件与通用提示。
+- [x] [代码] `ErrorBoundary.vue` 用匿名函数注册全局 `error/unhandledrejection` 监听却没有卸载，同时错误上报附带完整 URL，开发控制台也会直接打印原始异常对象 - `frontend/src/components/ErrorBoundary.vue` - 已改为具名监听并在卸载时清理，上报只保留 `path/hasQuery/timestamp` 等摘要字段，开发态控制台仅输出裁剪后的错误概要。
+
+### 🟢 低优先级补充
+- [x] [代码] 本轮同步把“用户可见错误文案”和“排障日志上下文”进一步拆开：界面层优先展示安全提示，调试层保留结构化摘要，后续继续收口同类异常时可直接复用这一口径。
+
+---
+
 ## 🔍 代码逻辑检查报告 - 第二十八轮 (2026-03-18)
+
 
 作为代码重构与质量维护负责人，我继续聚焦 `TODO.md` 中的 `[代码]` 维护方向，完成以下 5 个不重复的日常优化点：
 
@@ -354,9 +373,9 @@
 作为精通东西方命理占卜的资深爱好者，我对核心占卜逻辑进行了审计，发现以下严重偏离传统理论的算法错误：
 
 ### 🟢 低优先级（专业性优化）
-- [x] [占卜] 起运年龄精度优化 - 八字排盘 - 已优化为精确到\"X岁Y月Z天\"。
 
 ---
+
 
 ## 🎨 第三十三轮UI设计检查报告 (2026-03-17)
 
@@ -556,15 +575,11 @@
 作为精通东西方命理占卜的资深爱好者，我继续结合真实页面体验、接口实测、代码交叉核验与黄历外部对照，确认以下问题尚未在当前 `TODO.md` 中登记后，新增如下：
 
 ### 🔴 高优先级（逻辑错误/准确性问题）
-- [x] [占卜] 手机验证码登录在测试模式下仍直接 500，导致八字/塔罗/六爻/合婚等需登录功能无法从真实用户入口进入 - 登录入口 / 占卜功能访问 - 已在 `backend/app/service/SmsService.php` 补回 `think\facade\Log` 导入，测试验证码分支继续沿用脱敏手机号日志，不再把 `Log` 解析成 `app\service\Log` 而直接 500。
-- [x] [占卜] 合婚定价与计算链路都会因积分配置取值为空而报 500 - 合婚配对 - 已在 `backend/app/controller/Hehun.php` 为基础积分/导出积分增加显式数值兜底与 warning 日志，并修正 `backend/database/migrations/20250316_add_hehun_config.sql` 的 `system_config` 表写入目标；同时补充 `database/20260318_fix_hehun_points_config.sql` 便于缺配置环境直接回填默认值。
-
-- [x] [占卜] 塔罗页首屏把当前积分错误显示为 0，并直接拦截抽牌 - 塔罗牌占卜 - 已在 `frontend/src/views/Tarot.vue` 补齐 `pointsLoading/pointsError/flowError` 状态、积分加载展示与 `points-updated` 刷新监听，首屏不再用默认 0 误判积分不足，抽牌/解读失败时也可直接重试。
 
 ### 🟡 中优先级（体验问题）
-- [x] [占卜] 每日运势页签到卡片仍依赖不存在的 `checkin_record` 表，首屏长期显示“签到暂不可用” - 每日运势 - 已在 `backend/app/controller/Daily.php` 增加 `checkin_record / tc_checkin_record` 兼容探测，并按 `date/checkin_date`、`consecutive_days/continuous_days` 自动适配查询与写入，签到卡片可复用现有库表恢复显示。
 
 ### 🟢 低优先级（专业性优化）
+
 
 
 
