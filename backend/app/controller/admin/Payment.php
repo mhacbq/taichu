@@ -85,6 +85,10 @@ class Payment extends BaseController
      */
     public function saveConfig(Request $request)
     {
+        if ($response = $this->requirePaymentManagePermission('无权限修改支付配置')) {
+            return $response;
+        }
+
         $data = $request->post();
         
         if (empty($data['mch_id'])) {

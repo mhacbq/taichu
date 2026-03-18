@@ -36,11 +36,28 @@ class Knowledge extends BaseController
             );
             $keyword = trim((string) $request->get('keyword', ''));
             $categoryId = (int) $request->get('category_id', 0);
+            $articleTable = $this->resolveKnowledgeTable('article');
+            $categoryTable = $this->resolveKnowledgeTable('category');
 
-            $query = Db::name('tc_article')->alias('a')
-                ->leftJoin('tc_article_category c', 'a.category_id = c.id')
-                ->field('a.*, c.name as category_name')
-                ->order('a.created_at', 'desc');
+            if ($articleTable === null) {
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                    'page' => $pagination['page'],
+                    'pageSize' => $pagination['pageSize'],
+                ]);
+            }
+
+            $query = Db::table($articleTable)->alias('a');
+            $fields = ['a.*'];
+            if ($categoryTable !== null) {
+                $query->leftJoin($categoryTable . ' c', 'a.category_id = c.id');
+                $fields[] = 'c.name as category_name';
+            } else {
+                $fields[] = "'' as category_name";
+            }
+
+            $query->field($fields)->order('a.created_at', 'desc');
 
             if ($keyword !== '') {
                 $keyword = preg_replace('/[%_\\\\]/', '', $keyword);
@@ -55,7 +72,7 @@ class Knowledge extends BaseController
             $list = $query->page($pagination['page'], $pagination['pageSize'])->select()->toArray();
 
             return $this->success([
-                'list' => $list,
+                'list' => array_map([$this, 'normalizeArticleListRow'], $list),
                 'total' => $total,
                 'page' => $pagination['page'],
                 'pageSize' => $pagination['pageSize'],
@@ -81,10 +98,25 @@ class Knowledge extends BaseController
         }
 
         try {
-            $article = Db::table('tc_article')
-                ->alias('a')
-                ->leftJoin('tc_article_category c', 'a.category_id = c.id')
-                ->field('a.*, c.name as category_name, c.parent_id as category_parent_id')
+            $articleTable = $this->resolveKnowledgeTable('article');
+            if ($articleTable === null) {
+                return $this->error('文章不存在', 404);
+            }
+
+            $categoryTable = $this->resolveKnowledgeTable('category');
+            $query = Db::table($articleTable)->alias('a');
+            $fields = ['a.*'];
+            if ($categoryTable !== null) {
+                $query->leftJoin($categoryTable . ' c', 'a.category_id = c.id');
+                $fields[] = 'c.name as category_name';
+                $fields[] = 'c.parent_id as category_parent_id';
+            } else {
+                $fields[] = "'' as category_name";
+                $fields[] = '0 as category_parent_id';
+            }
+
+            $article = $query
+                ->field($fields)
                 ->where('a.id', (int) $id)
                 ->find();
             if (!$article) {
@@ -120,6 +152,11 @@ class Knowledge extends BaseController
         }
 
         try {
+            $articleTable = $this->resolveKnowledgeTable('article');
+            if ($articleTable === null) {
+                return $this->error('知识库文章表未初始化，请先执行数据库脚本', 500);
+            }
+
             $category = $this->resolveArticleCategoryForWrite((int) ($data['category_id'] ?? 0));
             if (!$category) {
                 return $this->error('请选择有效且已启用的分类', 400);
@@ -153,7 +190,7 @@ class Knowledge extends BaseController
                 'updated_at' => date('Y-m-d H:i:s'),
             ];
 
-            $id = (int) Db::table('tc_article')->insertGetId($saveData);
+            $id = (int) Db::table($articleTable)->insertGetId($saveData);
             return $this->success([
                 'id' => $id,
                 'category_id' => (int) $category['id'],
@@ -180,12 +217,17 @@ class Knowledge extends BaseController
         }
 
         $articleId = (int) $id;
-        $article = Db::table('tc_article')->where('id', $articleId)->find();
+        $articleTable = $this->resolveKnowledgeTable('article');
+        if ($articleTable === null) {
+            return $this->error('知识库文章表未初始化，请先执行数据库脚本', 500);
+        }
+
+        $article = Db::table($articleTable)->where('id', $articleId)->find();
         if (!$article) {
             return $this->error('文章不存在', 404);
         }
 
-        $data = $request->post();
+        $data = $request->isPut() ? $request->put() : $request->post();
         try {
             $updateData = [];
 
@@ -246,7 +288,7 @@ class Knowledge extends BaseController
             }
 
             $updateData['updated_at'] = date('Y-m-d H:i:s');
-            Db::table('tc_article')->where('id', $articleId)->update($updateData);
+            Db::table($articleTable)->where('id', $articleId)->update($updateData);
             return $this->success(null, '更新成功');
         } catch (\Throwable $e) {
             $this->logKnowledgeError('article_update', $e, [
