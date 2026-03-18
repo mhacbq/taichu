@@ -300,6 +300,14 @@ onMounted(() => {
   font-size: 16px;
 }
 
+.checkin-btn__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+
 .checkin-calendar {
   border-top: 1px solid var(--border-light);
   padding-top: 20px;

@@ -452,6 +452,14 @@ const heroPointsDetail = computed(() => {
     return '积分正在同步中，也可以先去个人中心确认今日签到状态。'
   }
 
+  if (baziOfferState.value === 'free') {
+    return `当前可用 ${formattedUserPoints.value} 积分，你的八字首测资格仍在，适合先从一次免费排盘开始。`
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return `当前可用 ${formattedUserPoints.value} 积分，八字首测资格已使用，可先查看当前价格再决定是否继续深入解读。`
+  }
+
   return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
 })
 

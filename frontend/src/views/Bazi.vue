@@ -3132,6 +3132,11 @@ const formatAiContent = (content) => {
   color: var(--text-secondary);
 }
 
+.form-hint--precision {
+  color: var(--warning-color);
+  font-weight: 600;
+}
+
 /* 操作按钮 */
 .result-actions {
   display: flex;
@@ -3141,9 +3146,17 @@ const formatAiContent = (content) => {
   flex-wrap: wrap;
 }
 
+.result-share-hint {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
 .result-actions .btn-icon {
   margin-right: 5px;
 }
+
 
 /* 大运区域样式 */
 .dayun-section {

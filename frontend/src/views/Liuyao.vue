@@ -95,7 +95,7 @@
               <el-icon><RefreshRight /></el-icon> 再次占卜
             </el-button>
             <div class="saved-status" :class="{ 'saved-status--history': result.is_history }" role="status" aria-live="polite">
-              <el-icon><CircleCheckFilled /></el-icon>
+              <el-icon><Collection v-if="result.is_history" /><CircleCheckFilled v-else /></el-icon>
               <span>{{ savedStatusText }}</span>
             </div>
             <el-button v-if="history.length > 0" round size="large" @click="showHistory = true">
