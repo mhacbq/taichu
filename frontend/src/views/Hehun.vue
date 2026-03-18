@@ -185,6 +185,12 @@
       <div v-else class="form-section">
         <div class="form-card card-hover">
           <h2>输入双方出生信息</h2>
+          <p class="form-intro">支持精确时分、大概时段和仅生日三种输入方式；系统会自动切换日期控件、时段选择和结果可信度说明，移动端也能保持稳定触达。</p>
+          <div class="form-meta-list">
+            <span class="form-meta-item">精确时分</span>
+            <span class="form-meta-item">大概时段</span>
+            <span class="form-meta-item">仅生日趋势</span>
+          </div>
           
           <!-- 男方信息 -->
           <div class="person-section card-hover">
@@ -192,6 +198,7 @@
               <el-icon class="gender-icon"><Male /></el-icon>
               男方信息
             </h3>
+            <p class="person-subtitle">先填生日，再按记忆精度选择具体时间、时段估算或仅生日模式。</p>
             <div class="form-row">
               <div class="form-group">
                 <label>姓名（可选）</label>
@@ -268,6 +275,7 @@
               <el-icon class="gender-icon"><Female /></el-icon>
               女方信息
             </h3>
+            <p class="person-subtitle">若只记得白天、晚上等大概时段，也可以先用时段估算后再继续完善。</p>
             <div class="form-row">
               <div class="form-group">
                 <label>姓名（可选）</label>
@@ -339,6 +347,7 @@
           
           <!-- 选项 -->
           <div class="options-section">
+            <h3 class="options-title">分析方案与解锁偏好</h3>
             <div class="option-plan-card">
               <div class="plan-badge-row">
                 <span class="plan-badge plan-badge--free">免费预览</span>
@@ -403,7 +412,7 @@
 
           
           <p class="form-hint">
-            <el-icon><Collection /></el-icon> 首次查看基础分析免费，详细报告需消耗积分或开通VIP
+            <el-icon><Collection /></el-icon> 首次查看基础分析免费；提交后的最近记录会自动保留，方便回看后再决定是否解锁完整版。
           </p>
         </div>
       </div>
@@ -1788,7 +1797,35 @@ onMounted(() => {
 .form-card h2 {
   color: var(--text-primary);
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 12px;
+}
+
+.form-intro {
+  max-width: 620px;
+  margin: 0 auto 16px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.form-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 28px;
+}
+
+.form-meta-item {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid var(--primary-light-20);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .person-section {
@@ -1813,8 +1850,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   font-size: 18px;
+}
+
+.person-subtitle {
+  margin: 0 0 20px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .gender-icon {
@@ -2093,6 +2137,11 @@ onMounted(() => {
   gap: 14px;
 }
 
+.options-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
 
 .option-plan-card {
   padding: 16px 18px;
@@ -3116,6 +3165,15 @@ onMounted(() => {
 
   .page-title {
     font-size: 28px;
+  }
+
+  .form-intro,
+  .person-subtitle {
+    text-align: left;
+  }
+
+  .form-meta-list {
+    justify-content: flex-start;
   }
   
   .form-card,
