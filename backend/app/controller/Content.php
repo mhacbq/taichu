@@ -10,8 +10,6 @@ use app\model\PageVersion;
 use app\model\PageDraft;
 use app\model\PageRecycle;
 use app\model\OperationLog;
-use app\service\SensitiveDataSanitizer;
-use think\facade\Log;
 use think\Request;
 
 /**
@@ -479,14 +477,12 @@ class Content extends BaseController
      */
     private function respondWithInternalError(\Throwable $e, string $message)
     {
-        Log::error('内容管理接口异常: ' . $e->getMessage(), [
-            'admin_id' => (int) (($this->request->adminUser['id'] ?? null) ?: ($this->request->adminId ?? 0)),
-            'request_url' => $this->request->url(true),
-            'request_method' => $this->request->method(),
-            'params' => $this->request->param(),
-        ]);
+        $params = $this->request->param();
 
-        return $this->error($message, 500);
+        return $this->respondSystemException('内容管理接口', $e, $message, [
+            'param_keys' => is_array($params) ? array_slice(array_keys($params), 0, 20) : [],
+            'param_count' => is_array($params) ? count($params) : 0,
+        ]);
     }
 
     /**

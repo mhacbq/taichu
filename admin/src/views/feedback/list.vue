@@ -129,6 +129,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getFeedbackList, getFeedbackDetail, replyFeedback, deleteFeedback } from '@/api/feedback'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const feedbackList = ref([])
@@ -226,7 +227,11 @@ async function submitReply() {
     replyDialog.visible = false
     loadFeedbackList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('feedback_list', 'reply_failed', error, {
+      feedback_id: replyDialog.feedbackId,
+      reply_status: replyDialog.form.status,
+      reply_length: replyDialog.form.reply?.trim().length || 0
+    })
   }
 }
 

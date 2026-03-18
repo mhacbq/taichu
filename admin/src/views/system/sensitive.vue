@@ -239,7 +239,11 @@ async function submitForm() {
     dialog.visible = false
     loadWordList()
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('system_sensitive', 'save_word_failed', error, {
+      mode: dialog.isEdit ? 'edit' : 'create',
+      sensitive_word_id: dialog.form.id ?? null,
+      word_length: dialog.form.word?.trim().length || 0
+    })
   }
 }
 

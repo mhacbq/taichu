@@ -3,7 +3,7 @@
     <el-card shadow="never" class="search-form">
       <el-form :model="queryForm" inline>
         <el-form-item label="用户ID">
-          <el-input v-model="queryForm.userId" placeholder="用户ID" clearable />
+          <el-input v-model="queryForm.user_id" placeholder="用户ID" clearable />
         </el-form-item>
         <el-form-item label="牌阵">
           <el-select v-model="queryForm.spread" placeholder="全部牌阵" clearable>
@@ -84,6 +84,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTarotRecords, deleteTarotRecord } from '@/api/content'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 const loading = ref(false)
 const total = ref(0)
@@ -109,10 +110,16 @@ async function loadRecords() {
   loading.value = true
   try {
     const res = await getTarotRecords(queryForm)
-    recordList.value = res.data.list
-    total.value = res.data.total
+    const data = res?.data || {}
+    recordList.value = data.list || []
+    total.value = data.total || 0
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('content_tarot', 'load_records_failed', error, {
+      user_id: queryForm.user_id || '',
+      spread_type: queryForm.spread || '',
+      page: queryForm.page,
+      page_size: queryForm.pageSize
+    })
   } finally {
     loading.value = false
   }
@@ -143,17 +150,22 @@ async function handleDelete(row) {
 
 function getSpreadName(type) {
   const map = {
-    'single': '单张牌',
-    'three': '三张牌',
-    'celtic': '凯尔特十字'
+    single: '单张牌',
+    three: '三张牌',
+    celtic: '凯尔特十字'
   }
   return map[type] || type
 }
 
 function parseCards(cardsJson) {
   try {
-    return typeof cardsJson === 'string' ? JSON.parse(cardsJson) : cardsJson
-  } catch (e) {
+    if (typeof cardsJson === 'string') {
+      const parsed = JSON.parse(cardsJson)
+      return Array.isArray(parsed) ? parsed : []
+    }
+
+    return Array.isArray(cardsJson) ? cardsJson : []
+  } catch {
     return []
   }
 }
@@ -179,16 +191,3 @@ function parseCards(cardsJson) {
 }
 </style>
 
-<style scoped>
-.app-container {
-  padding: 20px;
-}
-.search-form {
-  margin-bottom: 20px;
-}
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-</style>
