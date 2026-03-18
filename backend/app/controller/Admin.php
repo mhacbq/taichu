@@ -784,7 +784,7 @@ class Admin extends BaseController
     protected function applyPointsRecordDirectionFilter($query, string $type, array $columns): void
     {
         $normalized = strtolower(trim($type));
-        $isReduce = in_array($normalized, ['reduce', 'sub', 'subtract', 'minus', 'consume'], true);
+        $isReduce = $this->isReducePointsType($normalized);
 
         if (isset($columns['points'])) {
             $query->where('points', $isReduce ? '<' : '>', 0);
@@ -793,8 +793,8 @@ class Admin extends BaseController
 
         if (isset($columns['type'])) {
             $query->whereIn('type', $isReduce
-                ? ['reduce', 'sub', 'subtract', 'minus', 'consume']
-                : ['add', 'income', 'increase', 'recharge', 'register', 'reward']);
+                ? ['reduce', 'sub', 'subtract', 'minus', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem']
+                : ['add', 'income', 'increase', 'recharge', 'register', 'reward', 'signin', 'checkin', 'invite', 'share', 'bonus']);
         }
     }
 
@@ -803,7 +803,7 @@ class Admin extends BaseController
         $rawAmount = isset($row['amount']) ? (int) $row['amount'] : null;
         $delta = isset($row['points']) ? (int) $row['points'] : ($rawAmount ?? 0);
         $type = $this->normalizePointsRecordType($row, $delta);
-        if ($rawAmount === null) {
+        if ($rawAmount === null || ($rawAmount === 0 && $delta !== 0)) {
             $rawAmount = abs($delta);
         }
 
@@ -850,8 +850,14 @@ class Admin extends BaseController
         }
 
         $normalized = strtolower(trim((string) ($row['type'] ?? '')));
-        return in_array($normalized, ['reduce', 'sub', 'subtract', 'minus', 'consume'], true) ? 'reduce' : 'add';
+        return $this->isReducePointsType($normalized) ? 'reduce' : 'add';
     }
+
+    protected function isReducePointsType(string $type): bool
+    {
+        return in_array($type, ['reduce', 'sub', 'subtract', 'minus', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem'], true);
+    }
+
 
     protected function estimatePointsRecordBalance(array $row, array $columns): ?int
     {

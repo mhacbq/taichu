@@ -643,23 +643,37 @@ class Hehun extends BaseController
             + ($jiugongScoreMap[$jiugongAnalysis['grade'] ?? ''] ?? 1);
 
         $scores['traditional'] = min(10, $traditionalScore);
+        $traditionalRisk = $this->buildTraditionalRiskAssessment($sanyuanAnalysis, $jiugongAnalysis);
         $details['traditional'] = '三元：' . $sanyuanAnalysis['description'] . ' ' . $sanyuanAnalysis['suggestion']
             . ' 九宫：' . $jiugongAnalysis['description'] . ' ' . $jiugongAnalysis['suggestion'];
-        
-        // 计算总分
-        $totalScore = min(100, array_sum($scores));
-        
+        if (!empty($traditionalRisk['warning'])) {
+            $details['traditional'] .= ' 风险提示：' . $traditionalRisk['warning'];
+        }
+
+        $baseScore = min(100, array_sum($scores));
+        $totalScore = $this->applyTraditionalRiskToScore($baseScore, $traditionalRisk);
+
         // 确定等级
         $level = $this->calculateLevel($totalScore);
-        
+        if (!empty($traditionalRisk['level_cap'])) {
+            $level = $this->capCompatibilityLevel($level, (string) $traditionalRisk['level_cap']);
+            $totalScore = min($totalScore, $this->resolveScoreCeilingByLevel($level));
+        }
+
+        $traditionalMethods = [
+            'sanyuan' => $sanyuanAnalysis,
+            'jiugong' => $jiugongAnalysis,
+        ];
+
         // 生成建议
-        $suggestions = $this->generateSuggestions($scores, $maleBazi, $femaleBazi);
-        
+        $suggestions = $this->generateSuggestions($scores, $maleBazi, $femaleBazi, $traditionalRisk, $traditionalMethods);
+
         // 生成综合评语
-        $comment = $this->generateComment($totalScore, $level, $scores, $maleName, $femaleName);
-        
+        $comment = $this->generateComment($totalScore, $level, $scores, $maleName, $femaleName, $traditionalRisk, $traditionalMethods);
+
         return [
             'score' => $totalScore,
+            'base_score' => $baseScore,
             'max_score' => 100,
             'level' => $level,
             'level_text' => $this->getLevelText($level),
@@ -667,11 +681,9 @@ class Hehun extends BaseController
             'details' => $details,
             'suggestions' => $suggestions,
             'comment' => $comment,
-            'highlights' => $this->getHighlights($scores),
-            'traditional_methods' => [
-                'sanyuan' => $sanyuanAnalysis,
-                'jiugong' => $jiugongAnalysis,
-            ],
+            'highlights' => $this->getHighlights($scores, $traditionalRisk),
+            'traditional_methods' => $traditionalMethods,
+            'traditional_risk' => $traditionalRisk,
         ];
     }
     

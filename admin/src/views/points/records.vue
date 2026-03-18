@@ -80,25 +80,36 @@ onMounted(() => {
   loadRecords()
 })
 
+function isReducePointsType(value) {
+  return ['reduce', 'sub', 'subtract', 'minus', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem'].includes(String(value || '').trim().toLowerCase())
+}
+
 function normalizeRecordRow(row = {}) {
-  const direction = String(row.direction || row.type || '').toLowerCase() === 'reduce' ? 'reduce' : 'add'
-  const fallbackAmount = Math.abs(Number(row.points || 0))
-  const rawAmount = Number(row.amount ?? fallbackAmount)
+  const signedPoints = Number(row.points || 0)
+  const inferredDirection = signedPoints < 0
+    ? 'reduce'
+    : signedPoints > 0
+      ? 'add'
+      : (isReducePointsType(row.direction || row.type) ? 'reduce' : 'add')
+  const fallbackAmount = Math.abs(signedPoints)
+  const parsedAmount = Number(row.amount)
+  const rawAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : fallbackAmount
   const balance = row.balance === '' || row.balance === null || row.balance === undefined
     ? null
     : Number(row.balance)
 
   return {
     ...row,
-    direction,
-    direction_label: row.direction_label || (direction === 'reduce' ? '减少' : '增加'),
-    business_label: String(row.business_label || row.action || row.business_type || '积分变动'),
+    direction: inferredDirection,
+    direction_label: row.direction_label || (inferredDirection === 'reduce' ? '减少' : '增加'),
+    business_label: String(row.business_label || row.action || row.description || row.business_type || '积分变动'),
     amount: Number.isFinite(rawAmount) ? Math.abs(rawAmount) : 0,
     balance,
-    reason: String(row.reason || row.remark || row.action || '积分变动'),
+    reason: String(row.reason || row.remark || row.description || row.action || '积分变动'),
     created_at: String(row.created_at || '-')
   }
 }
+
 
 async function loadRecords() {
   loading.value = true

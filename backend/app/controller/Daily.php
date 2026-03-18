@@ -16,6 +16,7 @@ use think\facade\Log;
 class Daily extends BaseController
 {
     protected $middleware = [
+        \app\middleware\OptionalAuth::class => ['only' => ['fortune']],
         \app\middleware\Auth::class => ['only' => ['luck', 'checkin', 'checkinStatus']],
     ];
 
@@ -332,7 +333,7 @@ class Daily extends BaseController
         $ganWuXing = ['甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土', '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'];
         $dmWx = $ganWuXing[$dayMaster] ?? '土';
 
-        // 回退方案仍保留“身弱取印比、身旺取食财官”的传统原则，但仅在旧记录缺少出生信息时启用。
+        // 回退方案仍保留"身弱取印比、身旺取食财官"的传统原则，但仅在旧记录缺少出生信息时启用。
         $sheng = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金'];
         $monthZhi = (string)($baziRecord['month_zhi'] ?? '');
         $zhiWuXing = ['子' => '水', '丑' => '土', '寅' => '木', '卯' => '木', '辰' => '土', '巳' => '火', '午' => '火', '未' => '土', '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'];

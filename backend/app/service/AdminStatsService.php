@@ -1268,10 +1268,10 @@ class AdminStatsService
         }
 
         if (isset($columns['before_data']) && array_key_exists('before_data', $payload)) {
-            $data['before_data'] = $payload['before_data'];
+            $data['before_data'] = self::normalizeStructuredLogValue($payload['before_data']);
         }
         if (isset($columns['after_data']) && array_key_exists('after_data', $payload)) {
-            $data['after_data'] = $payload['after_data'];
+            $data['after_data'] = self::normalizeStructuredLogValue($payload['after_data']);
         }
         if (isset($columns['request_url'])) {
             $data['request_url'] = $requestUrl;
@@ -1283,6 +1283,7 @@ class AdminStatsService
         } elseif (isset($columns['method'])) {
             $data['method'] = $requestMethod;
         }
+
         if (isset($columns['status'])) {
             $data['status'] = (int) ($payload['status'] ?? 1);
         }
@@ -1300,9 +1301,27 @@ class AdminStatsService
     }
 
     /**
+     * 将数组/对象日志字段安全序列化为可落库的字符串
+     */
+    protected static function normalizeStructuredLogValue(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+
+        $encoded = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $encoded === false ? '{}' : $encoded;
+    }
+
+    /**
      * 解析后台日志表名
      */
     protected static function resolveAdminLogTable(): ?string
+
     {
         foreach (['tc_admin_log', 'admin_log'] as $table) {
             if (self::tableExists($table)) {

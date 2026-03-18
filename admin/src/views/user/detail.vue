@@ -177,14 +177,29 @@ function createDefaultUserInfo() {
   }
 }
 
+function isPhoneLike(value) {
+  return /^1[3-9]\d{9}$/.test(String(value || '').trim())
+}
+
+function resolveDisplayUsername(...values) {
+  for (const value of values) {
+    const normalized = String(value ?? '').trim()
+    if (!normalized || isPhoneLike(normalized)) {
+      continue
+    }
+    return normalized
+  }
+  return ''
+}
+
 function normalizeUserDetail(data = {}) {
   const baseUser = data.user && typeof data.user === 'object' ? data.user : {}
   const id = Number(data.id ?? baseUser.id ?? 0) || 0
-  const nickname = String(data.nickname ?? baseUser.nickname ?? data.username ?? baseUser.username ?? data.phone ?? baseUser.phone ?? `用户#${id}`)
-
-  const username = String(data.username ?? baseUser.username ?? data.nickname ?? baseUser.nickname ?? `用户#${id}`)
+  const username = resolveDisplayUsername(data.username, baseUser.username, data.nickname, baseUser.nickname) || `用户#${id}`
+  const nickname = String(data.nickname ?? baseUser.nickname ?? username ?? data.phone ?? baseUser.phone ?? `用户#${id}`)
 
   return {
+
     id,
     avatar: String(data.avatar ?? baseUser.avatar ?? ''),
     nickname,
@@ -243,14 +258,21 @@ function formatOrderStatus(status) {
   return statusMap[normalized] || String(status)
 }
 
+function isReducePointsType(value) {
+  return ['reduce', 'sub', 'subtract', 'minus', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem'].includes(String(value || '').trim().toLowerCase())
+}
+
 function formatPointsActivity(record = {}) {
-  const delta = Number(record.points ?? record.change_amount ?? record.amount ?? record.change_points ?? 0)
-  const direction = delta > 0 ? '增加' : delta < 0 ? '扣减' : '调整'
-  const amountText = delta !== 0 ? `${Math.abs(delta)} 积分` : '积分'
-  const reason = String(record.reason || record.remark || record.description || record.type_name || record.type || '后台积分变动').trim()
+  const signedDelta = Number(record.points ?? record.change_amount ?? record.change_points ?? 0)
+  const absoluteAmount = Number(record.amount ?? Math.abs(signedDelta) ?? 0)
+  const isReduce = signedDelta < 0 || (signedDelta === 0 && isReducePointsType(record.direction || record.type))
+  const direction = signedDelta === 0 && absoluteAmount === 0 ? '调整' : (isReduce ? '扣减' : '增加')
+  const amountText = absoluteAmount > 0 ? `${Math.abs(absoluteAmount)} 积分` : '积分'
+  const reason = String(record.reason || record.remark || record.description || record.type_name || record.action || record.type || '后台积分变动').trim()
 
   return `积分${direction} ${amountText}：${reason}`
 }
+
 
 function formatVipOrderActivity(order = {}) {
   const packageName = String(order.package_name || order.package_title || order.title || 'VIP 套餐').trim()

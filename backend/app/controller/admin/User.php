@@ -309,15 +309,36 @@ class User extends BaseController
      */
     protected function resolveDisplayUsername(array $userData, int $userId): string
     {
-        foreach (['username', 'nickname'] as $field) {
-            $value = trim((string) ($userData[$field] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
+        $nickname = trim((string) ($userData['nickname'] ?? ''));
+        $phone = trim((string) ($userData['phone'] ?? ''));
+        $username = trim((string) ($userData['username'] ?? ''));
+
+        if ($username !== '' && !$this->isPhoneLikeUsername($username, $phone)) {
+            return $username;
+        }
+
+        if ($nickname !== '') {
+            return $nickname;
         }
 
         return '用户#' . $userId;
     }
+
+    protected function isPhoneLikeUsername(string $username, string $phone = ''): bool
+    {
+        $normalizedUsername = trim($username);
+        if ($normalizedUsername === '') {
+            return false;
+        }
+
+        $normalizedPhone = trim($phone);
+        if ($normalizedPhone !== '' && $normalizedUsername === $normalizedPhone) {
+            return true;
+        }
+
+        return (bool) preg_match('/^1[3-9]\d{9}$/', $normalizedUsername);
+    }
+
 
     /**
      * 返回首个存在的数据表名
