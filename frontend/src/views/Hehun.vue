@@ -1777,7 +1777,7 @@ onMounted(() => {
 
 /* 表单样式 */
 .form-card {
-  background: var(--bg-card);
+  background: linear-gradient(180deg, var(--bg-card), rgba(var(--primary-rgb), 0.03));
   backdrop-filter: blur(10px);
   border-radius: var(--radius-lg);
   padding: 40px;
@@ -1794,15 +1794,18 @@ onMounted(() => {
 .person-section {
   margin-bottom: 30px;
   padding: 24px;
-  background: var(--primary-light-05);
+  background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.04));
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
 }
 
 .person-section:hover {
-  background: var(--primary-light-10);
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
   border-color: var(--primary-light-20);
+  box-shadow: var(--shadow-md);
 }
 
 .person-title {
@@ -1834,13 +1837,18 @@ onMounted(() => {
   width: 100%;
 }
 
+.hehun-field-control :deep(.el-date-editor.el-input),
+.hehun-field-control :deep(.el-date-editor) {
+  width: 100%;
+}
+
 .hehun-field-control :deep(.el-input__wrapper) {
   min-height: 48px;
   padding: 0 14px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 1px var(--border-light);
-  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  transition: box-shadow 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
 }
 
 .hehun-field-control :deep(.el-input__inner) {
@@ -1850,13 +1858,16 @@ onMounted(() => {
 
 .hehun-field-control :deep(.el-input__count-inner),
 .hehun-field-control :deep(.el-range-separator),
-.hehun-field-control :deep(.el-input__icon) {
+.hehun-field-control :deep(.el-input__icon),
+.hehun-field-control :deep(.el-input__prefix-inner),
+.hehun-field-control :deep(.el-input__suffix-inner) {
   color: var(--text-tertiary);
 }
 
 .hehun-field-control :deep(.el-input__wrapper.is-focus),
 .hehun-field-control :deep(.el-input__wrapper:hover) {
   background: var(--bg-tertiary);
+  transform: translateY(-1px);
   box-shadow: inset 0 0 0 1px var(--primary-color), var(--focus-ring);
 }
 
@@ -1930,6 +1941,10 @@ onMounted(() => {
   border-radius: var(--radius-md);
 }
 
+.precision-options--group :deep(.el-radio-button__original-radio:focus-visible + .el-radio-button__inner) {
+  box-shadow: inset 0 0 0 1px var(--primary-color), var(--focus-ring);
+}
+
 .precision-options--group :deep(.el-radio-button__inner:hover),
 .precision-options--group :deep(.el-radio-button.is-active .el-radio-button__inner) {
   transform: translateY(-2px);
@@ -1937,6 +1952,10 @@ onMounted(() => {
   background: rgba(var(--primary-rgb), 0.08);
   box-shadow: var(--shadow-sm);
   color: var(--text-secondary);
+}
+
+.precision-options--group :deep(.el-radio-button.is-active .precision-option-title) {
+  color: var(--primary-color);
 }
 
 .precision-option-title {
@@ -1999,6 +2018,10 @@ onMounted(() => {
 .time-range-options--group :deep(.el-radio-button:first-child .el-radio-button__inner),
 .time-range-options--group :deep(.el-radio-button:last-child .el-radio-button__inner) {
   border-radius: var(--radius-md);
+}
+
+.time-range-options--group :deep(.el-radio-button__original-radio:focus-visible + .el-radio-button__inner) {
+  box-shadow: inset 0 0 0 1px var(--primary-color), var(--focus-ring);
 }
 
 .time-range-options--group :deep(.el-radio-button__inner small) {
