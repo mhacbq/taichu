@@ -794,8 +794,10 @@ const resetTarot = () => {
   selectedTopic.value = ''
   savedRecordId.value = null
   savedShareCode.value = null
+  sharePublicConfirmed.value = false
   clearFlowError()
 }
+
 
 // 显示卡片详情
 const showCardDetail = (card, index = 0) => {

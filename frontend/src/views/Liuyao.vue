@@ -586,8 +586,19 @@ const submitDivination = async () => {
     return
   }
 
+  if (pricingLoading.value) {
+    ElMessage.warning('占卜价格还在同步，请稍候再试')
+    return
+  }
+
+  if (pricingError.value || !pricing.value) {
+    ElMessage.warning(pricingError.value || '请先重新获取价格后再提交占卜')
+    return
+  }
+
   isLoading.value = true
   try {
+
     const response = await liuyaoDivination(buildDivinationPayload())
 
     if (response.code === 200) {

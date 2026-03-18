@@ -653,10 +653,26 @@ const buildHehunPayload = ({ tier, useAi }) => ({
   useAi,
 })
 
+const isBirthInputComplete = (role) => {
+  const birthDateValue = form[`${role}BirthDate`]
+  const precision = form[`${role}BirthPrecision`]
+
+  if (!birthDateValue) {
+    return false
+  }
+
+  if (precision === 'range') {
+    return Boolean(form[`${role}BirthTimeRange`])
+  }
+
+  return true
+}
+
 // 表单验证
 const isFormValid = computed(() => {
-  return form.maleBirthDate && form.femaleBirthDate
+  return isBirthInputComplete('male') && isBirthInputComplete('female')
 })
+
 
 
 const normalizePricingData = (rawPricing) => {

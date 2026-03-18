@@ -309,7 +309,12 @@ class Knowledge extends BaseController
         }
 
         try {
-            $deleted = Db::table('tc_article')->where('id', (int) $id)->delete();
+            $articleTable = $this->resolveKnowledgeTable('article');
+            if ($articleTable === null) {
+                return $this->error('知识库文章表未初始化，请先执行数据库脚本', 500);
+            }
+
+            $deleted = Db::table($articleTable)->where('id', (int) $id)->delete();
             if ($deleted === 0) {
                 return $this->error('文章不存在', 404);
             }
@@ -375,8 +380,13 @@ class Knowledge extends BaseController
         }
 
         try {
+            $categoryTable = $this->resolveKnowledgeTable('category');
+            if ($categoryTable === null) {
+                return $this->error('知识库分类表未初始化，请先执行数据库脚本', 500);
+            }
+
             if ($parentId > 0) {
-                $parent = Db::table('tc_article_category')->where('id', $parentId)->find();
+                $parent = Db::table($categoryTable)->where('id', $parentId)->find();
                 if (!$parent) {
                     return $this->error('父分类不存在', 404);
                 }
@@ -398,14 +408,14 @@ class Knowledge extends BaseController
             ];
 
             if ($categoryId > 0) {
-                $exists = Db::table('tc_article_category')->where('id', $categoryId)->find();
+                $exists = Db::table($categoryTable)->where('id', $categoryId)->find();
                 if (!$exists) {
                     return $this->error('分类不存在', 404);
                 }
-                Db::table('tc_article_category')->where('id', $categoryId)->update($saveData);
+                Db::table($categoryTable)->where('id', $categoryId)->update($saveData);
             } else {
                 $saveData['created_at'] = date('Y-m-d H:i:s');
-                $categoryId = (int) Db::table('tc_article_category')->insertGetId($saveData);
+                $categoryId = (int) Db::table($categoryTable)->insertGetId($saveData);
             }
 
             $payload = $this->buildArticleCategoryPayload(true);
@@ -435,22 +445,30 @@ class Knowledge extends BaseController
 
         $categoryId = (int) $id;
         try {
-            $category = Db::table('tc_article_category')->where('id', $categoryId)->find();
+            $categoryTable = $this->resolveKnowledgeTable('category');
+            if ($categoryTable === null) {
+                return $this->error('知识库分类表未初始化，请先执行数据库脚本', 500);
+            }
+
+            $articleTable = $this->resolveKnowledgeTable('article');
+            $category = Db::table($categoryTable)->where('id', $categoryId)->find();
             if (!$category) {
                 return $this->error('分类不存在', 404);
             }
 
-            $articleCount = Db::table('tc_article')->where('category_id', $categoryId)->count();
+            $articleCount = $articleTable === null
+                ? 0
+                : Db::table($articleTable)->where('category_id', $categoryId)->count();
             if ($articleCount > 0) {
                 return $this->error('该分类下尚有文章，无法删除', 400);
             }
 
-            $childCount = Db::table('tc_article_category')->where('parent_id', $categoryId)->count();
+            $childCount = Db::table($categoryTable)->where('parent_id', $categoryId)->count();
             if ($childCount > 0) {
                 return $this->error('该分类下仍有子分类，无法删除', 400);
             }
 
-            Db::table('tc_article_category')->where('id', $categoryId)->delete();
+            Db::table($categoryTable)->where('id', $categoryId)->delete();
             return $this->success(null, '删除成功');
         } catch (\Throwable $e) {
             $this->logKnowledgeError('category_delete', $e, [
@@ -469,7 +487,12 @@ class Knowledge extends BaseController
             return null;
         }
 
-        $category = Db::table('tc_article_category')->where('id', $categoryId)->find();
+        $categoryTable = $this->resolveKnowledgeTable('category');
+        if ($categoryTable === null) {
+            return null;
+        }
+
+        $category = Db::table($categoryTable)->where('id', $categoryId)->find();
         if (!$category) {
             return null;
         }
@@ -482,22 +505,38 @@ class Knowledge extends BaseController
      */
     protected function buildArticleCategoryPayload(bool $includeDisabled = false): array
     {
-        $query = Db::table('tc_article_category')
-            ->alias('c')
-            ->leftJoin('tc_article a', 'a.category_id = c.id')
-            ->field([
-                'c.id',
-                'c.name',
-                'c.slug',
-                'c.description',
-                'c.parent_id',
-                'c.sort_order',
-                'c.status',
-                'c.created_at',
-                'c.updated_at',
-                'COUNT(a.id) AS article_count',
-            ])
-            ->group('c.id')
+        $categoryTable = $this->resolveKnowledgeTable('category');
+        if ($categoryTable === null) {
+            return [
+                'list' => [],
+                'tree' => [],
+                'map' => [],
+            ];
+        }
+
+        $articleTable = $this->resolveKnowledgeTable('article');
+        $query = Db::table($categoryTable)->alias('c');
+        $fields = [
+            'c.id',
+            'c.name',
+            'c.slug',
+            'c.description',
+            'c.parent_id',
+            'c.sort_order',
+            'c.status',
+            'c.created_at',
+            'c.updated_at',
+        ];
+
+        if ($articleTable !== null) {
+            $query->leftJoin($articleTable . ' a', 'a.category_id = c.id');
+            $fields[] = 'COUNT(a.id) AS article_count';
+            $query->group('c.id');
+        } else {
+            $fields[] = '0 AS article_count';
+        }
+
+        $query->field($fields)
             ->order('c.sort_order', 'asc')
             ->order('c.id', 'asc');
 
@@ -678,7 +717,12 @@ class Knowledge extends BaseController
      */
     protected function isUniqueArticleSlug(string $slug, int $excludeId = 0): bool
     {
-        $query = Db::table('tc_article')->where('slug', $slug);
+        $articleTable = $this->resolveKnowledgeTable('article');
+        if ($articleTable === null) {
+            return true;
+        }
+
+        $query = Db::table($articleTable)->where('slug', $slug);
         if ($excludeId > 0) {
             $query->where('id', '<>', $excludeId);
         }
@@ -691,7 +735,12 @@ class Knowledge extends BaseController
      */
     protected function isUniqueArticleCategorySlug(string $slug, int $excludeId = 0): bool
     {
-        $query = Db::table('tc_article_category')->where('slug', $slug);
+        $categoryTable = $this->resolveKnowledgeTable('category');
+        if ($categoryTable === null) {
+            return true;
+        }
+
+        $query = Db::table($categoryTable)->where('slug', $slug);
         if ($excludeId > 0) {
             $query->where('id', '<>', $excludeId);
         }
