@@ -175,6 +175,7 @@ class AdminStatsService
             ],
             'month' => [
                 'total' => (int) ($monthStats['total_orders'] ?? 0),
+                'paid_orders' => (int) ($monthStats['paid_orders'] ?? 0),
                 'amount' => (float) ($monthStats['total_amount'] ?? 0),
             ],
             'status_distribution' => $statusDistribution,

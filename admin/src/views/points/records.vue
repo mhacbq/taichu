@@ -80,15 +80,44 @@ onMounted(() => {
   loadRecords()
 })
 
+function normalizeRecordRow(row = {}) {
+  const direction = String(row.direction || row.type || '').toLowerCase() === 'reduce' ? 'reduce' : 'add'
+  const fallbackAmount = Math.abs(Number(row.points || 0))
+  const rawAmount = Number(row.amount ?? fallbackAmount)
+  const balance = row.balance === '' || row.balance === null || row.balance === undefined
+    ? null
+    : Number(row.balance)
+
+  return {
+    ...row,
+    direction,
+    direction_label: row.direction_label || (direction === 'reduce' ? '减少' : '增加'),
+    business_label: String(row.business_label || row.action || row.business_type || '积分变动'),
+    amount: Number.isFinite(rawAmount) ? Math.abs(rawAmount) : 0,
+    balance,
+    reason: String(row.reason || row.remark || row.action || '积分变动'),
+    created_at: String(row.created_at || '-')
+  }
+}
+
 async function loadRecords() {
   loading.value = true
   try {
     const { data } = await getPointsRecords(queryForm)
-    recordList.value = data.list || []
-    total.value = data.total || 0
+    const list = Array.isArray(data?.list) ? data.list : []
+    recordList.value = list.map(normalizeRecordRow)
+    total.value = Number(data?.total || 0)
   } finally {
     loading.value = false
   }
+}
+
+function formatAmount(row) {
+  return `${row.direction === 'reduce' ? '-' : '+'}${Number(row.amount || 0)}`
+}
+
+function formatBalance(balance) {
+  return balance === null ? '-' : balance
 }
 
 function handleSearch() {
@@ -108,6 +137,7 @@ function handleReset() {
 
 function handleSizeChange(val) {
   queryForm.pageSize = val
+  queryForm.page = 1
   loadRecords()
 }
 

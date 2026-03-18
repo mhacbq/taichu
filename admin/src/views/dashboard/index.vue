@@ -68,9 +68,9 @@
               </div>
               <div class="stat-info">
                 <div class="stat-title">{{ item.title }}</div>
-                <div class="stat-value">{{ item.value }}</div>
+                <div class="stat-value">{{ formatStatValue(item) }}</div>
                 <div class="stat-change" :class="item.trendType">
-                  {{ formatTrendText(item) }}
+                  {{ item.trendText || formatTrendText(item) }}
                 </div>
               </div>
             </div>
@@ -261,10 +261,12 @@ onUnmounted(() => {
 
 function createInitialStatistics() {
   return [
-    { title: '总用户数', value: 0, trend: 0, trendType: 'flat', color: '#409eff', icon: 'UserFilled' },
-    { title: '今日新增', value: 0, trend: 0, trendType: 'flat', color: '#67c23a', icon: 'User' },
-    { title: '八字排盘', value: 0, trend: 0, trendType: 'flat', color: '#e6a23c', icon: 'Calendar' },
-    { title: '塔罗占卜', value: 0, trend: 0, trendType: 'flat', color: '#f56c6c', icon: 'MagicStick' }
+    { title: '总用户数', value: 0, valueType: 'number', trend: 0, trendType: 'flat', trendText: '当前正常状态用户', color: '#409eff', icon: 'UserFilled' },
+    { title: '今日新增', value: 0, valueType: 'number', trend: 0, trendType: 'flat', color: '#67c23a', icon: 'User' },
+    { title: '今日支付订单', value: 0, valueType: 'number', trend: 0, trendType: 'flat', color: '#7c6cff', icon: 'Tickets' },
+    { title: '今日实收', value: 0, valueType: 'currency', trend: 0, trendType: 'flat', color: '#f56c6c', icon: 'Money' },
+    { title: '本月支付订单', value: 0, valueType: 'number', trend: 0, trendType: 'flat', trendText: '与充值订单统计口径一致', color: '#e6a23c', icon: 'ShoppingCart' },
+    { title: '本月实收', value: 0, valueType: 'currency', trend: 0, trendType: 'flat', trendText: '与充值订单统计口径一致', color: '#13ce66', icon: 'Coin' }
   ]
 }
 
@@ -313,13 +315,23 @@ async function loadStatistics() {
   const data = res.data || {}
   const stats = data.statistics || {}
   const overview = data.overview || {}
+  const orderStats = data.order_stats || {}
   const newUserChange = normalizeChange(overview.new_users?.change)
+  const todayOrderChange = normalizeChange(overview.today_orders?.change)
+  const todayRevenueChange = normalizeChange(overview.today_revenue?.change)
+  const todayPaidOrders = Number(overview.today_orders?.value ?? orderStats.today?.paid ?? 0)
+  const todayRevenue = Number(overview.today_revenue?.value ?? orderStats.today?.amount ?? 0)
+  const monthPaidOrders = Number(orderStats.month?.paid_orders || 0)
+  const monthCreatedOrders = Number(orderStats.month?.total || 0)
+  const monthRevenue = Number(orderStats.month?.amount || 0)
 
   statistics.value = [
-    { title: '总用户数', value: Number(stats.total_users || 0), trend: 0, trendType: 'flat', color: '#409eff', icon: 'UserFilled' },
-    { title: '今日新增', value: Number(stats.today_users || 0), trend: newUserChange.value, trendType: newUserChange.type, color: '#67c23a', icon: 'User' },
-    { title: '八字排盘', value: Number(stats.total_bazi || 0), trend: 0, trendType: 'flat', color: '#e6a23c', icon: 'Calendar' },
-    { title: '塔罗占卜', value: Number(stats.total_tarot || 0), trend: 0, trendType: 'flat', color: '#f56c6c', icon: 'MagicStick' }
+    { title: '总用户数', value: Number(stats.total_users || 0), valueType: 'number', trend: 0, trendType: 'flat', trendText: '当前正常状态用户', color: '#409eff', icon: 'UserFilled' },
+    { title: '今日新增', value: Number(stats.today_users || 0), valueType: 'number', trend: newUserChange.value, trendType: newUserChange.type, color: '#67c23a', icon: 'User' },
+    { title: '今日支付订单', value: todayPaidOrders, valueType: 'number', trend: todayOrderChange.value, trendType: todayOrderChange.type, color: '#7c6cff', icon: 'Tickets' },
+    { title: '今日实收', value: todayRevenue, valueType: 'currency', trend: todayRevenueChange.value, trendType: todayRevenueChange.type, color: '#f56c6c', icon: 'Money' },
+    { title: '本月支付订单', value: monthPaidOrders, valueType: 'number', trend: 0, trendType: 'flat', trendText: `累计创建 ${monthCreatedOrders} 单`, color: '#e6a23c', icon: 'ShoppingCart' },
+    { title: '本月实收', value: monthRevenue, valueType: 'currency', trend: 0, trendType: 'flat', trendText: `今日实收 ¥${formatCurrency(todayRevenue)}`, color: '#13ce66', icon: 'Coin' }
   ]
 }
 
@@ -352,7 +364,6 @@ async function loadTrendData() {
   const baziTrend = Array.isArray(data.bazi_trend) ? data.bazi_trend : []
   const tarotTrend = Array.isArray(data.tarot_trend) ? data.tarot_trend : []
 
-  updateTrendStatistics(baziTrend, tarotTrend)
   updateUserChart({
     dates: userTrend.map(item => item.date),
     newUsers: userTrend.map(item => item.count),
@@ -402,29 +413,8 @@ function normalizeChange(changePayload) {
   }
 }
 
-function getSeriesChange(series = []) {
-  const today = Number(series.at(-1)?.count || 0)
-  const yesterday = Number(series.at(-2)?.count || 0)
-
-  if (yesterday === 0) {
-    if (today === 0) {
-      return { value: 0, type: 'flat' }
-    }
-    return { value: 100, type: 'up' }
-  }
-
-  const change = ((today - yesterday) / yesterday) * 100
-  if (change === 0) {
-    return { value: 0, type: 'flat' }
-  }
-
-  return {
-    value: Number(Math.abs(change).toFixed(2)),
-    type: change > 0 ? 'up' : 'down'
-  }
-}
-
 function formatCurrency(value) {
+
   return Number(value || 0).toFixed(2)
 }
 

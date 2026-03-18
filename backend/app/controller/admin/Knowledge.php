@@ -61,7 +61,12 @@ class Knowledge extends BaseController
                 'pageSize' => $pagination['pageSize'],
             ]);
         } catch (\Throwable $e) {
-            Log::error('获取文章列表失败: ' . $e->getMessage());
+            $this->logKnowledgeError('article_list', $e, [
+                'keyword' => $keyword,
+                'category_id' => $categoryId,
+                'page' => $pagination['page'],
+                'page_size' => $pagination['pageSize'],
+            ]);
             return $this->error('获取文章列表失败', 500);
         }
     }
@@ -91,7 +96,9 @@ class Knowledge extends BaseController
             $article['category_path'] = $this->resolveArticleCategoryPath((int) ($article['category_id'] ?? 0), $categoryPayload['map']);
             return $this->success($article);
         } catch (\Throwable $e) {
-            Log::error('获取文章详情失败: ' . $e->getMessage());
+            $this->logKnowledgeError('article_detail', $e, [
+                'article_id' => (int) $id,
+            ]);
             return $this->error('获取文章详情失败', 500);
         }
     }
@@ -154,7 +161,11 @@ class Knowledge extends BaseController
                 'slug' => $slug,
             ], '保存成功');
         } catch (\Throwable $e) {
-            Log::error('保存文章失败: ' . $e->getMessage());
+            $this->logKnowledgeError('article_create', $e, [
+                'category_id' => (int) ($data['category_id'] ?? 0),
+                'title_length' => mb_strlen($title),
+                'status' => $status ?? null,
+            ]);
             return $this->error('保存失败，请稍后重试', 500);
         }
     }
@@ -238,7 +249,10 @@ class Knowledge extends BaseController
             Db::table('tc_article')->where('id', $articleId)->update($updateData);
             return $this->success(null, '更新成功');
         } catch (\Throwable $e) {
-            Log::error('更新文章失败: ' . $e->getMessage(), ['article_id' => $articleId]);
+            $this->logKnowledgeError('article_update', $e, [
+                'article_id' => $articleId,
+                'updated_fields' => array_keys($updateData ?? []),
+            ]);
             return $this->error('更新失败，请稍后重试', 500);
         }
     }
@@ -260,7 +274,9 @@ class Knowledge extends BaseController
 
             return $this->success(null, '删除成功');
         } catch (\Throwable $e) {
-            Log::error('删除文章失败: ' . $e->getMessage(), ['article_id' => (int) $id]);
+            $this->logKnowledgeError('article_delete', $e, [
+                'article_id' => (int) $id,
+            ]);
             return $this->error('删除失败，请稍后重试', 500);
         }
     }
@@ -274,9 +290,11 @@ class Knowledge extends BaseController
             return $this->error('无权限查看分类', 403);
         }
 
+        $includeDisabled = $this->normalizeBoolNumber($request->get('include_disabled', 0)) === 1;
+        $selectedId = (int) $request->get('selected_id', 0);
+
         try {
-            $payload = $this->buildArticleCategoryPayload($this->normalizeBoolNumber($request->get('include_disabled', 0)) === 1);
-            $selectedId = (int) $request->get('selected_id', 0);
+            $payload = $this->buildArticleCategoryPayload($includeDisabled);
 
             return $this->success([
                 'list' => $payload['list'],
@@ -285,7 +303,10 @@ class Knowledge extends BaseController
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
         } catch (\Throwable $e) {
-            Log::error('获取文章分类失败: ' . $e->getMessage());
+            $this->logKnowledgeError('category_list', $e, [
+                'include_disabled' => $includeDisabled,
+                'selected_id' => $selectedId,
+            ]);
             return $this->error('获取分类失败', 500);
         }
     }
@@ -352,7 +373,11 @@ class Knowledge extends BaseController
                 'categories' => $payload,
             ], '保存成功');
         } catch (\Throwable $e) {
-            Log::error('保存文章分类失败: ' . $e->getMessage(), ['category_id' => $categoryId]);
+            $this->logKnowledgeError('category_save', $e, [
+                'category_id' => $categoryId,
+                'parent_id' => $parentId,
+                'name_length' => mb_strlen($name),
+            ]);
             return $this->error('操作失败，请稍后重试', 500);
         }
     }
