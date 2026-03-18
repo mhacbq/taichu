@@ -8,6 +8,8 @@ use app\model\PointsProduct;
 use app\model\PointsExchange;
 use app\model\User;
 use think\facade\Db;
+use think\facade\Log;
+
 
 /**
  * 积分商城控制器
@@ -217,15 +219,26 @@ class PointsShop extends BaseController
             } else {
                 // 处理失败，回滚
                 Db::rollback();
+                Log::warning('积分兑换处理失败', $this->sanitizeLogContext([
+                    'user_id' => (int) $userId,
+                    'product_id' => $productId,
+                    'product_type' => (string) ($product['type'] ?? ''),
+                    'points_cost' => (int) $pointsCost,
+                    'message' => (string) ($processResult['message'] ?? ''),
+                ]));
                 return $this->error($processResult['message']);
             }
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
-            // 记录详细错误日志，但返回通用错误信息
-            trace('积分兑换失败: ' . $e->getMessage(), 'error');
-            return $this->error('兑换失败，请稍后重试');
+            return $this->respondSystemException('points_shop.exchange', $e, '兑换失败，请稍后重试', [
+                'user_id' => (int) $userId,
+                'product_id' => $productId,
+                'product_type' => (string) ($product['type'] ?? ''),
+                'points_cost' => (int) $pointsCost,
+            ]);
         }
+
     }
     
     /**

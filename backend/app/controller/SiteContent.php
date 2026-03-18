@@ -152,10 +152,32 @@ class SiteContent extends BaseController
             return $this->error('保存失败，请稍后重试', 500);
         }
     }
+
+    protected function saveManagedRecord(
+        ?int $id,
+        array $data,
+        callable $finder,
+        callable $creator,
+        string $notFoundMessage
+    ): ?\think\response\Json {
+        if ($id) {
+            $item = $finder($id);
+            if (!$item) {
+                return $this->error($notFoundMessage, 404);
+            }
+            $item->save($data);
+            return null;
+        }
+
+        $creator($data);
+
+        return null;
+    }
     
     /**
      * 删除内容（后台）
      */
+
     public function deleteContent(Request $request)
     {
         $id = $request->param('id');
@@ -211,29 +233,31 @@ class SiteContent extends BaseController
      */
     public function saveTestimonial(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'name', 'avatar', 'content', 'service_type',
             'sort_order', 'is_enabled'
         ]);
         
         try {
-            if ($id) {
-                $item = Testimonial::find($id);
-                if (!$item) {
-                    return $this->error('评价不存在', 404);
-                }
-                $item->save($data);
-            } else {
-                Testimonial::create($data);
-            }
-            
-            return $this->success(null, '保存成功');
-        } catch (\Exception $e) {
-            Log::error('保存评价失败: ' . $e->getMessage());
-            return $this->error('保存失败，请稍后重试', 500);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => Testimonial::find($recordId),
+                static fn (array $payload) => Testimonial::create($payload),
+                '评价不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_testimonial', $e, '保存评价失败，请稍后重试', [
+                'testimonial_id' => $id,
+                'service_type' => $data['service_type'] ?? '',
+                'field_keys' => array_values(array_keys($data)),
+            ]);
         }
     }
+
     
     /**
      * 删除评价（后台）
@@ -298,29 +322,31 @@ class SiteContent extends BaseController
      */
     public function saveFaq(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'category', 'question', 'answer',
             'sort_order', 'is_enabled'
         ]);
         
         try {
-            if ($id) {
-                $item = Faq::find($id);
-                if (!$item) {
-                    return $this->error('FAQ不存在', 404);
-                }
-                $item->save($data);
-            } else {
-                Faq::create($data);
-            }
-            
-            return $this->success(null, '保存成功');
-        } catch (\Exception $e) {
-            Log::error('保存FAQ失败: ' . $e->getMessage());
-            return $this->error('保存失败，请稍后重试', 500);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => Faq::find($recordId),
+                static fn (array $payload) => Faq::create($payload),
+                'FAQ不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_faq', $e, '保存FAQ失败，请稍后重试', [
+                'faq_id' => $id,
+                'category' => $data['category'] ?? '',
+                'question_length' => mb_strlen((string) ($data['question'] ?? '')),
+            ]);
         }
     }
+
     
     /**
      * 删除FAQ（后台）
@@ -370,7 +396,7 @@ class SiteContent extends BaseController
      */
     public function saveTarotCard(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'name', 'name_en', 'image_url', 'is_major',
             'upright_meaning', 'reversed_meaning',
@@ -378,22 +404,25 @@ class SiteContent extends BaseController
         ]);
         
         try {
-            if ($id) {
-                $item = TarotCard::find($id);
-                if (!$item) {
-                    return $this->error('塔罗牌不存在', 404);
-                }
-                $item->save($data);
-            } else {
-                TarotCard::create($data);
-            }
-            
-            return $this->success(null, '保存成功');
-        } catch (\Exception $e) {
-            Log::error('保存塔罗牌失败: ' . $e->getMessage());
-            return $this->error('保存失败，请稍后重试', 500);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => TarotCard::find($recordId),
+                static fn (array $payload) => TarotCard::create($payload),
+                '塔罗牌不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_tarot_card', $e, '保存塔罗牌失败，请稍后重试', [
+                'card_id' => $id,
+                'card_name' => $data['name'] ?? '',
+                'is_major' => (int) ($data['is_major'] ?? 0),
+                'has_image' => !empty($data['image_url']),
+            ]);
         }
     }
+
     
     // ==================== 塔罗牌阵管理 ====================
     
@@ -561,28 +590,31 @@ class SiteContent extends BaseController
      */
     public function saveFortuneTemplate(Request $request)
     {
-        $id = $request->param('id');
+        $id = $request->param('id/d', 0) ?: null;
         $data = $request->only([
             'type', 'level', 'title', 'content', 'is_enabled'
         ]);
         
         try {
-            if ($id) {
-                $item = DailyFortuneTemplate::find($id);
-                if (!$item) {
-                    return $this->error('模板不存在', 404);
-                }
-                $item->save($data);
-            } else {
-                DailyFortuneTemplate::create($data);
-            }
-            
-            return $this->success(null, '保存成功');
-        } catch (\Exception $e) {
-            Log::error('保存模板失败: ' . $e->getMessage());
-            return $this->error('保存失败，请稍后重试', 500);
+            $response = $this->saveManagedRecord(
+                $id,
+                $data,
+                static fn (int $recordId) => DailyFortuneTemplate::find($recordId),
+                static fn (array $payload) => DailyFortuneTemplate::create($payload),
+                '模板不存在'
+            );
+
+            return $response ?? $this->success(null, '保存成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('site_content.save_fortune_template', $e, '保存运势模板失败，请稍后重试', [
+                'template_id' => $id,
+                'type' => $data['type'] ?? '',
+                'level' => $data['level'] ?? '',
+                'title_length' => mb_strlen((string) ($data['title'] ?? '')),
+            ]);
         }
     }
+
     
     /**
      * 获取所有分类和类型选项

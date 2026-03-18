@@ -106,6 +106,8 @@ import {
   getPermissions, getRolePermissions, updateRolePermissions 
 } from '../../api/system'
 import { Plus, UserFilled, Edit, Delete } from '@element-plus/icons-vue'
+import { reportAdminUiError } from '@/utils/dev-error'
+
 
 const treeRef = ref(null)
 const loading = ref(false)
@@ -131,9 +133,10 @@ const loadRoleList = async () => {
       }
     }
   } catch (error) {
-    console.error(error)
+    reportAdminUiError('system_role', 'load_roles_failed', error)
     ElMessage.error('加载角色列表失败')
   } finally {
+
     loading.value = false
   }
 }
@@ -146,9 +149,11 @@ const loadPermissionTree = async () => {
       permissionTree.value = res.data
     }
   } catch (error) {
+    reportAdminUiError('system_role', 'load_permissions_failed', error)
     ElMessage.error('加载权限树失败')
   }
 }
+
 
 // 已选权限
 const selectedPermissions = ref([])
@@ -190,9 +195,13 @@ const loadRolePermissions = async (roleId) => {
       treeRef.value?.setCheckedKeys(res.data)
     }
   } catch (error) {
+    reportAdminUiError('system_role', 'load_role_permissions_failed', error, {
+      role_id: roleId
+    })
     ElMessage.error('加载角色权限失败')
   }
 }
+
 
 // 新增角色
 function handleAddRole() {
@@ -221,9 +230,16 @@ async function handleDeleteRole(role) {
       loadRoleList()
     }
   } catch (error) {
-    if (error !== 'cancel') ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      reportAdminUiError('system_role', 'delete_role_failed', error, {
+        role_id: role.id,
+        role_name: role.name
+      })
+      ElMessage.error('删除失败')
+    }
   }
 }
+
 
 // 提交角色
 async function submitRole() {
@@ -238,9 +254,15 @@ async function submitRole() {
       loadRoleList()
     }
   } catch (error) {
+    reportAdminUiError('system_role', dialog.isEdit ? 'update_role_failed' : 'create_role_failed', error, {
+      role_id: dialog.form.id,
+      role_code: dialog.form.code,
+      role_status: dialog.form.status
+    })
     ElMessage.error('保存失败')
   }
 }
+
 
 // 展开/收起全部
 function handleExpandAll() {
@@ -268,9 +290,14 @@ async function handleSavePermission() {
       ElMessage.success('权限保存成功')
     }
   } catch (error) {
+    reportAdminUiError('system_role', 'save_permissions_failed', error, {
+      role_id: selectedRole.value?.id || null,
+      permission_count: allKeys.length
+    })
     ElMessage.error('保存权限失败')
   }
 }
+
 
 
 // 页面加载时初始化

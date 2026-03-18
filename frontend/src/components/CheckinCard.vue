@@ -81,8 +81,30 @@ const consecutiveBonus = ref({})
 const statusUnavailable = ref(false)
 const availabilityMessage = ref('签到功能暂时不可用，不影响查看今日运势')
 
+const truncateCheckinErrorMessage = (message) => {
+  const normalized = typeof message === 'string' ? message.trim() : ''
+  if (!normalized) {
+    return 'unknown'
+  }
+
+  return normalized.length > 160 ? `${normalized.slice(0, 157)}...` : normalized
+}
+
+const reportCheckinError = (action, error, extra = {}) => {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.error('[CheckinCard]', {
+    action,
+    error_type: error?.name || typeof error,
+    message: truncateCheckinErrorMessage(error?.message || String(error ?? '')),
+    ...extra
+  })
+}
 
 // 计算下一个奖励
+
 const nextBonus = computed(() => {
   const days = consecutiveDays.value + 1
   let nextBonusPoints = 0
@@ -171,9 +193,12 @@ const loadCheckinStatus = async () => {
   } catch (error) {
     statusUnavailable.value = true
     availabilityMessage.value = '签到功能暂时不可用，不影响查看今日运势'
-    console.error('加载签到状态失败:', error)
+    reportCheckinError('load_checkin_status_failed', error, {
+      status_unavailable: true
+    })
   }
 }
+
 
 const handleCheckin = async () => {
   if (hasCheckedIn.value) return
@@ -201,8 +226,12 @@ const handleCheckin = async () => {
     }
   } catch (error) {
     ElMessage.error('签到失败，请稍后重试')
-    console.error(error)
+    reportCheckinError('submit_checkin_failed', error, {
+      has_checked_in: hasCheckedIn.value,
+      status_unavailable: statusUnavailable.value
+    })
   } finally {
+
     loading.value = false
   }
 }

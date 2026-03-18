@@ -17,16 +17,7 @@
 - 2026-03-18：本轮未在 `TODO.md` 中发现 `[代码]` 标记，转而完成 5 点日常代码维护：`ShareModal.vue` 取消分享静默返回并补齐开发态结构化日志、`Login.vue` 改为脱敏登录/发码错误日志、`Home.vue` 精简首测权益三态判断、`PointsService.php` 统一积分事务结构化日志并清理未使用导入、`Tarot.php` 切换到基类统一异常收口；`read_lints` 针对 5 个目标文件为 0，目标文件定向 `git diff --check` 通过，`npm run build --prefix frontend` 在当前 Node 环境提示 `Unexpected token '??='` 且不适合作为有效构建验证；代码提交为 `a59c029`（`refactor-harden-code-maintenance-batch-31`），但该提交额外带入了当时仓库已暂存的 `.codebuddy` 调试产物与 `TODO_UPDATE_SUMMARY.md`，后续清理命令未获批准。
 - 2026-03-18：本轮同样未发现 `TODO.md` 中的 `[代码]` 标记，改做 4 点日常代码维护：为后台路由补齐请求脱敏中间件、抽出 `SensitiveDataSanitizer` 统一 `SensitiveDataFilter/AuditLog/AdminAuth/Content` 的日志脱敏与安全路径记录、以及为 `admin` 登录/任务/风控/敏感词页面新增开发态结构化错误日志工具并替换裸 `console.error`；`read_lints` 针对 11 个目标文件均为 0，目标文件定向 `git diff --check` 通过，`npm run build --prefix admin` 仍受当前 Node 环境 `Unexpected token '??='` 影响而不适合作为有效构建验证，`where php` 也未找到 PHP CLI；代码已定向提交为 `8d66ddf`（`"refactor-harden-admin-log-sanitization-batch"`），未带入仓库中其它既有脏文件。
 - 2026-03-18：`TODO.md` 当前仅剩 1 条 `[代码]` 长线建议（前端引入 TypeScript），不适合本轮 3-5 点小批次直接收口，因此转做 5 点日常代码维护：`Recharge.vue` 收敛支付异常日志、去除重复创建订单/二维码分支并改为安全访问 `window.WeixinJSBridge`；`router/index.js` 将路由加载失败日志改为开发态摘要输出；`useSiteContent.js` 抽出通用加载器以清理重复 `try/catch` 与裸错误日志；`KnowledgeManage.vue`、`ShenshaManage.vue` 改为 `:prefix-icon="Search"` 以消除 lint 误报。`read_lints` 对 5 个目标文件为 0，目标文件定向 `git diff --check` 通过，`npm run build --prefix frontend` 仍被当前 Node 环境的 `Unexpected token '??='` 卡住，不适合作为本轮有效构建验证；代码已定向提交为 `b8b1d5e`，未带入其他历史脏文件。
-
-
-
-
-
-
-
-
-
-
-
-
-
+- 2026-03-18：继续做一轮 5 点日常代码维护：`AIInterpretation.vue` 为字符串动态图标补齐显式映射；`HistoryRecord.vue` 改为真实消费 `props.records` / 本地回退数据、移除假加载并让分页与图标映射真正生效；`FavoritesManager.vue` 删除不可达的收藏夹弹窗死代码并把分类统计改成计算属性；`admin/src/hooks/{useTable,useForm}.js` 接入统一开发态脱敏错误日志；`backend/app/controller/Tarot.php` 改走基类异常收口，避免记录原始提问与堆栈。`read_lints` 对 6 个目标文件为 0，目标文件定向 `git diff --check` 通过，`npm run build --prefix frontend` 与 `npm run build --prefix admin` 本轮均通过（仅剩既有 chunk/Sass 警告）；代码已定向提交为 `4f8f8ac`（`"refactor-harden-code-maintenance-batch-33"`），未带入其他历史脏文件。
+- 2026-03-18：`TODO.md` 里仍只有 1 条长线 `[代码]` 建议（前端全面引入 TypeScript），不适合本轮 3-5 点快修，因此转做 5 点日常维护：`Tarot.php` / `Payment.php` / `Liuyao.php` 统一改走基类结构化异常收口，去掉原始 trace / 提问正文直落日志；`admin/src/views/task/list.vue` 将任务手动执行失败改为统一开发态脱敏日志；`frontend/src/components/FloatingActionButton.vue` 清理未使用 `computed` 导入。`read_lints` 针对 5 个目标文件为 0，目标文件定向 `git diff --check` 通过，代码已定向提交为 `529b843`（`"refactor-harden-code-maintenance-batch-32"`），未带入仓库其它既有脏文件。
+- 2026-03-18：继续做一轮后台内容维护，核心是 5 类快修、涉及 6 个文件：`admin/src/views/content/tarot.vue` 修正用户 ID 查询字段、补齐列表失败脱敏日志并删除重复样式块；`admin/src/views/content/bazi.vue`、`admin/src/views/feedback/list.vue`、`admin/src/views/system/sensitive.vue`、`admin/src/views/anticheat/events.vue` 统一替换裸 `console.error` 为 `reportAdminUiError(...)`；`backend/app/controller/Content.php` 改走基类统一异常收口，只记录请求参数键名/数量，不再把整包请求参数直写日志。`read_lints` 针对 6 个目标文件为 0，目标文件定向 `git diff --check` 通过，`npm run build --prefix admin` 通过（仅剩既有 Sass legacy API 与大 chunk 警告），当前环境 `where php` 仍未找到 PHP CLI；代码已定向提交为 `2c80d91`（`"refactor-harden-admin-content-maintenance-batch-34"`），未带入仓库其它既有脏文件。
+- 2026-03-18：本轮 `TODO.md` 里仍只有 1 条长线 `[代码]` 建议（前端全面引入 TypeScript），不适合 3-5 点快修，因此改做 5 点日常维护：`SiteContent.php` 抽出通用保存助手并把评价/FAQ/塔罗牌/运势模板保存异常改为统一结构化收口；`Alipay.php` 将回调签名/订单/金额异常从裸 `trace` 改成脱敏结构化日志；`PointsShop.php` 为业务失败补 warning 日志并把异常改走基类统一收口；`CheckinCard.vue` 收敛签到状态/提交失败的开发态摘要日志；`admin/src/views/system/role.vue` 接入 `reportAdminUiError(...)` 覆盖角色与权限管理失败场景。`read_lints` 针对 5 个目标文件为 0，`npm run build --prefix admin`、`npm run build --prefix frontend` 与目标文件定向 `git diff --check` 均通过；本轮只应定向提交上述 5 个源码文件与本记忆文件，避免带入仓库其余既有脏改动。

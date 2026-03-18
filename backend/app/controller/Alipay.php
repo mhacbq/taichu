@@ -6,6 +6,8 @@ namespace app\controller;
 use app\BaseController;
 use app\model\PaymentConfig;
 use app\model\RechargeOrder;
+use think\facade\Log;
+
 
 /**
  * 支付宝支付控制器
@@ -114,7 +116,51 @@ class Alipay extends BaseController
         }
     }
 
+    protected function logNotifyEvent(string $level, string $message, array $context = []): void
+    {
+        $payload = $this->sanitizeLogContext($context);
+
+        switch (strtolower($level)) {
+            case 'warning':
+                Log::warning($message, $payload);
+                break;
+            case 'info':
+                Log::info($message, $payload);
+                break;
+            default:
+                Log::error($message, $payload);
+                break;
+        }
+    }
+
+    protected function buildNotifyLogContext(array $data, array $extra = []): array
+    {
+        return array_merge([
+            'channel' => 'alipay',
+            'order_no' => $this->maskTradeNo((string) ($data['out_trade_no'] ?? '')),
+            'trade_no' => $this->maskTradeNo((string) ($data['trade_no'] ?? '')),
+            'trade_status' => (string) ($data['trade_status'] ?? ''),
+            'notify_key_count' => count($data),
+        ], $extra);
+    }
+
+    protected function maskTradeNo(string $value): string
+    {
+        $normalized = trim($value);
+        if ($normalized === '') {
+            return '';
+        }
+
+        $length = strlen($normalized);
+        if ($length <= 8) {
+            return str_repeat('*', max($length - 2, 1)) . substr($normalized, -2);
+        }
+
+        return substr($normalized, 0, 4) . str_repeat('*', min($length - 8, 8)) . substr($normalized, -4);
+    }
+
     protected function resolveRechargePoints(float $amount): ?int
+
     {
         $normalizedAmount = (int) $amount;
         if ((float) $normalizedAmount !== $amount) {
@@ -283,9 +329,12 @@ class Alipay extends BaseController
         
         // 验证签名
         if (!$this->verifyAlipaySign($data, $sign, $config['alipay_public_key'])) {
-            trace('支付宝签名验证失败', 'error');
+            $this->logNotifyEvent('warning', '支付宝回调签名验证失败', $this->buildNotifyLogContext($data, [
+                'notify_source' => 'async',
+            ]));
             return response('fail', 200);
         }
+
         
         // 验证交易状态
         if ($data['trade_status'] !== 'TRADE_SUCCESS' && $data['trade_status'] !== 'TRADE_FINISHED') {
@@ -297,9 +346,12 @@ class Alipay extends BaseController
         $order = RechargeOrder::findByOrderNo($orderNo);
         
         if (!$order) {
-            trace("支付宝回调：订单不存在 - {$orderNo}", 'error');
+            $this->logNotifyEvent('error', '支付宝回调订单不存在', $this->buildNotifyLogContext($data, [
+                'notify_source' => 'async',
+            ]));
             return response('fail', 200);
         }
+
         
         // 如果订单已处理，直接返回成功
         if ($order->status === RechargeOrder::STATUS_PAID) {
@@ -309,9 +361,14 @@ class Alipay extends BaseController
         // 验证订单金额
         $totalAmount = (float) $data['total_amount'];
         if (abs($totalAmount - $order->amount) > 0.01) {
-            trace("订单金额不匹配：订单{$orderNo}，支付宝支付{$totalAmount}元，系统记录{$order->amount}元", 'error');
+            $this->logNotifyEvent('error', '支付宝回调金额不匹配', $this->buildNotifyLogContext($data, [
+                'notify_source' => 'async',
+                'paid_amount' => $totalAmount,
+                'expected_amount' => (float) $order->amount,
+            ]));
             return response('fail', 200);
         }
+
         
         // 标记订单为已支付
         $tradeNo = $data['trade_no'] ?? '';
