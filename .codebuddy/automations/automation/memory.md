@@ -118,6 +118,19 @@
 - **验证摘要**: 6 个相关 PHP 文件 IDE 诊断为 0；用后端镜像对 6 个文件执行 `php -l` 均通过；`TODO.md` 搜索 `[占卜]` 结果为 0。
 - **状态**: 已完成并提交 Git（功能修复提交 `2d3b2a9`，理论依据补充提交 `a7a2371`）。
 
+## 2026-03-18（继续修复补充）
+- **任务目标**: 继续收口命理算法残留问题，重点修正合婚日主口径、传统模型综合评分，以及八字“喜用神 ≠ 机械补缺”的解释偏差。
+- **执行摘要**:
+    1. `Hehun` 删除伪“天干相冲”残留访问，日柱配对改回“五合 / 同气 / 五行生扶”口径，避免错误套用不存在的天干冲规则。
+    2. `Hehun::analyzeHehun()` 将传统分改为“三元 + 九宫”联合计分，并把两套传统说明同时写入详情，修正“名义综合、实际只算九宫”的偏差。
+    3. `BaziInterpretationService::determineYongshen()` 改为先看喜用神顺序，再判断缺弱是否刚好落在喜用元素上，不再把“缺项”直接等同于“应该补”。
+    4. `BaziInterpretationService::generateComprehensiveAdvice()` 同步改为以扶抑用神为先，缺弱信息仅作结构参考，避免机械补五行。
+    5. 本轮复查 `TODO.md` 时未发现新的 `[占卜]` 待办，因此无需额外删除条目。
+- **验证摘要**: `Hehun.php`、`BaziInterpretationService.php`、`LiuyaoService.php`、`LunarService.php` IDE 诊断均为 0；在运行中的 `taichu-app` 容器内对 `Hehun.php` 与 `BaziInterpretationService.php` 执行 `php -l` 均通过；本机仍未找到可直接使用的 PHP CLI。
+- **状态**: 本轮代码修复、验证与 Git 提交已完成（`1d1f032`）。
+
+
+
 
 
 

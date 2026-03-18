@@ -14,28 +14,6 @@
 ### 🟢 低优先级
 - [ ] [运营] Dashboard 当前只展示用户量、活跃与八字/塔罗使用量，未直接呈现订单数、收入等经营指标卡片，运营还得再切到订单页补数据 - 后台首页 / Dashboard - 建议补回订单数、收入等核心经营指标，并与订单模块统计口径保持一致。
 
-## 🔍 代码逻辑检查报告 - 第三十轮 (2026-03-18)
-
-作为代码重构与质量维护负责人，我继续聚焦当前仓库里的代码质量隐患，完成以下 4 个不重复的日常优化点：
-
-### 🔴 高优先级
-- [x] [代码] 全局异常处理器已经引入 `request_id` 返回逻辑，但文件本身仍缺少 `RequestFacade` 导入与 `requestId` 缓存属性，导致这条安全兜底链路在静态检查和运行时都不完整 - `backend/app/exception/Handler.php` - 已补齐请求 facade 导入和 request_id 缓存字段，让统一系统异常响应可以稳定工作。
-- [x] [代码] AI 解盘控制器普通 / SSE 流式链路仍在 catch 中手写 `Log::error(...$e->getMessage(), trace...)`，同时没有复用控制器统一异常收口，存在日志泄露风险与潜在 lint/运行时问题 - `backend/app/controller/AiAnalysis.php` - 已切换到 `respondSystemException()` / `logControllerException()`，补齐 `mode/prompt_key/model/api_host/bazi_sections` 等结构化上下文，移除原始 trace 落盘。
-
-### 🟡 中优先级
-- [x] [代码] 应用壳层登录态与积分刷新直接 `JSON.parse(localStorage.userInfo)`，缓存一旦损坏会在导航层抛错，并把原始异常直接打到控制台 - `frontend/src/App.vue` - 已补齐安全读取 `userInfo`、统一会话清理 helper 与开发态摘要日志，积分刷新链路不再被脏缓存拦腰打断。
-
-### 🟢 低优先级
-- [x] [代码] 个人中心直接 `JSON.parse(localStorage.tarot_saved)` 并假定 `record.cards` 必为数组，脏缓存或旧数据格式会触发运行时错误；多处 catch 还会把原始异常直接打到控制台 - `frontend/src/views/Profile.vue` - 已补齐安全读取本地缓存、塔罗记录归一化和缺牌数据兜底，开发态日志改为输出裁剪后的错误摘要。
-
-### 🟢 低优先级补充
-- [x] [代码] 本轮同步继续推进“前端只展示安全提示、后端日志保留结构化摘要、跨入口复用统一 helper”的维护口径，应用壳层与个人中心的本地缓存读取口径也进一步统一。
-
-
----
-
-## 🎨 第四十四次UI设计检查报告 (2026-03-18)
-
 
 作为资深产品经理和UI设计师，我继续从首页承诺可信度、八字隐私与积分反馈、塔罗重置语义、六爻加载状态、合婚历史精度表达与签到月历可读性几个角度复核太初命理网站，确认以下问题尚未在当前 `TODO.md` 与自动化执行记录中重复登记后，新增如下：
 
