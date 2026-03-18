@@ -181,32 +181,37 @@ class Order extends BaseController
 
 
         try {
-            $data = $this->request->post();
+            $data = $this->request->isPut() ? $this->request->put() : $this->request->post();
 
             if (empty($data['package_name']) || empty($data['price']) || empty($data['duration'])) {
                 return $this->error('请填写完整信息');
             }
 
+            $packageTable = $this->resolveFirstExistingTable(['tc_vip_package', 'vip_package', 'vip_packages']);
+            if ($packageTable === null) {
+                return $this->error('VIP套餐表未初始化，请先执行数据库脚本', 500);
+            }
+
             $packageData = [
-                'package_name' => $data['package_name'],
-                'duration' => (int) $data['duration'],
-                'price' => (float) $data['price'],
-                'original_price' => (float) ($data['original_price'] ?? $data['price']),
-                'description' => $data['description'] ?? '',
-                'features' => json_encode($data['features'] ?? []),
-                'sort_order' => (int) ($data['sort_order'] ?? 0),
-                'is_recommend' => (int) ($data['is_recommend'] ?? 0),
-                'status' => (int) ($data['status'] ?? 1),
+                'package_name' => trim((string) $data['package_name']),
+                'duration' => max(1, (int) $data['duration']),
+                'price' => round((float) $data['price'], 2),
+                'original_price' => round((float) ($data['original_price'] ?? $data['price']), 2),
+                'description' => trim((string) ($data['description'] ?? '')),
+                'features' => $this->normalizeVipPackageFeatures($data['features'] ?? []),
+                'sort_order' => max(0, (int) ($data['sort_order'] ?? 0)),
+                'is_recommend' => (int) ((int) ($data['is_recommend'] ?? 0) !== 0),
+                'status' => (int) ((int) ($data['status'] ?? 1) !== 0),
             ];
 
             if (!empty($data['id'])) {
                 $packageData['updated_at'] = date('Y-m-d H:i:s');
-                \think\facade\Db::table('tc_vip_package')
-                    ->where('id', $data['id'])
+                Db::table($packageTable)
+                    ->where('id', (int) $data['id'])
                     ->update($packageData);
             } else {
                 $packageData['created_at'] = date('Y-m-d H:i:s');
-                \think\facade\Db::table('tc_vip_package')->insert($packageData);
+                Db::table($packageTable)->insert($packageData);
             }
 
             return $this->success([], '保存成功');
@@ -269,5 +274,27 @@ class Order extends BaseController
             'refunded' => 3,
             default => 0,
         };
+    }
+
+    protected function normalizeVipPackageFeatures(mixed $features): string
+    {
+        if (is_string($features)) {
+            $decoded = json_decode($features, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $features = $decoded;
+            } else {
+                $features = preg_split('/\r\n|\r|\n/', $features) ?: [];
+            }
+        }
+
+        if (!is_array($features)) {
+            $features = [];
+        }
+
+        $features = array_values(array_filter(array_map(static function ($item): string {
+            return trim((string) $item);
+        }, $features), static fn (string $item): bool => $item !== ''));
+
+        return json_encode($features, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]';
     }
 }

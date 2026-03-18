@@ -289,34 +289,68 @@ class Seo extends BaseController
             $page = $pagination['page'];
             $pageSize = $pagination['pageSize'];
             $pageKeyword = trim((string) $request->get('keyword', ''));
+            $indexedTable = $this->resolveSeoTable('indexed_pages');
+            $keywordTable = $this->resolveSeoTable('keywords');
+            $trafficTable = $this->resolveSeoTable('traffic_daily');
+            $configTable = $this->resolveSeoTable('config');
+            $submissionTable = $this->resolveSeoTable('submissions');
 
-            $baiduIndexed = (int) Db::name('seo_indexed_pages')->where('baidu_status', 'indexed')->count();
-            $bingIndexed = (int) Db::name('seo_indexed_pages')->where('bing_status', 'indexed')->count();
-            $baiduRecent = (int) Db::name('seo_indexed_pages')
-                ->where('baidu_status', 'indexed')
-                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-7 days')))
-                ->count();
-            $baiduPrevious = (int) Db::name('seo_indexed_pages')
-                ->where('baidu_status', 'indexed')
-                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-14 days')))
-                ->where('indexed_at', '<', date('Y-m-d H:i:s', strtotime('-7 days')))
-                ->count();
-            $bingRecent = (int) Db::name('seo_indexed_pages')
-                ->where('bing_status', 'indexed')
-                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-7 days')))
-                ->count();
-            $bingPrevious = (int) Db::name('seo_indexed_pages')
-                ->where('bing_status', 'indexed')
-                ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-14 days')))
-                ->where('indexed_at', '<', date('Y-m-d H:i:s', strtotime('-7 days')))
-                ->count();
+            $baiduIndexed = 0;
+            $bingIndexed = 0;
+            $baiduRecent = 0;
+            $baiduPrevious = 0;
+            $bingRecent = 0;
+            $bingPrevious = 0;
+            $pageTotal = 0;
+            $pageRows = [];
+            $pendingPages = 0;
+            if ($indexedTable !== null) {
+                $baiduIndexed = (int) Db::table($indexedTable)->where('baidu_status', 'indexed')->count();
+                $bingIndexed = (int) Db::table($indexedTable)->where('bing_status', 'indexed')->count();
+                $baiduRecent = (int) Db::table($indexedTable)
+                    ->where('baidu_status', 'indexed')
+                    ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->count();
+                $baiduPrevious = (int) Db::table($indexedTable)
+                    ->where('baidu_status', 'indexed')
+                    ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-14 days')))
+                    ->where('indexed_at', '<', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->count();
+                $bingRecent = (int) Db::table($indexedTable)
+                    ->where('bing_status', 'indexed')
+                    ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->count();
+                $bingPrevious = (int) Db::table($indexedTable)
+                    ->where('bing_status', 'indexed')
+                    ->where('indexed_at', '>=', date('Y-m-d H:i:s', strtotime('-14 days')))
+                    ->where('indexed_at', '<', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->count();
 
-            $allKeywordRows = Db::name('seo_keywords')
-                ->where('is_target', 1)
-                ->order('baidu_rank', 'asc')
-                ->order('bing_rank', 'asc')
-                ->select()
-                ->toArray();
+                $pageQuery = Db::table($indexedTable)->order('updated_at', 'desc');
+                if ($pageKeyword !== '') {
+                    $escapedKeyword = addcslashes($pageKeyword, '%_\\');
+                    $pageQuery->whereLike('url|title|page_route', '%' . $escapedKeyword . '%');
+                }
+                $pageTotal = $pageQuery->count();
+                $pageRows = $pageQuery->page($page, $pageSize)->select()->toArray();
+
+                $allIndexedRows = Db::table($indexedTable)->field('baidu_status,bing_status')->select()->toArray();
+                foreach ($allIndexedRows as $indexedRow) {
+                    if (($indexedRow['baidu_status'] ?? '') !== 'indexed' || ($indexedRow['bing_status'] ?? '') !== 'indexed') {
+                        $pendingPages++;
+                    }
+                }
+            }
+
+            $allKeywordRows = [];
+            if ($keywordTable !== null) {
+                $allKeywordRows = Db::table($keywordTable)
+                    ->where('is_target', 1)
+                    ->order('baidu_rank', 'asc')
+                    ->order('bing_rank', 'asc')
+                    ->select()
+                    ->toArray();
+            }
             $keywordTotal = count($allKeywordRows);
             $keywordTop10 = 0;
             foreach ($allKeywordRows as $row) {
@@ -328,30 +362,26 @@ class Seo extends BaseController
             }
             $keywordRows = array_slice($allKeywordRows, 0, 50);
 
-            $trafficCurrent = (int) Db::name('seo_traffic_daily')
-                ->where('stat_date', '>=', date('Y-m-d', strtotime('-30 days')))
-                ->sum('organic_sessions');
-            $trafficPrevious = (int) Db::name('seo_traffic_daily')
-                ->where('stat_date', '>=', date('Y-m-d', strtotime('-60 days')))
-                ->where('stat_date', '<', date('Y-m-d', strtotime('-30 days')))
-                ->sum('organic_sessions');
-
-            $pageQuery = Db::name('seo_indexed_pages')->order('updated_at', 'desc');
-            if ($pageKeyword !== '') {
-                $escapedKeyword = addcslashes($pageKeyword, '%_\\');
-                $pageQuery->whereLike('url|title|page_route', '%' . $escapedKeyword . '%');
+            $trafficCurrent = 0;
+            $trafficPrevious = 0;
+            if ($trafficTable !== null) {
+                $trafficCurrent = (int) Db::table($trafficTable)
+                    ->where('stat_date', '>=', date('Y-m-d', strtotime('-30 days')))
+                    ->sum('organic_sessions');
+                $trafficPrevious = (int) Db::table($trafficTable)
+                    ->where('stat_date', '>=', date('Y-m-d', strtotime('-60 days')))
+                    ->where('stat_date', '<', date('Y-m-d', strtotime('-30 days')))
+                    ->sum('organic_sessions');
             }
-            $pageTotal = $pageQuery->count();
-            $pageRows = $pageQuery->page($page, $pageSize)->select()->toArray();
 
-            $configRows = Db::name('seo_config')->select()->toArray();
-            $pendingPages = 0;
-            $allIndexedRows = Db::name('seo_indexed_pages')->field('baidu_status,bing_status')->select()->toArray();
-            foreach ($allIndexedRows as $indexedRow) {
-                if (($indexedRow['baidu_status'] ?? '') !== 'indexed' || ($indexedRow['bing_status'] ?? '') !== 'indexed') {
-                    $pendingPages++;
-                }
-            }
+            $configRows = $configTable !== null ? Db::table($configTable)->select()->toArray() : [];
+            $submissions = $submissionTable !== null
+                ? Db::table($submissionTable)
+                    ->order('submitted_at', 'desc')
+                    ->limit(10)
+                    ->select()
+                    ->toArray()
+                : [];
 
             return $this->success([
                 'stats' => [
@@ -380,11 +410,7 @@ class Seo extends BaseController
                     'pageSize' => $pageSize,
                 ],
                 'suggestions' => $this->buildSeoSuggestions($configRows, $keywordTotal, $keywordTop10, $pendingPages),
-                'submissions' => Db::name('seo_submissions')
-                    ->order('submitted_at', 'desc')
-                    ->limit(10)
-                    ->select()
-                    ->toArray(),
+                'submissions' => $submissions,
             ], '获取成功');
         } catch (\Throwable $e) {
             return $this->respondSystemException('seo_stats', $e, '获取SEO统计失败，请稍后重试', [

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
+use app\service\SchemaInspector;
 use think\facade\Db;
 use think\facade\Log;
 use think\Request;
@@ -757,6 +758,26 @@ class Knowledge extends BaseController
             'error' => $e->getMessage(),
             'exception' => get_class($e),
         ]);
+    }
+
+    protected function resolveKnowledgeTable(string $type): ?string
+    {
+        return match ($type) {
+            'article' => $this->resolveFirstExistingTable(['tc_article', 'article', 'articles']),
+            'category' => $this->resolveFirstExistingTable(['tc_article_category', 'article_category', 'article_categories']),
+            default => null,
+        };
+    }
+
+    protected function resolveFirstExistingTable(array $tables): ?string
+    {
+        foreach ($tables as $table) {
+            if ($table !== '' && SchemaInspector::tableExists((string) $table)) {
+                return (string) $table;
+            }
+        }
+
+        return null;
     }
 
     /**
