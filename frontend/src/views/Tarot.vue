@@ -11,7 +11,10 @@
         <el-icon class="hint-icon"><Coin /></el-icon>
         <span>本次占卜将消耗 <strong>5 积分</strong></span>
         <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
-        <span v-if="pointsError" class="points-warning">积分同步中，请稍后重试</span>
+        <div v-if="pointsError" class="points-warning" role="status" aria-live="polite">
+          <span>积分同步失败，请先重新获取后再继续占卜</span>
+          <el-button link type="warning" class="points-retry" @click="loadPoints" :loading="pointsLoading">重新获取积分</el-button>
+        </div>
       </div>
 
       <div v-if="currentPoints !== null && currentPoints < 5" class="insufficient-points card card-hover">
@@ -104,7 +107,7 @@
           size="large"
           @click="showConfirm"
           :loading="loading"
-          :disabled="!question || pointsLoading || currentPoints === null || currentPoints < 5"
+          :disabled="!canDrawTarot"
           class="draw-btn"
         >
           <el-icon class="btn-icon"><Document /></el-icon>
@@ -340,6 +343,19 @@ const pointsDisplayText = computed(() => {
 
   return currentPoints.value
 })
+
+const canDrawTarot = computed(() => {
+  if (!question.value.trim() || pointsLoading.value || loading.value) {
+    return false
+  }
+
+  if (currentPoints.value === null || currentPoints.value === undefined) {
+    return true
+  }
+
+  return currentPoints.value >= 5
+})
+
 
 const setFlowError = (stage, message) => {
   flowError.value = {
@@ -586,9 +602,15 @@ const showConfirm = async () => {
     return
   }
 
-  await refreshPoints({ silent: true })
+  if (pointsError.value || currentPoints.value === null || currentPoints.value === undefined) {
+    const recovered = await refreshPoints()
+    if (!recovered) {
+      ElMessage.warning('积分同步失败，请先重新获取积分')
+      return
+    }
+  }
 
-  if (currentPoints.value === null) {
+  if (currentPoints.value === null || currentPoints.value === undefined) {
     ElMessage.warning('积分状态同步中，请稍后再试')
     return
   }
@@ -613,6 +635,7 @@ const showConfirm = async () => {
     // 用户取消
   }
 }
+
 
 const drawCards = async () => {
   loading.value = true
@@ -689,6 +712,7 @@ onUnmounted(() => {
 // 当前保存的记录信息
 const savedRecordId = ref(null)
 const savedShareCode = ref(null)
+const sharePublicConfirmed = ref(false)
 
 // 保存塔罗结果到后端
 const saveTarotResult = async () => {
@@ -710,6 +734,7 @@ const saveTarotResult = async () => {
     if (response.code === 200) {
       savedRecordId.value = response.data.record_id
       savedShareCode.value = response.data.share_code
+      sharePublicConfirmed.value = false
       ElMessage.success('保存成功，可在个人中心查看历史记录')
     } else {
       ElMessage.error(response.message || '保存失败')
@@ -719,24 +744,66 @@ const saveTarotResult = async () => {
   }
 }
 
-const ensureTarotShareReady = async () => {
+const updateTarotShareVisibility = async (isPublic, { silent = false } = {}) => {
   if (!savedRecordId.value) {
     return false
   }
 
+  const errorMessage = isPublic ? '分享链接准备失败，请稍后重试' : '恢复私密状态失败，请稍后重试'
+
   try {
-    const response = await setTarotPublic({ id: savedRecordId.value, is_public: true })
+    const response = await setTarotPublic({ id: savedRecordId.value, is_public: isPublic })
     if (response.code === 200) {
       savedShareCode.value = response.data.share_code || savedShareCode.value
+      sharePublicConfirmed.value = isPublic
       return true
     }
 
-    ElMessage.error(response.message || '分享链接准备失败，请稍后重试')
+    if (!silent) {
+      ElMessage.error(response.message || errorMessage)
+    }
   } catch (error) {
-    reportUiError('准备塔罗分享链接失败', error, '分享链接准备失败，请稍后重试')
+    reportUiError(
+      isPublic ? '准备塔罗分享链接失败' : '恢复塔罗私密状态失败',
+      error,
+      silent ? '' : errorMessage
+    )
   }
 
   return false
+}
+
+const ensureTarotShareReady = async () => {
+  if (!savedRecordId.value) {
+    return { ready: false, exposedNow: false }
+  }
+
+  if (sharePublicConfirmed.value && savedShareCode.value) {
+    return { ready: true, exposedNow: false }
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      '分享前需要先将本次塔罗记录设为公开，仅持有链接的人可以查看。若你稍后取消系统分享，我们会自动恢复为私密状态。',
+      '确认公开分享',
+      {
+        confirmButtonText: '确认公开并分享',
+        cancelButtonText: '先不分享',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+  } catch (actionOrError) {
+    if (actionOrError === 'cancel' || actionOrError === 'close' || actionOrError?.name === 'AbortError') {
+      return { ready: false, exposedNow: false }
+    }
+
+    ElMessage.error('分享确认失败，请稍后重试')
+    return { ready: false, exposedNow: false }
+  }
+
+  const ready = await updateTarotShareVisibility(true)
+  return { ready, exposedNow: ready }
 }
 
 // 分享塔罗结果
@@ -750,11 +817,11 @@ const shareTarotResult = async () => {
     return
   }
 
-  const shareReady = await ensureTarotShareReady()
+  const { ready: shareReady, exposedNow } = await ensureTarotShareReady()
   if (!shareReady || !savedShareCode.value) {
     return
   }
-  
+
   // 生成分享链接
   const shareUrl = `${window.location.origin}/tarot/share/${savedShareCode.value}`
   const cardNames = cards.value.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
@@ -771,18 +838,32 @@ const shareTarotResult = async () => {
         url: shareUrl
       })
     } catch (error) {
+      if (exposedNow) {
+        const reverted = await updateTarotShareVisibility(false)
+        if (reverted && error?.name === 'AbortError') {
+          ElMessage.info('已取消分享，本次记录仍保持私密')
+        }
+      }
+
       if (error?.name !== 'AbortError') {
         reportUiError('系统分享失败', error, '分享失败，请稍后重试')
       }
     }
-  } else {
-    navigator.clipboard.writeText(shareText).then(() => {
-      ElMessage.success('分享链接已复制到剪贴板')
-    }).catch(error => {
-      reportUiError('复制分享内容失败', error, '复制失败，请手动复制')
-    })
+
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(shareText)
+    ElMessage.success('分享链接已复制到剪贴板')
+  } catch (error) {
+    if (exposedNow) {
+      await updateTarotShareVisibility(false)
+    }
+    reportUiError('复制分享内容失败', error, '复制失败，请手动复制')
   }
 }
+
 
 
 
@@ -864,9 +945,20 @@ const getCardAdvice = (card) => {
 }
 
 .points-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   color: var(--warning-color, #d97706);
   font-size: 13px;
 }
+
+.points-retry {
+  padding: 0;
+  min-height: auto;
+  font-weight: 600;
+}
+
 
 .insufficient-points {
   max-width: 900px;
@@ -1396,6 +1488,16 @@ const getCardAdvice = (card) => {
   .current-points {
     margin-left: 0;
   }
+
+  .points-warning {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .points-retry {
+    min-height: 44px;
+  }
+
 
   .spread-options {
 

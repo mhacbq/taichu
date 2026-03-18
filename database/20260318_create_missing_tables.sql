@@ -10,7 +10,57 @@ USE taichu;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- =============================================================
--- 1. 合婚记录表（hehun_records）
+-- 1. 积分历史记录表（points_history）
+--    MD Report 4.1 中定义的必需表
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `points_history` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `type` VARCHAR(20) NOT NULL COMMENT '类型 add/reduce',
+    `points` INT NOT NULL COMMENT '变动积分',
+    `balance` INT NOT NULL COMMENT '变动后余额',
+    `action` VARCHAR(100) NOT NULL COMMENT '动作说明',
+    `remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '备注',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='积分历史记录表';
+
+-- =============================================================
+-- 2. 积分兑换记录表（points_exchange）
+--    MD Report 4.2 中定义的必需表
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `points_exchange` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `product_id` INT UNSIGNED NOT NULL COMMENT '商品ID',
+    `product_name` VARCHAR(100) NOT NULL COMMENT '商品名称',
+    `points` INT NOT NULL COMMENT '消耗积分',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态 0待处理 1已完成 2已取消',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='积分兑换记录表';
+
+-- =============================================================
+-- 3. 签到记录表（checkin_record）
+--    MD Report 4.4 中定义的必需表（不同于 tc_checkin_log）
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `checkin_record` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `date` DATE NOT NULL COMMENT '签到日期',
+    `consecutive_days` INT NOT NULL DEFAULT 1 COMMENT '连续签到天数',
+    `points` INT NOT NULL DEFAULT 0 COMMENT '获得积分',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_user_date` (`user_id`, `date`),
+    INDEX `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='签到记录表';
+
+-- =============================================================
+-- 4. 合婚记录表（hehun_records）
 --    模型：HehunRecord，兼容旧表名 tc_hehun_record
 -- =============================================================
 CREATE TABLE IF NOT EXISTS `hehun_records` (

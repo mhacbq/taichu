@@ -236,7 +236,7 @@
             size="large"
             class="btn-submit"
             @click="submitDivination"
-            :disabled="isLoading || !canSubmit"
+            :disabled="isLoading || !canSubmit || !isPricingReady"
             :loading="isLoading"
           >
             <template #icon v-if="!isLoading">
@@ -352,8 +352,31 @@ const currentMethodDescription = computed(() => {
   return methodOptions.find((item) => item.value === form.method)?.description || ''
 })
 
+const isPricingReady = computed(() => !pricingLoading.value && !pricingError.value && !!pricing.value)
+
+const submitButtonText = computed(() => {
+  if (pricingLoading.value) {
+    return '价格同步中...'
+  }
+
+  if (pricingError.value || !pricing.value) {
+    return '请先重新获取价格'
+  }
+
+  if (pricing.value.is_first_free) {
+    return '首次免费起卦'
+  }
+
+  if (pricing.value.is_vip_free) {
+    return 'VIP 免费起卦'
+  }
+
+  const cost = Number(pricing.value.cost)
+  return Number.isFinite(cost) && cost > 0 ? `开始占卜（${cost}积分）` : '开始占卜'
+})
+
 const canSubmit = computed(() => {
-  if (!form.question.trim()) {
+  if (!isPricingReady.value || !form.question.trim()) {
     return false
   }
 
@@ -368,7 +391,42 @@ const canSubmit = computed(() => {
   return true
 })
 
+
+const isPricingReady = computed(() => {
+  return !pricingLoading.value && !pricingError.value && Boolean(pricing.value)
+})
+
+const canSubmitDivination = computed(() => {
+  return canSubmit.value && isPricingReady.value
+})
+
+const submitButtonText = computed(() => {
+  if (pricingLoading.value) {
+    return '正在同步价格...'
+  }
+
+  if (pricingError.value || !pricing.value) {
+    return '请先重新获取价格'
+  }
+
+  if (pricing.value.is_first_free) {
+    return '首次免费起卦'
+  }
+
+  if (pricing.value.is_vip_free) {
+    return 'VIP免费起卦'
+  }
+
+  const cost = Number(pricing.value.cost)
+  if (Number.isFinite(cost) && cost > 0) {
+    return `确认并消耗${cost}积分`
+  }
+
+  return '开始占卜'
+})
+
 const shouldShowRemainingPoints = computed(() => {
+
   if (!result.value || result.value.is_history) {
     return false
   }

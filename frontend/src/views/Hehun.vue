@@ -279,7 +279,7 @@
               </div>
             </div>
             <div v-if="form.femaleBirthPrecision === 'range'" class="time-range-panel">
-              <label class="time-range-label">大概出生时段</label>
+              <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
               <div class="time-range-options">
                 <button
                   v-for="option in birthTimeRangeOptions"
@@ -293,6 +293,7 @@
                   <small>{{ option.hint }}</small>
                 </button>
               </div>
+              <p v-if="!form.femaleBirthTimeRange" class="field-helper field-helper--warning">请选择女方的大概出生时段后再开始分析。</p>
             </div>
             <div class="precision-confidence" :class="`precision-confidence--${form.femaleBirthPrecision}`">
               <span class="confidence-badge">{{ getBirthPrecisionBadge(form.femaleBirthPrecision) }}</span>
@@ -537,7 +538,7 @@ const getBirthPrecisionHint = (precision) => {
 
 const getBirthFieldHelper = (precision) => {
   if (precision === 'range') {
-    return '先选择生日，再补充一个大概出生时段。'
+    return '先选择生日，再显式选择一个大概出生时段。'
   }
   if (precision === 'unknown') {
     return '仅用生日先看趋势，涉及时柱的结论会保守处理。'
@@ -545,7 +546,54 @@ const getBirthFieldHelper = (precision) => {
   return '建议尽量填写准确时间，减少时柱偏差。'
 }
 
+const normalizeBirthInputValue = (value, nextPrecision) => {
+  const trimmed = String(value || '').trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}):(\d{2})(?::\d{2})?)?$/)
+  if (!match) {
+    return nextPrecision === 'exact' ? trimmed : trimmed.slice(0, 10)
+  }
+
+  const [, date, hour, minute] = match
+  if (nextPrecision === 'exact') {
+    return hour && minute ? `${date}T${hour}:${minute}` : ''
+  }
+
+  return date
+}
+
+const resolveStoredTimeRange = (birthValue = '', fallback = fallbackBirthTimeRange) => {
+  const trimmed = String(birthValue || '').trim()
+  const match = trimmed.match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}):(\d{2})/)
+  if (!match) {
+    return fallback
+  }
+
+  return resolveTimeRangeByClock(`${match[1]}:${match[2]}`)
+}
+
+const handleBirthPrecisionChange = (role, nextPrecision) => {
+  const birthDateKey = `${role}BirthDate`
+  const precisionKey = `${role}BirthPrecision`
+  const timeRangeKey = `${role}BirthTimeRange`
+  const currentValue = form[birthDateKey]
+
+  form[precisionKey] = nextPrecision
+  form[birthDateKey] = normalizeBirthInputValue(currentValue, nextPrecision)
+
+  if (nextPrecision === 'range' || nextPrecision === 'unknown') {
+    form[timeRangeKey] = ''
+    return
+  }
+
+  form[timeRangeKey] = resolveStoredTimeRange(currentValue)
+}
+
 const getBirthConfidenceCopy = (precision, roleLabel) => {
+
   if (precision === 'range') {
     return `${roleLabel}当前按大概时段估算，适合先看关系趋势；涉及时柱的细项判断会保守处理。`
   }
@@ -1086,8 +1134,9 @@ const normalizeHistoryItem = (item = {}) => {
     female_bazi: normalizeObjectField(item.female_bazi, {}),
     male_birth_precision: item.male_birth_precision || inputMeta.male_birth_precision || '',
     female_birth_precision: item.female_birth_precision || inputMeta.female_birth_precision || '',
-    male_birth_time_range: item.male_birth_time_range || inputMeta.male_birth_time_range || defaultBirthTimeRange,
-    female_birth_time_range: item.female_birth_time_range || inputMeta.female_birth_time_range || defaultBirthTimeRange,
+    male_birth_time_range: item.male_birth_time_range || inputMeta.male_birth_time_range || fallbackBirthTimeRange,
+    female_birth_time_range: item.female_birth_time_range || inputMeta.female_birth_time_range || fallbackBirthTimeRange,
+
     male_birth_time: item.male_birth_time || '',
     female_birth_time: item.female_birth_time || '',
     score: Number(item.score ?? resultData.score ?? 0),
