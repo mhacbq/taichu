@@ -33,7 +33,7 @@
         </div>
 
         <!-- 个性化运势卡片 -->
-        <div v-if="fortune.personalized && fortune.personalized.hasBazi" class="personalized-fortune card card-hover">
+        <div v-if="dailyPersonalizedState === 'ready'" class="personalized-fortune card card-hover">
           <h2>
             <el-icon><MagicStick /></el-icon> 您的专属运势
             <el-tooltip content="基于您的八字日主计算的个性化运势分析" placement="top">
@@ -44,35 +44,40 @@
             <div class="master-info">
               <div class="master-card">
                 <span class="label">您的日主</span>
-                <span class="value">{{ fortune.personalized.dayMaster }}</span>
-                <span class="wuxing-badge" :class="fortune.personalized.dayMasterWuxing">{{ fortune.personalized.dayMasterWuxing }}</span>
+                <span class="value">{{ personalizedFortune.dayMaster }}</span>
+                <span class="wuxing-badge" :class="personalizedFortune.dayMasterWuxing">{{ personalizedFortune.dayMasterWuxing }}</span>
               </div>
               <div class="relation-arrow">
                 <el-icon><Right /></el-icon>
               </div>
               <div class="today-card">
                 <span class="label">今日干支</span>
-                <span class="value">{{ fortune.personalized.todayGanZhi }}</span>
-                <span class="wuxing-text">{{ fortune.personalized.todayWuxing }}</span>
+                <span class="value">{{ personalizedFortune.todayGanZhi }}</span>
+                <span class="wuxing-text">{{ personalizedFortune.todayWuxing }}</span>
               </div>
             </div>
             
             <div class="luck-indicator">
-              <div class="luck-badge" :class="fortune.personalized.luckLevel">
-                {{ fortune.personalized.relation }}
-                <span class="luck-level">{{ fortune.personalized.luckLevel }}</span>
+              <div class="luck-badge" :class="personalizedFortune.luckLevel">
+                <span class="luck-relation-name">{{ personalizedFortune.relation }}</span>
+                <span class="luck-relation-title">{{ personalizedRelationMeta.title }}</span>
+                <span class="luck-level">今日偏{{ personalizedFortune.luckLevel }}</span>
+              </div>
+              <div class="luck-summary">
+                <span class="luck-summary-label">这对你意味着什么</span>
+                <p>{{ personalizedRelationMeta.description }}</p>
               </div>
               <div class="personal-score">
                 <span class="score-label">综合评分</span>
-                <span class="score-value" :class="getScoreClass(fortune.personalized.personalScore)">
-                  {{ fortune.personalized.personalScore }}
+                <span class="score-value" :class="getScoreClass(personalizedFortune.personalScore)">
+                  {{ personalizedFortune.personalScore }}
                 </span>
               </div>
             </div>
             
             <div class="personal-advice">
               <h4><el-icon><StarFilled /></el-icon> 今日建议</h4>
-              <p>{{ fortune.personalized.advice }}</p>
+              <p>{{ personalizedFortune.advice }}</p>
             </div>
             
             <div class="personal-lucky-grid">
@@ -87,7 +92,7 @@
                   </div>
                 </div>
                 <div class="personal-lucky-values">
-                  <span v-for="color in fortune.personalized.luckyColors" :key="color" class="lucky-tag color">
+                  <span v-for="color in personalizedFortune.luckyColors" :key="color" class="lucky-tag color">
                     {{ color }}
                   </span>
                 </div>
@@ -103,7 +108,7 @@
                   </div>
                 </div>
                 <div class="personal-lucky-values">
-                  <span v-for="dir in fortune.personalized.luckyDirections" :key="dir" class="lucky-tag direction">
+                  <span v-for="dir in personalizedFortune.luckyDirections" :key="dir" class="lucky-tag direction">
                     {{ dir }}
                   </span>
                 </div>
@@ -113,16 +118,51 @@
           </div>
         </div>
         
-        <!-- 无八字时的提示 -->
-        <div v-else class="no-bazi-hint card card-hover">
-          <div class="hint-content">
-            <el-icon class="hint-icon" :size="48"><Collection /></el-icon>
-            <p>进行八字排盘即可获取您的个性化每日运势</p>
-            <router-link to="/bazi">
-              <el-button type="primary" size="small">去排盘</el-button>
-            </router-link>
+        <div v-else-if="dailyPersonalizedState === 'guest'" class="personalized-state-card card card-hover">
+          <div class="state-content">
+            <el-icon class="state-icon" :size="48"><UserFilled /></el-icon>
+            <div class="state-body">
+              <p class="state-title">登录后查看你的专属运势</p>
+              <p class="state-copy">当前展示的是公共日运。登录后会基于你的八字日主补充个人提示、幸运色和幸运方位。</p>
+            </div>
+            <div class="state-actions">
+              <router-link :to="dailyLoginRoute">
+                <el-button type="primary" size="small">去登录</el-button>
+              </router-link>
+            </div>
           </div>
         </div>
+
+        <div v-else-if="dailyPersonalizedState === 'no_bazi'" class="personalized-state-card personalized-state-card--empty card card-hover">
+          <div class="state-content">
+            <el-icon class="state-icon" :size="48"><Collection /></el-icon>
+            <div class="state-body">
+              <p class="state-title">完成八字排盘后再看专属部分</p>
+              <p class="state-copy">你已登录，但还没有可用的八字档案。先完成一次排盘，页面就会自动补齐个人运势解释。</p>
+            </div>
+            <div class="state-actions">
+              <router-link to="/bazi">
+                <el-button type="primary" size="small">去排盘</el-button>
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="dailyPersonalizedState === 'error'" class="personalized-state-card personalized-state-card--error card card-hover">
+          <div class="state-content">
+            <el-icon class="state-icon" :size="48"><WarningFilled /></el-icon>
+            <div class="state-body">
+              <p class="state-title">专属运势暂时没加载完整</p>
+              <p class="state-copy state-copy--error">系统已识别到你的登录态，但个性化字段缺失或结构异常。你可以重试刷新，不必重新排盘。</p>
+            </div>
+            <div class="state-actions">
+              <el-button type="primary" size="small" @click="loadDailyFortune({ userInitiated: true })">
+                <el-icon><RefreshRight /></el-icon> 重新获取
+              </el-button>
+            </div>
+          </div>
+        </div>
+
 
         <div class="overall-score card card-hover">
           <h2>今日综合运势</h2>
@@ -131,11 +171,13 @@
               <span class="score-number">{{ fortune.overallScore }}</span>
               <span class="score-label">分</span>
             </div>
-            <div class="score-stars">
-              <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= Math.round(fortune.overallScore / 20) }">
+            <div class="score-stars" :aria-label="`综合评分 ${fortune.overallScore} 分，对应 ${overallStarCount} 星评价`">
+              <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= overallStarCount }">
                 <StarFilled />
               </el-icon>
             </div>
+            <p class="score-rating">{{ overallStarLabel }}</p>
+
           </div>
           <p class="fortune-summary">{{ fortune.summary }}</p>
         </div>
@@ -208,9 +250,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny, UserFilled, RefreshRight } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
@@ -219,12 +261,114 @@ const solarDate = ref('')
 const lunarDate = ref('')
 const isLoading = ref(true)
 const fortune = ref(null)
-const activeNames = ref(['career', 'wealth'])
+const isLoggedIn = ref(false)
+const activeNames = ref([])
 const error = ref(false)
 const errorMessage = ref('')
+const dailyLoginRoute = { path: '/login', query: { redirect: '/daily' } }
 
+const personalizedRelationGuides = {
+  比劫: {
+    title: '同频助力，也有竞争',
+    description: '适合找熟悉的人协作、互通信息，但也要避免被同辈节奏带着跑。',
+  },
+  印绶: {
+    title: '贵人和恢复力更强',
+    description: '今天适合学习、复盘和补充能量，遇到问题时更容易得到支持。',
+  },
+  食伤: {
+    title: '表达力和创意更活跃',
+    description: '适合沟通、提案和输出想法，但说话别太满，节奏稳一点更吃香。',
+  },
+  官杀: {
+    title: '责任感和压力同步上升',
+    description: '适合先处理关键任务与规则要求，别硬扛，把优先级排清楚会顺很多。',
+  },
+  财星: {
+    title: '资源机会变多，也更考验判断',
+    description: '适合关注合作、预算和收益，但别急着冲动决策，先算清账更稳。',
+  },
+}
+
+const syncLoginState = () => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  isLoggedIn.value = Boolean(window.localStorage.getItem('token'))
+}
+
+const personalizedFortune = computed(() => {
+  const payload = fortune.value?.personalized
+  return payload && typeof payload === 'object' ? payload : null
+})
+
+const personalizedRelationMeta = computed(() => {
+  const relation = personalizedFortune.value?.relation || ''
+  return personalizedRelationGuides[relation] || {
+    title: '今日能量提示',
+    description: '今日个性化运势已生成，可结合下方建议安排重点事项。',
+  }
+})
+
+const isPersonalizedPayloadInvalid = computed(() => {
+  if (!isLoggedIn.value || !personalizedFortune.value) {
+    return false
+  }
+
+  if (personalizedFortune.value.hasBazi === false) {
+    return false
+  }
+
+  const requiredFields = ['dayMaster', 'todayGanZhi', 'relation', 'luckLevel', 'advice']
+  return personalizedFortune.value.hasBazi !== true || requiredFields.some((key) => {
+    return typeof personalizedFortune.value[key] !== 'string' || personalizedFortune.value[key].trim() === ''
+  })
+})
+
+const dailyPersonalizedState = computed(() => {
+  if (!fortune.value) {
+    return 'hidden'
+  }
+
+  if (!isLoggedIn.value) {
+    return 'guest'
+  }
+
+  if (isPersonalizedPayloadInvalid.value) {
+    return 'error'
+  }
+
+  if (personalizedFortune.value?.hasBazi) {
+    return 'ready'
+  }
+
+  return 'no_bazi'
+})
+
+const overallStarCount = computed(() => {
+  const score = Number(fortune.value?.overallScore ?? 0)
+  if (!Number.isFinite(score) || score <= 0) {
+    return 0
+  }
+
+  if (score >= 85) return 5
+  if (score >= 70) return 4
+  if (score >= 55) return 3
+  if (score >= 40) return 2
+  return 1
+})
+
+const overallStarLabel = computed(() => {
+  if (overallStarCount.value <= 0) {
+    return '评分整理中'
+  }
+
+  return `视觉评级：${overallStarCount.value} 星`
+})
 
 const getScoreColor = (score) => {
+
   if (score >= 80) return '#67c23a'
   if (score >= 60) return '#e6a23c'
   return '#f56c6c'
@@ -264,7 +408,12 @@ const detailSections = computed(() => {
   ].filter((item) => typeof item.content === 'string' && item.content.trim())
 })
 
+const defaultExpandedDetailNames = computed(() => {
+  return detailSections.value.length ? [detailSections.value[0].key] : []
+})
+
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
+
   isLoading.value = true
   error.value = false
   errorMessage.value = ''
@@ -285,11 +434,13 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
       }
       solarDate.value = data.date || ''
       lunarDate.value = data.lunarDate || ''
+      activeNames.value = defaultExpandedDetailNames.value
       error.value = false
     } else {
       fortune.value = null
       solarDate.value = ''
       lunarDate.value = ''
+      activeNames.value = []
       error.value = true
       errorMessage.value = response.message || '获取运势失败'
       if (userInitiated) {
@@ -300,6 +451,7 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
     fortune.value = null
     solarDate.value = ''
     lunarDate.value = ''
+    activeNames.value = []
     error.value = true
     errorMessage.value = '网络错误，请稍后重试'
     if (userInitiated) {
@@ -307,15 +459,31 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
     }
     console.error(err)
   } finally {
+
     isLoading.value = false
   }
 }
 
 
 
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    syncLoginState()
+  }
+}
+
 onMounted(() => {
+  syncLoginState()
   loadDailyFortune()
+  window.addEventListener('storage', syncLoginState)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('storage', syncLoginState)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
 
 </script>
 
@@ -445,6 +613,12 @@ onMounted(() => {
   gap: 5px;
 }
 
+.score-rating {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
 .star {
   font-size: 20px;
   color: var(--text-tertiary);
@@ -455,6 +629,7 @@ onMounted(() => {
 }
 
 .fortune-summary {
+
   color: var(--text-secondary);
   font-size: 16px;
   line-height: 1.6;
@@ -695,23 +870,56 @@ onMounted(() => {
 }
 
 .luck-indicator {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 30px;
+  display: grid;
+  grid-template-columns: minmax(180px, auto) minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 16px;
   margin-bottom: 25px;
-  flex-wrap: wrap;
 }
 
 .luck-badge {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 15px 30px;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 18px 22px;
   border-radius: 16px;
-  font-size: 20px;
-  font-weight: bold;
   color: var(--text-primary);
+}
+
+.luck-relation-name {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.luck-relation-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.luck-summary {
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-card), var(--surface-raised));
+}
+
+.luck-summary-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--primary-light);
+}
+
+.luck-summary p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 14px;
 }
 
 .luck-badge.吉 {
@@ -732,13 +940,15 @@ onMounted(() => {
 .luck-level {
   font-size: 14px;
   font-weight: normal;
-  margin-top: 5px;
   opacity: 0.8;
 }
 
 .personal-score {
+  min-width: 110px;
   text-align: center;
+  align-self: center;
 }
+
 
 .score-label {
   display: block;
@@ -867,27 +1077,72 @@ onMounted(() => {
   color: var(--text-primary);
 }
 
-/* 无八字提示 */
-.no-bazi-hint {
+/* 个性化状态提示 */
+.personalized-state-card {
   margin-bottom: 30px;
-  text-align: center;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-card), var(--surface-raised));
 }
 
-.hint-content {
-  padding: 30px;
+.personalized-state-card--empty {
+  box-shadow: inset 0 1px 0 rgba(var(--primary-rgb), 0.08);
 }
 
-.hint-icon {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 15px;
-  color: var(--primary-color);
+.personalized-state-card--error {
+  border-color: rgba(245, 108, 108, 0.24);
+  background: linear-gradient(180deg, rgba(245, 108, 108, 0.06), var(--bg-card));
 }
 
-.no-bazi-hint p {
+.state-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 26px;
+}
+
+.state-icon {
+  flex-shrink: 0;
+  color: var(--primary-light);
+}
+
+.personalized-state-card--error .state-icon {
+  color: var(--danger-color);
+}
+
+.state-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.state-title {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: var(--weight-semibold);
+}
+
+.state-copy {
+  margin: 0;
   color: var(--text-secondary);
-  margin-bottom: 15px;
+  line-height: 1.7;
 }
+
+.state-copy--error {
+  color: var(--text-primary);
+}
+
+.state-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.state-actions :deep(.el-button) {
+  min-height: 44px;
+  border-radius: 999px;
+  padding-inline: 18px;
+}
+
 
 @media (max-width: 768px) {
   .aspect-grid {
@@ -912,7 +1167,17 @@ onMounted(() => {
   }
   
   .luck-indicator {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .luck-badge,
+  .luck-summary,
+  .personal-score {
+    width: 100%;
+  }
+
+  .personal-score {
+    align-self: stretch;
   }
   
   .personal-lucky-grid {
@@ -935,5 +1200,20 @@ onMounted(() => {
   .lucky-tag {
     min-height: 34px;
   }
+
+  .state-content {
+    flex-direction: column;
+    text-align: center;
+    padding: 22px 18px;
+  }
+
+  .state-actions {
+    width: 100%;
+  }
+
+  .state-actions :deep(.el-button) {
+    width: 100%;
+  }
 }
+
 </style>

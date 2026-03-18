@@ -21,8 +21,16 @@
             <span v-if="result.is_first" class="first-free-badge">首次免费</span>
           </div>
 
+          <div v-if="resultContextItems.length" class="result-context" aria-label="起卦上下文信息">
+            <span v-for="item in resultContextItems" :key="item.label" class="context-chip">
+              <span class="context-chip__label">{{ item.label }}</span>
+              <span class="context-chip__value">{{ item.value }}</span>
+            </span>
+          </div>
+
           <!-- 问题 -->
           <div class="question-box">
+
             <span class="label">占问：</span>
             <span class="question-text">{{ result.question }}</span>
           </div>
@@ -433,7 +441,48 @@ const historyTriggerText = computed(() => (
   history.value.length > 0 ? `查看历史记录 (${history.value.length}条)` : '查看历史记录'
 ))
 
+const formatDateTime = (dateStr) => {
+  const rawValue = typeof dateStr === 'string' ? dateStr.trim() : ''
+  if (!rawValue) {
+    return ''
+  }
+
+  const normalizedValue = rawValue.includes('T') ? rawValue : rawValue.replace(' ', 'T')
+  const date = new Date(normalizedValue)
+  if (Number.isNaN(date.getTime())) {
+    return rawValue
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+const resultContextItems = computed(() => {
+  if (!result.value) {
+    return []
+  }
+
+  const timeInfo = result.value.time_info || {}
+  const xunkong = Array.isArray(timeInfo.xunkong)
+    ? timeInfo.xunkong.filter(Boolean).join('、')
+    : String(timeInfo.xunkong || '').trim()
+
+  return [
+    { label: '起卦方式', value: result.value.method_label || '' },
+    { label: '起卦时间', value: formatDateTime(timeInfo.divination_at || result.value.created_at || '') },
+    { label: '日辰', value: String(timeInfo.ri_chen || '').trim() },
+    { label: '月建', value: String(timeInfo.yue_jian || '').trim() },
+    { label: '旬空', value: xunkong },
+  ].filter((item) => item.value)
+})
+
 const reportUiError = (action, error, userMessage = '') => {
+
 
   console.error(`[Liuyao] ${action}`, error)
   if (userMessage) {
@@ -1071,7 +1120,37 @@ onUnmounted(() => {
   align-items: center;
 }
 
+.result-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-card));
+}
+
+.context-chip__label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.context-chip__value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .question-box {
+
   padding: 16px 20px;
   background: var(--bg-secondary);
   border-radius: 16px;
@@ -1650,7 +1729,17 @@ onUnmounted(() => {
     padding: 24px;
   }
 
+  .result-context {
+    gap: 8px;
+  }
+
+  .context-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .input-grid--double,
+
   .advanced-grid,
   .manual-grid {
     grid-template-columns: 1fr;

@@ -2,6 +2,59 @@
 
 ## 最近更新
 
+### UI 修复批次（ui-15 自动化执行，2026-03-18）
+
+- 本轮先读取 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，随后围绕剩余 `[UI]` 待办完成了 **5 个前台 UI/UX 修复**：1) `Daily.vue` 详细运势改为按真实返回的首个有效分项自动展开；2) `Daily.vue` 综合分与星级改成统一阈值映射，避免 85+ 仍只显示四星；3) `Daily.vue` 为“比劫 / 印绶 / 食伤 / 官杀 / 财星”补上白话解释；4) `Daily.vue` 将个性化区域拆分为游客、未排盘、字段异常、已就绪四种状态；5) `Liuyao.vue` + `backend/app/controller/Liuyao.php` 为实时结果与历史回看统一回显起卦方式、时间、日辰、月建与旬空上下文。
+- 已同步从 `TODO.md` 删除本轮完成的 5 条 `[UI]` 待办，避免后续自动化重复返工。
+- 本轮主要改动文件：`frontend/src/views/Daily.vue`、`frontend/src/views/Liuyao.vue`、`backend/app/controller/Liuyao.php`、`TODO.md`。
+
+#### 验证情况
+- `read_lints`：`frontend/src/views/Daily.vue`、`frontend/src/views/Liuyao.vue`、`backend/app/controller/Liuyao.php` 均为 0 diagnostics。
+- `git diff --check -- frontend/src/views/Daily.vue frontend/src/views/Liuyao.vue backend/app/controller/Liuyao.php TODO.md overview.md`：通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`：当前本机 Node 运行时仍被旧语法支持拦住，输出 `SyntaxError: Unexpected token '??='`；与前几轮一致，暂未见由本轮改动新增的构建错误。
+- 截图 / 录屏：本轮未新增视觉截图；当前环境受本机 Node 版本限制，未补跑前台本地预览。
+
+
+
+### 后台运营巡检（第三十二轮自动化执行，2026-03-18 13:40）
+
+- 本轮先读取 `.codebuddy/automations/30-3/memory.md` 与 `TODO.md`，随后复用现有浏览器会话 `ops-check`，主动清空后台 `localStorage` 后重新访问 `http://localhost:3001/login`，使用默认管理员账号 `admin / admin123` 重新登录，并按运营路径实测 Dashboard、用户管理、黄历/知识库/神煞/SEO、订单、积分记录、系统设置与系统公告。
+- 本轮未修改业务代码；已更新 `TODO.md`、`.codebuddy/automations/30-3/memory.md`、`overview.md`，并补充了多份运行态 YAML / 控制台 / 网络日志证据。
+
+#### 关键发现
+1. **登录、Dashboard、积分记录、系统设置、系统公告当前可用**
+   - `http://localhost:3001/login` 可正常访问，清空登录态后仍能用 `admin / admin123` 真实登录，登录成功后自动跳转 `/dashboard`。
+   - Dashboard 统计卡、趋势图占位、快捷入口、实时动态均能正常渲染；积分记录页也已能展示正确的增减方向、余额与原因；系统设置 `PUT /api/admin/system/settings` 返回 `200 OK`；系统公告可真实发布测试公告 `OpsNoticeRound32` 并完成删除回滚。
+2. **四条已标记“修复”的高优先级运营链路本轮仍未恢复**
+   - 用户详情“手动调积分”提交最小化 `+1` 后，控制台再次记录 `POST /api/admin/points/adjust` 为 `HTTP 200 + code 500`。
+   - 黄历管理首屏仍直接进入“黄历管理加载失败”只读态，控制台记录 `GET /api/admin/content/almanac` 为 `HTTP 200 + code 500`。
+   - 神煞新增测试项 `OpsRound32Shensha` 仍触发 `POST /api/admin/system/shensha` 的 `HTTP 200 + code 500`。
+   - SEO 新增测试路由 `/ops-seo-round32` 仍触发 `POST /api/admin/system/seo/configs` 的 `HTTP 200 + code 500`。
+3. **内容运营页仍存在可用性缺口**
+   - 用户详情页只有查看与“手动调积分”，没有任何资料编辑入口，运营无法直接修正基础资料。
+   - 知识库文章新增/删除主链路可闭环，但分类表与新增文章下拉里的分类名统一显示为 `????`，运营无法辨认分类。
+   - 神煞列表与 SEO 配置列表都出现历史数据乱码：多条名称/描述/关键词显示为 `??` / `????`，导致现存配置不可读。
+4. **订单页本轮可打开，但样本不足**
+   - `VIP订单` 与 `充值订单` 页面均能正常加载筛选区、表头和分页，但当前本地数据仍为 `0` 条，无法继续验证补单、退款或状态流转。
+
+#### 运行态证据
+- 登录与 Dashboard：`ops-login-round32.yaml`、`ops-dashboard-round32.yaml`
+- 用户列表 / 搜索 / 详情：`ops-user-list-round32.yaml`、`ops-user-search-round32.yaml`、`ops-user-detail-round32.yaml`
+- 调积分失败：`ops-points-adjust-dialog-round32.yaml`、`ops-points-adjust-after-plus1-round32.yaml`、`.playwright-cli/console-2026-03-18T05-21-04-997Z.log`
+- 黄历失败：`ops-almanac-round32.yaml`、`.playwright-cli/console-2026-03-18T05-25-40-232Z.log`、`.playwright-cli/network-2026-03-18T05-26-18-475Z.log`
+- 知识库文章 / 分类乱码：`ops-knowledge-round32.yaml`、`ops-knowledge-category-options-round32.yaml`、`ops-knowledge-after-save-round32.yaml`、`ops-knowledge-clean-round32.yaml`
+- 神煞列表 / 新增失败：`ops-shensha-round32.yaml`、`ops-shensha-create-round32.yaml`、`ops-shensha-after-save-round32.yaml`、`.playwright-cli/console-2026-03-18T05-30-54-023Z.log`
+- SEO 列表 / 新增失败：`ops-seo-round32.yaml`、`ops-seo-create-round32.yaml`、`.playwright-cli/console-2026-03-18T05-33-36-581Z.log`
+- 积分记录恢复：`ops-points-records-round32.yaml`
+- 订单页：`ops-vip-orders-round32.yaml`、`ops-payment-orders-round32.yaml`
+- 系统设置 / 公告：`ops-system-settings-round32.yaml`、`.playwright-cli/network-2026-03-18T05-37-49-257Z.log`、`ops-system-notice-after-save-round32.yaml`、`ops-system-notice-clean-round32.yaml`
+
+#### 验证情况
+- 已真实验证：登录页访问、账号密码登录、登录后跳转、Dashboard、用户列表搜索、用户详情查看、知识库文章新增/删除、积分记录查询、系统设置保存、系统公告发布/删除。
+- 已真实验证失败：手动调积分、黄历管理首屏、神煞新增、SEO 新增。
+- 已局部验证：VIP / 充值订单页面可打开，但因当前本地数据为 0 条，未能继续验证订单状态流转。
+- 截图 / 录屏：本轮未新增图片证据，主要保留页面快照 YAML 与控制台 / 网络日志。
+
 ### 占卜运行态收口修复（automation，2026-03-18）
 
 - 本轮继续处理此前追加到 `TODO.md` 的 4 条 `[占卜]` 高优先级运行态问题，并完成对应待办清理。

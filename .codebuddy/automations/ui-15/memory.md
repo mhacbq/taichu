@@ -1,6 +1,46 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Fifteenth round of UI consistency fixes focused on Daily personalization clarity, score/expansion consistency, and Liuyao result context visibility.
+- Status: Completed (5 UI issues resolved).
+- Date: 2026-03-18
+
+## Summary
+- `frontend/src/views/Daily.vue`: 将“专属运势”拆分为游客、未排盘、个性化字段异常、已就绪四种状态，并分别提供登录 / 排盘 / 重试入口，避免所有情况都落到同一张提示卡。
+- `frontend/src/views/Daily.vue`: 为“比劫 / 印绶 / 官杀 / 财星”等术语补上白话解释，同时把综合分的星级改为统一阈值映射，并在数据返回后自动展开首个有效“详细运势”分项。
+- `frontend/src/views/Liuyao.vue`、`backend/app/controller/Liuyao.php`: 在实时结果与历史回看里统一回显起卦方式、起卦时间、日辰、月建与旬空，让用户明确当前结论的起卦上下文。
+- `TODO.md`: 删除本轮已完成的 5 条 `[UI]` 待办，仅保留未处理的八字 / 合婚 / 塔罗 / 六爻其他项。
+
+## Validation
+- `read_lints`: `frontend/src/views/Daily.vue`、`frontend/src/views/Liuyao.vue`、`backend/app/controller/Liuyao.php` 0 diagnostics。
+- `git diff --check -- frontend/src/views/Daily.vue frontend/src/views/Liuyao.vue backend/app/controller/Liuyao.php TODO.md overview.md`: 通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 当前本机 Node 运行时仍报 `Unexpected token '??='`，与此前环境问题一致，暂未见由本轮改动引入的新构建错误。
+
+---
+
+
+
+## Previous Run
+- Task: Fourteenth round of UI consistency fixes focused on Bazi time-accuracy entry/result context, simple-mode information scope, yearly selector responsiveness, and homepage state-card trust cues.
+- Status: Completed (5 UI issues resolved and pushed).
+- Date: 2026-03-18
+- Commit: `79b12c4` (`"fix-ui-multiple-issues-20260318-1342"`)
+
+## Summary
+- `frontend/src/views/Bazi.vue`: 新增“精确到分钟 / 大概时段”双入口，并在结果头部补齐排盘模式、时间精度、出生地 / 默认北京时间标签，让用户明确知道结论依据。
+- `frontend/src/views/Bazi.vue`: 简化版结果自动隐藏大运、流年和深度预测工具；流年年份选择器改为更适合移动端的上下布局，触达更稳。
+- `frontend/src/views/Home.vue`: 登录态积分卡改为动态说明文案，首页问候语支持整点与页面回前台时自动刷新。
+- `TODO.md`: 删除本轮已完成的 5 条 `[UI]` 待办。
+
+## Validation
+- `read_lints`: `frontend/src/views/Bazi.vue`、`frontend/src/views/Home.vue` 0 diagnostics。
+- `git diff --check -- frontend/src/views/Bazi.vue frontend/src/views/Home.vue TODO.md overview.md`: 通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`: 当前本机 Node 运行时仍报 `Unexpected token '??='`，与此前环境问题一致；`git push origin master` 已推送 `79b12c4`。
+
+---
+
+## Previous Run
+
 - Task: Thirteenth round of UI consistency fixes focused on Liuyao CTA/pricing guards, Bazi required-state alignment, and homepage entry/rating semantics cleanup.
 - Status: Completed (5 UI issues resolved; plus 2 stale Tarot TODO items cleaned because code path was already aligned in the branch).
 - Date: 2026-03-18

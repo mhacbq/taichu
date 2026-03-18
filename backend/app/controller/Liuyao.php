@@ -1040,12 +1040,37 @@ PROMPT;
         $guaCi = (string) ($record['gua_ci'] ?? $originalGua['gua_ci'] ?? $guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? '');
         $interpretation = (string) ($record['interpretation'] ?? $record['analysis'] ?? '');
         $consumedPoints = (int) ($record['consumed_points'] ?? $record['points_used'] ?? 0);
+        $createdAt = (string) ($record['created_at'] ?? '');
+        $riChen = trim((string) ($record['rigan'] ?? ''));
+        $yueJian = trim((string) ($record['yuejian'] ?? ''));
+        $riGan = $riChen !== '' ? mb_substr($riChen, 0, 1) : '';
+        $riZhi = $riChen !== '' ? mb_substr($riChen, 1) : '';
+        $xunkong = $this->decodeJsonField($record['xunkong'] ?? $record['xun_kong'] ?? null);
+        if (!is_array($xunkong)) {
+            $xunkong = [];
+        }
+        if (empty($xunkong) && $riGan !== '' && $riZhi !== '') {
+            try {
+                $xunkong = LiuyaoService::calculateXunKong($riGan, $riZhi);
+            } catch (\Throwable $exception) {
+                $xunkong = [];
+            }
+        }
+        $timeInfo = [
+            'ri_gan' => $riGan,
+            'ri_zhi' => $riZhi,
+            'ri_chen' => $riChen,
+            'yue_jian' => $yueJian,
+            'divination_at' => $createdAt,
+            'xunkong' => array_values(array_filter(array_map('strval', $xunkong))),
+        ];
 
         return [
             'id' => (int) ($record['id'] ?? 0),
             'question' => (string) ($record['question'] ?? ''),
             'method' => $method,
             'method_label' => $this->getMethodLabel($method),
+            'time_info' => $timeInfo,
             'yao_result' => $yaoResult,
             'yao_names' => array_map(fn(int $item) => $this->getYaoName($item), $yaoResult),
             'gua' => [
@@ -1059,9 +1084,10 @@ PROMPT;
             'interpretation' => $interpretation,
             'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
             'consumed_points' => $consumedPoints,
-            'created_at' => (string) ($record['created_at'] ?? ''),
+            'created_at' => $createdAt,
             'fushen' => null,
         ];
+
     }
 
 
