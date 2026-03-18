@@ -718,7 +718,9 @@ class BaziCalculationService
     /**
      * 构建喜用五行优先级。
      * 身强遵循“先官杀、次食伤、后财星”，身弱遵循“先印星、次比劫”。
+     * 这里以子平常法为工程近似基准，避免只按当前最缺元素机械重排。
      */
+
     protected function buildFavoriteWuxingDetails(string $dayMasterWuxing, bool $isStrong, array $wuxingStats): array
     {
         $priorityMap = [

@@ -486,7 +486,9 @@ class LiuyaoService
 
     /**
      * 多重同类用神并见时，按动爻、世应、旬空综合取象。
+     * 取象上遵循“舍静取动、世应为纲、空亡减力”的常见六爻判断次序。
      */
+
     protected static function selectBestYongShenPosition(array $positions, array $shiYing, string $yaoCode, array $xunkong = []): array
     {
         if (empty($positions)) {
