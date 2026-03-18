@@ -2,6 +2,44 @@
 
 ## 最近更新
 
+### UI 修复批次（ui-15 自动化执行，2026-03-18 13:42）
+
+- 本轮先读取 `.codebuddy/automations/ui-15/memory.md` 与 `TODO.md`，随后针对剩余 `[UI]` 待办完成了 **5 个前台 UI/UX 修复**：1) `Bazi.vue` 新增“精确到分钟 / 大概时段”双入口，并在估算模式下展示降级提示；2) `Bazi.vue` 结果头部补齐排盘模式、时间精度、出生地 / 默认北京时间等上下文标签；3) `Bazi.vue` 简化版结果自动隐藏“大运与流年走势 / 深度预测工具”等进阶模块，同时把流年年份选择器改成更适合移动端的上下布局；4) `Home.vue` 登录态积分卡正文改为按积分与首测资格动态渲染，不再写死乐观文案；5) `Home.vue` 问候语改为按整点和页面可见性自动刷新，避免长驻页面后时段提示失真。
+- 已同步从 `TODO.md` 删除本轮完成的 5 条 `[UI]` 待办，避免后续自动化重复返工。
+- 本轮主要改动文件：`frontend/src/views/Bazi.vue`、`frontend/src/views/Home.vue`、`TODO.md`。
+
+#### 验证情况
+- `read_lints`：`frontend/src/views/Bazi.vue`、`frontend/src/views/Home.vue` 均为 0 diagnostics。
+- `git diff --stat -- frontend/src/views/Bazi.vue frontend/src/views/Home.vue TODO.md`：确认本轮仅涉及 3 个目标文件。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`：命令已执行，但当前本机 Node 运行时仍报 `SyntaxError: Unexpected token '??='`，与前几轮一致，未定位到由本轮改动新增的编译错误。
+- 截图 / 录屏：本轮未新增视觉截图；当前环境受本机 Node 版本限制，未补跑前台本地预览。
+- Git：计划按 `fix-ui-multiple-issues-20260318-1342` 提交并推送到 `origin/master`。
+
+
+
+### 占卜功能续测（30-4 自动化执行，2026-03-18）
+
+- 本轮延续前一轮占卜巡检，先复核 `.codebuddy/automations/30-4/memory.md` 与 `TODO.md` 去重基线，再用真实测试账号继续跑 **八字 → 每日运势 → 六爻 → 塔罗 → 合婚 premium** 的接口链路。
+- 为避开当前 shell 对复杂 JSON 参数的解析干扰，本轮在产物目录临时写了只读探针脚本 `probe_divination_api.py` 与 `probe_hehun_premium.py`，仅用于稳定复测接口；仓库业务代码未改动。
+- 已更新 `TODO.md`、`.codebuddy/automations/30-4/memory.md`、`overview.md`；本轮未新增页面截图或录屏，证据主要来自真实接口返回与容器日志。
+
+#### 关键发现
+1. **每日运势登录态个性化仍未恢复**
+   - 测试账号 `13800138112` 在再次完成样例八字排盘后，`GET /api/points/balance` 已显示 `baziCount=2`、余额从 `100` 变为 `90`；但 `GET /api/daily/fortune` 仍返回 `personalized: null`，登录用户与游客看到的仍是同一份公共日运。
+2. **六爻起卦主链路仍断**
+   - `GET /api/liuyao/pricing` 已可返回“首次免费”，但 `POST /api/liuyao/divination` 的时间起卦与手动摇卦都只得到 `HTTP 200 + code 500`，随后 `GET /api/liuyao/history` 仍为空列表。
+3. **塔罗抽牌成功但解读全部 500**
+   - `single / three / celtic` 三种牌阵都能正常抽牌，并分别把积分从 `90 → 85 → 80 → 75` 递减；但 `POST /api/tarot/interpret` 三次全报 HTTP 500。容器错误日志明确记录：`Class "app\\controller\\TarotElementService" not found`。
+4. **合婚 premium 冲突问题仍存在**
+   - 使用新测试账号 `13800138113`（100 积分）真实解锁 premium 后，详细报告依旧给出 `81 分 / 佳偶天成`，同时 `traditional_methods.jiugong` 继续判为“五鬼 / 大凶 / 强烈建议慎重考虑”。
+
+#### 验证说明
+- 已真实验证：`phone-login` 测试登录成功；样例八字排盘成功；每日运势在 `baziCount=2` 条件下仍返回 `personalized: null`；六爻 time/manual 两种方式均失败；塔罗三种牌阵都能抽牌但解读全部失败；合婚 premium JSON 链路在足额积分账号上可成功返回完整报告。
+- 已通过容器日志验证：塔罗解读失败时命中 `Class "app\controller\TarotElementService" not found`；六爻当前仅记录到统一“控制器异常”，仍需后续继续补精确堆栈。
+- 已把本轮确认且当前 `TODO.md` 尚未登记的 **4 项高优先级占卜问题** 追加到 `TODO.md` 的 **《2026-03-18 占卜深度体验补充（第四十七次）》**。
+
+
+
 ### 前端修复批次（15-2 自动化执行，2026-03-18 12:08）
 
 - 本轮先读取 `.codebuddy/automations/15-2/memory.md` 与 `TODO.md`，随后继续清理当前仍未收口的前端/Vue 待办，完成了 **5 个前端问题修复**：1) `Tarot.vue` 保存记录改为统一使用现有牌阵状态，修复未定义变量导致的保存失败风险；2) `Tarot.vue` 把牌面解读区改为区分“生成中 / 失败 / 待展示”三种状态，不再把正常处理中误写成失败；3) `Liuyao.vue` 历史记录弹窗补齐 loading / error / empty 三态和重试入口，同时在无记录或失败态下仍保留查看入口；4) `Hehun.vue` 免费预览升级区去掉 `v-if="!isLoading"` 的整体隐藏方式，改为保留卡片并展示解锁中的进度与失败反馈；5) `Bazi.vue` 在流年年份与大运选项切换时主动清空旧分析结果，恢复 CTA，避免当前选择与下方旧结论脱钩。

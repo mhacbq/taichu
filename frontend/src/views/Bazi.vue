@@ -54,15 +54,47 @@
 
         <div class="form-group">
           <label>出生日期与时间</label>
-          <el-date-picker
-            v-model="birthDate"
-            type="datetime"
-            placeholder="选择出生日期时间（精确到分钟）"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            class="full-width"
-          />
-          <p class="form-hint">当前需要选择精确到分钟的出生时间；若只记得大概时段，请先选最接近的时间估算。</p>
+          <div class="time-accuracy-switch">
+            <span class="switch-label">时间确认度</span>
+            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group">
+              <el-radio-button label="exact">精确到分钟</el-radio-button>
+              <el-radio-button label="estimated">大概时段 / 未知时辰</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <template v-if="birthTimeAccuracy === 'exact'">
+            <el-date-picker
+              v-model="exactBirthDate"
+              type="datetime"
+              placeholder="选择出生日期时间（精确到分钟）"
+              format="YYYY-MM-DD HH:mm"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="full-width"
+            />
+            <p class="form-hint">建议填写准确出生时间；若只记得大概时段，可切换为估算模式，结果页会同步标记时刻精度。</p>
+          </template>
+
+          <template v-else>
+            <div class="estimate-birth-grid">
+              <el-date-picker
+                v-model="estimatedBirthDate"
+                type="date"
+                placeholder="选择出生日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                class="full-width"
+              />
+              <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段" class="full-width">
+                <el-option
+                  v-for="option in estimatedTimeOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </div>
+            <p class="form-hint form-hint--precision"><el-icon><Warning /></el-icon> 当前将按估算时段排盘，时柱和流年细节更适合做方向参考，结果页会醒目标记“估算时刻”。</p>
+          </template>
         </div>
         
         <div class="form-group">
@@ -207,10 +239,14 @@
         <div class="result-header">
           <h2>八字排盘结果</h2>
           <div class="result-meta">
-            <span class="meta-tag" v-if="result.is_first_bazi"><el-icon><Present /></el-icon> 首次免费</span>
-            <span class="meta-tag" v-if="result.from_cache"><el-icon><Lightning /></el-icon> 智能缓存</span>
+            <span class="meta-tag meta-tag--success" v-if="result.is_first_bazi"><el-icon><Present /></el-icon> 首次免费</span>
+            <span class="meta-tag meta-tag--success" v-if="result.from_cache"><el-icon><Lightning /></el-icon> 智能缓存</span>
+            <span class="meta-tag meta-tag--info"><el-icon><MagicStick /></el-icon> {{ resultModeLabel }}</span>
+            <span class="meta-tag" :class="birthTimeAccuracy === 'estimated' ? 'meta-tag--warning' : 'meta-tag--neutral'"><el-icon><Calendar /></el-icon> {{ birthTimeAccuracyLabel }}</span>
+            <span class="meta-tag meta-tag--neutral"><el-icon><QuestionFilled /></el-icon> {{ locationContextLabel }}</span>
           </div>
         </div>
+        <p v-if="resultContextNote" class="result-context-note">{{ resultContextNote }}</p>
 
         <el-collapse v-model="activeNames" class="result-collapse">
           <!-- 命盘基础部分 -->
@@ -504,7 +540,7 @@
           </el-collapse-item>
 
           <!-- 运势趋势部分 -->
-          <el-collapse-item name="fortune">
+          <el-collapse-item v-if="showAdvancedResultSections" name="fortune">
             <template #title>
               <div class="collapse-title-wrapper">
                 <el-icon class="title-icon"><TrendCharts /></el-icon>
@@ -572,7 +608,7 @@
           </el-collapse-item>
         
           <!-- 深度预测部分 -->
-          <el-collapse-item name="tools">
+          <el-collapse-item v-if="showAdvancedResultSections" name="tools">
             <template #title>
               <div class="collapse-title-wrapper">
                 <el-icon class="title-icon"><Aim /></el-icon>
@@ -590,7 +626,10 @@
               
               <!-- 年份选择 -->
               <div class="year-selector">
-                <span class="selector-label">选择年份：</span>
+                <div class="year-selector__header">
+                  <span class="selector-label">选择年份</span>
+                  <span class="selected-year">{{ selectedYear }}年</span>
+                </div>
                 <el-slider
                   v-model="selectedYear"
                   :min="new Date().getFullYear() - 3"
@@ -599,7 +638,6 @@
                   show-stops
                   class="year-slider"
                 />
-                <span class="selected-year">{{ selectedYear }}年</span>
               </div>
               
               <!-- 流年分析结果 -->
@@ -971,7 +1009,7 @@
           <el-button @click="shareResult">
             <el-icon><Share /></el-icon> 分享
           </el-button>
-          <el-button @click="result = null">
+          <el-button @click="resetCurrentResult">
             <el-icon><RefreshRight /></el-icon> 重新排盘
           </el-button>
         </div>
@@ -1005,7 +1043,33 @@ import { CHINA_CITIES } from '../utils/constants'
 const BAZI_BASE_COST = 10
 const AI_ANALYSIS_DEFAULT_COST = 30
 
-const birthDate = ref('')
+const estimatedTimeOptions = [
+  { value: 'before-dawn', label: '凌晨（约 01:30）', time: '01:30:00', shortLabel: '凌晨' },
+  { value: 'morning', label: '早晨（约 07:30）', time: '07:30:00', shortLabel: '早晨' },
+  { value: 'forenoon', label: '上午（约 10:30）', time: '10:30:00', shortLabel: '上午' },
+  { value: 'noon', label: '中午（约 12:00）', time: '12:00:00', shortLabel: '中午' },
+  { value: 'afternoon', label: '下午（约 15:30）', time: '15:30:00', shortLabel: '下午' },
+  { value: 'evening', label: '晚上（约 20:30）', time: '20:30:00', shortLabel: '晚上' },
+]
+
+const birthTimeAccuracy = ref('exact')
+const exactBirthDate = ref('')
+const estimatedBirthDate = ref('')
+const estimatedTimeSlot = ref('noon')
+const selectedEstimatedTimeOption = computed(() => {
+  return estimatedTimeOptions.find((option) => option.value === estimatedTimeSlot.value) || estimatedTimeOptions[3]
+})
+const birthDate = computed(() => {
+  if (birthTimeAccuracy.value === 'exact') {
+    return exactBirthDate.value || ''
+  }
+
+  if (!estimatedBirthDate.value) {
+    return ''
+  }
+
+  return `${estimatedBirthDate.value} ${selectedEstimatedTimeOption.value.time}`
+})
 const gender = ref('male')
 const location = ref('')
 const loading = ref(false)
@@ -1086,7 +1150,7 @@ const resetDerivedAnalysisState = () => {
   selectedYear.value = new Date().getFullYear()
   selectedDayunIndex.value = 0
 
-  activeNames.value = ['basic']
+  activeNames.value = getDefaultActiveNames()
 
   if (aiAbortController.value) {
     aiAbortController.value.abort()
@@ -1113,7 +1177,34 @@ const versionHint = computed(() => {
     ? '简化版：适合新手，只看核心信息，不用填出生地'
     : '专业版：适合进阶，包含真太阳时、大运流年等详细分析'
 })
+const resultModeLabel = computed(() => (versionMode.value === 'pro' ? '专业版结果' : '简化版结果'))
+const showAdvancedResultSections = computed(() => versionMode.value === 'pro')
+const birthTimeAccuracyLabel = computed(() => {
+  if (birthTimeAccuracy.value === 'exact') {
+    return '精确到分钟'
+  }
 
+  return `估算时刻 · ${selectedEstimatedTimeOption.value.shortLabel}`
+})
+const locationContextLabel = computed(() => {
+  if (versionMode.value !== 'pro') {
+    return '未填写出生地 · 默认北京时间'
+  }
+
+  return location.value ? `${location.value} · 真太阳时校准` : '未填写出生地 · 默认北京时间'
+})
+const resultContextNote = computed(() => {
+  if (birthTimeAccuracy.value === 'estimated') {
+    return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，尤其时柱与流年细节更适合做方向参考。`
+  }
+
+  if (!showAdvancedResultSections.value) {
+    return '当前为简化版结果，已自动收起大运、流年与深度预测工具；想继续深入，可切换到专业版。'
+  }
+
+  return ''
+})
+const getDefaultActiveNames = () => (showAdvancedResultSections.value ? ['basic', 'interpretation', 'fortune'] : ['basic', 'interpretation'])
 
 const cityOptions = computed(() => {
   return CHINA_CITIES.map(city => ({
@@ -1223,6 +1314,19 @@ const getFortuneToolActionText = (type, readyText) => {
 
   return readyText
 }
+
+watch(birthTimeAccuracy, (mode) => {
+  if (mode === 'estimated') {
+    if (!estimatedBirthDate.value && exactBirthDate.value) {
+      estimatedBirthDate.value = exactBirthDate.value.slice(0, 10)
+    }
+    return
+  }
+
+  if (!exactBirthDate.value && estimatedBirthDate.value) {
+    exactBirthDate.value = `${estimatedBirthDate.value} ${selectedEstimatedTimeOption.value.time}`
+  }
+})
 
 watch(selectedYear, (newYear, oldYear) => {
   if (newYear === oldYear) {
@@ -1599,6 +1703,7 @@ const calculateBazi = async () => {
     
     if (response.code === 200) {
       result.value = response.data
+      activeNames.value = getDefaultActiveNames()
       currentPoints.value = response.data.remaining_points
       isFirstBazi.value = false
       ElMessage.success('排盘成功！为你生成详细的命理解读')
@@ -2164,8 +2269,9 @@ const formatAiContent = (content) => {
 .result-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .result-header h2 {
@@ -2175,17 +2281,52 @@ const formatAiContent = (content) => {
 .result-meta {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .meta-tag {
-  background: rgba(var(--success-color-rgb), 0.2);
-  color: var(--success-color);
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 12px;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+
+.meta-tag--success {
+  background: rgba(var(--success-color-rgb), 0.2);
+  color: var(--success-color);
+}
+
+.meta-tag--info {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-color);
+}
+
+.meta-tag--neutral {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.meta-tag--warning {
+  background: rgba(230, 162, 60, 0.14);
+  border-color: rgba(230, 162, 60, 0.24);
+  color: var(--warning-color);
+}
+
+.result-context-note {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
+  color: var(--text-secondary);
+  line-height: 1.7;
 }
 
 @keyframes pulse {
@@ -2472,6 +2613,35 @@ const formatAiContent = (content) => {
   display: flex;
   align-items: center;
   gap: 5px;
+  line-height: 1.6;
+}
+
+.time-accuracy-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.switch-label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time-accuracy-group {
+  flex-wrap: wrap;
+}
+
+.estimate-birth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .full-width {
@@ -3529,12 +3699,19 @@ const formatAiContent = (content) => {
 
 .year-selector {
   display: flex;
-  align-items: center;
-  gap: 15px;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 25px;
   padding: 20px;
   background: var(--bg-secondary);
   border-radius: 12px;
+}
+
+.year-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .selector-label {
@@ -3544,7 +3721,7 @@ const formatAiContent = (content) => {
 }
 
 .year-slider {
-  flex: 1;
+  width: 100%;
 }
 
 .selected-year {
@@ -3552,6 +3729,7 @@ const formatAiContent = (content) => {
   font-size: 18px;
   font-weight: bold;
   min-width: 70px;
+  text-align: right;
 }
 
 /* 流年分析结果 */
@@ -4190,6 +4368,33 @@ const formatAiContent = (content) => {
 @media (max-width: 768px) {
   .bazi-page {
     padding: 30px 0;
+  }
+
+  .result-header {
+    flex-direction: column;
+  }
+
+  .result-meta {
+    justify-content: flex-start;
+  }
+
+  .time-accuracy-switch,
+  .year-selector__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .time-accuracy-group,
+  .estimate-birth-grid {
+    width: 100%;
+  }
+
+  .estimate-birth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-year {
+    text-align: left;
   }
 
   .fortune-recovery-banner {

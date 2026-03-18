@@ -78,7 +78,7 @@
                   <strong class="hero-points-value">{{ formattedUserPoints }}</strong>
                 </div>
               </div>
-              <p class="hero-points-note">当前积分已为你准备好，想继续深入时可以直接排盘或占卜；若想先补充额度，去签到页领取今日积分即可。</p>
+              <p class="hero-points-note">{{ heroPointsCardNote }}</p>
             </div>
             <div class="hero-panel-actions">
               <router-link to="/profile" class="hero-panel-btn hero-panel-btn--primary">签到领积分</router-link>
@@ -263,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
 import { Sunrise, Sunny, Moon, Coin, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
@@ -457,6 +457,27 @@ const heroPointsDetail = computed(() => {
   return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
 })
 
+const heroPointsCardNote = computed(() => {
+  if (!isLoggedIn.value) {
+    return '登录后即可同步积分权益与八字首测资格。'
+  }
+
+  if (!hasDisplayValue(userPoints.value)) {
+    return '积分正在同步中，也可以先去个人中心确认今日签到状态。'
+  }
+
+  if (baziOfferState.value === 'free') {
+    return `当前可用 ${formattedUserPoints.value} 积分，你的八字首测资格仍在，适合先从一次免费排盘开始。`
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return `当前可用 ${formattedUserPoints.value} 积分，八字首测资格已使用；想补充额度时，可去签到页领取今日积分。`
+  }
+
+  return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
+})
+
+
 const heroProofItems = computed(() => [
   {
     key: 'users',
@@ -539,16 +560,43 @@ const guestBenefits = [
 ]
 
 // 问候语数据
-const hour = new Date().getHours()
+const currentHour = ref(new Date().getHours())
+let greetingRefreshTimer = null
+
+const syncCurrentHour = () => {
+  currentHour.value = new Date().getHours()
+}
+
+const scheduleGreetingRefresh = () => {
+  syncCurrentHour()
+
+  if (greetingRefreshTimer) {
+    window.clearTimeout(greetingRefreshTimer)
+  }
+
+  const now = new Date()
+  const nextHour = new Date(now)
+  nextHour.setHours(now.getHours() + 1, 0, 0, 0)
+  greetingRefreshTimer = window.setTimeout(() => {
+    scheduleGreetingRefresh()
+  }, Math.max(1000, nextHour.getTime() - now.getTime() + 1000))
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    scheduleGreetingRefresh()
+  }
+}
+
 const greetingIcon = computed(() => {
-  if (hour < 12) return 'morning'
-  if (hour < 18) return 'afternoon'
+  if (currentHour.value < 12) return 'morning'
+  if (currentHour.value < 18) return 'afternoon'
   return 'evening'
 })
 
 const greetingText = computed(() => {
-  if (hour < 12) return '早上好，愿你今天充满希望'
-  if (hour < 18) return '下午好，愿你的努力都有收获'
+  if (currentHour.value < 12) return '早上好，愿你今天充满希望'
+  if (currentHour.value < 18) return '下午好，愿你的努力都有收获'
   return '晚上好，愿你今夜好梦'
 })
 
@@ -714,11 +762,18 @@ const refreshHomeAccountState = () => {
 onMounted(() => {
   loadStats()
   loadUserPoints()
+  scheduleGreetingRefresh()
   window.addEventListener('points-updated', refreshHomeAccountState)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('points-updated', refreshHomeAccountState)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  if (greetingRefreshTimer) {
+    window.clearTimeout(greetingRefreshTimer)
+    greetingRefreshTimer = null
+  }
 })
 </script>
 
