@@ -624,6 +624,16 @@ const buildDivinationPayload = () => {
 
 // 提交占卜
 const submitDivination = async () => {
+  if (pricingLoading.value) {
+    ElMessage.warning('价格同步中，请稍后再试')
+    return
+  }
+
+  if (pricingError.value || !pricing.value) {
+    ElMessage.warning('请先重新获取价格')
+    return
+  }
+
   if (!form.question.trim()) {
     ElMessage.warning('请输入占卜问题')
     return
@@ -633,6 +643,7 @@ const submitDivination = async () => {
     ElMessage.warning('问题太短了，请详细描述您的问题')
     return
   }
+
 
   if (form.method === 'number' && !Number.isFinite(form.numbers[0])) {
     ElMessage.warning('数字起卦至少需要填写第一个数字')

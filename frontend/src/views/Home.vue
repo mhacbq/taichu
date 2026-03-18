@@ -176,10 +176,10 @@
           </div>
           <div class="feature-card card-hover">
             <div class="feature-icon"><el-icon :size="48"><Aim /></el-icon></div>
-            <h3>更多功能</h3>
-            <p>取名建议、吉日查询等更多命理功能，满足您的不同需求</p>
+            <h3>个人中心</h3>
+            <p>在这里查看历史记录、积分权益与签到入口，也能继续管理你的命理体验进度</p>
             <router-link to="/profile" class="feature-link">
-              探索更多 <el-icon><ArrowRight /></el-icon>
+              进入个人中心 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
         </div>
@@ -212,10 +212,8 @@
                 <h4>{{ item.name }}</h4>
                 <p class="testimonial-persona">{{ item.persona }}</p>
                 <div class="testimonial-rating">
-                  <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= item.rating }">
-                    <StarFilled />
-                  </el-icon>
-                  <span class="testimonial-rating-text">{{ item.ratingLabel }}</span>
+                  <span class="testimonial-score">{{ item.ratingLabel.split(' · ')[0] }}</span>
+                  <span class="testimonial-rating-text">{{ item.ratingLabel.split(' · ')[1] || '示例反馈' }}</span>
                 </div>
               </div>
             </div>
@@ -1582,24 +1580,28 @@ onUnmounted(() => {
 .testimonial-rating {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.testimonial-rating .star {
-  color: var(--border-color);
-  font-size: 14px;
-}
-
-.testimonial-rating .star.filled {
-  color: var(--star-color);
+.testimonial-score {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.14);
+  border: 1px solid rgba(var(--primary-rgb), 0.24);
+  color: var(--text-primary);
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semibold);
 }
 
 .testimonial-rating-text {
-  margin-left: 6px;
   color: var(--text-tertiary);
   font-size: var(--font-tiny);
 }
+
 
 .testimonial-content {
   margin: 0;

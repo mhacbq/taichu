@@ -1134,7 +1134,7 @@ const confirmDialogConfig = computed(() => {
 })
 
 const canStartBazi = computed(() => {
-  if (!isAccountReady.value) {
+  if (!birthDate.value || !isAccountReady.value) {
     return false
   }
 
@@ -1142,6 +1142,10 @@ const canStartBazi = computed(() => {
 })
 
 const startBaziButtonText = computed(() => {
+  if (!birthDate.value) {
+    return '请选择出生日期'
+  }
+
   if (accountStatus.value === 'loading') {
     return '账户信息查询中...'
   }
@@ -1152,6 +1156,7 @@ const startBaziButtonText = computed(() => {
 
   return isFirstBazi.value ? '首次免费排盘' : '开始排盘'
 })
+
 
 const getFortuneToolCost = (type) => {
   const costKeyMap = {
