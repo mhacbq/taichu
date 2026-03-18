@@ -83,7 +83,34 @@ export function deleteNotice(id, options = {}) {
   })
 }
 
+export function getNotificationConfig(options = {}) {
+  return request({
+    url: '/system/notification/config',
+    method: 'get',
+    ...options
+  })
+}
+
+export function saveNotificationConfig(data, options = {}) {
+  return request({
+    url: '/system/notification/config',
+    method: 'put',
+    data,
+    ...options
+  })
+}
+
+export function sendNotificationTest(data, options = {}) {
+  return request({
+    url: '/system/notification/test',
+    method: 'post',
+    data,
+    ...options
+  })
+}
+
 export function getAdminUsers(params) {
+
   return request({
     url: '/system/admins',
     method: 'get',

@@ -28,8 +28,10 @@ Route::group('api/admin', function () {
         Route::get('users/behavior', 'Admin/userBehavior');
         Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
         Route::put('users/:id/status', 'admin.User/toggleStatus');
+        Route::put('users/:id', 'admin.User/updateProfile');
         Route::get('users/:id', 'admin.User/detail');
         Route::get('users', 'admin.User/index');
+
 
         
         // 内容管理
@@ -128,7 +130,11 @@ Route::group('api/admin', function () {
         Route::get('system/notices', 'admin.Notice/getNotices');
         Route::post('system/notices', 'admin.Notice/saveNotice');
         Route::delete('system/notices/:id', 'admin.Notice/deleteNotice');
+        Route::get('system/notification/config', 'admin.NotificationConfig/getSettings');
+        Route::put('system/notification/config', 'admin.NotificationConfig/saveSettings');
+        Route::post('system/notification/test', 'admin.NotificationConfig/sendTest');
         Route::get('system/shensha', 'admin.Shensha/index');
+
         Route::get('system/shensha/options', 'admin.Shensha/options');
         Route::post('system/shensha', 'admin.Shensha/save');
         Route::put('system/shensha/:id', 'admin.Shensha/save');

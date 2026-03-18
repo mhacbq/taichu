@@ -530,20 +530,48 @@ class Notification extends BaseController
         }
 
         if (self::usesNarrowNotificationSettingTable($columns)) {
-            $rows = Db::name('tc_notification_setting')
-                ->where('user_id', $userId)
-                ->select()
-                ->toArray();
-
+            $rows = self::loadNarrowSettingsRows($userId);
             return self::buildSettingsPayload($rows);
         }
 
+        $row = self::loadWideSettingsRow($userId);
+        return self::buildSettingsPayload($row ?: []);
+    }
+
+    protected static function loadNarrowSettingsRows(int $userId): array
+    {
+        $rows = Db::name('tc_notification_setting')
+            ->where('user_id', $userId)
+            ->select()
+            ->toArray();
+
+        if (!empty($rows)) {
+            return $rows;
+        }
+
+        return Db::name('tc_notification_setting')
+            ->where('user_id', 0)
+            ->select()
+            ->toArray();
+    }
+
+    protected static function loadWideSettingsRow(int $userId): array
+    {
         $row = Db::name('tc_notification_setting')
             ->where('user_id', $userId)
             ->find();
 
-        return self::buildSettingsPayload($row ?: []);
+        if (is_array($row) && !empty($row)) {
+            return $row;
+        }
+
+        $defaultRow = Db::name('tc_notification_setting')
+            ->where('user_id', 0)
+            ->find();
+
+        return is_array($defaultRow) ? $defaultRow : [];
     }
+
 
     /**
      * 获取通知设置表字段

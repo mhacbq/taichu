@@ -1,6 +1,14 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 用户资料 / 功能开关 / 神煞 / 通知配置修复记录（本次）
+
+- 本轮完成 5 个后端/运营收口项：系统设置功能开关保存后立即回读失效、用户详情资料编辑入口缺失、神煞历史乱码展示不可读、后台缺少独立通知配置入口、后台缺少测试通知能力；并补了神煞历史脏数据回填 SQL。
+- 关键代码：`backend/app/model/SystemConfig.php` 统一解析 `tc_system_config/system_config` 真表并按最新记录回读，`backend/app/controller/Admin.php` 为系统设置保存补齐布尔类型和分类映射；`backend/route/admin.php` + `admin/src/views/user/detail.vue` + `admin/src/api/user.js` 接通用户资料编辑；新增 `backend/app/controller/admin/NotificationConfig.php`、`admin/src/views/system/notification.vue`、`admin/src/api/system.js`、`admin/src/router/index.js`，落地通知默认开关/免打扰/测试通知；`backend/app/controller/admin/Shensha.php` + `backend/app/service/DisplayTextRepairService.php` 兜底修复神煞乱码，并新增 `database/20260318_fix_shensha_display_encoding.sql` 接入 `20260318_master_migration.sql`。
+- 验证：`docker exec taichu-app php /var/www/html/tests/run.php` 已通过；`docker exec taichu-app php -l` 对 `Admin.php`、`Notification.php`、`admin/Shensha.php`、`admin/NotificationConfig.php`、`SystemConfig.php`、`DisplayTextRepairService.php`、`route/admin.php` 均语法通过；`npm --prefix admin run build` 通过，仅保留既有 Sass legacy JS API 与 chunk 体积告警；`git diff --check`（目标文件）通过。
+- Git：待本轮收尾提交，并只纳入本轮目标文件。
+
 ## 2026-03-18 积分 / 敏感配置 / 索引修复记录（本次）
+
 
 - 本轮完成 5 个后端相关问题收口：积分记录接口字段归一化、支付配置敏感字段加密、短信配置敏感字段加密、高频查询与清理索引补齐、短信验证码过期物理清理；同时补充了后端轻量测试入口与两组单元测试。
 - 关键代码：`backend/app/model/PointsRecord.php` 新增统一展示归一化能力并修复空字符串导致 `reason/remark/action` 回退失效的问题；新增 `backend/app/service/SensitiveConfigCrypt.php`，为 `PaymentConfig.php`、`SmsConfig.php` 提供 AES-256-GCM 字段级加密/解密；`SmsCode.php` 新增 `purgeExpired(7)` 并由 `DailyTask.php` 接入；数据库脚本 `database/20260318_add_points_recharge_sms_indexes.sql` 已接入 `20260318_master_migration.sql`。

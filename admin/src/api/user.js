@@ -40,7 +40,17 @@ export function getUserDetail(id, options = {}) {
   })
 }
 
+export function updateUserProfile(id, data, options = {}) {
+  return request({
+    url: `/users/${id}`,
+    method: 'put',
+    data,
+    ...options
+  })
+}
+
 export function updateUserStatus(id, status, options = {}) {
+
   return request({
     url: `/users/${id}/status`,
     method: 'put',

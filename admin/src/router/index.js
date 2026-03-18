@@ -347,7 +347,14 @@ export const asyncRoutes = [
         meta: { title: '系统公告', roles: ['admin', 'operator'] }
       },
       {
+        path: 'notification',
+        name: 'NotificationConfig',
+        component: () => import('@/views/system/notification.vue'),
+        meta: { title: '通知配置', roles: ['admin', 'operator'] }
+      },
+      {
         path: 'admin',
+
         name: 'AdminUsers',
         component: () => import('@/views/system/admin.vue'),
         meta: { title: '管理员管理', roles: ['admin'] }

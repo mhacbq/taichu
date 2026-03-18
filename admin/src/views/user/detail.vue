@@ -23,6 +23,8 @@
             </div>
             <el-descriptions :column="1" border>
               <el-descriptions-item label="用户名">{{ userInfo.username || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="昵称">{{ userInfo.nickname || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="性别">{{ formatGender(userInfo.gender) }}</el-descriptions-item>
               <el-descriptions-item label="手机号">{{ userInfo.phone || '-' }}</el-descriptions-item>
               <el-descriptions-item label="邮箱">{{ userInfo.email || '-' }}</el-descriptions-item>
               <el-descriptions-item label="注册时间">{{ userInfo.created_at || '-' }}</el-descriptions-item>
@@ -40,7 +42,10 @@
             <template #header>
               <div class="card-header">
                 <span>使用统计</span>
-                <el-button type="primary" :disabled="!canAdjustPoints" @click="openPointsDialog">手动调积分</el-button>
+                <div class="action-group">
+                  <el-button type="primary" plain :disabled="!canEditProfile" @click="openProfileDialog">编辑资料</el-button>
+                  <el-button type="primary" :disabled="!canAdjustPoints" @click="openPointsDialog">手动调积分</el-button>
+                </div>
               </div>
             </template>
 
@@ -89,6 +94,39 @@
       </el-row>
     </div>
 
+    <el-dialog v-model="profileDialog.visible" title="编辑用户资料" width="520px">
+      <el-form :model="profileDialog.form" label-width="96px" :disabled="!canEditProfile || submittingProfile">
+        <el-form-item label="昵称" required>
+          <el-input
+            v-model="profileDialog.form.nickname"
+            maxlength="50"
+            show-word-limit
+            placeholder="请输入用户昵称"
+          />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="profileDialog.form.email" placeholder="请输入邮箱地址" clearable />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="profileDialog.form.phone" placeholder="请输入手机号" clearable />
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="profileDialog.form.gender">
+            <el-radio :label="0">未知</el-radio>
+            <el-radio :label="1">男</el-radio>
+            <el-radio :label="2">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="头像链接">
+          <el-input v-model="profileDialog.form.avatar" placeholder="https://example.com/avatar.png" clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="profileDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="submittingProfile" :disabled="!canEditProfile" @click="submitProfile">保存资料</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="pointsDialog.visible" title="手动调整积分" width="420px">
       <el-form :model="pointsDialog.form" label-width="90px" :disabled="!canAdjustPoints">
         <el-form-item label="当前积分">
@@ -126,7 +164,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getUserDetail } from '@/api/user'
+import { getUserDetail, updateUserProfile } from '@/api/user'
 import { adjustPoints } from '@/api/points'
 import { createReadonlyErrorState } from '@/utils/page-error'
 
@@ -134,8 +172,13 @@ const route = useRoute()
 const router = useRouter()
 const loadingDetail = ref(false)
 const submitting = ref(false)
+const submittingProfile = ref(false)
 const detailError = ref(null)
 const userInfo = ref(createDefaultUserInfo())
+const profileDialog = reactive({
+  visible: false,
+  form: createDefaultProfileForm()
+})
 const pointsDialog = reactive({
   visible: false,
   form: {
@@ -153,7 +196,24 @@ const canAdjustPoints = computed(() => {
 
   return Boolean(userInfo.value.can_adjust_points || userInfo.value.actions?.can_adjust_points)
 })
+const canEditProfile = computed(() => {
+  if (detailError.value) {
+    return false
+  }
+
+  return Boolean(userInfo.value.can_edit_profile || userInfo.value.actions?.can_edit_profile)
+})
 const activities = computed(() => buildRecentActivities(userInfo.value))
+
+function createDefaultProfileForm() {
+  return {
+    nickname: '',
+    email: '',
+    phone: '',
+    gender: 0,
+    avatar: ''
+  }
+}
 
 function createDefaultUserInfo() {
   return {
@@ -163,6 +223,7 @@ function createDefaultUserInfo() {
     username: '',
     phone: '',
     email: '',
+    gender: 0,
     created_at: '',
     status: 0,
     points: 0,
@@ -173,6 +234,7 @@ function createDefaultUserInfo() {
     vip_orders: [],
     recharge_orders: [],
     can_adjust_points: false,
+    can_edit_profile: false,
     actions: {}
   }
 }
@@ -199,14 +261,13 @@ function normalizeUserDetail(data = {}) {
   const nickname = String(data.nickname ?? baseUser.nickname ?? username ?? data.phone ?? baseUser.phone ?? `用户#${id}`)
 
   return {
-
     id,
     avatar: String(data.avatar ?? baseUser.avatar ?? ''),
     nickname,
     username,
     phone: String(data.phone ?? baseUser.phone ?? ''),
-
     email: String(data.email ?? baseUser.email ?? ''),
+    gender: Number(data.gender ?? baseUser.gender ?? 0),
     created_at: String(data.created_at ?? baseUser.created_at ?? ''),
     status: Number(data.status ?? baseUser.status ?? 0),
     points: Number(data.points ?? baseUser.points ?? 0),
@@ -217,7 +278,29 @@ function normalizeUserDetail(data = {}) {
     vip_orders: Array.isArray(data.vip_orders) ? data.vip_orders : (Array.isArray(data.stats?.vip_orders) ? data.stats.vip_orders : []),
     recharge_orders: Array.isArray(data.recharge_orders) ? data.recharge_orders : (Array.isArray(data.stats?.recharge_orders) ? data.stats.recharge_orders : []),
     can_adjust_points: Boolean(data.can_adjust_points ?? data.actions?.can_adjust_points ?? data.stats?.points_summary?.can_adjust),
+    can_edit_profile: Boolean(data.can_edit_profile ?? data.actions?.can_edit_profile),
     actions: data.actions && typeof data.actions === 'object' ? data.actions : {}
+  }
+}
+
+function createProfilePayload(user = {}) {
+  return {
+    nickname: String(user.nickname || '').trim(),
+    email: String(user.email || '').trim(),
+    phone: String(user.phone || '').trim(),
+    gender: Number.isFinite(Number(user.gender)) ? Number(user.gender) : 0,
+    avatar: String(user.avatar || '').trim()
+  }
+}
+
+function formatGender(value) {
+  switch (Number(value)) {
+    case 1:
+      return '男'
+    case 2:
+      return '女'
+    default:
+      return '未知'
   }
 }
 
@@ -272,7 +355,6 @@ function formatPointsActivity(record = {}) {
 
   return `积分${direction} ${amountText}：${reason}`
 }
-
 
 function formatVipOrderActivity(order = {}) {
   const packageName = String(order.package_name || order.package_title || order.title || 'VIP 套餐').trim()
@@ -337,13 +419,89 @@ async function loadUserDetail() {
     const userId = route.params.id
     const { data } = await getUserDetail(userId, { showErrorMessage: false })
     userInfo.value = normalizeUserDetail(data)
+    profileDialog.form = createProfilePayload(userInfo.value)
     detailError.value = null
   } catch (error) {
     userInfo.value = createDefaultUserInfo()
+    profileDialog.visible = false
     pointsDialog.visible = false
     detailError.value = createReadonlyErrorState(error, '用户详情', 'user_view')
   } finally {
     loadingDetail.value = false
+  }
+}
+
+function openProfileDialog() {
+  if (detailError.value) {
+    ElMessage.warning('用户详情尚未成功加载，已禁止继续编辑资料')
+    return
+  }
+
+  if (!canEditProfile.value) {
+    ElMessage.warning('当前账号无用户资料编辑权限')
+    return
+  }
+
+  profileDialog.form = createProfilePayload(userInfo.value)
+  profileDialog.visible = true
+}
+
+function validateProfileForm(form) {
+  const nickname = String(form.nickname || '').trim()
+  if (!nickname) {
+    return '昵称不能为空'
+  }
+
+  const email = String(form.email || '').trim()
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return '邮箱格式不正确'
+  }
+
+  const phone = String(form.phone || '').trim()
+  if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+    return '手机号格式不正确'
+  }
+
+  const avatar = String(form.avatar || '').trim()
+  if (avatar && !/^https?:\/\//i.test(avatar)) {
+    return '头像链接必须以 http:// 或 https:// 开头'
+  }
+
+  if (![0, 1, 2].includes(Number(form.gender))) {
+    return '性别值无效'
+  }
+
+  return ''
+}
+
+async function submitProfile() {
+  if (!canEditProfile.value) {
+    ElMessage.warning(detailError.value ? '用户详情尚未成功加载，已禁止继续编辑资料' : '当前账号无用户资料编辑权限')
+    return
+  }
+
+  const message = validateProfileForm(profileDialog.form)
+  if (message) {
+    ElMessage.warning(message)
+    return
+  }
+
+  submittingProfile.value = true
+  try {
+    await updateUserProfile(userInfo.value.id, {
+      nickname: profileDialog.form.nickname.trim(),
+      email: profileDialog.form.email.trim(),
+      phone: profileDialog.form.phone.trim(),
+      gender: Number(profileDialog.form.gender),
+      avatar: profileDialog.form.avatar.trim()
+    }, { showErrorMessage: false })
+    ElMessage.success('用户资料已更新')
+    profileDialog.visible = false
+    await loadUserDetail()
+  } catch (error) {
+    ElMessage.error(error.message || '保存用户资料失败')
+  } finally {
+    submittingProfile.value = false
   }
 }
 
@@ -408,6 +566,12 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.action-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .simple-header {

@@ -1001,7 +1001,7 @@ class Admin extends BaseController
         }
 
         try {
-            $rules = Db::name('system_config')
+            $rules = Db::table('system_config')
                 ->whereIn('category', [self::CATEGORY_POINTS, self::CATEGORY_POINTS_COST])
                 ->order('category', 'asc')
                 ->order('sort_order', 'asc')
@@ -1075,13 +1075,13 @@ class Admin extends BaseController
         try {
             $existing = null;
             if ($id > 0) {
-                $existing = Db::name('system_config')->where('id', $id)->find();
+                $existing = Db::table('system_config')->where('id', $id)->find();
                 if (!$existing) {
                     return $this->error('积分规则不存在', 404);
                 }
             }
 
-            $duplicateQuery = Db::name('system_config')->where('config_key', $code);
+            $duplicateQuery = Db::table('system_config')->where('config_key', $code);
             if ($id > 0) {
                 $duplicateQuery->where('id', '<>', $id);
             }
@@ -1101,10 +1101,10 @@ class Admin extends BaseController
             ];
 
             if ($id > 0) {
-                Db::name('system_config')->where('id', $id)->update($payload);
+                Db::table('system_config')->where('id', $id)->update($payload);
             } else {
                 $payload['created_at'] = date('Y-m-d H:i:s');
-                $id = (int) Db::name('system_config')->insertGetId($payload);
+                $id = (int) Db::table('system_config')->insertGetId($payload);
             }
 
             $after = [
@@ -1274,7 +1274,7 @@ class Admin extends BaseController
 
             // 获取操作前的设置用于日志记录
             $configKeys = array_keys($normalizedSettings);
-            $oldSettings = Db::name('system_config')
+            $oldSettings = Db::table('system_config')
                 ->whereIn('config_key', $configKeys)
                 ->column('config_value', 'config_key');
 
@@ -1287,35 +1287,36 @@ class Admin extends BaseController
                 }
 
                 // 获取配置类型
-                $config = Db::name('system_config')
+                $config = Db::table('system_config')
                     ->where('config_key', $key)
                     ->find();
 
+                $configType = $this->resolveSystemSettingConfigType($key, $value, (string) ($config['config_type'] ?? 'string'));
                 if ($config) {
-                    // 根据类型处理值
-                    $processedValue = $this->processConfigValue($value, $config['config_type']);
+                    $processedValue = $this->processConfigValue($value, $configType);
 
-                    Db::name('system_config')
+                    Db::table('system_config')
                         ->where('config_key', $key)
                         ->update([
                             'config_value' => $processedValue,
+                            'config_type' => $configType,
+                            'category' => $this->resolveSystemSettingCategory($key, (string) ($config['category'] ?? 'custom')),
                             'updated_at' => date('Y-m-d H:i:s')
                         ]);
                     $updateCount++;
                 } else {
-                    $configType = is_bool($value) ? 'bool' : (is_int($value) ? 'int' : (is_float($value) ? 'float' : (is_array($value) ? 'json' : 'string')));
-                    // 新增配置项时按归一化后的真实类型落库
-                    Db::name('system_config')->insert([
+                    Db::table('system_config')->insert([
                         'config_key' => $key,
                         'config_value' => $this->processConfigValue($value, $configType),
                         'config_type' => $configType,
-                        'category' => 'custom',
+                        'category' => $this->resolveSystemSettingCategory($key),
                         'is_editable' => 1,
                         'created_at' => date('Y-m-d H:i:s'),
                         'updated_at' => date('Y-m-d H:i:s')
                     ]);
                     $updateCount++;
                 }
+
             }
 
             ConfigService::clearCache();
@@ -1362,7 +1363,7 @@ class Admin extends BaseController
             $pageSize = $pagination['pageSize'];
             $keyword = trim((string) $request->get('keyword', ''));
 
-            $query = Db::name('system_config')
+            $query = Db::table('system_config')
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->order('created_at', 'desc');
 
@@ -1372,7 +1373,7 @@ class Admin extends BaseController
 
             $total = $query->count();
             $rows = $query->page($page, $pageSize)->select()->toArray();
-            $allRows = Db::name('system_config')
+            $allRows = Db::table('system_config')
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->select()
                 ->toArray();
@@ -1453,7 +1454,7 @@ class Admin extends BaseController
                 'remark' => $remark,
             ];
 
-            $id = (int) Db::name('system_config')->insertGetId([
+            $id = (int) Db::table('system_config')->insertGetId([
                 'config_key' => 'sensitive_word_' . uniqid('', true),
                 'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE),
                 'config_type' => 'json',
@@ -1505,7 +1506,7 @@ class Admin extends BaseController
         }
 
         try {
-            $existing = Db::name('system_config')
+            $existing = Db::table('system_config')
                 ->where('id', $id)
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->find();
@@ -1523,7 +1524,7 @@ class Admin extends BaseController
                 'remark' => $remark,
             ];
 
-            Db::name('system_config')
+            Db::table('system_config')
                 ->where('id', $id)
                 ->update([
                     'config_value' => json_encode($payload, JSON_UNESCAPED_UNICODE),
@@ -1559,7 +1560,7 @@ class Admin extends BaseController
         }
 
         try {
-            $existing = Db::name('system_config')
+            $existing = Db::table('system_config')
                 ->where('id', $id)
                 ->where('category', self::CATEGORY_SENSITIVE_WORDS)
                 ->find();
@@ -1567,7 +1568,7 @@ class Admin extends BaseController
                 return $this->error('敏感词不存在', 404);
             }
 
-            Db::name('system_config')->where('id', $id)->delete();
+            Db::table('system_config')->where('id', $id)->delete();
 
             $this->logOperation('delete_sensitive_word', 'config', [
                 'target_id' => $id,
@@ -1642,7 +1643,7 @@ class Admin extends BaseController
             }
 
             if (!empty($insertData)) {
-                Db::name('system_config')->insertAll($insertData);
+                Db::table('system_config')->insertAll($insertData);
             }
 
             $this->logOperation('import_sensitive_words', 'config', [
@@ -2079,9 +2080,61 @@ class Admin extends BaseController
         return $normalized;
     }
 
+    protected function resolveSystemSettingConfigType(string $key, mixed $value, string $fallback = 'string'): string
+    {
+        if (in_array($key, ['site_name', 'logo', 'site_description'], true)) {
+            return 'string';
+        }
+
+        if (in_array($key, ['register_points', 'checkin_points', 'points_sign_daily', 'bazi_cost', 'points_cost_bazi', 'tarot_cost', 'points_cost_tarot'], true)) {
+            return 'int';
+        }
+
+        if (in_array($key, ['enable_register', 'feature_register_enabled', 'enable_daily', 'feature_daily_enabled', 'enable_feedback', 'feature_feedback_enabled', 'enable_ai_analysis', 'feature_ai_analysis_enabled'], true)) {
+            return 'bool';
+        }
+
+        if (is_bool($value)) {
+            return 'bool';
+        }
+        if (is_int($value)) {
+            return 'int';
+        }
+        if (is_float($value)) {
+            return 'float';
+        }
+        if (is_array($value)) {
+            return 'json';
+        }
+
+        return $fallback !== '' ? $fallback : 'string';
+    }
+
+    protected function resolveSystemSettingCategory(string $key, string $fallback = 'custom'): string
+    {
+        if (in_array($key, ['site_name', 'logo', 'site_description'], true)) {
+            return 'site';
+        }
+
+        if (in_array($key, ['register_points', 'checkin_points', 'points_sign_daily'], true)) {
+            return 'points';
+        }
+
+        if (in_array($key, ['bazi_cost', 'points_cost_bazi', 'tarot_cost', 'points_cost_tarot'], true)) {
+            return 'points_cost';
+        }
+
+        if (in_array($key, ['enable_register', 'feature_register_enabled', 'enable_daily', 'feature_daily_enabled', 'enable_feedback', 'feature_feedback_enabled', 'enable_ai_analysis', 'feature_ai_analysis_enabled'], true)) {
+            return 'feature';
+        }
+
+        return $fallback !== '' ? $fallback : 'custom';
+    }
+
     /**
      * 解析配置中的JSON值
      */
+
 
     protected function decodeConfigJson(?string $value): array
     {
@@ -2098,7 +2151,7 @@ class Admin extends BaseController
      */
     protected function hasDuplicateSensitiveWord(string $word, int $excludeId = 0): bool
     {
-        $rows = Db::name('system_config')
+        $rows = Db::table('system_config')
             ->where('category', self::CATEGORY_SENSITIVE_WORDS)
             ->select()
             ->toArray();
@@ -2670,7 +2723,7 @@ class Admin extends BaseController
         }
 
         try {
-            $list = Db::name('system_config')
+            $list = Db::table('system_config')
                 ->where('category', 'feedback_category')
                 ->select();
             return $this->success($list, '获取成功');
@@ -2694,11 +2747,11 @@ class Admin extends BaseController
             unset($data['id']);
 
             if ($id > 0) {
-                Db::name('system_config')->where('id', $id)->update($data);
+                Db::table('system_config')->where('id', $id)->update($data);
             } else {
                 $data['category'] = 'feedback_category';
                 $data['config_key'] = 'fb_cat_' . uniqid();
-                $id = Db::name('system_config')->insertGetId($data);
+                $id = Db::table('system_config')->insertGetId($data);
             }
 
             return $this->success(['id' => $id], '保存成功');
@@ -2717,7 +2770,7 @@ class Admin extends BaseController
         }
 
         try {
-            Db::name('system_config')->where('id', $id)->where('category', 'feedback_category')->delete();
+            Db::table('system_config')->where('id', $id)->where('category', 'feedback_category')->delete();
             return $this->success(null, '删除成功');
         } catch (\Exception $e) {
             return $this->error('删除失败', 500);
