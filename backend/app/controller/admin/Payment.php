@@ -608,7 +608,19 @@ class Payment extends BaseController
         }
 
         try {
-            $paidBaseQuery = Db::table('tc_recharge_order')
+            $rechargeOrderTable = $this->resolveRechargeOrderTable();
+            if ($rechargeOrderTable === null) {
+                return $this->success([
+                    'total_amount' => 0,
+                    'total_points' => 0,
+                    'order_count' => 0,
+                    'user_count' => 0,
+                    'pending_count' => 0,
+                    'avg_amount' => 0,
+                ]);
+            }
+
+            $paidBaseQuery = Db::table($rechargeOrderTable)
                 ->where('pay_time', '>=', $startDate . ' 00:00:00')
                 ->where('pay_time', '<=', $endDate . ' 23:59:59');
             $this->applyRechargeOrderStatusFilter($paidBaseQuery, 'paid');
@@ -616,15 +628,13 @@ class Payment extends BaseController
             $totalAmount = (float) ((clone $paidBaseQuery)->sum('amount') ?? 0);
             $totalPoints = (int) ((clone $paidBaseQuery)->sum('points') ?? 0);
             $orderCount = (int) (clone $paidBaseQuery)->count();
-            $rechargeOrderColumns = SchemaInspector::getTableColumns('tc_recharge_order');
+            $rechargeOrderColumns = $this->getRechargeOrderColumns();
             $paidUserIds = isset($rechargeOrderColumns['user_id'])
                 ? (clone $paidBaseQuery)->column('user_id')
                 : [];
             $userCount = count(array_unique(array_filter(array_map('intval', (array) $paidUserIds), static fn (int $userId): bool => $userId > 0)));
 
-
-
-            $pendingBaseQuery = Db::table('tc_recharge_order')
+            $pendingBaseQuery = Db::table($rechargeOrderTable)
                 ->where('created_at', '>=', $startDate . ' 00:00:00')
                 ->where('created_at', '<=', $endDate . ' 23:59:59');
             $this->applyRechargeOrderStatusFilter($pendingBaseQuery, 'pending');
@@ -659,10 +669,23 @@ class Payment extends BaseController
         $days = 7;
         $data = [];
 
+        $rechargeOrderTable = $this->resolveRechargeOrderTable();
+        if ($rechargeOrderTable === null) {
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $data[] = [
+                    'date' => date('Y-m-d', strtotime("-{$i} days")),
+                    'amount' => 0,
+                    'count' => 0,
+                ];
+            }
+
+            return $this->success($data);
+        }
+
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-{$i} days"));
 
-            $baseQuery = Db::table('tc_recharge_order')
+            $baseQuery = Db::table($rechargeOrderTable)
                 ->where('pay_time', '>=', $date . ' 00:00:00')
                 ->where('pay_time', '<=', $date . ' 23:59:59');
             $this->applyRechargeOrderStatusFilter($baseQuery, 'paid');
@@ -811,7 +834,20 @@ class Payment extends BaseController
 
         Db::startTrans();
         try {
-            $lockedOrder = Db::table('tc_recharge_order')
+            $rechargeOrderTable = $this->resolveRechargeOrderTable();
+            if ($rechargeOrderTable === null) {
+                Db::rollback();
+                return ['success' => false, 'message' => '订单表未初始化'];
+            }
+
+            $userTable = $this->resolveUserTable();
+            if ($userTable === null) {
+                Db::rollback();
+                return ['success' => false, 'message' => '用户表未初始化'];
+            }
+
+            $orderColumns = $this->getRechargeOrderColumns();
+            $lockedOrder = Db::table($rechargeOrderTable)
                 ->where('id', $order->id)
                 ->lock(true)
                 ->find();
@@ -821,13 +857,13 @@ class Payment extends BaseController
                 return ['success' => false, 'message' => '订单不存在'];
             }
 
-            if (($lockedOrder['status'] ?? '') === RechargeOrder::STATUS_REFUNDED) {
+            if ($this->extractRechargeOrderStatus($lockedOrder) === RechargeOrder::STATUS_REFUNDED) {
                 Db::commit();
                 $order->refresh();
                 return ['success' => true, 'message' => '订单已退款'];
             }
 
-            if (($lockedOrder['status'] ?? '') !== RechargeOrder::STATUS_PAID) {
+            if ($this->extractRechargeOrderStatus($lockedOrder) !== RechargeOrder::STATUS_PAID) {
                 Db::rollback();
                 return ['success' => false, 'message' => '当前订单状态不允许退款'];
             }
@@ -856,7 +892,7 @@ class Payment extends BaseController
                 return ['success' => false, 'message' => (string) ($refundResult['message'] ?? '微信退款失败')];
             }
 
-            $user = Db::table('tc_user')
+            $user = Db::table($userTable)
                 ->where('id', $order->user_id)
                 ->lock(true)
                 ->find();
@@ -866,40 +902,69 @@ class Payment extends BaseController
                 return ['success' => false, 'message' => '用户不存在'];
             }
 
+            if (!isset($user['points'])) {
+                Db::rollback();
+                return ['success' => false, 'message' => '用户积分字段不存在'];
+            }
+
             $currentPoints = (int) ($user['points'] ?? 0);
             if ($currentPoints < (int) $order->points) {
                 Db::rollback();
                 return ['success' => false, 'message' => '用户当前积分不足，无法执行退款'];
             }
 
-            Db::table('tc_user')
+            Db::table($userTable)
                 ->where('id', $order->user_id)
                 ->dec('points', (int) $order->points)
                 ->update();
 
-            Db::table('tc_points_record')->insert([
-                'user_id' => $order->user_id,
-                'action' => '充值退款',
-                'points' => -((int) $order->points),
-                'type' => 'refund',
-                'related_id' => $order->id,
-                'remark' => $reason,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            $this->insertRefundPointsRecordCompat(
+                (int) $order->user_id,
+                (int) $order->id,
+                -((int) $order->points),
+                $currentPoints,
+                $currentPoints - (int) $order->points,
+                $reason
+            );
 
             $refundTime = date('Y-m-d H:i:s');
-            Db::table('tc_recharge_order')
+            $orderUpdatePayload = [];
+            if (isset($orderColumns['status'])) {
+                $orderUpdatePayload['status'] = RechargeOrder::STATUS_REFUNDED;
+            }
+            if (isset($orderColumns['pay_status'])) {
+                $orderUpdatePayload['pay_status'] = 3;
+            }
+            if (isset($orderColumns['refund_no'])) {
+                $orderUpdatePayload['refund_no'] = $refundNo;
+            }
+            if (isset($orderColumns['refund_amount'])) {
+                $orderUpdatePayload['refund_amount'] = $refundAmount;
+            }
+            if (isset($orderColumns['refund_time'])) {
+                $orderUpdatePayload['refund_time'] = $refundTime;
+            }
+            if (isset($orderColumns['refund_reason'])) {
+                $orderUpdatePayload['refund_reason'] = $reason;
+            }
+            if (isset($orderColumns['wechat_refund_id'])) {
+                $orderUpdatePayload['wechat_refund_id'] = (string) ($refundResult['refund_id'] ?? '');
+            }
+            if (isset($orderColumns['refund_response'])) {
+                $orderUpdatePayload['refund_response'] = json_encode($refundResult, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            if (isset($orderColumns['updated_at'])) {
+                $orderUpdatePayload['updated_at'] = $refundTime;
+            }
+
+            if (empty($orderUpdatePayload)) {
+                Db::rollback();
+                return ['success' => false, 'message' => '订单退款字段不存在，无法回写退款结果'];
+            }
+
+            Db::table($rechargeOrderTable)
                 ->where('id', $order->id)
-                ->update([
-                    'status' => RechargeOrder::STATUS_REFUNDED,
-                    'refund_no' => $refundNo,
-                    'refund_amount' => $refundAmount,
-                    'refund_time' => $refundTime,
-                    'refund_reason' => $reason,
-                    'wechat_refund_id' => (string) ($refundResult['refund_id'] ?? ''),
-                    'refund_response' => json_encode($refundResult, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    'updated_at' => $refundTime,
-                ]);
+                ->update($orderUpdatePayload);
 
             $this->logOperation('refund_recharge_order', 'recharge_order', [
                 'target_id' => $order->id,
@@ -937,7 +1002,7 @@ class Payment extends BaseController
      */
     protected function applyRechargeOrderStatusFilter($query, string $status): void
     {
-        $columns = SchemaInspector::getTableColumns('tc_recharge_order');
+        $columns = $this->getRechargeOrderColumns();
         if (isset($columns['status'])) {
             $statusMap = [
                 'pending' => RechargeOrder::STATUS_PENDING,
@@ -962,6 +1027,135 @@ class Payment extends BaseController
 
         if ($status === 'paid') {
             $query->whereNotNull('pay_time');
+        }
+    }
+
+    protected function extractRechargeOrderStatus(array $orderRow): string
+    {
+        $status = trim((string) ($orderRow['status'] ?? ''));
+        if ($status !== '') {
+            return $status;
+        }
+
+        return match ((int) ($orderRow['pay_status'] ?? -1)) {
+            1 => RechargeOrder::STATUS_PAID,
+            2 => RechargeOrder::STATUS_CANCELLED,
+            3 => RechargeOrder::STATUS_REFUNDED,
+            default => RechargeOrder::STATUS_PENDING,
+        };
+    }
+
+    protected function resolveRechargeOrderTable(): ?string
+    {
+        foreach (['tc_recharge_order', 'recharge_order'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return null;
+    }
+
+    protected function resolveUserTable(): ?string
+    {
+        foreach (['tc_user', 'user'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return null;
+    }
+
+    protected function resolvePointsRecordTable(): ?string
+    {
+        foreach (['tc_points_record', 'points_record'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return null;
+    }
+
+    protected function getRechargeOrderColumns(): array
+    {
+        $table = $this->resolveRechargeOrderTable();
+        return $table === null ? [] : SchemaInspector::getTableColumns($table);
+    }
+
+    protected function getPointsRecordColumns(): array
+    {
+        $table = $this->resolvePointsRecordTable();
+        return $table === null ? [] : SchemaInspector::getTableColumns($table);
+    }
+
+    protected function insertRefundPointsRecordCompat(
+        int $userId,
+        int $orderId,
+        int $points,
+        int $beforePoints,
+        int $afterPoints,
+        string $reason
+    ): void {
+        $pointsRecordTable = $this->resolvePointsRecordTable();
+        if ($pointsRecordTable === null) {
+            return;
+        }
+
+        $columns = $this->getPointsRecordColumns();
+        $payload = [];
+        if (isset($columns['user_id'])) {
+            $payload['user_id'] = $userId;
+        }
+        if (isset($columns['action'])) {
+            $payload['action'] = '充值退款';
+        }
+        if (isset($columns['points'])) {
+            $payload['points'] = $points;
+        }
+        if (isset($columns['type'])) {
+            $payload['type'] = 'refund';
+        }
+        if (isset($columns['related_id'])) {
+            $payload['related_id'] = $orderId;
+        }
+        if (isset($columns['remark'])) {
+            $payload['remark'] = $reason;
+        }
+        if (isset($columns['description'])) {
+            $payload['description'] = $reason;
+        }
+        if (isset($columns['amount'])) {
+            $payload['amount'] = abs($points);
+        }
+        if (isset($columns['balance'])) {
+            $payload['balance'] = $afterPoints;
+        }
+        if (isset($columns['reason'])) {
+            $payload['reason'] = $reason;
+        }
+        if (isset($columns['source_id'])) {
+            $payload['source_id'] = $orderId;
+        }
+        if (isset($columns['source_type'])) {
+            $payload['source_type'] = 'recharge_refund';
+        }
+        if (isset($columns['before_balance'])) {
+            $payload['before_balance'] = $beforePoints;
+        }
+        if (isset($columns['after_balance'])) {
+            $payload['after_balance'] = $afterPoints;
+        }
+        if (isset($columns['created_at'])) {
+            $payload['created_at'] = date('Y-m-d H:i:s');
+        }
+        if (isset($columns['updated_at'])) {
+            $payload['updated_at'] = date('Y-m-d H:i:s');
+        }
+
+        if (!empty($payload)) {
+            Db::table($pointsRecordTable)->insert($payload);
         }
     }
 
