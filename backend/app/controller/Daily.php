@@ -4,12 +4,15 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
+use app\model\BaziRecord;
 use app\model\DailyFortune;
 use app\model\PointsRecord;
 use app\service\BaziCalculationService;
 use app\service\ConfigService;
 use app\service\LunarService;
-
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use think\facade\Config;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -44,9 +47,10 @@ class Daily extends BaseController
      */
     public function fortune()
     {
-        $user = $this->request->user;
+        $user = $this->resolveOptionalUser();
         $fortune = DailyFortune::getToday();
         $almanac = LunarService::solarToLunar($fortune->date);
+
         
         $yi = !empty($almanac['yi']) ? $almanac['yi'] : array_values(array_filter(explode(',', $fortune->yi)));
         $ji = !empty($almanac['ji']) ? $almanac['ji'] : array_values(array_filter(explode(',', $fortune->ji)));
@@ -91,21 +95,68 @@ class Daily extends BaseController
             'personalized' => $personalized,
         ]);
     }
+
+    /**
+     * 公开接口的登录态兜底。
+     * 即使 OptionalAuth 因部署漂移或缓存未生效，也尝试按 Bearer Token 还原用户上下文。
+     */
+    protected function resolveOptionalUser(): ?array
+    {
+        $requestUser = $this->request->user ?? null;
+        if (is_array($requestUser) && !empty($requestUser['sub'])) {
+            return $requestUser;
+        }
+
+        $authorization = (string) ($this->request->header('Authorization') ?? '');
+        $token = '';
+        if ($authorization !== '' && stripos($authorization, 'Bearer ') === 0) {
+            $token = trim(substr($authorization, 7));
+        }
+        if ($token === '') {
+            $token = trim((string) $this->request->param('token', ''));
+        }
+        if ($token === '' || strlen($token) < 10) {
+            return null;
+        }
+
+        try {
+            $secret = (string) Config::get('jwt.secret');
+            if ($secret === '') {
+                return null;
+            }
+
+            $decoded = (array) JWT::decode($token, new Key($secret, 'HS256'));
+            if (empty($decoded['sub'])) {
+                return null;
+            }
+
+            $this->request->user = $decoded;
+            return $decoded;
+        } catch (\Throwable $e) {
+            Log::warning('每日运势可选鉴权解析失败，按游客返回公共结果', [
+                'message' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
     
     /**
      * 生成个性化运势
      */
+
     protected function generatePersonalizedFortune(int $userId, $fortune, array $almanac = []): ?array
     {
         // 获取用户最近的八字排盘记录
-        $baziRecord = Db::name('tc_bazi_record')
-            ->where('user_id', $userId)
+        $baziRecord = BaziRecord::where('user_id', $userId)
             ->order('created_at', 'desc')
             ->find();
         
         if (!$baziRecord) {
             return null;
         }
+
+        $baziRecord = $baziRecord->toArray();
+
         
         // 今日干支优先复用黄历口径，确保页面展示与个性化分析始终是同一套底盘。
         $today = $fortune->date ?: (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Shanghai')))->format('Y-m-d');

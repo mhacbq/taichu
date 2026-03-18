@@ -6,8 +6,10 @@ namespace app\controller;
 use app\BaseController;
 use app\model\PointsRecord;
 use app\model\TarotRecord;
-use app\service\TarotElementService;
 use think\facade\Db;
+use think\facade\Log;
+
+
 
 
 class Tarot extends BaseController
@@ -208,21 +210,30 @@ class Tarot extends BaseController
      */
     public function interpret()
     {
-        $data = $this->request->post();
-        
-        if (empty($data['cards']) || empty($data['question'])) {
-            return $this->error('缺少必要参数');
+        try {
+            $data = $this->request->post();
+
+            if (empty($data['cards']) || empty($data['question'])) {
+                return $this->error('缺少必要参数');
+            }
+
+            $cards = $data['cards'];
+            $question = $data['question'];
+
+            $interpretation = $this->generateInterpretation($cards, $question);
+
+            return $this->success([
+                'interpretation' => $interpretation,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('塔罗解读失败: ' . $e->getMessage(), [
+                'question' => $this->request->post('question', ''),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error('解读失败，请稍后重试', 500);
         }
-        
-        $cards = $data['cards'];
-        $question = $data['question'];
-        
-        $interpretation = $this->generateInterpretation($cards, $question);
-        
-        return $this->success([
-            'interpretation' => $interpretation,
-        ]);
     }
+
     
     /**
      * 抽取指定数量的牌
@@ -740,8 +751,9 @@ class Tarot extends BaseController
      */
     protected function getCardRelationship(array $card1, array $card2): string
     {
-        $leftElement = TarotElementService::resolveCardElement($card1);
-        $rightElement = TarotElementService::resolveCardElement($card2);
+        $leftElement = \app\service\TarotElementService::resolveCardElement($card1);
+        $rightElement = \app\service\TarotElementService::resolveCardElement($card2);
+
         $leftElementText = $leftElement !== '' ? $leftElement : '未知元素';
         $rightElementText = $rightElement !== '' ? $rightElement : '未知元素';
         $sameElement = $leftElement !== '' && $leftElement === $rightElement;
@@ -796,7 +808,7 @@ class Tarot extends BaseController
      */
     protected function getElementRelation(string $element1, string $element2): string
     {
-        return TarotElementService::formatRelation($element1, $element2);
+        return \app\service\TarotElementService::formatRelation($element1, $element2);
     }
 
     

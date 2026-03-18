@@ -2,7 +2,68 @@
 
 ## 最近更新
 
+### 占卜运行态收口修复（automation，2026-03-18）
+
+- 本轮继续处理此前追加到 `TODO.md` 的 4 条 `[占卜]` 高优先级运行态问题，并完成对应待办清理。
+- 主要改动文件：
+  - `backend/app/service/LiuyaoService.php`
+  - `backend/app/controller/Liuyao.php`
+  - `backend/app/controller/Tarot.php`
+  - `backend/app/controller/Hehun.php`
+  - `.codebuddy/automations/automation/memory.md`
+  - `TODO.md`
+- 关键修复点：
+  1. `LiuyaoService::getYaoDiZhi()` 统一先把 `0/1/2/3` 四态爻码归一成纯阴阳码，再进入八卦/纳甲映射，避免老阴老阳直接查卦码导致六爻 time/manual 起卦异常。
+  2. `Liuyao.php` 为卦辞表与记录表都补了动态 schema 探测：`gua_data / liuyao_gua`、`tc_liuyao_record / liuyao_records` 均可兼容；起卦保存、AI 回写、历史读取、删除过滤都不再写死单一字段集。
+  3. `Tarot.php` 补上 `Log` 导入，把 `TarotElementService` 改为全限定类名调用，并在 `interpret()` 外层补统一异常收口，直接针对“`app\controller\TarotElementService not found`”这类运行态问题做去歧义处理。
+  4. `Hehun::generateAiSummary()` 现在会显式读取 `traditional_risk`；遇到 `五鬼 / 绝命` 等高风险时，摘要会优先输出传统警示，不再继续沿用“高分=乐观结论”的话术。
+  5. 已从 `TODO.md` 删除本轮 4 条已完成的 `[占卜]` 待办，避免后续自动化重复返工。
+
+#### 验证情况
+- `read_lints`：`LiuyaoService.php`、`Liuyao.php`、`Tarot.php`、`Hehun.php` 均为 0 diagnostics。
+- 运行环境核对：本机仍无可直接调用的 `php` CLI；容器内代码根目录为 `/var/www/html/app`，与工作区 `backend/app` 不是同一路径，因此本轮未直接对容器内运行代码做同步语法校验。
+- 截图 / 录屏：本轮为后端运行态兼容修复，未新增 UI 截图或录屏。
+
+
+
+### 后台运营续测（第三十一轮复核，2026-03-18 12:26）
+
+- 本轮直接沿用当前已登录的后台会话 `ops-check`，继续从运营实际路径复核 **SEO 管理、知识库文章、VIP/充值订单、积分记录、系统基础配置、系统公告**。
+- 本轮未改动业务代码，也未向 `TODO.md` 追加新条目；原因是新确认的异常与顶部既有运营问题重复，去重后保持原状。
+
+#### 关键发现
+1. **SEO 新增保存仍未恢复**
+   - 在 `SEO 管理` 弹窗中提交最小化测试配置 `/ops-seo-20260318` 后，页面仍提示“请求失败，请稍后重试”。
+   - 控制台继续记录：`business_response_error {code: 500, httpStatus: 200, method: POST, path: /system/seo/configs}`。
+   - 该问题已存在于 `TODO.md` 顶部高优先级区，本轮不重复登记。
+2. **知识库文章 CRUD 当前可用**
+   - 通过后台真实新增一篇测试草稿 `Ops_Knowledge_Test`（分类 `八字基础`），保存成功后列表从 `0` 变为 `1`。
+   - 随后已在后台内完成删除，列表恢复 `0`，说明知识库文章新增/删除链路可正常闭环。
+3. **订单页本轮没有复现功能故障，但样本不足**
+   - `VIP订单` 与 `充值订单` 页面都能正常加载，筛选区、表头与分页控件可见。
+   - 当前本地数据集两页都显示 `0` 条订单，因此本轮无法真实走到退款、补单、状态流转等后续动作。
+4. **积分记录列表可打开，但审计字段仍失真**
+   - `积分记录` 页面可正常加载，且能看到最新积分流水。
+   - 但多条记录的“变动后余额”仍显示 `-`，与 `TODO.md` 现有中优先级问题一致，本轮仅复核未重复追加。
+5. **系统设置与公告链路当前可用**
+   - `PUT /api/admin/system/settings` 提交后返回 `200 OK`，页面未出现错误态。
+   - 系统公告可真实发布测试项 `Ops_Notice_Test`，并已完成删除回滚，列表恢复为空。
+
+#### 运行态证据
+- SEO 保存失败：`ops-seo-current.yaml`、`.playwright-cli/console-2026-03-18T04-09-28-537Z.log`
+- 知识库新增/清理：`ops-knowledge-after-save.yaml`、`ops-knowledge-clean.yaml`
+- 订单页：`ops-vip-orders.yaml`、`ops-payment-orders.yaml`
+- 积分记录：`ops-points-records.yaml`
+- 系统设置保存：`ops-system-settings-after-save.yaml`、`.playwright-cli/network-2026-03-18T04-23-49-275Z.log`
+- 系统公告发布/清理：`ops-system-notice-after-save.yaml`、`ops-system-notice-clean2.yaml`
+
+#### 验证情况
+- 已真实验证：SEO 新增失败仍可复现；知识库文章新增与删除均可用；系统设置保存返回成功；系统公告发布与删除均可用。
+- 已局部验证：VIP 订单与充值订单页面可加载，但因当前数据为 0 条，未能继续验证状态流转。
+- 本轮未新增截图或录屏，证据主要来自页面快照 YAML 与网络 / 控制台日志。
+
 ### 后台运营修复（后端修复专家，2026-03-18 12:30）
+
 
 - 本轮直接修复了 `TODO.md` 顶部的 5 个后台运营阻塞项：1) 用户详情用户名仍回填手机号；2) 手动调积分 `HTTP 200 + code 500`；3) 黄历列表首屏失败；4) 神煞新增失败；5) SEO 配置新增失败。
 - 主要改动文件：

@@ -430,6 +430,7 @@ class Hehun extends BaseController
         if ($useAi) {
             $aiAnalysis = $this->generateAiAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
         }
+        $analysisMeta = $this->buildAnalysisMeta($useAi, $aiAnalysis);
         
         // 计算实际积分消耗（事务外计算）
         $isNewUser = HehunRecord::getUserCount($user['sub']) === 0;
@@ -507,9 +508,10 @@ class Hehun extends BaseController
                 'level' => $hehunResult['level'],
                 'result' => array_merge($hehunResult, [
                     'input_meta' => $birthInputMeta,
+                    'analysis_meta' => $analysisMeta,
                 ]),
                 'ai_analysis' => $aiAnalysis,
-                'is_ai_analysis' => $useAi,
+                'is_ai_analysis' => $analysisMeta['is_ai_generated'],
                 'points_cost' => $needPoints ? $finalPoints : 0,
             ]);
             
@@ -525,8 +527,11 @@ class Hehun extends BaseController
                 'tier' => $isVip ? self::TIER_VIP : self::TIER_PREMIUM,
                 'male_bazi' => $maleBazi,
                 'female_bazi' => $femaleBazi,
-                'hehun' => $hehunResult,
+                'hehun' => array_merge($hehunResult, [
+                    'analysis_meta' => $analysisMeta,
+                ]),
                 'ai_analysis' => $aiAnalysis,
+                'analysis_meta' => $analysisMeta,
                 'pricing' => [
                     'points_cost' => $needPoints ? $finalPoints : 0,
                     'original_points' => $costInfo['original'],
@@ -685,6 +690,128 @@ class Hehun extends BaseController
             'traditional_methods' => $traditionalMethods,
             'traditional_risk' => $traditionalRisk,
         ];
+    }
+
+    /**
+     * 传统三元/九宫风险校正。
+     *
+     * 八宅合婚以生气、天医、延年为吉，六煞、祸害、五鬼、绝命为凶；
+     * 若出现五鬼、绝命等重凶，不能再让综合分维持“佳偶天成”的乐观口径。
+     */
+    protected function buildTraditionalRiskAssessment(array $sanyuanAnalysis, array $jiugongAnalysis): array
+    {
+        $jiugongType = (string)($jiugongAnalysis['relation']['type'] ?? ($jiugongAnalysis['type'] ?? ''));
+        $jiugongGrade = (string)($jiugongAnalysis['grade'] ?? '');
+        $sanyuanGrade = (string)($sanyuanAnalysis['grade'] ?? '');
+
+        $risk = [
+            'risk_level' => 'none',
+            'penalty' => 0,
+            'score_cap' => 100,
+            'level_cap' => '',
+            'warning' => '',
+            'source' => '',
+            'relation' => $jiugongType,
+        ];
+
+        $jiugongRiskMap = [
+            '绝命' => [
+                'risk_level' => 'critical',
+                'penalty' => 28,
+                'score_cap' => 32,
+                'level_cap' => 'poor',
+                'warning' => '九宫命卦落“绝命”，属八宅合婚最忌之配，总评需以谨慎口径处理。',
+            ],
+            '五鬼' => [
+                'risk_level' => 'high',
+                'penalty' => 22,
+                'score_cap' => 39,
+                'level_cap' => 'poor',
+                'warning' => '九宫命卦落“五鬼”，传统上主是非惊扰与家宅不宁，不能只凭其他分项偏高就给出乐观结论。',
+            ],
+            '祸害' => [
+                'risk_level' => 'medium',
+                'penalty' => 14,
+                'score_cap' => 54,
+                'level_cap' => 'fair',
+                'warning' => '九宫命卦落“祸害”，多主口舌病灾隐忧，总评已按传统凶象做保守折减。',
+            ],
+            '六煞' => [
+                'risk_level' => 'medium',
+                'penalty' => 10,
+                'score_cap' => 69,
+                'level_cap' => 'medium',
+                'warning' => '九宫命卦落“六煞”，易起争执与外缘干扰，总评已按传统风险下调。',
+            ],
+        ];
+
+        if ($jiugongType !== '' && isset($jiugongRiskMap[$jiugongType])) {
+            $risk = array_merge($risk, $jiugongRiskMap[$jiugongType], [
+                'source' => 'jiugong',
+                'relation' => $jiugongType,
+            ]);
+        } elseif ($jiugongGrade === '下等婚') {
+            $risk = array_merge($risk, [
+                'risk_level' => 'medium',
+                'penalty' => 8,
+                'score_cap' => 69,
+                'level_cap' => 'medium',
+                'warning' => '九宫合婚落在下等婚区间，总评已按传统口径改为保守解释。',
+                'source' => 'jiugong',
+            ]);
+        }
+
+        if ($sanyuanGrade === '下等婚') {
+            $risk['penalty'] += 6;
+            $risk['source'] = $risk['source'] !== '' ? $risk['source'] . '+sanyuan' : 'sanyuan';
+
+            if ($risk['level_cap'] === '') {
+                $risk['risk_level'] = 'medium';
+                $risk['score_cap'] = min((int) $risk['score_cap'], 69);
+                $risk['level_cap'] = 'medium';
+            }
+
+            $risk['warning'] .= ($risk['warning'] !== '' ? ' ' : '') . '三元年命同时落下等婚，说明元运步调与纳音方向也偏离，宜再看现实磨合与边界管理。';
+        }
+
+        return $risk;
+    }
+
+    protected function applyTraditionalRiskToScore(int $baseScore, array $traditionalRisk): int
+    {
+        $score = max(0, $baseScore - (int)($traditionalRisk['penalty'] ?? 0));
+        $scoreCap = (int)($traditionalRisk['score_cap'] ?? 100);
+
+        return min(100, min($score, $scoreCap));
+    }
+
+    protected function capCompatibilityLevel(string $level, string $capLevel): string
+    {
+        $levelRank = [
+            'poor' => 0,
+            'fair' => 1,
+            'medium' => 2,
+            'good' => 3,
+            'excellent' => 4,
+        ];
+
+        if (!isset($levelRank[$level], $levelRank[$capLevel])) {
+            return $level;
+        }
+
+        return $levelRank[$level] <= $levelRank[$capLevel] ? $level : $capLevel;
+    }
+
+    protected function resolveScoreCeilingByLevel(string $level): int
+    {
+        return match ($level) {
+            'excellent' => 100,
+            'good' => 84,
+            'medium' => 69,
+            'fair' => 54,
+            'poor' => 39,
+            default => 100,
+        };
     }
     
     /**
@@ -1136,9 +1263,25 @@ class Hehun extends BaseController
     /**
      * 生成建议
      */
-    protected function generateSuggestions(array $scores, array $maleBazi, array $femaleBazi): array
+    protected function generateSuggestions(array $scores, array $maleBazi, array $femaleBazi, array $traditionalRisk = [], array $traditionalMethods = []): array
     {
         $suggestions = [];
+        $jiugongType = (string)($traditionalMethods['jiugong']['relation']['type'] ?? '');
+        $sanyuanGrade = (string)($traditionalMethods['sanyuan']['grade'] ?? '');
+
+        if (!empty($traditionalRisk['warning'])) {
+            $suggestions[] = $traditionalRisk['warning'];
+        }
+
+        if (in_array($jiugongType, ['五鬼', '绝命'], true)) {
+            $suggestions[] = "传统九宫命卦见{$jiugongType}，若现实中已准备进入婚姻，宜先把沟通方式、财务分工与居住安排谈清楚，再结合择吉与家居布局减轻冲耗。";
+        } elseif (in_array($jiugongType, ['祸害', '六煞'], true)) {
+            $suggestions[] = "传统九宫命卦见{$jiugongType}，更要防范口舌争执与外缘干扰，婚前最好先统一边界与重大决策规则。";
+        }
+
+        if ($sanyuanGrade === '下等婚') {
+            $suggestions[] = '三元年命步调不齐，婚后在家庭节奏、事业规划与长辈关系上更需要提前协商。';
+        }
         
         // 根据各项得分生成建议
         if ($scores['year'] < 10) {
@@ -1162,13 +1305,13 @@ class Hehun extends BaseController
             $suggestions[] = '建议互相尊重、包容理解，共同创造美好未来。';
         }
         
-        return $suggestions;
+        return array_values(array_unique($suggestions));
     }
     
     /**
      * 生成综合评语
      */
-    protected function generateComment(int $score, string $level, array $scores, string $maleName, string $femaleName): string
+    protected function generateComment(int $score, string $level, array $scores, string $maleName, string $femaleName, array $traditionalRisk = [], array $traditionalMethods = []): string
     {
         $levelComments = [
             'excellent' => "{$maleName}与{$femaleName}的八字配合极佳，乃是难得的天作之合。双方命理高度契合，婚后生活和谐美满，事业家庭双丰收。",
@@ -1177,14 +1320,28 @@ class Hehun extends BaseController
             'fair' => "{$maleName}与{$femaleName}的八字配合一般，需要多加经营。建议婚前多了解彼此，婚后多沟通，通过努力也能获得幸福。",
             'poor' => "{$maleName}与{$femaleName}的八字配合较弱，需要谨慎考虑。如决定在一起，建议找专业命理师择吉日、布置风水等方式化解。"
         ];
+
+        $comment = $levelComments[$level] ?? '八字合婚分析完成，请参考详细评分和建议。';
+
+        if (!empty($traditionalRisk['warning'])) {
+            $jiugongType = (string)($traditionalMethods['jiugong']['relation']['type'] ?? '');
+            $riskLead = in_array($traditionalRisk['risk_level'] ?? '', ['critical', 'high'], true)
+                ? ' 但传统合婚提示必须放在前面：'
+                : ' 同时还需结合传统合婚提示：';
+            $comment .= $riskLead . $traditionalRisk['warning'];
+
+            if ($jiugongType !== '') {
+                $comment .= " 当前九宫关系为{$jiugongType}，不宜只凭总分做单向乐观判断。";
+            }
+        }
         
-        return $levelComments[$level] ?? '八字合婚分析完成，请参考详细评分和建议。';
+        return $comment;
     }
     
     /**
      * 获取亮点
      */
-    protected function getHighlights(array $scores): array
+    protected function getHighlights(array $scores, array $traditionalRisk = []): array
     {
         $highlights = [];
         
@@ -1205,6 +1362,9 @@ class Hehun extends BaseController
         }
         if ($scores['day'] < 12) {
             $highlights[] = ['type' => 'warn', 'text' => '日主相克'];
+        }
+        if (!empty($traditionalRisk['relation']) && !empty($traditionalRisk['warning'])) {
+            $highlights[] = ['type' => 'warn', 'text' => '九宫' . $traditionalRisk['relation'] . '提示'];
         }
         
         return $highlights;
@@ -1241,6 +1401,22 @@ class Hehun extends BaseController
             \think\facade\Log::error('AI分析失败: ' . $e->getMessage());
             return $this->generateRuleBasedAnalysis($hehunResult, $maleBazi, $femaleBazi, $maleName, $femaleName);
         }
+    }
+
+    protected function buildAnalysisMeta(bool $useAi, ?array $analysis): array
+    {
+        $isAiGenerated = $useAi && !empty($analysis['is_ai_generated']);
+        $engine = !$useAi ? 'none' : ($isAiGenerated ? 'ai' : 'rules');
+
+        return [
+            'ai_requested' => $useAi,
+            'is_ai_generated' => $isAiGenerated,
+            'analysis_engine' => $engine,
+            'provider' => $isAiGenerated ? (string)($analysis['provider'] ?? '') : '',
+            'fallback_note' => !$useAi || $isAiGenerated
+                ? ''
+                : (string)($analysis['note'] ?? 'AI 服务暂不可用，本次已自动切换为规则解读。'),
+        ];
     }
     
     /**
@@ -1310,19 +1486,38 @@ PROMPT;
      */
     protected function generateAiSummary(array $hehunResult, string $maleName, string $femaleName): string
     {
-        $score = $hehunResult['score'];
-        $level = $hehunResult['level'];
-        
-        if ($level === 'excellent') {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理契合度极高（{$score}分）。双方五行互补，日主相生，干支多合，是难得的上等婚配。婚后感情稳定，事业互助，家庭和睦，建议把握良缘。";
-        } elseif ($level === 'good') {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合良好（{$score}分）。双方有一定缘分基础，性格互补性较强。婚后需要相互包容理解，共同经营，必能收获美满婚姻。";
-        } elseif ($level === 'medium') {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合中等（{$score}分）。双方缘分尚可，但也存在一些小冲克。建议婚前多了解，婚后多沟通，通过共同努力创造幸福生活。";
-        } else {
-            return "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合需要谨慎（{$score}分）。双方存在一些冲克因素，建议慎重考虑。如决定在一起，可通过择吉日、风水调理等方式化解。";
+        $score = (int) ($hehunResult['score'] ?? 0);
+        $level = (string) ($hehunResult['level'] ?? 'medium');
+        $traditionalRisk = $hehunResult['traditional_risk'] ?? [];
+        $warning = trim((string) ($traditionalRisk['warning'] ?? ''));
+        $riskLevel = (string) ($traditionalRisk['risk_level'] ?? 'none');
+        $relation = trim((string) ($traditionalRisk['relation'] ?? ''));
+
+        if (in_array($riskLevel, ['critical', 'high'], true) && $warning !== '') {
+            $relationText = $relation !== '' ? "当前九宫关系为{$relation}。" : '';
+            return "根据八字合婚分析，{$maleName}与{$femaleName}当前综合得分为{$score}分，但传统合婚提示必须优先看：{$warning}{$relationText}因此这段关系不宜只按分数作乐观理解，更适合先把沟通、现实边界与长期承压能力评估清楚，再决定后续走向。";
         }
+
+        if ($level === 'excellent') {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理契合度极高（{$score}分）。双方五行互补，日主相生，干支多合，是难得的上等婚配。婚后感情稳定，事业互助，家庭和睦，建议把握良缘。";
+        } elseif ($level === 'good') {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合良好（{$score}分）。双方有一定缘分基础，性格互补性较强。婚后需要相互包容理解，共同经营，方能把优势真正落到现实生活里。";
+        } elseif ($level === 'medium') {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合中等（{$score}分）。双方缘分尚可，但也存在一些小冲克。建议婚前多了解，婚后多沟通，通过共同努力创造幸福生活。";
+        } else {
+            $summary = "根据八字合婚分析，{$maleName}与{$femaleName}的命理配合需要谨慎（{$score}分）。双方存在一些冲克因素，建议慎重考虑。如决定在一起，可通过择吉日、风水调理等方式化解。";
+        }
+
+        if ($warning !== '') {
+            $summary .= ' 同时仍需结合传统合婚提示：' . $warning;
+            if ($relation !== '') {
+                $summary .= " 当前九宫关系为{$relation}，不宜只凭总分做单向判断。";
+            }
+        }
+
+        return $summary;
     }
+
     
     /**
      * 分析性格契合度

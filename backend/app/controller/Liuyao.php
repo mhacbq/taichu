@@ -176,19 +176,23 @@ class Liuyao extends BaseController
         try {
             $record = $this->findOwnedRecord((int) $this->request->post('id', 0));
             $table = $this->resolveLiuyaoRecordTable();
+            $columns = $this->getLiuyaoRecordColumns();
 
-            if ($table === 'tc_liuyao_record') {
+            if (isset($columns['status'])) {
+                $deletePayload = ['status' => 0];
+                if (isset($columns['updated_at'])) {
+                    $deletePayload['updated_at'] = date('Y-m-d H:i:s');
+                }
+
                 Db::table($table)
                     ->where('id', (int) $record['id'])
-                    ->update([
-                        'status' => 0,
-                        'updated_at' => date('Y-m-d H:i:s'),
-                    ]);
+                    ->update($deletePayload);
             } else {
                 Db::table($table)
                     ->where('id', (int) $record['id'])
                     ->delete();
             }
+
 
             return $this->success(null, '删除成功');
 
@@ -276,28 +280,75 @@ class Liuyao extends BaseController
      */
     private function getGuaInfo(string $mainGua, string $bianGua): array
     {
+        $table = $this->resolveGuaDataTable();
+        if ($table === '') {
+            return [
+                'main' => null,
+                'bian' => null,
+            ];
+        }
+
         // 验证卦名格式，只允许中文字符
         $pattern = '/^[\x{4e00}-\x{9fa5}]+$/u';
         $mainInfo = null;
         $bianInfo = null;
 
         if ($mainGua !== '' && preg_match($pattern, $mainGua)) {
-            $mainInfo = \think\facade\Db::table('gua_data')
+            $mainInfo = Db::table($table)
                 ->where('gua_name', $mainGua)
                 ->find();
         }
 
         if ($bianGua !== '' && preg_match($pattern, $bianGua)) {
-            $bianInfo = \think\facade\Db::table('gua_data')
+            $bianInfo = Db::table($table)
                 ->where('gua_name', $bianGua)
                 ->find();
         }
-        
+
         return [
-            'main' => $mainInfo,
-            'bian' => $bianInfo,
+            'main' => $this->normalizeGuaInfoRow($mainInfo),
+            'bian' => $this->normalizeGuaInfoRow($bianInfo),
         ];
     }
+
+    private function resolveGuaDataTable(): string
+    {
+        foreach (['gua_data', 'liuyao_gua'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return '';
+    }
+
+    private function resolveGuaYaoDataTable(): string
+    {
+        foreach (['gua_yao_data'] as $table) {
+            if (SchemaInspector::tableExists($table)) {
+                return $table;
+            }
+        }
+
+        return '';
+    }
+
+    private function normalizeGuaInfoRow(?array $row): ?array
+    {
+        if (!$row) {
+            return null;
+        }
+
+        if (!isset($row['gua_ci'])) {
+            $row['gua_ci'] = '';
+        }
+        if (empty($row['general_meaning'])) {
+            $row['general_meaning'] = (string) ($row['description'] ?? $row['gua_ci_meaning'] ?? $row['gua_ci'] ?? '');
+        }
+
+        return $row;
+    }
+
 
     
 
@@ -322,20 +373,29 @@ class Liuyao extends BaseController
             // 更新记录
             if (!empty($data['record_id'])) {
                 $table = $this->resolveLiuyaoRecordTable();
-                $updateData = $table === 'tc_liuyao_record'
-                    ? [
-                        'ai_interpretation' => $interpretation,
-                        'updated_at' => date('Y-m-d H:i:s'),
-                    ]
-                    : [
-                        'ai_analysis' => $interpretation,
-                        'is_ai_analysis' => 1,
-                    ];
+                $columns = $this->getLiuyaoRecordColumns();
+                $updateData = [];
 
-                \think\facade\Db::table($table)
-                    ->where('id', $data['record_id'])
-                    ->update($updateData);
+                if (isset($columns['ai_interpretation'])) {
+                    $updateData['ai_interpretation'] = $interpretation;
+                }
+                if (isset($columns['ai_analysis'])) {
+                    $updateData['ai_analysis'] = $interpretation;
+                }
+                if (isset($columns['is_ai_analysis'])) {
+                    $updateData['is_ai_analysis'] = 1;
+                }
+                if (isset($columns['updated_at'])) {
+                    $updateData['updated_at'] = date('Y-m-d H:i:s');
+                }
+
+                if ($updateData !== []) {
+                    Db::table($table)
+                        ->where('id', $data['record_id'])
+                        ->update($updateData);
+                }
             }
+
 
             
             return $this->success(['interpretation' => $interpretation]);
@@ -463,17 +523,30 @@ PROMPT;
     public function guaList()
     {
         try {
-            $list = \think\facade\Db::table('gua_data')
-                ->field('id, gua_name, gua_xuhao, wuxing, general_meaning')
-                ->order('gua_xuhao', 'ASC')
-                ->select();
-            
+            $table = $this->resolveGuaDataTable();
+            if ($table === '') {
+                return $this->success([]);
+            }
+
+            $field = $table === 'gua_data'
+                ? 'id, gua_name, gua_xuhao, wuxing, general_meaning, gua_ci'
+                : 'id, gua_name, gua_code, wuxing, description, gua_ci';
+            $orderField = $table === 'gua_data' ? 'gua_xuhao' : 'id';
+            $list = Db::table($table)
+                ->field($field)
+                ->order($orderField, 'ASC')
+                ->select()
+                ->toArray();
+
+            $list = array_map(fn(array $item) => $this->normalizeGuaInfoRow($item) ?? $item, $list);
+
             return $this->success($list);
         } catch (\Exception $e) {
             Log::error('获取卦象列表失败: ' . $e->getMessage());
             return $this->error('获取卦象列表失败，请稍后重试', 500);
         }
     }
+
 
     
     /**
@@ -482,7 +555,12 @@ PROMPT;
     public function guaDetail(string $name)
     {
         try {
-            $gua = \think\facade\Db::table('gua_data')
+            $guaTable = $this->resolveGuaDataTable();
+            if ($guaTable === '') {
+                return $this->error('卦象基础数据未部署', 503);
+            }
+
+            $gua = Db::table($guaTable)
                 ->where('gua_name', $name)
                 ->find();
             
@@ -490,13 +568,18 @@ PROMPT;
                 return $this->error('卦象不存在', 404);
             }
 
-            // 获取爻辞
-            $yaoCi = \think\facade\Db::table('gua_yao_data')
-                ->where('gua_id', $gua['id'])
-                ->order('yao_position', 'ASC')
-                ->select();
+            $gua = $this->normalizeGuaInfoRow($gua) ?? $gua;
 
-            $gua['yao_ci'] = $yaoCi;
+            // 获取爻辞
+            $gua['yao_ci'] = [];
+            $yaoTable = $this->resolveGuaYaoDataTable();
+            if ($yaoTable !== '' && !empty($gua['id'])) {
+                $gua['yao_ci'] = Db::table($yaoTable)
+                    ->where('gua_id', $gua['id'])
+                    ->order('yao_position', 'ASC')
+                    ->select()
+                    ->toArray();
+            }
 
             return $this->success($gua);
         } catch (\Exception $e) {
@@ -504,6 +587,7 @@ PROMPT;
             return $this->error('获取卦象详情失败，请稍后重试', 500);
         }
     }
+
 
     
     /**
@@ -837,15 +921,75 @@ PROMPT;
     private function storeDivinationRecord(array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): int
     {
         $table = $this->resolveLiuyaoRecordTable();
+        $columns = $this->getLiuyaoRecordColumns();
         $createdAt = date('Y-m-d H:i:s');
+        $recordData = [];
 
-        if ($table === 'liuyao_records') {
+        if (isset($columns['hexagram_original']) || isset($columns['analysis']) || isset($columns['points_used'])) {
             $recordData = [
                 'user_id' => (int) ($data['user_id'] ?? 0),
-                'question' => $data['question'] ?? '',
-                'yao_result' => $coreResult['yao_code'] ?? json_encode($coreResult['yao_result'], JSON_UNESCAPED_UNICODE),
-                'gua_code' => substr((string) ($coreResult['clean_gua_code'] ?? ''), 0, 2),
-                'gua_name' => $coreResult['main_gua'] ?? '',
+                'question' => (string) ($data['question'] ?? ''),
+                'method' => (string) ($data['method'] ?? 'time'),
+                'hexagram_original' => json_encode([
+                    'name' => $coreResult['main_gua'] ?? '',
+                    'code' => $coreResult['clean_gua_code'] ?? '',
+                    'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
+                    'yao_code' => $coreResult['yao_code'] ?? '',
+                    'yao_result' => $coreResult['yao_result'] ?? [],
+                ], JSON_UNESCAPED_UNICODE),
+                'hexagram_changed' => json_encode([
+                    'name' => $coreResult['bian_gua']['bian_name'] ?? '',
+                    'code' => $coreResult['bian_gua']['bian_code'] ?? '',
+                ], JSON_UNESCAPED_UNICODE),
+                'hexagram_mutual' => json_encode([
+                    'name' => $coreResult['hu_gua']['hu_name'] ?? '',
+                    'code' => $coreResult['hu_gua']['hu_code'] ?? '',
+                ], JSON_UNESCAPED_UNICODE),
+                'lines' => json_encode($this->buildLineSnapshots($coreResult), JSON_UNESCAPED_UNICODE),
+                'moving_lines' => json_encode($coreResult['bian_gua']['dong_yao'] ?? [], JSON_UNESCAPED_UNICODE),
+                'analysis' => $interpretation,
+                'ai_analysis' => $aiContent ?? '',
+                'points_used' => $pointsCost,
+                'is_free' => $pointsCost === 0 ? 1 : 0,
+                'is_public' => 0,
+                'share_code' => '',
+                'client_ip' => (string) $this->request->ip(),
+                'created_at' => $createdAt,
+            ];
+        } elseif (isset($columns['question_type']) || isset($columns['main_gua_name']) || isset($columns['yao_code'])) {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => (string) ($data['question'] ?? ''),
+                'question_type' => $this->getQuestionTypeCode((string) ($data['question_type'] ?? '其他')),
+                'method' => $this->getMethodCode((string) ($data['method'] ?? 'time')),
+                'input_number' => !empty($data['numbers']) ? implode(',', (array) $data['numbers']) : '',
+                'yao_result' => json_encode($coreResult['yao_result'] ?? [], JSON_UNESCAPED_UNICODE),
+                'yao_code' => (string) ($coreResult['yao_code'] ?? ''),
+                'main_gua_name' => (string) ($coreResult['main_gua'] ?? ''),
+                'main_gua_code' => (string) ($coreResult['clean_gua_code'] ?? ''),
+                'bian_gua_name' => (string) ($coreResult['bian_gua']['bian_name'] ?? ''),
+                'bian_gua_code' => (string) ($coreResult['bian_gua']['bian_code'] ?? ''),
+                'hu_gua_name' => (string) ($coreResult['hu_gua']['hu_name'] ?? ''),
+                'hu_gua_code' => (string) ($coreResult['hu_gua']['hu_code'] ?? ''),
+                'liuqin' => json_encode($coreResult['liuqin'] ?? [], JSON_UNESCAPED_UNICODE),
+                'liushen' => json_encode($coreResult['liu_shen'] ?? [], JSON_UNESCAPED_UNICODE),
+                'yongshen' => (string) ($coreResult['yong_shen']['liuqin'] ?? ''),
+                'liunian' => (string) ($coreResult['time_info']['ri_zhi'] ?? ''),
+                'yuejian' => (string) ($coreResult['time_info']['yue_jian'] ?? ''),
+                'rigan' => (string) ($coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''))),
+                'interpretation' => $interpretation,
+                'ai_interpretation' => $aiContent ?? '',
+                'updated_at' => $createdAt,
+                'created_at' => $createdAt,
+            ];
+        } else {
+            $recordData = [
+                'user_id' => (int) ($data['user_id'] ?? 0),
+                'question' => (string) ($data['question'] ?? ''),
+                'method' => (string) ($data['method'] ?? 'time'),
+                'yao_result' => $coreResult['yao_code'] ?? json_encode($coreResult['yao_result'] ?? [], JSON_UNESCAPED_UNICODE),
+                'gua_code' => (string) ($coreResult['clean_gua_code'] ?? ''),
+                'gua_name' => (string) ($coreResult['main_gua'] ?? ''),
                 'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
                 'yao_ci' => '',
                 'interpretation' => $interpretation,
@@ -854,37 +998,13 @@ PROMPT;
                 'consumed_points' => $pointsCost,
                 'created_at' => $createdAt,
             ];
-        } else {
-            $recordData = [
-                'user_id' => (int) ($data['user_id'] ?? 0),
-                'question' => $data['question'] ?? '',
-                'question_type' => $this->getQuestionTypeCode($data['question_type'] ?? '其他'),
-                'method' => $this->getMethodCode($data['method'] ?? 'time'),
-                'input_number' => !empty($data['numbers']) ? implode(',', (array) $data['numbers']) : '',
-                'yao_result' => json_encode($coreResult['yao_result'], JSON_UNESCAPED_UNICODE),
-                'yao_code' => $coreResult['yao_code'],
-                'main_gua_name' => $coreResult['main_gua'],
-                'main_gua_code' => $coreResult['clean_gua_code'] ?? '',
-                'bian_gua_name' => $coreResult['bian_gua']['bian_name'] ?? '',
-                'bian_gua_code' => $coreResult['bian_gua']['bian_code'] ?? '',
-                'hu_gua_name' => $coreResult['hu_gua']['hu_name'] ?? '',
-                'hu_gua_code' => $coreResult['hu_gua']['hu_code'] ?? '',
-                'liuqin' => json_encode($coreResult['liuqin'] ?? [], JSON_UNESCAPED_UNICODE),
-                'liushen' => json_encode($coreResult['liu_shen'] ?? [], JSON_UNESCAPED_UNICODE),
-                'yongshen' => $coreResult['yong_shen']['liuqin'] ?? '',
-                'liunian' => $coreResult['time_info']['ri_zhi'] ?? '',
-                'yuejian' => $coreResult['time_info']['yue_jian'] ?? '',
-                'rigan' => $coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? '')),
-
-                'interpretation' => $interpretation,
-                'ai_interpretation' => $aiContent ?? '',
-                'updated_at' => $createdAt,
-                'created_at' => $createdAt,
-            ];
         }
+
+        $recordData = $this->filterRecordDataByColumns($recordData, $columns);
 
         return (int) Db::table($table)->insertGetId($recordData);
     }
+
 
 
     /**
@@ -906,13 +1026,20 @@ PROMPT;
      */
     private function formatRecordForFrontend(array $record): array
     {
-        $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? '');
-        $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? '');
-        $bianGuaName = (string) ($record['bian_gua_name'] ?? '');
-        $yaoResult = $this->normalizeYaoResult($record['yao_result'] ?? '', (string) ($record['yao_code'] ?? ''));
+        $originalGua = $this->decodeJsonField($record['hexagram_original'] ?? null);
+        $changedGua = $this->decodeJsonField($record['hexagram_changed'] ?? null);
+        $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? $originalGua['name'] ?? '');
+        $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? $originalGua['code'] ?? '');
+        $bianGuaName = (string) ($record['bian_gua_name'] ?? $changedGua['name'] ?? '');
+        $yaoCode = (string) ($record['yao_code'] ?? $originalGua['yao_code'] ?? '');
+        $yaoSeed = $record['yao_result'] ?? ($originalGua['yao_result'] ?? '');
+        $yaoResult = $this->normalizeYaoResult($yaoSeed, $yaoCode);
         $guaInfo = $this->getGuaInfo($mainGuaName, $bianGuaName);
-        $method = $this->resolveMethodByCode((int) ($record['method'] ?? 1));
+        $method = $this->resolveMethodByCode($record['method'] ?? 1);
         $aiContent = (string) ($record['ai_interpretation'] ?? $record['ai_analysis'] ?? '');
+        $guaCi = (string) ($record['gua_ci'] ?? $originalGua['gua_ci'] ?? $guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? '');
+        $interpretation = (string) ($record['interpretation'] ?? $record['analysis'] ?? '');
+        $consumedPoints = (int) ($record['consumed_points'] ?? $record['points_used'] ?? 0);
 
         return [
             'id' => (int) ($record['id'] ?? 0),
@@ -921,16 +1048,22 @@ PROMPT;
             'method_label' => $this->getMethodLabel($method),
             'yao_result' => $yaoResult,
             'yao_names' => array_map(fn(int $item) => $this->getYaoName($item), $yaoResult),
+            'gua' => [
+                'name' => $mainGuaName,
+                'code' => $mainGuaCode,
+                'gua_ci' => $guaCi,
+            ],
             'gua_name' => $mainGuaName,
             'gua_code' => $mainGuaCode,
-            'gua_ci' => (string) ($record['gua_ci'] ?? $guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? ''),
-            'interpretation' => (string) ($record['interpretation'] ?? ''),
+            'gua_ci' => $guaCi,
+            'interpretation' => $interpretation,
             'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
-            'consumed_points' => (int) ($record['consumed_points'] ?? 0),
+            'consumed_points' => $consumedPoints,
             'created_at' => (string) ($record['created_at'] ?? ''),
             'fushen' => null,
         ];
     }
+
 
 
     /**
@@ -967,7 +1100,8 @@ PROMPT;
         }
 
         foreach (['tc_liuyao_record', 'liuyao_records'] as $table) {
-            if (SchemaInspector::tableExists($table)) {
+            $columns = SchemaInspector::getTableColumns($table);
+            if (!empty($columns) && isset($columns['user_id']) && isset($columns['question'])) {
                 self::$liuyaoRecordTable = $table;
                 return $table;
             }
@@ -977,13 +1111,61 @@ PROMPT;
         return self::$liuyaoRecordTable;
     }
 
+    private function getLiuyaoRecordColumns(): array
+    {
+        return SchemaInspector::getTableColumns($this->resolveLiuyaoRecordTable());
+    }
+
+    private function filterRecordDataByColumns(array $data, array $columns): array
+    {
+        return array_filter(
+            $data,
+            static fn($value, string $key): bool => isset($columns[$key]),
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
+
+    private function buildLineSnapshots(array $coreResult): array
+    {
+        $snapshots = [];
+        foreach (($coreResult['yao_result'] ?? []) as $index => $value) {
+            $position = $index + 1;
+            $snapshots[] = [
+                'position' => $position,
+                'value' => (int) $value,
+                'name' => $this->getYaoName((int) $value),
+                'liuqin' => $coreResult['liuqin'][$position] ?? '',
+                'liushen' => $coreResult['liu_shen'][$position] ?? '',
+            ];
+        }
+
+        return $snapshots;
+    }
+
+    private function decodeJsonField($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (!is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
     /**
-     * 仅在新表结构下追加 status=1 过滤。
+     * 仅在存在软删字段时追加过滤。
      */
     private function applyRecordActiveFilter($query)
     {
-        if ($this->resolveLiuyaoRecordTable() === 'tc_liuyao_record') {
+        $columns = $this->getLiuyaoRecordColumns();
+        if (isset($columns['status'])) {
             $query->where('status', 1);
+        }
+        if (isset($columns['is_deleted'])) {
+            $query->where('is_deleted', 0);
         }
 
         return $query;
@@ -992,11 +1174,31 @@ PROMPT;
     /**
      * 根据代码反解起卦方式
      */
-
-    private function resolveMethodByCode(int $methodCode): string
+    private function resolveMethodByCode($methodCode): string
     {
-        return [1 => 'time', 2 => 'number', 3 => 'manual'][$methodCode] ?? 'time';
+        if (is_string($methodCode)) {
+            $normalized = strtolower(trim($methodCode));
+            $stringMap = [
+                'time' => 'time',
+                'number' => 'number',
+                'manual' => 'manual',
+                'coin' => 'manual',
+                'random' => 'time',
+            ];
+            if (isset($stringMap[$normalized])) {
+                return $stringMap[$normalized];
+            }
+
+            if (is_numeric($normalized)) {
+                $methodCode = (int) $normalized;
+            } else {
+                return 'time';
+            }
+        }
+
+        return [1 => 'time', 2 => 'number', 3 => 'manual'][(int) $methodCode] ?? 'time';
     }
+
 
     /**
      * 查询当前用户自己的记录

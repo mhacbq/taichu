@@ -99,19 +99,26 @@ class LiuyaoService
         
         // 互卦码（从下往上：下卦+上卦）
         $huCode = $xiaGuaCode . $shangGuaCode;
-        
-        // 转换为阴阳（0,2为阴，1,3为阳）
-        $huYinYang = '';
-        foreach (str_split($huCode) as $yao) {
-            $huYinYang .= ($yao == '0' || $yao == '2') ? '0' : '1';
-        }
+        $huYinYang = self::normalizeYinYangCode($huCode);
+        $cleanXiaCode = substr($huYinYang, 0, 3);
+        $cleanShangCode = substr($huYinYang, 3, 3);
         
         return [
             'hu_code' => $huYinYang,
             'hu_name' => self::getGuaName($huYinYang),
-            'xia_gua' => self::BA_GUA[$xiaGuaCode] ?? '',
-            'shang_gua' => self::BA_GUA[$shangGuaCode] ?? '',
+            'xia_gua' => self::BA_GUA[$cleanXiaCode] ?? '',
+            'shang_gua' => self::BA_GUA[$cleanShangCode] ?? '',
         ];
+    }
+
+    /**
+     * 将六爻编码归一为纯阴阳码。
+     * 六爻内部使用 0/1/2/3 四态编码，但查八卦与纳甲时必须先还原为 0/1，
+     * 否则老阴/老阳会误入不存在的卦码，导致纳甲、六亲、六神上下文整体失真。
+     */
+    private static function normalizeYinYangCode(string $code): string
+    {
+        return strtr($code, ['0' => '0', '1' => '1', '2' => '0', '3' => '1']);
     }
 
     /**
@@ -125,17 +132,20 @@ class LiuyaoService
         if (strlen($code) != 6) {
             return '';
         }
+
+        $cleanCode = self::normalizeYinYangCode($code);
         
         // 下卦（初二三爻）
-        $xiaCode = substr($code, 0, 3);
+        $xiaCode = substr($cleanCode, 0, 3);
         // 上卦（四五上爻）
-        $shangCode = substr($code, 3, 3);
+        $shangCode = substr($cleanCode, 3, 3);
         
         $xiaGua = self::BA_GUA[$xiaCode] ?? '';
         $shangGua = self::BA_GUA[$shangCode] ?? '';
         
         return $shangGua . $xiaGua;
     }
+
 
     /**
      * 计算六亲
@@ -230,23 +240,29 @@ class LiuyaoService
      */
     private static function getYaoDiZhi(string $guaName, string $yaoCode): array
     {
-        $yaoArray = str_split($yaoCode);
-        // 下卦代码
-        $xiaCode = substr($yaoCode, 0, 3);
-        $shangCode = substr($yaoCode, 3, 3);
-        
-        $xiaGua = self::BA_GUA[$xiaCode];
-        $shangGua = self::BA_GUA[$shangCode];
-        
-        $result = [];
-        $innerZhi = self::NA_JIA[$xiaGua]['inner'];
-        $outerZhi = self::NA_JIA[$shangGua]['outer'];
-        
-        for ($i = 0; $i < 3; $i++) {
-            $result[$i + 1] = $innerZhi[$i];
-            $result[$i + 4] = $outerZhi[$i];
+        $cleanCode = self::normalizeYinYangCode($yaoCode);
+        $xiaCode = substr($cleanCode, 0, 3);
+        $shangCode = substr($cleanCode, 3, 3);
+
+        $xiaGua = self::BA_GUA[$xiaCode] ?? '';
+        $shangGua = self::BA_GUA[$shangCode] ?? '';
+        if ($xiaGua === '' || $shangGua === '') {
+            return [];
         }
-        
+
+        $result = [];
+        $innerZhi = self::NA_JIA[$xiaGua]['inner'] ?? [];
+        $outerZhi = self::NA_JIA[$shangGua]['outer'] ?? [];
+
+        for ($i = 0; $i < 3; $i++) {
+            if (isset($innerZhi[$i])) {
+                $result[$i + 1] = $innerZhi[$i];
+            }
+            if (isset($outerZhi[$i])) {
+                $result[$i + 4] = $outerZhi[$i];
+            }
+        }
+
         return $result;
     }
 
@@ -266,7 +282,7 @@ class LiuyaoService
     public static function getGuaInfo(string $yaoCode): array
     {
         // 转换 yaoCode 为 0/1 形式进行计算 (忽略老阴老阳)
-        $cleanCode = str_replace(['2', '3'], ['0', '1'], $yaoCode);
+        $cleanCode = self::normalizeYinYangCode($yaoCode);
         $xiaCode = substr($cleanCode, 0, 3);
         $shangCode = substr($cleanCode, 3, 3);
         
