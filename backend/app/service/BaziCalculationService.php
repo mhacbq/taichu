@@ -793,7 +793,10 @@ class BaziCalculationService
 
 
     /**
-     * 计算地支冲合对日主力量的修正
+     * 计算地支冲合刑害破对日主力量的修正。
+     *
+     * 取象遵循“冲则动摇根气，合会可成势，刑害破多主内耗”的常见子平口径，
+     * 并按相关地支对日主的助扶比例调节分值，避免只剩固定常数。
      */
     protected function calculateBranchInteractionScore(array $pillars, array $supporting, array $branchWeights): array
     {
@@ -805,13 +808,15 @@ class BaziCalculationService
             'day' => $pillars['day']['zhi'],
             'hour' => $pillars['hour']['zhi'],
         ];
+        $branchValues = array_values($branchMap);
+        $branchCounts = array_count_values($branchValues);
 
         $liuchong = [
             ['子', '午'], ['丑', '未'], ['寅', '申'],
             ['卯', '酉'], ['辰', '戌'], ['巳', '亥'],
         ];
         foreach ($liuchong as [$left, $right]) {
-            if (in_array($left, $branchMap, true) && in_array($right, $branchMap, true)) {
+            if (in_array($left, $branchValues, true) && in_array($right, $branchValues, true)) {
                 $impact = 2 + ($this->getBranchSupportRatio($left, $supporting, $branchWeights) * 2) + ($this->getBranchSupportRatio($right, $supporting, $branchWeights) * 2);
                 $score -= $impact;
                 $notes[] = "{$left}{$right}六冲，根气受扰，扣" . round($impact, 1) . '分';
@@ -828,10 +833,13 @@ class BaziCalculationService
         ];
         foreach ($liuhe as $combo) {
             [$left, $right] = $combo['branches'];
-            if (in_array($left, $branchMap, true) && in_array($right, $branchMap, true)) {
-                $effect = in_array($combo['element'], $supporting, true) ? 4 : -3;
+            if (in_array($left, $branchValues, true) && in_array($right, $branchValues, true)) {
+                $clusterRatio = $this->getBranchClusterSupportRatio($combo['branches'], $supporting, $branchWeights);
+                $effect = in_array($combo['element'], $supporting, true)
+                    ? 3.5 + ($clusterRatio * 2)
+                    : -(2.5 + ($clusterRatio * 1.5));
                 $score += $effect;
-                $notes[] = "{$left}{$right}六合化{$combo['element']}，" . ($effect > 0 ? '助身' : '泄身') . abs($effect) . '分';
+                $notes[] = "{$left}{$right}六合化{$combo['element']}，" . ($effect > 0 ? '助身' : '泄身') . round(abs($effect), 1) . '分';
             }
         }
 
@@ -842,10 +850,79 @@ class BaziCalculationService
             ['branches' => ['巳', '酉', '丑'], 'element' => '金'],
         ];
         foreach ($sanhe as $combo) {
-            if (count(array_intersect($combo['branches'], array_values($branchMap))) === 3) {
-                $effect = in_array($combo['element'], $supporting, true) ? 6 : -4;
+            if (count(array_intersect($combo['branches'], $branchValues)) === 3) {
+                $clusterRatio = $this->getBranchClusterSupportRatio($combo['branches'], $supporting, $branchWeights);
+                $effect = in_array($combo['element'], $supporting, true)
+                    ? 5.5 + ($clusterRatio * 2)
+                    : -(4 + ($clusterRatio * 1.5));
                 $score += $effect;
-                $notes[] = implode('', $combo['branches']) . "三合{$combo['element']}局，" . ($effect > 0 ? '成局助身' : '成局泄身') . abs($effect) . '分';
+                $notes[] = implode('', $combo['branches']) . "三合{$combo['element']}局，" . ($effect > 0 ? '成局助身' : '成局泄身') . round(abs($effect), 1) . '分';
+            }
+        }
+
+        $sanhui = [
+            ['branches' => ['寅', '卯', '辰'], 'element' => '木'],
+            ['branches' => ['巳', '午', '未'], 'element' => '火'],
+            ['branches' => ['申', '酉', '戌'], 'element' => '金'],
+            ['branches' => ['亥', '子', '丑'], 'element' => '水'],
+        ];
+        foreach ($sanhui as $combo) {
+            if (count(array_intersect($combo['branches'], $branchValues)) === 3) {
+                $clusterRatio = $this->getBranchClusterSupportRatio($combo['branches'], $supporting, $branchWeights);
+                $effect = in_array($combo['element'], $supporting, true)
+                    ? 5 + ($clusterRatio * 1.8)
+                    : -(3.5 + ($clusterRatio * 1.3));
+                $score += $effect;
+                $notes[] = implode('', $combo['branches']) . "三会{$combo['element']}方，" . ($effect > 0 ? '会旺助身' : '会势泄身') . round(abs($effect), 1) . '分';
+            }
+        }
+
+        $xingPairs = [
+            ['子', '卯', '无礼之刑'],
+            ['寅', '巳', '无恩之刑'],
+            ['巳', '申', '无恩之刑'],
+            ['申', '寅', '无恩之刑'],
+            ['丑', '未', '恃势之刑'],
+            ['未', '戌', '恃势之刑'],
+            ['戌', '丑', '恃势之刑'],
+        ];
+        foreach ($xingPairs as [$left, $right, $label]) {
+            if (in_array($left, $branchValues, true) && in_array($right, $branchValues, true)) {
+                $penalty = $this->getBranchPairPenalty($left, $right, $supporting, $branchWeights, 1.8);
+                $score -= $penalty;
+                $notes[] = "{$left}{$right}{$label}，内耗加重，扣" . round($penalty, 1) . '分';
+            }
+        }
+
+        foreach (['辰', '午', '酉', '亥'] as $selfXing) {
+            if (($branchCounts[$selfXing] ?? 0) >= 2) {
+                $penalty = 1.6 + ($this->getBranchSupportRatio($selfXing, $supporting, $branchWeights) * 1.4);
+                $score -= $penalty;
+                $notes[] = "{$selfXing}{$selfXing}自刑，气机反复，扣" . round($penalty, 1) . '分';
+            }
+        }
+
+        $haiPairs = [
+            ['子', '未'], ['丑', '午'], ['寅', '巳'],
+            ['卯', '辰'], ['申', '亥'], ['酉', '戌'],
+        ];
+        foreach ($haiPairs as [$left, $right]) {
+            if (in_array($left, $branchValues, true) && in_array($right, $branchValues, true)) {
+                $penalty = $this->getBranchPairPenalty($left, $right, $supporting, $branchWeights, 1.5);
+                $score -= $penalty;
+                $notes[] = "{$left}{$right}相害，暗损根气，扣" . round($penalty, 1) . '分';
+            }
+        }
+
+        $poPairs = [
+            ['子', '酉'], ['午', '卯'], ['巳', '申'],
+            ['寅', '亥'], ['辰', '丑'], ['未', '戌'],
+        ];
+        foreach ($poPairs as [$left, $right]) {
+            if (in_array($left, $branchValues, true) && in_array($right, $branchValues, true)) {
+                $penalty = $this->getBranchPairPenalty($left, $right, $supporting, $branchWeights, 1.2);
+                $score -= $penalty;
+                $notes[] = "{$left}{$right}相破，格局受损，扣" . round($penalty, 1) . '分';
             }
         }
 
@@ -853,6 +930,32 @@ class BaziCalculationService
             'score' => round($score, 1),
             'notes' => $notes,
         ];
+    }
+
+    /**
+     * 获取一组地支对日主的平均助扶比例。
+     */
+    protected function getBranchClusterSupportRatio(array $branches, array $supporting, array $branchWeights): float
+    {
+        if (empty($branches)) {
+            return 0;
+        }
+
+        $total = 0;
+        foreach ($branches as $branch) {
+            $total += $this->getBranchSupportRatio($branch, $supporting, $branchWeights);
+        }
+
+        return min(1, $total / count($branches));
+    }
+
+    /**
+     * 获取双支刑害破的基础扣分。
+     */
+    protected function getBranchPairPenalty(string $left, string $right, array $supporting, array $branchWeights, float $base): float
+    {
+        $averageSupport = $this->getBranchClusterSupportRatio([$left, $right], $supporting, $branchWeights);
+        return $base + ($averageSupport * 1.5);
     }
 
     /**
@@ -872,6 +975,7 @@ class BaziCalculationService
 
         return min(1, $ratio);
     }
+
 
     /**
      * 计算起运时间 (精确到岁/月/天)

@@ -286,6 +286,9 @@ class YearlyFortuneService
             case 'restrain':
                 $score -= 10;
                 break;
+            case 'restrained':
+                $score -= 14;
+                break;
         }
         
         // 2. 地支关系评分
@@ -300,13 +303,27 @@ class YearlyFortuneService
             case 'harmony':
                 $score += 12;
                 break;
+            case 'drain':
+                $score -= 4;
+                break;
+            case 'restrain':
+            case 'restrained':
+                $score -= 9;
+                break;
             case 'conflict':
                 $score -= 15;
                 break;
             case 'punishment':
                 $score -= 8;
                 break;
+            case 'harm':
+                $score -= 6;
+                break;
+            case 'break':
+                $score -= 5;
+                break;
         }
+
         
         // 3. 纳音五行匹配
         $yearNayin = $this->getYearNayin($year);
@@ -447,6 +464,22 @@ class YearlyFortuneService
         ];
         return $map[$gan] ?? '木';
     }
+
+    /**
+     * 获取地支五行。
+     */
+    protected function getZhiWuxing(string $zhi): string
+    {
+        $map = [
+            '寅' => '木', '卯' => '木',
+            '巳' => '火', '午' => '火',
+            '辰' => '土', '戌' => '土', '丑' => '土', '未' => '土',
+            '申' => '金', '酉' => '金',
+            '亥' => '水', '子' => '水',
+        ];
+
+        return $map[$zhi] ?? '土';
+    }
     
     /**
      * 计算天干关系
@@ -525,7 +558,23 @@ class YearlyFortuneService
             '辰' => '戌', '戌' => '辰',
             '巳' => '亥', '亥' => '巳',
         ];
-        
+
+        $xing = [
+            '子-卯',
+            '寅-巳', '巳-申', '申-寅',
+            '丑-未', '未-戌', '戌-丑',
+        ];
+
+        $hai = [
+            '子-未', '丑-午', '寅-巳',
+            '卯-辰', '申-亥', '酉-戌',
+        ];
+
+        $po = [
+            '子-酉', '午-卯', '巳-申',
+            '寅-亥', '辰-丑', '未-戌',
+        ];
+
         if (isset($liuhe[$zhi1]) && $liuhe[$zhi1] === $zhi2) {
             return 'harmony';
         }
@@ -533,9 +582,57 @@ class YearlyFortuneService
         if (isset($chong[$zhi1]) && $chong[$zhi1] === $zhi2) {
             return 'conflict';
         }
+
+        $pair = $zhi1 . '-' . $zhi2;
+        if (in_array($pair, $xing, true) || in_array($zhi2 . '-' . $zhi1, $xing, true)) {
+            return 'punishment';
+        }
+
+        if (in_array($pair, $hai, true) || in_array($zhi2 . '-' . $zhi1, $hai, true)) {
+
+            return 'harm';
+        }
+
+        if (in_array($pair, $po, true) || in_array($zhi2 . '-' . $zhi1, $po, true)) {
+            return 'break';
+        }
+
+        $wuxing1 = $this->getZhiWuxing($zhi1);
+        $wuxing2 = $this->getZhiWuxing($zhi2);
+        $generate = [
+            '木' => '火',
+            '火' => '土',
+            '土' => '金',
+            '金' => '水',
+            '水' => '木',
+        ];
+        $restrain = [
+            '木' => '土',
+            '土' => '水',
+            '水' => '火',
+            '火' => '金',
+            '金' => '木',
+        ];
+
+        if ($generate[$wuxing2] === $wuxing1) {
+            return 'generate';
+        }
+
+        if ($generate[$wuxing1] === $wuxing2) {
+            return 'drain';
+        }
+
+        if ($restrain[$wuxing2] === $wuxing1) {
+            return 'restrained';
+        }
+
+        if ($restrain[$wuxing1] === $wuxing2) {
+            return 'restrain';
+        }
         
         return 'neutral';
     }
+
     
     /**
      * 获取纳音五行

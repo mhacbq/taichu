@@ -336,14 +336,17 @@ PROMPT;
             ?? ($isReversed ? ($card['reversed_meaning'] ?? '') : ($card['meaning'] ?? ''));
         $keywords = $card['keywords'] ?? str_replace('，', '、', $orientationMeaning !== '' ? $orientationMeaning : ($card['meaning'] ?? ''));
 
+        $element = TarotElementService::resolveCardElement($card);
+
         return [
             'name' => $card['name'] ?? ('第' . ($index + 1) . '张牌'),
             'position' => $card['position'] ?? self::guessTarotPositionLabel($totalCards, $index),
             'orientation' => $orientation,
             'orientation_meaning' => $orientationMeaning,
             'keywords' => $keywords,
-            'element' => $card['element'] ?? '未知',
+            'element' => $element !== '' ? $element : '未知',
         ];
+
     }
 
     /**

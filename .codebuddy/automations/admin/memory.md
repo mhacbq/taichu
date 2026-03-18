@@ -1,5 +1,9 @@
 # admin 自动化执行记忆
 
+- 2026-03-18：本轮继续核查 `TODO.md` 中的 `[运营]` 项，已确认当前不存在未勾选的 `[运营]` 待办；同时更新 `overview.md`，把“手动调积分未闭环”的旧描述改为已由 `database/20260318_fix_admin_role_permissions.sql` 权限补丁闭环，后续如继续推进应转向 `TODO.md` 的 `[UI]` 项。
+
+
+
 - 2026-03-18：本轮继续处理 `[运营]` 高优先级待办，新增 `database/20260318_fix_admin_role_permissions.sql` 为运营角色补发 `points_adjust / content_manage / almanac_view / almanac_edit` 权限，并把补丁挂入 `backend/docker-entrypoint.sh` 自动执行；同时让注册奖励与注册开关改为读取后台系统配置，VIP 订单页错误态补充 `stats_view / config_manage` 线索，`TODO.md` 已同步勾选，admin 构建通过。
 - 2026-03-18：本轮继续处理 `[运营]` 高优先级待办，已修复用户列表用户名搜索的 ThinkORM `whereOrLike` 兼容问题，为黄历管理补上 `content_manage / config_manage` 权限兜底与缺表空结构返回；同时补齐 SEO / 黄历初始化 SQL 并挂入 `backend/docker-entrypoint.sh`，SEO 页字段归一化与 VIP 订单写权限判断也已同步收口，`TODO.md` 与 `overview.md` 已更新，admin 构建通过。
 

@@ -507,6 +507,25 @@ class Knowledge extends BaseController
     }
 
     /**
+     * 归一化知识库分类行，统一修复名称/描述乱码与类型字段
+     */
+    protected function normalizeArticleCategoryRow(array $row): array
+    {
+        return array_merge($row, [
+            'id' => (int) ($row['id'] ?? 0),
+            'name' => $this->normalizePossiblyGarbledText((string) ($row['name'] ?? '')),
+            'slug' => trim((string) ($row['slug'] ?? '')),
+            'description' => $this->normalizePossiblyGarbledText((string) ($row['description'] ?? '')),
+            'parent_id' => (int) ($row['parent_id'] ?? 0),
+            'sort_order' => (int) ($row['sort_order'] ?? 0),
+            'status' => $this->normalizeArticleCategoryStatus($row['status'] ?? 0),
+            'article_count' => (int) ($row['article_count'] ?? 0),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'updated_at' => (string) ($row['updated_at'] ?? ''),
+        ]);
+    }
+
+    /**
      * 归一化文章列表/详情中的分类展示字段
      */
     protected function normalizeArticleListRow(array $row): array
@@ -536,6 +555,7 @@ class Knowledge extends BaseController
 
         return $value;
     }
+
 
     /**
      * 解析分类路径，供编辑页快速跳转使用

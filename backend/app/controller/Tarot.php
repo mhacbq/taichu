@@ -6,8 +6,10 @@ namespace app\controller;
 use app\BaseController;
 use app\model\PointsRecord;
 use app\model\TarotRecord;
+use app\service\TarotElementService;
 use think\facade\Db;
 use think\facade\Log;
+
 
 class Tarot extends BaseController
 {
@@ -739,30 +741,38 @@ class Tarot extends BaseController
      */
     protected function getCardRelationship(array $card1, array $card2): string
     {
-        $sameElement = $card1['element'] === $card2['element'];
-        $bothReversed = $card1['reversed'] && $card2['reversed'];
-        $bothUpright = !$card1['reversed'] && !$card2['reversed'];
+        $leftElement = TarotElementService::resolveCardElement($card1);
+        $rightElement = TarotElementService::resolveCardElement($card2);
+        $leftElementText = $leftElement !== '' ? $leftElement : '未知元素';
+        $rightElementText = $rightElement !== '' ? $rightElement : '未知元素';
+        $sameElement = $leftElement !== '' && $leftElement === $rightElement;
+        $bothReversed = !empty($card1['reversed']) && !empty($card2['reversed']);
+        $bothUpright = empty($card1['reversed']) && empty($card2['reversed']);
+
         
         if ($sameElement) {
             $elementGuidance = [
-                '风' => '思想层面的连贯性很强，说明您的思考模式较为一致。',
-                '水' => '情感流动贯穿始终，内心深处有持续的感受在影响您。',
+                '风' => '思想层面的连贯性很强，说明你的思考模式较为一致。',
+                '水' => '情感流动贯穿始终，内心深处有持续的感受在影响你。',
                 '火' => '行动力和热情从开始到结束都很强烈，保持这种能量。',
                 '土' => '现实基础稳固，整个过程都有物质层面的支撑。',
             ];
-            return "同为{$card1['element']}元素，" . $elementGuidance[$card1['element']];
+            return "同为{$leftElement}元素，" . ($elementGuidance[$leftElement] ?? '主题能量高度集中。');
         }
         
         if ($bothUpright) {
-            return "两张均为正位，能量流动顺畅，从{$card1['element']}过渡到{$card2['element']}，提示需要从" . $this->getElementAspect($card1['element']) . "转向" . $this->getElementAspect($card2['element']) . "。";
+            $relation = $this->getElementRelation($leftElement, $rightElement);
+            $prefix = $relation !== '' ? $relation . ' ' : '';
+            return $prefix . "两张均为正位，能量流动顺畅，从{$leftElement}转向{$rightElement}，提示需要从" . $this->getElementAspect($leftElement) . "转向" . $this->getElementAspect($rightElement) . "。";
         }
         
         if ($bothReversed) {
-            return "两张均为逆位，可能存在深层的阻碍需要面对，从{$card1['element']}的困境中寻求{$card2['element']}的突破。";
+            return "两张均为逆位，可能存在深层的阻碍需要面对，从{$leftElement}的困境中寻求{$rightElement}的突破。";
         }
         
-        return "能量状态有所变化，从{$card1['name']}的" . ($card1['reversed'] ? '逆位' : '正位') . "状态转向{$card2['name']}的" . ($card2['reversed'] ? '逆位' : '正位') . "状态。";
+        return "能量状态有所变化，从{$card1['name']}的" . (!empty($card1['reversed']) ? '逆位' : '正位') . "状态转向{$card2['name']}的" . (!empty($card2['reversed']) ? '逆位' : '正位') . "状态。";
     }
+
     
     /**
      * 获取元素代表的方面
@@ -778,78 +788,18 @@ class Tarot extends BaseController
      */
     protected function getTransitionDesc(array $from, array $to): string
     {
-        $sameElement = $from['element'] === $to['element'];
-        
-        if ($sameElement) {
-            $fromMeaning = $from['reversed'] ? ($from['reversed_meaning'] ?: $from['meaning']) : $from['meaning'];
-            $toMeaning = $to['reversed'] ? ($to['reversed_meaning'] ?: $to['meaning']) : $to['meaning'];
-            return "同元素{$from['element']}的深化，从「{$fromMeaning}」发展为「{$toMeaning}」";
-        }
-        
-        $transitions = [
-            '风-水' => '从理性思考进入情感层面',
-            '风-火' => '想法转化为行动',
-            '风-土' => '构思落实为现实',
-            '水-风' => '情感得到理性梳理',
-            '水-火' => '情感激发行动力',
-            '水-土' => '情感需要现实承载',
-            '火-风' => '行动前需要更多思考',
-            '火-水' => '行动影响情感状态',
-            '火-土' => '行动力转化为实际成果',
-            '土-风' => '现实需要重新规划',
-            '土-水' => '物质影响情感体验',
-            '土-火' => '现实条件激发行动',
-        ];
-        
-        $key = $from['element'] . '-' . $to['element'];
-        $desc = $transitions[$key] ?? "从{$from['element']}转向{$to['element']}";
-        
-        return "{$desc}，{$from['name']} → {$to['name']}";
+        return TarotElementService::describeTransition($from, $to);
     }
+
     
     /**
      * 获取元素之间的关系 (基于西方传统四元素尊严模型 - Elemental Dignities)
      */
     protected function getElementRelation(string $element1, string $element2): string
     {
-        if ($element1 === $element2) {
-            return '同元素共鸣：主题被持续放大，牌阵焦点十分明确。';
-        }
-
-        $pair = [$element1, $element2];
-        sort($pair);
-        $pairStr = implode('-', $pair);
-
-        $friendly = [
-            '火-风' => '风助火势，意志得到思想鼓动，行动更容易迅速展开。',
-            '水-土' => '土承水意，情绪获得承载，现实层面更容易稳步落地。',
-        ];
-
-        $hostile = [
-            '水-火' => '水火相激，感受与行动彼此牵制，局势容易出现内耗。',
-            '土-风' => '风土相逆，理念表达受现实框架压制，推进阻力较大。',
-        ];
-
-        $neutral = [
-            '火-土' => '火土相接，行动有落点，但速度会被现实节奏放缓。',
-            '水-风' => '水风并行，理性与感受同时发声，需要整合后才能形成结论。',
-        ];
-
-        if (isset($friendly[$pairStr])) {
-            return '友好尊严：' . $friendly[$pairStr];
-        }
-
-        if (isset($hostile[$pairStr])) {
-            return '敌对尊严：' . $hostile[$pairStr];
-        }
-
-        if (isset($neutral[$pairStr])) {
-            return '中性尊严：' . $neutral[$pairStr];
-        }
-
-
-        return '';
+        return TarotElementService::formatRelation($element1, $element2);
     }
+
     
     /**
      * 保存塔罗占卜记录

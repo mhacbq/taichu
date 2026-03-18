@@ -538,8 +538,12 @@ PROMPT;
         $result['question'] = trim((string) ($data['question'] ?? ''));
         $result['time_info'] = $timeInfo;
         $result['liu_shen'] = LiuyaoService::getLiuShen($riGan);
+        if (count($result['liu_shen']) !== 6) {
+            throw new \InvalidArgumentException('日辰天干解析失败，无法排定六神');
+        }
 
         $guaInfo = LiuyaoService::getGuaInfo($result['yao_code']);
+
         $result['gong'] = $guaInfo['gong'];
         $result['shi_ying'] = LiuyaoService::getShiYing($result['main_gua'], $result['yao_code']);
 
