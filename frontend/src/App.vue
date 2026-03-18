@@ -411,23 +411,46 @@ const checkLoginStatus = () => {
   }
 }
 
+const syncStoredPoints = (balance) => {
+  const parsedBalance = Number(balance)
+  if (!Number.isFinite(parsedBalance)) {
+    return false
+  }
+
+  userPoints.value = parsedBalance
+  const userInfo = readStoredUserInfo() || {}
+  userInfo.points = parsedBalance
+  localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  return true
+}
+
 // 刷新积分
 const refreshPoints = async () => {
   try {
     const response = await getPointsBalance()
     if (response.code === 200) {
-      userPoints.value = response.data.balance
-      const userInfo = readStoredUserInfo() || {}
-      userInfo.points = response.data.balance
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
+      syncStoredPoints(response.data.balance)
     }
   } catch (error) {
     logAppShellError('refresh_points_failed', error)
   }
 }
 
+const handlePointsUpdated = async (event) => {
+  if (!isLoggedIn.value) {
+    return
+  }
+
+  const eventBalance = Number(event?.detail?.balance)
+  if (syncStoredPoints(eventBalance)) {
+    return
+  }
+
+  await refreshPoints()
+}
 
 // 处理下拉菜单命令
+
 const handleCommand = (command) => {
   if (command === 'profile') {
     router.push('/profile')
@@ -480,11 +503,14 @@ watch(() => route.path, () => {
 
 onMounted(() => {
   checkLoginStatus()
+  window.addEventListener('points-updated', handlePointsUpdated)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('points-updated', handlePointsUpdated)
   unlockPageScroll()
 })
+
 </script>
 
 <style scoped>

@@ -89,9 +89,11 @@
           <div class="history-list" v-if="tarotHistory.length > 0">
             <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
               <div class="history-info">
-                <span class="history-date">{{ formatTime(record.date) }}</span>
+                <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
                 <span class="history-question" :title="record.question">{{ record.question }}</span>
+                <span class="history-birth">{{ record.spreadName }}</span>
               </div>
+
               <div class="tarot-cards">
                 <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
                   {{ card.emoji }}<small v-if="card.reversed">逆</small>
@@ -215,9 +217,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, submitFeedback } from '../api'
+import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, submitFeedback } from '../api'
+
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
@@ -310,6 +313,12 @@ const normalizeTarotCard = (card) => {
 const normalizeTarotRecord = (record, index = 0) => {
   const source = record && typeof record === 'object' ? record : {}
   const cards = Array.isArray(source.cards) ? source.cards.map(normalizeTarotCard) : []
+  const spreadNameMap = {
+    single: '单牌占卜',
+    three: '三张牌阵',
+    celtic: '凯尔特十字',
+    relationship: '关系牌阵',
+  }
 
   return {
     ...source,
@@ -317,9 +326,11 @@ const normalizeTarotRecord = (record, index = 0) => {
       ? source.question.trim()
       : `塔罗记录 ${index + 1}`,
     cards,
-    date: source.date || ''
+    date: source.date || source.created_at || '',
+    spreadName: source.spread_name || spreadNameMap[source.spread_type] || '塔罗占卜',
   }
 }
+
 
 const getTarotCards = (record) => {
   return Array.isArray(record?.cards) ? record.cards : []
@@ -357,9 +368,10 @@ const loadUserData = async () => {
     // 加载排盘历史
     await loadBaziHistory()
     
-    // 加载本地保存的塔罗历史
-    loadTarotHistory()
+    // 加载塔罗历史
+    await loadTarotHistory()
   } catch (error) {
+
     reportProfileError('load_user_data_failed', error)
   }
 }
@@ -384,11 +396,28 @@ const loadBaziHistory = async () => {
   }
 }
 
-// 加载本地塔罗历史
-const loadTarotHistory = () => {
-  const saved = safeReadArrayFromStorage('tarot_saved')
-  tarotHistory.value = saved.map(normalizeTarotRecord).slice(0, 10)
+// 加载塔罗历史
+const loadTarotHistory = async () => {
+  try {
+    const response = await getTarotHistory({ page: 1, page_size: 10 })
+    if (response.code === 200) {
+      const list = Array.isArray(response.data?.list) ? response.data.list : []
+      tarotHistory.value = list.map(normalizeTarotRecord)
+      return
+    }
+
+    tarotHistory.value = []
+    ElMessage.warning(response.message || '获取塔罗历史失败，请稍后重试')
+  } catch (error) {
+    tarotHistory.value = []
+    reportProfileError('load_tarot_history_failed', error)
+  }
 }
+
+const handleTarotHistoryUpdated = () => {
+  loadTarotHistory()
+}
+
 
 
 const submitFeedbackForm = async () => {
@@ -507,7 +536,13 @@ ${inviteLink.value}`
 
 onMounted(() => {
   loadUserData()
+  window.addEventListener('tarot-history-updated', handleTarotHistoryUpdated)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('tarot-history-updated', handleTarotHistoryUpdated)
+})
+
 </script>
 
 <style scoped>

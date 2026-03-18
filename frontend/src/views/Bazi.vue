@@ -177,23 +177,10 @@
       >
         <div class="points-confirm-content">
           <div class="points-icon"><el-icon :size="48"><Coin /></el-icon></div>
-          <p class="points-title">
-            {{ 
-              pointsConfirmType === 'yearly' ? '流年运势分析' : 
-              pointsConfirmType === 'dayun' ? '大运运势评分' : 
-              '运势K线图' 
-            }}
-          </p>
+          <p class="points-title">{{ getPointsConfirmTitle(pointsConfirmType) }}</p>
           <p class="points-desc">
-            此功能将消耗 
-            <strong>
-              {{ 
-                pointsConfirmType === 'yearly' ? fortunePointsCost.yearly_fortune : 
-                pointsConfirmType === 'dayun' ? fortunePointsCost.dayun_analysis : 
-                fortunePointsCost.dayun_chart 
-              }} 
-              积分
-            </strong>
+            此功能将消耗
+            <strong>{{ getPointsConfirmCost(pointsConfirmType) }} 积分</strong>
           </p>
           <p class="points-balance">当前积分: {{ currentPoints }}</p>
         </div>
@@ -1109,8 +1096,13 @@ const syncCurrentPoints = (remainingPoints, fallbackCost = 0) => {
     }
   }
 
-  window.dispatchEvent(new Event('points-updated'))
+  window.dispatchEvent(new CustomEvent('points-updated', {
+    detail: {
+      balance: currentPoints.value,
+    },
+  }))
 }
+
 
 
 // 流年运势相关
@@ -1135,8 +1127,9 @@ const dayunChartLoading = ref(false)
 
 // 积分消耗确认对话框
 const pointsConfirmVisible = ref(false)
-const pointsConfirmType = ref('') // 'yearly', 'dayun', 'chart'
+const pointsConfirmType = ref('') // 'yearly', 'dayun', 'chart', 'ai'
 const pointsConfirmData = ref({})
+
 
 const resetDerivedAnalysisState = () => {
   yearlyFortuneResult.value = null
@@ -1268,7 +1261,28 @@ const getFortuneToolCost = (type) => {
   return Number.isFinite(parsedCost) ? parsedCost : null
 }
 
+const getPointsConfirmTitle = (type = '') => {
+  const titleMap = {
+    yearly: '流年运势分析',
+    dayun: '大运运势评分',
+    chart: '运势K线图',
+    ai: 'AI 智能解盘',
+  }
+
+  return titleMap[type] || '积分功能'
+}
+
+const getPointsConfirmCost = (type = '') => {
+  if (type === 'ai') {
+    return aiAnalysisCost.value
+  }
+
+  const cost = getFortuneToolCost(type)
+  return Number.isFinite(cost) ? cost : 0
+}
+
 const getFortuneToolTagText = (type) => {
+
   if (fortunePricingStatus.value === 'loading') {
     return '价格查询中'
   }
@@ -1507,14 +1521,17 @@ const loadPoints = async ({ silent = false } = {}) => {
 
 // 显示积分消耗确认对话框
 const showPointsConfirm = (type, data = {}) => {
-  if (!isAccountReady.value || !isFortunePricingReady.value) {
-    ElMessage.warning('价格信息还在同步，请稍后再试')
+  const isAiAction = type === 'ai'
+  const isPricingReady = isAiAction ? isAiPricingReady.value : isFortunePricingReady.value
+
+  if (!isAccountReady.value || !isPricingReady) {
+    ElMessage.warning(isAiAction ? 'AI 解盘价格还在同步，请稍后再试' : '价格信息还在同步，请稍后再试')
     return
   }
 
-  const cost = getFortuneToolCost(type)
+  const cost = getPointsConfirmCost(type)
   if (!Number.isFinite(cost)) {
-    ElMessage.warning('当前价格信息暂不可用，请稍后重试')
+    ElMessage.warning(isAiAction ? 'AI 解盘价格暂不可用，请稍后重试' : '当前价格信息暂不可用，请稍后重试')
     return
   }
 
@@ -1543,8 +1560,12 @@ const confirmPointsConsume = async () => {
     case 'chart':
       await getDayunChartData()
       break
+    case 'ai':
+      await startAiAnalysisCore()
+      break
   }
 }
+
 
 // 获取流年运势分析
 const getYearlyFortuneAnalysis = async () => {
@@ -1560,8 +1581,9 @@ const getYearlyFortuneAnalysis = async () => {
     if (response.code === 200) {
       yearlyFortuneResult.value = response.data
       lastAnalyzedYear.value = selectedYear.value
-      currentPoints.value = response.data.remaining_points
+      syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('流年运势分析完成！')
+
 
     } else {
       ElMessage.error(response.message || '分析失败')
@@ -1588,8 +1610,9 @@ const getDayunFortuneAnalysis = async () => {
     if (response.code === 200) {
       dayunAnalysisResult.value = response.data
       lastAnalyzedDayunIndex.value = selectedDayunIndex.value
-      currentPoints.value = response.data.remaining_points
+      syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('大运运势分析完成！')
+
 
     } else {
       ElMessage.error(response.message || '分析失败')
@@ -1614,8 +1637,9 @@ const getDayunChartData = async () => {
     
     if (response.code === 200) {
       dayunChartData.value = response.data
-      currentPoints.value = response.data.remaining_points
+      syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('运势K线图生成完成！')
+
     } else {
       ElMessage.error(response.message || '生成失败')
     }
@@ -1704,9 +1728,10 @@ const calculateBazi = async () => {
     if (response.code === 200) {
       result.value = response.data
       activeNames.value = getDefaultActiveNames()
-      currentPoints.value = response.data.remaining_points
+      syncCurrentPoints(response.data.remaining_points)
       isFirstBazi.value = false
       ElMessage.success('排盘成功！为你生成详细的命理解读')
+
     } else {
       ElMessage.error(response.message || '排盘失败')
       // 如果是积分不足，刷新积分
@@ -1871,7 +1896,11 @@ const shareResult = async () => {
 }
 
 // AI解盘
-const startAiAnalysis = async () => {
+const startAiAnalysis = () => {
+  showPointsConfirm('ai')
+}
+
+const startAiAnalysisCore = async () => {
   if (!isAccountReady.value || !isAiPricingReady.value) {
     ElMessage.warning('AI 解盘价格还在同步，请稍后再试')
     return
@@ -1882,9 +1911,8 @@ const startAiAnalysis = async () => {
     return
   }
 
-
-  
   aiAnalyzing.value = true
+
   aiStreamContent.value = ''
   aiLoadingTime.value = 60
   
@@ -1964,10 +1992,9 @@ const startAiAnalysis = async () => {
       const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
       if (res.code === 200) {
         aiAnalysisResult.value = res.data
-        currentPoints.value = Number.isFinite(Number(res.data?.remaining_points))
-          ? Number(res.data.remaining_points)
-          : Math.max(0, currentPoints.value - aiAnalysisCost.value)
+        syncCurrentPoints(res.data?.remaining_points, aiAnalysisCost.value)
       } else {
+
 
         ElMessage.error(res.message || 'AI解盘失败')
       }

@@ -1,5 +1,14 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-18 13:41 执行摘要（本轮）
+
+- 本轮完成 5 个前端问题修复并清理对应 TODO：八字 AI 解盘补充积分确认、全局导航积分徽标改为监听实时余额事件、塔罗问题模板区改为可折叠继续查看、塔罗保存/个人中心历史统一到云端数据源、合婚历史载入前增加草稿覆盖确认。
+- 关键文件：`frontend/src/views/Bazi.vue`、`frontend/src/App.vue`、`frontend/src/views/Tarot.vue`、`frontend/src/views/Profile.vue`、`frontend/src/views/Hehun.vue`、`TODO.md`。
+- 验证结果：上述 5 个 Vue 文件 `read_lints` 均为 0 条新增诊断，`git diff --check -- frontend/src/views/Bazi.vue frontend/src/App.vue frontend/src/views/Tarot.vue frontend/src/views/Profile.vue frontend/src/views/Hehun.vue TODO.md` 通过；`npm run build --prefix frontend` 仍被本机旧 Node 运行时拦住，输出 `SyntaxError: Unexpected token '??='`，需在较新 Node 环境补做完整构建回归。
+- Git：已准备按 `fix-frontend-multiple-issues-20260318-1341` 提交并推送，仅纳入本轮前端修复相关文件与自动化记忆更新。
+
+
+
 ## 2026-03-18 12:08 执行摘要（本轮）
 
 - 本轮完成 5 个前端问题修复并清理对应 TODO：塔罗保存记录未定义牌阵变量、塔罗解读区处理中误报失败、六爻历史弹窗缺少 loading/error/empty 状态、合婚升级卡片解锁时整块消失、八字深度预测切换选项后旧结果残留。

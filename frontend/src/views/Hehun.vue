@@ -832,6 +832,22 @@ const clearUnlockFeedback = () => {
   unlockLoading.value = false
 }
 
+const hasUnsavedDraft = computed(() => {
+  const hasFilledValue = [
+    form.maleName,
+    form.maleBirthDate,
+    form.maleBirthTimeRange,
+    form.femaleName,
+    form.femaleBirthDate,
+    form.femaleBirthTimeRange,
+  ].some((value) => String(value || '').trim())
+
+  return hasFilledValue || form.maleBirthPrecision !== 'exact' || form.femaleBirthPrecision !== 'exact'
+})
+
+
+
+
 const escapeHtml = (value = '') => String(value)
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -1373,8 +1389,10 @@ const unlockPremium = async () => {
     if (response.code === 200) {
       freeResult.value = null
       premiumResult.value = normalizePremiumResultData(response.data)
+      window.dispatchEvent(new Event('points-updated'))
       ElMessage.success('解锁成功！')
     } else {
+
       unlockError.value = response.code === 403
         ? '积分不足，请先充值后再解锁详细报告。'
         : (response.message || '解锁失败，请重试。')
@@ -1560,51 +1578,73 @@ const resolveHistoryBirthState = (item, role) => {
 
 
 // 加载历史记录详情
-const loadHistoryDetail = (item) => {
+const applyHistoryDetail = (normalizedItem) => {
+  activeHistoryId.value = normalizedItem.id
+
+  // 填充表单
+  form.maleName = normalizedItem.male_name || ''
+  form.femaleName = normalizedItem.female_name || ''
+
+  const maleBirthState = resolveHistoryBirthState(normalizedItem, 'male')
+  form.maleBirthDate = maleBirthState.value
+  form.maleBirthPrecision = maleBirthState.precision
+  form.maleBirthTimeRange = maleBirthState.timeRange
+
+  const femaleBirthState = resolveHistoryBirthState(normalizedItem, 'female')
+  form.femaleBirthDate = femaleBirthState.value
+  form.femaleBirthPrecision = femaleBirthState.precision
+  form.femaleBirthTimeRange = femaleBirthState.timeRange
+
+  const hehunData = normalizeHehunData(normalizedItem.result)
+  const aiAnalysisData = normalizeAiField(normalizedItem.ai_analysis)
+  const maleBaziData = normalizeObjectField(normalizedItem.male_bazi, {})
+  const femaleBaziData = normalizeObjectField(normalizedItem.female_bazi, {})
+
+  if (!hehunData || Object.keys(hehunData).length === 0) {
+    ElMessage.warning('合婚结果数据不完整')
+    return
+  }
+
+  if (normalizedItem.tier === 'free' || !normalizedItem.is_premium) {
+    freeResult.value = buildHistoryFreeResult(normalizedItem, hehunData, maleBaziData, femaleBaziData)
+    premiumResult.value = null
+    clearUnlockFeedback()
+    return
+  }
+
+  premiumResult.value = buildHistoryPremiumResult(normalizedItem, hehunData, aiAnalysisData, maleBaziData, femaleBaziData)
+  freeResult.value = null
+  clearUnlockFeedback()
+}
+
+const loadHistoryDetail = async (item) => {
   const normalizedItem = normalizeHistoryItem(item)
 
   try {
-    activeHistoryId.value = normalizedItem.id
-
-    // 填充表单
-    form.maleName = normalizedItem.male_name || ''
-    form.femaleName = normalizedItem.female_name || ''
-
-    const maleBirthState = resolveHistoryBirthState(normalizedItem, 'male')
-    form.maleBirthDate = maleBirthState.value
-    form.maleBirthPrecision = maleBirthState.precision
-    form.maleBirthTimeRange = maleBirthState.timeRange
-
-    const femaleBirthState = resolveHistoryBirthState(normalizedItem, 'female')
-    form.femaleBirthDate = femaleBirthState.value
-    form.femaleBirthPrecision = femaleBirthState.precision
-    form.femaleBirthTimeRange = femaleBirthState.timeRange
-
-    const hehunData = normalizeHehunData(normalizedItem.result)
-    const aiAnalysisData = normalizeAiField(normalizedItem.ai_analysis)
-    const maleBaziData = normalizeObjectField(normalizedItem.male_bazi, {})
-    const femaleBaziData = normalizeObjectField(normalizedItem.female_bazi, {})
-
-    if (!hehunData || Object.keys(hehunData).length === 0) {
-      ElMessage.warning('合婚结果数据不完整')
-      return
+    if (!freeResult.value && !premiumResult.value && hasUnsavedDraft.value && activeHistoryId.value !== normalizedItem.id) {
+      await ElMessageBox.confirm(
+        '当前正在填写的双方信息会被这条历史记录直接覆盖，是否继续载入？',
+        '载入历史记录',
+        {
+          confirmButtonText: '载入历史记录',
+          cancelButtonText: '继续填写',
+          type: 'warning',
+          distinguishCancelAndClose: true,
+        }
+      )
     }
 
-    if (normalizedItem.tier === 'free' || !normalizedItem.is_premium) {
-      freeResult.value = buildHistoryFreeResult(normalizedItem, hehunData, maleBaziData, femaleBaziData)
-      premiumResult.value = null
-      clearUnlockFeedback()
-      return
-    }
-
-    premiumResult.value = buildHistoryPremiumResult(normalizedItem, hehunData, aiAnalysisData, maleBaziData, femaleBaziData)
-    freeResult.value = null
-    clearUnlockFeedback()
+    applyHistoryDetail(normalizedItem)
   } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+
     console.error('加载历史记录失败:', error)
     ElMessage.error('历史记录数据格式错误，无法加载')
   }
 }
+
 
 // 格式化日期
 const formatDate = (dateStr) => {

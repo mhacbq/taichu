@@ -48,47 +48,61 @@
       </div>
 
       <!-- 问题引导区域 -->
-      <div class="question-guide card card-hover" v-if="!question && cards.length === 0">
-        <h3>
-          <el-icon class="guide-icon"><ChatDotRound /></el-icon>
-          不知道问什么？选择一个你关心的话题
-        </h3>
-        <div class="topic-tabs">
-          <button
-            v-for="topic in questionTopics"
-            :key="topic.id"
-            type="button"
-            class="topic-tab card-hover"
-            :class="{ active: selectedTopic === topic.id }"
-            :aria-pressed="selectedTopic === topic.id"
-            @click="selectTopic(topic.id)"
+      <div v-if="showQuestionGuide" class="question-guide card card-hover">
+        <div class="question-guide__header">
+          <h3>
+            <el-icon class="guide-icon"><ChatDotRound /></el-icon>
+            不知道问什么？选择一个你关心的话题
+          </h3>
+          <el-button
+            v-if="question && cards.length === 0"
+            link
+            type="primary"
+            class="guide-toggle"
+            @click="toggleQuestionGuide"
           >
-            <span class="topic-icon">
-              <el-icon v-if="topic.icon === 'briefcase'"><Briefcase /></el-icon>
-              <el-icon v-else-if="topic.icon === 'heart'"><StarFilled /></el-icon>
-              <el-icon v-else-if="topic.icon === 'star'"><StarFilled /></el-icon>
-              <el-icon v-else-if="topic.icon === 'question'"><QuestionFilled /></el-icon>
-              <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
-            </span>
-            <span class="topic-name">{{ topic.name }}</span>
-          </button>
+            {{ questionGuideExpanded ? '收起模板' : '继续查看模板' }}
+          </el-button>
         </div>
-        <div class="question-templates" v-if="selectedTopic">
-          <p class="template-hint">点击选择一个问题，或以此为灵感输入你自己的问题：</p>
-          <div class="template-list">
+        <div v-show="questionGuideExpanded || (!question && cards.length === 0)">
+          <div class="topic-tabs">
             <button
-              v-for="(template, index) in currentTemplates"
-              :key="index"
+              v-for="topic in questionTopics"
+              :key="topic.id"
               type="button"
-              class="template-item card-hover"
-              @click="selectQuestion(template)"
+              class="topic-tab card-hover"
+              :class="{ active: selectedTopic === topic.id }"
+              :aria-pressed="selectedTopic === topic.id"
+              @click="selectTopic(topic.id)"
             >
-              <span class="template-bullet">•</span>
-              <span class="template-text">{{ template }}</span>
+              <span class="topic-icon">
+                <el-icon v-if="topic.icon === 'briefcase'"><Briefcase /></el-icon>
+                <el-icon v-else-if="topic.icon === 'heart'"><StarFilled /></el-icon>
+                <el-icon v-else-if="topic.icon === 'star'"><StarFilled /></el-icon>
+                <el-icon v-else-if="topic.icon === 'question'"><QuestionFilled /></el-icon>
+                <el-icon v-else-if="topic.icon === 'users'"><UserFilled /></el-icon>
+              </span>
+              <span class="topic-name">{{ topic.name }}</span>
             </button>
+          </div>
+          <div class="question-templates" v-if="selectedTopic">
+            <p class="template-hint">点击选择一个问题，或以此为灵感输入你自己的问题：</p>
+            <div class="template-list">
+              <button
+                v-for="(template, index) in currentTemplates"
+                :key="index"
+                type="button"
+                class="template-item card-hover"
+                @click="selectQuestion(template)"
+              >
+                <span class="template-bullet">•</span>
+                <span class="template-text">{{ template }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
 
       <div class="question-section card card-hover">
         <h3>您想咨询的问题</h3>
@@ -321,7 +335,9 @@ const currentPoints = ref(null)
 const cardDetailVisible = ref(false)
 const selectedCard = ref(null)
 const selectedTopic = ref('')
+const questionGuideExpanded = ref(true)
 const flowError = ref(null)
+
 
 const getSpreadName = (spreadType) => {
   return spreads.find((spread) => spread.id === spreadType)?.name || '当前牌阵'
@@ -404,7 +420,14 @@ const currentTemplates = computed(() => {
   return selectedTopic.value ? questionTemplates[selectedTopic.value] : []
 })
 
+const showQuestionGuide = computed(() => cards.value.length === 0 && (!question.value || questionGuideExpanded.value))
+
+const toggleQuestionGuide = () => {
+  questionGuideExpanded.value = !questionGuideExpanded.value
+}
+
 const selectSpread = (spreadId) => {
+
   selectedSpread.value = spreadId
 }
 
@@ -469,13 +492,15 @@ const getPositionLabel = (spreadType, index) => {
 }
 
 const selectTopic = (topicId) => {
-
   selectedTopic.value = topicId
+  questionGuideExpanded.value = true
 }
 
 const selectQuestion = (template) => {
   question.value = template
+  questionGuideExpanded.value = false
 }
+
 
 // 塔罗牌详细解读数据
 const cardDetailedMeanings = {
@@ -679,9 +704,15 @@ const drawCards = async () => {
 
       if (Number.isFinite(remainingPoints)) {
         currentPoints.value = remainingPoints
+        window.dispatchEvent(new CustomEvent('points-updated', {
+          detail: {
+            balance: remainingPoints,
+          },
+        }))
       }
 
       clearFlowError()
+
       await interpretCurrentCards()
       return
     }
@@ -743,7 +774,7 @@ const sharePublicConfirmed = ref(false)
 const saveTarotResult = async () => {
   if (savedRecordId.value) {
     ElMessage.info('已经保存过了')
-    return
+    return true
   }
   
   try {
@@ -755,20 +786,27 @@ const saveTarotResult = async () => {
       ai_analysis: ''
     })
 
-
-    
     if (response.code === 200) {
       savedRecordId.value = response.data.record_id
       savedShareCode.value = response.data.share_code
       sharePublicConfirmed.value = false
-      ElMessage.success('保存成功，可在个人中心查看历史记录')
-    } else {
-      ElMessage.error(response.message || '保存失败')
+      window.dispatchEvent(new CustomEvent('tarot-history-updated', {
+        detail: {
+          recordId: savedRecordId.value,
+        },
+      }))
+      ElMessage.success('保存成功，已同步到云端塔罗历史，可在个人中心查看')
+      return true
     }
+
+    ElMessage.error(response.message || '保存失败')
   } catch (error) {
     reportUiError('保存塔罗记录失败', error, '保存失败，请稍后重试')
   }
+
+  return false
 }
+
 
 const updateTarotShareVisibility = async (isPublic, { silent = false } = {}) => {
   if (!savedRecordId.value) {
@@ -836,8 +874,12 @@ const ensureTarotShareReady = async () => {
 const shareTarotResult = async () => {
   // 如果没有保存过，先保存
   if (!savedRecordId.value) {
-    await saveTarotResult()
+    const saved = await saveTarotResult()
+    if (!saved) {
+      return
+    }
   }
+
   
   if (!savedRecordId.value) {
     return
@@ -899,11 +941,13 @@ const resetTarot = () => {
   interpretation.value = ''
   question.value = ''
   selectedTopic.value = ''
+  questionGuideExpanded.value = true
   savedRecordId.value = null
   savedShareCode.value = null
   sharePublicConfirmed.value = false
   clearFlowError()
 }
+
 
 
 // 显示卡片详情
@@ -1133,7 +1177,28 @@ const getCardAdvice = (card) => {
   border: 1px solid var(--white-05);
 }
 
+.question-guide__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.question-guide__header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-toggle {
+  padding: 0;
+  min-height: auto;
+}
+
 .topic-tabs {
+
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
