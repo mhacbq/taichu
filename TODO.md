@@ -12,13 +12,6 @@
 - [ ] [运营] 积分记录接口当前仍返回 `points` 有值但 `amount=0`、`balance=null`、`reason` 为空；前端列表会把塔罗消耗等非 `reduce` 类型记录误判成“增加”，运营无法准确完成积分审计 - 积分管理 / 积分记录 - 需统一方向、数量、余额与原因字段映射，避免正负向记录继续失真。
 
 
-
-## 2026-03-18 UI设计检查（第四十五次）
-
-### 🔴 高优先级（功能性问题）
-
-
-
 ### 🟡 中优先级（体验问题）
 - [ ] [UI] 合婚历史记录点击后会直接覆盖当前正在填写的双方信息，没有任何二次确认 - 合婚页 / 历史记录列表 - 建议在检测到未提交草稿时弹出确认框，支持“继续填写”或“载入历史记录”。
 
@@ -30,8 +23,6 @@
 
 ## 2026-03-18 UI设计检查（第四十六次）
 
-### 🔴 高优先级（功能性问题）
-
 
 ### 🟡 中优先级（体验问题）
 - [ ] [UI] 八字页“简化版：只看核心信息”与结果页结构不一致，simple 模式下仍固定展示“大运与流年走势”“深度预测工具”等进阶模块 - 八字排盘页 / 结果区 - 建议按 `mode` 隐藏深度模块，或把模式文案改成“先看核心信息，可选继续深入”。
@@ -42,11 +33,71 @@
 
 ### 🟢 低优先级（美观问题）
 
+## 2026-03-18 占卜深度体验补充（第四十七次）
+
+### 🔴 高优先级（逻辑错误/准确性问题）
+- [ ] [占卜] 每日运势在登录且已有八字记录时，`GET /api/daily/fortune` 仍返回 `personalized: null`，用户永远看不到“专属运势”卡 - 每日运势 - `Daily::fortune()` 会读取 `$request->user`，但当前仅 `luck/checkin/checkinStatus` 挂了 Auth 中间件，导致登录态个性化链路实际失效。
+- [ ] [占卜] 合婚详细报告总评与传统分项结论互相打架：同一份报告给出 81 分“佳偶天成”，但 `traditional_methods.jiugong` 同时判定“五鬼”“大凶”“强烈建议慎重考虑” - 合婚配对 - 关键凶象没有参与总评降权或冲突提示，可能直接误导用户做婚配判断。
+
+### 🟡 中优先级（体验问题）
+- [ ] [占卜] 合婚勾选“解锁详细报告时启用 AI 深度分析”后，接口在 AI 不可用时会静默回退为规则引擎，但结果页仍以“AI深度解读”名义展示且不说明降级 - 合婚配对 - 建议在付费前和结果页明确标注当前是否真实启用 AI，避免付费预期落差。
 
 
 
+## 2026-03-18 数据库表优化与功能完善（第四十八次）
+
+### 🔴 高优先级（核心架构优化）
+
+#### 数据库表优化
+- [ ] [架构] 删除或合并冗余的用户资料表 `tc_user_profile` - 该表字段完全可以合并到 `users` 主表中，当前两表冗余且需要 JOIN 查询，影响性能 - 建议：直接在 `users` 表添加 `gender/age/region/education/occupation` 等字段，然后删除 `tc_user_profile`
+- [ ] [架构] 合并冗余的积分任务表 `tc_points_task` 与 `tc_task_log` - 两个表记录相同内容，容易造成数据不一致 - 建议：统一使用 `tc_task_log`，删除 `tc_points_task`，在迁移脚本中合并历史数据
+- [ ] [架构] 检查并整合两个签到表 `checkin_record` 与 `tc_checkin_log` - 功能重复，维护困难 - 建议：确认业务逻辑后选择一个作为主表，另一个作为历史备表或删除
+
+#### 敏感信息加密
+- [ ] [安全] 对 `tc_payment_config.api_key` 和 `tc_payment_config.api_cert` 实现字段级加密存储 - 当前直接存储明文，存在安全风险 - 建议：使用 Laravel 的 Encryptable 或自定义加密方法
+- [ ] [安全] 对 `tc_payment_config.mch_id` 实现加密存储 - 商户号属于敏感信息
+- [ ] [安全] 对 `tc_sms_config.secret_id` 和 `tc_sms_config.secret_key` 实现加密存储 - 短信服务凭据必须加密
+- [ ] [安全] 对 `tc_sms_config.sign_name` 加密存储 - 短信签名也是敏感标识
+- [ ] [安全] 考虑对 `users.phone` 实现加密存储或脱敏处理 - 用户手机号属于 PII（个人可识别信息）
+
+### 🟡 中优先级（功能完善）
+
+#### 未实现的功能表
+- [ ] [功能] 激活流年运势功能 - `tc_yearly_fortune` 表已创建但代码中未使用 - 建议：
+  - 在前端添加"流年运势"功能入口
+  - 创建流年运势计算逻辑
+  - 接入 AI 进行深度分析
+  - 参考表字段：user_id, year, overall_score, career, wealth, love, health, analysis
+  
+- [ ] [功能] 激活取名功能 - `tc_qiming_record` 表已创建但代码中未使用 - 建议：
+  - 在前端添加"取名建议"功能入口
+  - 创建取名建议生成逻辑（基于八字五行）
+  - 集成 AI 进行名字质量评测
+  - 参考表字段：user_id, bazi_data, suggested_names, rating_scores, analysis
+
+#### 表字段完善
+- [ ] [数据] 在 `users` 表补充验证码相关字段 - 当前必须查 `tc_sms_code` 表才能验证状态 - 建议：添加 `last_sms_code_time`, `sms_code_attempts` 字段以优化查询
+- [ ] [数据] 在 `points_records` 表补充更多业务分类 - 当前 `action` 字段值不统一 - 建议：建立 action 的枚举定义，并补充缺失的业务场景分类
+- [ ] [数据] 在 `bazi_records` 表添加 `ai_analysis_model` 字段 - 记录使用的 AI 模型（GPT-3.5/GPT-4/Claude等），便于追溯和对比结果
+
+### 🟢 低优先级（性能与运维）
+
+#### 性能优化与监控
+- [ ] [性能] 为 `points_records` 表建立按用户 ID 的分区索引 - 该表是高频写表，Year 2 预计 ~1M 行 - 建议：`KEY idx_user_created (user_id, created_at)`
+- [ ] [性能] 为 `operation_logs` 表建立定期清理策略 - 该表增长快，Year 2 预计 ~100MB - 建议：仅保留最近1年的操作日志，老数据定期归档到文件系统或备份库
+- [ ] [性能] 为 `tc_checkin_log` 表建立分区表结构 - 签到数据量大且增长快 - 建议：按日期分区，方便定期清理或归档
+- [ ] [性能] 引入 Redis 缓存策略 - 避免重复查询配置表、模板表等 - 建议：
+  - 缓存 `system_config` 全表（1小时过期）
+  - 缓存 `ai_prompts`（按 category 分组）
+  - 缓存 `tarot_cards` 和 `tarot_spreads`
+  - 缓存用户的 VIP 状态（30分钟过期）
+  
+- [ ] [性能] 对高频查询表建立必要的复合索引 - 建议：
+  - `bazi_records`: `KEY idx_user_created (user_id, created_at)`
+  - `tc_tarot_record`: `KEY idx_user_spread_created (user_id, spread_type, created_at)`
+  - `recharge_orders`: `KEY idx_user_status_created (user_id, status, created_at)`
 
 
-
-
+#### 数据归档与清理
+- [ ] [运维] 为 `tc_sms_code` 表建立过期验证码清理 - 定期删除 `expire_time` 已过期的记录
 

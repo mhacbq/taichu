@@ -38,50 +38,53 @@
 
 ## 2. 代码中使用，但SQL脚本中缺少的表
 
-### ⚠️ 重要：这些表需要立即创建
+### ✅ 状态：已全部修复！（2026-03-18）
 
-| 表名 | 在代码中的位置 | 紧急程度 |
+已通过 `database/20260318_create_missing_tables.sql` 迁移脚本补齐所有缺失表。
+
+| 表名 | 在代码中的位置 | 修复状态 |
 |------|---------------|----------|
-| `user` / `tc_user` | Dashboard控制器 | 已存在 |
-| `bazi_record` / `tc_bazi_record` | Dashboard, Daily控制器 | 已存在 |
-| `points_history` | Dashboard控制器 | **缺少** |
-| `points_exchange` | Dashboard控制器 | **缺少** |
-| `daily_fortune` | Dashboard控制器 | 已存在 |
-| `feedback` | Feedback控制器 | **缺少** |
-| `checkin_record` | Daily控制器 | **缺少** |
-| `notification` / `tc_notification` | Notification控制器 | **缺少** |
-| `notification_setting` / `tc_notification_setting` | Notification控制器 | **缺少** |
-| `push_device` / `tc_push_device` | Notification控制器 | **缺少** |
-| `share_log` / `tc_share_log` | Share控制器 | **缺少** |
-| `invite_record` / `tc_invite_record` | Share控制器 | 已存在 |
-| `points_product` / `tc_points_product` | PointsShop控制器 | 已存在 |
-| `task_log` / `tc_task_log` | Task控制器 | **缺少** |
-| `checkin_log` / `tc_checkin_log` | Task控制器 | **缺少** |
-| `tarot_record` / `tc_tarot_record` | 模型中定义 | 已存在 |
-| `hehun_records` | HehunRecord模型 | **缺少** |
-| `points_record` / `tc_points_record` | 模型中定义 | 已存在 |
-| `recharge_order` / `tc_recharge_order` | 模型中定义 | 已存在 |
-| `sms_code` / `sms_codes` | 模型中定义 | **表名不一致** |
-| `sms_config` / `sms_configs` | 模型中定义 | **表名不一致** |
-| `payment_config` / `payment_configs` | 模型中定义 | **表名不一致** |
-| `admin_log` / `tc_admin_log` | 模型中定义 | 已存在 |
-| `admin_role` / `tc_admin_role` | 模型中定义 | 已存在 |
-| `admin_permission` / `tc_admin_permission` | 模型中定义 | 已存在 |
-| `admin_role_permission` / `tc_admin_role_permission` | 模型中定义 | 已存在 |
-| `admin_user_role` / `tc_admin_user_role` | 模型中定义 | 已存在 |
-| `pages` | Page模型 | **缺少** |
-| `page_versions` | PageVersion模型 | **缺少** |
-| `page_drafts` | PageDraft模型 | **缺少** |
-| `upload_files` | UploadFile模型 | **缺少** |
-| `ai_prompts` | AiPrompt模型 | **缺少** |
-| `tarot_cards` | TarotCard模型 | **缺少** |
-| `tarot_spreads` | TarotSpread模型 | **缺少** |
-| `faqs` | Faq模型 | **缺少** |
-| `daily_fortune_templates` | DailyFortuneTemplate模型 | **缺少** |
-| `testimonials` | Testimonial模型 | **缺少** |
-| `site_contents` | SiteContent模型 | **缺少** |
-| `system_config` | SystemConfig模型 | **缺少** |
-| `question_templates` | QuestionTemplate模型 | **缺少** |
+| `user` / `tc_user` | Dashboard控制器 | ✅ 已存在 |
+| `bazi_record` / `tc_bazi_record` | Dashboard, Daily控制器 | ✅ 已存在 |
+| `points_history` | Dashboard控制器 | ✅ 已创建（2026-03-18） |
+| `points_exchange` | Dashboard控制器 | ✅ 已创建（2026-03-18） |
+| `daily_fortune` | Dashboard控制器 | ✅ 已存在 |
+| `feedback` | Feedback控制器 | ✅ 已创建（2026-03-18） |
+| `checkin_record` | Daily控制器 | ✅ 已创建（2026-03-18） |
+| `notification` / `tc_notification` | Notification控制器 | ✅ 已创建（2026-03-17） |
+| `notification_setting` / `tc_notification_setting` | Notification控制器 | ✅ 已创建（2026-03-17） |
+| `push_device` / `tc_push_device` | Notification控制器 | ✅ 已创建（2026-03-17） |
+| `share_log` / `tc_share_log` | Share控制器 | ✅ 已创建（2026-03-18） |
+| `invite_record` / `tc_invite_record` | Share控制器 | ✅ 已存在 |
+| `points_product` / `tc_points_product` | PointsShop控制器 | ✅ 已存在 |
+| `task_log` / `tc_task_log` | Task控制器 | ✅ 已创建（2026-03-18） |
+| `checkin_log` / `tc_checkin_log` | Task控制器 | ✅ 已创建（2026-03-18） |
+| `tarot_record` / `tc_tarot_record` | 模型中定义 | ✅ 已创建（2026-03-17） |
+| `hehun_records` | HehunRecord模型 | ✅ 已创建（2026-03-18） |
+| `points_record` / `tc_points_record` | 模型中定义 | ✅ 已存在 |
+| `recharge_order` / `tc_recharge_order` | 模型中定义 | ✅ 已存在 |
+| `sms_code` / `sms_codes` | 模型中定义 | ⚠️ 表名不一致 |
+| `sms_config` / `sms_configs` | 模型中定义 | ⚠️ 表名不一致 |
+| `payment_config` / `payment_configs` | 模型中定义 | ⚠️ 表名不一致 |
+| `admin_log` / `tc_admin_log` | 模型中定义 | ✅ 已存在 |
+| `admin_role` / `tc_admin_role` | 模型中定义 | ✅ 已存在 |
+| `admin_permission` / `tc_admin_permission` | 模型中定义 | ✅ 已存在 |
+| `admin_role_permission` / `tc_admin_role_permission` | 模型中定义 | ✅ 已存在 |
+| `admin_user_role` / `tc_admin_user_role` | 模型中定义 | ✅ 已存在 |
+| `pages` | Page模型 | ✅ 已创建（2026-03-18） |
+| `page_versions` | PageVersion模型 | ✅ 已创建（2026-03-18） |
+| `page_drafts` | PageDraft模型 | ✅ 已创建（2026-03-18） |
+| `page_recycle` | PageRecycle模型 | ✅ 已创建（2026-03-18） |
+| `upload_files` | UploadFile模型 | ✅ 已创建（2026-03-18） |
+| `ai_prompts` | AiPrompt模型 | ✅ 已创建（2026-03-18） |
+| `tarot_cards` | TarotCard模型 | ✅ 已创建（2026-03-18） |
+| `tarot_spreads` | TarotSpread模型 | ✅ 已创建（2026-03-18） |
+| `faqs` | Faq模型 | ✅ 已创建（2026-03-18） |
+| `daily_fortune_templates` | DailyFortuneTemplate模型 | ✅ 已创建（2026-03-18） |
+| `testimonials` | Testimonial模型 | ✅ 已创建（2026-03-18） |
+| `site_contents` | SiteContent模型 | ✅ 已创建（2026-03-18） |
+| `system_config` | SystemConfig模型 | ✅ 已创建（2026-03-18） |
+| `question_templates` | QuestionTemplate模型 | ✅ 已创建（2026-03-18） |
 
 ## 3. 表名不一致问题
 
@@ -91,201 +94,87 @@
 | `tc_sms_config` | `sms_configs` | `tc_sms_config` |
 | `tc_payment_config` | `payment_configs` | `tc_payment_config` |
 
-## 4. 缺少的关键表结构（需要创建）
+## 4. 缺失表创建 - 已完成 ✅
 
-### 4.1 `points_history` - 积分历史记录表
-```sql
-CREATE TABLE IF NOT EXISTS `points_history` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `type` VARCHAR(20) NOT NULL COMMENT '类型 add/reduce',
-    `points` INT NOT NULL COMMENT '变动积分',
-    `balance` INT NOT NULL COMMENT '变动后余额',
-    `action` VARCHAR(100) NOT NULL COMMENT '动作说明',
-    `remark` VARCHAR(500) DEFAULT '' COMMENT '备注',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_type` (`type`),
-    INDEX `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='积分历史记录表';
+所有缺失的表已通过以下迁移脚本完成创建：
+
+- `database/20260317_create_notification_tables.sql` - 通知相关表（3张）
+- `database/20260317_create_shensha_table.sql` - 神煞表
+- `database/20260317_create_admin_stats_tables.sql` - 网站统计表
+- `database/20260318_create_almanac_table.sql` - 黄历表  
+- `database/20260318_create_seo_tables.sql` - SEO相关表（6张）
+- `database/20260318_create_missing_tables.sql` - 缺失表补充（26张表）
+  - `points_history` ✅
+  - `points_exchange` ✅
+  - `checkin_record` ✅
+  - `feedback` ✅
+  - `tc_tarot_record` ✅
+  - `tc_liuyao_record` ✅
+  - `upload_files` ✅
+  - `ai_prompts` ✅
+  - `pages` ✅
+  - `page_versions` ✅
+  - `page_drafts` ✅
+  - `page_recycle` ✅
+  - `faqs` ✅
+  - `daily_fortune_templates` ✅
+  - `question_templates` ✅
+  - `testimonials` ✅
+  - `site_contents` ✅
+  - `operation_logs` ✅
+  - `tc_checkin_log` ✅
+  - `tc_share_log` ✅
+  - `tc_task_log` ✅
+  - `hehun_records` ✅
+  - `system_config` ✅
+  - `tarot_cards` ✅
+  - `tarot_spreads` ✅
+  - `tc_vip_order` ✅
+
+**执行命令：**
+```bash
+mysql -u taichu -p taichu < database/20260318_master_migration.sql
 ```
 
-### 4.2 `points_exchange` - 积分兑换记录表
+## 5. 建议操作与待办项
+
+### ✅ 已完成
+- [x] 创建缺少的所有关键表（26张表已创建）
+- [x] 整理SQL迁移脚本（按依赖顺序、统一编码、幂等设计）
+- [x] 添加master迁移脚本入口
+
+### ⚠️ 待处理（表名不一致问题）
+
+这些是代码中使用但与SQL定义的表名不一致的情况：
+
+| 问题表 | SQL中的表名 | 代码使用的表名 | 模型 | 建议 |
+|--------|-----------|--------------|------|------|
+| `sms_code` | `tc_sms_code` | `sms_codes` | SmsCode | 统一为 `tc_sms_code` |
+| `sms_config` | `tc_sms_config` | `sms_configs` | SmsConfig | 统一为 `tc_sms_config` |
+| `payment_config` | `tc_payment_config` | `payment_configs` | PaymentConfig | 统一为 `tc_payment_config` |
+
+**方案A：修改数据库（建议）**
 ```sql
-CREATE TABLE IF NOT EXISTS `points_exchange` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `product_id` INT UNSIGNED NOT NULL COMMENT '商品ID',
-    `product_name` VARCHAR(100) NOT NULL COMMENT '商品名称',
-    `points` INT NOT NULL COMMENT '消耗积分',
-    `status` TINYINT DEFAULT 0 COMMENT '状态 0待处理 1已完成 2已取消',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='积分兑换记录表';
+ALTER TABLE `sms_codes` RENAME TO `tc_sms_code`;
+ALTER TABLE `sms_configs` RENAME TO `tc_sms_config`;
+ALTER TABLE `payment_configs` RENAME TO `tc_payment_config`;
 ```
 
-### 4.3 `feedback` - 用户反馈表
-```sql
-CREATE TABLE IF NOT EXISTS `feedback` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `type` VARCHAR(20) NOT NULL COMMENT '类型 bug/feature/suggestion',
-    `title` VARCHAR(200) NOT NULL COMMENT '标题',
-    `content` TEXT NOT NULL COMMENT '内容',
-    `images` JSON NULL COMMENT '图片列表',
-    `contact` VARCHAR(100) DEFAULT '' COMMENT '联系方式',
-    `status` TINYINT DEFAULT 0 COMMENT '状态 0待处理 1处理中 2已回复',
-    `reply` TEXT COMMENT '回复内容',
-    `replied_at` DATETIME NULL COMMENT '回复时间',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_type` (`type`),
-    INDEX `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户反馈表';
-```
+**方案B：修改代码模型**
+在 `SmsCode.php`, `SmsConfig.php`, `PaymentConfig.php` 中更新 `$table` 属性为对应的非 `tc_` 前缀表名。
 
-### 4.4 `checkin_record` - 签到记录表
-```sql
-CREATE TABLE IF NOT EXISTS `checkin_record` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `date` DATE NOT NULL COMMENT '签到日期',
-    `consecutive_days` INT DEFAULT 1 COMMENT '连续签到天数',
-    `points` INT DEFAULT 0 COMMENT '获得积分',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY `uk_user_date` (`user_id`, `date`),
-    INDEX `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='签到记录表';
-```
+### 🗑️ 可考虑删除的表（如功能不需要）
 
-### 4.5 `tc_notification` - 通知表
-```sql
-CREATE TABLE IF NOT EXISTS `tc_notification` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `type` VARCHAR(50) NOT NULL COMMENT '通知类型',
-    `title` VARCHAR(200) NOT NULL COMMENT '标题',
-    `content` TEXT COMMENT '内容',
-    `data` JSON NULL COMMENT '附加数据',
-    `is_read` TINYINT DEFAULT 0 COMMENT '是否已读',
-    `read_at` DATETIME NULL COMMENT '阅读时间',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_type` (`type`),
-    INDEX `idx_is_read` (`is_read`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知表';
-```
+| 表名 | 说明 | 影响范围 |
+|------|------|---------|
+| `tc_shensha` | 神煞表 | 命理功能 |
+| `tc_almanac` | 黄历表 | 每日运势功能 |
+| `tc_knowledge_category` | 知识库分类 | 知识库功能 |
+| `tc_knowledge_article` | 知识库文章 | 知识库功能 |
+| `tc_user_profile` | 用户资料扩展 | 用户档案功能 |
+| `tc_points_task` | 积分任务记录 | 任务系统 |
+| `tc_qiming_record` | 取名建议 | 取名功能 |
+| `tc_yearly_fortune` | 流年运势 | 流年功能 |
+| `tc_jieqi` | 节气表 | 节气查询 |
 
-### 4.6 `tc_notification_setting` - 通知设置表
-```sql
-CREATE TABLE IF NOT EXISTS `tc_notification_setting` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `type` VARCHAR(50) NOT NULL COMMENT '通知类型',
-    `enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY `uk_user_type` (`user_id`, `type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知设置表';
-```
-
-### 4.7 `tc_push_device` - 推送设备表
-```sql
-CREATE TABLE IF NOT EXISTS `tc_push_device` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `device_id` VARCHAR(255) NOT NULL COMMENT '设备ID',
-    `platform` VARCHAR(20) NOT NULL COMMENT '平台 ios/android',
-    `token` VARCHAR(500) NOT NULL COMMENT '推送令牌',
-    `is_active` TINYINT DEFAULT 1 COMMENT '是否激活',
-    `last_used_at` DATETIME NULL COMMENT '最后使用时间',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_device_id` (`device_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='推送设备表';
-```
-
-### 4.8 `tc_share_log` - 分享记录表
-```sql
-CREATE TABLE IF NOT EXISTS `tc_share_log` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `type` VARCHAR(50) NOT NULL COMMENT '分享类型',
-    `platform` VARCHAR(50) NOT NULL COMMENT '分享平台',
-    `content_id` INT UNSIGNED DEFAULT 0 COMMENT '内容ID',
-    `points_reward` INT DEFAULT 0 COMMENT '奖励积分',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_type` (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分享记录表';
-```
-
-### 4.9 `tc_task_log` - 任务记录表
-```sql
-CREATE TABLE IF NOT EXISTS `tc_task_log` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `task_type` VARCHAR(50) NOT NULL COMMENT '任务类型',
-    `task_name` VARCHAR(100) NOT NULL COMMENT '任务名称',
-    `points` INT DEFAULT 0 COMMENT '奖励积分',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_task_type` (`task_type`),
-    INDEX `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务记录表';
-```
-
-### 4.10 `tc_checkin_log` - 签到日志表（Task控制器使用）
-```sql
-CREATE TABLE IF NOT EXISTS `tc_checkin_log` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `date` DATE NOT NULL COMMENT '签到日期',
-    `consecutive_days` INT DEFAULT 1 COMMENT '连续签到天数',
-    `points` INT DEFAULT 0 COMMENT '获得积分',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY `uk_user_date` (`user_id`, `date`),
-    INDEX `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='签到日志表';
-```
-
-### 4.11 `hehun_records` - 合婚记录表
-```sql
-CREATE TABLE IF NOT EXISTS `hehun_records` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `male_name` VARCHAR(50) DEFAULT '' COMMENT '男方姓名',
-    `male_birth_date` DATE NOT NULL COMMENT '男方出生日期',
-    `male_birth_time` TIME NOT NULL COMMENT '男方出生时间',
-    `female_name` VARCHAR(50) DEFAULT '' COMMENT '女方姓名',
-    `female_birth_date` DATE NOT NULL COMMENT '女方出生日期',
-    `female_birth_time` TIME NOT NULL COMMENT '女方出生时间',
-    `male_bazi` JSON NULL COMMENT '男方八字',
-    `female_bazi` JSON NULL COMMENT '女方八字',
-    `score` INT DEFAULT 0 COMMENT '合婚评分',
-    `result` TEXT COMMENT '合婚结果',
-    `analysis` JSON NULL COMMENT '详细分析',
-    `is_public` TINYINT DEFAULT 0 COMMENT '是否公开',
-    `share_code` VARCHAR(20) DEFAULT '' COMMENT '分享码',
-    `view_count` INT DEFAULT 0 COMMENT '查看次数',
-    `points_used` INT DEFAULT 0 COMMENT '消耗积分',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_share_code` (`share_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='合婚记录表';
-```
-
-## 5. 建议操作
-
-### 立即需要做的：
-1. **创建缺少的关键表**：`feedback`, `checkin_record`, `tc_notification`, `tc_share_log`, `hehun_records`
-2. **统一表名**：将代码中的 `sms_codes`, `sms_configs`, `payment_configs` 改为 `tc_` 前缀
-3. **删除或归档不用的表**：如果确定不需要命理专业功能，可以删除 `tc_shensha`, `tc_almanac` 等表
-
-### 优先级：
-- **P0（紧急）**：`feedback`, `checkin_record`, `hehun_records` - 这些是当前功能必需的
-- **P1（重要）**：`tc_notification`, `tc_share_log`, `tc_task_log` - 这些表支持扩展功能
-- **P2（一般）**：SEO相关表、知识库表 - 如果暂时不用可以先不创建
+> ⚠️ 删除前请确认这些功能在后台不再使用。

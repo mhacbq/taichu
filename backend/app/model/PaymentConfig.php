@@ -10,8 +10,8 @@ use think\Model;
  */
 class PaymentConfig extends Model
 {
-    // 注意：此表不使用tc_前缀
-    protected $name = 'payment_configs';
+    // 使用 tc_ 前缀，与数据库表名统一
+    protected $name = 'tc_payment_config';
     
     protected $autoWriteTimestamp = true;
     

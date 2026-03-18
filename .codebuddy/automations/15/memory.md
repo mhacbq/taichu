@@ -1,6 +1,22 @@
 # 后端修复专家 - 执行记录
 
+## 2026-03-18 03:45 支付统计 / 退款兼容修复记录（本次）
+
+- 本轮继续围绕后台支付主链路收口 5 类后端问题：充值统计表名硬编码、趋势接口表名硬编码、订单状态筛选固定 schema、退款流程写死订单/用户表、退款积分流水写死 `tc_points_record` 且字段兼容性不足。
+- 关键代码：`backend/app/controller/admin/Payment.php` 新增充值订单/用户/积分记录动态表解析；`getStats()` 与 `getTrend()` 缺表降级；`performRefund()` 兼容 `status/pay_status` 与退款字段差异，并补齐退款积分流水兼容写入。
+- 验证：已对 `Payment.php` 执行 IDE 诊断检查（0 条），`git diff --check -- backend/app/controller/admin/Payment.php` 通过；当前环境仍无 `php` CLI，未执行 `php -l`。
+- Git：已提交 `8d1ecac`，提交信息为 `"fix-backend-payment-refund-compat-20260318"`；但该提交额外带入了提交前已在暂存区中的无关文档文件，尝试清理时命令被环境拒绝，尚未自动修正。
+
+## 2026-03-18 03:20 知识库 / SEO / VIP 套餐兼容修复记录（本次）
+
+
+- 核对 `TODO.md` 后，当前已无未完成的 `[代码]` / `[运营]` 后端条目；本轮转为修补与近期运营问题强相关的 5 类后台兼容缺口。
+- 关键代码：`backend/app/controller/admin/Knowledge.php` 增加知识库文章/分类动态表解析并修复文章更新对 PUT 请求体读取失败；`backend/app/controller/admin/Seo.php` 让 SEO 统计接口统一走 `resolveSeoTable()` 并在缺表时降级；`backend/app/controller/admin/Order.php` 修复 VIP 套餐保存只支持 POST、写死 `tc_vip_package`、`features` 入参不稳的问题。
+- 验证：已对 `Knowledge.php`、`Seo.php`、`Order.php`、`Payment.php` 执行 IDE 诊断检查，均为 0 条；`git diff --check`（目标文件）通过；当前环境仍无 `php` CLI，未执行 `php -l`。
+- Git：已提交 `f8c72c2`，提交信息为 `"fix-backend-knowledge-seo-vip-compat-20260318"`。
+
 ## 2026-03-18 02:10 Dashboard / 用户 / 充值统计兼容修复记录（本次）
+
 
 - 本轮聚焦 5 个后台运营主链路问题：Dashboard statistics 500、Dashboard trend 500、用户列表加载失败、用户详情加载失败、充值统计 500。
 - 关键代码：`backend/app/service/AdminStatsService.php` 改为用 schema 探测 + 实时快照降级处理 Dashboard 与用户列表，兼容 `tc_user_vip/user_vip`、`status/pay_status`、缺失命理记录表；`backend/app/controller/admin/User.php` 为详情链路补齐缺表降级；`backend/app/controller/admin/Payment.php` 改为兼容旧版充值订单状态字段并保留正确的去重用户统计。

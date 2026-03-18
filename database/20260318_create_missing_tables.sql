@@ -679,6 +679,66 @@ CREATE TABLE IF NOT EXISTS `tc_vip_order` (
     KEY `idx_vip_end_at` (`vip_end_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='VIP订单表';
 
+-- =============================================================
+-- 24. 短信验证码表（tc_sms_code）
+--    模型：SmsCode，用于短信验证码管理
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_sms_code` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
+    `code` VARCHAR(10) NOT NULL COMMENT '验证码',
+    `type` VARCHAR(50) NOT NULL DEFAULT 'register' COMMENT '验证码类型: register/login/reset',
+    `expire_time` DATETIME NOT NULL COMMENT '过期时间',
+    `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用 0否 1是',
+    `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT '请求IP',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_phone_type` (`phone`, `type`),
+    INDEX `idx_expire_time` (`expire_time`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='短信验证码表';
+
+-- =============================================================
+-- 25. 短信配置表（tc_sms_config）
+--    模型：SmsConfig，用于存储腾讯云/其他SMS供应商的API配置
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_sms_config` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `provider` VARCHAR(50) NOT NULL DEFAULT 'tencent' COMMENT '供应商: tencent/aliyun/other',
+    `secret_id` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '腾讯云SecretId 或 阿里云AccessKeyId',
+    `secret_key` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '腾讯云SecretKey 或 阿里云AccessKeySecret',
+    `sdk_app_id` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '腾讯云SDK App ID',
+    `sign_name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '短信签名',
+    `template_code` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '短信模板ID',
+    `template_register` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '注册验证码模板ID',
+    `template_reset` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '密码重置验证码模板ID',
+    `is_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '是否启用 0否 1是',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY `idx_provider` (`provider`),
+    KEY `idx_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='短信配置表';
+
+-- =============================================================
+-- 26. 支付配置表（tc_payment_config）
+--    模型：PaymentConfig，用于存储微信支付/支付宝的API配置
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_payment_config` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `type` VARCHAR(50) NOT NULL DEFAULT 'wechat_jsapi' COMMENT '支付类型: wechat_jsapi/wechat_native/alipay_web/alipay_mobile',
+    `mch_id` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '商户号（微信）/ 商家ID（支付宝）',
+    `app_id` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '应用ID（微信）/ 应用ID（支付宝）',
+    `api_key` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'API密钥（微信）/ 私钥（支付宝）',
+    `api_cert` LONGTEXT COMMENT '微信支付证书（pem格式）',
+    `api_key_pem` LONGTEXT COMMENT '微信支付私钥（pem格式）',
+    `notify_url` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '支付回调通知URL',
+    `return_url` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '支付成功返回URL（支付宝用）',
+    `is_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '是否启用 0否 1是',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_type` (`type`),
+    KEY `idx_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付配置表';
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 完成提示
@@ -688,6 +748,8 @@ SELECT CONCAT(
     'tc_tarot_record, tc_liuyao_record, upload_files, ai_prompts, ',
     'pages, page_versions, page_drafts, page_recycle, faqs, feedback, ',
     'daily_fortune_templates, question_templates, testimonials, site_contents, ',
-    'operation_logs, tc_checkin_log, tc_share_log, tc_task_log, tc_vip_order'
+    'operation_logs, tc_checkin_log, tc_share_log, tc_task_log, ',
+    'points_history, points_exchange, checkin_record, ',
+    'tc_sms_code, tc_sms_config, tc_payment_config'
 ) AS migration_result;
 

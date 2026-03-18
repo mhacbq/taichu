@@ -10,8 +10,8 @@ use think\Model;
  */
 class SmsCode extends Model
 {
-    // 注意：此表不使用tc_前缀
-    protected $name = 'sms_codes';
+    // 使用 tc_ 前缀，与数据库表名统一
+    protected $name = 'tc_sms_code';
     
     protected $autoWriteTimestamp = true;
     

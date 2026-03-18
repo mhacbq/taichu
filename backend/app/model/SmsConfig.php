@@ -10,7 +10,7 @@ use think\Model;
  */
 class SmsConfig extends Model
 {
-    protected $name = 'sms_configs';
+    protected $name = 'tc_sms_config';
     
     protected $autoWriteTimestamp = true;
     

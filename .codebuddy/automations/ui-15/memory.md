@@ -1,6 +1,26 @@
 # Automation Memory - UI Fixes (2026-03-18)
 
 ## Latest Run
+- Task: Thirteenth round of UI consistency fixes focused on Liuyao CTA/pricing guards, Bazi required-state alignment, and homepage entry/rating semantics cleanup.
+- Status: Completed (5 UI issues resolved; plus 2 stale Tarot TODO items cleaned because code path was already aligned in the branch).
+- Date: 2026-03-18
+- Commit: `08224e9` (`"fix-ui-multiple-issues-20260318-1059"`)
+
+## Summary
+- `frontend/src/views/Liuyao.vue`: 新增 `submitButtonText` 动态文案，并把定价加载/失败状态纳入按钮禁用与提交函数兜底，避免价格提示和主 CTA 相互矛盾。
+- `frontend/src/views/Bazi.vue`: 将出生日期纳入 `canStartBazi`，未填时主按钮直接显示“请选择出生日期”，避免先点后拦截。
+- `frontend/src/views/Home.vue`: 将“更多功能”入口改成真实的“个人中心”语义；把“用户心声”从整星 + 小数文案改成统一数字评分胶囊，消除双口径。
+- `TODO.md`: 删除本轮已完成的首页 / 六爻 / 八字待办，并顺带清理 2 条已在当前分支落地但仍残留的塔罗 TODO。
+
+## Validation
+- `read_lints`: `frontend/src/views/Home.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/views/Liuyao.vue` 0 diagnostics。
+- `npm run build --prefix frontend`: 当前环境的 Node 在解析依赖时提示 `Unexpected token '??='`；命令以 exit code 0 结束，属于本机运行时兼容问题，未定位到本轮改动引入的构建报错。
+- `git push origin master`: 已推送 `08224e9` 到 `origin/master`。
+
+
+---
+
+## Previous Run
 - Task: Twelfth round of UI consistency fixes focused on homepage first-free trust cues, Bazi privacy sharing, Liuyao history semantics, and check-in icon/calendar polish.
 - Status: Completed (5 UI issues resolved and pushed).
 - Date: 2026-03-18
