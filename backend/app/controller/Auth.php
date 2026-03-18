@@ -7,7 +7,9 @@ use app\BaseController;
 use app\model\User;
 use app\model\InviteRecord;
 use app\model\PointsRecord;
+use app\service\ConfigService;
 use app\service\SmsService;
+
 use Firebase\JWT\JWT;
 use think\facade\Cache;
 use think\facade\Config;
@@ -67,10 +69,15 @@ class Auth extends BaseController
         $isNewUser = false;
         
         if (!$user) {
+            if (!$this->isRegisterEnabled()) {
+                return $this->error('当前暂未开放新用户注册', 403);
+            }
+
             $isNewUser = true;
             
             // 使用事务包裹新用户创建相关操作
             Db::startTrans();
+
             try {
                 $user = User::create([
                     'phone' => $phone,
@@ -80,8 +87,10 @@ class Auth extends BaseController
                 ]);
                 
                 // 新用户赠送积分
-                $user->addPoints(self::REGISTER_POINTS);
-                PointsRecord::record($user->id, '新用户注册奖励', self::REGISTER_POINTS, 'register');
+                $registerPoints = $this->getRegisterRewardPoints();
+                $user->addPoints($registerPoints);
+                PointsRecord::record($user->id, '新用户注册奖励', $registerPoints, 'register');
+
                 
                 // 处理邀请码
                 if (!empty($data['invite_code'])) {
@@ -171,8 +180,10 @@ class Auth extends BaseController
             ]);
             
             // 新用户赠送积分
-            $user->addPoints(self::REGISTER_POINTS);
-            PointsRecord::record($user->id, '新用户注册奖励', self::REGISTER_POINTS, 'register');
+            $registerPoints = $this->getRegisterRewardPoints();
+            $user->addPoints($registerPoints);
+            PointsRecord::record($user->id, '新用户注册奖励', $registerPoints, 'register');
+
             
             // 处理邀请码
             if (!empty($data['invite_code'])) {
@@ -220,10 +231,20 @@ class Auth extends BaseController
         
         return $url;
     }
+
+    /**
+     * 读取后台可配置的注册赠送积分
+     */
+    protected function getRegisterRewardPoints(): int
+    {
+        $configuredPoints = ConfigService::get('register_points', self::REGISTER_POINTS);
+        return max(0, (int) $configuredPoints);
+    }
     
     /**
      * 生成Token响应
      */
+
     protected function generateTokenResponse(User $user, bool $isNewUser = false, string $message = '登录成功')
     {
         $secret = Config::get('jwt.secret');

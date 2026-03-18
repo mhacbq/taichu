@@ -173,6 +173,44 @@ abstract class BaseController
     }
 
     /**
+     * 判断当前后台管理员是否拥有指定角色
+     */
+    protected function hasAdminRole(string $roleCode): bool
+    {
+        $roleCode = strtolower(trim($roleCode));
+        if ($roleCode === '') {
+            return false;
+        }
+
+        $roles = $this->request->adminUser['roles'] ?? [];
+        if (!is_array($roles)) {
+            $roles = [$roles];
+        }
+
+        foreach ($roles as $role) {
+            if (strtolower(trim((string) $role)) === $roleCode) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 判断当前后台管理员是否拥有任一角色
+     */
+    protected function hasAnyAdminRole(array $roleCodes): bool
+    {
+        foreach ($roleCodes as $roleCode) {
+            if ($this->hasAdminRole((string) $roleCode)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 获取当前操作者ID，优先读取后台管理员信息
      */
     protected function getOperatorId(): int
@@ -184,6 +222,7 @@ abstract class BaseController
 
         return (int) ($this->request->userId ?? 0);
     }
+
 
     /**
      * 统一记录后台操作日志，并对上下文做脱敏处理

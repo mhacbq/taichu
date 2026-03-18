@@ -915,11 +915,55 @@ class AdminStatsService
     }
 
     /**
+     * 向用户列表查询追加关键词检索条件
+     */
+    private static function applyUserKeywordFilter($query, string $keyword): void
+    {
+        $escapedKeyword = '%' . addcslashes($keyword, '%_\\') . '%';
+        $query->where(function ($q) use ($escapedKeyword, $keyword) {
+            $hasCondition = false;
+            if (self::tableHasColumn('tc_user', 'username')) {
+                $q->whereLike('u.username', $escapedKeyword);
+                $hasCondition = true;
+            }
+            if (self::tableHasColumn('tc_user', 'nickname')) {
+                if ($hasCondition) {
+                    $q->whereOrLike('u.nickname', $escapedKeyword);
+                } else {
+                    $q->whereLike('u.nickname', $escapedKeyword);
+                    $hasCondition = true;
+                }
+            }
+            if (self::tableHasColumn('tc_user', 'phone')) {
+                if ($hasCondition) {
+                    $q->whereOrLike('u.phone', $escapedKeyword);
+                } else {
+                    $q->whereLike('u.phone', $escapedKeyword);
+                    $hasCondition = true;
+                }
+            }
+
+            if (preg_match('/^\d+$/', $keyword)) {
+                if ($hasCondition) {
+                    $q->whereOr('u.id', (int) $keyword);
+                } else {
+                    $q->where('u.id', (int) $keyword);
+                    $hasCondition = true;
+                }
+            }
+            if (!$hasCondition) {
+                $q->whereRaw('1 = 0');
+            }
+        });
+    }
+
+    /**
      * 获取用户列表（带筛选）
      */
 
     public static function getUserList(array $params = []): array
     {
+
         if (!self::tableExists('tc_user')) {
             return [
                 'total' => 0,
@@ -962,81 +1006,11 @@ class AdminStatsService
         $query = Db::table('tc_user')->alias('u')->field($fields);
 
         if ($username !== '') {
-            $escapedUsername = addcslashes($username, '%_\\');
-            $query->where(function ($q) use ($escapedUsername, $username) {
-                $hasCondition = false;
-                if (self::tableHasColumn('tc_user', 'username')) {
-                    $q->whereLike('u.username', '%' . $escapedUsername . '%');
-                    $hasCondition = true;
-                }
-                if (self::tableHasColumn('tc_user', 'nickname')) {
-                    if ($hasCondition) {
-                        $q->whereLike('u.nickname', '%' . $escapedUsername . '%', 'OR');
-                    } else {
-                        $q->whereLike('u.nickname', '%' . $escapedUsername . '%');
-                        $hasCondition = true;
-                    }
-                }
-                if (self::tableHasColumn('tc_user', 'phone')) {
-                    if ($hasCondition) {
-                        $q->whereLike('u.phone', '%' . $escapedUsername . '%', 'OR');
-                    } else {
-                        $q->whereLike('u.phone', '%' . $escapedUsername . '%');
-                        $hasCondition = true;
-                    }
-                }
-
-                if (preg_match('/^\d+$/', $username)) {
-                    if ($hasCondition) {
-                        $q->whereOr('u.id', (int) $username);
-                    } else {
-                        $q->where('u.id', (int) $username);
-                        $hasCondition = true;
-                    }
-                }
-                if (!$hasCondition) {
-                    $q->whereRaw('1 = 0');
-                }
-            });
+            self::applyUserKeywordFilter($query, $username);
         } elseif ($keyword !== '') {
-
-            $escapedKeyword = addcslashes($keyword, '%_\\');
-            $query->where(function ($q) use ($escapedKeyword, $keyword) {
-                $hasCondition = false;
-                if (self::tableHasColumn('tc_user', 'username')) {
-                    $q->whereLike('u.username', '%' . $escapedKeyword . '%');
-                    $hasCondition = true;
-                }
-                if (self::tableHasColumn('tc_user', 'nickname')) {
-                    if ($hasCondition) {
-                        $q->whereLike('u.nickname', '%' . $escapedKeyword . '%', 'OR');
-                    } else {
-                        $q->whereLike('u.nickname', '%' . $escapedKeyword . '%');
-                        $hasCondition = true;
-                    }
-                }
-                if (self::tableHasColumn('tc_user', 'phone')) {
-                    if ($hasCondition) {
-                        $q->whereLike('u.phone', '%' . $escapedKeyword . '%', 'OR');
-                    } else {
-                        $q->whereLike('u.phone', '%' . $escapedKeyword . '%');
-                        $hasCondition = true;
-                    }
-                }
-
-                if (preg_match('/^\d+$/', $keyword)) {
-                    if ($hasCondition) {
-                        $q->whereOr('u.id', (int) $keyword);
-                    } else {
-                        $q->where('u.id', (int) $keyword);
-                        $hasCondition = true;
-                    }
-                }
-                if (!$hasCondition) {
-                    $q->whereRaw('1 = 0');
-                }
-            });
+            self::applyUserKeywordFilter($query, $keyword);
         }
+
 
 
         if ($phone !== '' && self::tableHasColumn('tc_user', 'phone')) {
@@ -1081,7 +1055,8 @@ class AdminStatsService
             $rawPhone = trim((string) ($item['phone'] ?? ''));
             $displayName = $rawUsername !== ''
                 ? $rawUsername
-                : ($rawNickname !== '' ? $rawNickname : ($rawPhone !== '' ? $rawPhone : ('用户#' . $userId)));
+                : ($rawNickname !== '' ? $rawNickname : ('用户#' . $userId));
+
 
             $item['status'] = (int) ($item['status'] ?? 0);
             $item['points'] = (int) ($item['points'] ?? 0);

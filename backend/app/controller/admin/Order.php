@@ -17,14 +17,28 @@ class Order extends BaseController
 {
     protected $middleware = [\app\middleware\AdminAuth::class];
 
+    protected function canViewOrders(): bool
+    {
+        return $this->hasAnyAdminPermission(['stats_view', 'config_manage'])
+            || $this->hasAnyAdminRole(['admin', 'operator']);
+    }
+
+    protected function canModifyOrders(): bool
+    {
+        return $this->hasAdminPermission('config_manage')
+            || $this->hasAdminRole('admin');
+    }
+
     /**
      * 获取订单列表
      */
+
     public function index()
     {
-        if (!$this->hasAnyAdminPermission(['stats_view', 'config_manage'])) {
+        if (!$this->canViewOrders()) {
             return $this->error('无权限查看订单列表', 403);
         }
+
 
         try {
             $params = $this->request->get();
@@ -44,9 +58,10 @@ class Order extends BaseController
      */
     public function detail(int $id)
     {
-        if (!$this->hasAnyAdminPermission(['stats_view', 'config_manage'])) {
+        if (!$this->canViewOrders()) {
             return $this->error('无权限查看订单详情', 403);
         }
+
 
         try {
             $orderTable = $this->resolveFirstExistingTable(['tc_vip_order', 'vip_orders']);
@@ -89,9 +104,10 @@ class Order extends BaseController
      */
     public function refund()
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canModifyOrders()) {
             return $this->error('无权限处理退款', 403);
         }
+
 
         try {
             $data = $this->request->post();
@@ -125,9 +141,10 @@ class Order extends BaseController
      */
     public function packages()
     {
-        if (!$this->hasAnyAdminPermission(['stats_view', 'config_manage'])) {
+        if (!$this->canViewOrders()) {
             return $this->error('无权限查看套餐列表', 403);
         }
+
 
         try {
             $packageTable = $this->resolveFirstExistingTable(['tc_vip_package', 'vip_package', 'vip_packages']);
@@ -158,9 +175,10 @@ class Order extends BaseController
      */
     public function savePackage()
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canModifyOrders()) {
             return $this->error('无权限修改VIP套餐', 403);
         }
+
 
         try {
             $data = $this->request->post();

@@ -7,7 +7,9 @@ use app\BaseController;
 use app\model\DailyFortune;
 use app\model\PointsRecord;
 use app\service\BaziCalculationService;
+use app\service\ConfigService;
 use app\service\LunarService;
+
 use think\facade\Db;
 use think\facade\Log;
 
@@ -495,10 +497,17 @@ class Daily extends BaseController
 
         return $columns;
     }
+
+    protected function getCheckinRewardPoints(): int
+    {
+        $configuredPoints = ConfigService::get('checkin_points', ConfigService::get('points_sign_daily', self::CHECKIN_POINTS));
+        return max(0, (int) $configuredPoints);
+    }
     
     /**
      * 每日签到
      */
+
     public function checkin()
     {
         $user = $this->request->user ?? [];
@@ -524,8 +533,9 @@ class Daily extends BaseController
         $consecutiveDays = $yesterdayCheckin ? ((int) ($yesterdayCheckin[$storage['consecutive_column']] ?? 0) + 1) : 1;
         
         // 计算奖励
-        $basePoints = self::CHECKIN_POINTS;
+        $basePoints = $this->getCheckinRewardPoints();
         $bonusPoints = 0;
+
         
         foreach (self::CONSECUTIVE_BONUS as $days => $bonus) {
             if ($consecutiveDays >= $days) {
@@ -640,9 +650,10 @@ class Daily extends BaseController
         return $this->success([
             'checkedIn' => !!$todayCheckin,
             'consecutiveDays' => $consecutiveDays,
-            'todayPoints' => self::CHECKIN_POINTS,
+            'todayPoints' => $this->getCheckinRewardPoints(),
             'monthCheckins' => $monthCheckins,
             'consecutiveBonus' => self::CONSECUTIVE_BONUS,
         ]);
+
     }
 }

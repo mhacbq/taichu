@@ -39,18 +39,28 @@
     
     <!-- 签到日历 -->
     <div class="checkin-calendar">
-      <div class="calendar-header">本月签到记录</div>
+      <div class="calendar-header">
+        <span>本月签到记录</span>
+        <span class="calendar-month">{{ calendarMonthLabel }}</span>
+      </div>
+      <div class="calendar-weekdays">
+        <span v-for="weekday in weekdayHeaders" :key="weekday" class="calendar-weekday">{{ weekday }}</span>
+      </div>
       <div class="calendar-grid">
         <div 
-          v-for="day in calendarDays" 
-          :key="day.date"
+          v-for="day in calendarCells" 
+          :key="day.key"
           class="calendar-day"
           :class="{ 
+            'calendar-day--placeholder': day.isPlaceholder,
             checked: day.checked,
             today: day.isToday 
           }"
         >
-          {{ day.day }}
+          <template v-if="!day.isPlaceholder">
+            <span class="calendar-day__number">{{ day.day }}</span>
+            <span v-if="day.checked" class="calendar-day__dot"></span>
+          </template>
         </div>
       </div>
     </div>
@@ -101,25 +111,45 @@ const nextBonusDays = computed(() => {
   return minDays === Infinity ? 0 : minDays - days + 1
 })
 
+const weekdayHeaders = ['一', '二', '三', '四', '五', '六', '日']
+
+const calendarMonthLabel = computed(() => {
+  const today = new Date()
+  return `${today.getFullYear()}年${today.getMonth() + 1}月`
+})
+
 // 生成日历数据
-const calendarDays = computed(() => {
-  const days = []
+const calendarCells = computed(() => {
+  const cells = []
   const today = new Date()
   const year = today.getFullYear()
   const month = today.getMonth()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDayOffset = (new Date(year, month, 1).getDay() + 6) % 7
+
+  for (let i = 0; i < firstDayOffset; i++) {
+    cells.push({
+      key: `placeholder-${i}`,
+      isPlaceholder: true,
+      checked: false,
+      isToday: false,
+      day: '',
+    })
+  }
   
   for (let i = 1; i <= daysInMonth; i++) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
-    days.push({
+    cells.push({
+      key: date,
       day: i,
-      date: date,
+      date,
+      isPlaceholder: false,
       checked: monthCheckins.value.includes(date),
       isToday: i === today.getDate()
     })
   }
   
-  return days
+  return cells
 })
 
 const loadCheckinStatus = async () => {
@@ -278,8 +308,30 @@ onMounted(() => {
 .calendar-header {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calendar-month {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.calendar-weekday {
   text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
 }
 
 .calendar-grid {
@@ -297,20 +349,31 @@ onMounted(() => {
   border-radius: 16px;
   font-size: 14px;
   color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.calendar-day--placeholder {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
 }
 
 .calendar-day.checked {
   background: var(--success-gradient);
   color: #fff;
   font-weight: bold;
+  box-shadow: 0 10px 18px rgba(16, 185, 129, 0.18);
 }
 
 .calendar-day.today {
-  border: 2px solid var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .calendar-day.today.checked {
-  border-color: var(--success-color);
+  border-color: rgba(255, 255, 255, 0.75);
+  color: #fff;
 }
 
 @media (max-width: 480px) {

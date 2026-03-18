@@ -99,7 +99,7 @@ class User extends BaseController
             ];
 
             $payload = array_merge($userData, [
-                'username' => (string) (($userData['phone'] ?? '') ?: ('用户#' . $id)),
+                'username' => $this->resolveDisplayUsername($userData, $id),
                 'email' => (string) ($userData['email'] ?? ''),
                 'bazi_count' => $baziCount,
                 'tarot_count' => $tarotCount,
@@ -305,6 +305,21 @@ class User extends BaseController
     }
 
     /**
+     * 统一用户名展示口径，避免手机号误写入“用户名”字段
+     */
+    protected function resolveDisplayUsername(array $userData, int $userId): string
+    {
+        foreach (['username', 'nickname'] as $field) {
+            $value = trim((string) ($userData[$field] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '用户#' . $userId;
+    }
+
+    /**
      * 返回首个存在的数据表名
      */
     protected function resolveFirstExistingTable(array $tables): ?string
@@ -318,3 +333,4 @@ class User extends BaseController
         return null;
     }
 }
+

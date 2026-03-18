@@ -1,19 +1,22 @@
 import request from './request'
 
-export function getSettings() {
+export function getSettings(options = {}) {
   return request({
     url: '/system/settings',
-    method: 'get'
+    method: 'get',
+    ...options
   })
 }
 
-export function saveSettings(data) {
+export function saveSettings(data, options = {}) {
   return request({
     url: '/system/settings',
     method: 'put',
-    data
+    data,
+    ...options
   })
 }
+
 
 export function getSensitiveWords(params) {
   return request({

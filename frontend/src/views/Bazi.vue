@@ -53,16 +53,16 @@
         </div>
 
         <div class="form-group">
-          <label>出生日期</label>
+          <label>出生日期与时间</label>
           <el-date-picker
             v-model="birthDate"
             type="datetime"
-            placeholder="选择出生日期时间"
+            placeholder="选择出生日期时间（精确到分钟）"
             format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DD HH:mm:ss"
             class="full-width"
           />
-          <p class="form-hint">不知道具体时辰？选个大概的时间也可以</p>
+          <p class="form-hint">当前需要选择精确到分钟的出生时间；若只记得大概时段，请先选最接近的时间估算。</p>
         </div>
         
         <div class="form-group">
@@ -983,7 +983,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
 
 import {
@@ -1645,29 +1645,86 @@ const isCurrentDaYun = (yun) => {
 }
 
 // 分享结果
-const shareResult = () => {
+const buildBaziShareText = (includeFullDetails = false) => {
+  if (!includeFullDetails) {
+    return [
+      '我刚在太初命理完成了一次八字排盘。',
+      '这次结果主要帮我梳理了性格优势、发展方向和未来节奏。',
+      '如果你也想先做一版低风险参考，可以先从摘要版体验开始。',
+      '快来测测你的八字吧！'
+    ].join('\n')
+  }
+
+  return [
+    '我在太初命理完成了一次八字排盘',
+    `日主：${result.value?.bazi?.day_master || ''}（${result.value?.bazi?.day_master_wuxing || ''}）`,
+    `八字：${result.value?.bazi?.year?.gan || ''}${result.value?.bazi?.year?.zhi || ''} ${result.value?.bazi?.month?.gan || ''}${result.value?.bazi?.month?.zhi || ''} ${result.value?.bazi?.day?.gan || ''}${result.value?.bazi?.day?.zhi || ''} ${result.value?.bazi?.hour?.gan || ''}${result.value?.bazi?.hour?.zhi || ''}`,
+    '快来测测你的八字吧！'
+  ].filter(Boolean).join('\n')
+}
+
+const shareBaziText = async (shareText, clipboardSuccessText) => {
+  if (navigator.share) {
+    await navigator.share({
+      title: '我的八字排盘结果',
+      text: shareText
+    })
+    return
+  }
+
+  if (!navigator.clipboard?.writeText) {
+    throw new Error('clipboard-unavailable')
+  }
+
+  await navigator.clipboard.writeText(shareText)
+  ElMessage.success(clipboardSuccessText)
+}
+
+const shareResult = async () => {
   if (!result.value?.bazi) {
     ElMessage.warning('暂无排盘结果可分享')
     return
   }
-  
-  const shareText = `我在太初命理进行了八字排盘\n` +
-    `日主：${result.value.bazi.day_master || ''}（${result.value.bazi.day_master_wuxing || ''}）\n` +
-    `八字：${result.value.bazi.year?.gan || ''}${result.value.bazi.year?.zhi || ''} ${result.value.bazi.month?.gan || ''}${result.value.bazi.month?.zhi || ''} ${result.value.bazi.day?.gan || ''}${result.value.bazi.day?.zhi || ''} ${result.value.bazi.hour?.gan || ''}${result.value.bazi.hour?.zhi || ''}\n` +
-    `快来测测你的八字吧！`
-  
-  if (navigator.share) {
-    navigator.share({
-      title: '我的八字排盘结果',
-      text: shareText
-    })
-  } else {
-    // 复制到剪贴板
-    navigator.clipboard.writeText(shareText).then(() => {
-      ElMessage.success('分享内容已复制到剪贴板')
-    }).catch(() => {
-      ElMessage.error('复制失败，请手动复制')
-    })
+
+  let includeFullDetails = false
+
+  try {
+    await ElMessageBox.confirm(
+      '为保护隐私，默认推荐摘要分享，不包含完整八字信息。若你确认对方知情且愿意查看完整命盘，再选择“包含完整八字”。',
+      '选择分享方式',
+      {
+        confirmButtonText: '包含完整八字',
+        cancelButtonText: '仅分享摘要',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+
+    includeFullDetails = true
+  } catch (actionOrError) {
+    if (actionOrError === 'cancel') {
+      includeFullDetails = false
+    } else if (actionOrError === 'close' || actionOrError?.name === 'AbortError') {
+      return
+    } else {
+      ElMessage.error('分享失败，请稍后重试')
+      return
+    }
+  }
+
+  try {
+    await shareBaziText(
+      buildBaziShareText(includeFullDetails),
+      includeFullDetails ? '完整八字分享内容已复制到剪贴板' : '摘要分享内容已复制到剪贴板'
+    )
+
+    if (!includeFullDetails) {
+      ElMessage.info('已按摘要版分享，默认省略完整八字信息')
+    }
+  } catch (shareError) {
+    if (shareError?.name !== 'AbortError') {
+      ElMessage.error(shareError?.message === 'clipboard-unavailable' ? '当前环境不支持自动复制，请手动复制分享内容' : '复制失败，请手动复制')
+    }
   }
 }
 

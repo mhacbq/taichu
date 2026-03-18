@@ -1200,32 +1200,7 @@ class Admin extends BaseController
         }
         
         try {
-            // 从数据库读取所有配置项
-            $configList = Db::name('system_config')
-                ->column('config_value', 'config_key');
-            
-            // 如果数据库为空，提供基础默认值
-            $settings = array_merge([
-                'site_name' => '太初命理',
-                'logo' => '',
-                'site_description' => '专业的命理分析平台',
-                'register_points' => 100,
-                'checkin_points' => 10,
-                'bazi_cost' => 20,
-                'tarot_cost' => 10,
-                'enable_register' => true,
-                'enable_daily' => true,
-                'enable_feedback' => true,
-                'enable_ai_analysis' => true
-            ], $configList);
-
-
-            // 处理布尔类型和数字类型转换
-            foreach ($settings as $key => &$value) {
-                if ($value === 'true' || $value === '1') $value = true;
-                if ($value === 'false' || $value === '0') $value = false;
-                if (is_numeric($value) && !str_contains((string)$value, '.')) $value = (int)$value;
-            }
+            $settings = $this->buildSystemSettingsResponse();
 
             // 记录查看日志
             $this->logOperation('view', 'config', [
@@ -1234,11 +1209,11 @@ class Admin extends BaseController
 
             return $this->success($settings, '获取成功');
         } catch (\Exception $e) {
-
             Log::error('获取系统设置失败: ' . $e->getMessage());
             return $this->error('获取设置失败，请稍后重试', 500);
         }
     }
+
 
     /**
      * 保存系统设置
@@ -1250,6 +1225,7 @@ class Admin extends BaseController
             return $this->error('无权限修改系统设置', 403);
         }
         
+        $configKeys = [];
         try {
             $settings = $request->isPut() ? $request->put() : $request->post();
 
@@ -1257,15 +1233,20 @@ class Admin extends BaseController
                 return $this->error('设置数据不能为空', 400);
             }
 
+            $normalizedSettings = $this->normalizeSystemSettingsInput($settings);
+            if (empty($normalizedSettings)) {
+                return $this->error('没有可保存的系统设置项', 400);
+            }
+
             // 获取操作前的设置用于日志记录
-            $configKeys = array_keys($settings);
+            $configKeys = array_keys($normalizedSettings);
             $oldSettings = Db::name('system_config')
                 ->whereIn('config_key', $configKeys)
                 ->column('config_value', 'config_key');
 
             // 批量更新配置
             $updateCount = 0;
-            foreach ($settings as $key => $value) {
+            foreach ($normalizedSettings as $key => $value) {
                 // 验证配置键名格式
                 if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
                     continue;
@@ -1288,11 +1269,12 @@ class Admin extends BaseController
                         ]);
                     $updateCount++;
                 } else {
-                    // 新增配置项，默认为string类型
+                    $configType = is_bool($value) ? 'bool' : (is_int($value) ? 'int' : (is_float($value) ? 'float' : (is_array($value) ? 'json' : 'string')));
+                    // 新增配置项时按归一化后的真实类型落库
                     Db::name('system_config')->insert([
                         'config_key' => $key,
-                        'config_value' => is_array($value) ? json_encode($value) : (string)$value,
-                        'config_type' => is_array($value) ? 'json' : 'string',
+                        'config_value' => $this->processConfigValue($value, $configType),
+                        'config_type' => $configType,
                         'category' => 'custom',
                         'is_editable' => 1,
                         'created_at' => date('Y-m-d H:i:s'),
@@ -1303,15 +1285,19 @@ class Admin extends BaseController
             }
 
             ConfigService::clearCache();
+            $latestSettings = $this->buildSystemSettingsResponse();
 
             // 记录操作日志
             $this->logOperation('update', 'config', [
                 'detail' => '更新系统设置',
                 'before_data' => $oldSettings,
-                'after_data' => $settings,
+                'after_data' => $latestSettings,
             ]);
 
-            return $this->success(['updated_count' => $updateCount], '保存成功');
+            return $this->success([
+                'updated_count' => $updateCount,
+                'settings' => $latestSettings,
+            ], '保存成功');
 
         } catch (\Exception $e) {
             return $this->respondSystemException('admin_save_settings', $e, '保存失败，请稍后重试', [
@@ -1320,6 +1306,7 @@ class Admin extends BaseController
             ]);
         }
     }
+
     
     /**
      * 获取敏感词列表
@@ -1953,8 +1940,115 @@ class Admin extends BaseController
     }
 
     /**
+     * 归一化系统设置中的布尔值
+     */
+    protected function normalizeSettingBool(mixed $value, bool $default = false): bool
+    {
+        if ($value === null) {
+            return $default;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value !== 0;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
+            return true;
+        }
+        if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
+            return false;
+        }
+
+        return $default;
+    }
+
+    /**
+     * 构建后台系统设置页的真实配置响应
+     */
+    protected function buildSystemSettingsResponse(): array
+    {
+        return [
+            'site_name' => (string) ConfigService::get('site_name', '太初命理'),
+            'logo' => (string) ConfigService::get('logo', ''),
+            'site_description' => (string) ConfigService::get('site_description', '专业的命理分析平台'),
+            'register_points' => (int) ConfigService::get('register_points', 100),
+            'checkin_points' => (int) ConfigService::get('checkin_points', ConfigService::get('points_sign_daily', 5)),
+            'bazi_cost' => (int) ConfigService::get('points_cost_bazi', ConfigService::get('bazi_cost', 20)),
+            'tarot_cost' => (int) ConfigService::get('points_cost_tarot', ConfigService::get('tarot_cost', 10)),
+            'enable_register' => $this->normalizeSettingBool(ConfigService::get('feature_register_enabled', ConfigService::get('enable_register', true)), true),
+            'enable_daily' => $this->normalizeSettingBool(ConfigService::get('feature_daily_enabled', ConfigService::get('enable_daily', true)), true),
+            'enable_feedback' => $this->normalizeSettingBool(ConfigService::get('feature_feedback_enabled', ConfigService::get('enable_feedback', true)), true),
+            'enable_ai_analysis' => $this->normalizeSettingBool(ConfigService::get('feature_ai_analysis_enabled', ConfigService::get('enable_ai_analysis', true)), true),
+        ];
+    }
+
+    /**
+     * 把后台设置页的旧字段映射为真实业务配置键
+     */
+    protected function normalizeSystemSettingsInput(array $settings): array
+    {
+        $normalized = [];
+
+        if (array_key_exists('site_name', $settings)) {
+            $normalized['site_name'] = trim((string) $settings['site_name']);
+        }
+        if (array_key_exists('logo', $settings)) {
+            $normalized['logo'] = trim((string) $settings['logo']);
+        }
+        if (array_key_exists('site_description', $settings)) {
+            $normalized['site_description'] = trim((string) $settings['site_description']);
+        }
+        if (array_key_exists('register_points', $settings)) {
+            $normalized['register_points'] = max(0, (int) $settings['register_points']);
+        }
+        if (array_key_exists('checkin_points', $settings)) {
+            $checkinPoints = max(0, (int) $settings['checkin_points']);
+            $normalized['checkin_points'] = $checkinPoints;
+            $normalized['points_sign_daily'] = $checkinPoints;
+        }
+        if (array_key_exists('bazi_cost', $settings)) {
+            $baziCost = max(0, (int) $settings['bazi_cost']);
+            $normalized['bazi_cost'] = $baziCost;
+            $normalized['points_cost_bazi'] = $baziCost;
+        }
+        if (array_key_exists('tarot_cost', $settings)) {
+            $tarotCost = max(0, (int) $settings['tarot_cost']);
+            $normalized['tarot_cost'] = $tarotCost;
+            $normalized['points_cost_tarot'] = $tarotCost;
+        }
+        if (array_key_exists('enable_register', $settings)) {
+            $enabled = $this->normalizeSettingBool($settings['enable_register'], true);
+            $normalized['enable_register'] = $enabled;
+            $normalized['feature_register_enabled'] = $enabled;
+        }
+        if (array_key_exists('enable_daily', $settings)) {
+            $enabled = $this->normalizeSettingBool($settings['enable_daily'], true);
+            $normalized['enable_daily'] = $enabled;
+            $normalized['feature_daily_enabled'] = $enabled;
+        }
+        if (array_key_exists('enable_feedback', $settings)) {
+            $enabled = $this->normalizeSettingBool($settings['enable_feedback'], true);
+            $normalized['enable_feedback'] = $enabled;
+            $normalized['feature_feedback_enabled'] = $enabled;
+        }
+        if (array_key_exists('enable_ai_analysis', $settings)) {
+            $enabled = $this->normalizeSettingBool($settings['enable_ai_analysis'], true);
+            $normalized['enable_ai_analysis'] = $enabled;
+            $normalized['feature_ai_analysis_enabled'] = $enabled;
+        }
+
+        return $normalized;
+    }
+
+    /**
      * 解析配置中的JSON值
      */
+
     protected function decodeConfigJson(?string $value): array
     {
         if ($value === null || $value === '') {

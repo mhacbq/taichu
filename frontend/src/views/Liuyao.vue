@@ -94,9 +94,9 @@
             <el-button type="info" round size="large" @click="resetForm">
               <el-icon><RefreshRight /></el-icon> 再次占卜
             </el-button>
-            <div class="saved-status" role="status" aria-live="polite">
+            <div class="saved-status" :class="{ 'saved-status--history': result.is_history }" role="status" aria-live="polite">
               <el-icon><CircleCheckFilled /></el-icon>
-              <span>已自动保存到历史记录</span>
+              <span>{{ savedStatusText }}</span>
             </div>
             <el-button v-if="history.length > 0" round size="large" @click="showHistory = true">
               <el-icon><Collection /></el-icon> 查看历史
@@ -375,6 +375,8 @@ const shouldShowRemainingPoints = computed(() => {
 
   return result.value.remaining_points !== null && result.value.remaining_points !== undefined
 })
+
+const savedStatusText = computed(() => (result.value?.is_history ? '来自历史记录' : '已自动保存到历史记录'))
 
 const reportUiError = (action, error, userMessage = '') => {
   console.error(`[Liuyao] ${action}`, error)
@@ -1342,6 +1344,13 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
 }
+
+.saved-status--history {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: rgba(var(--primary-rgb), 0.18);
+  color: var(--primary-color);
+}
+
 
 .btn-primary,
 

@@ -16,6 +16,13 @@ class Seo extends BaseController
     protected $middleware = [\app\middleware\AdminAuth::class];
 
     protected const DEFAULT_PAGE_SIZE = 20;
+    
+    protected function canManageSeo(): bool
+    {
+        return $this->hasAdminPermission('config_manage')
+            || $this->hasAdminRole('admin');
+    }
+
     protected const MAX_PAGE_SIZE = 100;
     protected const SEO_CHANGE_FREQUENCIES = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
     protected const SEO_ENGINES = ['baidu', 'bing', '360', 'sogou'];
@@ -26,9 +33,10 @@ class Seo extends BaseController
      */
     public function seoConfigList(Request $request)
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限查看SEO配置', 403);
         }
+
 
         try {
             $pagination = $this->normalizePagination(
@@ -128,9 +136,10 @@ class Seo extends BaseController
      */
     public function saveSeoConfig(Request $request, int $id = 0)
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限维护SEO配置', 403);
         }
+
 
         $data = $request->isPut() ? $request->put() : $request->post();
         $id = max($id, (int) ($data['id'] ?? 0));
@@ -167,7 +176,8 @@ class Seo extends BaseController
         }
 
         try {
-            $duplicateQuery = Db::name('seo_config')->where('route', $route);
+            $configTable = $this->resolveSeoTable('config') ?? 'tc_seo_config';
+            $duplicateQuery = Db::table($configTable)->where('route', $route);
             if ($id > 0) {
                 $duplicateQuery->where('id', '<>', $id);
             }
@@ -175,10 +185,11 @@ class Seo extends BaseController
                 return $this->error('该页面路由的SEO配置已存在', 400);
             }
 
-            $existing = $id > 0 ? Db::name('seo_config')->where('id', $id)->find() : null;
+            $existing = $id > 0 ? Db::table($configTable)->where('id', $id)->find() : null;
             if ($id > 0 && !$existing) {
                 return $this->error('SEO配置不存在', 404);
             }
+
 
             $payload = [
                 'route' => $route,
@@ -228,17 +239,20 @@ class Seo extends BaseController
      */
     public function deleteSeoConfig(int $id)
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限删除SEO配置', 403);
         }
 
+
         try {
-            $existing = Db::name('seo_config')->where('id', $id)->find();
+            $configTable = $this->resolveSeoTable('config') ?? 'tc_seo_config';
+            $existing = Db::table($configTable)->where('id', $id)->find();
             if (!$existing) {
                 return $this->error('SEO配置不存在', 404);
             }
 
-            Db::name('seo_config')->where('id', $id)->delete();
+            Db::table($configTable)->where('id', $id)->delete();
+
 
             $this->logOperation('delete_seo_config', 'config', [
                 'target_id' => $id,
@@ -260,9 +274,10 @@ class Seo extends BaseController
      */
     public function seoStats(Request $request)
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限查看SEO统计', 403);
         }
+
 
         try {
             $pagination = $this->normalizePagination(
@@ -383,9 +398,10 @@ class Seo extends BaseController
      */
     public function seoRobots()
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限查看robots配置', 403);
         }
+
 
         try {
             $robotsTable = $this->resolveSeoTable('robots');
@@ -429,9 +445,10 @@ class Seo extends BaseController
      */
     public function saveSeoRobots(Request $request)
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限保存robots配置', 403);
         }
+
 
         $content = trim((string) ($request->put('content', '') ?: $request->post('content', '')));
         if ($content === '') {
@@ -490,9 +507,10 @@ class Seo extends BaseController
      */
     public function seoSubmit(Request $request)
     {
-        if (!$this->hasAdminPermission('config_manage')) {
+        if (!$this->canManageSeo()) {
             return $this->error('无权限执行收录提交', 403);
         }
+
 
         $engine = trim((string) $request->post('engine', ''));
         $type = trim((string) $request->post('type', 'sitemap'));
@@ -509,6 +527,7 @@ class Seo extends BaseController
         }
 
         try {
+            $submissionTable = $this->resolveSeoTable('submissions') ?? 'tc_seo_submissions';
             $payload = [
                 'engine' => $engine,
                 'type' => $type,
@@ -518,7 +537,8 @@ class Seo extends BaseController
                 'submitted_at' => date('Y-m-d H:i:s'),
                 'completed_at' => date('Y-m-d H:i:s'),
             ];
-            $id = (int) Db::name('seo_submissions')->insertGetId($payload);
+            $id = (int) Db::table($submissionTable)->insertGetId($payload);
+
 
             $this->logOperation('submit_seo', 'config', [
                 'target_id' => $id,

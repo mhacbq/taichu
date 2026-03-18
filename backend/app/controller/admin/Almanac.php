@@ -21,13 +21,16 @@ class Almanac extends BaseController
 
     protected function canReadAlmanac(): bool
     {
-        return $this->hasAnyAdminPermission(['almanac_view', 'content_manage', 'config_manage']);
+        return $this->hasAnyAdminPermission(['almanac_view', 'content_manage', 'config_manage'])
+            || $this->hasAnyAdminRole(['admin', 'operator']);
     }
 
     protected function canWriteAlmanac(): bool
     {
-        return $this->hasAnyAdminPermission(['almanac_edit', 'content_manage', 'config_manage']);
+        return $this->hasAnyAdminPermission(['almanac_edit', 'content_manage', 'config_manage'])
+            || $this->hasAnyAdminRole(['admin', 'operator']);
     }
+
 
     /**
      * 黄历列表

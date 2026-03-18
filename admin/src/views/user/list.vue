@@ -106,7 +106,8 @@
           <el-table-column label="操作" width="180" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" @click="handleView(row)">查看</el-button>
-              <el-button link type="primary" :disabled="readonlyMode" @click="handleAdjustPoints(row)">调积分</el-button>
+              <el-button link type="primary" :disabled="readonlyMode || !canAdjustPoints" @click="handleAdjustPoints(row)">调积分</el-button>
+
               <el-dropdown :disabled="readonlyMode" @command="handleMore($event, row)">
                 <el-button link type="primary">
                   更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
@@ -161,7 +162,8 @@
       </el-form>
       <template #footer>
         <el-button @click="pointsDialog.visible = false">取消</el-button>
-        <el-button type="primary" :disabled="readonlyMode" @click="confirmAdjustPoints">确定</el-button>
+        <el-button type="primary" :disabled="readonlyMode || !canAdjustPoints" @click="confirmAdjustPoints">确定</el-button>
+
       </template>
     </el-dialog>
   </div>
@@ -174,9 +176,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, Download } from '@element-plus/icons-vue'
 import { getUserList, updateUserStatus, exportUsers, batchUpdateUserStatus } from '@/api/user'
 import { adjustPoints } from '@/api/points'
+import { useUserStore } from '@/stores/user'
 import { createReadonlyErrorState } from '@/utils/page-error'
 
 const router = useRouter()
+const userStore = useUserStore()
+
 
 const loading = ref(false)
 const total = ref(0)
@@ -201,6 +206,12 @@ const pointsDialog = reactive({
 })
 
 const readonlyMode = computed(() => Boolean(pageError.value))
+const canAdjustPoints = computed(() => {
+  return userStore.permissions?.includes('*')
+    || userStore.permissions?.includes('points_adjust')
+    || userStore.roles?.includes('admin')
+})
+
 
 function createDefaultPointsForm() {
   return {
@@ -292,7 +303,13 @@ function handleAdjustPoints(row) {
     return
   }
 
+  if (!canAdjustPoints.value) {
+    ElMessage.warning('当前账号无积分调整权限')
+    return
+  }
+
   pointsDialog.userId = row.id
+
   pointsDialog.currentPoints = row.points
   pointsDialog.form = createDefaultPointsForm()
   pointsDialog.visible = true
@@ -303,7 +320,13 @@ async function confirmAdjustPoints() {
     return
   }
 
+  if (!canAdjustPoints.value) {
+    ElMessage.warning('当前账号无积分调整权限')
+    return
+  }
+
   if (!pointsDialog.form.reason.trim()) {
+
     ElMessage.warning('请输入调整原因')
     return
   }

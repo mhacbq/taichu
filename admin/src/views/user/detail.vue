@@ -182,12 +182,15 @@ function normalizeUserDetail(data = {}) {
   const id = Number(data.id ?? baseUser.id ?? 0) || 0
   const nickname = String(data.nickname ?? baseUser.nickname ?? data.username ?? baseUser.username ?? data.phone ?? baseUser.phone ?? `用户#${id}`)
 
+  const username = String(data.username ?? baseUser.username ?? data.nickname ?? baseUser.nickname ?? `用户#${id}`)
+
   return {
     id,
     avatar: String(data.avatar ?? baseUser.avatar ?? ''),
     nickname,
-    username: String(data.username ?? baseUser.username ?? data.phone ?? baseUser.phone ?? `用户#${id}`),
+    username,
     phone: String(data.phone ?? baseUser.phone ?? ''),
+
     email: String(data.email ?? baseUser.email ?? ''),
     created_at: String(data.created_at ?? baseUser.created_at ?? ''),
     status: Number(data.status ?? baseUser.status ?? 0),

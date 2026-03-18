@@ -13,7 +13,7 @@
               <el-icon class="btn-icon"><Calendar /></el-icon>
               开始排盘
               <span v-if="!isLoggedIn" class="btn-badge btn-badge--login">需登录</span>
-              <span class="btn-badge btn-badge--free">首测免费</span>
+              <span v-if="heroPrimaryBadge" :class="['btn-badge', heroPrimaryBadge.className]">{{ heroPrimaryBadge.text }}</span>
             </router-link>
             <router-link to="/tarot" class="btn-secondary">
               <el-icon class="btn-icon"><MagicStick /></el-icon>
@@ -126,8 +126,8 @@
             <h3>八字排盘</h3>
             <p>基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考</p>
             <div class="feature-access">
-              <span class="feature-note">需登录</span>
-              <span class="feature-note feature-note--free">首测免费</span>
+              <span class="feature-note">{{ isLoggedIn ? '已登录可用' : '需登录' }}</span>
+              <span v-if="baziFeatureBadge" :class="['feature-note', baziFeatureBadge.className]">{{ baziFeatureBadge.text }}</span>
             </div>
             <router-link to="/bazi" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
@@ -334,6 +334,95 @@ const statsError = ref(false)
 const isLoggedIn = ref(false)
 const userPoints = ref(null)
 const userCount = ref(null)
+const isFirstBaziEligible = ref(null)
+
+const baziOfferState = computed(() => {
+  if (!isLoggedIn.value) {
+    return 'guest'
+  }
+
+  if (isFirstBaziEligible.value === true) {
+    return 'free'
+  }
+
+  if (isFirstBaziEligible.value === false) {
+    return 'priced'
+  }
+
+  return 'loading'
+})
+
+const heroPrimaryBadge = computed(() => {
+  if (baziOfferState.value === 'guest') {
+    return {
+      text: '登录后首测免费',
+      className: 'btn-badge--free'
+    }
+  }
+
+  if (baziOfferState.value === 'free') {
+    return {
+      text: '首测免费',
+      className: 'btn-badge--free'
+    }
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return {
+      text: '查看当前价格',
+      className: 'btn-badge--pricing'
+    }
+  }
+
+  return {
+    text: '权益确认中',
+    className: 'btn-badge--muted'
+  }
+})
+
+const baziFeatureBadge = computed(() => {
+  if (baziOfferState.value === 'guest') {
+    return {
+      text: '登录后首测免费',
+      className: 'feature-note--free'
+    }
+  }
+
+  if (baziOfferState.value === 'free') {
+    return {
+      text: '首测免费',
+      className: 'feature-note--free'
+    }
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return {
+      text: '查看当前价格',
+      className: 'feature-note--price'
+    }
+  }
+
+  return {
+    text: '权益确认中',
+    className: 'feature-note--muted'
+  }
+})
+
+const baziAccessDetail = computed(() => {
+  if (baziOfferState.value === 'guest') {
+    return '登录后可保存体验进度，并确认你是否还保留八字首测免费资格。'
+  }
+
+  if (baziOfferState.value === 'free') {
+    return '八字、塔罗、六爻与合婚现在都能直接进入，你的八字首测资格也还在。'
+  }
+
+  if (baziOfferState.value === 'priced') {
+    return '八字、塔罗、六爻与合婚现在都能直接进入；八字首测资格已使用，可直接查看当前价格。'
+  }
+
+  return '八字、塔罗、六爻与合婚现在都能直接进入，八字权益正在同步。'
+})
 
 const heroHintText = computed(() => {
   if (statsLoading.value) {
@@ -392,7 +481,7 @@ const heroAccessItems = computed(() => [
     key: 'entry',
     icon: isLoggedIn.value ? Check : Present,
     title: isLoggedIn.value ? '完整入口已为你解锁' : '登录后开启完整体验',
-    detail: isLoggedIn.value ? '八字、塔罗、六爻与合婚现在都能直接进入。' : '八字、塔罗、六爻与合婚会在登录后保存记录与体验进度。'
+    detail: baziAccessDetail.value
   },
   {
     key: 'daily',
@@ -595,6 +684,7 @@ const loadUserPoints = async () => {
   if (!token) {
     isLoggedIn.value = false
     userPoints.value = null
+    isFirstBaziEligible.value = null
     return
   }
   
@@ -603,19 +693,30 @@ const loadUserPoints = async () => {
     const response = await getPointsBalance()
     if (response.code === 200) {
       userPoints.value = response.data.balance
+      isFirstBaziEligible.value = resolveFirstBaziFlag(response.data?.first_bazi)
     } else {
       userPoints.value = null
+      isFirstBaziEligible.value = null
     }
   } catch (error) {
     console.error('加载积分失败:', error)
     userPoints.value = null
+    isFirstBaziEligible.value = null
   }
 }
 
+const refreshHomeAccountState = () => {
+  loadUserPoints()
+}
 
 onMounted(() => {
   loadStats()
   loadUserPoints()
+  window.addEventListener('points-updated', refreshHomeAccountState)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('points-updated', refreshHomeAccountState)
 })
 </script>
 
@@ -716,11 +817,24 @@ onMounted(() => {
   color: var(--text-inverse);
 }
 
+.btn-badge--pricing {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  color: #f59e0b;
+}
+
+.btn-badge--muted {
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  color: var(--text-secondary);
+}
+
 .btn-badge--outline {
   background: rgba(var(--primary-rgb), 0.12);
   border: 1px solid rgba(var(--primary-rgb), 0.18);
   color: var(--primary-color);
 }
+
 
 .hero-hint {
   color: var(--text-tertiary);
@@ -1129,6 +1243,19 @@ onMounted(() => {
   border-color: rgba(103, 194, 58, 0.18);
   color: var(--success-color);
 }
+
+.feature-note--price {
+  background: rgba(230, 162, 60, 0.12);
+  border-color: rgba(230, 162, 60, 0.2);
+  color: var(--warning-color);
+}
+
+.feature-note--muted {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: var(--text-secondary);
+}
+
 
 .feature-link {
 
