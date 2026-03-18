@@ -288,9 +288,10 @@ const loadUserData = async () => {
     // 加载本地保存的塔罗历史
     loadTarotHistory()
   } catch (error) {
-    console.error('加载用户数据失败:', error)
+    reportProfileError('load_user_data_failed', error)
   }
 }
+
 
 // 加载排盘历史（后端分页）
 const loadBaziHistory = async () => {
@@ -304,15 +305,19 @@ const loadBaziHistory = async () => {
       baziTotal.value = baziRes.data.pagination?.total || 0
     }
   } catch (error) {
-    console.error('加载排盘历史失败:', error)
+    reportProfileError('load_bazi_history_failed', error, {
+      page: baziCurrentPage.value,
+      page_size: baziPageSize.value
+    })
   }
 }
 
 // 加载本地塔罗历史
 const loadTarotHistory = () => {
-  const saved = JSON.parse(localStorage.getItem('tarot_saved') || '[]')
-  tarotHistory.value = saved.slice(0, 10) // 显示最近10条
+  const saved = safeReadArrayFromStorage('tarot_saved')
+  tarotHistory.value = saved.map(normalizeTarotRecord).slice(0, 10)
 }
+
 
 const submitFeedbackForm = async () => {
   if (!feedbackContent.value.trim()) {
@@ -337,8 +342,9 @@ const submitFeedbackForm = async () => {
     }
   } catch (error) {
     ElMessage.error('网络错误，请稍后重试')
-    console.error(error)
+    reportProfileError('submit_feedback_failed', error)
   } finally {
+
     feedbackLoading.value = false
   }
 }
@@ -352,9 +358,16 @@ const viewDetail = (record) => {
 }
 
 const viewTarotDetail = (record) => {
-  const cardNames = record.cards.map(c => c.name + (c.reversed ? '(逆位)' : '(正位)')).join('、')
+  const cards = getTarotCards(record)
+  if (!cards.length) {
+    ElMessage.warning('该记录缺少塔罗牌数据')
+    return
+  }
+
+  const cardNames = cards.map(card => `${card.name}${card.reversed ? '(逆位)' : '(正位)'}`).join('、')
   ElMessage.info(`塔罗牌：${cardNames}`)
 }
+
 
 // 处理积分获取方式点击
 const handleMethodAction = (method) => {

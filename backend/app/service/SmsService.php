@@ -98,9 +98,10 @@ class SmsService
             return ['success' => false, 'message' => $result['Response']['SendStatusSet'][0]['Message'] ?? '发送失败'];
             
         } catch (\Exception $e) {
-            trace('腾讯云短信发送失败: ' . $e->getMessage(), 'error');
+            self::logSmsProviderException($e, $phone, $type, $config);
             return ['success' => false, 'message' => '短信服务异常'];
         }
+
     }
     
     /**

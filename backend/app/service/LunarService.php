@@ -89,6 +89,7 @@ class LunarService
         $isLeap = false;
 
         for ($i = 1; $i <= 12; $i++) {
+            $lunarMonth = $i;
             $bit = 12 - $i;
             $days = (($monthData >> $bit) & 1) ? 30 : 29;
 
@@ -96,7 +97,6 @@ class LunarService
                 break;
             }
             $offset -= $days;
-            $lunarMonth++;
 
             if ($i === $leapMonth) {
                 if ($offset < $leapMonthDays) {
@@ -106,6 +106,7 @@ class LunarService
                 $offset -= $leapMonthDays;
             }
         }
+
 
         $lunarDay = $offset + 1;
         $lunarYearGanZhi = self::getYearGanZhiByYear($lunarYear);

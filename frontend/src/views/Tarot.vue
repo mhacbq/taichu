@@ -791,6 +791,7 @@ const resetTarot = () => {
   cards.value = []
   interpretation.value = ''
   question.value = ''
+  selectedTopic.value = ''
   savedRecordId.value = null
   savedShareCode.value = null
   clearFlowError()

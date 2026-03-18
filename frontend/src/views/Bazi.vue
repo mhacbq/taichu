@@ -1704,7 +1704,8 @@ const startAiAnalysis = async () => {
   try {
     // 尝试使用流式API
     const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
-    
+    let streamRemainingPoints = null
+
     if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
       // 流式响应
       const reader = response.body.getReader()
@@ -1732,6 +1733,13 @@ const startAiAnalysis = async () => {
             
             try {
               const parsed = JSON.parse(data)
+              const parsedRemainingPoints = Number(
+                parsed?.remaining_points ?? parsed?.data?.remaining_points ?? parsed?.result?.remaining_points
+              )
+              if (Number.isFinite(parsedRemainingPoints)) {
+                streamRemainingPoints = parsedRemainingPoints
+              }
+
               if (parsed.choices?.[0]?.delta?.content) {
                 const content = parsed.choices[0].delta.content
                 fullContent += content
@@ -1749,6 +1757,8 @@ const startAiAnalysis = async () => {
           analysis: fullContent,
           model: 'AI'
         }
+
+        syncCurrentPoints(streamRemainingPoints, aiAnalysisCost.value)
       }
     } else {
       // 非流式响应

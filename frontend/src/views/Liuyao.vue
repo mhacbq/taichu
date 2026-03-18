@@ -501,13 +501,24 @@ const normalizeResult = (data = {}, isHistory = false) => {
 
 // 获取定价
 const loadPricing = async () => {
+  pricingLoading.value = true
+  pricingError.value = ''
+
   try {
     const response = await getLiuyaoPricing()
     if (response.code === 200) {
       pricing.value = response.data || null
+      return
     }
+
+    pricing.value = null
+    pricingError.value = response.message || '获取占卜价格失败，请稍后重试'
   } catch (error) {
-    reportUiError('获取定价失败', error, '获取定价信息失败')
+    pricing.value = null
+    pricingError.value = '获取占卜价格失败，请稍后重试'
+    reportUiError('获取定价失败', error)
+  } finally {
+    pricingLoading.value = false
   }
 }
 

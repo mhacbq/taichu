@@ -40,7 +40,10 @@ class Handler extends Handle
                 $context = 'Application Error';
             }
             
-            LogService::error($exception, $context);
+            LogService::error($exception, $context, [
+                'request_id' => $this->resolveRequestId(),
+            ]);
+
         }
         
         parent::report($exception);
@@ -56,6 +59,8 @@ class Handler extends Handle
      */
     public function render($request, Throwable $e): Response
     {
+        $requestId = $this->resolveRequestId();
+
         // 添加自定义异常处理机制
         
         // 验证异常
@@ -80,13 +85,7 @@ class Handler extends Handle
         
         // 数据库异常
         if ($e instanceof \think\exception\PDOException) {
-            LogService::error($e, 'Database Error');
-            
-            return json([
-                'code' => 500,
-                'message' => '数据库操作失败，请稍后重试',
-                'data' => null,
-            ], 500);
+            return $this->renderSystemErrorResponse(500, '数据库操作失败，请稍后重试', $requestId);
         }
         
         // 业务逻辑异常
@@ -97,33 +96,46 @@ class Handler extends Handle
                 'data' => $e->getData(),
             ], 400);
         }
-        
-        // 生产环境隐藏详细错误信息
-        if (!env('app_debug', false)) {
-            return json([
-                'code' => 500,
-                'message' => '服务器内部错误，请稍后重试',
-                'data' => null,
-            ], 500);
-        }
-        
-        // 开发环境返回详细错误信息
-        return json([
-            'code' => 500,
-            'message' => $e->getMessage(),
-            'data' => [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ],
-        ], 500);
+
+        return $this->renderSystemErrorResponse(500, '服务器内部错误，请稍后重试', $requestId);
     }
+
     
+    protected function renderSystemErrorResponse(int $statusCode, string $message, string $requestId): Response
+    {
+        return json([
+            'code' => $statusCode,
+            'message' => $message,
+            'data' => [
+                'request_id' => $requestId,
+            ],
+        ], $statusCode);
+    }
+
+    protected function resolveRequestId(): string
+    {
+        if ($this->requestId !== null) {
+            return $this->requestId;
+        }
+
+        $headerRequestId = trim((string) RequestFacade::header('X-Request-Id', ''));
+        if ($headerRequestId !== '') {
+            return $this->requestId = substr($headerRequestId, 0, 64);
+        }
+
+        try {
+            return $this->requestId = 'req_' . date('YmdHis') . '_' . bin2hex(random_bytes(4));
+        } catch (Throwable $exception) {
+            return $this->requestId = 'req_' . date('YmdHis') . '_' . mt_rand(100000, 999999);
+        }
+    }
+
     /**
      * 获取HTTP错误信息
      */
     protected function getHttpErrorMessage(int $statusCode): string
     {
+
         $messages = [
             400 => '请求参数错误',
             401 => '未授权，请先登录',

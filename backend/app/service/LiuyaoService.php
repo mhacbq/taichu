@@ -402,14 +402,16 @@ class LiuyaoService
         }
         
         $xunkong = [];
+        $selectionReason = '';
         if (!empty($timeInfo) && isset($timeInfo['ri_gan']) && isset($timeInfo['ri_zhi'])) {
             $xunkong = self::calculateXunKong($timeInfo['ri_gan'], $timeInfo['ri_zhi']);
         }
 
         // 特殊处理：如果用神是“世爻”，直接指向世位
         if ($targetLiuqin === '世爻') {
-            $position = $shiYing['shi'];
+            $position = (int)($shiYing['shi'] ?? 1);
             $targetLiuqin = $liuqin[$position] ?? '世爻';
+            $selectionReason = '此类事项以世爻为主，直取世位定用';
         } else {
             // 在六爻中寻找匹配的六亲位置
             $positions = [];
@@ -418,7 +420,6 @@ class LiuyaoService
                     $positions[] = $pos;
                 }
             }
-
 
             // 如果没找到用神，则需寻找“伏神”
             if (empty($positions)) {
@@ -447,11 +448,19 @@ class LiuyaoService
                         'description' => "用神【{$targetLiuqin}】不现，按卦宫伏神法取第{$fushen['position']}爻地支【{$fushen['di_zhi']}】，伏于本爻【{$hostLineLiuQin}】之下。状态：" . implode('、', $fushenStatus)
                     ];
                 }
+
+                $position = (int)($shiYing['ying'] ?? 1);
+                $selectionReason = '本卦未见明现用神，且伏神未取到，暂借应位参看';
+            } elseif (count($positions) > 1) {
+                $selection = self::selectBestYongShenPosition($positions, $shiYing, $yaoCode, $xunkong);
+                $position = $selection['position'];
+                $selectionReason = $selection['reason'];
+            } else {
+                $position = (int)$positions[0];
+                $selectionReason = '同类用神唯一现于此爻';
             }
-            
-            // 如果有多个，通常取动爻，若无动爻则取世应，此处简化取第一个
-            $position = $positions[0] ?? $shiYing['ying'];
         }
+
         
         // 2. 状态分析
         $yaoArray = str_split($yaoCode);

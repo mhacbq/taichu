@@ -36,9 +36,33 @@ class AiAnalysis extends BaseController
         return AiPrompt::getDefault($type);
     }
 
+    private function buildAiAnalysisLogContext(array $baziData, string $promptKey, string $customPrompt, array $config, array $extra = []): array
+    {
+        $context = array_filter([
+            'prompt_key' => $promptKey,
+            'prompt_key_provided' => $promptKey !== '',
+            'has_custom_prompt' => $customPrompt !== '',
+            'custom_prompt_length' => $customPrompt !== '' ? mb_strlen($customPrompt) : 0,
+            'bazi_sections' => array_values(array_intersect(['year', 'month', 'day', 'hour', 'wuxing_stats'], array_keys($baziData))),
+            'bazi_field_count' => count($baziData),
+            'day_master' => (string) ($baziData['day_master'] ?? ''),
+            'model' => (string) ($config['model'] ?? 'DeepSeek-V3.2'),
+            'api_host' => $this->extractAiApiHost((string) ($config['api_url'] ?? '')),
+        ], static fn ($value) => !($value === '' || $value === 0 || $value === false || $value === null || $value === []));
+
+        return array_merge($context, $extra);
+    }
+
+    private function extractAiApiHost(string $apiUrl): string
+    {
+        $host = (string) parse_url($apiUrl, PHP_URL_HOST);
+        return $host !== '' ? $host : '';
+    }
+
     /**
      * 兼容旧版AI解盘路由
      */
+
     public function analyze(Request $request)
     {
         return $this->analyzeBazi($request);
@@ -198,12 +222,18 @@ class AiAnalysis extends BaseController
             $this->callAiApiStream($systemPrompt, $userPrompt, $config);
             $this->emitSseDone();
         } catch (\Exception $e) {
-            Log::error('AI流式解盘失败: ' . $e->getMessage(), [
-                'prompt_key' => $promptKey,
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logControllerException(
+                'ai_bazi_stream',
+                $e,
+                $this->buildAiAnalysisLogContext($baziData, $promptKey, $customPrompt, $config, [
+                    'mode' => 'stream',
+                    'prompt_source' => $prompt ? 'preset' : 'default',
+                ]),
+                'error'
+            );
             $this->emitSseError('AI流式解盘失败，请稍后重试');
         }
+
 
         exit;
 

@@ -1131,7 +1131,13 @@ const submitForm = async () => {
       premiumResult.value = null
       freeResult.value = response.data
       clearUnlockFeedback()
-      loadHistory() // 刷新历史记录
+      ElMessage.success('基础合婚分析完成')
+
+      try {
+        await loadHistory() // 刷新历史记录
+      } catch (historyError) {
+        console.warn('合婚结果已生成，但历史记录刷新失败:', historyError)
+      }
     } else {
       ElMessage.error(response.message)
     }

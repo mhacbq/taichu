@@ -7,17 +7,38 @@ use app\BaseController;
 use app\model\VipOrder;
 use app\service\ConfigService;
 use app\service\VipService;
-use think\facade\Log;
 use think\response\Json;
+
 
 /**
  * VIP会员控制器
  */
 class Vip extends BaseController
 {
+    protected function ensureVipFeatureEnabled(): ?Json
+    {
+        if (ConfigService::isFeatureEnabled('vip')) {
+            return null;
+        }
+
+        return $this->error('VIP功能暂未开放', 403);
+    }
+
+    protected function buildVipLogContext(array $user = [], string $vipType = '', string $payMethod = '', array $extra = []): array
+    {
+        $context = array_filter([
+            'user_id' => (int) ($user['sub'] ?? 0),
+            'vip_type' => $vipType,
+            'pay_method' => $payMethod,
+        ], static fn ($value) => !($value === '' || $value === 0 || $value === null));
+
+        return array_merge($context, $extra);
+    }
+
     /**
      * 中间件配置
      */
+
     protected $middleware = [
         \app\middleware\Auth::class,
     ];
@@ -45,12 +66,12 @@ class Vip extends BaseController
      */
     public function benefits(): Json
     {
-        // 检查VIP功能是否开启
-        if (!ConfigService::isFeatureEnabled('vip')) {
-            return $this->error('VIP功能暂未开放', 403);
+        if ($disabledResponse = $this->ensureVipFeatureEnabled()) {
+            return $disabledResponse;
         }
         
         $benefits = [
+
             'prices' => [
                 'month' => ConfigService::get('vip_month_price', 19.9),
                 'quarter' => ConfigService::get('vip_quarter_price', 49),
@@ -103,12 +124,11 @@ class Vip extends BaseController
         $vipType = $this->request->post('type', '');
         $payMethod = $this->request->post('pay_method', 'wechat');
         
-        // 检查VIP功能是否开启
-        if (!ConfigService::isFeatureEnabled('vip')) {
-            return $this->error('VIP功能暂未开放', 403);
+        if ($disabledResponse = $this->ensureVipFeatureEnabled()) {
+            return $disabledResponse;
         }
         
-        if (!in_array($vipType, ['month', 'quarter', 'year'])) {
+        if (!in_array($vipType, ['month', 'quarter', 'year'], true)) {
             return $this->error('无效的VIP类型', 400);
         }
         
@@ -121,15 +141,14 @@ class Vip extends BaseController
                 'pay_params' => $order['pay_params'] ?? null,
             ], '订单创建成功');
         } catch (\Exception $e) {
-            Log::error('创建VIP订单失败: ' . $e->getMessage(), [
-                'user_id' => $userId,
-                'vip_type' => $vipType,
-                'pay_method' => $payMethod,
-                'request_url' => $this->request->url(true),
-            ]);
-
-            return $this->error('创建VIP订单失败，请稍后重试', 500);
+            return $this->respondSystemException(
+                'vip_subscribe_create_order',
+                $e,
+                '创建VIP订单失败，请稍后重试',
+                $this->buildVipLogContext($user, $vipType, $payMethod)
+            );
         }
+
     }
     
     /**
