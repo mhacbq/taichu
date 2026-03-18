@@ -196,12 +196,10 @@ class Tarot extends BaseController
             ]);
         } catch (\Exception $e) {
             Db::rollback();
-            Log::error('塔罗抽牌失败: ' . $e->getMessage(), [
-                'user_id' => $user['sub'] ?? 0,
-                'spread' => $spread,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return $this->error('抽牌失败，请稍后重试', 500);
+            return $this->respondSystemException('tarot_draw_failed', $e, '抽牌失败，请稍后重试', [
+                'user_id' => (int) ($user['sub'] ?? 0),
+                'spread' => (string) $spread,
+            ], 500);
         }
     }
     
@@ -226,9 +224,9 @@ class Tarot extends BaseController
                 'interpretation' => $interpretation,
             ]);
         } catch (\Throwable $e) {
-            Log::error('塔罗解读失败: ' . $e->getMessage(), [
-                'question' => $this->request->post('question', ''),
-                'trace' => $e->getTraceAsString(),
+            $this->logControllerException('执行塔罗解读', $e, [
+                'card_count' => is_array($cards ?? null) ? count($cards) : 0,
+                'question_length' => mb_strlen((string) ($question ?? '')),
             ]);
             return $this->error('解读失败，请稍后重试', 500);
         }

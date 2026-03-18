@@ -34,7 +34,7 @@
         <div class="interpretation-section" v-for="(section, index) in sections" :key="index">
           <div class="section-header">
             <div class="section-icon" :style="{ background: section.color }">
-              <el-icon :size="18" color="white"><component :is="section.icon" /></el-icon>
+              <el-icon :size="18" color="white"><component :is="resolveSectionIcon(section.icon)" /></el-icon>
             </div>
             <h4 class="section-title">{{ section.title }}</h4>
           </div>
@@ -140,6 +140,24 @@ const thinkingTexts = [
 // 解读段落
 const sections = ref([])
 const advice = ref('')
+
+const sectionIconMap = {
+  MagicStick,
+  StarFilled,
+  Sunny,
+  Moon,
+  Money,
+  UserFilled,
+  Briefcase
+}
+
+const resolveSectionIcon = (icon) => {
+  if (typeof icon !== 'string') {
+    return icon || StarFilled
+  }
+
+  return sectionIconMap[icon] || StarFilled
+}
 
 // 模拟加载过程
 const simulateLoading = () => {

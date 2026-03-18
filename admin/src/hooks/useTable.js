@@ -1,4 +1,5 @@
 import { ref, reactive, computed } from 'vue'
+import { reportAdminUiError } from '@/utils/dev-error'
 
 /**
  * 表格组合式函数
@@ -49,7 +50,11 @@ export function useTable(options = {}) {
       total.value = res.data?.total || 0
       return res
     } catch (error) {
-      console.error('Load data failed:', error)
+      reportAdminUiError('useTable', 'load_data_failed', error, {
+        page: queryParams.page,
+        page_size: queryParams.pageSize,
+        has_fetch_api: typeof fetchApi === 'function'
+      })
       throw error
     } finally {
       loading.value = false
