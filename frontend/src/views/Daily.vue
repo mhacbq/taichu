@@ -1,13 +1,12 @@
 <template>
   <div class="daily-page">
     <div class="container">
-      <div class="page-header">
-        <BackButton />
-        <h1 class="section-title">每日运势</h1>
-      </div>
+      <PageHeroHeader
+        title="每日运势"
+        subtitle="先看今天的公共日运，再根据登录状态继续查看专属运势和签到入口，首屏不再让签到状态抢戏。"
+        :icon="Calendar"
+      />
 
-      <!-- 签到卡片 -->
-      <CheckinCard />
 
       <div v-if="isLoading" class="date-display date-display--loading card card-hover">
         <div class="date-skeleton-block">
@@ -233,7 +232,27 @@
             <p>今日详细运势仍在整理中，稍后再看。</p>
           </div>
         </div>
+
+        <div class="daily-action-zone">
+          <CheckinCard v-if="isLoggedIn" />
+          <div v-else class="personalized-state-card guest-checkin-card card card-hover">
+
+            <div class="state-content">
+              <el-icon class="state-icon" :size="48"><Present /></el-icon>
+              <div class="state-body">
+                <p class="state-title">登录后再签到领积分</p>
+                <p class="state-copy">公共日运已经在上面完整展示。登录后可在这里完成每日签到、累计积分，并解锁与你八字相关的专属提示。</p>
+              </div>
+              <div class="state-actions">
+                <router-link :to="dailyLoginRoute">
+                  <el-button type="primary" size="small">登录后签到</el-button>
+                </router-link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
 
       <!-- 错误状态 -->
       <div v-else-if="error" class="error-state card card-hover">
@@ -252,10 +271,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny, UserFilled, RefreshRight } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny, UserFilled, RefreshRight, Calendar, Present } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
-import BackButton from '../components/BackButton.vue'
+import PageHeroHeader from '../components/PageHeroHeader.vue'
+
 
 const solarDate = ref('')
 const lunarDate = ref('')
@@ -492,18 +512,8 @@ onUnmounted(() => {
   padding: 60px 0;
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.page-header .section-title {
-  margin: 0;
-}
-
 .date-display {
+
   max-width: 600px;
   margin: 0 auto 30px;
   display: flex;
@@ -767,7 +777,16 @@ onUnmounted(() => {
   line-height: 1.8;
 }
 
+.daily-action-zone {
+  margin-top: 30px;
+}
+
+.guest-checkin-card {
+  margin-bottom: 0;
+}
+
 .loading-state {
+
   max-width: 800px;
   margin: 0 auto;
 }

@@ -42,7 +42,7 @@
           
           <div class="bazi-compare">
             <div class="bazi-side">
-              <h4>男方八字</h4>
+              <h4>{{ getRoleBaziTitle('male') }}</h4>
               <div class="bazi-pillars">
                 <span class="pillar">{{ freeResult.male_bazi.year }}</span>
                 <span class="pillar">{{ freeResult.male_bazi.month }}</span>
@@ -53,7 +53,7 @@
             </div>
             <div class="bazi-divider"><el-icon :size="24"><Link /></el-icon></div>
             <div class="bazi-side">
-              <h4>女方八字</h4>
+              <h4>{{ getRoleBaziTitle('female') }}</h4>
               <div class="bazi-pillars">
                 <span class="pillar">{{ freeResult.female_bazi.year }}</span>
                 <span class="pillar">{{ freeResult.female_bazi.month }}</span>
@@ -66,8 +66,22 @@
           
           <div class="suggestion-box">
             <h4><el-icon><Collection /></el-icon> 建议</h4>
-            <p>{{ freeResult.hehun.suggestions[0] }}</p>
+            <ul class="suggestion-list">
+              <li v-for="(suggestion, idx) in visibleFreeSuggestions" :key="`free-suggestion-${idx}`">
+                {{ suggestion }}
+              </li>
+            </ul>
+            <el-button
+              v-if="hasMoreFreeSuggestions"
+              link
+              type="primary"
+              class="suggestion-toggle"
+              @click="showAllFreeSuggestions = !showAllFreeSuggestions"
+            >
+              {{ showAllFreeSuggestions ? '收起额外建议' : `展开剩余 ${freeSuggestionList.length - visibleFreeSuggestions.length} 条建议` }}
+            </el-button>
           </div>
+
           
           <div class="upgrade-prompt" :class="{ 'upgrade-prompt--busy': unlockLoading }" :aria-busy="unlockLoading">
             <p>{{ freeResult.preview_hint }}</p>
@@ -191,13 +205,26 @@
             <span class="form-meta-item">大概时段</span>
             <span class="form-meta-item">仅生日趋势</span>
           </div>
+
+          <div class="role-mode-toggle card-hover">
+            <div>
+              <strong>显示方式</strong>
+              <p>只切换页面上的称呼，不改后端字段和合婚算法。</p>
+            </div>
+            <el-radio-group v-model="roleDisplayMode" size="small">
+              <el-radio-button label="gender">男方 / 女方</el-radio-button>
+              <el-radio-button label="neutral">A方 / B方</el-radio-button>
+            </el-radio-group>
+          </div>
           
           <!-- 男方信息 -->
+
           <div class="person-section card-hover">
             <h3 class="person-title">
-              <el-icon class="gender-icon"><Male /></el-icon>
-              男方信息
+              <el-icon class="gender-icon"><component :is="resolveRoleIcon('male')" /></el-icon>
+              {{ getRolePanelTitle('male') }}
             </h3>
+
             <p class="person-subtitle">先填生日，再按记忆精度选择具体时间、时段估算或仅生日模式。</p>
             <div class="form-row">
               <div class="form-group">
@@ -205,7 +232,8 @@
                 <el-input
                   v-model="form.maleName"
                   class="hehun-field-control"
-                  placeholder="输入姓名"
+                  :placeholder="getRoleNamePlaceholder('male')"
+
                   maxlength="10"
                   clearable
                   show-word-limit
@@ -216,7 +244,7 @@
               <label class="precision-heading">出生时刻精度</label>
               <el-radio-group
                 v-model="form.maleBirthPrecision"
-                class="precision-options precision-options--group"
+                class="precision-options precision-options--group premium-segment premium-segment--card"
                 @change="(value) => handleBirthPrecisionChange('male', value)"
               >
                 <el-radio-button
@@ -248,7 +276,7 @@
             </div>
             <div v-if="form.maleBirthPrecision === 'range'" class="time-range-panel">
               <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
-              <el-radio-group v-model="form.maleBirthTimeRange" class="time-range-options time-range-options--group">
+              <el-radio-group v-model="form.maleBirthTimeRange" class="time-range-options time-range-options--group premium-segment premium-segment--card">
                 <el-radio-button
                   v-for="option in birthTimeRangeOptions"
                   :key="`male-range-${option.value}`"
@@ -259,22 +287,24 @@
                   <small>{{ option.hint }}</small>
                 </el-radio-button>
               </el-radio-group>
-              <p v-if="!form.maleBirthTimeRange" class="field-helper field-helper--warning">请选择男方的大概出生时段后再开始分析。</p>
+              <p v-if="!form.maleBirthTimeRange" class="field-helper field-helper--warning">请选择{{ getRoleLabel('male') }}的大概出生时段后再开始分析。</p>
             </div>
 
             <div class="precision-confidence" :class="`precision-confidence--${form.maleBirthPrecision}`">
               <span class="confidence-badge">{{ getBirthPrecisionBadge(form.maleBirthPrecision) }}</span>
-              <p>{{ getBirthConfidenceCopy(form.maleBirthPrecision, '男方') }}</p>
+              <p>{{ getBirthConfidenceCopy(form.maleBirthPrecision, getRoleLabel('male')) }}</p>
             </div>
+
           </div>
 
           
           <!-- 女方信息 -->
           <div class="person-section">
             <h3 class="person-title">
-              <el-icon class="gender-icon"><Female /></el-icon>
-              女方信息
+              <el-icon class="gender-icon"><component :is="resolveRoleIcon('female')" /></el-icon>
+              {{ getRolePanelTitle('female') }}
             </h3>
+
             <p class="person-subtitle">若只记得白天、晚上等大概时段，也可以先用时段估算后再继续完善。</p>
             <div class="form-row">
               <div class="form-group">
@@ -282,7 +312,8 @@
                 <el-input
                   v-model="form.femaleName"
                   class="hehun-field-control"
-                  placeholder="输入姓名"
+                  :placeholder="getRoleNamePlaceholder('female')"
+
                   maxlength="10"
                   clearable
                   show-word-limit
@@ -293,7 +324,7 @@
               <label class="precision-heading">出生时刻精度</label>
               <el-radio-group
                 v-model="form.femaleBirthPrecision"
-                class="precision-options precision-options--group"
+                class="precision-options precision-options--group premium-segment premium-segment--card"
                 @change="(value) => handleBirthPrecisionChange('female', value)"
               >
                 <el-radio-button
@@ -325,7 +356,7 @@
             </div>
             <div v-if="form.femaleBirthPrecision === 'range'" class="time-range-panel">
               <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
-              <el-radio-group v-model="form.femaleBirthTimeRange" class="time-range-options time-range-options--group">
+              <el-radio-group v-model="form.femaleBirthTimeRange" class="time-range-options time-range-options--group premium-segment premium-segment--card">
                 <el-radio-button
                   v-for="option in birthTimeRangeOptions"
                   :key="`female-range-${option.value}`"
@@ -336,12 +367,13 @@
                   <small>{{ option.hint }}</small>
                 </el-radio-button>
               </el-radio-group>
-              <p v-if="!form.femaleBirthTimeRange" class="field-helper field-helper--warning">请选择女方的大概出生时段后再开始分析。</p>
+              <p v-if="!form.femaleBirthTimeRange" class="field-helper field-helper--warning">请选择{{ getRoleLabel('female') }}的大概出生时段后再开始分析。</p>
             </div>
             <div class="precision-confidence" :class="`precision-confidence--${form.femaleBirthPrecision}`">
               <span class="confidence-badge">{{ getBirthPrecisionBadge(form.femaleBirthPrecision) }}</span>
-              <p>{{ getBirthConfidenceCopy(form.femaleBirthPrecision, '女方') }}</p>
+              <p>{{ getBirthConfidenceCopy(form.femaleBirthPrecision, getRoleLabel('female')) }}</p>
             </div>
+
           </div>
 
           
@@ -480,7 +512,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
-import { Male, Female, Unlock, Lock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled, Calendar, ArrowRight, StarFilled, CircleCheckFilled } from '@element-plus/icons-vue'
+import { Male, Female, UserFilled, Unlock, Lock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled, Calendar, ArrowRight, StarFilled, CircleCheckFilled } from '@element-plus/icons-vue'
+
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 import BackButton from '../components/BackButton.vue'
 
@@ -529,8 +562,55 @@ const form = reactive({
   useAi: true,
 })
 
+const roleDisplayMode = ref('gender')
+const roleCopyMap = {
+  gender: {
+    male: {
+      short: '男方',
+      panel: '男方信息',
+      bazi: '男方八字',
+      namePlaceholder: '输入男方姓名',
+    },
+    female: {
+      short: '女方',
+      panel: '女方信息',
+      bazi: '女方八字',
+      namePlaceholder: '输入女方姓名',
+    },
+  },
+  neutral: {
+    male: {
+      short: 'A方',
+      panel: 'A方信息',
+      bazi: 'A方八字',
+      namePlaceholder: '输入 A 方姓名',
+    },
+    female: {
+      short: 'B方',
+      panel: 'B方信息',
+      bazi: 'B方八字',
+      namePlaceholder: '输入 B 方姓名',
+    },
+  },
+}
+
+const currentRoleCopy = computed(() => roleCopyMap[roleDisplayMode.value] || roleCopyMap.gender)
+const getRoleCopy = (role) => currentRoleCopy.value[role] || currentRoleCopy.value.male
+const getRoleLabel = (role) => getRoleCopy(role).short
+const getRolePanelTitle = (role) => getRoleCopy(role).panel
+const getRoleBaziTitle = (role) => getRoleCopy(role).bazi
+const getRoleNamePlaceholder = (role) => getRoleCopy(role).namePlaceholder
+const resolveRoleIcon = (role) => {
+  if (roleDisplayMode.value === 'neutral') {
+    return UserFilled
+  }
+
+  return role === 'female' ? Female : Male
+}
+
 
 // 状态
+
 const isLoading = ref(false)
 const exporting = ref(false)
 const freeResult = ref(null)
@@ -545,8 +625,10 @@ const historyLoading = ref(false)
 const historyLoaded = ref(false)
 const historyError = ref('')
 const activeHistoryId = ref(null)
+const showAllFreeSuggestions = ref(false)
 
 const historyTierCopy = {
+
   free: { label: '免费预览', cta: '查看基础预览' },
   premium: { label: '完整版', cta: '查看完整报告' },
   vip: { label: 'VIP完整版', cta: '查看会员报告' },
@@ -725,16 +807,16 @@ const hydrateBirthState = (birthDate) => {
 
 const precisionSummaryList = computed(() => ([
   {
-    role: '男方',
+    role: getRoleLabel('male'),
     modeLabel: getBirthPrecisionLabel(form.maleBirthPrecision),
     confidence: getBirthPrecisionBadge(form.maleBirthPrecision),
-    detail: getBirthConfidenceCopy(form.maleBirthPrecision, '男方'),
+    detail: getBirthConfidenceCopy(form.maleBirthPrecision, getRoleLabel('male')),
   },
   {
-    role: '女方',
+    role: getRoleLabel('female'),
     modeLabel: getBirthPrecisionLabel(form.femaleBirthPrecision),
     confidence: getBirthPrecisionBadge(form.femaleBirthPrecision),
-    detail: getBirthConfidenceCopy(form.femaleBirthPrecision, '女方'),
+    detail: getBirthConfidenceCopy(form.femaleBirthPrecision, getRoleLabel('female')),
   },
 ]))
 
@@ -743,17 +825,18 @@ const hasReducedPrecision = computed(() => {
 })
 
 const buildHehunPayload = ({ tier, useAi }) => ({
-  maleName: form.maleName || '男方',
+  maleName: form.maleName || getRoleLabel('male'),
   maleBirthDate: resolveBirthDatePayload(form.maleBirthDate, form.maleBirthPrecision, form.maleBirthTimeRange),
   maleBirthPrecision: form.maleBirthPrecision,
   maleBirthTimeRange: form.maleBirthTimeRange,
-  femaleName: form.femaleName || '女方',
+  femaleName: form.femaleName || getRoleLabel('female'),
   femaleBirthDate: resolveBirthDatePayload(form.femaleBirthDate, form.femaleBirthPrecision, form.femaleBirthTimeRange),
   femaleBirthPrecision: form.femaleBirthPrecision,
   femaleBirthTimeRange: form.femaleBirthTimeRange,
   tier,
   useAi,
 })
+
 
 const isBirthInputComplete = (role) => {
   const birthDateValue = form[`${role}BirthDate`]
@@ -843,7 +926,16 @@ const pricingDisplayText = computed(() => {
 
 const canExportReport = computed(() => Boolean(premiumResult.value?.id))
 const canUnlockPremium = computed(() => Boolean(freeResult.value) && Boolean(normalizedPricing.value) && !isLoading.value && !unlockLoading.value)
+const freeSuggestionList = computed(() => {
+  const suggestions = freeResult.value?.hehun?.suggestions
+  return Array.isArray(suggestions) ? suggestions.filter((item) => typeof item === 'string' && item.trim()) : []
+})
+const visibleFreeSuggestions = computed(() => {
+  return showAllFreeSuggestions.value ? freeSuggestionList.value : freeSuggestionList.value.slice(0, 3)
+})
+const hasMoreFreeSuggestions = computed(() => freeSuggestionList.value.length > visibleFreeSuggestions.value.length)
 const premiumUnlockMessage = computed(() => {
+
 
   const points = normalizedPricing.value?.final
   if (!Number.isFinite(points)) {
@@ -1389,8 +1481,10 @@ const submitForm = async () => {
       const normalizedFreeResult = normalizeFreeResultData(response.data)
       premiumResult.value = null
       freeResult.value = normalizedFreeResult
+      showAllFreeSuggestions.value = false
 
       clearUnlockFeedback()
+
       ElMessage.success('基础合婚分析完成')
 
       try {
@@ -1473,15 +1567,19 @@ const unlockPremium = async () => {
 const returnToForm = () => {
   freeResult.value = null
   premiumResult.value = null
+  showAllFreeSuggestions.value = false
   clearUnlockFeedback()
 }
+
 
 // 重置表单
 const resetForm = () => {
   freeResult.value = null
   premiumResult.value = null
   activeHistoryId.value = null
+  showAllFreeSuggestions.value = false
   clearUnlockFeedback()
+
   form.maleName = ''
   form.maleBirthDate = ''
   form.maleBirthPrecision = 'exact'
@@ -1513,8 +1611,11 @@ const exportReport = async () => {
       // 下载PDF
       const link = document.createElement('a')
       link.href = response.data.download_url
-      link.download = `合婚报告_${form.maleName}_${form.femaleName}.pdf`
+      const exportMaleName = form.maleName || getRoleLabel('male')
+      const exportFemaleName = form.femaleName || getRoleLabel('female')
+      link.download = `合婚报告_${exportMaleName}_${exportFemaleName}.pdf`
       link.click()
+
       ElMessage.success('报告导出成功')
     } else {
       ElMessage.error(response.message)
@@ -1572,10 +1673,11 @@ const getHistoryPersonLabel = (name, birthDate, roleLabel) => {
 }
 
 const formatHistoryNames = (item = {}) => {
-  const maleLabel = getHistoryPersonLabel(item.male_name, item.male_birth_date, '男方')
-  const femaleLabel = getHistoryPersonLabel(item.female_name, item.female_birth_date, '女方')
+  const maleLabel = getHistoryPersonLabel(item.male_name, item.male_birth_date, getRoleLabel('male'))
+  const femaleLabel = getHistoryPersonLabel(item.female_name, item.female_birth_date, getRoleLabel('female'))
   return `${maleLabel} & ${femaleLabel}`
 }
+
 
 const buildHistoryFreeResult = (item, hehunData, maleBaziData, femaleBaziData) => normalizeFreeResultData({
   ...item,
@@ -1647,8 +1749,10 @@ const resolveHistoryBirthState = (item, role) => {
 // 加载历史记录详情
 const applyHistoryDetail = (normalizedItem) => {
   activeHistoryId.value = normalizedItem.id
+  showAllFreeSuggestions.value = false
 
   // 填充表单
+
   form.maleName = normalizedItem.male_name || ''
   form.femaleName = normalizedItem.female_name || ''
 
@@ -1828,6 +1932,31 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.role-mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-rgb), 0.02));
+  border: 1px solid var(--primary-light-20);
+  border-radius: var(--radius-md);
+}
+
+.role-mode-toggle strong {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.role-mode-toggle p {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .person-section {
   margin-bottom: 30px;
   padding: 24px;
@@ -1837,6 +1966,7 @@ onMounted(() => {
   box-shadow: var(--shadow-sm);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
 }
+
 
 .person-section:hover {
   transform: translateY(-1px);
@@ -2561,14 +2691,28 @@ onMounted(() => {
 
 .suggestion-box h4 {
   color: var(--success-color);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.suggestion-box p {
-  color: var(--text-secondary);
+.suggestion-list {
   margin: 0;
-  line-height: 1.6;
+  padding-left: 20px;
+  color: var(--text-secondary);
 }
+
+.suggestion-list li + li {
+  margin-top: 8px;
+}
+
+.suggestion-list li {
+  line-height: 1.7;
+}
+
+.suggestion-toggle {
+  margin-top: 10px;
+  padding: 0;
+}
+
 
 /* 升级提示 */
 .upgrade-prompt {
@@ -3175,8 +3319,14 @@ onMounted(() => {
   .form-meta-list {
     justify-content: flex-start;
   }
+
+  .role-mode-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
   
   .form-card,
+
   .result-card {
     padding: 24px;
   }

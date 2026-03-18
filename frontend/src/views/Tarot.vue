@@ -1,10 +1,12 @@
 <template>
   <div class="tarot-page">
     <div class="container">
-      <div class="page-header">
-        <BackButton />
-        <h1 class="section-title">塔罗占卜</h1>
-      </div>
+      <PageHeroHeader
+        title="塔罗占卜"
+        subtitle="先选牌阵，再聚焦你真正想问的问题；抽牌完成后会锁定上下文，确保保存、分享和复盘都对得上本次解读。"
+        :icon="MagicStick"
+      />
+
 
       <!-- 积分提示 -->
       <div class="points-hint card card-hover">
@@ -288,8 +290,10 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic } from '../api'
 
-import BackButton from '../components/BackButton.vue'
+
+import PageHeroHeader from '../components/PageHeroHeader.vue'
 import TarotCard from '../components/TarotCard.vue'
+
 import EmptyState from '../components/EmptyState.vue'
 import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
 
@@ -1095,18 +1099,8 @@ const getCardAdvice = (card) => {
   padding: 60px 0;
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.page-header .section-title {
-  margin: 0;
-}
-
 .points-hint {
+
   max-width: 900px;
   margin: 0 auto 20px;
   display: flex;

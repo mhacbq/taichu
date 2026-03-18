@@ -1,10 +1,12 @@
 <template>
   <div class="bazi-page">
     <div class="container">
-      <div class="page-header">
-        <BackButton />
-        <h1 class="section-title">八字排盘</h1>
-      </div>
+      <PageHeroHeader
+        title="八字排盘"
+        subtitle="支持精确出生时间、大概时段与未知时辰三种口径，结果页会同步标注当前精度，避免把估算时刻误当成精确排盘。"
+        :icon="Grid"
+      />
+
       
       <!-- 暖心提示 -->
       <div class="warm-tip card" v-if="!result">
@@ -34,7 +36,7 @@
         <!-- 简版/专业版切换 -->
         <div class="version-toggle">
           <span class="toggle-label">排盘模式：</span>
-          <el-radio-group v-model="versionMode" size="small">
+          <el-radio-group v-model="versionMode" size="small" class="premium-segment premium-segment--compact">
             <el-radio-button label="simple">
               <span class="mode-option">
                 <el-icon class="mode-icon"><MagicStick /></el-icon>
@@ -56,7 +58,7 @@
           <label>出生日期与时间</label>
           <div class="time-accuracy-switch">
             <span class="switch-label">时间确认度</span>
-            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group">
+            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group premium-segment premium-segment--compact">
               <el-radio-button label="exact">精确到分钟</el-radio-button>
               <el-radio-button label="estimated">大概时段 / 未知时辰</el-radio-button>
             </el-radio-group>
@@ -84,7 +86,7 @@
                 value-format="YYYY-MM-DD"
                 class="full-width"
               />
-              <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段" class="full-width">
+              <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段或未知时辰" class="full-width" clearable>
                 <el-option
                   v-for="option in estimatedTimeOptions"
                   :key="option.value"
@@ -93,8 +95,9 @@
                 />
               </el-select>
             </div>
-            <p class="form-hint form-hint--precision"><el-icon><Warning /></el-icon> 当前将按估算时段排盘，时柱和流年细节更适合做方向参考，结果页会醒目标记“估算时刻”。</p>
+            <p class="form-hint form-hint--precision"><el-icon><Warning /></el-icon> {{ estimatedModeHint }}</p>
           </template>
+
         </div>
         
         <div class="form-group">
@@ -753,8 +756,8 @@
               <!-- 大运选择 -->
               <div class="dayun-selector">
                 <span class="selector-label">选择大运：</span>
-                <el-radio-group v-model="selectedDayunIndex" size="small">
-                  <el-radio-button 
+                <el-radio-group v-model="selectedDayunIndex" size="small" class="premium-segment premium-segment--scroll">
+                  <el-radio-button
                     v-for="(yun, index) in result.dayun" 
                     :key="index" 
                     :label="index"
@@ -1036,8 +1039,9 @@ import {
   getClientConfig
 } from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
-import BackButton from '../components/BackButton.vue'
+import PageHeroHeader from '../components/PageHeroHeader.vue'
 import { sanitizeHtml } from '../utils/sanitize'
+
 import { CHINA_CITIES } from '../utils/constants'
 
 
@@ -1053,26 +1057,60 @@ const estimatedTimeOptions = [
   { value: 'noon', label: '中午（约 12:00）', time: '12:00:00', shortLabel: '中午' },
   { value: 'afternoon', label: '下午（约 15:30）', time: '15:30:00', shortLabel: '下午' },
   { value: 'evening', label: '晚上（约 20:30）', time: '20:30:00', shortLabel: '晚上' },
+  { value: 'unknown', label: '未知时辰（仅按生日趋势）', time: '', shortLabel: '未知时辰', mode: 'date-only' },
 ]
+
+const resolveEstimatedTimeSlotByClock = (clock = '') => {
+  const [hour = '12'] = String(clock || '').split(':')
+  const parsedHour = Number(hour)
+
+  if (!Number.isFinite(parsedHour)) {
+    return ''
+  }
+
+  if (parsedHour < 6) return 'before-dawn'
+  if (parsedHour < 9) return 'morning'
+  if (parsedHour < 12) return 'forenoon'
+  if (parsedHour < 14) return 'noon'
+  if (parsedHour < 18) return 'afternoon'
+  return 'evening'
+}
 
 const birthTimeAccuracy = ref('exact')
 const exactBirthDate = ref('')
 const estimatedBirthDate = ref('')
-const estimatedTimeSlot = ref('noon')
+const estimatedTimeSlot = ref('')
 const selectedEstimatedTimeOption = computed(() => {
-  return estimatedTimeOptions.find((option) => option.value === estimatedTimeSlot.value) || estimatedTimeOptions[3]
+  return estimatedTimeOptions.find((option) => option.value === estimatedTimeSlot.value) || null
 })
+const isEstimatedDateOnly = computed(() => selectedEstimatedTimeOption.value?.mode === 'date-only')
 const birthDate = computed(() => {
   if (birthTimeAccuracy.value === 'exact') {
     return exactBirthDate.value || ''
   }
 
-  if (!estimatedBirthDate.value) {
+  if (!estimatedBirthDate.value || !selectedEstimatedTimeOption.value) {
     return ''
+  }
+
+  if (isEstimatedDateOnly.value) {
+    return estimatedBirthDate.value
   }
 
   return `${estimatedBirthDate.value} ${selectedEstimatedTimeOption.value.time}`
 })
+const estimatedModeHint = computed(() => {
+  if (!estimatedTimeSlot.value) {
+    return '请选择一个大概时段，或直接选择“未知时辰（仅按生日趋势）”，系统不会再默认替你预设中午。'
+  }
+
+  if (isEstimatedDateOnly.value) {
+    return '当前按“未知时辰”仅基于生日趋势排盘，系统会弱化时柱与流年细节判断，并在结果页醒目标注。'
+  }
+
+  return `当前将按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，时柱和流年细节更适合做方向参考，结果页会醒目标记“估算时刻”。`
+})
+
 const gender = ref('male')
 const location = ref('')
 const loading = ref(false)
@@ -1199,8 +1237,15 @@ const birthTimeAccuracyLabel = computed(() => {
     return '精确到分钟'
   }
 
-  return `估算时刻 · ${selectedEstimatedTimeOption.value.shortLabel}`
+  if (isEstimatedDateOnly.value) {
+    return '未知时辰 · 仅生日趋势'
+  }
+
+  return selectedEstimatedTimeOption.value
+    ? `估算时刻 · ${selectedEstimatedTimeOption.value.shortLabel}`
+    : '待确认时段'
 })
+
 const locationContextLabel = computed(() => {
   if (versionMode.value !== 'pro') {
     return '未填写出生地 · 默认北京时间'
@@ -1210,10 +1255,17 @@ const locationContextLabel = computed(() => {
 })
 const resultContextNote = computed(() => {
   if (birthTimeAccuracy.value === 'estimated') {
-    return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，尤其时柱与流年细节更适合做方向参考。`
+    if (isEstimatedDateOnly.value) {
+      return '当前按“未知时辰”仅基于生日趋势排盘，尤其时柱、起运点与流年细节更适合做方向参考。'
+    }
+
+    if (selectedEstimatedTimeOption.value) {
+      return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，尤其时柱与流年细节更适合做方向参考。`
+    }
   }
 
   if (!showAdvancedResultSections.value) {
+
     return '当前为简化版结果，已自动收起大运、流年与深度预测工具；想继续深入，可切换到专业版。'
   }
 
@@ -1391,13 +1443,19 @@ watch(birthTimeAccuracy, (mode) => {
     if (!estimatedBirthDate.value && exactBirthDate.value) {
       estimatedBirthDate.value = exactBirthDate.value.slice(0, 10)
     }
+
+    if (!estimatedTimeSlot.value && exactBirthDate.value) {
+      const clockMatch = exactBirthDate.value.match(/(\d{2}:\d{2})/)
+      estimatedTimeSlot.value = clockMatch ? resolveEstimatedTimeSlotByClock(clockMatch[1]) : ''
+    }
     return
   }
 
-  if (!exactBirthDate.value && estimatedBirthDate.value) {
+  if (!exactBirthDate.value && estimatedBirthDate.value && selectedEstimatedTimeOption.value && !isEstimatedDateOnly.value) {
     exactBirthDate.value = `${estimatedBirthDate.value} ${selectedEstimatedTimeOption.value.time}`
   }
 })
+
 
 watch(selectedYear, (newYear, oldYear) => {
   if (newYear === oldYear) {
@@ -1726,10 +1784,22 @@ const getScoreClass = (score) => {
 
 // 显示确认对话框
 const showConfirm = () => {
-  if (!birthDate.value) {
+  if (birthTimeAccuracy.value === 'estimated') {
+    if (!estimatedBirthDate.value) {
+      ElMessage.warning('请选择出生日期')
+      return
+    }
+
+    if (!estimatedTimeSlot.value) {
+      ElMessage.warning('请选择一个大概时段，或明确选择“未知时辰”后再继续')
+      return
+    }
+  } else if (!birthDate.value) {
     ElMessage.warning('请选择出生日期')
     return
   }
+
+
 
   if (!isAccountReady.value) {
     ElMessage.warning(accountStatus.value === 'error' ? '账户信息暂不可用，请先刷新价格信息' : '账户信息还在同步，请稍候')
@@ -2606,18 +2676,9 @@ const formatAiContent = (content) => {
   }
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.page-header .section-title {
-  margin: 0;
-}
 
 .bazi-form {
+
   max-width: 600px;
   margin: 0 auto 40px;
 }
