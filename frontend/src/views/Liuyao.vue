@@ -281,7 +281,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
 import { RefreshRight, Delete, MagicStick, Present, Trophy, Close, CircleCheckFilled, Collection } from '@element-plus/icons-vue'
@@ -332,6 +332,8 @@ const historyLoaded = ref(false)
 const historyError = ref('')
 const submitError = ref('')
 const showHistory = ref(false)
+const currentBeijingTimestamp = ref(Date.now())
+let beijingTimer = null
 
 
 const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
@@ -642,8 +644,18 @@ const formatDate = (dateStr) => {
 
 // 初始化
 onMounted(() => {
+  beijingTimer = window.setInterval(() => {
+    currentBeijingTimestamp.value = Date.now()
+  }, 1000)
   loadPricing()
   loadHistory()
+})
+
+onUnmounted(() => {
+  if (beijingTimer) {
+    clearInterval(beijingTimer)
+    beijingTimer = null
+  }
 })
 </script>
 

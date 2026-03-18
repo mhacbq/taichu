@@ -268,7 +268,19 @@ const dynamicImportErrorPattern = /Failed to fetch dynamically imported module|I
 
 router.onError((error, to) => {
   if (!dynamicImportErrorPattern.test(String(error?.message || ''))) {
-    console.error('路由加载失败:', error)
+    const matchedInfo = Array.isArray(to?.matched)
+      ? to.matched.map((record) => ({
+          name: record.name,
+          path: record.path,
+          hasComponent: !!record.components?.default || !!record.component,
+        }))
+      : []
+
+    console.error('路由加载失败:', {
+      error,
+      to: to?.fullPath || to?.path || '',
+      matched: matchedInfo,
+    })
     return
   }
 

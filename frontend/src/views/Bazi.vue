@@ -992,7 +992,8 @@ import {
   getYearlyFortune, 
   getDayunAnalysis, 
   getDayunChart as getDayunChartApi,
-  getFortunePointsCost 
+  getFortunePointsCost,
+  getClientConfig
 } from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
 import BackButton from '../components/BackButton.vue'
@@ -1116,6 +1117,21 @@ const cityOptions = computed(() => {
 
 const isAccountReady = computed(() => accountStatus.value === 'ready')
 const isFortunePricingReady = computed(() => fortunePricingStatus.value === 'ready')
+const isAiPricingReady = computed(() => aiPricingStatus.value === 'ready' || aiPricingStatus.value === 'fallback')
+
+const confirmDialogConfig = computed(() => {
+  if (isFirstBazi.value) {
+    return {
+      title: '首次排盘确认',
+      actionText: '开始排盘',
+    }
+  }
+
+  return {
+    title: '确认排盘',
+    actionText: '确认排盘',
+  }
+})
 
 const canStartBazi = computed(() => {
   if (!isAccountReady.value) {

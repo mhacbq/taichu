@@ -147,7 +147,31 @@ class SystemConfig extends Model
      */
     public static function isFeatureEnabled(string $featureKey): bool
     {
-        return self::getByKey("feature_{$featureKey}_enabled", true);
+        $value = self::getByKey("feature_{$featureKey}_enabled", true);
+
+        if ($value === null) {
+            return true;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int)$value !== 0;
+        }
+
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
+                return true;
+            }
+            if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
     
     /**

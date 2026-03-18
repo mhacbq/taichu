@@ -134,7 +134,8 @@
     <main class="main-content" :class="{ 'main-content--companion-safe': shouldReserveCompanionSpace }">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
-          <component :is="Component" />
+          <component v-if="Component" :is="Component" />
+          <div v-else class="route-loading-placeholder" aria-live="polite"></div>
         </transition>
       </router-view>
     </main>
@@ -894,6 +895,10 @@ onBeforeUnmount(() => {
 /* 主要内容区 */
 .main-content {
   flex: 1;
+}
+
+.route-loading-placeholder {
+  min-height: 120px;
 }
 
 /* 页脚 - 深色风格 */

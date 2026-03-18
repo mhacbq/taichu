@@ -107,5 +107,17 @@
 - **验证摘要**: 5 个相关 PHP 文件 IDE 诊断均为 0；Docker 容器内 `php -l` 检查 `Paipan.php`、`Liuyao.php`、`Hehun.php`、`Tarot.php`、`DeepSeekService.php` 全部通过。
 - **状态**: 已完成并提交 Git（`a02b7fa`）。
 
+## 2026-03-18 13:55
+- **任务目标**: 继续处理命理算法残留问题，聚焦节气特例表、六神起例容错、五行平衡评分、喜用神优先级与塔罗元素关系下沉。
+- **执行摘要**:
+    1. `BaziCalculationService` 改正节气寿星公式的特殊年份映射，补齐春分/小满/冬至/小寒等特例。
+    2. 八字强弱链路新增 `favorite_wuxing_details`，并按“身强先官杀食伤财、身弱先印比”稳定输出；`Daily.php` 不再随机抽喜用五行。
+    3. `BaziInterpretationService` 改为按整体离散度评估五行平衡，弱/缺阈值随总量动态调整。
+    4. `LiuyaoService` 让六神起例兼容完整日柱输入，多重用神按发动/世应/旬空综合择位。
+    5. 新增 `TarotElementService` 统一四元素尊严与转场描述，并清掉 `TODO.md` 残留 `[占卜]` 项。
+- **验证摘要**: 6 个相关 PHP 文件 IDE 诊断为 0；用后端镜像对 6 个文件执行 `php -l` 均通过；`TODO.md` 搜索 `[占卜]` 结果为 0。
+- **状态**: 已完成并提交 Git（功能修复提交 `2d3b2a9`，理论依据补充提交 `a7a2371`）。
+
+
 
 
