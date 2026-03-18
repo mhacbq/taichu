@@ -1,6 +1,14 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-18 继续处理摘要（本轮）
+
+- 本轮收尾并对齐 6 个前端问题：塔罗分享前公开确认链路、塔罗积分失败后的重新获取入口、六爻提交按钮文案缺失、六爻价格失败时主 CTA 禁用、合婚精度切换时的出生值归一化、合婚“大概时段”默认上午预选。
+- 关键文件：`frontend/src/views/Tarot.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/views/Hehun.vue`、`TODO.md`。
+- 验证结果：相关 Vue 文件 `read_lints` 为 0 条新增诊断，`git diff --check -- frontend/src/views/Tarot.vue frontend/src/views/Liuyao.vue frontend/src/views/Hehun.vue` 通过；尝试执行 `npm run build --prefix frontend` 时被本机 Node 运行时拦住，日志显示 `SyntaxError: Unexpected token '??='`，需要在较新的 Node 环境下复测完整构建。
+- 待收尾：补记 overview、整理本轮 git 提交并推送，仅暂不纳入工作区内已有的无关改动。
+
 ## 2026-03-18 本轮执行摘要（追加）
+
 
 - 本轮完成并清理 6 个前端待办：塔罗抽牌后锁定牌阵快照、塔罗重置时清空已选话题、八字 AI 解盘价格改为优先读取后端客户端配置并在流式成功后回刷余额、六爻定价区补齐加载/失败/重试与 CTA 禁用、六爻北京时间提示改为实时刷新、每日运势补齐 `isLoading` 状态声明。
 - 关键文件：`frontend/src/views/Tarot.vue`、`frontend/src/views/Bazi.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/views/Daily.vue`、`TODO.md`。

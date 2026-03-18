@@ -650,8 +650,10 @@ const drawCards = async () => {
       interpretation.value = ''
       savedRecordId.value = null
       savedShareCode.value = null
+      sharePublicConfirmed.value = false
 
       const remainingPoints = Number(drawResponse.data.remaining_points)
+
       if (Number.isFinite(remainingPoints)) {
         currentPoints.value = remainingPoints
       }

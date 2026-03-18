@@ -192,8 +192,9 @@
                   type="button"
                   class="precision-option"
                   :class="{ active: form.maleBirthPrecision === option.value }"
-                  @click="form.maleBirthPrecision = option.value"
+                  @click="handleBirthPrecisionChange('male', option.value)"
                 >
+
                   <span class="precision-option-title">{{ option.label }}</span>
                   <span class="precision-option-desc">{{ option.desc }}</span>
                 </button>
@@ -212,7 +213,7 @@
               </div>
             </div>
             <div v-if="form.maleBirthPrecision === 'range'" class="time-range-panel">
-              <label class="time-range-label">大概出生时段</label>
+              <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
               <div class="time-range-options">
                 <button
                   v-for="option in birthTimeRangeOptions"
@@ -226,7 +227,9 @@
                   <small>{{ option.hint }}</small>
                 </button>
               </div>
+              <p v-if="!form.maleBirthTimeRange" class="field-helper field-helper--warning">请选择男方的大概出生时段后再开始分析。</p>
             </div>
+
             <div class="precision-confidence" :class="`precision-confidence--${form.maleBirthPrecision}`">
               <span class="confidence-badge">{{ getBirthPrecisionBadge(form.maleBirthPrecision) }}</span>
               <p>{{ getBirthConfidenceCopy(form.maleBirthPrecision, '男方') }}</p>
@@ -259,8 +262,9 @@
                   type="button"
                   class="precision-option"
                   :class="{ active: form.femaleBirthPrecision === option.value }"
-                  @click="form.femaleBirthPrecision = option.value"
+                  @click="handleBirthPrecisionChange('female', option.value)"
                 >
+
                   <span class="precision-option-title">{{ option.label }}</span>
                   <span class="precision-option-desc">{{ option.desc }}</span>
                 </button>
@@ -461,7 +465,6 @@ const birthTimeRangeOptions = [
   { value: 'evening', label: '晚上', hint: '18:00-23:59', time: '19:30' },
 ]
 
-const defaultBirthTimeRange = 'forenoon'
 const birthTimeRangeMap = birthTimeRangeOptions.reduce((acc, option) => {
   acc[option.value] = option
   return acc
@@ -472,13 +475,14 @@ const form = reactive({
   maleName: '',
   maleBirthDate: '',
   maleBirthPrecision: 'exact',
-  maleBirthTimeRange: defaultBirthTimeRange,
+  maleBirthTimeRange: '',
   femaleName: '',
   femaleBirthDate: '',
   femaleBirthPrecision: 'exact',
-  femaleBirthTimeRange: defaultBirthTimeRange,
+  femaleBirthTimeRange: '',
   useAi: true,
 })
+
 
 // 状态
 const isLoading = ref(false)
@@ -565,7 +569,7 @@ const normalizeBirthInputValue = (value, nextPrecision) => {
   return date
 }
 
-const resolveStoredTimeRange = (birthValue = '', fallback = fallbackBirthTimeRange) => {
+const resolveStoredTimeRange = (birthValue = '', fallback = '') => {
   const trimmed = String(birthValue || '').trim()
   const match = trimmed.match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}):(\d{2})/)
   if (!match) {
@@ -581,19 +585,16 @@ const handleBirthPrecisionChange = (role, nextPrecision) => {
   const timeRangeKey = `${role}BirthTimeRange`
   const currentValue = form[birthDateKey]
 
-  form[precisionKey] = nextPrecision
-  form[birthDateKey] = normalizeBirthInputValue(currentValue, nextPrecision)
-
-  if (nextPrecision === 'range' || nextPrecision === 'unknown') {
-    form[timeRangeKey] = ''
+  if (form[precisionKey] === nextPrecision) {
     return
   }
 
-  form[timeRangeKey] = resolveStoredTimeRange(currentValue)
+  form[precisionKey] = nextPrecision
+  form[birthDateKey] = normalizeBirthInputValue(currentValue, nextPrecision)
+  form[timeRangeKey] = ''
 }
 
 const getBirthConfidenceCopy = (precision, roleLabel) => {
-
   if (precision === 'range') {
     return `${roleLabel}当前按大概时段估算，适合先看关系趋势；涉及时柱的细项判断会保守处理。`
   }
@@ -617,9 +618,10 @@ const resolveBirthDatePayload = (value, precision, timeRange) => {
     return dateOnly
   }
 
-  const matchedRange = birthTimeRangeMap[timeRange] || birthTimeRangeMap[defaultBirthTimeRange]
-  return `${dateOnly} ${matchedRange.time}`
+  const matchedRange = birthTimeRangeMap[timeRange]
+  return matchedRange ? `${dateOnly} ${matchedRange.time}` : ''
 }
+
 
 const resolveTimeRangeByClock = (clock = '') => {
   const [hour = '12'] = clock.split(':')
@@ -638,7 +640,7 @@ const hydrateBirthState = (birthDate) => {
     return {
       value: '',
       precision: 'exact',
-      timeRange: defaultBirthTimeRange,
+      timeRange: '',
     }
   }
 
@@ -648,16 +650,16 @@ const hydrateBirthState = (birthDate) => {
     return {
       value: trimmed,
       precision: 'unknown',
-      timeRange: defaultBirthTimeRange,
+      timeRange: '',
     }
   }
 
   const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?$/)
   if (!match) {
     return {
-      value: trimmed,
+      value: normalizeBirthInputValue(trimmed, 'exact'),
       precision: 'exact',
-      timeRange: defaultBirthTimeRange,
+      timeRange: '',
     }
   }
 
@@ -668,6 +670,7 @@ const hydrateBirthState = (birthDate) => {
     timeRange: resolveTimeRangeByClock(`${hour}:${minute}`),
   }
 }
+
 
 const precisionSummaryList = computed(() => ([
   {
@@ -1134,8 +1137,9 @@ const normalizeHistoryItem = (item = {}) => {
     female_bazi: normalizeObjectField(item.female_bazi, {}),
     male_birth_precision: item.male_birth_precision || inputMeta.male_birth_precision || '',
     female_birth_precision: item.female_birth_precision || inputMeta.female_birth_precision || '',
-    male_birth_time_range: item.male_birth_time_range || inputMeta.male_birth_time_range || fallbackBirthTimeRange,
-    female_birth_time_range: item.female_birth_time_range || inputMeta.female_birth_time_range || fallbackBirthTimeRange,
+    male_birth_time_range: item.male_birth_time_range || inputMeta.male_birth_time_range || '',
+    female_birth_time_range: item.female_birth_time_range || inputMeta.female_birth_time_range || '',
+
 
     male_birth_time: item.male_birth_time || '',
     female_birth_time: item.female_birth_time || '',
@@ -1193,20 +1197,21 @@ const loadPricing = async () => {
 // 提交表单（免费预览）
 const submitForm = async () => {
   if (!isFormValid.value) {
-    ElMessage.warning('请填写双方出生日期')
+    ElMessage.warning('请完整填写双方出生信息；若选择“大概时段”，还需显式选择对应时段')
     return
   }
-  
+
   isLoading.value = true
   try {
     const response = await calculateHehun(buildHehunPayload({
       tier: 'free',
       useAi: false,
     }))
-    
+
     if (response.code === 200) {
       premiumResult.value = null
-      freeResult.value = response.data
+      freeResult.value = normalizeFreeResultData(response.data)
+
       clearUnlockFeedback()
       ElMessage.success('基础合婚分析完成')
 
@@ -1252,8 +1257,9 @@ const unlockPremium = async () => {
     
     if (response.code === 200) {
       freeResult.value = null
-      premiumResult.value = response.data
+      premiumResult.value = normalizePremiumResultData(response.data)
       ElMessage.success('解锁成功！')
+
     } else {
       if (response.code === 403) {
         ElMessage.error('积分不足，请先充值')
@@ -1279,12 +1285,13 @@ const resetForm = () => {
   form.maleName = ''
   form.maleBirthDate = ''
   form.maleBirthPrecision = 'exact'
-  form.maleBirthTimeRange = defaultBirthTimeRange
+  form.maleBirthTimeRange = ''
   form.femaleName = ''
   form.femaleBirthDate = ''
   form.femaleBirthPrecision = 'exact'
-  form.femaleBirthTimeRange = defaultBirthTimeRange
+  form.femaleBirthTimeRange = ''
 }
+
 
 
 // 导出报告
@@ -1405,26 +1412,35 @@ const toDatetimeLocalValue = (value = '') => {
 const resolveHistoryBirthState = (item, role) => {
   const birthValue = String(item?.[`${role}_birth_date`] || '').trim()
   const precision = item?.[`${role}_birth_precision`] || ''
-  const timeRange = item?.[`${role}_birth_time_range`] || defaultBirthTimeRange
+  const storedTimeRange = item?.[`${role}_birth_time_range`] || ''
 
   if (precision === 'exact') {
     return {
       value: toDatetimeLocalValue(birthValue),
       precision: 'exact',
-      timeRange,
+      timeRange: resolveStoredTimeRange(birthValue, storedTimeRange),
     }
   }
 
-  if (precision === 'range' || precision === 'unknown') {
+  if (precision === 'range') {
     return {
       value: birthValue.slice(0, 10),
-      precision,
-      timeRange,
+      precision: 'range',
+      timeRange: storedTimeRange || resolveStoredTimeRange(birthValue, ''),
+    }
+  }
+
+  if (precision === 'unknown') {
+    return {
+      value: birthValue.slice(0, 10),
+      precision: 'unknown',
+      timeRange: '',
     }
   }
 
   return hydrateBirthState(birthValue)
 }
+
 
 // 加载历史记录详情
 const loadHistoryDetail = (item) => {
@@ -1627,6 +1643,12 @@ onMounted(() => {
   font-size: var(--font-caption);
   line-height: 1.6;
 }
+
+.field-helper--warning {
+  color: var(--warning-color);
+  font-weight: 600;
+}
+
 
 .birth-precision-panel {
   margin-bottom: 18px;

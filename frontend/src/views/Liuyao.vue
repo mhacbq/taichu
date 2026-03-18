@@ -236,7 +236,7 @@
             size="large"
             class="btn-submit"
             @click="submitDivination"
-            :disabled="isLoading || !canSubmit || !isPricingReady"
+            :disabled="isLoading || !canSubmitDivination"
             :loading="isLoading"
           >
             <template #icon v-if="!isLoading">
@@ -352,31 +352,8 @@ const currentMethodDescription = computed(() => {
   return methodOptions.find((item) => item.value === form.method)?.description || ''
 })
 
-const isPricingReady = computed(() => !pricingLoading.value && !pricingError.value && !!pricing.value)
-
-const submitButtonText = computed(() => {
-  if (pricingLoading.value) {
-    return '价格同步中...'
-  }
-
-  if (pricingError.value || !pricing.value) {
-    return '请先重新获取价格'
-  }
-
-  if (pricing.value.is_first_free) {
-    return '首次免费起卦'
-  }
-
-  if (pricing.value.is_vip_free) {
-    return 'VIP 免费起卦'
-  }
-
-  const cost = Number(pricing.value.cost)
-  return Number.isFinite(cost) && cost > 0 ? `开始占卜（${cost}积分）` : '开始占卜'
-})
-
 const canSubmit = computed(() => {
-  if (!isPricingReady.value || !form.question.trim()) {
+  if (!form.question.trim()) {
     return false
   }
 
@@ -390,7 +367,6 @@ const canSubmit = computed(() => {
 
   return true
 })
-
 
 const isPricingReady = computed(() => {
   return !pricingLoading.value && !pricingError.value && Boolean(pricing.value)
@@ -424,6 +400,7 @@ const submitButtonText = computed(() => {
 
   return '开始占卜'
 })
+
 
 const shouldShowRemainingPoints = computed(() => {
 
@@ -625,12 +602,12 @@ const buildDivinationPayload = () => {
 // 提交占卜
 const submitDivination = async () => {
   if (pricingLoading.value) {
-    ElMessage.warning('价格同步中，请稍后再试')
+    ElMessage.warning('占卜价格还在同步，请稍候再试')
     return
   }
 
   if (pricingError.value || !pricing.value) {
-    ElMessage.warning('请先重新获取价格')
+    ElMessage.warning(pricingError.value || '请先重新获取价格后再提交占卜')
     return
   }
 
@@ -644,7 +621,6 @@ const submitDivination = async () => {
     return
   }
 
-
   if (form.method === 'number' && !Number.isFinite(form.numbers[0])) {
     ElMessage.warning('数字起卦至少需要填写第一个数字')
     return
@@ -655,20 +631,10 @@ const submitDivination = async () => {
     return
   }
 
-  if (pricingLoading.value) {
-    ElMessage.warning('占卜价格还在同步，请稍候再试')
-    return
-  }
-
-  if (pricingError.value || !pricing.value) {
-    ElMessage.warning(pricingError.value || '请先重新获取价格后再提交占卜')
-    return
-  }
-
   isLoading.value = true
   try {
-
     const response = await liuyaoDivination(buildDivinationPayload())
+
 
     if (response.code === 200) {
       result.value = normalizeResult(response.data, false)
