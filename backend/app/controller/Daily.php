@@ -169,7 +169,13 @@ class Daily extends BaseController
 
         
         // 用户日主
-        $dayMaster = $baziRecord['day_gan'];
+        $dayMaster = $baziRecord['day_gan'] ?? '';
+        if ($dayMaster === '' && isset($baziRecord['day_pillar'])) {
+            $dayMaster = mb_substr($baziRecord['day_pillar'], 0, 1);
+        }
+        if ($dayMaster === '') {
+            return null; // 无法获取日主信息，返回null
+        }
         
         // 五行属性
         $ganWuXing = [

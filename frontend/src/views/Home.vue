@@ -1975,7 +1975,6 @@ onUnmounted(() => {
 .hero-title {
   max-width: 10ch;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #6b4412 0%, #b37721 46%, #f0c56f 100%);
   text-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.1);
 }
 

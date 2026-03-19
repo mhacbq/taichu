@@ -128,6 +128,44 @@ class Hehun extends BaseController
             'female_birth_time_range' => in_array($femaleTimeRange, $allowedTimeRanges, true) ? $femaleTimeRange : 'forenoon',
         ];
     }
+
+    protected function buildFreePreviewBazi(array $bazi): array
+    {
+        return [
+            'year' => (string) (($bazi['year']['gan'] ?? '') . ($bazi['year']['zhi'] ?? '')),
+            'month' => (string) (($bazi['month']['gan'] ?? '') . ($bazi['month']['zhi'] ?? '')),
+            'day' => (string) (($bazi['day']['gan'] ?? '') . ($bazi['day']['zhi'] ?? '')),
+            'hour' => (string) (($bazi['hour']['gan'] ?? '') . ($bazi['hour']['zhi'] ?? '')),
+            'day_master' => (string) ($bazi['day_master'] ?? ''),
+        ];
+    }
+
+    protected function buildFreePreviewHehun(array $hehunResult): array
+    {
+        $suggestions = $hehunResult['suggestions'] ?? [];
+        $firstSuggestion = is_array($suggestions) && !empty($suggestions)
+            ? (string) $suggestions[0]
+            : '双方缘分尚可，建议查看详细报告了解更多。';
+
+        $level = (string) ($hehunResult['level'] ?? '');
+
+        return [
+            'score' => (int) ($hehunResult['score'] ?? 0),
+            'level' => $level,
+            'level_text' => (string) ($hehunResult['level_text'] ?? HehunRecord::getLevelText($level)),
+            'comment' => (string) ($hehunResult['comment'] ?? ''),
+            'suggestions' => [$firstSuggestion],
+        ];
+    }
+
+    protected function buildFreePreviewStorageResult(array $previewHehun, array $birthInputMeta, array $pricing): array
+    {
+        return array_merge($previewHehun, [
+            'input_meta' => $birthInputMeta,
+            'pricing' => $pricing,
+            'report_tier' => self::TIER_FREE,
+        ]);
+    }
     
     /**
      * 天干五行
@@ -369,6 +407,7 @@ class Hehun extends BaseController
         
         // 执行完整合婚分析
         $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);
+        $birthInputMeta = $this->buildBirthInputMeta($data);
         $storageStatus = HehunRecord::getStorageStatus();
         
         // 如果是免费层，只返回基础信息
@@ -378,35 +417,47 @@ class Hehun extends BaseController
             $pricing['unlock_message'] = $storageStatus['message'];
             $pricing['storage_table'] = $storageStatus['table'];
 
-            return $this->success([
+            $freePreviewHehun = $this->buildFreePreviewHehun($hehunResult);
+            $response = [
                 'tier' => self::TIER_FREE,
-                'male_bazi' => [
-                    'year' => $maleBazi['year']['gan'] . $maleBazi['year']['zhi'],
-                    'month' => $maleBazi['month']['gan'] . $maleBazi['month']['zhi'],
-                    'day' => $maleBazi['day']['gan'] . $maleBazi['day']['zhi'],
-                    'hour' => $maleBazi['hour']['gan'] . $maleBazi['hour']['zhi'],
-                    'day_master' => $maleBazi['day_master']
-                ],
-                'female_bazi' => [
-                    'year' => $femaleBazi['year']['gan'] . $femaleBazi['year']['zhi'],
-                    'month' => $femaleBazi['month']['gan'] . $femaleBazi['month']['zhi'],
-                    'day' => $femaleBazi['day']['gan'] . $femaleBazi['day']['zhi'],
-                    'hour' => $femaleBazi['hour']['gan'] . $femaleBazi['hour']['zhi'],
-                    'day_master' => $femaleBazi['day_master']
-                ],
-                'hehun' => [
-                    'score' => $hehunResult['score'],
-                    'level' => $hehunResult['level'],
-                    'level_text' => $hehunResult['level_text'],
-                    'comment' => $hehunResult['comment'],
-                    'suggestions' => [count($hehunResult['suggestions']) > 0 ? $hehunResult['suggestions'][0] : '双方缘分尚可，建议查看详细报告了解更多。']
-                ],
+                'male_bazi' => $this->buildFreePreviewBazi($maleBazi),
+                'female_bazi' => $this->buildFreePreviewBazi($femaleBazi),
+                'hehun' => $freePreviewHehun,
                 'preview_hint' => $storageStatus['ready']
                     ? '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告'
                     : '当前详细报告链路正在维护，建议先等待库表修复完成后再解锁。',
                 'storage_status' => $storageStatus,
                 'pricing' => $pricing
-            ]);
+            ];
+
+            if ($storageStatus['ready']) {
+                try {
+                    $response['id'] = HehunRecord::createCompatible([
+                        'user_id' => $user['sub'],
+                        'male_name' => $maleName,
+                        'female_name' => $femaleName,
+                        'male_birth_date' => $data['maleBirthDate'],
+                        'female_birth_date' => $data['femaleBirthDate'],
+                        'male_bazi' => $maleBazi,
+                        'female_bazi' => $femaleBazi,
+                        'score' => $freePreviewHehun['score'],
+                        'level' => $freePreviewHehun['level'],
+                        'result' => $this->buildFreePreviewStorageResult($freePreviewHehun, $birthInputMeta, $pricing),
+                        'points_cost' => 0,
+                        'is_ai_analysis' => false,
+                        'is_premium' => false,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('合婚免费预览保存历史失败，已降级为仅返回结果', $this->buildHehunLogContext($user, $data, [
+                        'step' => 'save_free_preview',
+                        'storage_table' => $storageStatus['table'],
+                        'exception_class' => get_class($e),
+                        'exception_message' => $e->getMessage(),
+                    ]));
+                }
+            }
+
+            return $this->success($response);
         }
         
         // 付费层逻辑
@@ -495,6 +546,8 @@ class Hehun extends BaseController
                 ]);
             }
             
+            $reportTier = !$needPoints && $isVip ? self::TIER_VIP : self::TIER_PREMIUM;
+
             // 保存合婚记录（兼容 hehun_records / tc_hehun_record 两套历史表结构）
             $recordId = HehunRecord::createCompatible([
                 'user_id' => $user['sub'],
@@ -509,10 +562,21 @@ class Hehun extends BaseController
                 'result' => array_merge($hehunResult, [
                     'input_meta' => $birthInputMeta,
                     'analysis_meta' => $analysisMeta,
+                    'pricing' => [
+                        'points_cost' => $needPoints ? $finalPoints : 0,
+                        'original_points' => $costInfo['original'],
+                        'discount' => $costInfo['discount'] > 0 ? [
+                            'percent' => $costInfo['discount'],
+                            'reason' => $costInfo['reason'],
+                            'saved' => $costInfo['saved'],
+                        ] : null,
+                    ],
+                    'report_tier' => $reportTier,
                 ]),
                 'ai_analysis' => $aiAnalysis,
                 'is_ai_analysis' => $analysisMeta['is_ai_generated'],
                 'points_cost' => $needPoints ? $finalPoints : 0,
+                'is_premium' => true,
             ]);
             
             Db::commit();
@@ -524,7 +588,7 @@ class Hehun extends BaseController
             
             $result = [
                 'id' => $recordId,
-                'tier' => $isVip ? self::TIER_VIP : self::TIER_PREMIUM,
+                'tier' => $reportTier,
                 'male_bazi' => $maleBazi,
                 'female_bazi' => $femaleBazi,
                 'hehun' => array_merge($hehunResult, [

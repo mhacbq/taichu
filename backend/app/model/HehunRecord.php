@@ -182,6 +182,9 @@ class HehunRecord extends Model
         if (isset($columns['is_ai_analysis'])) {
             $insert['is_ai_analysis'] = !empty($payload['is_ai_analysis']) ? 1 : 0;
         }
+        if (isset($columns['is_premium'])) {
+            $insert['is_premium'] = !empty($payload['is_premium']) ? 1 : 0;
+        }
 
         $pointsField = self::getPointsField();
         if ($pointsField !== null) {
@@ -215,14 +218,25 @@ class HehunRecord extends Model
     }
 
     /**
-     * 获取用户的合婚次数。
+     * 获取用户已解锁的合婚次数（免费预览不计入新用户折扣判断）。
      */
     public static function getUserCount(int $userId): int
     {
-        return (int)Db::name(self::resolveTableName())
+        $rows = Db::name(self::resolveTableName())
             ->where('user_id', $userId)
-            ->count();
+            ->select()
+            ->toArray();
+
+        $unlockedCount = 0;
+        foreach ($rows as $row) {
+            if (self::isUnlockedRecord((array)$row)) {
+                $unlockedCount++;
+            }
+        }
+
+        return $unlockedCount;
     }
+
 
     /**
      * 获取今日合婚次数。
@@ -294,9 +308,12 @@ class HehunRecord extends Model
         $aiAnalysis = self::decodeJsonField($row['ai_analysis'] ?? null);
         $analysisMeta = self::resolveAnalysisMeta($row, $result, $aiAnalysis);
         $hasAnalysisContent = !empty($analysisMeta['ai_requested']) || !empty($aiAnalysis);
+        $storedTier = self::resolveStoredTier($row, $result);
         $isPremium = self::resolvePremiumFlag($row, $result, $pointsCost, $hasAnalysisContent);
-        $tier = $isPremium ? ($pointsCost > 0 ? 'premium' : 'vip') : 'free';
+        $tier = $storedTier ?? ($isPremium ? ($pointsCost > 0 ? 'premium' : 'vip') : 'free');
         $createdAt = (string)($row[$createTimeField] ?? '');
+        $pricing = is_array($result['pricing'] ?? null) ? $result['pricing'] : null;
+
 
         return [
             'id' => (int)($row['id'] ?? 0),
@@ -320,6 +337,7 @@ class HehunRecord extends Model
             'level' => $level,
             'level_text' => self::getLevelText($level),
             'is_ai_analysis' => $analysisMeta['is_ai_generated'],
+            'pricing' => $pricing,
             'points_cost' => $pointsCost,
             'is_premium' => $isPremium,
             'tier' => $tier,
@@ -514,8 +532,39 @@ class HehunRecord extends Model
         return !empty($analysisMeta['is_ai_generated']);
     }
 
+    protected static function isUnlockedRecord(array $row): bool
+    {
+        $pointsField = self::getPointsField();
+        $result = self::decodeJsonField($row['result'] ?? null);
+
+        if (empty($result) && isset($row['bazi_match'])) {
+            $result = self::decodeJsonField($row['bazi_match']);
+        }
+
+        $pointsCost = $pointsField !== null ? (int)($row[$pointsField] ?? 0) : 0;
+        $aiAnalysis = self::decodeJsonField($row['ai_analysis'] ?? null);
+        $analysisMeta = self::resolveAnalysisMeta($row, $result, $aiAnalysis);
+        $hasAnalysisContent = !empty($analysisMeta['ai_requested']) || !empty($aiAnalysis);
+
+        return self::resolvePremiumFlag($row, $result, $pointsCost, $hasAnalysisContent);
+    }
+
+    protected static function resolveStoredTier(array $row, array $result): ?string
+    {
+        $tier = strtolower(trim((string)($row['tier'] ?? ($result['report_tier'] ?? ($result['tier'] ?? '')))));
+        return in_array($tier, ['free', 'premium', 'vip'], true) ? $tier : null;
+    }
+
     protected static function resolvePremiumFlag(array $row, array $result, int $pointsCost, bool $hasAiAnalysis): bool
     {
+        $storedTier = self::resolveStoredTier($row, $result);
+        if ($storedTier === 'free') {
+            return false;
+        }
+        if ($storedTier === 'premium' || $storedTier === 'vip') {
+            return true;
+        }
+
         if (array_key_exists('is_premium', $row)) {
             return !empty($row['is_premium']);
         }
@@ -535,6 +584,7 @@ class HehunRecord extends Model
 
         return is_string($analysis) && trim($analysis) !== '';
     }
+
 
     /**
      * 生成旧表 analysis 文本。

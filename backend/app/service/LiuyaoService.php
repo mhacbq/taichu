@@ -702,9 +702,18 @@ class LiuyaoService
 
         // 2. 转换为农历分值
         $lunar = LunarService::solarToLunar($calcDate);
-        $yearNum = $lunar['year_zhi_index'];
-        $monthNum = $lunar['lunar_month'];
-        $dayNum = $lunar['lunar_day'];
+        
+        // 检查农历数据是否完整，提供默认值
+        $yearNum = $lunar['year_zhi_index'] ?? 1;
+        $monthNum = $lunar['lunar_month'] ?? 1;
+        $dayNum = $lunar['lunar_day'] ?? 1;
+        
+        // 如果农历数据不完整，使用公历数据作为备选
+        if (empty($lunar) {
+            $yearNum = (int)date('Y', strtotime($calcDate)) % 12 + 1;
+            $monthNum = (int)date('n', strtotime($calcDate));
+            $dayNum = (int)date('j', strtotime($calcDate));
+        }
         
         // 时辰支数计算 (子=1, 丑=2, ..., 亥=12)
         $hourNum = (int)(($hour + 1) / 2) % 12 + 1;

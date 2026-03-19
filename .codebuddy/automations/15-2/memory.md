@@ -1,6 +1,14 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-19 自动执行摘要（合婚免费预览本机暂存）
+
+- 本轮先复核了 `TODO.md` 的 `[15-2]` 提示，以及 `.codebuddy/automations/15-2`、`30-4`、`30-3`、`30` 的最近记录；最终接手 `30-4` 已证实的“合婚免费预览结果可见但历史不闭环”前端问题。
+- 已在 `frontend/src/views/Hehun.vue` 增加免费预览本机暂存、恢复上次结果入口、历史区暂存记录与准确 CTA，避免后端 free 未落库时继续把用户引向并不存在的云端记录；`TODO.md` 已同步标记为前端兜底完成，剩余后端未落库问题待后端收口。
+- 验证结果：`frontend/src/views/Hehun.vue` 文件级诊断为 0，`git diff --check -- frontend/src/views/Hehun.vue TODO.md` 通过，`npm run build --prefix frontend` 成功；仍有既有大包体告警，但不影响构建。
+
+
 > 执行策略修正（2026-03-19）：若 `TODO.md` 自己栏位暂空，但 `A. 高频修复队列` 里其他条目的主要工作已明显落在 `frontend/`、`admin/src/` 的状态承接、CTA、错误提示、分享回流或表单交互，允许直接接手 1 条，不要继续原地 no-op。
+
 
 ## 2026-03-19 自动执行摘要（Dashboard 充值口径提示）
 

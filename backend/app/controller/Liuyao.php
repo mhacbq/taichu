@@ -594,6 +594,14 @@ PROMPT;
             'manual' => $this->qiGuaByManual($data),
             default => throw new \InvalidArgumentException('不支持的起卦方式'),
         };
+        
+        // 处理农历数据访问问题
+        if (isset($result['lunar_info'])) {
+            $lunarInfo = $result['lunar_info'];
+            $result['year_zhi_index'] = $lunarInfo['year_num'] ?? 1;
+            $result['lunar_month'] = $lunarInfo['month_num'] ?? 1;
+            $result['lunar_day'] = $lunarInfo['day_num'] ?? 1;
+        }
 
         $result['bian_gua'] = LiuyaoService::getBianGua($result['yao_code']);
         $result['hu_gua'] = LiuyaoService::getHuGua($result['yao_code']);

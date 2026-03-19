@@ -609,6 +609,204 @@ class BaziInterpretationService
     }
 
     /**
+     * 增强版日主分析 - 支持分级分析深度
+     */
+    protected function analyzeDayMasterEnhanced(string $dayMaster, array $bazi, string $depth = 'standard'): array
+    {
+        $basicAnalysis = $this->analyzeDayMaster($dayMaster, $bazi);
+        
+        $enhancedAnalysis = [
+            'basic' => $basicAnalysis,
+            'depth_level' => $depth,
+            'comprehensive_analysis' => '',
+            'career_recommendations' => [],
+            'relationship_insights' => [],
+            'health_considerations' => [],
+            'development_advice' => ''
+        ];
+        
+        // 根据分析深度提供不同级别的分析
+        switch ($depth) {
+            case 'basic':
+                $enhancedAnalysis['comprehensive_analysis'] = $this->generateBasicDayMasterAnalysis($dayMaster, $bazi);
+                break;
+                
+            case 'standard':
+                $enhancedAnalysis['comprehensive_analysis'] = $this->generateStandardDayMasterAnalysis($dayMaster, $bazi);
+                $enhancedAnalysis['career_recommendations'] = $this->getCareerRecommendations($dayMaster);
+                break;
+                
+            case 'professional':
+                $enhancedAnalysis['comprehensive_analysis'] = $this->generateProfessionalDayMasterAnalysis($dayMaster, $bazi);
+                $enhancedAnalysis['career_recommendations'] = $this->getCareerRecommendations($dayMaster);
+                $enhancedAnalysis['relationship_insights'] = $this->getRelationshipInsights($dayMaster, $bazi);
+                break;
+                
+            case 'expert':
+                $enhancedAnalysis['comprehensive_analysis'] = $this->generateExpertDayMasterAnalysis($dayMaster, $bazi);
+                $enhancedAnalysis['career_recommendations'] = $this->getCareerRecommendations($dayMaster);
+                $enhancedAnalysis['relationship_insights'] = $this->getRelationshipInsights($dayMaster, $bazi);
+                $enhancedAnalysis['health_considerations'] = $this->getHealthConsiderations($dayMaster, $bazi);
+                $enhancedAnalysis['development_advice'] = $this->getDevelopmentAdvice($dayMaster, $bazi);
+                break;
+                
+            default:
+                $enhancedAnalysis['comprehensive_analysis'] = $this->generateStandardDayMasterAnalysis($dayMaster, $bazi);
+                $enhancedAnalysis['career_recommendations'] = $this->getCareerRecommendations($dayMaster);
+        }
+        
+        return $enhancedAnalysis;
+    }
+
+    /**
+     * 生成基础日主分析
+     */
+    protected function generateBasicDayMasterAnalysis(string $dayMaster, array $bazi): string
+    {
+        $chars = $this->ganCharacteristics[$dayMaster];
+        return "你的日主为{$dayMaster}（{$chars['nature']}），气质像{$chars['symbol']}。主要特点：" . implode('、', $chars['traits']) . "。";
+    }
+
+    /**
+     * 生成标准日主分析
+     */
+    protected function generateStandardDayMasterAnalysis(string $dayMaster, array $bazi): string
+    {
+        $basicAnalysis = $this->generateBasicDayMasterAnalysis($dayMaster, $bazi);
+        $chars = $this->ganCharacteristics[$dayMaster];
+        
+        $analysis = $basicAnalysis;
+        $analysis .= "你的优势在于{$chars['strengths']}，需要注意{$chars['weaknesses']}。";
+        
+        // 结合日支影响
+        $dayZhi = $bazi['day']['zhi'];
+        $dayZhiChars = $this->zhiCharacteristics[$dayZhi];
+        $analysis .= "日支为{$dayZhi}，会增强你{$dayZhiChars['特性']}的特点。";
+        
+        return $analysis;
+    }
+
+    /**
+     * 生成专业日主分析
+     */
+    protected function generateProfessionalDayMasterAnalysis(string $dayMaster, array $bazi): string
+    {
+        $standardAnalysis = $this->generateStandardDayMasterAnalysis($dayMaster, $bazi);
+        
+        // 分析五行平衡对日主的影响
+        $wuxingStats = $bazi['wuxing_stats'] ?? [];
+        $dayMasterWuxing = $this->ganWuXing[$dayMaster];
+        $dayMasterStrength = $wuxingStats[$dayMasterWuxing] ?? 0;
+        
+        $analysis = $standardAnalysis;
+        
+        if ($dayMasterStrength >= 2.0) {
+            $analysis .= "你的{$dayMasterWuxing}气较旺，日主有力，做事有魄力，但要注意避免过于强势。";
+        } elseif ($dayMasterStrength <= 1.0) {
+            $analysis .= "你的{$dayMasterWuxing}气偏弱，日主需要扶助，建议多借助外力，培养自信心。";
+        } else {
+            $analysis .= "你的{$dayMasterWuxing}气适中，日主平衡，能够较好地发挥自身优势。";
+        }
+        
+        return $analysis;
+    }
+
+    /**
+     * 生成专家级日主分析
+     */
+    protected function generateExpertDayMasterAnalysis(string $dayMaster, array $bazi): string
+    {
+        $professionalAnalysis = $this->generateProfessionalDayMasterAnalysis($dayMaster, $bazi);
+        
+        // 分析十神配置对日主的影响
+        $shishenAnalysis = $this->analyzeShishen($bazi);
+        $dominantShishen = $shishenAnalysis['dominant'] ?? '';
+        
+        $analysis = $professionalAnalysis;
+        
+        if ($dominantShishen) {
+            $shishenMeaning = $this->shishenMeanings[$dominantShishen] ?? null;
+            if ($shishenMeaning) {
+                $analysis .= "命局中{$dominantShishen}突出，说明你{$shishenMeaning['正面']}，这对你的性格发展有重要影响。";
+            }
+        }
+        
+        return $analysis;
+    }
+
+    /**
+     * 获取职业推荐
+     */
+    protected function getCareerRecommendations(string $dayMaster): array
+    {
+        $chars = $this->ganCharacteristics[$dayMaster];
+        return $chars['career'];
+    }
+
+    /**
+     * 获取关系洞察
+     */
+    protected function getRelationshipInsights(string $dayMaster, array $bazi): array
+    {
+        $chars = $this->ganCharacteristics[$dayMaster];
+        $insights = [];
+        
+        // 根据日主特性提供关系建议
+        if (in_array($dayMaster, ['甲', '丙', '戊', '庚', '壬'])) {
+            // 阳干日主
+            $insights[] = '你在关系中比较主动，喜欢主导，但要注意给对方足够的空间。';
+            $insights[] = '你的直率性格容易赢得信任，但有时需要更细腻的表达方式。';
+        } else {
+            // 阴干日主
+            $insights[] = '你在关系中比较细腻，善于察言观色，但需要学会表达自己的真实想法。';
+            $insights[] = '你的温和性格容易建立和谐关系，但要注意保持自己的立场。';
+        }
+        
+        return $insights;
+    }
+
+    /**
+     * 获取健康考虑
+     */
+    protected function getHealthConsiderations(string $dayMaster, array $bazi): array
+    {
+        $dayMasterWuxing = $this->ganWuXing[$dayMaster];
+        $considerations = [];
+        
+        // 根据日主五行提供健康建议
+        $healthMapping = [
+            '木' => ['肝胆系统', '眼睛', '筋骨'],
+            '火' => ['心脏', '血液循环', '小肠'],
+            '土' => ['脾胃', '消化系统', '肌肉'],
+            '金' => ['肺脏', '呼吸系统', '皮肤'],
+            '水' => ['肾脏', '泌尿系统', '骨骼']
+        ];
+        
+        if (isset($healthMapping[$dayMasterWuxing])) {
+            $organs = implode('、', $healthMapping[$dayMasterWuxing]);
+            $considerations[] = "你的日主属{$dayMasterWuxing}，需要特别关注{$organs}的健康。";
+        }
+        
+        return $considerations;
+    }
+
+    /**
+     * 获取发展建议
+     */
+    protected function getDevelopmentAdvice(string $dayMaster, array $bazi): string
+    {
+        $chars = $this->ganCharacteristics[$dayMaster];
+        
+        $advice = "基于你的日主特性，建议：\n";
+        $advice .= "1. 充分发挥你的优势：{$chars['strengths']}\n";
+        $advice .= "2. 注意改善你的弱点：{$chars['weaknesses']}\n";
+        $advice .= "3. 在职业发展上，可以考虑：" . implode('、', $chars['career']) . "\n";
+        $advice .= "4. 人际关系中，保持你的" . implode('、', array_slice($chars['traits'], 0, 2)) . "特质\n";
+        
+        return $advice;
+    }
+
+    /**
      * 分析十神配置
      */
     protected function analyzeShishen(array $bazi): array

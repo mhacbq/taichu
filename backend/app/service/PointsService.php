@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace app\service;
 
+use app\model\PointsRecord;
 use think\facade\Db;
 use think\facade\Log;
+
 
 /**
  * 积分服务类
@@ -65,16 +67,19 @@ class PointsService
                 return ['success' => false, 'message' => '积分扣除失败', 'balance' => $userData['points']];
             }
 
-            // 4. 记录积分变动（使用数据库插入而非模型，保持在同一连接中）
-            $recordId = Db::name('tc_points_record')->insertGetId([
-                'user_id' => $userId,
-                'action' => $action,
-                'points' => -$points,
-                'type' => $type,
-                'related_id' => $relatedId,
-                'remark' => $remark,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            $newBalance = (int) $userData['points'] - $points;
+
+            // 4. 记录积分变动（统一复用兼容 payload，适配 amount / balance / reason / description 等新列）
+            $recordPayload = PointsRecord::buildRecordPayload(
+                $userId,
+                $action,
+                -$points,
+                $type,
+                $relatedId,
+                $remark,
+                ['balance' => $newBalance]
+            );
+            $recordId = Db::name('tc_points_record')->insertGetId($recordPayload);
 
             if (!$recordId) {
                 Db::rollback();
@@ -85,7 +90,7 @@ class PointsService
             Db::commit();
 
             // 6. 返回新的积分余额
-            $newBalance = $userData['points'] - $points;
+
 
             return [
                 'success' => true,

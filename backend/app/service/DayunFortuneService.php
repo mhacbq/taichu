@@ -99,23 +99,27 @@ class DayunFortuneService
      */
     public function getDayunChartData(array $dayuns, array $bazi, int $userId): array
     {
-        // 检查缓存
-        $cacheKey = 'dayun_chart:' . md5(json_encode($dayuns) . $bazi['day']['gan']);
-        $cached = CacheService::get($cacheKey);
-        if ($cached) {
-            $cached['from_cache'] = true;
-            $cached['points_cost'] = 0;
-            return $cached;
-        }
-
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
             throw new \Exception('用户不存在');
         }
 
-        if ((int) ($userModel->points ?? 0) < self::DAYUN_CHART_POINTS_COST) {
+        $currentBalance = (int) ($userModel->points ?? 0);
+
+        // 检查缓存（按用户隔离，并在命中时回填当前余额，避免旧缓存造成扣费口径漂移）
+        $cacheKey = 'dayun_chart:' . md5(json_encode($dayuns, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ($bazi['day']['gan'] ?? '') . ':' . $userId);
+        $cached = CacheService::get($cacheKey);
+        if ($cached) {
+            $cached['from_cache'] = true;
+            $cached['points_cost'] = 0;
+            $cached['remaining_points'] = $currentBalance;
+            return $cached;
+        }
+
+        if ($currentBalance < self::DAYUN_CHART_POINTS_COST) {
             throw new \Exception('积分不足，需要' . self::DAYUN_CHART_POINTS_COST . '积分', 403);
         }
+
 
         $chartData = [];
 
@@ -157,6 +161,9 @@ class DayunFortuneService
             ];
         }
 
+        $summary = $this->generateChartSummary($chartData);
+        $bestPeriod = $this->findBestPeriod($chartData);
+
         $pointsService = new PointsService();
         $consumeResult = $pointsService->consume(
             $userId,
@@ -175,12 +182,13 @@ class DayunFortuneService
 
         $result = [
             'chart_data' => $chartData,
-            'summary' => $this->generateChartSummary($chartData),
-            'best_period' => $this->findBestPeriod($chartData),
+            'summary' => $summary,
+            'best_period' => $bestPeriod,
             'points_cost' => self::DAYUN_CHART_POINTS_COST,
             'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
+
 
         CacheService::set($cacheKey, $result, self::CACHE_TTL, CacheService::TAG_AI);
 

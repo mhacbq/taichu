@@ -62,12 +62,12 @@ class Fortune extends BaseController
         }
 
         $bazi = $this->buildBaziPayload($record);
+        $gender = $this->resolveRecordGender($record);
 
-        
         try {
             $result = $this->yearlyService->getYearlyFortune(
                 $bazi,
-                $record->gender,
+                $gender,
                 $year,
                 $user['sub']
             );
@@ -186,12 +186,11 @@ class Fortune extends BaseController
 
         $bazi = $this->buildBaziPayload($record);
 
-        
-        // 重新计算大运（沿用排盘控制器的同源算法与节气口径）
-        $paipanController = new \app\controller\Paipan($this->app);
-        $dayuns = $paipanController->calculateDaYun($bazi, $record->gender, $record->birth_date);
-        
+        // 优先复用记录里的大运快照；旧记录缺快照时再按兼容后的性别/出生时分重算
+        $dayuns = $this->resolveDayuns($record, $bazi);
+
         if (!isset($dayuns[$dayunIndex])) {
+
 
             return $this->error('大运索引无效', 400);
         }
@@ -239,12 +238,11 @@ class Fortune extends BaseController
 
         $bazi = $this->buildBaziPayload($record);
 
-        
-        // 重新计算大运（沿用排盘控制器的同源算法与节气口径）
-        $paipanController = new \app\controller\Paipan($this->app);
-        $dayuns = $paipanController->calculateDaYun($bazi, $record->gender, $record->birth_date);
-        
+        // 优先复用记录里的大运快照；旧记录缺快照时再按兼容后的性别/出生时分重算
+        $dayuns = $this->resolveDayuns($record, $bazi);
+
         try {
+
 
             $result = $this->dayunService->getDayunChartData($dayuns, $bazi, $user['sub']);
             
@@ -274,34 +272,158 @@ class Fortune extends BaseController
     }
 
     /**
-     * 统一构建运势分析所需的八字结构。
+     * 统一构建运势分析所需的八字结构，兼容旧 tc_bazi_record 的原始字段与 rich schema。
      */
     private function buildBaziPayload(BaziRecord $record): array
     {
-        $birthTimestamp = strtotime((string) $record->birth_date);
+        $recordData = $record->toApiArray();
+        $birthDate = $this->resolveRecordBirthDate($record, $recordData);
+        $birthTimestamp = strtotime($birthDate);
         $birthYear = $birthTimestamp !== false ? (int) date('Y', $birthTimestamp) : null;
+        $recordBazi = is_array($recordData['bazi'] ?? null) ? $recordData['bazi'] : [];
 
         return [
             'year' => [
-                'gan' => $record->year_gan,
-                'zhi' => $record->year_zhi,
+                'gan' => trim((string) ($recordBazi['year']['gan'] ?? $record->year_gan)),
+                'zhi' => trim((string) ($recordBazi['year']['zhi'] ?? $record->year_zhi)),
                 'number' => $birthYear,
             ],
             'month' => [
-                'gan' => $record->month_gan,
-                'zhi' => $record->month_zhi,
+                'gan' => trim((string) ($recordBazi['month']['gan'] ?? $record->month_gan)),
+                'zhi' => trim((string) ($recordBazi['month']['zhi'] ?? $record->month_zhi)),
             ],
             'day' => [
-                'gan' => $record->day_gan,
-                'zhi' => $record->day_zhi,
+                'gan' => trim((string) ($recordBazi['day']['gan'] ?? $record->day_gan)),
+                'zhi' => trim((string) ($recordBazi['day']['zhi'] ?? $record->day_zhi)),
             ],
             'hour' => [
-                'gan' => $record->hour_gan,
-                'zhi' => $record->hour_zhi,
+                'gan' => trim((string) ($recordBazi['hour']['gan'] ?? $record->hour_gan)),
+                'zhi' => trim((string) ($recordBazi['hour']['zhi'] ?? $record->hour_zhi)),
             ],
-            'birth_date' => (string) $record->birth_date,
+            'birth_date' => $birthDate,
         ];
     }
+
+    /**
+     * 优先复用记录中的大运快照，缺失时再按标准化后的记录信息重算。
+     */
+    private function resolveDayuns(BaziRecord $record, array $bazi): array
+    {
+        $reportData = $this->getRecordReportData($record);
+        $storedDayuns = $reportData['dayun'] ?? null;
+        if ($this->isUsableDayunSnapshot($storedDayuns)) {
+            return $storedDayuns;
+        }
+
+
+        $paipanController = new \app\controller\Paipan($this->app);
+        return $paipanController->calculateDaYun(
+            $bazi,
+            $this->resolveRecordGender($record),
+            $bazi['birth_date'] ?? $this->resolveRecordBirthDate($record)
+        );
+    }
+
+    /**
+     * 判断历史记录中的大运快照是否足够支持后续评分/图表链路。
+     */
+    private function isUsableDayunSnapshot($dayuns): bool
+    {
+        if (!is_array($dayuns) || $dayuns === []) {
+            return false;
+        }
+
+        foreach ($dayuns as $dayun) {
+            if (!is_array($dayun)) {
+                return false;
+            }
+
+            if (
+                trim((string) ($dayun['gan'] ?? '')) === ''
+                || trim((string) ($dayun['zhi'] ?? '')) === ''
+                || !isset($dayun['start_age'])
+                || !isset($dayun['end_age'])
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 兼容旧表 TINYINT、rich schema 文本与 report_data 中的性别口径。
+     */
+    private function resolveRecordGender(BaziRecord $record, array $recordData = []): string
+
+    {
+        $reportData = $this->getRecordReportData($record);
+        $candidates = [
+            $recordData['gender'] ?? null,
+            $record->getAttr('gender'),
+            $reportData['gender'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $normalized = strtolower(trim((string) $candidate));
+            if (in_array($normalized, ['female', '女', '2'], true)) {
+                return 'female';
+            }
+            if (in_array($normalized, ['male', '男', '1'], true)) {
+                return 'male';
+            }
+        }
+
+        Log::warning('运势链路命中缺省性别回退', [
+            'record_id' => (int) ($record->getAttr('id') ?? 0),
+            'user_id' => (int) ($record->getAttr('user_id') ?? 0),
+        ]);
+
+        return 'male';
+    }
+
+    /**
+     * 兼容 rich schema 的 birth_date + birth_time 以及旧 report_data 里的出生时分文本。
+     */
+    private function resolveRecordBirthDate(BaziRecord $record, array $recordData = []): string
+    {
+        $birthDate = trim((string) ($recordData['birth_date'] ?? ''));
+        if ($birthDate !== '') {
+            return $birthDate;
+        }
+
+        $rawBirthDate = trim((string) ($record->getAttr('birth_date') ?? ''));
+        $birthTime = trim((string) ($record->getAttr('birth_time') ?? ''));
+        if ($rawBirthDate !== '' && $birthTime !== '' && $birthTime !== '00:00:00' && !str_contains($rawBirthDate, ':')) {
+            return $rawBirthDate . ' ' . $birthTime;
+        }
+        if ($rawBirthDate !== '') {
+            return $rawBirthDate;
+        }
+
+        return trim((string) ($this->getRecordReportData($record)['birth_date'] ?? ''));
+    }
+
+    /**
+     * 读取 report_data，兼容字符串 JSON 与数组口径。
+     */
+    private function getRecordReportData(BaziRecord $record): array
+    {
+        $reportData = $record->getAttr('report_data');
+        if (is_array($reportData)) {
+            return $reportData;
+        }
+
+        if (is_string($reportData) && trim($reportData) !== '') {
+            $decoded = json_decode($reportData, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [];
+    }
+
 
     /**
      * 统一处理运势分析异常
@@ -321,7 +443,8 @@ class Fortune extends BaseController
             return $this->error($forbiddenMessage, 403);
         }
 
-        return $this->error('运势分析失败，请稍后重试', 500);
+        return $this->error('运势分析失败：' . $e->getMessage(), 500);
+
     }
     
     /**
