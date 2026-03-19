@@ -294,7 +294,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import GuideModal from '../components/GuideModal.vue'
 import { getHomeStats, getPointsBalance } from '../api'
-import { Sunrise, Sunny, Moon, Coin, Cherry, Calendar, MagicStick, Star, Aim, Present, Switch, Link, Check, UserFilled, DataLine, ChatLineRound } from '@element-plus/icons-vue'
+import { Sunrise, Sunny, Moon, Coin, Cherry, Calendar, Star, Check } from '@element-plus/icons-vue'
 
 const statIconMap = {
   UserFilled,

@@ -26,10 +26,23 @@
                 <span class="solar-date">{{ solarDate }}</span>
                 <span class="lunar-date">{{ lunarDate }}</span>
               </div>
-              <div class="fortune-score">
-                <div class="score-circle" :class="getScoreClass(fortune.overall)">
-                  <span class="score-value">{{ fortune.overall }}</span>
-                  <span class="score-label">综合评分</span>
+              <div class="overview-header-right">
+                <el-tooltip content="刷新运势数据" placement="top">
+                  <el-button
+                    class="refresh-fortune-btn"
+                    :icon="RefreshRight"
+                    circle
+                    size="small"
+                    text
+                    :loading="isLoading"
+                    @click="loadDailyFortune({ userInitiated: true })"
+                  />
+                </el-tooltip>
+                <div class="fortune-score">
+                  <div class="score-circle" :class="getScoreClass(fortune.overall)">
+                    <span class="score-value">{{ fortune.overall }}</span>
+                    <span class="score-label">综合评分</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1225,6 +1238,23 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.overview-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-fortune-btn {
+  color: var(--text-tertiary, #aaa);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.refresh-fortune-btn:hover {
+  opacity: 1;
+  color: var(--primary-color);
 }
 
 .date-info {
