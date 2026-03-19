@@ -178,3 +178,41 @@ export const deleteRole = (id) => request.delete(`/admin/system/roles/${id}`)
 // 套餐管理
 export const getPackages = () => request.get('/admin/order/packages')
 export const savePackage = (data) => request.post('/admin/order/save-package', data)
+
+// 反作弊 - 规则管理
+export const saveRiskRule = (data) => request.post('/admin/anticheat/rules', data)
+export const updateRiskRule = (id, data) => request.put(`/admin/anticheat/rules/${id}`, data)
+export const deleteRiskRule = (id) => request.delete(`/admin/anticheat/rules/${id}`)
+// 反作弊 - 设备指纹
+export const getDeviceFingerprints = (params) => request.get('/admin/anticheat/devices', { params })
+export const blockDevice = (id, data) => request.put(`/admin/anticheat/devices/${id}/block`, data)
+
+// 支付配置
+export const getPaymentConfig = () => request.get('/admin/payment/config')
+export const savePaymentConfig = (data) => request.post('/admin/payment/config', data)
+
+// 权限管理
+export const getPermissions = () => request.get('/admin/system/permissions')
+export const getRolePermissions = (roleId) => request.get(`/admin/system/roles/${roleId}/permissions`)
+export const updateRolePermissions = (roleId, permissions) => request.post(`/admin/system/roles/${roleId}/permissions`, { permissions })
+
+// 数据字典
+export const getDictTypes = () => request.get('/admin/system/dict/types')
+export const createDictType = (data) => request.post('/admin/system/dict/types', data)
+export const updateDictType = (id, data) => request.put(`/admin/system/dict/types/${id}`, data)
+export const deleteDictType = (id) => request.delete(`/admin/system/dict/types/${id}`)
+export const getDictData = (params) => request.get('/admin/system/dict/data', { params })
+export const saveDictData = (data) => request.post('/admin/system/dict/data', data)
+export const deleteDictData = (id) => request.delete(`/admin/system/dict/data/${id}`)
+
+// 定时任务补充
+export const getTaskDetail = (id) => request.get(`/admin/tasks/${id}`)
+export const updateTaskItem = (id, data) => request.put(`/admin/tasks/${id}`, data)
+export const toggleTaskStatus = (id, status) => request.put(`/admin/tasks/${id}/status`, { status })
+export const getTaskScripts = () => request.get('/admin/tasks/scripts')
+export const saveTaskScript = (data) => request.post('/admin/tasks/scripts', data)
+export const deleteTaskScript = (id) => request.delete(`/admin/tasks/scripts/${id}`)
+
+// 仪表板补充
+export const refreshDashboardStats = () => request.post('/admin/dashboard/refresh-stats')
+export const exportDashboardRealtime = (params) => request.get('/admin/dashboard/export-realtime', { params, responseType: 'blob' })

@@ -76,6 +76,7 @@
           <el-menu-item index="/admin/system-tools">系统工具</el-menu-item>
           <el-menu-item index="/admin/tasks">定时任务</el-menu-item>
           <el-menu-item index="/admin/logs">系统日志</el-menu-item>
+          <el-menu-item index="/admin/anticheat">反作弊</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -147,6 +148,7 @@ const pageTitles = {
   '/admin/system-tools': '系统工具',
   '/admin/tasks': '定时任务',
   '/admin/logs': '系统日志',
+  '/admin/anticheat': '反作弊管理',
 }
 const currentPageTitle = computed(() => pageTitles[route.path] || '')
 

@@ -45,6 +45,7 @@ const AdminPackageManage = () => import('../views/admin/PackageManage.vue')
 const AdminSystemLogs = () => import('../views/admin/SystemLogs.vue')
 const AdminTaskManage = () => import('../views/admin/TaskManage.vue')
 const AdminPointsRules = () => import('../views/admin/PointsRules.vue')
+const AdminAnticheatManage = () => import('../views/admin/AnticheatManage.vue')
 
 const routes = [
   {
@@ -218,6 +219,12 @@ const routes = [
         name: 'AdminPointsRules',
         component: AdminPointsRules,
         meta: { title: '积分规则 - 太初命理管理后台' }
+      },
+      {
+        path: 'anticheat',
+        name: 'AdminAnticheatManage',
+        component: AdminAnticheatManage,
+        meta: { title: '反作弊管理 - 太初命理管理后台' }
       },
     ]
   },
