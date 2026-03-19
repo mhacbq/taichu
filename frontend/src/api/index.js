@@ -12,14 +12,11 @@ export const sendSmsCode = (data) => request.post('/sms/send-code', data)
 
 export const getUserInfo = () => request.get('/auth/userinfo')
 
-// 文化测算
+// 文化测算（六爻/八字/合婚等核心功能）
 export const calculateCultural = (data) => request.post('/paipan/cultural', data)
-export const getCulturalHistory = (params) => request.get('/paipan/history', { params })
 export const setCulturalSharePublic = (data) => request.post('/paipan/set-share-public', data)
-export const deleteCulturalRecord = (data) => request.post('/paipan/delete-record', data)
-export const getCulturalShare = (params) => request.get('/cultural/share', { params })
 
-// 文化分析
+// 文化分析 API
 export const drawCultural = (data) => request.post('/cultural/draw', data)
 export const interpretCultural = (data) => request.post('/cultural/interpret', data)
 export const saveCulturalRecord = (data) => request.post('/cultural/save-record', data)
@@ -29,11 +26,14 @@ export const deleteCulturalRecord = (data) => request.post('/cultural/delete-rec
 export const setCulturalPublic = (data) => request.post('/cultural/set-public', data)
 export const getCulturalShare = (params) => request.get('/cultural/share', { params })
 
-// 日常参考
-export const getDailyReference = () => request.get('/daily/reference')
-export const getTodayGuidance = () => request.get('/daily/guidance')
+// 每日运势（核心接口）
+export const getDailyFortune = (config = {}) => request.get('/daily/fortune', config)
+export const getDailyLuck = () => request.get('/daily/luck')
 export const dailyCheckin = () => request.post('/daily/checkin')
 export const getCheckinStatus = (config = {}) => request.get('/daily/checkin-status', config)
+// 兼容旧接口名
+export const getDailyReference = getDailyFortune
+export const getTodayGuidance = getDailyLuck
 
 
 // 积分系统
@@ -90,3 +90,51 @@ export const getDecisionPricing = () => request.get('/decision/pricing')
 export const decisionAnalysis = (data) => request.post('/decision/analysis', data)
 export const getDecisionHistory = (params) => request.get('/decision/history', { params })
 export const deleteDecisionRecord = (data) => request.post('/decision/delete', data)
+
+// ====== 六爻占卜 API ======
+export const getLiuyaoPricing = (config = {}) => request.get('/liuyao/pricing', config)
+export const liuyaoDivination = (data) => request.post('/liuyao/divination', data)
+export const getLiuyaoHistory = (params) => request.get('/liuyao/history', { params })
+export const getLiuyaoDetail = (params) => request.get('/liuyao/detail', { params })
+export const deleteLiuyaoRecord = (data) => request.post('/liuyao/delete', data)
+
+// ====== 八字合婚 API ======
+export const getHehunPricing = (config = {}) => request.get('/hehun/pricing', config)
+export const calculateHehun = (data) => request.post('/hehun/calculate', data)
+export const getHehunHistory = (params) => request.get('/hehun/history', { params })
+export const exportHehunReport = (data) => request.post('/hehun/export', data)
+
+// ====== 塔罗占卜 API ======
+export const drawTarot = (data) => request.post('/tarot/draw', data)
+export const interpretTarot = (data) => request.post('/tarot/interpret', data)
+export const saveTarotRecord = (data) => request.post('/tarot/save-record', data)
+export const getTarotHistory = (params) => request.get('/tarot/history', { params })
+export const getTarotDetail = (params) => request.get('/tarot/detail', { params })
+export const deleteTarotRecord = (data) => request.post('/tarot/delete-record', data)
+export const setTarotPublic = (data) => request.post('/tarot/set-public', data)
+export const getTarotShare = (params) => request.get('/tarot/share', { params })
+
+// ====== 八字排盘 API ======
+export const calculateBazi = (data) => request.post('/paipan/bazi', data)
+export const getBaziHistory = (params) => request.get('/paipan/history', { params })
+export const deleteBaziRecord = (data) => request.post('/paipan/delete-record', data)
+export const setBaziSharePublic = (data) => request.post('/paipan/set-share-public', data)
+export const getBaziShare = (params) => request.get('/bazi/share', { params })
+
+// ====== 支付 API ======
+export const getRechargeOptions = () => request.get('/payment/options')
+export const createRechargeOrder = (data) => request.post('/payment/create-order', data)
+export const queryRechargeOrder = (params) => request.get('/payment/query-order', { params })
+export const getRechargeHistory = (params) => request.get('/payment/history', { params })
+
+// ====== 个人信息更新 ======
+export const updateProfile = (data) => request.put('/auth/profile', data)
+export const getMyInvites = () => request.get('/auth/my-invites')
+export const getInviteLeaderboard = () => request.get('/auth/invite-leaderboard')
+
+// ====== 运势分析（八字流年大运）API ======
+export const getFortunePointsCost = (config = {}) => request.get('/fortune/points-cost', config)
+export const getYearlyFortune = (data) => request.post('/fortune/yearly', data)
+export const getYearlyFortune2026Trend = (params) => request.get('/fortune/yearly-trend', { params })
+export const getDayunAnalysis = (data) => request.post('/fortune/dayun-analysis', data)
+export const getDayunChart = (data) => request.post('/fortune/dayun-chart', data)

@@ -17,6 +17,7 @@
   --bg-primary: #0a0a1a;
   --bg-secondary: #111122;
   --bg-tertiary: #16162e;
+  --bg-overlay: rgba(8, 8, 20, 0.96);
   --bg-card: var(--white-05);
   --bg-hover: var(--white-08);
   --bg-main: var(--text-primary);
@@ -47,6 +48,7 @@
   --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(var(--primary-rgb), 0.12);
   --shadow-btn-primary: 0 18px 30px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --shadow-btn-secondary: 0 16px 28px rgba(145, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2);
   --focus-ring: 0 0 0 3px var(--primary-light-15);
 
   /* 简化圆角系统 */
@@ -247,9 +249,16 @@
 .card:hover,
 .card-hover:focus-within,
 .card:focus-within {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: var(--shadow-hover), 0 0 40px rgba(var(--primary-rgb), 0.1);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-hover), 0 0 30px rgba(var(--primary-rgb), 0.08);
   border-color: var(--primary-light-30) !important;
+}
+
+@media (max-width: 768px) {
+  .card-hover:hover,
+  .card:hover {
+    transform: translateY(-2px) scale(1.005);
+  }
 }
 
 .card-hover:active,

@@ -165,12 +165,13 @@
         <el-icon class="bottom-icon"><Star /></el-icon>
         <span class="bottom-label">运势</span>
       </router-link>
-      <router-link to="/bazi" class="bottom-nav-item bottom-nav-item--primary" :class="{ active: $route.path === '/bazi' }">
-        <span class="bottom-primary-icon">☯</span>
+      <router-link to="/liuyao" class="bottom-nav-item bottom-nav-item--primary" :class="{ active: $route.path === '/liuyao' }">
+        <span class="bottom-primary-icon">☰</span>
+        <span class="bottom-primary-label">起卦</span>
       </router-link>
-      <router-link to="/tarot" class="bottom-nav-item" :class="{ active: $route.path === '/tarot' }">
-        <el-icon class="bottom-icon"><MagicStick /></el-icon>
-        <span class="bottom-label">塔罗</span>
+      <router-link to="/bazi" class="bottom-nav-item" :class="{ active: $route.path === '/bazi' }">
+        <el-icon class="bottom-icon"><Calendar /></el-icon>
+        <span class="bottom-label">八字</span>
       </router-link>
       <router-link :to="isLoggedIn ? '/profile' : '/login'" class="bottom-nav-item" :class="{ active: $route.path === '/profile' }">
         <el-icon class="bottom-icon"><User /></el-icon>
@@ -960,9 +961,9 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 999;
   opacity: 0;
   transition: all 0.4s ease;
@@ -1614,6 +1615,13 @@ onBeforeUnmount(() => {
   .bottom-primary-icon {
     font-size: 22px;
     line-height: 1;
+  }
+
+  .bottom-primary-label {
+    font-size: 9px;
+    color: #0a0a1a;
+    font-weight: 600;
+    margin-top: 1px;
   }
 
   .bottom-nav-item--primary.active {

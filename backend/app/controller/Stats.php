@@ -64,18 +64,32 @@ class Stats extends BaseController
     }
     
     /**
-     * 获取首页展示数据
+     * 获取首页展示数据（直接查询，避免链式响应对象调用）
      */
     public function home()
     {
-        // 获取最新的用户统计
-        $stats = $this->index()->getData();
+        $formatNumber = function($num) {
+            if ($num >= 100000) {
+                return floor($num / 10000) . '万+';
+            } elseif ($num >= 10000) {
+                return round($num / 10000, 1) . '万+';
+            } elseif ($num >= 1000) {
+                return floor($num / 1000) . '000+';
+            }
+            return (string)$num;
+        };
+
+        // 直接查询数据，不依赖 index() 的响应对象
+        $userCount = Db::name('tc_user')->where('status', 1)->count();
+        $baziCount = Db::name('tc_bazi_record')->count();
+        $tarotCount = Db::name('tc_tarot_record')->count() ?? 0;
+        $totalAnalysis = $baziCount + $tarotCount;
         
         return $this->success([
             'stats' => [
-                ['number' => $stats['data']['userCount']['display'], 'label' => '服务用户'],
-                ['number' => $stats['data']['analysisCount']['display'], 'label' => '分析次数'],
-                ['number' => $stats['data']['satisfactionRate']['display'], 'label' => '好评率'],
+                ['number' => $formatNumber($userCount), 'label' => '服务用户'],
+                ['number' => $formatNumber($totalAnalysis), 'label' => '分析次数'],
+                ['number' => '98%', 'label' => '好评率'],
             ],
             'features' => [
                 [

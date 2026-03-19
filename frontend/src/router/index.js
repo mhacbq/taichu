@@ -68,7 +68,7 @@ const routes = [
     name: 'Tarot',
     component: Tarot,
     meta: { 
-      requiresAuth: true,
+      public: true,
       seo: seoConfigs.tarot,
       breadcrumb: [{ name: '首页', url: '/' }, { name: '塔罗占卜', url: '/tarot' }]
     }
@@ -213,7 +213,7 @@ const routes = [
     name: 'Hehun',
     component: Hehun,
     meta: { 
-      requiresAuth: true,
+      public: true,
       seo: {
         title: '八字合婚 - 太初命理',
         description: '通过双方八字分析婚姻匹配度，了解缘分深浅',
@@ -227,7 +227,7 @@ const routes = [
     name: 'Liuyao',
     component: Liuyao,
     meta: { 
-      requiresAuth: true,
+      public: true,
       seo: {
         title: '六爻占卜 - 太初命理',
         description: '传统周易六爻占卜，解答心中疑惑',

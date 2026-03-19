@@ -162,22 +162,22 @@ Route::group('api', function () {
         Route::get('invite-info', 'Share/inviteInfo');
     });
     
-// 八字合婚
-Route::group('hehun', function () {
-    Route::get('pricing', 'Hehun/getPricing');      // 获取定价配置
-    Route::post('calculate', 'Hehun/calculate');     // 合婚计算
-    Route::get('history', 'Hehun/history');          // 合婚历史
-    Route::post('export', 'Hehun/export');           // 导出报告
-});
+    // 八字合婚
+    Route::group('hehun', function () {
+        Route::get('pricing', 'Hehun/getPricing');      // 获取定价配置
+        Route::post('calculate', 'Hehun/calculate');     // 合婚计算
+        Route::get('history', 'Hehun/history');          // 合婚历史
+        Route::post('export', 'Hehun/export');           // 导出报告
+    });
 
-// 六爻占卜
-Route::group('liuyao', function () {
-    Route::get('pricing', 'Liuyao/getPricing');      // 获取定价
-    Route::post('divination', 'Liuyao/divination');  // 执行占卜
-    Route::get('history', 'Liuyao/history');         // 历史记录
-    Route::get('detail', 'Liuyao/detail');           // 记录详情
-    Route::post('delete', 'Liuyao/delete');          // 删除记录
-});
+    // 六爻占卜
+    Route::group('liuyao', function () {
+        Route::get('pricing', 'Liuyao/getPricing');      // 获取定价
+        Route::post('divination', 'Liuyao/divination');  // 执行占卜
+        Route::get('history', 'Liuyao/history');         // 历史记录
+        Route::get('detail', 'Liuyao/detail');           // 记录详情
+        Route::post('delete', 'Liuyao/delete');          // 删除记录
+    });
     
     // 取名建议
     Route::group('qiming', function () {
@@ -201,6 +201,19 @@ Route::group('liuyao', function () {
 Route::post('api/payment/notify', 'Payment/notify');
 Route::post('api/alipay/notify', 'Alipay/notify');
 Route::get('api/alipay/return', 'Alipay/return');
+
+// 支付宝主动发起支付接口（需要鉴权，在middleware包裹下）
+Route::post('api/alipay/create-order', 'Alipay/createOrder')->middleware([
+    \app\middleware\Cors::class,
+    \app\middleware\RateLimit::class,
+]);
+Route::post('api/alipay/create-mobile-order', 'Alipay/createMobileOrder')->middleware([
+    \app\middleware\Cors::class,
+    \app\middleware\RateLimit::class,
+]);
+Route::get('api/alipay/query-order', 'Alipay/queryOrder')->middleware([
+    \app\middleware\Cors::class,
+]);
 
 // 公开分享接口
 Route::get('api/tarot/share', 'Tarot/share');
