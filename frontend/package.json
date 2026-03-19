@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node tests/utils.test.js",
     "icon:audit": "node ./scripts/audit-element-plus-icons.cjs",
     "icon:check": "node ./scripts/check-icons.cjs"
   },
