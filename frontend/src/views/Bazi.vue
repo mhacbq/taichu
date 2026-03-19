@@ -1011,6 +1011,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div> <!-- End of Tab 2/3 container -->
 
         <!-- 操作按钮 -->
