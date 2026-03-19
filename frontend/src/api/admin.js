@@ -76,6 +76,15 @@ export const getPointsRecords = (params) => request.get('/admin/points/records',
 export const adjustUserPoints = (data) => request.post('/admin/points/adjust', data)
 export const getPointsRules = () => request.get('/admin/points/rules')
 export const savePointsRules = (data) => request.put('/admin/points/rules', data)
+export const savePointsRule = (data) => request.post('/admin/points/rules', data)
+export const deletePointsRule = (id) => request.delete(`/admin/points/rules/${id}`)
+
+// 定时任务
+export const getTaskList = () => request.get('/admin/tasks')
+export const saveTaskItem = (data) => request.post('/admin/tasks', data)
+export const deleteTaskItem = (id) => request.delete(`/admin/tasks/${id}`)
+export const runTaskNow = (id) => request.post(`/admin/tasks/${id}/run`)
+export const getTaskLogs = (params) => request.get('/admin/tasks/logs', { params })
 export const getPointsStats = (params) => request.get('/admin/points/stats', { params })
 
 // 支付/订单管理

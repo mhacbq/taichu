@@ -29,6 +29,15 @@
           <el-menu-item index="/admin/feedback">用户反馈</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="points">
+          <template #title>
+            <el-icon><Coin /></el-icon>
+            <span>积分管理</span>
+          </template>
+          <el-menu-item index="/admin/points">积分记录</el-menu-item>
+          <el-menu-item index="/admin/points-rules">积分规则</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="orders">
           <template #title>
             <el-icon><Money /></el-icon>
@@ -65,6 +74,8 @@
           </template>
           <el-menu-item index="/admin/config">系统配置</el-menu-item>
           <el-menu-item index="/admin/system-tools">系统工具</el-menu-item>
+          <el-menu-item index="/admin/tasks">定时任务</el-menu-item>
+          <el-menu-item index="/admin/logs">系统日志</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -122,6 +133,7 @@ const pageTitles = {
   '/admin': '仪表板',
   '/admin/users': '用户管理',
   '/admin/points': '积分记录',
+  '/admin/points-rules': '积分规则',
   '/admin/feedback': '用户反馈',
   '/admin/orders': '订单列表',
   '/admin/packages': '套餐管理',
@@ -133,6 +145,8 @@ const pageTitles = {
   '/admin/seo/stats': 'SEO统计',
   '/admin/config': '系统配置',
   '/admin/system-tools': '系统工具',
+  '/admin/tasks': '定时任务',
+  '/admin/logs': '系统日志',
 }
 const currentPageTitle = computed(() => pageTitles[route.path] || '')
 

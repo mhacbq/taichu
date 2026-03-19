@@ -42,6 +42,9 @@ const AdminOrderManage = () => import('../views/admin/OrderManage.vue')
 const AdminContentRecords = () => import('../views/admin/ContentRecords.vue')
 const AdminSystemTools = () => import('../views/admin/SystemTools.vue')
 const AdminPackageManage = () => import('../views/admin/PackageManage.vue')
+const AdminSystemLogs = () => import('../views/admin/SystemLogs.vue')
+const AdminTaskManage = () => import('../views/admin/TaskManage.vue')
+const AdminPointsRules = () => import('../views/admin/PointsRules.vue')
 
 const routes = [
   {
@@ -197,6 +200,24 @@ const routes = [
         name: 'AdminSystemTools',
         component: AdminSystemTools,
         meta: { title: '系统工具 - 太初命理管理后台' }
+      },
+      {
+        path: 'logs',
+        name: 'AdminSystemLogs',
+        component: AdminSystemLogs,
+        meta: { title: '系统日志 - 太初命理管理后台' }
+      },
+      {
+        path: 'tasks',
+        name: 'AdminTaskManage',
+        component: AdminTaskManage,
+        meta: { title: '定时任务 - 太初命理管理后台' }
+      },
+      {
+        path: 'points-rules',
+        name: 'AdminPointsRules',
+        component: AdminPointsRules,
+        meta: { title: '积分规则 - 太初命理管理后台' }
       },
     ]
   },
