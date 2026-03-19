@@ -260,8 +260,7 @@ import { use, init as echartsInit } from 'echarts/core'
 import { PieChart, LineChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { graphic } from 'echarts/core'
-const { LinearGradient } = graphic
+import { LinearGradient } from 'echarts/lib/util/graphic'
 import {
   ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
   Warning, InfoFilled, CircleCheck

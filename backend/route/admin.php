@@ -185,6 +185,7 @@ Route::group('api/admin', function () {
         Route::post('seo/save', 'admin.Seo/saveSeoConfig');
         Route::get('seo/configs', 'admin.Seo/seoConfigList');
         Route::get('seo/robots', 'admin.Seo/seoRobots');
+        Route::get('seo/stats', 'admin.Seo/seoStats');
         Route::post('seo/delete', 'admin.Seo/deleteSeoConfigByRoute');
         Route::post('seo/robots', 'admin.Seo/saveSeoRobots');
         Route::post('seo/sitemap-generate', 'admin.Seo/generateSitemap');

@@ -30,6 +30,7 @@ export const getAlmanacMonths = () => request.get('/admin/almanac/months')
 
 // SEO管理
 export const getSeoConfigs = () => request.get('/admin/seo/configs')
+export const getSeoStats = (params) => request.get('/admin/seo/stats', { params })
 export const saveSeoConfig = (data) => request.post('/admin/seo/save', data)
 export const deleteSeoConfig = (route) => request.post('/admin/seo/delete', { route })
 export const getRobotsConfig = () => request.get('/admin/seo/robots')
