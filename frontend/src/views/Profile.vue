@@ -1,9 +1,25 @@
 <template>
   <div class="profile-page">
     <div class="container">
-      <div class="page-header">
+      <div class="profile-hero">
         <BackButton />
-        <h1 class="section-title">个人中心</h1>
+        <div class="profile-hero-content">
+          <div class="profile-hero-avatar">
+            <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="用户头像" class="profile-hero-avatar-img">
+            <span v-else class="profile-hero-avatar-placeholder">{{ userInfo.nickname?.[0] || '用' }}</span>
+          </div>
+          <div class="profile-hero-info">
+            <h1 class="profile-hero-name">{{ userInfo.nickname || '欢迎回来' }}</h1>
+            <p class="profile-hero-sub">
+              <span class="profile-hero-id">ID: {{ userInfo.id || '--' }}</span>
+              <span class="profile-hero-divider">·</span>
+              <span class="profile-hero-points-badge">
+                <el-icon><Coin /></el-icon>
+                {{ pointsBalance }} 积分
+              </span>
+            </p>
+          </div>
+        </div>
       </div>
       
       <!-- 签到卡片 -->
@@ -12,14 +28,6 @@
       <div class="profile-grid">
         <!-- 用户信息卡片 -->
         <div class="user-info card card-hover">
-          <div class="avatar-section">
-            <div class="avatar">
-              <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="头像">
-              <span v-else>{{ userInfo.nickname?.[0] || '用' }}</span>
-            </div>
-            <h3>{{ userInfo.nickname || '用户' }}</h3>
-            <p class="user-id">ID: {{ userInfo.id || '--' }}</p>
-          </div>
           <div class="user-stats">
             <div class="stat">
               <span class="stat-value">{{ pointsBalance }}</span>
@@ -599,6 +607,75 @@ onUnmounted(() => {
 <style scoped>
 .profile-page {
   padding: 60px 0;
+}
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(184, 134, 11, 0.18);
+  border-radius: 20px;
+}
+
+.profile-hero-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-hero-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid rgba(212, 175, 55, 0.4);
+}
+
+.profile-hero-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+
+.profile-hero-avatar-placeholder {
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.profile-hero-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.profile-hero-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.profile-hero-id { color: var(--text-muted); }
+.profile-hero-divider { color: var(--border-color); }
+
+.profile-hero-points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 999px;
+  color: #D4AF37;
+  font-weight: 600;
 }
 
 .page-header {
