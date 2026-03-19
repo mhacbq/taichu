@@ -1252,35 +1252,38 @@ const getCardAdvice = (card) => {
 .spread-card {
   appearance: none;
   width: 100%;
-  background: var(--surface-raised);
-  border-radius: var(--radius-lg);
-  padding: 30px 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95));
+  border-radius: 24px;
+  padding: 32px 24px;
   text-align: center;
   cursor: pointer;
-  border: 1px solid var(--border-light);
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
   color: inherit;
   font: inherit;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(var(--primary-rgb), 0.05);
 }
 
 .spread-card:hover {
-  border-color: var(--primary-light-40);
-  background: var(--surface-hover);
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-hover);
+  border-color: rgba(var(--primary-rgb), 0.25);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 241, 0.96));
+  transform: translateY(-8px);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12), 0 12px 32px rgba(var(--primary-rgb), 0.08);
 }
 
 .spread-card.active {
   border-color: var(--primary-color);
-  background: linear-gradient(135deg, var(--bg-card) 0%, var(--primary-light-10) 100%);
-  box-shadow: 0 16px 32px rgba(var(--primary-rgb), 0.18);
-  transform: translateY(-8px) scale(1.02);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 242, 215, 0.96));
+  box-shadow: 0 28px 56px rgba(var(--primary-rgb), 0.2), 
+              0 16px 40px rgba(var(--primary-rgb), 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: translateY(-10px) scale(1.03);
   z-index: 2;
 }
 
@@ -1290,12 +1293,13 @@ const getCardAdvice = (card) => {
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  opacity: 0.8;
 }
 
 .spread-card:focus-visible {
@@ -2068,6 +2072,96 @@ const getCardAdvice = (card) => {
     radial-gradient(circle at top left, rgba(var(--primary-rgb), 0.14), transparent 32%),
     radial-gradient(circle at 88% 14%, rgba(245, 196, 103, 0.18), transparent 26%),
     linear-gradient(180deg, #fffdf8 0%, #fff9f2 48%, #fff7ef 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.tarot-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(var(--primary-rgb), 0.08), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(245, 196, 103, 0.12), transparent 35%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.tarot-container {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.tarot-header {
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.tarot-header h1 {
+  font-size: clamp(32px, 4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tarot-header p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.tarot-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.tarot-section {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95));
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(var(--primary-rgb), 0.04);
+  transition: all 0.3s ease;
+}
+
+.tarot-section:hover {
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08), 0 12px 32px rgba(var(--primary-rgb), 0.06);
+  transform: translateY(-2px);
+}
+
+.tarot-section h2 {
+  font-size: clamp(22px, 3vw, 26px);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.tarot-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-color), transparent);
+  border-radius: 1px;
 }
 
 .points-hint,
@@ -2108,7 +2202,7 @@ const getCardAdvice = (card) => {
 
 .current-points {
   padding: 6px 12px;
-  border-radius: var(--radius-pill);
+  border-radius: 999px;
   background: rgba(var(--primary-rgb), 0.08);
   color: #8c5c15;
   font-weight: 700;
@@ -2161,7 +2255,7 @@ const getCardAdvice = (card) => {
   inset: auto -24px -48px auto;
   width: 140px;
   height: 140px;
-  border-radius: var(--radius-pill);
+  border-radius: 999px;
   background: radial-gradient(circle, rgba(var(--primary-rgb), 0.16), rgba(var(--primary-rgb), 0));
   pointer-events: none;
 }
@@ -2206,17 +2300,7 @@ const getCardAdvice = (card) => {
   color: var(--text-primary);
 }
 
-.topic-tab {
-  min-height: 98px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(var(--primary-rgb), 0.1);
-}
-
-.topic-tab.active {
-  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.92), rgba(207, 160, 74, 0.92));
-  box-shadow: 0 16px 28px rgba(var(--primary-rgb), 0.18);
-}
+优化牌阵选择卡片的悬停和激活状态样式，提升视觉质感和交互体验
 
 .template-hint {
   margin-bottom: 12px;
@@ -2227,6 +2311,36 @@ const getCardAdvice = (card) => {
   min-height: 76px;
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 237, 0.92));
+  border: 1px solid rgba(var(--primary-rgb), 0.08);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  padding: 16px 20px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.template-item:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 252, 245, 0.96));
+  border-color: rgba(var(--primary-rgb), 0.2);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08), 0 6px 20px rgba(var(--primary-rgb), 0.05);
+}
+
+.template-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.template-item:hover::before {
+  left: 100%;
 }
 
 .question-section {
@@ -2253,16 +2367,112 @@ const getCardAdvice = (card) => {
 
 .draw-btn {
   width: 100%;
-  min-height: 54px;
-  margin-top: 18px;
+  min-height: 56px;
+  margin-top: 20px;
   border: none;
-  border-radius: 18px;
-  font-weight: 700;
-  box-shadow: 0 18px 32px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  box-shadow: 0 20px 40px rgba(var(--primary-rgb), 0.25), 
+              0 8px 24px rgba(var(--primary-rgb), 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.draw-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px rgba(var(--primary-rgb), 0.3),
+              0 12px 32px rgba(var(--primary-rgb), 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+}
+
+.draw-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.2),
+              inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.draw-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.draw-btn:hover::before {
+  left: 100%;
+}
+
+.draw-btn .btn-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.draw-btn:hover .btn-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .cards-result {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 239, 0.95));
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.cards-result::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.2), transparent);
+}
+
+.cards-result h3 {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.cards-result h3::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+  border-radius: 1px;
+}
+
+.cards-hint {
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: rgba(var(--primary-rgb), 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--primary-rgb), 0.08);
 }
 
 .cards-hint {
@@ -2295,11 +2505,68 @@ const getCardAdvice = (card) => {
 
 .interpretation {
   margin-top: 6px;
-  padding: 26px;
+  padding: 30px;
   border-radius: 24px;
   border: 1px solid rgba(var(--primary-rgb), 0.12);
   background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 245, 224, 0.9));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  position: relative;
+  overflow: hidden;
+}
+
+.interpretation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.15), transparent);
+}
+
+.interpretation h3 {
+  font-size: clamp(22px, 2.5vw, 26px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.interpretation h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-color), transparent);
+  border-radius: 1px;
+}
+
+.interpretation-content,
+.interpretation-placeholder {
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--text-secondary);
+  position: relative;
+  z-index: 1;
+}
+
+.interpretation-placeholder--loading {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.interpretation-placeholder--error {
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+.interpretation--pending {
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.95), rgba(255, 245, 224, 0.85));
+  border-color: rgba(var(--primary-rgb), 0.08);
 }
 
 .interpretation-content,
@@ -2309,15 +2576,72 @@ const getCardAdvice = (card) => {
 }
 
 .result-actions {
-  margin-top: 24px;
-  padding-top: 22px;
+  margin-top: 28px;
+  padding-top: 24px;
   border-top: 1px solid rgba(var(--primary-rgb), 0.12);
-  gap: 14px;
+  gap: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .result-actions .el-button {
-  min-width: 150px;
+  min-width: 160px;
+  min-height: 48px;
   border-radius: 16px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.result-actions .el-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.result-actions .el-button:hover::before {
+  left: 100%;
+}
+
+.result-actions .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+}
+
+.result-actions .el-button:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.result-actions .el-button--primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  border: none;
+  box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.15);
+}
+
+.result-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+  box-shadow: 0 12px 32px rgba(var(--primary-rgb), 0.2);
+}
+
+.result-actions .el-button--plain {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
+}
+
+.result-actions .el-button--plain:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(var(--primary-rgb), 0.25);
 }
 
 .flow-error--inline {

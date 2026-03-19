@@ -336,4 +336,18 @@
 - `admin/dist/index.html` 仍存在，且 `npm run build --prefix admin` 本轮成功通过；但仓库内依旧无法确认用户实际部署/挂载后的后台站点根地址，因此本轮继续没有凭空访问任何页面 URL。
 - fresh login `POST /api/admin/auth/login` 返回 `role="admin"`、`roles=["admin"]`，`GET /api/admin/auth/info` 也返回 `permissions=["*"]`；随后 `GET -> PUT(原样回存) -> GET /api/admin/system/settings` 三次结果保持一致，`site_name=太初命理`、`register_points=100`、`checkin_points=5`、`bazi_cost=20`、`tarot_cost=10`、`enable_feedback=true` 等字段均未再回读成空值或 `0`。公开 `GET /api/config/client` 的 `points.tasks.sign_daily.points=5` 也同步正常。本轮没有在“系统设置保存后刷新回读”这组链路上补出新后台缺陷，因此未新增 TODO 条目。
 
+---
+
+## 2026-03-19 第四十五轮执行摘要
+
+### 检查范围
+- 继续先复读 `TODO.md` 的 `[30-3]` 章节与本记忆；仅确认现有 `admin/dist/index.html` 构建产物仍在，不假设任何本地后台页面挂载根地址。
+- 本轮只补证 1 组后台主链路：`登录 -> 充值订单列表筛选 / 搜索`，仅核对 `http://localhost:8080/api/admin/...` 与前端页面实现，不直接修复。
+
+### 检查结果概述
+- `admin/dist/index.html` 仍存在，但工作区内没有可证明 phpstudy 已把后台静态页实际挂到哪个根地址的本地配置或产物（例如 `frontend/dist-admin`），因此本轮继续不凭空访问页面 URL，只保留“页面根地址未确认”的阻塞结论。
+- fresh login 后，充值订单基础列表与统计接口可返回真实数据；但 `user_id=1` 筛选后结果仍保持全量 4 条，说明后台暂未真正消费该参数；同时 `keyword=R202403200002` 会把 `GET /api/admin/payment/orders` 直接打成 `HTTP 500`。结合前端 `payment/orders.vue` 的错误承接，这会让后台订单页出现“用户ID筛选无效”与“搜索后整页退化成加载失败只读卡”两类真实运营问题。该证据已补写进 `TODO.md`。
+
+
+
 

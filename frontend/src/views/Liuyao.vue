@@ -2459,6 +2459,7 @@ onUnmounted(() => {
   .gua-display {
     flex-direction: column;
     gap: 20px;
+    padding: 28px 18px;
     overflow: visible;
   }
 
@@ -2469,7 +2470,8 @@ onUnmounted(() => {
   }
 
   .yao-line {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
     gap: 10px;
     padding: 12px 14px;
   }
@@ -2479,7 +2481,15 @@ onUnmounted(() => {
   }
 
   .fushen-box {
+    position: static;
+    left: auto;
+    align-self: flex-start;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
     min-width: 0;
+    max-width: 100%;
     padding: 6px 10px;
   }
 
@@ -2490,15 +2500,22 @@ onUnmounted(() => {
   }
 
   .yao-line__meta,
+  .yao-line__visual,
   .yao-line__info {
+    display: flex;
     width: 100%;
+  }
+
+  .yao-line__meta,
+  .yao-line__info {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
   }
 
   .yao-line__visual {
-    width: 100%;
+    align-items: center;
     gap: 10px;
   }
 
@@ -2507,6 +2524,12 @@ onUnmounted(() => {
     height: 28px;
     font-size: 16px;
   }
+
+  .yao-name {
+    min-width: 0;
+    text-align: left;
+  }
+
 
   .yao-mark--quiet {
     font-size: 14px;

@@ -84,13 +84,32 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" :loading="loading" @click="handleSearch">搜索</el-button>
+            <el-button :disabled="loading" @click="handleReset">重置</el-button>
           </el-form-item>
         </el-form>
       </el-card>
 
+      <el-alert
+        v-if="orderListFeedback"
+        class="query-alert"
+        type="warning"
+        show-icon
+        :closable="false"
+        :title="orderListFeedback"
+      />
+
+      <el-alert
+        v-if="filterWarningMessage"
+        class="query-alert"
+        type="warning"
+        show-icon
+        :closable="false"
+        :title="filterWarningMessage"
+      />
+
       <el-card shadow="never">
+
         <el-table v-loading="loading" :data="orderList" stripe border empty-text="暂无订单数据">
           <el-table-column type="index" label="#" width="56" />
           <el-table-column prop="order_no" label="订单号" min-width="190" show-overflow-tooltip />
@@ -250,11 +269,16 @@ const refundVisible = ref(false)
 const refunding = ref(false)
 const pageError = ref(null)
 const statsError = ref('')
+const orderListFeedback = ref('')
+const filterWarningMessage = ref('')
+const hasLoadedOrders = ref(false)
+const hasLoadedStats = ref(false)
+const lastSuccessfulOrderQuery = ref(null)
 
 const stats = reactive(createInitialStats())
 
-
 const queryForm = reactive({
+
   order_no: '',
   user_id: '',
   status: '',
@@ -280,15 +304,39 @@ function createInitialStats() {
   }
 }
 
+function createQuerySnapshot(source = queryForm) {
+  return {
+    order_no: source.order_no || '',
+    user_id: source.user_id || '',
+    status: source.status || '',
+    date_range: Array.isArray(source.date_range) ? [...source.date_range] : [],
+    page: Number(source.page || 1),
+    limit: Number(source.limit || 20)
+  }
+}
+
+function applyQuerySnapshot(snapshot) {
+  if (!snapshot) {
+    return
+  }
+
+  Object.assign(queryForm, createQuerySnapshot(snapshot))
+}
+
 function resetPageState() {
   orderList.value = []
   total.value = 0
   statsError.value = ''
+  orderListFeedback.value = ''
+  filterWarningMessage.value = ''
+  hasLoadedOrders.value = false
+  hasLoadedStats.value = false
+  lastSuccessfulOrderQuery.value = null
   Object.assign(stats, createInitialStats())
 }
 
-
 function ensureWritable(message) {
+
   if (!readonlyMode.value) {
     return true
   }
@@ -300,33 +348,72 @@ onMounted(() => {
   refreshPage()
 })
 
-function buildOrderParams() {
+function buildOrderParams(source = queryForm) {
   const params = {
-    page: queryForm.page,
-    limit: queryForm.limit,
-    keyword: queryForm.order_no?.trim() || undefined,
-    user_id: queryForm.user_id?.trim() || undefined,
-    status: queryForm.status || undefined
+    page: source.page,
+    limit: source.limit,
+    keyword: source.order_no?.trim() || undefined,
+    user_id: source.user_id?.trim() || undefined,
+    status: source.status || undefined
   }
 
-  if (queryForm.date_range?.length === 2) {
-    params.start_date = queryForm.date_range[0]
-    params.end_date = queryForm.date_range[1]
+  if (source.date_range?.length === 2) {
+    params.start_date = source.date_range[0]
+    params.end_date = source.date_range[1]
   }
 
   return params
 }
 
-function buildStatsParams() {
+function buildStatsParams(source = queryForm) {
   const params = {}
 
-  if (queryForm.date_range?.length === 2) {
-    params.start_date = queryForm.date_range[0]
-    params.end_date = queryForm.date_range[1]
+  if (source.date_range?.length === 2) {
+    params.start_date = source.date_range[0]
+    params.end_date = source.date_range[1]
   }
 
   return params
 }
+
+function buildOrderFailureMessage(error, params = {}) {
+  const fallbackNotice = '当前先保留上一次成功加载的订单列表，避免整页直接退化成失败卡。'
+  const requestedKeyword = String(params.keyword || '').trim()
+  const requestedUserId = String(params.user_id || '').trim()
+  const httpStatus = Number(error?.response?.status || error?.httpStatus || 0)
+
+  if (requestedKeyword) {
+    return `订单搜索暂未成功：后端接口在关键词“${requestedKeyword}”下${httpStatus === 500 ? '仍会直接返回 500' : '返回异常'}。${fallbackNotice}请先清空关键词，或改用时间范围 / 状态继续排查。`
+  }
+
+  if (requestedUserId) {
+    return `订单列表暂未按最新筛选条件重新加载。${fallbackNotice}当前“用户ID=${requestedUserId}”条件可能仍受后端接口限制，请以表格里实际返回的用户ID为准。`
+  }
+
+  return `订单列表刷新失败。${fallbackNotice}请稍后重试。`
+}
+
+function buildUserFilterWarning(orders, params = {}) {
+  const requestedUserId = String(params.user_id || '').trim()
+  if (!requestedUserId || !Array.isArray(orders) || orders.length === 0) {
+    return ''
+  }
+
+  const mismatchedUserIds = [...new Set(
+    orders
+      .map(item => String(item?.user_id ?? '').trim())
+      .filter(userId => userId && userId !== requestedUserId)
+  )]
+
+  if (!mismatchedUserIds.length) {
+    return ''
+  }
+
+  const previewIds = mismatchedUserIds.slice(0, 3).join('、')
+  const suffix = mismatchedUserIds.length > 3 ? ' 等' : ''
+  return `接口返回结果仍包含用户 ${previewIds}${suffix} 的订单，说明“用户ID=${requestedUserId}”筛选尚未真正生效。页面暂保留原始返回结果，避免误判为“没有订单”。`
+}
+
 
 function formatAmount(value) {
   return Number(value || 0).toFixed(2)
@@ -434,19 +521,25 @@ function normalizeRechargeOrder(order = {}) {
   }
 }
 
-async function loadOrders() {
+async function loadOrders(source = queryForm) {
+  const params = buildOrderParams(source)
   loading.value = true
   try {
-    const { data } = await getRechargeOrders(buildOrderParams(), { showErrorMessage: false })
-    orderList.value = Array.isArray(data?.list) ? data.list.map(normalizeRechargeOrder) : []
+    const { data } = await getRechargeOrders(params, { showErrorMessage: false })
+    const normalizedOrders = Array.isArray(data?.list) ? data.list.map(normalizeRechargeOrder) : []
+    orderList.value = normalizedOrders
     total.value = Number(data?.total || 0)
+    orderListFeedback.value = ''
+    filterWarningMessage.value = buildUserFilterWarning(normalizedOrders, params)
+    hasLoadedOrders.value = true
+    lastSuccessfulOrderQuery.value = createQuerySnapshot(source)
   } finally {
     loading.value = false
   }
 }
 
-async function loadStats() {
-  const { data } = await getRechargeStats(buildStatsParams(), { showErrorMessage: false })
+async function loadStats(source = queryForm) {
+  const { data } = await getRechargeStats(buildStatsParams(source), { showErrorMessage: false })
   Object.assign(stats, {
     total_amount: Number(data?.total_amount || 0),
     total_points: Number(data?.total_points || 0),
@@ -455,21 +548,46 @@ async function loadStats() {
     pending_count: Number(data?.pending_count || 0),
     avg_amount: Number(data?.avg_amount || 0)
   })
+  hasLoadedStats.value = true
 }
 
-async function refreshPage() {
+async function refreshPage(options = {}) {
+  const attemptedQuery = createQuerySnapshot()
+  const preserveOrdersOnFailure = options.preserveOrdersOnFailure ?? hasLoadedOrders.value
+
   try {
-    const [ordersResult, statsResult] = await Promise.allSettled([loadOrders(), loadStats()])
+    const [ordersResult, statsResult] = await Promise.allSettled([
+      loadOrders(attemptedQuery),
+      loadStats(attemptedQuery)
+    ])
 
     if (ordersResult.status === 'rejected') {
+      if (preserveOrdersOnFailure && hasLoadedOrders.value) {
+        pageError.value = null
+        orderListFeedback.value = buildOrderFailureMessage(ordersResult.reason, buildOrderParams(attemptedQuery))
+
+        if (statsResult.status === 'rejected') {
+          statsError.value = hasLoadedStats.value
+            ? '充值统计加载失败，顶部统计仍保留上一次成功结果'
+            : (statsResult.reason?.message || '充值统计加载失败，当前仅展示订单列表数据')
+        } else {
+          statsError.value = ''
+        }
+        return
+      }
+
       throw ordersResult.reason
     }
 
     pageError.value = null
 
     if (statsResult.status === 'rejected') {
-      Object.assign(stats, createInitialStats())
-      statsError.value = statsResult.reason?.message || '充值统计加载失败，当前仅展示订单列表数据'
+      if (!hasLoadedStats.value) {
+        Object.assign(stats, createInitialStats())
+      }
+      statsError.value = hasLoadedStats.value
+        ? '充值统计加载失败，顶部统计仍保留上一次成功结果'
+        : (statsResult.reason?.message || '充值统计加载失败，当前仅展示订单列表数据')
       return
     }
 
@@ -482,10 +600,29 @@ async function refreshPage() {
   }
 }
 
+async function reloadOrdersWithFallback(options = {}) {
+  const attemptedQuery = createQuerySnapshot()
+
+  try {
+    await loadOrders(attemptedQuery)
+    pageError.value = null
+  } catch (error) {
+    if (hasLoadedOrders.value) {
+      if (options.revertQueryOnFailure && lastSuccessfulOrderQuery.value) {
+        applyQuerySnapshot(lastSuccessfulOrderQuery.value)
+      }
+      pageError.value = null
+      orderListFeedback.value = buildOrderFailureMessage(error, buildOrderParams(attemptedQuery))
+      return
+    }
+
+    handleLoadFailure(error)
+  }
+}
 
 function handleSearch() {
   queryForm.page = 1
-  refreshPage()
+  refreshPage({ preserveOrdersOnFailure: true })
 }
 
 function handleReset() {
@@ -497,18 +634,18 @@ function handleReset() {
     page: 1,
     limit: 20
   })
-  refreshPage()
+  refreshPage({ preserveOrdersOnFailure: true })
 }
 
 function handleSizeChange(size) {
   queryForm.limit = size
   queryForm.page = 1
-  loadOrders().catch(handleLoadFailure)
+  reloadOrdersWithFallback({ revertQueryOnFailure: true })
 }
 
 function handleCurrentChange(page) {
   queryForm.page = page
-  loadOrders().catch(handleLoadFailure)
+  reloadOrdersWithFallback({ revertQueryOnFailure: true })
 }
 
 function handleLoadFailure(error) {
@@ -517,6 +654,7 @@ function handleLoadFailure(error) {
   refundVisible.value = false
   pageError.value = createReadonlyErrorState(error, '充值订单', 'stats_view / config_manage')
 }
+
 
 async function handleDetail(row) {
   try {
@@ -626,7 +764,12 @@ async function confirmRefund() {
   margin-bottom: 20px;
 }
 
+.query-alert {
+  margin-bottom: 20px;
+}
+
 .amount {
+
   color: #f56c6c;
   font-weight: 700;
 }

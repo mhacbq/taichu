@@ -127,26 +127,28 @@ const frontStyle = computed(() => ({
   height: 100%;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  border-radius: 16px;
+  border-radius: 24px;
   overflow: hidden;
 }
 
-/* Card Front Styling */
+/* Card Front Styling - 优化为八字排版风格 */
 .card-front {
-  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 241, 0.94));
   color: var(--text-primary);
   transform: rotateY(180deg);
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 20px;
   position: relative;
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   z-index: 2;
 }
 
@@ -154,17 +156,18 @@ const frontStyle = computed(() => ({
   font-family: 'Cinzel', 'Times New Roman', serif;
   font-weight: 800;
   font-size: 20px;
-  color: var(--primary-light);
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  color: var(--primary-color);
+  text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
 }
 
 .card-element-tag {
   font-size: 11px;
-  padding: 2px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
-  background: var(--white-05);
-  border: 1px solid var(--white-10);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
   color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .card-visual-container {
@@ -189,13 +192,13 @@ const frontStyle = computed(() => ({
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: var(--white-03);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(var(--primary-rgb), 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(var(--primary-rgb), 0.15);
   position: relative;
 }
 
@@ -205,7 +208,7 @@ const frontStyle = computed(() => ({
   left: 0;
   width: 100%;
   height: 100%;
-  color: var(--primary-light);
+  color: var(--primary-color);
   pointer-events: none;
   animation: rotate-pattern 30s linear infinite;
 }
@@ -217,87 +220,94 @@ const frontStyle = computed(() => ({
 
 .card-emoji {
   font-size: 60px;
-  filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.8));
+  filter: drop-shadow(0 0 15px rgba(var(--primary-rgb), 0.3));
 }
 
 .card-footer-new {
-  padding-top: 15px;
-  border-top: 1px dashed rgba(212, 175, 55, 0.3);
+  padding-top: 16px;
+  border-top: 1px dashed rgba(var(--primary-rgb), 0.2);
   z-index: 2;
 }
 
 .card-name-cn {
   font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 1px;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .reversed-badge-mini {
-  font-size: 9px;
+  font-size: 10px;
   color: #ff4d4f;
   letter-spacing: 1px;
   font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 77, 79, 0.1);
+  border: 1px solid rgba(255, 77, 79, 0.3);
 }
 
-/* Decorative Corners */
+/* Decorative Corners - 优化为更现代的风格 */
 .corner-decor {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--primary-light);
-  opacity: 0.4;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(var(--primary-rgb), 0.3);
+  opacity: 0.6;
+  border-radius: 8px;
 }
 
-.top-l { top: 8px; left: 8px; border-right: none; border-bottom: none; }
-.top-r { top: 8px; right: 8px; border-left: none; border-bottom: none; }
-.bot-l { bottom: 8px; left: 8px; border-right: none; border-top: none; }
-.bot-r { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+.top-l { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.top-r { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+.bot-l { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+.bot-r { bottom: 10px; right: 10px; border-left: none; border-top: none; }
 
-/* Card Back Styling */
+/* Card Back Styling - 优化为八字排版风格 */
 .card-back {
-  background: #0a0a0a;
-  padding: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
+  padding: 16px;
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
 }
 
 .back-pattern {
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95));
+  border-radius: 20px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--primary-color);
+  border: 2px solid rgba(var(--primary-rgb), 0.2);
 }
 
 .back-border-outer {
   position: absolute;
-  top: 8px; left: 8px; right: 8px; bottom: 8px;
-  border: 1px solid rgba(184, 134, 11, 0.3);
-  border-radius: 8px;
+  top: 10px; left: 10px; right: 10px; bottom: 10px;
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  border-radius: 12px;
 }
 
 .back-border-inner {
   position: absolute;
-  top: 14px; left: 14px; right: 14px; bottom: 14px;
-  border: 1px solid rgba(184, 134, 11, 0.1);
-  border-radius: 6px;
+  top: 16px; left: 16px; right: 16px; bottom: 16px;
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  border-radius: 8px;
 }
 
 .center-emblem {
-  background: #000;
-  padding: 15px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px;
   border-radius: 50%;
-  border: 1px solid var(--primary-light);
-  box-shadow: 0 0 30px rgba(184, 134, 11, 0.2);
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.2), inset 0 0 20px rgba(var(--primary-rgb), 0.1);
 }
 
 .center-icon {
   font-size: 60px;
-  color: var(--primary-light);
+  color: var(--primary-color);
   animation: rotate-back 20s linear infinite;
 }
 
@@ -306,14 +316,15 @@ const frontStyle = computed(() => ({
   width: 40px;
   height: 40px;
   opacity: 0.2;
-  background-image: radial-gradient(circle, var(--primary-light) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--primary-color) 1px, transparent 1px);
   background-size: 8px 8px;
+  border-radius: 8px;
 }
 
-.tl { top: 0; left: 0; border-radius: 0 0 40px 0; }
-.tr { top: 0; right: 0; border-radius: 0 0 0 40px; }
-.bl { bottom: 0; left: 0; border-radius: 0 40px 0 0; }
-.br { bottom: 0; right: 0; border-radius: 40px 0 0 0; }
+.tl { top: 0; left: 0; border-radius: 0 0 12px 0; }
+.tr { top: 0; right: 0; border-radius: 0 0 0 12px; }
+.bl { bottom: 0; left: 0; border-radius: 0 12px 0 0; }
+.br { bottom: 0; right: 0; border-radius: 12px 0 0 0; }
 
 @keyframes rotate-back {
   from { transform: rotate(0deg); }
@@ -321,8 +332,8 @@ const frontStyle = computed(() => ({
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.2); }
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -358,7 +369,6 @@ const frontStyle = computed(() => ({
 }
 
 @media (max-width: 768px) {
-
   .tarot-card-component {
     width: 140px;
     height: 240px;
@@ -375,6 +385,12 @@ const frontStyle = computed(() => ({
   .visual-frame {
     width: 70px;
     height: 70px;
+  }
+  
+  .card-front,
+  .card-back {
+    padding: 14px;
+    border-radius: 20px;
   }
 }
 </style>
