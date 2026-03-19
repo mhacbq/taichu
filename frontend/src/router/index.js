@@ -36,6 +36,9 @@ const AdminKnowledgeManage = () => import('../views/admin/KnowledgeManage.vue')
 const AdminSEOManage = () => import('../views/admin/SEOManage.vue')
 const AdminSEOStats = () => import('../views/admin/SEOStats.vue')
 const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
+const AdminPointsRecords = () => import('../views/admin/PointsRecords.vue')
+const AdminFeedbackManage = () => import('../views/admin/FeedbackManage.vue')
+const AdminOrderManage = () => import('../views/admin/OrderManage.vue')
 
 const routes = [
   {
@@ -102,7 +105,7 @@ const routes = [
       breadcrumb: [{ name: '首页', url: '/' }, { name: '每日运势', url: '/daily' }]
     }
   },
-  // 管理端统一布局入口（Dashboard + 仪表板）
+  // 管理端统一布局入口 — 所有 /admin/* 都在 AdminLayout 下，共享侧边栏
   {
     path: '/admin',
     component: AdminLayout,
@@ -120,97 +123,61 @@ const routes = [
         component: AdminUserManage,
         meta: { title: '用户管理 - 太初命理管理后台' }
       },
+      {
+        path: 'config',
+        name: 'AdminConfig',
+        component: AdminConfig,
+        meta: { title: '系统配置 - 太初命理管理后台' }
+      },
+      {
+        path: 'almanac',
+        name: 'AdminAlmanacManage',
+        component: AdminAlmanacManage,
+        meta: { title: '黄历管理 - 太初命理管理后台' }
+      },
+      {
+        path: 'knowledge',
+        name: 'AdminKnowledgeManage',
+        component: AdminKnowledgeManage,
+        meta: { title: '知识库管理 - 太初命理管理后台' }
+      },
+      {
+        path: 'seo',
+        name: 'AdminSEOManage',
+        component: AdminSEOManage,
+        meta: { title: 'SEO配置 - 太初命理管理后台' }
+      },
+      {
+        path: 'seo/stats',
+        name: 'AdminSEOStats',
+        component: AdminSEOStats,
+        meta: { title: 'SEO统计 - 太初命理管理后台' }
+      },
+      {
+        path: 'shensha',
+        name: 'AdminShenshaManage',
+        component: AdminShenshaManage,
+        meta: { title: '神煞管理 - 太初命理管理后台' }
+      },
+      {
+        path: 'points',
+        name: 'AdminPointsRecords',
+        component: AdminPointsRecords,
+        meta: { title: '积分记录 - 太初命理管理后台' }
+      },
+      {
+        path: 'feedback',
+        name: 'AdminFeedbackManage',
+        component: AdminFeedbackManage,
+        meta: { title: '用户反馈 - 太初命理管理后台' }
+      },
+      {
+        path: 'orders',
+        name: 'AdminOrderManage',
+        component: AdminOrderManage,
+        meta: { title: '订单管理 - 太初命理管理后台' }
+      },
     ]
-  },
-  {
-    path: '/admin/config',
-    name: 'AdminConfig',
-    component: AdminConfig,
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      seo: {
-        title: '系统配置管理 - 太初命理后台',
-        description: '太初命理后台系统配置管理页面',
-        keywords: '后台配置,系统配置,管理后台'
-      },
-      breadcrumb: [{ name: '首页', url: '/' }, { name: '系统配置', url: '/admin/config' }]
-    }
-  },
-  {
-    path: '/admin/almanac',
-    name: 'AdminAlmanacManage',
-    component: AdminAlmanacManage,
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      seo: {
-        title: '黄历管理 - 太初命理后台',
-        description: '太初命理后台黄历内容管理页面',
-        keywords: '黄历管理,后台管理'
-      },
-      breadcrumb: [{ name: '首页', url: '/' }, { name: '黄历管理', url: '/admin/almanac' }]
-    }
-  },
-  {
-    path: '/admin/knowledge',
-    name: 'AdminKnowledgeManage',
-    component: AdminKnowledgeManage,
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      seo: {
-        title: '知识库管理 - 太初命理后台',
-        description: '太初命理后台知识库管理页面',
-        keywords: '知识库管理,后台管理'
-      },
-      breadcrumb: [{ name: '首页', url: '/' }, { name: '知识库管理', url: '/admin/knowledge' }]
-    }
-  },
-  {
-    path: '/admin/seo',
-    name: 'AdminSEOManage',
-    component: AdminSEOManage,
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      seo: {
-        title: 'SEO管理 - 太初命理后台',
-        description: '太初命理后台 SEO 配置管理页面',
-        keywords: 'SEO管理,后台管理'
-      },
-      breadcrumb: [{ name: '首页', url: '/' }, { name: 'SEO管理', url: '/admin/seo' }]
-    }
-  },
-  {
-    path: '/admin/seo/stats',
-    name: 'AdminSEOStats',
-    component: AdminSEOStats,
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      seo: {
-        title: 'SEO统计 - 太初命理后台',
-        description: '太初命理后台 SEO 统计页面',
-        keywords: 'SEO统计,后台管理'
-      },
-      breadcrumb: [{ name: '首页', url: '/' }, { name: 'SEO统计', url: '/admin/seo/stats' }]
-    }
-  },
-  {
-    path: '/admin/shensha',
-    name: 'AdminShenshaManage',
-    component: AdminShenshaManage,
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      seo: {
-        title: '神煞管理 - 太初命理后台',
-        description: '太初命理后台神煞配置管理页面',
-        keywords: '神煞管理,后台管理'
-      },
-      breadcrumb: [{ name: '首页', url: '/' }, { name: '神煞管理', url: '/admin/shensha' }]
-    }
   },
 
   {
