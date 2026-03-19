@@ -19,7 +19,7 @@
     </el-card>
 
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="recordList" stripe>
+      <el-table v-loading="loading" :data="recordList" stripe empty-text="暂无积分记录">
         <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="user_id" label="用户ID" width="100" />

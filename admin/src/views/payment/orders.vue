@@ -91,7 +91,7 @@
       </el-card>
 
       <el-card shadow="never">
-        <el-table v-loading="loading" :data="orderList" stripe border>
+        <el-table v-loading="loading" :data="orderList" stripe border empty-text="暂无订单数据">
           <el-table-column type="index" label="#" width="56" />
           <el-table-column prop="order_no" label="订单号" min-width="190" show-overflow-tooltip />
           <el-table-column prop="pay_order_no" label="支付单号" min-width="190" show-overflow-tooltip>

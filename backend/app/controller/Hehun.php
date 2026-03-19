@@ -166,7 +166,7 @@ class Hehun extends BaseController
             'report_tier' => self::TIER_FREE,
         ]);
     }
-    
+
     /**
      * 天干五行
      */
@@ -410,19 +410,66 @@ class Hehun extends BaseController
         $birthInputMeta = $this->buildBirthInputMeta($data);
         $storageStatus = HehunRecord::getStorageStatus();
         
-        // 如果是免费层，只返回基础信息
+        // 如果是免费层，只返回基础信息，但同时保存历史记录供用户回看
         if ($tier === self::TIER_FREE) {
             $pricing = $this->getQuickPricing($user['sub']);
             $pricing['unlock_ready'] = $storageStatus['ready'];
             $pricing['unlock_message'] = $storageStatus['message'];
             $pricing['storage_table'] = $storageStatus['table'];
 
-            $freePreviewHehun = $this->buildFreePreviewHehun($hehunResult);
-            $response = [
+            // 免费层也保存历史记录（无需积分，tier=free），确保用户离开后仍可回看
+            $freeRecordId = 0;
+            if ($storageStatus['ready']) {
+                try {
+                    $freeRecordId = HehunRecord::createCompatible([
+                        'user_id' => (int) $user['sub'],
+                        'male_name' => $maleName,
+                        'female_name' => $femaleName,
+                        'male_birthdate' => $data['maleBirthDate'],
+                        'female_birthdate' => $data['femaleBirthDate'],
+                        'male_bazi' => json_encode($maleBazi, JSON_UNESCAPED_UNICODE),
+                        'female_bazi' => json_encode($femaleBazi, JSON_UNESCAPED_UNICODE),
+                        'result' => json_encode([
+                            'score' => $hehunResult['score'],
+                            'level' => $hehunResult['level'],
+                            'level_text' => $hehunResult['level_text'],
+                            'comment' => $hehunResult['comment'],
+                            'suggestions' => $hehunResult['suggestions'],
+                        ], JSON_UNESCAPED_UNICODE),
+                        'score' => $hehunResult['score'],
+                        'level' => $hehunResult['level'],
+                        'tier' => self::TIER_FREE,
+                        'points_cost' => 0,
+                    ]);
+                } catch (\Exception $e) {
+                    // 历史记录保存失败不影响主流程
+                    \think\facade\Log::warning('合婚免费记录保存失败: ' . $e->getMessage());
+                }
+            }
+
+            return $this->success([
                 'tier' => self::TIER_FREE,
-                'male_bazi' => $this->buildFreePreviewBazi($maleBazi),
-                'female_bazi' => $this->buildFreePreviewBazi($femaleBazi),
-                'hehun' => $freePreviewHehun,
+                'male_bazi' => [
+                    'year' => $maleBazi['year']['gan'] . $maleBazi['year']['zhi'],
+                    'month' => $maleBazi['month']['gan'] . $maleBazi['month']['zhi'],
+                    'day' => $maleBazi['day']['gan'] . $maleBazi['day']['zhi'],
+                    'hour' => $maleBazi['hour']['gan'] . $maleBazi['hour']['zhi'],
+                    'day_master' => $maleBazi['day_master']
+                ],
+                'female_bazi' => [
+                    'year' => $femaleBazi['year']['gan'] . $femaleBazi['year']['zhi'],
+                    'month' => $femaleBazi['month']['gan'] . $femaleBazi['month']['zhi'],
+                    'day' => $femaleBazi['day']['gan'] . $femaleBazi['day']['zhi'],
+                    'hour' => $femaleBazi['hour']['gan'] . $femaleBazi['hour']['zhi'],
+                    'day_master' => $femaleBazi['day_master']
+                ],
+                'hehun' => [
+                    'score' => $hehunResult['score'],
+                    'level' => $hehunResult['level'],
+                    'level_text' => $hehunResult['level_text'],
+                    'comment' => $hehunResult['comment'],
+                    'suggestions' => [count($hehunResult['suggestions']) > 0 ? $hehunResult['suggestions'][0] : '双方缘分尚可，建议查看详细报告了解更多。']
+                ],
                 'preview_hint' => $storageStatus['ready']
                     ? '查看五维度详细分析、AI解读、化解方案等，请解锁详细报告'
                     : '当前详细报告链路正在维护，建议先等待库表修复完成后再解锁。',

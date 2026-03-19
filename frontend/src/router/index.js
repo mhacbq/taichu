@@ -18,6 +18,10 @@ const Recharge = () => import('../views/Recharge.vue')
 const Hehun = () => import('../views/Hehun.vue')
 const Liuyao = () => import('../views/Liuyao.vue')
 
+// 法律页面
+const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
+const PrivacyPolicy = () => import('../views/Legal/PrivacyPolicy.vue')
+
 // 管理后台页面（懒加载）
 const AdminConfig = () => import('../views/admin/Config.vue')
 const AdminAlmanacManage = () => import('../views/admin/AlmanacManage.vue')
@@ -238,6 +242,34 @@ const routes = [
       public: true,
       seo: seoConfigs.help,
       breadcrumb: [{ name: '首页', url: '/' }, { name: '帮助中心', url: '/help' }]
+    }
+  },
+  {
+    path: '/legal/agreement',
+    name: 'UserAgreement',
+    component: UserAgreement,
+    meta: {
+      public: true,
+      seo: {
+        title: '用户协议 - 太初命理',
+        description: '太初命理用户服务协议',
+        keywords: '用户协议,服务条款'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '用户协议', url: '/legal/agreement' }]
+    }
+  },
+  {
+    path: '/legal/privacy',
+    name: 'PrivacyPolicy',
+    component: PrivacyPolicy,
+    meta: {
+      public: true,
+      seo: {
+        title: '隐私政策 - 太初命理',
+        description: '太初命理隐私政策说明',
+        keywords: '隐私政策,隐私保护'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '隐私政策', url: '/legal/privacy' }]
     }
   },
   {

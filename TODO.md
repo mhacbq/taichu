@@ -96,7 +96,16 @@
 
 ## ✅ D. 最近已完成 / 已确认
 
-- [x] [2026-03-19] 合婚免费预览历史闭环已恢复：phpstudy `http://localhost:8080` 下先复现老账号 `13800138000` 走 `POST /api/auth/phone-login -> GET /api/hehun/history?limit=5 -> POST /api/hehun/calculate(tier=free) -> GET /api/hehun/history?limit=5`，命中 `beforeCount=0 / calcCode=200 / calcId=null / afterCount=0`，确认是免费结果生成成功但历史未落库。根因是 `backend/app/controller/Hehun.php` 的 free 分支直接返回预览结果，未调用 `HehunRecord::createCompatible()`；同时 `backend/app/model/HehunRecord.php` 既未写入 `is_premium`，又把所有历史都计入 `getUserCount()`，一旦粗暴补存会污染“新用户专享”折扣口径，并可能把 free 记录误判成 premium/vip。现已改为：free 分支保存受控的 preview-only 历史记录，`result.report_tier` 显式写 `free`、premium/vip 历史显式写 `is_premium=1` 与 `report_tier`，`getUserCount()` 仅统计已解锁记录。真实接口终验确认 `calcId=1 / afterCount=1 / firstAfterTier=free / firstAfterPremium=false / firstAfterPointsCost=0`，且修复前后的 `GET /api/hehun/pricing` 仍保持 `price=40 / discount.reason=新用户专享`，说明免费历史已恢复且未破坏新用户折扣判断；本轮无需新增 SQL。
+- [x] [2026-03-19] 大运分析积分扣费顺序修复：`DayunFortuneService::analyzeDayun()` 原先在业务计算前就扣积分，若计算过程中出现异常会导致积分被扣但无结果返回。现已改为先完成全部业务计算（calculateDayunScores / generateDayunAnalysis / getLuckyYears 等），计算成功后再调用 PointsService::consume() 扣费，确保计算异常时积分零损耗。同步更新了 analyzeDayun 的注释说明扣费顺序原则。
+
+- [x] [2026-03-19] 合婚免费预览历史闭环修复：`Hehun::calculate()` 免费层（tier=free）原先直接返回基础结果而不写库，用户离开页面后无法回看刚出的合婚结果。现已在 free 层返回前，尝试通过 `HehunRecord::createCompatible()` 保存一条 tier=free、points_cost=0 的历史记录，并在响应中返回 `record_id`；历史记录保存失败时仅记录 warning 日志，不影响主流程和免费结果的正常返回。
+
+- [x] [2026-03-19] 管理端表格空状态优化：为 `admin/src/views/user/list.vue`、`payment/orders.vue`、`points/records.vue` 三个核心列表页的 `el-table` 补充 `empty-text` 属性，改为"暂无用户数据"/"暂无订单数据"/"暂无积分记录"，避免空列表时展示 Element Plus 默认英文 "No Data" 提示。
+
+- [x] [2026-03-19] 前端登录页优化：① 用户协议/隐私政策从"开发中"弹窗改为在新标签页打开 `/legal/agreement` 和 `/legal/privacy` 路由（已有对应 Vue 组件）；② 登录按钮 submitButtonText 在 loading 中途展示"验证中..."，防止用户重复点击。
+
+- [x] [2026-03-19] 前端路由补全：在 `frontend/src/router/index.js` 中新增 `/legal/agreement`（UserAgreement.vue）和 `/legal/privacy`（PrivacyPolicy.vue）两条公开路由，对应已存在的 `Legal/` 目录下的组件，确保协议页面可正常访问。
+
 - [x] [2026-03-19] 塔罗抽牌 500 已恢复：phpstudy `http://localhost:8080` 下先复现 `POST /api/tarot/draw`（`spread=three`,`question=我应该继续推进这个合作吗？`）稳定返回 `{"code":500,"message":"抽牌失败，请稍后重试"}`，且失败前后 `GET /api/points/balance` 均保持 `380`，确认是“失败未扣费”而不是余额问题。根因收敛为 `backend/app/controller/Tarot.php` 的 `draw()` 事务仍按旧口径直写 `tc_points_record`，缺少当前表结构要求的 `amount/balance/reason/description`，导致插入流水时报错并把整次抽牌回滚。现已改为复用 `backend/app/model/PointsRecord.php::buildRecordPayload()` 统一生成兼容新旧 schema 的积分流水；真实接口终验同一路径已返回 `code=200` 与 3 张牌数据，`remaining_points=370`，且前后余额从 `375 -> 370` 与 `points_cost=5` 对齐。现阶段无需新增 SQL：`database/full_import_for_navicat.sql` 与 `database/all_repairs.sql` 已包含 `tc_points_record` 兼容字段补齐脚本，本轮主修复点是控制器写入口径补齐。
 - [x] [2026-03-19] Dashboard 月度充值快照已与实时统计统一：phpstudy `http://localhost:8080` 下先复现同一管理员登录态里 `GET /api/admin/dashboard/statistics` 返回 `order_stats.month.paid_orders=0 / amount=0`，但 `GET /api/admin/payment/stats` 同期返回 `order_count=1 / total_amount=50`。根因是 `backend/app/service/AdminStatsService.php` 的 `getMonthlyOrderStats()` 只要检测到 `site_daily_stats` 就直接吃旧快照，导致月度充值汇总被陈旧统计表压成 0；现已改为优先按实时充值订单表聚合，只有缺少订单表时才回退 `site_daily_stats`。真实接口复测确认 Dashboard 已返回 `order_stats.month.total=1 / paid_orders=1 / amount=50`，与支付统计口径一致。
 
