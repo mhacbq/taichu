@@ -8,6 +8,7 @@ use app\service\SchemaInspector;
 use app\service\SensitiveDataSanitizer;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use think\facade\Cache;
 use think\facade\Db;
 use think\facade\Env;
 use think\facade\Log;
@@ -69,6 +70,16 @@ class AdminAuth
 
             if ($adminId <= 0 || $issuer !== 'taichu-admin' || !$isAdmin) {
                 throw new \UnexpectedValueException('后台 Token 声明无效');
+            }
+
+            // ── 黑名单校验：检查 Token 是否已被注销 ──────────────────────────
+            $jti = $decoded->jti ?? md5($token);
+            if (Cache::get("admin_token_blacklist:{$jti}")) {
+                return json([
+                    'code' => 401,
+                    'message' => '登录已过期，请重新登录',
+                    'data' => null,
+                ], 401);
             }
 
             $admin = AdminAuthService::findActiveAdmin($adminId);

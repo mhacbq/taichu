@@ -255,11 +255,21 @@
 <script setup>
 import { ref, computed, h, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import * as echarts from 'echarts'
+// echarts 按需引入，减少打包体积
+import { use, init as echartsInit } from 'echarts/core'
+import { PieChart, LineChart } from 'echarts/charts'
+import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import { graphic } from 'echarts/core'
+const { LinearGradient } = graphic
 import {
   ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
   Warning, InfoFilled, CircleCheck
 } from '@element-plus/icons-vue'
+import { getSeoStats } from '@/api/admin'
+
+// 注册 echarts 所需组件
+use([PieChart, LineChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
 
 // 图表实例
 let pieChartInstance = null
@@ -269,81 +279,87 @@ let trendChartInstance = null
 const pieChart = ref(null)
 const trendChart = ref(null)
 
-// 统计数据
+// 加载状态
+const loading = ref(false)
+
+// 统计数据（从API获取）
 const stats = ref({
-  baidu: { indexed: 12, trend: 20 },
-  bing: { indexed: 8, trend: 14 },
-  keywords: { total: 156, top10: 23 },
-  traffic: { organic: 2341, trend: 35 }
+  baidu: { indexed: 0, trend: 0 },
+  bing: { indexed: 0, trend: 0 },
+  keywords: { total: 0, top10: 0 },
+  traffic: { organic: 0, trend: 0 }
 })
 
-// 关键词数据
+// 关键词数据（从API获取）
 const keywordFilter = ref('all')
-const keywords = ref([
-  { keyword: '八字排盘', category: '核心词', baiduRank: 15, bingRank: 12, searchVolume: 12500, trend: 1 },
-  { keyword: '免费八字', category: '长尾词', baiduRank: 8, bingRank: 6, searchVolume: 8900, trend: 1 },
-  { keyword: '塔罗占卜', category: '核心词', baiduRank: 23, bingRank: 18, searchVolume: 10200, trend: -1 },
-  { keyword: '在线塔罗', category: '长尾词', baiduRank: 12, bingRank: 10, searchVolume: 5600, trend: 1 },
-  { keyword: '每日运势', category: '核心词', baiduRank: 45, bingRank: 38, searchVolume: 15800, trend: 1 },
-  { keyword: '生辰八字', category: '长尾词', baiduRank: 18, bingRank: 15, searchVolume: 7300, trend: 1 },
-  { keyword: '塔罗牌', category: '核心词', baiduRank: 56, bingRank: 42, searchVolume: 22100, trend: -1 },
-  { keyword: '星座运势', category: '相关词', baiduRank: 89, bingRank: 76, searchVolume: 35600, trend: 1 },
-  { keyword: '命理分析', category: '相关词', baiduRank: 34, bingRank: 28, searchVolume: 4200, trend: 1 },
-  { keyword: 'AI算命', category: '特色词', baiduRank: 5, bingRank: 3, searchVolume: 1800, trend: 1 }
-])
+const keywords = ref([])
 
-// 页面数据
+// 页面数据（从API获取）
 const pageSearch = ref('')
 const pageCurrent = ref(1)
 const pageSize = ref(10)
-const pageTotal = ref(6)
-const pages = ref([
-  { url: '/', title: '太初命理 - AI智能命理分析平台', baiduStatus: '已收录', bingStatus: '已收录', lastCrawl: '2026-03-14', traffic: 1250 },
-  { url: '/bazi', title: '免费八字排盘_在线生辰八字测算', baiduStatus: '已收录', bingStatus: '已收录', lastCrawl: '2026-03-14', traffic: 680 },
-  { url: '/tarot', title: '免费塔罗牌占卜_在线塔罗测试', baiduStatus: '已收录', bingStatus: '已收录', lastCrawl: '2026-03-13', traffic: 520 },
-  { url: '/daily', title: '今日运势查询_每日星座运势', baiduStatus: '已收录', bingStatus: '待收录', lastCrawl: '2026-03-12', traffic: 380 },
-  { url: '/help', title: '帮助中心_使用指南_常见问题', baiduStatus: '已收录', bingStatus: '已收录', lastCrawl: '2026-03-10', traffic: 95 },
-  { url: '/recharge', title: '积分充值_购买命理服务', baiduStatus: '待收录', bingStatus: '待收录', lastCrawl: '-', traffic: 42 }
-])
+const pageTotal = ref(0)
+const pages = ref([])
 
-// 建议数据
-const suggestions = ref([
-  {
-    priority: 'high',
-    title: '页面加载速度较慢',
-    description: '首页加载时间超过3秒，建议优化图片大小和代码压缩',
-    action: '查看详情'
-  },
-  {
-    priority: 'high',
-    title: '缺少结构化数据',
-    description: '多个页面未添加JSON-LD结构化数据，影响搜索结果展示',
-    action: '立即添加'
-  },
-  {
-    priority: 'medium',
-    title: '外链数量较少',
-    description: '当前外链数量不足，建议增加高质量外链建设',
-    action: '查看建议'
-  },
-  {
-    priority: 'low',
-    title: '内容更新频率良好',
-    description: '近期内容更新频率正常，继续保持',
-    action: '查看报告'
-  }
-])
+// 建议数据（从API获取，降级为空数组）
+const suggestions = ref([])
+
+// 趋势图原始数据（从API获取）
+const trendRawData = ref({ trend: [], dates: [] })
 
 // 趋势图类型
 const trendType = ref('indexed')
 
-// 计算属性
+// ── 数据加载 ────────────────────────────────────────────────────
+async function loadStats() {
+  loading.value = true
+  try {
+    const params = {
+      page: pageCurrent.value,
+      pageSize: pageSize.value,
+      keyword: pageSearch.value || undefined
+    }
+    const res = await getSeoStats(params)
+    const data = res?.data ?? res
+    if (!data) return
+
+    // 统计卡片
+    if (data.stats) stats.value = data.stats
+
+    // 关键词列表
+    if (Array.isArray(data.keywords)) keywords.value = data.keywords
+
+    // 页面收录列表
+    if (data.pages) {
+      pages.value = data.pages.list ?? []
+      pageTotal.value = data.pages.total ?? 0
+    }
+
+    // 趋势图数据
+    if (data.trend) {
+      trendRawData.value = data.trend
+      updateTrendChart()
+    }
+
+    // 优化建议
+    if (Array.isArray(data.suggestions)) suggestions.value = data.suggestions
+
+    // 更新饼图（用百度/必应收录量）
+    updatePieChart()
+  } catch {
+    ElMessage.error('获取SEO统计数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// ── 计算属性 ─────────────────────────────────────────────────────
 const filteredKeywords = computed(() => {
   let result = keywords.value
   if (keywordFilter.value === 'top10') {
-    result = result.filter(k => k.baiduRank <= 10 || k.bingRank <= 10)
+    result = result.filter(k => (k.baidu_rank || k.baiduRank) <= 10 || (k.bing_rank || k.bingRank) <= 10)
   } else if (keywordFilter.value === 'top50') {
-    result = result.filter(k => k.baiduRank <= 50 || k.bingRank <= 50)
+    result = result.filter(k => (k.baidu_rank || k.baiduRank) <= 50 || (k.bing_rank || k.bingRank) <= 50)
   }
   return result
 })
@@ -351,22 +367,21 @@ const filteredKeywords = computed(() => {
 const filteredPages = computed(() => {
   if (!pageSearch.value) return pages.value
   return pages.value.filter(p =>
-    p.url.includes(pageSearch.value) ||
-    p.title.includes(pageSearch.value)
+    p.url?.includes(pageSearch.value) ||
+    p.title?.includes(pageSearch.value)
   )
 })
 
-// 方法
+// ── 工具方法 ─────────────────────────────────────────────────────
 const getKeywordType = (category) => {
   const map = { '核心词': 'danger', '长尾词': 'success', '相关词': 'info', '特色词': 'warning' }
   return map[category] || 'info'
 }
 
 const formatNumber = (num) => {
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万'
-  }
-  return num.toLocaleString()
+  const n = Number(num) || 0
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万'
+  return n.toLocaleString()
 }
 
 const refreshPage = (row) => {
@@ -382,23 +397,25 @@ const RankBadge = {
   props: ['rank'],
   setup(props) {
     const type = computed(() => {
-      if (props.rank <= 10) return 'success'
-      if (props.rank <= 30) return 'warning'
+      const r = Number(props.rank)
+      if (r <= 10) return 'success'
+      if (r <= 30) return 'warning'
       return 'info'
     })
     return () => h('el-tag', { type: type.value, size: 'small' }, props.rank)
   }
 }
 
-// 初始化饼图
-const initPieChart = () => {
-  if (!pieChart.value) return
-  pieChartInstance = echarts.init(pieChart.value)
+// ── 图表方法 ─────────────────────────────────────────────────────
+const updatePieChart = () => {
+  if (!pieChartInstance) return
+  const baiduVal = stats.value.baidu?.indexed ?? 0
+  const bingVal = stats.value.bing?.indexed ?? 0
   pieChartInstance.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     legend: { bottom: '0', left: 'center', textStyle: { color: '#8b8b8b' }, itemWidth: 10, itemHeight: 10 },
     series: [{
-      name: '流量占比',
+      name: '收录分布',
       type: 'pie',
       radius: ['40%', '70%'],
       avoidLabelOverlap: false,
@@ -406,30 +423,43 @@ const initPieChart = () => {
       label: { show: false },
       emphasis: { label: { show: true, fontSize: '14', fontWeight: 'bold' } },
       data: [
-        { value: 1250, name: '百度', itemStyle: { color: '#2932e1' } },
-        { value: 680, name: '必应', itemStyle: { color: '#008373' } },
-        { value: 411, name: 'Google', itemStyle: { color: '#4285f4' } }
+        { value: baiduVal, name: '百度', itemStyle: { color: '#2932e1' } },
+        { value: bingVal, name: '必应', itemStyle: { color: '#008373' } }
       ]
     }]
   })
 }
 
-// 初始化趋势图
+const initPieChart = () => {
+  if (!pieChart.value) return
+  pieChartInstance = echartsInit(pieChart.value)
+  updatePieChart()
+}
+
 const initTrendChart = () => {
   if (!trendChart.value) return
-  trendChartInstance = echarts.init(trendChart.value)
+  trendChartInstance = echartsInit(trendChart.value)
   updateTrendChart()
 }
 
 const updateTrendChart = () => {
+  if (!trendChartInstance) return
   const isTraffic = trendType.value === 'traffic'
+  const raw = trendRawData.value
+  const dates = raw?.dates?.length ? raw.dates : Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - 29 + i)
+    return `${d.getMonth()+1}-${d.getDate()}`
+  })
+  const baiduData = isTraffic ? (raw?.baidu_traffic ?? []) : (raw?.baidu_indexed ?? [])
+  const bingData = isTraffic ? (raw?.bing_traffic ?? []) : (raw?.bing_indexed ?? [])
+
   const option = {
     tooltip: { trigger: 'axis' },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: Array.from({ length: 30 }, (_, i) => `03-${i + 1}`),
+      data: dates,
       axisLabel: { color: '#8b8b8b' }
     },
     yAxis: { type: 'value', axisLabel: { color: '#8b8b8b' } },
@@ -438,17 +468,17 @@ const updateTrendChart = () => {
         name: isTraffic ? '百度流量' : '百度收录',
         type: 'line',
         smooth: true,
-        data: Array.from({ length: 30 }, () => Math.floor(Math.random() * (isTraffic ? 500 : 50)) + 20),
+        data: baiduData,
         itemStyle: { color: '#2932e1' },
-        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(41, 50, 225, 0.2)' }, { offset: 1, color: 'rgba(41, 50, 225, 0)' }]) }
+        areaStyle: { color: new LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(41, 50, 225, 0.2)' }, { offset: 1, color: 'rgba(41, 50, 225, 0)' }]) }
       },
       {
         name: isTraffic ? '必应流量' : '必应收录',
         type: 'line',
         smooth: true,
-        data: Array.from({ length: 30 }, () => Math.floor(Math.random() * (isTraffic ? 300 : 30)) + 10),
+        data: bingData,
         itemStyle: { color: '#008373' },
-        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 131, 115, 0.2)' }, { offset: 1, color: 'rgba(0, 131, 115, 0)' }]) }
+        areaStyle: { color: new LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 131, 115, 0.2)' }, { offset: 1, color: 'rgba(0, 131, 115, 0)' }]) }
       }
     ]
   }
@@ -456,15 +486,18 @@ const updateTrendChart = () => {
 }
 
 watch(trendType, updateTrendChart)
+watch(pageCurrent, loadStats)
+watch(pageSearch, () => { pageCurrent.value = 1; loadStats() })
 
 const handleResize = () => {
   pieChartInstance?.resize()
   trendChartInstance?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
   initPieChart()
   initTrendChart()
+  await loadStats()
   window.addEventListener('resize', handleResize)
 })
 
@@ -473,7 +506,6 @@ onUnmounted(() => {
   pieChartInstance?.dispose()
   trendChartInstance?.dispose()
 })
-
 </script>
 
 <style scoped>

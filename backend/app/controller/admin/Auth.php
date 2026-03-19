@@ -7,6 +7,8 @@ use app\BaseController;
 use app\service\AdminAuthService;
 use app\service\SchemaInspector;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use think\facade\Cache;
 use think\facade\Db;
 use think\facade\Env;
 use think\facade\Log;
@@ -92,6 +94,7 @@ class Auth extends BaseController
             'iss' => 'taichu-admin',
             'iat' => time(),
             'exp' => time() + 86400,
+            'jti' => bin2hex(random_bytes(16)),  // 唯一Token ID，用于黑名单精确识别
             'sub' => $adminId,
             'username' => (string) ($admin['username'] ?? $username),
             'roles' => $roles,
@@ -146,9 +149,32 @@ class Auth extends BaseController
 
     /**
      * 退出登录
+     *
+     * 将当前 Token 加入黑名单缓存，确保注销后 Token 立即失效。
+     * 缓存 TTL 与 Token 剩余有效期一致，避免黑名单无限增长。
      */
-    public function logout()
+    public function logout(Request $request)
     {
+        $authHeader = $request->header('Authorization', '');
+        $token = preg_replace('/^Bearer\s+/i', '', trim((string) $authHeader));
+
+        if ($token !== '' && $this->jwtKey !== '') {
+            try {
+                $payload = (array) \Firebase\JWT\JWT::decode($token, new Key($this->jwtKey, 'HS256'));
+                $jti = $payload['jti'] ?? md5($token);
+                $exp = (int) ($payload['exp'] ?? 0);
+                $ttl = max(60, $exp - time());
+                Cache::set("admin_token_blacklist:{$jti}", 1, $ttl);
+                Log::info('管理员退出，Token已加入黑名单', [
+                    'jti' => $jti,
+                    'exp' => $exp,
+                    'admin_id' => $payload['sub'] ?? 0,
+                ]);
+            } catch (\Throwable $e) {
+                Log::debug('logout: Token解析失败', ['error' => $e->getMessage()]);
+            }
+        }
+
         return $this->success(null, '退出成功');
     }
 
