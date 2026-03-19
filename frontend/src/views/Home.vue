@@ -213,6 +213,38 @@
               进入 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
+
+          <!-- 取名建议（即将推出） -->
+          <div class="feature-card feature-card--coming card-hover" data-type="qiming">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">✍️</span>
+            </div>
+            <div class="coming-badge">即将推出</div>
+            <h3>取名建议</h3>
+            <p>结合生辰八字与五行，由AI为新生儿推荐寓意美好的名字</p>
+            <div class="feature-meta">
+              <span class="feature-cost">✨ 五行取名</span>
+            </div>
+            <span class="feature-link feature-link--sm feature-link--disabled">
+              敬请期待
+            </span>
+          </div>
+
+          <!-- 吉日查询（即将推出） -->
+          <div class="feature-card feature-card--coming card-hover" data-type="jiri">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">📅</span>
+            </div>
+            <div class="coming-badge">即将推出</div>
+            <h3>吉日查询</h3>
+            <p>结婚、开业、搬家……根据黄历与个人八字，挑选最宜之日</p>
+            <div class="feature-meta">
+              <span class="feature-cost">📆 择日黄历</span>
+            </div>
+            <span class="feature-link feature-link--sm feature-link--disabled">
+              敬请期待
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -1424,8 +1456,56 @@ onUnmounted(() => {
   border-color: rgba(212, 175, 55, 0.35);
 }
 
-/* 命理符号图标 */
-.feature-icon-wrap {
+/* 次要功能卡片：视觉退后 */
+.feature-card--secondary {
+  background: rgba(255, 253, 246, 0.9);
+  border-color: rgba(227, 184, 104, 0.2);
+  padding: 24px 20px;
+}
+
+.feature-card--secondary:hover {
+  border-color: rgba(212, 175, 55, 0.35);
+}
+
+/* 即将推出卡片 */
+.feature-card--coming {
+  background: rgba(248, 248, 248, 0.7);
+  border-color: rgba(200, 200, 200, 0.3);
+  padding: 24px 20px;
+  opacity: 0.75;
+  position: relative;
+}
+
+.feature-card--coming:hover {
+  opacity: 0.9;
+  border-color: rgba(212, 175, 55, 0.25);
+}
+
+.coming-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  border-radius: 20px;
+  padding: 2px 10px;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.feature-link--disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #bbb;
+  cursor: default;
+  pointer-events: none;
+  margin-top: auto;
+}
+
+
   width: 64px;
   height: 64px;
   margin: 0 auto 20px;
