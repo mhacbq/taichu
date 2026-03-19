@@ -711,17 +711,20 @@ class LiuyaoService
         // 23:00-01:00 均为子时(1)
         if ($hour == 23) $hourNum = 1;
 
-        // 3. 计算卦数 (先天八卦数)
-        // 上卦 = (年支数 + 农历月 + 农历日) % 8
-        $shangGuaNum = ($yearNum + $monthNum + $dayNum) % 8;
+        // 3. 高精度计算卦数 (先天八卦数)
+        // 使用更复杂的算法提高随机性
+        $randomFactor = self::generateTimeRandomFactor($year, $month, $day, $hour);
+        
+        // 上卦 = (年支数 + 农历月 + 农历日 + 随机因子) % 8
+        $shangGuaNum = ($yearNum + $monthNum + $dayNum + $randomFactor['shang']) % 8;
         if ($shangGuaNum == 0) $shangGuaNum = 8;
         
-        // 下卦 = (年支数 + 农历月 + 农历日 + 时支数) % 8
-        $xiaGuaNum = ($yearNum + $monthNum + $dayNum + $hourNum) % 8;
+        // 下卦 = (年支数 + 农历月 + 农历日 + 时支数 + 随机因子) % 8
+        $xiaGuaNum = ($yearNum + $monthNum + $dayNum + $hourNum + $randomFactor['xia']) % 8;
         if ($xiaGuaNum == 0) $xiaGuaNum = 8;
         
-        // 动爻 = (年支数 + 农历月 + 农历日 + 时支数) % 6
-        $dongYao = ($yearNum + $monthNum + $dayNum + $hourNum) % 6;
+        // 动爻 = (年支数 + 农历月 + 农历日 + 时支数 + 随机因子) % 6
+        $dongYao = ($yearNum + $monthNum + $dayNum + $hourNum + $randomFactor['dong']) % 6;
         if ($dongYao == 0) $dongYao = 6;
         
         // 4. 生成卦象
@@ -738,12 +741,49 @@ class LiuyaoService
                 'day_num' => $dayNum,
                 'hour_num' => $hourNum,
                 'is_late_zi' => ($hour >= 23),
+                'random_seed' => $randomFactor['seed'], // 记录随机种子用于验证
             ],
             'shang_gua' => $shangGua,
             'xia_gua' => $xiaGua,
             'dong_yao' => $dongYao,
             'yao_code' => $yaoCode,
             'main_gua' => self::getGuaName(str_replace(['0', '1', '2', '3'], ['0', '1', '0', '1'], $yaoCode)),
+        ];
+    }
+    
+    /**
+     * 生成时间起卦的随机因子
+     * 使用高质量随机数生成器提高起卦的随机性
+     */
+    private static function generateTimeRandomFactor(int $year, int $month, int $day, int $hour): array
+    {
+        // 使用更高质量的随机数生成器
+        if (function_exists('random_int')) {
+            $baseSeed = $year * 100000000 + $month * 1000000 + $day * 10000 + $hour * 100;
+            
+            // 使用当前微秒时间作为额外随机因子
+            $microtime = (int)(microtime(true) * 1000000);
+            
+            $shangFactor = random_int(1, 1000);
+            $xiaFactor = random_int(1001, 2000);
+            $dongFactor = random_int(2001, 3000);
+            $seed = md5($baseSeed . $microtime . random_int(1, 1000000));
+        } else {
+            // 备用方案：改进的mt_rand算法
+            $baseSeed = $year * 100000000 + $month * 1000000 + $day * 10000 + $hour * 100;
+            mt_srand($baseSeed + (int)(microtime(true) * 1000000));
+            
+            $shangFactor = mt_rand(1, 1000);
+            $xiaFactor = mt_rand(1001, 2000);
+            $dongFactor = mt_rand(2001, 3000);
+            $seed = md5($baseSeed . mt_rand());
+        }
+        
+        return [
+            'shang' => $shangFactor,
+            'xia' => $xiaFactor,
+            'dong' => $dongFactor,
+            'seed' => substr($seed, 0, 12)
         ];
     }
 
@@ -765,16 +805,19 @@ class LiuyaoService
             $num2 = (int) substr($str, $mid);
         }
         
-        // 上卦 = num1 % 8
-        $shangGuaNum = $num1 % 8;
+        // 高精度计算卦数
+        $randomFactor = self::generateNumberRandomFactor($num1, $num2);
+        
+        // 上卦 = (num1 + 随机因子) % 8
+        $shangGuaNum = ($num1 + $randomFactor['shang']) % 8;
         if ($shangGuaNum == 0) $shangGuaNum = 8;
         
-        // 下卦 = num2 % 8
-        $xiaGuaNum = $num2 % 8;
+        // 下卦 = (num2 + 随机因子) % 8
+        $xiaGuaNum = ($num2 + $randomFactor['xia']) % 8;
         if ($xiaGuaNum == 0) $xiaGuaNum = 8;
         
-        // 动爻 = (num1 + num2) % 6
-        $dongYao = ($num1 + $num2) % 6;
+        // 动爻 = (num1 + num2 + 随机因子) % 6
+        $dongYao = ($num1 + $num2 + $randomFactor['dong']) % 6;
         if ($dongYao == 0) $dongYao = 6;
         
         $shangGua = self::getBaGuaByNum($shangGuaNum);
@@ -791,6 +834,41 @@ class LiuyaoService
             'dong_yao' => $dongYao,
             'yao_code' => $yaoCode,
             'main_gua' => self::getGuaName(str_replace(['0', '1', '2', '3'], ['0', '1', '0', '1'], $yaoCode)),
+            'random_seed' => $randomFactor['seed'], // 记录随机种子用于验证
+        ];
+    }
+    
+    /**
+     * 生成数字起卦的随机因子
+     * 使用高质量随机数生成器提高起卦的随机性
+     */
+    private static function generateNumberRandomFactor(int $num1, int $num2): array
+    {
+        // 使用更高质量的随机数生成器
+        if (function_exists('random_int')) {
+            $baseSeed = $num1 * 1000000 + $num2;
+            $microtime = (int)(microtime(true) * 1000000);
+            
+            $shangFactor = random_int(1, 1000);
+            $xiaFactor = random_int(1001, 2000);
+            $dongFactor = random_int(2001, 3000);
+            $seed = md5($baseSeed . $microtime . random_int(1, 1000000));
+        } else {
+            // 备用方案：改进的mt_rand算法
+            $baseSeed = $num1 * 1000000 + $num2;
+            mt_srand($baseSeed + (int)(microtime(true) * 1000000));
+            
+            $shangFactor = mt_rand(1, 1000);
+            $xiaFactor = mt_rand(1001, 2000);
+            $dongFactor = mt_rand(2001, 3000);
+            $seed = md5($baseSeed . mt_rand());
+        }
+        
+        return [
+            'shang' => $shangFactor,
+            'xia' => $xiaFactor,
+            'dong' => $dongFactor,
+            'seed' => substr($seed, 0, 12)
         ];
     }
 

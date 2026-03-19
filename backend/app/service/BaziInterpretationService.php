@@ -226,10 +226,19 @@ class BaziInterpretationService
     ];
 
     /**
-     * 生成完整八字解读
+     * 生成完整八字解读 - 增强版
+     * 支持分级分析和智能质量评估
      */
-    public function generateFullInterpretation(array $bazi, string $gender): array
+    public function generateFullInterpretation(array $bazi, string $gender, array $config = []): array
     {
+        $defaultConfig = [
+            'analysis_depth' => 'professional', // 分析深度：basic/standard/professional/expert
+            'include_hehun' => false, // 是否包含合婚分析
+            'quality_threshold' => 0.8, // 质量阈值
+            'max_length' => 2000, // 最大分析长度
+        ];
+        $config = array_merge($defaultConfig, $config);
+        
         $dayMaster = $bazi['day']['gan'] ?? '甲';
         if (!isset($this->ganCharacteristics[$dayMaster])) {
             $dayMaster = '甲';
@@ -240,14 +249,14 @@ class BaziInterpretationService
 
         $wuxingStats = $this->normalizeWuxingStats($bazi['wuxing_stats'] ?? []);
         
-        // 分析五行强弱
-        $wuxingAnalysis = $this->analyzeWuxingStrength($wuxingStats);
+        // 分析五行强弱 - 根据深度调整分析精度
+        $wuxingAnalysis = $this->analyzeWuxingStrength($wuxingStats, $config['analysis_depth']);
         
-        // 分析喜用神 - 传入完整bazi以进行深入分析
-        $yongshen = $this->determineYongshen($bazi, $wuxingStats);
+        // 分析喜用神 - 根据深度调整分析深度
+        $yongshen = $this->determineYongshen($bazi, $wuxingStats, $config['analysis_depth']);
         
-        // 分析日主特性
-        $dayMasterAnalysis = $this->analyzeDayMaster($dayMaster, $bazi);
+        // 分析日主特性 - 增强版分析
+        $dayMasterAnalysis = $this->analyzeDayMasterEnhanced($dayMaster, $bazi, $config['analysis_depth']);
         
         // 分析十神配置
         $shishenAnalysis = $this->analyzeShishen($bazi);

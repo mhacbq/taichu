@@ -1599,25 +1599,55 @@ const getCardAdvice = (card) => {
 
 
 .tarot-card {
-  width: 150px;
-  height: 250px;
-  perspective: 1000px;
+  width: 160px;
+  height: 260px;
+  perspective: 1200px;
+  position: relative;
 }
-
 
 .card-inner {
   width: 100%;
   height: 100%;
-  background: var(--bg-tertiary);
-  border-radius: 15px;
-  border: 2px solid rgba(184, 134, 11, 0.3);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
+  border-radius: 18px;
+  border: 2px solid rgba(184, 134, 11, 0.4);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 25px;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+              0 4px 16px rgba(184, 134, 11, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.3), transparent);
+}
+
+.card-inner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+.tarot-card:hover .card-inner::after {
+  left: 100%;
 }
 
 .tarot-card.reversed .card-inner {
@@ -1625,31 +1655,96 @@ const getCardAdvice = (card) => {
 }
 
 .card-number {
-  font-size: 24px;
+  font-size: 28px;
   color: var(--primary-color);
-  font-weight: bold;
-  margin-bottom: 20px;
+  font-weight: 800;
+  margin-bottom: 25px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  letter-spacing: 1px;
+}
+
+.card-number::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+  border-radius: 1px;
 }
 
 .card-name {
-  font-size: 18px;
+  font-size: 20px;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.card-name::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.3), transparent);
 }
 
 .card-position {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.12);
-  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(255, 215, 0, 0.08));
+  border: 1px solid rgba(184, 134, 11, 0.3);
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-position::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.card-position:hover::before {
+  left: 100%;
+}
+
+.card-position:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(184, 134, 11, 0.15),
+              0 4px 16px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-color: rgba(184, 134, 11, 0.5);
 }
 
 
@@ -2013,7 +2108,7 @@ const getCardAdvice = (card) => {
 
 .current-points {
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(var(--primary-rgb), 0.08);
   color: #8c5c15;
   font-weight: 700;
@@ -2021,7 +2116,7 @@ const getCardAdvice = (card) => {
 
 .points-warning {
   padding: 10px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: rgba(255, 247, 237, 0.9);
   border: 1px solid rgba(217, 119, 6, 0.14);
 }
@@ -2055,7 +2150,7 @@ const getCardAdvice = (card) => {
 .spread-card {
   min-height: 240px;
   padding: 28px 22px 24px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 234, 0.92));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
@@ -2066,7 +2161,7 @@ const getCardAdvice = (card) => {
   inset: auto -24px -48px auto;
   width: 140px;
   height: 140px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: radial-gradient(circle, rgba(var(--primary-rgb), 0.16), rgba(var(--primary-rgb), 0));
   pointer-events: none;
 }

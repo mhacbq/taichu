@@ -1999,12 +1999,12 @@ onUnmounted(() => {
 }
 
 .btn-primary {
-  box-shadow: 0 18px 30px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-btn-primary);
 }
 
 .btn-secondary {
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 16px 28px rgba(145, 111, 45, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-btn-secondary);
 }
 
 .hero-highlight,
@@ -2017,7 +2017,7 @@ onUnmounted(() => {
 .feature-card,
 .testimonials-summary,
 .testimonial-card {
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(var(--primary-rgb), 0.05);
+  box-shadow: var(--shadow-card);
 }
 
 .hero-highlight,

@@ -2897,10 +2897,11 @@ const formatAiContent = (content) => {
   animation: fadeInUp 0.8s ease;
 }
 
-/* 排盘表格动画 */
+/* 高端排盘表格动画 */
 .paipan-row {
   opacity: 0;
-  animation: fadeInUp 0.5s ease forwards;
+  transform: translateY(30px);
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .paipan-row:nth-child(1) { animation-delay: 0.1s; }
@@ -2910,36 +2911,58 @@ const formatAiContent = (content) => {
 .paipan-row:nth-child(5) { animation-delay: 0.5s; }
 .paipan-row:nth-child(6) { animation-delay: 0.6s; }
 
-/* 五行进度条动画 */
+/* 高端五行进度条动画 */
 .wuxing-fill {
-  animation: fillBar 1s ease forwards;
-  animation-delay: 0.5s;
+  animation: fillBar 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.7s;
   width: 0;
+  position: relative;
 }
 
 @keyframes fillBar {
-  to {
+  0% {
+    width: 0;
+    transform: scaleX(0);
+  }
+  50% {
+    transform: scaleX(1.05);
+  }
+  100% {
     width: var(--target-width);
+    transform: scaleX(1);
   }
 }
 
-/* 解读卡片依次出现 */
+/* 高端解读卡片动画 */
 .reading-card {
   opacity: 0;
-  animation: fadeInUp 0.5s ease forwards;
+  transform: translateX(-20px);
+  animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.reading-card:nth-child(1) { animation-delay: 0.1s; }
-.reading-card:nth-child(2) { animation-delay: 0.2s; }
-.reading-card:nth-child(3) { animation-delay: 0.3s; }
-.reading-card:nth-child(4) { animation-delay: 0.4s; }
-.reading-card:nth-child(5) { animation-delay: 0.5s; }
-.reading-card:nth-child(6) { animation-delay: 0.6s; }
+.reading-card:nth-child(1) { animation-delay: 0.2s; }
+.reading-card:nth-child(2) { animation-delay: 0.3s; }
+.reading-card:nth-child(3) { animation-delay: 0.4s; }
+.reading-card:nth-child(4) { animation-delay: 0.5s; }
+.reading-card:nth-child(5) { animation-delay: 0.6s; }
+.reading-card:nth-child(6) { animation-delay: 0.7s; }
 
-/* 大运时间线动画 */
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 高端大运时间线动画 */
 .dayun-item {
   opacity: 0;
-  animation: fadeInUp 0.5s ease forwards;
+  transform: translateY(20px);
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .dayun-item:nth-child(1) { animation-delay: 0.1s; }
@@ -2948,6 +2971,27 @@ const formatAiContent = (content) => {
 .dayun-item:nth-child(4) { animation-delay: 0.25s; }
 .dayun-item:nth-child(5) { animation-delay: 0.3s; }
 .dayun-item:nth-child(6) { animation-delay: 0.35s; }
+
+/* 高端全局动画增强 */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
 .dayun-item:nth-child(7) { animation-delay: 0.4s; }
 .dayun-item:nth-child(8) { animation-delay: 0.45s; }
 
@@ -3413,28 +3457,79 @@ const formatAiContent = (content) => {
 }
 
 .bazi-result {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.bazi-result::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.5), transparent);
 }
 
 .bazi-result h2 {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   color: var(--text-primary);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+
+.bazi-result h2::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+  border-radius: 2px;
 }
 
 .bazi-paipan {
-  background: var(--bg-card);
-  border-radius: 15px;
-  padding: 30px;
-  margin-bottom: 30px;
-  border: 1px solid var(--border-color);
+  background: linear-gradient(145deg, rgba(184, 134, 11, 0.05), rgba(255, 255, 255, 0.02));
+  border-radius: 24px;
+  padding: 40px;
+  margin-bottom: 40px;
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 
+              0 8px 16px rgba(184, 134, 11, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.bazi-paipan::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.3), transparent);
 }
 
 .paipan-row {
   display: flex;
   justify-content: space-around;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  position: relative;
 }
 
 .paipan-row:last-child {
@@ -3444,27 +3539,53 @@ const formatAiContent = (content) => {
 .paipan-cell {
   flex: 1;
   text-align: center;
-  padding: 20px;
-  font-size: 28px;
-  font-weight: bold;
+  padding: 25px 20px;
+  font-size: 32px;
+  font-weight: 700;
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.paipan-cell:hover {
+  transform: translateY(-2px);
+  background: rgba(184, 134, 11, 0.05);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.1);
 }
 
 .paipan-cell.header {
-  font-size: 16px;
-  color: var(--text-tertiary);
-  font-weight: normal;
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .paipan-cell.highlight {
-  color: var(--primary-color);
-  background: var(--primary-light-10);
-  border-radius: 10px;
+  color: var(--primary-light);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(212, 175, 55, 0.1));
+  border: 1px solid rgba(184, 134, 11, 0.3);
+  box-shadow: 0 12px 30px rgba(184, 134, 11, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.paipan-cell.highlight::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 18px;
+  background: linear-gradient(45deg, transparent, rgba(184, 134, 11, 0.2), transparent);
+  z-index: -1;
 }
 
 .bazi-analysis {
@@ -4114,97 +4235,204 @@ const formatAiContent = (content) => {
 }
 
 
-/* 五行统计 */
+/* 高端五行统计 */
 .wuxing-stats {
-  background: var(--bg-secondary);
-  border-radius: 15px;
-  padding: 25px;
-  margin: 30px 0;
-  border: 1px solid var(--border-light);
+  background: linear-gradient(145deg, rgba(184, 134, 11, 0.04), rgba(255, 255, 255, 0.02));
+  border-radius: 20px;
+  padding: 35px;
+  margin: 40px 0;
+  border: 1px solid rgba(184, 134, 11, 0.12);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12),
+              0 8px 16px rgba(184, 134, 11, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.wuxing-stats::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.25), transparent);
 }
 
 .wuxing-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  position: relative;
 }
 
 .wuxing-stats h3 {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .wuxing-caption {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.8;
+  font-weight: 500;
 }
 
 .wuxing-bars {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
 }
 
 .wuxing-bar-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
+  gap: 20px;
+  padding: 15px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(184, 134, 11, 0.05);
+}
+
+.wuxing-bar-item:hover {
+  transform: translateY(-2px);
+  background: rgba(184, 134, 11, 0.08);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.1);
 }
 
 .wuxing-bar-main {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
   min-width: 0;
 }
 
 .wuxing-name {
-  width: 30px;
-  font-weight: bold;
+  width: 40px;
+  font-weight: 700;
   color: var(--text-primary);
+  font-size: 18px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .wuxing-bar {
   flex: 1;
-  height: 20px;
-  background: var(--bg-tertiary);
-  border-radius: 10px;
+  height: 28px;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.05));
+  border-radius: 14px;
   overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(184, 134, 11, 0.1);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .wuxing-fill {
   height: 100%;
-  border-radius: 10px;
-  transition: width 0.5s ease;
+  border-radius: 14px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.wuxing-fill.金 { background: linear-gradient(90deg, var(--wuxing-jin), var(--primary-light-15)); }
-.wuxing-fill.木 { background: linear-gradient(90deg, var(--wuxing-mu), var(--success-light)); }
-.wuxing-fill.水 { background: linear-gradient(90deg, var(--wuxing-shui), var(--info-light)); }
-.wuxing-fill.火 { background: linear-gradient(90deg, var(--wuxing-huo), var(--danger-light)); }
-.wuxing-fill.土 { background: linear-gradient(90deg, var(--wuxing-tu), var(--warning-light)); }
+.wuxing-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 3s infinite;
+  border-radius: 14px;
+}
+
+.wuxing-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent);
+  border-radius: 14px;
+}
+
+/* 高端五行颜色定义 */
+.wuxing-fill.金 { 
+  background: linear-gradient(135deg, #FFD700, #D4AF37, #B8860B);
+}
+
+.wuxing-fill.木 { 
+  background: linear-gradient(135deg, #32CD32, #228B22, #006400);
+}
+
+.wuxing-fill.水 { 
+  background: linear-gradient(135deg, #1E90FF, #4169E1, #0000CD);
+}
+
+.wuxing-fill.火 { 
+  background: linear-gradient(135deg, #FF4500, #DC143C, #B22222);
+}
+
+.wuxing-fill.土 { 
+  background: linear-gradient(135deg, #CD853F, #8B4513, #654321);
+}
 
 .wuxing-meta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   justify-content: flex-end;
   flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(184, 134, 11, 0.1);
+  backdrop-filter: blur(5px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wuxing-bar-item:hover .wuxing-meta {
+  background: rgba(184, 134, 11, 0.08);
+  border-color: rgba(184, 134, 11, 0.2);
+  transform: scale(1.02);
 }
 
 .wuxing-count {
-  min-width: 32px;
+  min-width: 40px;
   text-align: right;
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .wuxing-unit,
 .wuxing-share {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.wuxing-unit {
+  color: rgba(184, 134, 11, 0.8);
+}
+
+.wuxing-share {
+  color: var(--success-color);
+  font-weight: 700;
 }
 
 
@@ -4772,50 +5000,78 @@ const formatAiContent = (content) => {
   border: 1px solid rgba(34, 139, 34, 0.3);
 }
 
-/* 幸运信息 */
+/* 幸运信息 - 高端优化 */
 .lucky-info {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-top: 10px;
+  gap: 20px;
+  margin-top: 15px;
+  padding: 20px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
+  border-radius: 20px;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+              0 4px 16px rgba(184, 134, 11, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .lucky-section h5 {
-  color: var(--white-70);
-  font-size: 14px;
-  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 15px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .lucky-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .lucky-tag {
-  padding: 5px 12px;
-  border-radius: 15px;
+  padding: 6px 14px;
+  border-radius: 18px;
   font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.lucky-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .lucky-tag.good {
-  background: rgba(103, 194, 58, 0.3);
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.4), rgba(103, 194, 58, 0.2));
   color: #67c23a;
+  border-color: rgba(103, 194, 58, 0.3);
 }
 
 .lucky-tag.bad {
-  background: rgba(245, 108, 108, 0.3);
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.4), rgba(245, 108, 108, 0.2));
   color: #f56c6c;
+  border-color: rgba(245, 108, 108, 0.3);
 }
 
 .lucky-tag.color {
-  background: rgba(255, 215, 0, 0.3);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 215, 0, 0.2));
   color: var(--star-color);
+  border-color: rgba(255, 215, 0, 0.3);
 }
 
 .lucky-tag.number {
-  background: rgba(64, 158, 255, 0.3);
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.4), rgba(64, 158, 255, 0.2));
   color: #409eff;
+  border-color: rgba(64, 158, 255, 0.3);
 }
 
 /* 大运运势分析 */
@@ -5857,7 +6113,7 @@ const formatAiContent = (content) => {
   .bazi-form,
   .bazi-result {
     padding: 22px 18px;
-    border-radius: 24px;
+    border-radius: var(--radius-xl);
   }
 
   .strategy-summary-card,

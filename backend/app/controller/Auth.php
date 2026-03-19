@@ -80,11 +80,14 @@ class Auth extends BaseController
 
             try {
                 $user = User::create([
+                    'openid' => null,
+                    'unionid' => null,
                     'phone' => $phone,
                     'nickname' => '用户' . substr($phone, -4),
                     'avatar' => '',
                     'gender' => 0,
                 ]);
+
                 
                 // 新用户赠送积分
                 $registerPoints = $this->getRegisterRewardPoints();

@@ -157,23 +157,32 @@ class Payment extends BaseController
         $keyword = trim((string) $request->get('keyword', ''));
         $startDate = trim((string) $request->get('start_date', ''));
         $endDate = trim((string) $request->get('end_date', ''));
+        $rechargeOrderColumns = $this->getRechargeOrderColumns();
         
         $query = RechargeOrder::with('user');
+
         
         if ($status !== '') {
             if (!in_array($status, self::ORDER_STATUSES, true)) {
                 return $this->error('订单状态参数无效');
             }
-            $query->where('status', $status);
+            $this->applyRechargeOrderStatusFilter($query, $status);
         }
+
 
         if ($keyword !== '') {
             $keyword = preg_replace('/[%_\\\\]/', '', $keyword) ?: '';
             $matchedUserIds = User::whereLike('nickname', '%' . $keyword . '%')->column('id');
 
-            $query->where(function ($q) use ($keyword, $matchedUserIds) {
-                $q->whereLike('order_no', '%' . $keyword . '%')
-                    ->whereOrLike('pay_order_no', '%' . $keyword . '%');
+            $query->where(function ($q) use ($keyword, $matchedUserIds, $rechargeOrderColumns) {
+                $q->whereLike('order_no', '%' . $keyword . '%');
+
+                if (isset($rechargeOrderColumns['pay_order_no'])) {
+                    $q->whereOrLike('pay_order_no', '%' . $keyword . '%');
+                }
+                if (isset($rechargeOrderColumns['transaction_id'])) {
+                    $q->whereOrLike('transaction_id', '%' . $keyword . '%');
+                }
 
                 if (ctype_digit($keyword)) {
                     $q->whereOr('user_id', (int) $keyword);
@@ -184,6 +193,7 @@ class Payment extends BaseController
                 }
             });
         }
+
         
         if ($startDate !== '') {
             if (!$this->isDateOnly($startDate)) {
@@ -205,24 +215,9 @@ class Payment extends BaseController
         
         $list = [];
         foreach ($orders as $order) {
-            $list[] = [
-                'id' => $order->id,
-                'order_no' => $order->order_no,
-                'pay_order_no' => $order->pay_order_no,
-                'refund_no' => $order->refund_no,
-                'user_id' => $order->user_id,
-                'user_nickname' => $order->user ? $order->user->nickname : '未知用户',
-                'amount' => $order->amount,
-                'points' => $order->points,
-                'status' => $order->status,
-                'payment_type' => $order->payment_type,
-                'pay_time' => $order->pay_time,
-                'refund_amount' => $order->refund_amount,
-                'refund_time' => $order->refund_time,
-                'created_at' => $order->created_at,
-                'updated_at' => $order->updated_at,
-            ];
+            $list[] = $this->buildRechargeOrderPayload($order);
         }
+
         
         return $this->success([
             'list' => $list,
@@ -245,23 +240,32 @@ class Payment extends BaseController
         $keyword = trim((string) $request->get('keyword', ''));
         $startDate = trim((string) $request->get('start_date', ''));
         $endDate = trim((string) $request->get('end_date', ''));
+        $rechargeOrderColumns = $this->getRechargeOrderColumns();
 
         try {
             $query = RechargeOrder::with('user');
+
 
             if ($status !== '') {
                 if (!in_array($status, self::ORDER_STATUSES, true)) {
                     return $this->error('订单状态参数无效');
                 }
-                $query->where('status', $status);
+                $this->applyRechargeOrderStatusFilter($query, $status);
             }
+
 
             if ($keyword !== '') {
                 $keyword = preg_replace('/[%_\\]/', '', $keyword) ?: '';
                 $matchedUserIds = User::whereLike('nickname', '%' . $keyword . '%')->column('id');
-                $query->where(function ($q) use ($keyword, $matchedUserIds) {
-                    $q->whereLike('order_no', '%' . $keyword . '%')
-                        ->whereOrLike('pay_order_no', '%' . $keyword . '%');
+                $query->where(function ($q) use ($keyword, $matchedUserIds, $rechargeOrderColumns) {
+                    $q->whereLike('order_no', '%' . $keyword . '%');
+
+                    if (isset($rechargeOrderColumns['pay_order_no'])) {
+                        $q->whereOrLike('pay_order_no', '%' . $keyword . '%');
+                    }
+                    if (isset($rechargeOrderColumns['transaction_id'])) {
+                        $q->whereOrLike('transaction_id', '%' . $keyword . '%');
+                    }
 
                     if (ctype_digit($keyword)) {
                         $q->whereOr('user_id', (int) $keyword);
@@ -272,6 +276,7 @@ class Payment extends BaseController
                     }
                 });
             }
+
 
             if ($startDate !== '') {
                 if (!$this->isDateOnly($startDate)) {
@@ -290,24 +295,26 @@ class Payment extends BaseController
             $csv = "\xEF\xBB\xBF" . implode(',', ['订单号', '支付单号', '退款单号', '用户ID', '用户昵称', '金额', '积分', '状态', '支付方式', '支付时间', '退款金额', '退款时间', '创建时间']) . "\n";
 
             foreach ($orders as $order) {
+                $payload = $this->buildRechargeOrderPayload($order);
                 $row = [
-                    $this->escapeCsv((string) $order->order_no),
-                    $this->escapeCsv((string) ($order->pay_order_no ?? '')),
-                    $this->escapeCsv((string) ($order->refund_no ?? '')),
-                    (string) $order->user_id,
-                    $this->escapeCsv((string) ($order->user ? $order->user->nickname : '未知用户')),
-                    (string) $order->amount,
-                    (string) $order->points,
-                    $this->escapeCsv((string) $order->status),
-                    $this->escapeCsv((string) $order->payment_type),
-                    (string) ($order->pay_time ?? ''),
-                    (string) ($order->refund_amount ?? ''),
-                    (string) ($order->refund_time ?? ''),
-                    (string) ($order->created_at ?? ''),
+                    $this->escapeCsv((string) ($payload['order_no'] ?? '')),
+                    $this->escapeCsv((string) ($payload['pay_order_no'] ?? '')),
+                    $this->escapeCsv((string) ($payload['refund_no'] ?? '')),
+                    (string) ($payload['user_id'] ?? ''),
+                    $this->escapeCsv((string) ($payload['user_nickname'] ?? '未知用户')),
+                    (string) ($payload['amount'] ?? ''),
+                    (string) ($payload['points'] ?? ''),
+                    $this->escapeCsv((string) ($payload['status'] ?? '')),
+                    $this->escapeCsv((string) ($payload['payment_type'] ?? '')),
+                    (string) ($payload['pay_time'] ?? ''),
+                    (string) ($payload['refund_amount'] ?? ''),
+                    (string) ($payload['refund_time'] ?? ''),
+                    (string) ($payload['created_at'] ?? ''),
                 ];
 
                 $csv .= implode(',', $row) . "\n";
             }
+
 
             return response($csv, 200, [
                 'Content-Type' => 'text/csv; charset=utf-8',
@@ -342,29 +349,8 @@ class Payment extends BaseController
             return $this->error('订单不存在', 404);
         }
         
-        return $this->success([
-            'id' => $order->id,
-            'order_no' => $order->order_no,
-            'pay_order_no' => $order->pay_order_no,
-            'refund_no' => $order->refund_no,
-            'wechat_refund_id' => $order->wechat_refund_id,
-            'user_id' => $order->user_id,
-            'user_nickname' => $order->user ? $order->user->nickname : '未知用户',
-            'user_phone' => $order->user ? $order->user->phone : '',
-            'amount' => $order->amount,
-            'points' => $order->points,
-            'status' => $order->status,
-            'payment_type' => $order->payment_type,
-            'pay_time' => $order->pay_time,
-            'refund_amount' => $order->refund_amount,
-            'refund_time' => $order->refund_time,
-            'refund_reason' => $order->refund_reason,
-            'refund_response' => $order->refund_response,
-            'expire_time' => $order->expire_time,
-            'client_ip' => $order->client_ip,
-            'created_at' => $order->created_at,
-            'updated_at' => $order->updated_at,
-        ]);
+        return $this->success($this->buildRechargeOrderPayload($order, true));
+
     }
     
     /**
@@ -720,14 +706,25 @@ class Payment extends BaseController
             }
         }
 
+        $rechargeOrderColumns = $this->getRechargeOrderColumns();
+
         return RechargeOrder::with('user')
-            ->where(function ($query) use ($identifier) {
-                $query->where('order_no', $identifier)
-                    ->whereOr('pay_order_no', $identifier)
-                    ->whereOr('refund_no', $identifier);
+            ->where(function ($query) use ($identifier, $rechargeOrderColumns) {
+                $query->where('order_no', $identifier);
+
+                if (isset($rechargeOrderColumns['pay_order_no'])) {
+                    $query->whereOr('pay_order_no', $identifier);
+                }
+                if (isset($rechargeOrderColumns['transaction_id'])) {
+                    $query->whereOr('transaction_id', $identifier);
+                }
+                if (isset($rechargeOrderColumns['refund_no'])) {
+                    $query->whereOr('refund_no', $identifier);
+                }
             })
             ->find();
     }
+
 
     /**
      * 统一处理订单状态流转
@@ -1003,47 +1000,189 @@ class Payment extends BaseController
     protected function applyRechargeOrderStatusFilter($query, string $status): void
     {
         $columns = $this->getRechargeOrderColumns();
+        $normalizedStatus = $this->normalizeRechargeOrderStatus((string) $status);
+        $legacyPayStatus = $this->mapRechargeLegacyPayStatus($normalizedStatus);
+
+        if (isset($columns['status']) && isset($columns['pay_status']) && $legacyPayStatus !== null) {
+            $query->whereRaw(sprintf(
+                "(`status` = '%s' OR ((`status` IS NULL OR `status` = '') AND `pay_status` = %d))",
+                $normalizedStatus,
+                $legacyPayStatus
+            ));
+            return;
+        }
+
         if (isset($columns['status'])) {
-            $statusMap = [
-                'pending' => RechargeOrder::STATUS_PENDING,
-                'paid' => RechargeOrder::STATUS_PAID,
-                'cancelled' => RechargeOrder::STATUS_CANCELLED,
-                'refunded' => RechargeOrder::STATUS_REFUNDED,
-            ];
-            $query->where('status', $statusMap[$status] ?? $status);
+            $query->where('status', $normalizedStatus !== '' ? $normalizedStatus : $status);
             return;
         }
 
-        if (isset($columns['pay_status'])) {
-            $statusMap = [
-                'pending' => 0,
-                'paid' => 1,
-                'cancelled' => 2,
-                'refunded' => 3,
-            ];
-            $query->where('pay_status', $statusMap[$status] ?? 0);
+        if (isset($columns['pay_status']) && $legacyPayStatus !== null) {
+            $query->where('pay_status', $legacyPayStatus);
             return;
         }
 
-        if ($status === 'paid') {
-            $query->whereNotNull('pay_time');
+        if ($normalizedStatus === RechargeOrder::STATUS_REFUNDED) {
+            $query->where(function ($refundQuery) {
+                $refundQuery->whereNotNull('refund_time')
+                    ->whereOr('refund_no', '<>', '')
+                    ->whereOr('refund_amount', '>', 0);
+            });
+            return;
         }
+
+        if ($normalizedStatus === RechargeOrder::STATUS_PAID) {
+            $query->where(function ($paidQuery) {
+                $paidQuery->whereNotNull('pay_time')
+                    ->whereOr('pay_order_no', '<>', '')
+                    ->whereOr('transaction_id', '<>', '');
+            });
+            return;
+        }
+
+        if ($normalizedStatus === RechargeOrder::STATUS_PENDING) {
+            $query->whereNull('pay_time');
+        }
+    }
+
+    protected function buildRechargeOrderPayload(RechargeOrder $order, bool $includeUserPhone = false): array
+    {
+        $orderRow = $order->getData();
+        $payload = [
+            'id' => (int) ($orderRow['id'] ?? $order->id),
+            'order_no' => (string) ($orderRow['order_no'] ?? $order->order_no),
+            'pay_order_no' => $this->extractRechargeOrderPayOrderNo($orderRow),
+            'refund_no' => (string) ($orderRow['refund_no'] ?? ''),
+            'user_id' => (int) ($orderRow['user_id'] ?? $order->user_id),
+            'user_nickname' => $order->user ? (string) $order->user->nickname : '未知用户',
+            'amount' => $orderRow['amount'] ?? $order->amount,
+            'points' => $orderRow['points'] ?? $order->points,
+            'status' => $this->extractRechargeOrderStatus($orderRow),
+            'payment_type' => $this->extractRechargeOrderPaymentType($orderRow),
+            'pay_time' => $orderRow['pay_time'] ?? null,
+            'refund_amount' => $orderRow['refund_amount'] ?? null,
+            'refund_time' => $orderRow['refund_time'] ?? null,
+            'created_at' => $orderRow['created_at'] ?? null,
+            'updated_at' => $orderRow['updated_at'] ?? null,
+        ];
+
+        if ($includeUserPhone) {
+            $payload['wechat_refund_id'] = (string) ($orderRow['wechat_refund_id'] ?? '');
+            $payload['user_phone'] = $order->user ? (string) $order->user->phone : '';
+            $payload['refund_reason'] = (string) ($orderRow['refund_reason'] ?? '');
+            $payload['refund_response'] = $orderRow['refund_response'] ?? null;
+            $payload['expire_time'] = $orderRow['expire_time'] ?? null;
+            $payload['client_ip'] = (string) ($orderRow['client_ip'] ?? '');
+        }
+
+        return $payload;
     }
 
     protected function extractRechargeOrderStatus(array $orderRow): string
     {
-        $status = trim((string) ($orderRow['status'] ?? ''));
+        $status = $this->normalizeRechargeOrderStatus((string) ($orderRow['status'] ?? ''));
         if ($status !== '') {
             return $status;
         }
 
-        return match ((int) ($orderRow['pay_status'] ?? -1)) {
+        $legacyStatus = $this->mapRechargeLegacyPayStatusToCurrent($orderRow['pay_status'] ?? null);
+        if ($legacyStatus !== null) {
+            return $legacyStatus;
+        }
+
+        if (!empty($orderRow['refund_time'])
+            || trim((string) ($orderRow['refund_no'] ?? '')) !== ''
+            || (float) ($orderRow['refund_amount'] ?? 0) > 0) {
+            return RechargeOrder::STATUS_REFUNDED;
+        }
+
+        if (!empty($orderRow['pay_time'])
+            || trim((string) ($orderRow['pay_order_no'] ?? '')) !== ''
+            || trim((string) ($orderRow['transaction_id'] ?? '')) !== '') {
+            return RechargeOrder::STATUS_PAID;
+        }
+
+        return RechargeOrder::STATUS_PENDING;
+    }
+
+    protected function extractRechargeOrderPaymentType(array $orderRow): string
+    {
+        $paymentType = $this->normalizeRechargePaymentType((string) ($orderRow['payment_type'] ?? ''));
+        if ($paymentType !== '') {
+            return $paymentType;
+        }
+
+        $legacyPaymentType = $this->normalizeRechargePaymentType((string) ($orderRow['pay_type'] ?? ''));
+        if ($legacyPaymentType !== '') {
+            return $legacyPaymentType;
+        }
+
+        return '';
+    }
+
+    protected function extractRechargeOrderPayOrderNo(array $orderRow): string
+    {
+        $payOrderNo = trim((string) ($orderRow['pay_order_no'] ?? ''));
+        if ($payOrderNo !== '') {
+            return $payOrderNo;
+        }
+
+        return trim((string) ($orderRow['transaction_id'] ?? ''));
+    }
+
+    protected function normalizeRechargeOrderStatus(string $status): string
+    {
+        $normalized = strtolower(trim($status));
+        $allowedStatuses = array_merge(self::ORDER_STATUSES, [RechargeOrder::STATUS_PROCESSING]);
+        return in_array($normalized, $allowedStatuses, true) ? $normalized : '';
+    }
+
+    protected function normalizeRechargePaymentType(string $paymentType): string
+    {
+        $normalized = strtolower(trim($paymentType));
+        if ($normalized === '') {
+            return '';
+        }
+
+        if ($normalized === 'wechat_jsapi') {
+            return 'wechat_jsapi';
+        }
+        if ($normalized === 'alipay' || strpos($normalized, 'alipay') !== false) {
+            return 'alipay';
+        }
+        if (in_array($normalized, ['wechat', 'wxpay', 'weixin'], true) || strpos($normalized, 'wechat') !== false) {
+            return 'wechat';
+        }
+
+        return $normalized;
+    }
+
+    protected function mapRechargeLegacyPayStatus(string $status): ?int
+    {
+        return match ($status) {
+            RechargeOrder::STATUS_PENDING => 0,
+            RechargeOrder::STATUS_PAID => 1,
+            RechargeOrder::STATUS_CANCELLED => 2,
+            RechargeOrder::STATUS_REFUNDED => 3,
+            default => null,
+        };
+    }
+
+    protected function mapRechargeLegacyPayStatusToCurrent(mixed $status): ?string
+    {
+        if ($status === null || $status === '') {
+            return null;
+        }
+
+        return match ((int) $status) {
             1 => RechargeOrder::STATUS_PAID,
             2 => RechargeOrder::STATUS_CANCELLED,
             3 => RechargeOrder::STATUS_REFUNDED,
-            default => RechargeOrder::STATUS_PENDING,
+            0 => RechargeOrder::STATUS_PENDING,
+            default => null,
         };
     }
+
 
     protected function resolveRechargeOrderTable(): ?string
     {

@@ -45,6 +45,8 @@ Route::group('api', function () {
     Route::group('paipan', function () {
         Route::post('bazi', 'Paipan/bazi');
         Route::get('history', 'Paipan/history');
+        Route::post('set-share-public', 'Paipan/setSharePublic');
+        Route::post('delete-record', 'Paipan/deleteRecord');
     });
     
     // 运势分析（积分消耗功能）

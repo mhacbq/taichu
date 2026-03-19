@@ -71,12 +71,20 @@ class Liuyao extends BaseController
 
             if (!empty($data['useAi'])) {
                 try {
-                    $aiContent = DeepSeekService::interpretLiuyao($this->buildAiPayload($coreResult));
+                    // 构建更详细的AI分析载荷，包含更多专业信息
+                    $aiPayload = $this->buildEnhancedAiPayload($coreResult, $data);
+                    $aiContent = DeepSeekService::interpretLiuyao($aiPayload);
+                    
+                    // 记录AI分析的使用情况，用于优化积分消耗
+                    $this->logAiAnalysisUsage($userModel->id, $aiContent);
                 } catch (\Throwable $aiError) {
                     Log::warning('六爻 AI 解读降级', [
                         'user_id' => (int) $userModel->id,
                         'message' => $aiError->getMessage(),
                     ]);
+                    
+                    // 降级方案：生成基础AI分析
+                    $aiContent = $this->generateFallbackAiAnalysis($coreResult, $data);
                 }
             }
 

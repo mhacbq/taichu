@@ -490,6 +490,32 @@ class AdminStatsService
      */
     private static function getMonthlyOrderStats(string $thisMonth): array
     {
+        $orderTable = self::resolveRechargeOrderTable();
+        if ($orderTable !== null) {
+            $paidAmount = 0;
+            $paidCount = 0;
+            if (self::tableHasColumn($orderTable, 'pay_time')) {
+                $paidBaseQuery = Db::table($orderTable)
+                    ->whereLike('pay_time', $thisMonth . '%');
+
+                foreach (self::getRechargePaidConditions($orderTable) as $condition) {
+                    [$field, $operator, $value] = $condition;
+                    $paidBaseQuery->where($field, $operator, $value);
+                }
+
+                $paidCount = (int) (clone $paidBaseQuery)->count();
+                $paidAmount = (float) ((clone $paidBaseQuery)->sum('amount') ?? 0);
+            }
+
+            return [
+                'total_orders' => self::tableHasColumn($orderTable, 'created_at')
+                    ? (int) Db::table($orderTable)->whereLike('created_at', $thisMonth . '%')->count()
+                    : 0,
+                'paid_orders' => $paidCount,
+                'total_amount' => $paidAmount,
+            ];
+        }
+
         if (self::tableExists('site_daily_stats')) {
             $monthStats = Db::table('site_daily_stats')
                 ->whereLike('stat_date', $thisMonth . '%')
@@ -503,31 +529,7 @@ class AdminStatsService
             ];
         }
 
-        $orderTable = self::resolveRechargeOrderTable();
-        if ($orderTable === null) {
-            return ['total_orders' => 0, 'paid_orders' => 0, 'total_amount' => 0];
-        }
-
-        $paidAmount = 0;
-        $paidCount = 0;
-        if (self::tableHasColumn($orderTable, 'pay_time')) {
-            $paidBaseQuery = Db::table($orderTable)
-                ->whereLike('pay_time', $thisMonth . '%');
-
-            foreach (self::getRechargePaidConditions($orderTable) as $condition) {
-                [$field, $operator, $value] = $condition;
-                $paidBaseQuery->where($field, $operator, $value);
-            }
-
-            $paidCount = (int) (clone $paidBaseQuery)->count();
-            $paidAmount = (float) ((clone $paidBaseQuery)->sum('amount') ?? 0);
-        }
-
-        return [
-            'total_orders' => (int) Db::table($orderTable)->whereLike('created_at', $thisMonth . '%')->count(),
-            'paid_orders' => $paidCount,
-            'total_amount' => $paidAmount,
-        ];
+        return ['total_orders' => 0, 'paid_orders' => 0, 'total_amount' => 0];
     }
 
     /**

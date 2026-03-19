@@ -2,6 +2,26 @@
 
 > 执行策略修正（2026-03-19）：若 `TODO.md` 自己栏位暂空，但 `A. 高频修复队列` 里其他条目的主要工作已明显落在 `frontend/`、`admin/src/` 的状态承接、CTA、错误提示、分享回流或表单交互，允许直接接手 1 条，不要继续原地 no-op。
 
+## 2026-03-19 自动执行摘要（Dashboard 充值口径提示）
+
+- 本轮接手 `A. 高频修复队列` 中 Dashboard 与充值订单页口径漂移的后台前端承接问题；真实接口复现确认 `GET /api/admin/dashboard/statistics` 仍返回月度/今日支付为 `0`，而 `GET /api/admin/payment/stats` 已返回 `order_count=1 / total_amount=50`。
+- 已在 `admin/src/views/dashboard/index.vue` 并行拉取累计充值统计，给看板头部补“累计充值 X 单 / ¥Y”摘要，给月度卡片补累计提示，并在“累计有流水但本月快照为 0”时展示显式提醒和“查看充值订单”CTA；同时更新 `TODO.md`，把剩余问题收敛为后端统计口径统一。
+- 验证结果：`admin/src/views/dashboard/index.vue` 文件级诊断为 0，`git diff --check -- admin/src/views/dashboard/index.vue` 通过，`npm run build --prefix admin` 成功；仍有既有 Sass legacy API 与大包体告警，但不影响构建，后端月度快照问题仍待继续收口。
+
+
+## 2026-03-19 自动执行摘要（充值订单页旧字段兼容）
+
+- 本轮接手 `A. 高频修复队列` 中充值订单页可见断裂问题；真实接口复现确认 `GET /api/admin/payment/orders?page=1&limit=5` 仍会返回 `status=null`、`payment_type=null`，但 `pay_time` 已存在，导致后台订单页把真实已支付订单展示成 `-` 并丢失退款入口。
+- 已在 `admin/src/views/payment/orders.vue` 增加旧字段兼容归一化：按 `pay_time / refund_time` 恢复状态展示，列表与详情统一承接，缺失支付渠道时展示“渠道待补齐”，并补一条页面级提示告知正在使用兼容展示。
+- 验证结果：`admin/src/views/payment/orders.vue` 文件级诊断为 0，`git diff --check -- admin/src/views/payment/orders.vue` 通过，`npm run build --prefix admin` 成功；当前剩余问题主要是后端列表接口仍未回填标准 `status/payment_type` 字段。
+
+## 2026-03-19 自动执行摘要（系统设置假成功前端收口）
+
+- 本轮接手 `A. 高频修复队列` 中“系统设置接口保存成功但回读错乱”的后台前端承接问题；复核 `admin/src/views/system/settings.vue` 发现页面此前在 `PUT /api/admin/system/settings` 返回成功后会先弹“系统设置已保存”，随后仅被动重载数据，没有校验回读值是否和刚提交的一致，因此会把后端错配继续包装成前端成功态。
+- 已在系统设置页新增保存后回读校验：统一归一化可编辑字段、保存后立即重新 `GET` 设置并逐项比对；若回读失败则提示“暂时无法确认是否真正生效”，若字段错配则展示差异清单并将表单刷新为服务端当前值，只有回读一致时才显示“已保存并生效”。
+- 验证结果：`admin/src/views/system/settings.vue` 文件级诊断为 0，`git diff --check -- admin/src/views/system/settings.vue` 通过，`npm run build --prefix admin` 成功；仍有既有 Sass legacy API 与大包体告警，但不影响构建。后端真实读写口径问题仍待后续继续收口。
+
+
 ## 2026-03-19 自动执行摘要（结果页 CTA 收口）
 
 - 本轮接手 `A. 高频修复队列` 中“前台关键结果页下一步动作不统一”这一前端问题，沿用当前工作区已存在的八字 / 合婚动作区方向，新增 `frontend/src/components/ResultNextSteps.vue`，把 `Tarot.vue`、`Liuyao.vue` 结果页统一到同一套 CTA 与相关推荐承接节奏。

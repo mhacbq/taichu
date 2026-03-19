@@ -209,7 +209,7 @@ class Config extends BaseController
             }
         }
         
-        // 消耗积分
+        // 消耗积分 - 智能分级配置
         $costMapping = [
             'save_record' => 'points_cost_save_record',
             'share_poster' => 'points_cost_share_poster',
@@ -217,9 +217,16 @@ class Config extends BaseController
             'yearly_fortune' => 'points_cost_yearly_fortune',
             'dayun_analysis' => 'points_cost_dayun_analysis',
             'dayun_chart' => 'points_cost_dayun_chart',
-            'hehun' => 'points_cost_hehun',
+            'hehun_basic' => 'points_cost_hehun_basic', // 基础合婚分析
+            'hehun_standard' => 'points_cost_hehun_standard', // 标准合婚分析
+            'hehun_professional' => 'points_cost_hehun_professional', // 专业合婚分析
+            'hehun_expert' => 'points_cost_hehun_expert', // 专家级合婚分析
             'qiming' => 'points_cost_qiming',
             'jiri' => 'points_cost_jiri',
+            'bazi_basic' => 'points_cost_bazi_basic', // 基础八字分析
+            'bazi_standard' => 'points_cost_bazi_standard', // 标准八字分析
+            'bazi_professional' => 'points_cost_bazi_professional', // 专业八字分析
+            'bazi_expert' => 'points_cost_bazi_expert', // 专家级八字分析
         ];
         
         foreach ($costMapping as $key => $configKey) {

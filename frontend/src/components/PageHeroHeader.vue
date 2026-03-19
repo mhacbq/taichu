@@ -65,11 +65,10 @@ defineProps({
   overflow: hidden;
   min-height: 172px;
   padding: 28px 32px;
-  border-radius: 28px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 238, 0.96));
+  border-radius: var(--radius-card);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 238, 0.96));
   border: 1px solid rgba(var(--primary-rgb), 0.14);
-  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08), 0 10px 26px rgba(var(--primary-rgb), 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .page-hero__halo {
@@ -121,7 +120,7 @@ defineProps({
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: clamp(30px, 4vw, 40px);
+  font-size: var(--font-h2);
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1.12;
@@ -131,7 +130,7 @@ defineProps({
 .page-hero__icon-shell {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;

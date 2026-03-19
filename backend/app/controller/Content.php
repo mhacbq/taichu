@@ -9,8 +9,8 @@ use app\model\Page;
 use app\model\PageVersion;
 use app\model\PageDraft;
 use app\model\PageRecycle;
-use app\model\OperationLog;
 use think\Request;
+
 
 /**
  * 内容管理控制器
@@ -100,9 +100,13 @@ class Content extends BaseController
             );
             
             // 记录操作日志
-            $this->logOperation('save_page', "保存页面: {$pageId}");
+            $this->logOperation('save_page', 'content_page', [
+                'target_type' => 'page',
+                'detail' => "保存页面: {$pageId}",
+            ]);
             
             return $this->success([
+
                 'version' => $page->version,
                 'updated_at' => $page->updated_at
             ], '保存成功');
@@ -222,9 +226,13 @@ class Content extends BaseController
                 ]
             );
             
-            $this->logOperation('restore_version', "恢复页面 {$version->page_id} 到版本 {$version->version}");
+            $this->logOperation('restore_version', 'content_page', [
+                'target_type' => 'page',
+                'detail' => "恢复页面 {$version->page_id} 到版本 {$version->version}",
+            ]);
             
             return $this->success(null, '恢复成功');
+
         } catch (\Exception $e) {
             return $this->respondWithInternalError($e, '恢复版本失败，请稍后重试');
         }
@@ -310,9 +318,13 @@ class Content extends BaseController
                 ]
             );
             
-            $this->logOperation('import_page', "导入页面: {$data['page_id']}");
+            $this->logOperation('import_page', 'content_page', [
+                'target_type' => 'page',
+                'detail' => "导入页面: {$data['page_id']}",
+            ]);
             
             return $this->success([
+
                 'page_id' => $page->page_id,
                 'version' => $page->version
             ], '导入成功');
@@ -383,9 +395,13 @@ class Content extends BaseController
             // 删除页面
             $page->delete();
             
-            $this->logOperation('delete_page', "删除页面: {$pageId}");
+            $this->logOperation('delete_page', 'content_page', [
+                'target_type' => 'page',
+                'detail' => "删除页面: {$pageId}",
+            ]);
             
             return $this->success(null, '删除成功');
+
         } catch (\Exception $e) {
             return $this->respondWithInternalError($e, '删除页面失败，请稍后重试');
         }
@@ -501,18 +517,4 @@ class Content extends BaseController
         return $titles[$pageId] ?? '未命名页面';
     }
 
-    /**
-     * 记录操作日志
-     */
-    private function logOperation(string $action, string $description)
-    {
-        // 记录到操作日志表
-        OperationLog::create([
-            'action' => $action,
-            'description' => $description,
-            'admin_id' => request()->adminId ?? 0,
-            'ip' => request()->ip(),
-            'created_at' => date('Y-m-d H:i:s')
-        ]);
-    }
 }

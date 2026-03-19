@@ -183,12 +183,15 @@ class PhoneAuth extends BaseController
             Db::startTrans();
             try {
                 $user = User::create([
+                    'openid' => null,
+                    'unionid' => null,
                     'phone' => $phone,
                     'nickname' => $data['nickname'] ?? '用户' . substr($phone, -4),
                     'avatar' => $data['avatar'] ?? '',
                     'gender' => $data['gender'] ?? 0,
                     'last_login_at' => date('Y-m-d H:i:s'),
                 ]);
+
                 
                 // 新用户赠送积分
                 $user->addPoints(100);

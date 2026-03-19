@@ -4,10 +4,32 @@ declare(strict_types=1);
 namespace app\model;
 
 use app\service\LunarService;
+use app\service\SchemaInspector;
+use think\facade\Db;
 use think\Model;
 
 class DailyFortune extends Model
 {
+    private const TABLE_NAME = 'tc_daily_fortune';
+    private const STORAGE_MARKER_USER_ID = 0;
+    private const STORAGE_MARKER_TYPE = 'daily';
+    private const SNAPSHOT_FIELDS = [
+        'date',
+        'lunar_date',
+        'overall_score',
+        'summary',
+        'career_score',
+        'career_desc',
+        'wealth_score',
+        'wealth_desc',
+        'love_score',
+        'love_desc',
+        'health_score',
+        'health_desc',
+        'yi',
+        'ji',
+    ];
+
     private const ZHIRI_SCORE_MAP = [
         '建' => 74,
         '除' => 80,
@@ -49,16 +71,18 @@ class DailyFortune extends Model
         ],
     ];
 
-    protected $table = 'tc_daily_fortune';
+    protected $table = self::TABLE_NAME;
     protected $pk = 'id';
-    
+
     protected $autoWriteTimestamp = true;
     protected $createTime = 'created_at';
     protected $updateTime = 'updated_at';
-    
+
     protected $schema = [
         'id' => 'int',
+        'user_id' => 'int',
         'date' => 'string',
+        'fortune_type' => 'string',
         'lunar_date' => 'string',
         'overall_score' => 'int',
         'summary' => 'string',
@@ -72,75 +96,66 @@ class DailyFortune extends Model
         'health_desc' => 'string',
         'yi' => 'string',
         'ji' => 'string',
+        'fortune_score' => 'int',
+        'fortune_desc' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-    
+
     /**
      * 获取指定日期的运势
      */
     public static function getByDate(string $date): ?self
     {
-        return self::where('date', $date)->find();
+        if (!self::canQueryStorage()) {
+            return null;
+        }
+
+        return self::buildStorageQuery($date)->find();
     }
-    
+
     /**
      * 获取今日运势（如果没有则生成）
      */
     public static function getToday(): self
     {
         $today = date('Y-m-d');
-        $fortune = self::where('date', $today)->find();
-        
+        $generated = self::buildFortunePayload($today);
+
+        if (!self::supportsPersistentSnapshot()) {
+            return self::fromPayload($generated);
+        }
+
+        $fortune = self::getByDate($today);
         if (!$fortune) {
-            return self::generateFortune($today);
-        }
-
-        $pending = [];
-        $expectedLunarDate = self::solarToLunar($today);
-        if ($fortune->lunar_date !== $expectedLunarDate) {
-            $pending['lunar_date'] = $expectedLunarDate;
-        }
-
-        if (self::shouldRefreshGeneratedRecord($fortune)) {
-            $generated = self::buildFortunePayload($today);
-            foreach ([
-                'lunar_date',
-                'overall_score',
-                'summary',
-                'career_score',
-                'career_desc',
-                'wealth_score',
-                'wealth_desc',
-                'love_score',
-                'love_desc',
-                'health_score',
-                'health_desc',
-                'yi',
-                'ji',
-            ] as $field) {
-                $currentValue = (string) ($fortune->{$field} ?? '');
-                $targetValue = (string) ($generated[$field] ?? '');
-                if ($currentValue !== $targetValue) {
-                    $pending[$field] = $generated[$field];
-                }
+            if (!self::persistSnapshot($generated)) {
+                return self::fromPayload($generated);
             }
+
+            return self::getByDate($today) ?? self::fromPayload($generated);
         }
 
+        $pending = self::collectPendingSnapshotUpdates($fortune, $generated);
         if (!empty($pending)) {
-            $fortune->save($pending);
-            $fortune = self::where('id', $fortune->id)->find() ?? $fortune;
+            self::persistSnapshot($pending, (int) ($fortune->id ?? 0));
+            $fortune = self::getByDate($today) ?? self::fromPayload(array_merge($generated, $pending));
         }
-        
+
         return $fortune;
     }
-    
+
     /**
      * 生成运势
      */
     protected static function generateFortune(string $date): self
     {
-        return self::create(self::buildFortunePayload($date));
+        $payload = self::buildFortunePayload($date);
+
+        if (self::supportsPersistentSnapshot() && self::persistSnapshot($payload)) {
+            return self::getByDate($date) ?? self::fromPayload($payload);
+        }
+
+        return self::fromPayload($payload);
     }
 
     protected static function buildFortunePayload(string $date): array
@@ -172,6 +187,151 @@ class DailyFortune extends Model
             'yi' => implode(',', $yi),
             'ji' => implode(',', $ji),
         ];
+    }
+
+    protected static function supportsPersistentSnapshot(): bool
+    {
+        $columns = self::getTableColumns();
+        if (empty($columns)) {
+            return false;
+        }
+
+        foreach (self::SNAPSHOT_FIELDS as $field) {
+            if (!isset($columns[$field])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected static function canQueryStorage(): bool
+    {
+        return isset(self::getTableColumns()['date']);
+    }
+
+    protected static function getTableColumns(): array
+    {
+        if (!SchemaInspector::tableExists(self::TABLE_NAME)) {
+            return [];
+        }
+
+        return SchemaInspector::getTableColumns(self::TABLE_NAME);
+    }
+
+    protected static function buildStorageQuery(?string $date = null)
+    {
+        $query = self::where([]);
+        $columns = self::getTableColumns();
+
+        if ($date !== null) {
+            $query->where('date', $date);
+        }
+        if (isset($columns['fortune_type'])) {
+            $query->where('fortune_type', self::STORAGE_MARKER_TYPE);
+        }
+        if (isset($columns['user_id'])) {
+            $query->where('user_id', self::STORAGE_MARKER_USER_ID);
+        }
+
+        return $query;
+    }
+
+    protected static function persistSnapshot(array $payload, int $id = 0): bool
+    {
+        if (!self::supportsPersistentSnapshot()) {
+            return false;
+        }
+
+        $columns = self::getTableColumns();
+        $now = date('Y-m-d H:i:s');
+        $storagePayload = self::buildStoragePayload($payload, $columns, $now, $id <= 0);
+
+        try {
+            if ($id > 0 && isset($columns['id'])) {
+                return Db::name(self::TABLE_NAME)->where('id', $id)->update($storagePayload) !== false;
+            }
+
+            return Db::name(self::TABLE_NAME)->insert($storagePayload) !== false;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    protected static function buildStoragePayload(array $payload, array $columns, string $now, bool $isCreate): array
+    {
+        $storagePayload = [];
+
+        foreach (self::SNAPSHOT_FIELDS as $field) {
+            if (isset($columns[$field]) && array_key_exists($field, $payload)) {
+                $storagePayload[$field] = $payload[$field];
+            }
+        }
+
+        if (isset($columns['user_id'])) {
+            $storagePayload['user_id'] = self::STORAGE_MARKER_USER_ID;
+        }
+        if (isset($columns['fortune_type'])) {
+            $storagePayload['fortune_type'] = self::STORAGE_MARKER_TYPE;
+        }
+        if (isset($columns['fortune_score']) && isset($payload['overall_score'])) {
+            $storagePayload['fortune_score'] = (int) $payload['overall_score'];
+        }
+        if (isset($columns['fortune_desc']) && isset($payload['summary'])) {
+            $storagePayload['fortune_desc'] = (string) $payload['summary'];
+        }
+        if ($isCreate && isset($columns['created_at'])) {
+            $storagePayload['created_at'] = $now;
+        }
+        if (isset($columns['updated_at'])) {
+            $storagePayload['updated_at'] = $now;
+        }
+
+        return $storagePayload;
+    }
+
+    protected static function fromPayload(array $payload): self
+    {
+        return new self($payload);
+    }
+
+    protected static function collectPendingSnapshotUpdates(self $fortune, array $generated): array
+    {
+        $pending = [];
+
+        $expectedLunarDate = self::solarToLunar((string) ($generated['date'] ?? date('Y-m-d')));
+        if ((string) ($fortune->lunar_date ?? '') !== $expectedLunarDate) {
+            $pending['lunar_date'] = $expectedLunarDate;
+        }
+
+        if (self::shouldRefreshGeneratedRecord($fortune) || self::hasIncompleteSnapshot($fortune)) {
+            foreach (self::SNAPSHOT_FIELDS as $field) {
+                $currentValue = (string) ($fortune->{$field} ?? '');
+                $targetValue = (string) ($generated[$field] ?? '');
+                if ($currentValue !== $targetValue) {
+                    $pending[$field] = $generated[$field];
+                }
+            }
+        }
+
+        return $pending;
+    }
+
+    protected static function hasIncompleteSnapshot(self $fortune): bool
+    {
+        foreach (['summary', 'career_desc', 'wealth_desc', 'love_desc', 'health_desc', 'yi', 'ji'] as $field) {
+            if (trim((string) ($fortune->{$field} ?? '')) === '') {
+                return true;
+            }
+        }
+
+        foreach (['overall_score', 'career_score', 'wealth_score', 'love_score', 'health_score'] as $field) {
+            if ((int) ($fortune->{$field} ?? 0) <= 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected static function shouldRefreshGeneratedRecord(self $fortune): bool
@@ -362,7 +522,6 @@ class DailyFortune extends Model
         return '健康运势偏弱，宜减少劳累与冒进，必要时及时休息检查。';
     }
 
-    
     /**
      * 公历转农历（使用统一农历服务）
      */
@@ -373,8 +532,8 @@ class DailyFortune extends Model
             return (string) $lunar['lunar_text'];
         }
 
-        $month = self::formatLunarMonth((int)($lunar['lunar_month'] ?? 1), (bool)($lunar['is_leap'] ?? false));
-        $day = self::formatLunarDay((int)($lunar['lunar_day'] ?? 1));
+        $month = self::formatLunarMonth((int) ($lunar['lunar_month'] ?? 1), (bool) ($lunar['is_leap'] ?? false));
+        $day = self::formatLunarDay((int) ($lunar['lunar_day'] ?? 1));
         $yearGanZhi = $lunar['year_gan_zhi'] ?? '';
 
         return trim("{$yearGanZhi}年 {$month}{$day}");
@@ -399,18 +558,27 @@ class DailyFortune extends Model
             26 => '廿六', 27 => '廿七', 28 => '廿八', 29 => '廿九', 30 => '三十',
         ];
 
-        return $days[$day] ?? ((string)$day);
+        return $days[$day] ?? ((string) $day);
     }
-    
+
     /**
      * 根据分数获取运势摘要
      */
     protected static function getSummaryByScore(int $score): string
     {
-        if ($score >= 90) return '今日运势极佳，万事顺遂，把握机会！';
-        if ($score >= 80) return '今日运势良好，积极进取，收获颇丰。';
-        if ($score >= 70) return '今日运势平稳，稳扎稳打，循序渐进。';
-        if ($score >= 60) return '今日运势一般，保持谨慎，静待时机。';
+        if ($score >= 90) {
+            return '今日运势极佳，万事顺遂，把握机会！';
+        }
+        if ($score >= 80) {
+            return '今日运势良好，积极进取，收获颇丰。';
+        }
+        if ($score >= 70) {
+            return '今日运势平稳，稳扎稳打，循序渐进。';
+        }
+        if ($score >= 60) {
+            return '今日运势一般，保持谨慎，静待时机。';
+        }
+
         return '今日运势欠佳，低调行事，以守为攻。';
     }
 }

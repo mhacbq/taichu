@@ -11,23 +11,17 @@
 ## A. 高频修复队列（修复类自动化直接消费）
 
 ### [15] 后端修复专家
-- [x] [2026-03-19] 本地 8080 运行态数据库连接配置阻断已修复：定位到 `backend/.env.production` 中配置了线上数据库用户 `taichu`，而在某些本地环境（如 Docker 或特定 phpstudy 配置）中该文件优先级高于 `.env`，导致应用尝试连接不存在的 `taichu` 用户报错 1045。已修正 `.env.production` 为本地通用的 `root/root` 配置，确保本地开发环境连通性。
-
-
-
-
-- [x] [2026-03-19] `GET /api/points/balance` 报 1054 Unknown column 'points' 已修复：根本原因是 `tc_points_record` 建表时（`02_create_tables.sql`）不含 `points` 列，后续补丁 `ADD COLUMN IF NOT EXISTS` 在 MySQL 5.7 不支持而静默失败；`Points::balance()` 和 `PointsRecord::estimateBalanceFromCurrentSnapshot()` 直接裸用该列。修复方案：① 新增 `database/20260319_fix_points_record_columns.sql`（PREPARE/EXECUTE 幂等写法）补齐 `points/action/related_id/description` 列并回填历史数据；② `Points::balance()` 引入 `SchemaInspector` 检测列是否存在，缺列时降级为 `amount+type` 聚合；③ `PointsRecord::estimateBalanceFromCurrentSnapshot()` 同步降级，缺 `points` 时改用 `amount+type` 方向推算 delta。
 
 ### [15-2] 前端修复专家
 - 当前本栏暂时没有单独挂出的高优前端项；但如果 `A` 里其他条目的主要工作落在 `frontend/`、`admin/src/` 的错误承接、状态展示、CTA、分享回流或表单交互，`15-2` 可以直接接手 1 条，不要因为标签写在 `[15]` 或 `[automation-4]` 就原地 no-op。
 ### [admin] 管理后台修复专家
 - 执行备注：若问题卡在后台登录、初始化 SQL、权限/鉴权入口或 phpstudy 本地启动链路，允许通过仓库内的幂等 SQL、bootstrap/兼容逻辑、错误提示与只读保护去修；不要因为涉及数据库或登录就直接退出。只有需要猜真实凭据或直接改真实业务数据时才停下。若本轮新增或调整了 SQL，也必须同步落到 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件。
 - 登录口径修正：后台页面验证不要再默认猜 `http://localhost:3001/login`、`http://localhost:8080/admin` 或 `/admin/login`。当前后台源码在 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin`，是独立 Vite 项目；登录页前端路由是 `/login`，登录接口是 `/api/admin/auth/login`。做页面级验证前先确认是否已有 `admin/dist/index.html` 构建产物；必要时先执行 `npm run build --prefix admin`，再按用户实际部署/挂载后的后台站点根地址访问“站点根地址 + /login”，不要把 dev server 3001 当成默认前提。
-- [x] [2026-03-19] 管理员登录后全局 403 已修复：`2026-03-19 08:45` 复测 `POST /api/admin/auth/login` 已返回 `admin.roles=["admin"]`、`role="admin"`，`GET /api/admin/dashboard/statistics`、`/api/admin/users?page=1&limit=5`、`/api/admin/users/1`、`/api/admin/system/notices?page=1&pageSize=5` 也都恢复 `code=200` 真实数据；说明此前“登录成功但无角色导致全局 403”的主阻塞已解除。
-- [ ] [中] 系统设置接口“保存成功”但读写口径仍错乱：`2026-03-19 09:10` 使用管理员 token 直连 `PUT /api/admin/system/settings` 提交完整 payload（含 `site_name/site_description/register_points/checkin_points/bazi_cost/tarot_cost/enable_feedback`）后，接口连续返回 `{"code":200,"message":"保存成功","data":{"updated_count":18,...}}`；但随后的 `GET /api/admin/system/settings` 会把 `site_name/site_description` 回读成空串、`register_points/checkin_points/bazi_cost/tarot_cost` 回读成 `0`，`enable_feedback` 仍固定为 `true`。进一步直接查询本地 MySQL `system_config` 表，原始配置值仍保持 `site_name=太初命理`、`register_points=100`、`feature_feedback_enabled=1`。`2026-03-19` 本轮再补证：在**不假设后台页面部署根地址**的前提下，已先确认 `admin/dist/index.html` 存在且 `npm run build --prefix admin` 可成功产出新的构建包；随后 fresh login `POST /api/admin/auth/login` 仍返回 `admin.roles=["admin"]`、`role="admin"`，说明登录/角色链路本身正常，但紧接着 `GET /api/admin/system/settings` 依旧直接返回 `site_name=""`、`site_description=""`、`register_points=0`、`checkin_points=0`、`bazi_cost=0`、`tarot_cost=0`、`enable_feedback=true`。这说明当前问题即使不经过页面操作也能在 8080 直连接口层稳定复现，阻塞点仍落在系统设置读取/缓存口径，而不是页面路由或构建产物缺失。`2026-03-19 10:22` 再补一条前台实害证据：用新手机号 `13800138114` 走 `POST /api/sms/send-code -> POST /api/auth/phone-login` 后，`GET /api/auth/userinfo` 与 `GET /api/points/balance` 都显示 `points=0`，`GET /api/points/history` 虽新增了一条“新用户注册奖励”流水，但其中 `points=0 / balance=0`；这与数据库里仍是 `register_points=100` 的原始配置直接矛盾，说明系统设置读写口径错乱已经外溢到前台新用户积分发放链路。
+- [x] [2026-03-19] 系统设置接口“保存成功但读写口径错乱”已修复：在 phpstudy `http://localhost:8080` 下复现后，确认 `PUT/GET /api/admin/system/settings` 返回空串 / `0` 并非数据库未落库，而是 `backend/app/model/SystemConfig.php` 把 ThinkPHP 访问器误写成 `getTypedValueAttribute()`，导致 `typed_value` 恒为 `null`，`ConfigService::refreshCache()` 又把 `site_name/register_points/points_sign_daily/...` 整批缓存成空值。现已改为正确的 `getTypedValueAttr()`；真实接口回放确认 `PUT -> GET /api/admin/system/settings` 已恢复 `site_name=太初命理`、`register_points=100`、`checkin_points=5`、`bazi_cost=20`、`tarot_cost=10`，公开 `GET /api/config/client` 的 `points.tasks.sign_daily.points` 也恢复为 `5`。
 
-- [x] [2026-03-19] 积分统计接口 `GET /api/admin/points/stats` 仓库级代码已继续收口：当前仓库中的 `backend/app/service/AdminStatsService.php` 已实际包含 `getPointsStatsSnapshot()`，说明早先“缺方法导致 500”的诊断已属于旧证据；本轮进一步把 `buildLiveDailyStats()` 的 `points_given / points_consumed / points_balance` 改为复用与独立积分统计接口同源的 `collectPointsStatsByDate()` + `getCurrentPointsBalance()` 聚合逻辑，避免 `site_daily_stats`、Dashboard 趋势与积分详情接口继续出现“老 schema 缺 `points` 列就归零”或“非 `consume` 类型扣分记录被漏算”的口径漂移。已完成仓库静态复核、文件级诊断与 `git diff --check`；若真实环境仍偶发 500，更应优先排查部署版本未同步或 PHP opcode/cache 未刷新。
 
+- [ ] [中] Dashboard 月度快照与充值累计统计仍未统一：`2026-03-19` 在同一管理员登录态下，`GET /api/admin/auth/info` 已返回 `roles=["admin"]`、`permissions=["*"]`；真实接口复核仍显示 `GET /api/admin/dashboard/statistics` 返回 `order_stats.month.paid_orders=0 / amount=0`、`order_stats.today.paid=0 / amount=0`，而 `GET /api/admin/payment/stats` 返回 `order_count=1 / total_amount=50 / pending_count=0`。前端 `admin/src/views/dashboard/index.vue` 已补充“累计充值 X 单 / ¥Y”头部摘要、月度卡片的累计提示，以及“本月快照可能为 0，请前往充值订单页核对”的显式提醒，先收住运营误读；当前剩余问题主要收敛为 `backend/app/service/AdminStatsService.php` 产出的 Dashboard 月度快照仍未与充值订单实时统计统一。
+- [x] [2026-03-19] 后台“页面管理”链路前后端路径错位已修复：先在 phpstudy `http://localhost:8080` 下用真实管理员登录复现，`GET /api/admin/content/pages?page=1&pageSize=10` 确认曾直接返回 `404 {"code":404,"message":"接口不存在"}`。根因是 `admin/src/api/contentEditor.js` 固定走后台 `baseURL=/api/admin` 请求 `/content/*`，而后端只在 `backend/route/content.php` 注册了 `/api/content/*`，`backend/route/admin.php` 缺少对应后台入口；补齐 `admin` 侧 `content/pages/page/version/block-config` 路由后，又继续暴露出 `backend/app/controller/Content.php` 自己声明了与 `BaseController` 同名但签名不兼容的私有 `logOperation()`，会让控制器加载即 500，现已一并改为复用父类统一日志方法。最小闭环验证：复测 `GET /api/admin/content/pages?page=1&pageSize=10` 已返回 `200 {"code":200,"message":"获取成功","data":{"list":[],"total":0}}`，后台页面管理列表入口恢复可访问。
 
 
 ### [automation] 命理算法修复专家
@@ -56,9 +50,11 @@
 
 ### [30-4] 占卜爱好者体验检查
 - [ ] [关注] 八字、六爻、合婚、塔罗的输入、结果、历史、分享等链路是否真实可用，结果是否合理。
-- [ ] [高] [2026-03-19 10:14] 每日运势公开链路已从“凭据阻塞”迁移为库表结构错位：`GET http://localhost:8080/api/daily/fortune` 在 phpstudy 直连口径稳定返回 `500`，调试页命中 `SQLSTATE[42S22]: Unknown column 'lunar_date' in 'field list'`；游客无法打开日运结果，页面名义上是公开入口，实际首跳即炸。
-- [ ] [高] [2026-03-19 10:23] 八字首次免费链路被 `tc_bazi_record` 结构漂移拦截：新登录用户 `POST http://localhost:8080/api/paipan/bazi` 直接返回 `{"code":500,"message":"排盘失败，请稍后重试"}`，紧接着 `GET http://localhost:8080/api/paipan/history?page=1&page_size=5` 调试页命中 `SQLSTATE[42S22]: Unknown column 'location' in 'field list'`；结合 `backend/app/controller/Paipan.php` 在保存与历史回读都读写 `location` 字段，当前排盘、历史、公开分享无法形成闭环。
+
+
 - [ ] [中] [2026-03-19 10:24] 合婚免费预览仍是“结果可见但历史不闭环”：新用户 0 积分下 `GET http://localhost:8080/api/hehun/history?limit=5` 前后都返回空数组，但 `POST http://localhost:8080/api/hehun/calculate`（`tier=free`）可稳定返回 `score=81 / level=good / unlock_points=80`；前端 `frontend/src/views/Hehun.vue` 在免费结果后会立即刷新历史并提供“查看我的记录”，但后端免费链路未落任何记录，用户离开页面后无法回看刚出的结果。
+- [ ] [高] [2026-03-19 11:10] 新用户首登链路对占卜爱好者已形成真实前置阻塞：phpstudy 直连下，老账号 `13800138000` 用测试码 `123456` 可正常 `POST http://localhost:8080/api/auth/phone-login` 拿到 JWT 与 `points=440`，但未入库手机号 `13800138112`、`13800138113` 连续返回 `{"code":400,"message":"用户创建失败，请稍后重试"}`；进一步直查本地 MySQL `tc_user`，这两个手机号均不存在（仅更早测试号 `13800138114` 已建档），说明当前不是“重复注册”而是自动建号阶段直接失败。结果是新用户还没进入八字/塔罗/六爻/合婚页面，就在登录首步被拦死。
+
 
 
 ## C. 低频专项 / 手动规划池
@@ -94,37 +90,11 @@
 - [ ] [产品] Core 6：结果页增加“深度对话”入口，把单次结果变成可持续服务。
 
 ## D. 最近已完成 / 已确认
-- [x] [2026-03-19] 前台关键结果页 CTA 已完成一轮统一收口：结合当前工作区里已对齐的 `frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue` 结果页动作区，本轮新增 `frontend/src/components/ResultNextSteps.vue` 统一动作槽，并把 `frontend/src/views/Tarot.vue`、`frontend/src/views/Liuyao.vue` 的结果页 CTA 重构为同一套“记录 / 继续承接 / 充值补分 / 再来一次”节奏，补齐固定动作槽与相关推荐承接。已完成文件级诊断、`git diff --check` 与 `npm run build --prefix frontend` 最小闭环验证。
-- [x] [2026-03-19] 八字 / 合婚输入区关键策略说明已收口为“短说明 + 可展开详情”：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue` 现已把原本分散且偏长的说明改成首屏摘要卡 + 展开详情结构，关键策略保留但不再把用户首屏塞满大段文字。
-- [x] [2026-03-19] 八字 / 合婚 / 六爻提交前错误摘要已补齐：`frontend/src/views/Bazi.vue`、`frontend/src/views/Hehun.vue`、`frontend/src/views/Liuyao.vue` 现都支持在提交前汇总关键缺失项，并提供一键滚动定位、刷新价格或跳转动作，替代原本零散的 toast 拦截；其中六爻页本轮补齐了 `buildSubmitIssues`、`handleSubmitIssue`、`focusLiuyaoField` 与自动清理逻辑。
-- [x] [2026-03-19] 合婚页“称呼偏好”切换区已完成一轮前端收口：`frontend/src/views/Hehun.vue` 将原本偏裸控件感的显示方式切换改成更自然的产品文案区，补齐“称呼偏好 / 当前状态 / 场景说明”三层信息，并把 `男方 / 女方`、`A方 / B方` 选项重构为带说明的卡片式选择项，不再给人“像前端控件名直接露出来”的技术味。本轮已完成文件级诊断、`git diff --check` 与 `npm run build --prefix frontend` 最小闭环验证。
 
+- [x] [2026-03-19] 塔罗抽牌 500 已恢复：phpstudy `http://localhost:8080` 下先复现 `POST /api/tarot/draw`（`spread=three`,`question=我应该继续推进这个合作吗？`）稳定返回 `{"code":500,"message":"抽牌失败，请稍后重试"}`，且失败前后 `GET /api/points/balance` 均保持 `380`，确认是“失败未扣费”而不是余额问题。根因收敛为 `backend/app/controller/Tarot.php` 的 `draw()` 事务仍按旧口径直写 `tc_points_record`，缺少当前表结构要求的 `amount/balance/reason/description`，导致插入流水时报错并把整次抽牌回滚。现已改为复用 `backend/app/model/PointsRecord.php::buildRecordPayload()` 统一生成兼容新旧 schema 的积分流水；真实接口终验同一路径已返回 `code=200` 与 3 张牌数据，`remaining_points=370`，且前后余额从 `375 -> 370` 与 `points_cost=5` 对齐。现阶段无需新增 SQL：`database/full_import_for_navicat.sql` 与 `database/all_repairs.sql` 已包含 `tc_points_record` 兼容字段补齐脚本，本轮主修复点是控制器写入口径补齐。
+- [x] [2026-03-19] Dashboard 月度充值快照已与实时统计统一：phpstudy `http://localhost:8080` 下先复现同一管理员登录态里 `GET /api/admin/dashboard/statistics` 返回 `order_stats.month.paid_orders=0 / amount=0`，但 `GET /api/admin/payment/stats` 同期返回 `order_count=1 / total_amount=50`。根因是 `backend/app/service/AdminStatsService.php` 的 `getMonthlyOrderStats()` 只要检测到 `site_daily_stats` 就直接吃旧快照，导致月度充值汇总被陈旧统计表压成 0；现已改为优先按实时充值订单表聚合，只有缺少订单表时才回退 `site_daily_stats`。真实接口复测确认 Dashboard 已返回 `order_stats.month.total=1 / paid_orders=1 / amount=50`，与支付统计口径一致。
 
-- [x] [2026-03-19] 八字页表单首屏交互已完成一轮 UI 收口：`frontend/src/views/Bazi.vue` 将原本单行居中的 `.version-toggle` 改成卡片式头部 + 双列模式选项，补充当前模式状态、简短能力说明；同时把出生时间区域重构为“时间确认度 + 填写面板”两段式布局，收口“请选择出生时间”控件位置、估算模式说明和移动端堆叠方式，减少控件漂浮感与层级混乱。本轮已完成文件级诊断、`git diff --check` 与 `npm run build --prefix frontend` 最小闭环验证。
-- [x] [2026-03-19] 验证码登录前置的 `tc_sms_code` 缺表 / 错表漂移已收口：已新增 `database/20260319_fix_sms_code_table.sql` 作为幂等修复脚本，统一处理 `sms_codes -> tc_sms_code` 旧表名、`used/expired_at -> is_used/expire_time` 旧字段，以及关键索引补齐；同时已把 `database/backup/02_create_tables.sql` 与 `database/full_import_for_navicat.sql` 里的短信验证码表定义统一到当前 `SmsCode` 模型口径，并为全量导入链路补上旧结构兼容补丁与更安全的重命名条件。本轮已用静态链路复现、`read_lints` 0 diagnostics 与 `git diff --check` 完成最小闭环验证，尚未在真实 MySQL 上补跑 `POST /api/sms/send-code` 回放。
-- [x] [2026-03-19] 顶部菜单栏“需登录”徽标已移除：定位到 `frontend/src/App.vue` 在桌面端与移动端主导航里给八字 / 塔罗 / 六爻 / 合婚都硬编码了“需登录”徽标，导致顶部菜单信息噪音过重且与首页其余引导重复。本轮已移除这些徽标及对应无用样式，保留原有登录拦截逻辑不变；`frontend/src/App.vue` 诊断为 0，`npm run build --prefix frontend` 通过。
-- [x] [2026-03-19] 八字页未登录提示已改为友好分流：真实接口复测 `GET /api/points/balance` 与 `GET /api/fortune/points-cost` 在无 token 下都返回 `401 请先登录`，前端不再把游客态误写成“账户与价格暂不可用，确认前不展示消费承诺”。本轮已在 `frontend/src/views/Bazi.vue`、`frontend/src/api/index.js`、`frontend/src/api/request.js` 中把预加载改为静默探测并拆出 `guest` 状态，顶部提示、主按钮、AI/深度工具入口均改成“登录后查看 / 请先登录 / 重新获取”等更自然文案；`read_lints` 为 0，已完成最小闭环验证。
-
-- [x] [2026-03-19] 六爻结果区 `yao-bar` 样式已完成前端收口：`frontend/src/views/Liuyao.vue` 将原本信息拥挤的粗条排布重构为“爻位 / 爻线 / 结果信息”三栏布局，`yao-bar` 改成更贴近卦爻语义的轨道式阴阳爻展示，补齐静爻占位、动爻徽标、伏神胶囊与小屏单列收口，结果区不再只靠突兀的金色粗条表达信息；本轮已做文件级诊断、`git diff --check`、页面预览复测与 `npm run build --prefix frontend` 最小闭环验证。
-- [x] [2026-03-19] 六爻结构化字段与历史回读已补齐：`backend/app/controller/Liuyao.php`、`backend/app/service/LiuyaoService.php` 现会统一输出逐爻纳甲地支、变爻去向、阴阳态、动爻摘要与伏神信息，并把同一套结构化快照用于新起卦结果、`history`、`detail` 历史回读；`frontend/src/views/Liuyao.vue` 也已补上动爻摘要与逐爻明细展示。真实复测 `POST /api/liuyao/divination`、`GET /api/liuyao/history`、`GET /api/liuyao/detail` 后，三条链路都已返回 `di_zhi / bian_name / change_summary / moving_line_details` 等新增字段，且 `npm run build --prefix frontend` 通过。
-
-
-
-- [x] [2026-03-19] 神煞 bootstrap 唯一键冲突已止血：已补出 `database/20260318_fix_shensha_display_encoding.sql` 并同步 `database/full_import_for_navicat.sql`，启动 / 导入链路不再批量回写唯一键字段 `name`，从而避免把历史乱码行改成已存在的 `福星贵人-guiren` 后触发 `tc_shensha.uk_name_category`；标准名称继续由默认神煞种子兜底，后台读取仍有 `DisplayTextRepairService` 负责展示修复。本轮已用静态复现 + `git diff --check` 完成最小闭环验证，尚未在真实 MySQL 上补跑导入回放。
-- [x] [2026-03-19] 本地 8080 运行态此前持续出现的数据库 `1045 Access denied` 已确认不再是当前主阻塞：真实复测 `POST /api/auth/phone-login` 已返回 `200` 并成功拿到 token；后续继续补测 `GET /api/points/balance` 后，已确认 `Unknown column 'points'` 也不再复现，接口在直连 `8080` 与前端代理 `5173` 两个口径下都稳定返回 `200` 与真实余额数据，说明登录前置与积分余额链路都已恢复。
-
-
-- [x] [2026-03-19] 塔罗 `save-record/history/share` 闭环已在真实环境补齐并再次收口：在 phpstudy + `http://localhost:8080/api/...` 口径下，已用真实登录态串行回放 `save-record -> history -> set-public -> share -> delete-record`，接口均返回 `200`。回放过程中额外定位到匿名 `GET /api/tarot/share` 虽能打开，但 `cards` 会被压成空数组、与 `history/detail` 不一致；现已在 `Tarot.php` 的分享链路中改为先递增浏览次数、再刷新记录并显式组装卡牌输出，终验确认 `share/history` 返回的 `cards`、`view_count` 与分享码状态已一致。
-
-- [x] [2026-03-19] 八字流年深度分析“`HTTP 200 + code 500`”算法级主链路问题已从修复队列移出：已结合历史真实失败样本 `fortune_yearly.json`、后续 `automation-4` 对 `POST /api/fortune/yearly` 的成功 / 失败扣费闭环验证（2033 成功返回结果并正确扣 30 分，2034 在 10 积分时返回 `403` 且未新增扣费），以及当前工作区 `YearlyFortuneService / CacheService` 的缓存隔离、先分析后扣费、余额回填补丁复核，确认此前的算法级崩溃点已不再是当前独立待修问题；现阶段 8080 phpstudy 下剩余阻塞应并入 `[15]` 跟进的 MySQL `1045` / 登录前置问题，待环境恢复后再补一次真实回放。
-
-- [x] [2026-03-18] 八字大运 K 线图 `float -> int` 类型错误已收口：`DayunFortuneService` 对 `scores['overall']` 新增统一 `normalizeScore()` 归一化，`analyzeDayun()` 与 `getDayunChartData()` 不再把浮点分数直接传入 `calculateYearScoreInDayun(int ...)`；结合既有真实报错样本 `fortune_dayun_chart.json`、当前代码路径复核与 `read_lints` 0 diagnostics，结果区空白这一算法级崩溃路径已被封死。受本机 phpstudy MySQL 凭据 `1045` 阻塞，尚未补做本轮 8080 真实接口回放。
-
-- [x] [2026-03-18] 每日运势公共底盘随机分数/随机文案导致结果自相矛盾的问题已修复：`DailyFortune::generateFortune()` 改为基于黄历干支、值日、宜忌的确定性生成，并在读取今日记录时自动修复旧的随机样本；`2026-03-18` 接口复测已不再出现“高分却给低档文案”。
-
-- [x] [2026-03-18] 塔罗 `POST /api/tarot/interpret` 全量失败问题已解除：当前 `backend/app/controller/Tarot.php` 已正确引入 `use app\service\TarotElementService;`，接力前一次真实复测中 `single / three / celtic` 的 `draw + interpret` 均已成功；后续主阻塞已转移到 `save-record/history/share` 闭环。
-- [x] [2026-03-18] 六爻“返回 200 但 `id = null`、`/api/liuyao/history` 全空”不再是当前主阻塞：接力前一次真实复测中 `POST /api/liuyao/divination` 已返回有效 `id = 4`，`GET /api/liuyao/history` 也已有记录；当前遗留问题改为历史持久化字段缩水。
-- [x] [2026-03-18] 六爻历史回读字段缩水的代码侧根因已修复：`backend/app/controller/Liuyao.php` 现会把 `time_info / gong / shi_ying / liuqin / liushen / yong_shen` 一并快照进 `hexagram_original`，历史回读也会优先使用快照并对旧记录按 `created_at + yao_code` 兜底重建 `ri_gan / yue_jian / xunkong / line_details`；本轮受第 `[15]` 条本机 MySQL 凭据阻塞影响，未能完成 8080 登录态真实接口回放，先以代码路径复现 + IDE 诊断 + `git diff --check` 做最小闭环。
+- [x] [2026-03-19] 八字首次免费链路与历史/分享闭环已恢复：phpstudy `http://localhost:8080` 下先复现 `GET /api/paipan/history?page=1&page_size=5` 命中 `Unknown column 'location' in 'field list'`，随后补做 `backend/app/model/BaziRecord.php` 的新旧 schema 兼容、`backend/app/controller/Paipan.php` 的积分流水兜底与公开分享/删除路由收口，并修正 `BaziCalculationService` 的负数取模索引异常；真实接口终验 `POST /api/paipan/bazi`、`GET /api/paipan/history`、`POST /api/paipan/set-share-public`、`GET /api/bazi/share`、`POST /api/paipan/delete-record` 均返回业务 JSON，测试记录删除后历史列表也已确认移除。同步新增 `database/20260319_fix_bazi_record_schema.sql`，并修正 `database/full_import_for_navicat.sql`、`database/backup/02_create_tables.sql` 的 `tc_bazi_record` 初始化定义。
 
 
 

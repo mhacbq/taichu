@@ -331,4 +331,41 @@
 - **验证摘要**: 真实接口终验 `divination/history/detail` 三条链路均已返回 `di_zhi / bian_name / change_summary / moving_line_details` 等新增字段；`read_lints` 检查 `Liuyao.php`、`LiuyaoService.php`、`frontend/src/views/Liuyao.vue` 为 0 diagnostics；`npm run build --prefix frontend` 通过。
 - **状态**: 已完成 1 条六爻结构化输出高优问题闭环；当前 `[automation]` 仅剩低优“每日运势文案专业性不足”待后续处理。
 
+## 2026-03-19 每日运势公开链路库表漂移修复
+- **任务目标**: 直接接手 `TODO.md` 中仍属于结构化输出 / controller / schema 兼容范畴的高优问题，修复 `GET /api/daily/fortune` 因 `tc_daily_fortune` 旧表缺列导致的公开 500。
+- **执行摘要**:
+    1. 先用 phpstudy 真实接口复测 `GET http://localhost:8080/api/daily/fortune`，确认当前稳定返回 `500`，异常核心是 `SQLSTATE[42S22]: Unknown column 'lunar_date' in 'field list'`。
+    2. 结合 `backend/app/model/DailyFortune.php` 与库内 SQL 脚本复核，确认根因是部分环境还在使用旧版 `tc_daily_fortune` 建表口径（`user_id/fortune_type/card_*` 结构），与当前每日运势公共快照模型不一致。
+    3. 本轮已在 `DailyFortune` 模型加入 schema 探测与降级：表结构未兼容时直接按黄历实时生成返回，不再因缺列 500；表结构兼容时继续按 `user_id=0 + fortune_type=daily` 写入/刷新公共快照。
+    4. 已新增 `database/20260319_fix_daily_fortune_schema.sql`，并同步修正 `database/full_import_for_navicat.sql`、`database/backup/02_create_tables.sql` 中错误的 `tc_daily_fortune` 建表定义；`TODO.md` 也已把该问题转入 `D. 最近已完成 / 已确认`。
+- **验证摘要**: 真实接口终验 `GET /api/daily/fortune` 已恢复 `code=200` 并返回完整日运 JSON；`read_lints` 检查 `backend/app/model/DailyFortune.php` 为 0 diagnostics；本轮改动文件级 `git diff --check` 通过。
+- **状态**: 已完成 1 条每日运势公开链路高优问题闭环；后续若用户愿意补跑 SQL，可继续把运行库迁移到统一快照表结构。
+
+## 2026-03-19 八字首次免费链路 schema 兼容修复
+- **任务目标**: 直接接手 `TODO.md` 中仍属于 controller/model/结构化输出范畴的高优问题，修复 `tc_bazi_record` 结构漂移导致的八字排盘、历史、公开分享闭环断裂。
+- **执行摘要**:
+    1. 先用 phpstudy 真实接口复测：`GET /api/paipan/history?page=1&page_size=5` 稳定命中 `Unknown column 'location' in 'field list'`；随后继续回放 `POST /api/paipan/bazi` 时又暴露出两层同根因阻塞：`BaziCalculationService` 负数取模导致 `Undefined array key -2`，以及 `tc_points_record` 新 schema 下缺少 `amount` 默认值。
+    2. 本轮重写 `backend/app/model/BaziRecord.php`，统一兼容 `location/birth_place`、`year_gan~hour_zhi` 与 `*_pillar`、`analysis/report_data`、原生分享字段与 `tc_share_log` 回退，并让历史 / 分享统一走 `toApiArray()` 输出。
+    3. 同步收口 `backend/app/controller/Paipan.php`：扣分流水改为优先复用 `PointsRecord::buildRecordPayload()`，并对新积分表补 `amount/balance/reason/description` 兜底；排盘与缓存分支的记录保存都切到 `BaziRecord::createRecord()`；控制器级鉴权只保留登录接口，公开 `share` 不再误拦；补上 `set-share-public` / `delete-record` 路由。
+    4. 另外修正 `backend/app/service/BaziCalculationService.php` 的日柱交叉验证取模归一化；SQL 侧新增 `database/20260319_fix_bazi_record_schema.sql`，并同步修正 `database/full_import_for_navicat.sql`、`database/backup/02_create_tables.sql` 中错误的 `tc_bazi_record` 初始化定义；`TODO.md` 也已把该问题转入 `D. 最近已完成 / 已确认`。
+- **验证摘要**: 真实接口终验 `POST /api/paipan/bazi`、`GET /api/paipan/history`、`POST /api/paipan/set-share-public`、`GET /api/bazi/share`、`POST /api/paipan/delete-record` 均返回业务 JSON；删除后复查历史，测试记录已移除；`read_lints` 检查 `BaziRecord.php`、`Paipan.php`、`BaziCalculationService.php`、`route/app.php` 为 0 diagnostics。
+- **状态**: 已完成 1 条八字主链路高优问题闭环；后续如继续接手，占卜链路剩余高优更适合转向“新用户首登失败”或“塔罗 draw 500”这类仍未闭环的问题。
+
+## 2026-03-19 塔罗抽牌积分流水兼容修复
+- **任务目标**: 直接接手 `TODO.md` 中仍属于 controller / schema 兼容范畴的高优问题，修复 `POST /api/tarot/draw` 因积分流水写入旧口径导致的抽牌 500。
+- **执行摘要**:
+    1. 先用 phpstudy 真实接口复测 `POST /api/auth/phone-login`、`GET /api/points/balance`、`POST /api/tarot/draw`，确认老账号登录正常、抽牌前后余额都维持 `380`，而抽牌接口稳定返回 `{"code":500,"message":"抽牌失败，请稍后重试"}`。
+    2. 结合 `backend/app/controller/Tarot.php` 与 `backend/app/model/PointsRecord.php` 复核，确认根因不是抽牌随机逻辑本身，而是 `draw()` 事务仍手写旧版 `tc_points_record` 插入字段，缺少当前表结构要求的 `amount / balance / reason / description`，导致扣费流水插入失败并整体回滚。
+    3. 本轮已把塔罗抽牌扣费改为复用 `PointsRecord::buildRecordPayload()`，统一按新旧 schema 兼容口径生成流水，并显式回填 `balance / reason / description`；`TODO.md` 也已把该问题转入 `D. 最近已完成 / 已确认`。
+    4. SQL 侧本轮未新增补丁文件：已复核 `database/full_import_for_navicat.sql` 与 `database/all_repairs.sql`，其中已有 `tc_points_record` 兼容字段补齐脚本；当前主修复点是控制器写入口径补齐，而不是新增表结构。
+- **验证摘要**: 真实接口终验 `POST /api/tarot/draw` 已恢复 `code=200` 并返回 3 张牌；`remaining_points=370` 且余额从 `375 -> 370` 与 `points_cost=5` 对齐；`read_lints` 检查 `backend/app/controller/Tarot.php` 为 0 diagnostics。
+- **状态**: 已完成 1 条塔罗主链路高优问题闭环；后续可继续转向“新用户首登失败”或“合婚免费预览历史不落记录”这类仍未闭环问题。
+
+
+
+
+
+
+
+
 

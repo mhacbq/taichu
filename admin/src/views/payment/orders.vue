@@ -47,6 +47,15 @@
         :title="statsError"
       />
 
+      <el-alert
+        v-if="compatWarningMessage"
+        class="stats-alert"
+        type="warning"
+        show-icon
+        :closable="false"
+        :title="compatWarningMessage"
+      />
+
       <el-card class="search-form" shadow="never">
 
         <el-form :model="queryForm" inline>
@@ -345,15 +354,91 @@ function getPaymentTypeText(type) {
   return {
     wechat: '微信支付',
     wechat_jsapi: '微信 JSAPI',
-    alipay: '支付宝'
+    alipay: '支付宝',
+    legacy_unknown: '渠道待补齐'
   }[type] || type || '-'
+}
+
+const KNOWN_RECHARGE_STATUSES = ['pending', 'paid', 'cancelled', 'refunded']
+const KNOWN_PAYMENT_TYPES = ['wechat', 'wechat_jsapi', 'alipay']
+const LEGACY_UNKNOWN_PAYMENT_TYPE = 'legacy_unknown'
+
+const compatWarningMessage = computed(() => {
+  const fallbackOrders = orderList.value.filter(item => item.compatMeta?.usedFallback)
+  if (!fallbackOrders.length) {
+    return ''
+  }
+
+  const inferredStatusCount = fallbackOrders.filter(item => item.compatMeta?.statusInferred).length
+  const missingPaymentTypeCount = fallbackOrders.filter(item => item.compatMeta?.paymentTypeMissing).length
+  const fragments = []
+
+  if (inferredStatusCount > 0) {
+    fragments.push(`${inferredStatusCount} 条已按支付 / 退款时间恢复状态`)
+  }
+
+  if (missingPaymentTypeCount > 0) {
+    fragments.push(`${missingPaymentTypeCount} 条支付渠道仍待后端补齐`)
+  }
+
+  return `检测到 ${fallbackOrders.length} 条历史充值订单仍在走旧字段口径，页面已先做兼容展示${fragments.length ? `：${fragments.join('，')}` : ''}。`
+})
+
+function normalizeKnownRechargeStatus(status) {
+  const normalized = String(status ?? '').trim().toLowerCase()
+  return KNOWN_RECHARGE_STATUSES.includes(normalized) ? normalized : ''
+}
+
+function normalizeKnownPaymentType(type) {
+  const normalized = String(type ?? '').trim().toLowerCase()
+  return KNOWN_PAYMENT_TYPES.includes(normalized) ? normalized : ''
+}
+
+function inferRechargeStatus(order = {}) {
+  if (order.refund_time || order.refund_no || Number(order.refund_amount || 0) > 0) {
+    return 'refunded'
+  }
+
+  if (order.pay_time || order.pay_order_no) {
+    return 'paid'
+  }
+
+  return ''
+}
+
+function inferRechargePaymentType(order = {}) {
+  const hasLifecycleSignal = order.pay_time
+    || order.pay_order_no
+    || order.refund_time
+    || order.refund_no
+    || Number(order.refund_amount || 0) > 0
+
+  return hasLifecycleSignal ? LEGACY_UNKNOWN_PAYMENT_TYPE : ''
+}
+
+function normalizeRechargeOrder(order = {}) {
+  const knownStatus = normalizeKnownRechargeStatus(order.status)
+  const knownPaymentType = normalizeKnownPaymentType(order.payment_type)
+  const normalizedStatus = knownStatus || inferRechargeStatus(order)
+  const normalizedPaymentType = knownPaymentType || inferRechargePaymentType(order)
+
+  return {
+    ...order,
+    status: normalizedStatus,
+    payment_type: normalizedPaymentType,
+    compatMeta: {
+      usedFallback: Boolean((!knownStatus && normalizedStatus) || (!knownPaymentType && normalizedPaymentType)),
+      statusInferred: !knownStatus && normalizedStatus !== '',
+      paymentTypeMissing: !knownPaymentType && normalizedPaymentType === LEGACY_UNKNOWN_PAYMENT_TYPE
+    }
+  }
 }
 
 async function loadOrders() {
   loading.value = true
   try {
     const { data } = await getRechargeOrders(buildOrderParams(), { showErrorMessage: false })
-    orderList.value = Array.isArray(data?.list) ? data.list : []
+    orderList.value = Array.isArray(data?.list) ? data.list.map(normalizeRechargeOrder) : []
     total.value = Number(data?.total || 0)
   } finally {
     loading.value = false
@@ -436,7 +521,7 @@ function handleLoadFailure(error) {
 async function handleDetail(row) {
   try {
     const { data } = await getOrderDetail(row.order_no || row.id, { showErrorMessage: false })
-    currentOrder.value = data
+    currentOrder.value = normalizeRechargeOrder(data)
     detailVisible.value = true
   } catch (error) {
     ElMessage.error(error.message || '加载订单详情失败')

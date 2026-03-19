@@ -49,8 +49,21 @@ Route::group('api/admin', function () {
         Route::post('content/almanac', 'admin.Almanac/saveAlmanac');
         Route::put('content/almanac/:id', 'admin.Almanac/updateAlmanac');
         Route::delete('content/almanac/:id', 'admin.Almanac/deleteAlmanac');
+        Route::get('content/pages', 'Content/getPages');
+        Route::get('content/page/:pageId', 'Content/getPage');
+        Route::post('content/page/:pageId', 'Content/savePage');
+        Route::delete('content/page/:pageId', 'Content/deletePage');
+        Route::post('content/page/import', 'Content/importPage');
+        Route::get('content/page/:pageId/export', 'Content/exportPage');
+        Route::post('content/page/:pageId/autosave', 'Content/autoSave');
+        Route::get('content/page/:pageId/draft', 'Content/getDraft');
+        Route::get('content/page/:pageId/versions', 'Content/getVersions');
+        Route::post('content/version/:versionId/restore', 'Content/restoreVersion');
+        Route::get('content/version/:versionId/preview', 'Content/previewVersion');
+        Route::get('content/block-config/:type', 'Content/getBlockConfig');
         
         // 积分管理
+
         Route::get('points/records', 'Admin/pointsRecords');
         Route::post('points/adjust', 'admin.User/adjustPoints');
         Route::get('points/rules', 'Admin/getPointsRules');
@@ -60,9 +73,10 @@ Route::group('api/admin', function () {
         // 支付管理
         Route::get('payment/config', 'admin.Payment/getConfig');
         Route::post('payment/config', 'admin.Payment/saveConfig');
-        Route::get('payment/orders', 'admin.Payment/getOrders');
         Route::get('payment/orders/export', 'admin.Payment/exportOrders');
         Route::get('payment/orders/:id', 'admin.Payment/getOrderDetail');
+        Route::get('payment/orders', 'admin.Payment/getOrders');
+
         Route::put('payment/orders/batch-status', 'admin.Payment/batchUpdateStatus');
         Route::put('payment/orders/:id/status', 'admin.Payment/updateOrderStatus');
         Route::post('payment/orders/:id/refund', 'admin.Payment/refundOrder');

@@ -1635,7 +1635,7 @@ onUnmounted(() => {
   align-items: center;
   padding: 50px 40px;
   background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-primary));
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   margin-bottom: 40px;
   border: 1px solid var(--primary-light-20);
   position: relative;
@@ -1686,7 +1686,7 @@ onUnmounted(() => {
   z-index: 2;
   background: var(--white-03);
   padding: 30px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   backdrop-filter: blur(10px);
   border: 1px solid var(--white-08);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -1723,7 +1723,7 @@ onUnmounted(() => {
   z-index: 2;
   background: linear-gradient(180deg, rgba(13, 11, 7, 0.88), rgba(5, 5, 5, 0.72));
   padding: 28px 32px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   border: 1px solid rgba(212, 175, 55, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 36px rgba(0, 0, 0, 0.45);
 }
@@ -2028,24 +2028,61 @@ onUnmounted(() => {
 
 /* 卦辞 */
 .gua-ci-section {
-  padding: 20px;
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  margin-bottom: 24px;
-  border: 1px solid var(--border-light);
+  padding: 25px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
+  border-radius: 20px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(184, 134, 11, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+              0 4px 16px rgba(184, 134, 11, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.gua-ci-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.3), transparent);
 }
 
 .gua-ci-section h4 {
   color: var(--primary-color);
-  margin-bottom: 10px;
-  font-size: 16px;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+
+.gua-ci-section h4::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-color), transparent);
+  border-radius: 1px;
 }
 
 .gua-ci {
   color: var(--text-primary);
   line-height: 1.8;
-  font-size: 15px;
+  font-size: 16px;
   margin: 0;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* 解读 */
@@ -2070,27 +2107,54 @@ onUnmounted(() => {
 
 /* AI分析 */
 .ai-section {
-  margin-bottom: 24px;
-  padding: 20px;
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  border-left: 4px solid var(--success-color);
+  margin-bottom: 30px;
+  padding: 25px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95));
+  border-radius: 20px;
+  border-left: 5px solid var(--success-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+              0 4px 16px rgba(40, 167, 69, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
 }
 
 .ai-section h4 {
-  color: var(--success-color);
-  margin-bottom: 12px;
-  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  font-size: 18px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.ai-section h4 .el-icon {
+  color: var(--success-color);
+  font-size: 20px;
+  filter: drop-shadow(0 2px 4px rgba(40, 167, 69, 0.3));
 }
 
 .ai-content {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   line-height: 1.8;
-  font-size: 14px;
+  font-size: 15px;
   white-space: pre-wrap;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* 积分信息 */

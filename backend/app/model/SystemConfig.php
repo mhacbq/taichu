@@ -38,7 +38,7 @@ class SystemConfig extends Model
     /**
      * 获取配置值（自动转换类型）
      */
-    public function getTypedValueAttribute($value, $data)
+    public function getTypedValueAttr($value, $data)
     {
         $val = $data['config_value'] ?? '';
         $type = self::normalizeConfigType((string) ($data['config_type'] ?? 'string'));
@@ -61,6 +61,7 @@ class SystemConfig extends Model
                 return $val;
         }
     }
+
 
 
     /**

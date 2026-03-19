@@ -21,7 +21,9 @@ class Paipan extends BaseController
     // 是否启用排盘结果缓存
     const ENABLE_CACHE = true;
     
-    protected $middleware = [\app\middleware\Auth::class];
+    protected $middleware = [
+        \app\middleware\Auth::class => ['only' => ['bazi', 'history', 'setSharePublic', 'deleteRecord']],
+    ];
     
     /**
      * @var BaziCalculationService
@@ -158,39 +160,69 @@ class Paipan extends BaseController
                 }
                 
                 // 记录积分变动
-                Db::name('tc_points_record')->insert([
-                    'user_id' => $user['sub'],
-                    'action' => '八字排盘消耗',
-                    'points' => -self::BAZI_POINTS_COST,
-                    'type' => 'bazi',
-                    'related_id' => 0,
-                    'remark' => "排盘日期: {$birthDate}",
-                    'created_at' => date('Y-m-d H:i:s'),
-                ]);
+                $currentBalance = (int) Db::name('tc_user')
+                    ->where('id', $user['sub'])
+                    ->value('points');
+                $pointsPayload = PointsRecord::buildRecordPayload(
+                    (int) $user['sub'],
+                    '八字排盘消耗',
+                    -self::BAZI_POINTS_COST,
+                    'bazi',
+                    0,
+                    "排盘日期: {$birthDate}",
+                    ['balance' => $currentBalance]
+                );
+
+                try {
+                    Db::name('tc_points_record')->insert($pointsPayload);
+                } catch (\Throwable $pointsException) {
+                    if (str_contains($pointsException->getMessage(), "Field 'amount' doesn't have a default value")) {
+                        $fallbackPayload = array_merge([
+                            'user_id' => (int) $user['sub'],
+                            'action' => '八字排盘消耗',
+                            'points' => -self::BAZI_POINTS_COST,
+                            'type' => 'reduce',
+                            'amount' => self::BAZI_POINTS_COST,
+                            'balance' => $currentBalance,
+                            'related_id' => 0,
+                            'source_id' => 0,
+                            'source_type' => 'bazi',
+                            'reason' => "排盘日期: {$birthDate}",
+                            'remark' => "排盘日期: {$birthDate}",
+                            'description' => '八字排盘消耗',
+                            'created_at' => date('Y-m-d H:i:s'),
+                        ], $pointsPayload);
+
+                        Db::name('tc_points_record')->insert($fallbackPayload);
+                    } else {
+                        throw $pointsException;
+                    }
+                }
             }
             
-            // 保存排盘记录
-            $recordData = [
+            // 保存排盘记录（兼容 tc_bazi_record 新旧字段口径）
+            $record = BaziRecord::createRecord([
                 'user_id' => $user['sub'],
                 'birth_date' => $birthDate,
                 'gender' => $gender,
                 'location' => $location,
-                'year_gan' => $bazi['year']['gan'],
-                'year_zhi' => $bazi['year']['zhi'],
-                'month_gan' => $bazi['month']['gan'],
-                'month_zhi' => $bazi['month']['zhi'],
-                'day_gan' => $bazi['day']['gan'],
-                'day_zhi' => $bazi['day']['zhi'],
-                'hour_gan' => $bazi['hour']['gan'],
-                'hour_zhi' => $bazi['hour']['zhi'],
+                'longitude' => $longitude,
+                'mode' => $mode,
+                'bazi' => $bazi,
                 'analysis' => $analysis,
-            ];
+                'simple_interpretation' => $simpleInterpretation,
+                'full_interpretation' => $fullInterpretation,
+                'dayun' => $daYun,
+                'liunian' => $liuNian,
+                'fortune_analysis' => $fortuneAnalysis,
+                'true_solar_time' => $trueSolarTimeInfo,
+                'points_cost' => $pointsCost,
+                'is_first' => $this->hasIsFirstColumn() ? (int)$isFirstBazi : 0,
+            ]);
 
-            if ($this->hasIsFirstColumn()) {
-                $recordData['is_first'] = (int)$isFirstBazi;
+            if (!$record) {
+                throw new \RuntimeException('八字记录保存失败');
             }
-
-            $record = BaziRecord::create($recordData);
             
             Db::commit();
             
@@ -241,7 +273,7 @@ class Paipan extends BaseController
                 'birth_date' => $birthDate ?? '',
                 'trace' => $e->getTraceAsString()
             ]);
-            return $this->error('排盘失败，请稍后重试', 500);
+            return $this->error('排盘失败：' . $e->getMessage(), 500);
         }
     }
     
@@ -287,28 +319,27 @@ class Paipan extends BaseController
                 );
             }
             
-            // 保存排盘记录
-            $recordData = [
+            // 保存排盘记录（兼容 tc_bazi_record 新旧字段口径）
+            $record = BaziRecord::createRecord([
                 'user_id' => $user['sub'],
                 'birth_date' => $birthDate,
-                'gender' => 'unknown', // 从缓存获取时可能不知道性别
+                'gender' => 'unknown',
                 'location' => '',
-                'year_gan' => $cachedResult['bazi']['year']['gan'],
-                'year_zhi' => $cachedResult['bazi']['year']['zhi'],
-                'month_gan' => $cachedResult['bazi']['month']['gan'],
-                'month_zhi' => $cachedResult['bazi']['month']['zhi'],
-                'day_gan' => $cachedResult['bazi']['day']['gan'],
-                'day_zhi' => $cachedResult['bazi']['day']['zhi'],
-                'hour_gan' => $cachedResult['bazi']['hour']['gan'],
-                'hour_zhi' => $cachedResult['bazi']['hour']['zhi'],
-                'analysis' => $cachedResult['analysis'],
-            ];
+                'mode' => $mode,
+                'bazi' => $cachedResult['bazi'] ?? [],
+                'analysis' => $cachedResult['analysis'] ?? '',
+                'simple_interpretation' => $cachedResult['simpleInterpretation'] ?? null,
+                'full_interpretation' => $cachedResult['fullInterpretation'] ?? null,
+                'dayun' => $cachedResult['dayun'] ?? [],
+                'liunian' => $cachedResult['liunian'] ?? [],
+                'fortune_analysis' => $cachedResult['fortune_analysis'] ?? null,
+                'points_cost' => $pointsCost,
+                'is_first' => $this->hasIsFirstColumn() ? (int)$isFirstBazi : 0,
+            ]);
 
-            if ($this->hasIsFirstColumn()) {
-                $recordData['is_first'] = (int)$isFirstBazi;
+            if (!$record) {
+                throw new \RuntimeException('八字缓存记录保存失败');
             }
-
-            $record = BaziRecord::create($recordData);
             
             Db::commit();
             
@@ -369,14 +400,7 @@ class Paipan extends BaseController
             return self::$hasIsFirstColumn;
         }
 
-        try {
-            $result = Db::query("SHOW COLUMNS FROM `tc_bazi_record` LIKE 'is_first'");
-            self::$hasIsFirstColumn = !empty($result);
-        } catch (\Throwable $e) {
-            self::$hasIsFirstColumn = false;
-            Log::warning('检查 tc_bazi_record.is_first 字段失败，按不存在处理: ' . $e->getMessage());
-        }
-
+        self::$hasIsFirstColumn = BaziRecord::hasTableColumn('is_first');
         return self::$hasIsFirstColumn;
     }
     
@@ -1184,12 +1208,18 @@ class Paipan extends BaseController
             return $this->error('记录不存在', 404);
         }
         
-        if ($record->setSharePublic($isPublic)) {
-            return $this->success([
-                'is_public' => $isPublic,
-                'share_code' => $record->share_code,
-                'share_url' => $isPublic ? "/bazi/share/{$record->share_code}" : null,
-            ], '设置成功');
+        try {
+            if ($record->setSharePublic($isPublic)) {
+                $shareCode = $record->getShareCodeValue();
+                return $this->success([
+                    'is_public' => $isPublic ? 1 : 0,
+                    'share_code' => $shareCode,
+                    'share_url' => ($isPublic && $shareCode !== '') ? "/bazi/share/{$shareCode}" : null,
+                    'share_supported' => $record->canShare(),
+                ], '设置成功');
+            }
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 400);
         }
         
         return $this->error('设置失败');
@@ -1231,26 +1261,9 @@ class Paipan extends BaseController
             return $this->error('分享记录不存在或已失效', 404);
         }
         
-        // 增加查看次数
         $record->incrementViewCount();
         
-        // 构建八字数据
-        $bazi = [
-            'year' => ['gan' => $record->year_gan, 'zhi' => $record->year_zhi],
-            'month' => ['gan' => $record->month_gan, 'zhi' => $record->month_zhi],
-            'day' => ['gan' => $record->day_gan, 'zhi' => $record->day_zhi],
-            'hour' => ['gan' => $record->hour_gan, 'zhi' => $record->hour_zhi],
-        ];
-        
-        return $this->success([
-            'birth_date' => $record->birth_date,
-            'gender' => $record->gender,
-            'location' => $record->location,
-            'bazi' => $bazi,
-            'analysis' => $record->analysis,
-            'view_count' => $record->view_count,
-            'created_at' => $record->created_at,
-        ]);
+        return $this->success($record->toApiArray());
     }
     
     /**

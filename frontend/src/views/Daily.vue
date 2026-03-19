@@ -1428,7 +1428,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   width: 72px;
   height: 72px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1482,7 +1482,7 @@ onUnmounted(() => {
 
 .aspect-card {
   padding: 24px 22px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.94));
 }
 
@@ -1564,7 +1564,7 @@ onUnmounted(() => {
   .loading-state,
   .error-state {
     padding: 20px 18px;
-    border-radius: 24px;
+    border-radius: var(--radius-xl);
   }
 
   .date-display {

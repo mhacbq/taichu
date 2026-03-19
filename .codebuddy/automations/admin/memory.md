@@ -8,7 +8,9 @@
 >
 > 后台登录入口修正（2026-03-19）：后台页面验证不要再默认猜 `http://localhost:3001/login`、`http://localhost:8080/admin` 或 `/admin/login`。当前后台源码在 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin`，是独立 Vite 项目；登录页前端路由是 `/login`，登录接口是 `POST /api/admin/auth/login`。做页面级验证前先确认 `admin/dist/index.html` 是否已存在，必要时先执行 `npm run build --prefix admin`，再按用户实际部署/挂载后的后台站点根地址访问“站点根地址 + /login”。
 
+- 2026-03-19 14:28：本轮处理 `[admin]` 的充值订单旧字段兼容问题；已把 `backend/app/controller/admin/Payment.php` 改为兼容 `status/pay_status`、`payment_type/pay_type`、`pay_order_no/transaction_id`，并调整 `backend/route/admin.php` 的充值订单路由顺序，避免详情请求被列表路由吞掉；同时让 `backend/app/model/RechargeOrder.php` 真正保存传入支付渠道，并新增幂等补丁 `database/20260319_fix_recharge_order_compat.sql`。最小验证：phpstudy `http://localhost:8080` 下复测 `GET /api/admin/payment/orders`、`GET /api/admin/payment/orders?status=paid`、`GET /api/admin/payment/orders/R202403200002` 均返回 `200`，历史订单已恢复 `status=paid / payment_type=wechat`。
 - 2026-03-19 07:20：本轮改为处理 `[admin]` 队列里可直接落地的前台壳层问题，静态复核确认 `frontend/src/App.vue` 在桌面端与移动端顶部导航都硬编码了“需登录”徽标；已移除对应徽标和无用样式，保留原有登录拦截逻辑不变，并同步把该项从 `TODO.md` 高频队列移入最近完成。最小闭环验证：`frontend/src/App.vue` 诊断 0、`npm run build --prefix frontend` 通过。
+
 - 2026-03-19 07:02：继续按 phpstudy `http://localhost:8080` 复现 `[admin]` 唯一高优主问题；`/api/health` 返回 `code=200`，`POST /api/admin/auth/login`（`admin / admin123`）仍返回“管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql”，`GET /api/admin/dashboard/statistics` 仍为 `401`，`GET /admin/login` 仍是 `404`。复核 `backend/app/controller/admin/Auth.php`、`backend/app/service/AdminAuthService.php`、`database/20260317_create_admin_users_table.sql`、`backend/docker-entrypoint.sh` 后，结论仍是 phpstudy 本机 `taichu` 库未导入管理员初始化 SQL；该项属于登录鉴权 + 数据库迁移高风险边界，本轮未改业务代码、未动 SQL、未更新 TODO 完成状态，建议人工导入 SQL 后先复测 `login -> auth/info -> dashboard/statistics`。
 
 

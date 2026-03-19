@@ -20,8 +20,9 @@ USE `taichu`;
 -- 用户表
 CREATE TABLE IF NOT EXISTS `tc_user` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `openid` VARCHAR(100) DEFAULT '' COMMENT '微信openid',
-    `unionid` VARCHAR(100) DEFAULT '' COMMENT '微信unionid',
+    `openid` VARCHAR(100) DEFAULT NULL COMMENT '微信openid，手机号注册用户保持 NULL 以避免唯一键被空串占用',
+    `unionid` VARCHAR(100) DEFAULT NULL COMMENT '微信unionid，未绑定时保持 NULL',
+
     `phone` VARCHAR(20) DEFAULT '' COMMENT '手机号',
     `password` VARCHAR(255) DEFAULT '' COMMENT '密码',
     `nickname` VARCHAR(50) DEFAULT '' COMMENT '昵称',
@@ -131,32 +132,45 @@ CREATE TABLE IF NOT EXISTS `tc_vip_order` (
 -- 4. 八字相关表
 -- =====================================================
 
--- 八字排盘记录表
+-- 八字排盘记录表（兼容当前控制器 + 历史 rich schema）
 CREATE TABLE IF NOT EXISTS `tc_bazi_record` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED DEFAULT 0 COMMENT '用户ID 0为游客',
-    `name` VARCHAR(50) DEFAULT '' COMMENT '姓名',
-    `gender` TINYINT NOT NULL COMMENT '性别 1男 2女',
-    `birth_date` DATE NOT NULL COMMENT '出生日期',
-    `birth_time` TIME NOT NULL COMMENT '出生时间',
-    `birth_place` VARCHAR(200) DEFAULT '' COMMENT '出生地点',
+    `user_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户ID',
+    `name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '姓名',
+    `gender` TINYINT NOT NULL DEFAULT 0 COMMENT '性别 1男 2女（兼容当前 rich schema）',
+    `birth_date` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '出生日期时间文本',
+    `birth_time` TIME NULL DEFAULT NULL COMMENT '出生时分（兼容 rich schema）',
+    `location` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '出生地点（当前接口口径）',
+    `birth_place` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '出生地点（旧 rich schema 口径）',
     `longitude` DECIMAL(10, 6) NULL COMMENT '经度',
     `latitude` DECIMAL(10, 6) NULL COMMENT '纬度',
-    `year_pillar` VARCHAR(10) DEFAULT '' COMMENT '年柱',
-    `month_pillar` VARCHAR(10) DEFAULT '' COMMENT '月柱',
-    `day_pillar` VARCHAR(10) DEFAULT '' COMMENT '日柱',
-    `hour_pillar` VARCHAR(10) DEFAULT '' COMMENT '时柱',
-    `wuxing_analysis` JSON NULL COMMENT '五行分析',
-    `shishen_analysis` JSON NULL COMMENT '十神分析',
+    `year_gan` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '年干',
+    `year_zhi` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '年支',
+    `month_gan` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '月干',
+    `month_zhi` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '月支',
+    `day_gan` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '日干',
+    `day_zhi` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '日支',
+    `hour_gan` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '时干',
+    `hour_zhi` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '时支',
+    `year_pillar` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '年柱',
+    `month_pillar` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '月柱',
+    `day_pillar` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '日柱',
+    `hour_pillar` VARCHAR(10) NOT NULL DEFAULT '' COMMENT '时柱',
+    `analysis` TEXT NULL COMMENT '文本分析摘要',
+    `report_data` JSON NULL COMMENT '完整报告数据',
     `dayun` JSON NULL COMMENT '大运数据',
     `liunian` JSON NULL COMMENT '流年数据',
-    `report_data` JSON NULL COMMENT '完整报告数据',
-    `is_paid` TINYINT DEFAULT 0 COMMENT '是否付费解锁完整报告',
-    `points_used` INT DEFAULT 0 COMMENT '消耗积分',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `is_first` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否首次排盘',
+    `is_paid` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否付费解锁完整报告',
+    `points_used` INT NOT NULL DEFAULT 0 COMMENT '消耗积分',
+    `is_public` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否公开分享',
+    `share_code` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '分享码',
+    `view_count` INT NOT NULL DEFAULT 0 COMMENT '查看次数',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_created_at` (`created_at`)
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_created_at` (`created_at`),
+    KEY `idx_share_code` (`share_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='八字排盘记录表';
 
 -- 八字合婚记录表
@@ -204,22 +218,26 @@ CREATE TABLE IF NOT EXISTS `tc_qiming_record` (
 -- 每日运势记录表
 CREATE TABLE IF NOT EXISTS `tc_daily_fortune` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
     `date` DATE NOT NULL COMMENT '日期',
-    `fortune_type` VARCHAR(20) NOT NULL COMMENT '运势类型 tarot/meihao/etc',
-    `card_id` INT DEFAULT 0 COMMENT '塔罗牌ID',
-    `card_name` VARCHAR(50) DEFAULT '' COMMENT '塔罗牌名称',
-    `card_image` VARCHAR(500) DEFAULT '' COMMENT '塔罗牌图片',
-    `fortune_score` TINYINT DEFAULT 0 COMMENT '运势评分',
-    `fortune_desc` TEXT COMMENT '运势描述',
-    `suggestions` JSON NULL COMMENT '建议',
-    `is_shared` TINYINT DEFAULT 0 COMMENT '是否已分享',
+    `lunar_date` VARCHAR(50) DEFAULT '' COMMENT '农历日期',
+    `overall_score` INT DEFAULT 70 COMMENT '综合评分 0-100',
+    `summary` VARCHAR(500) DEFAULT '' COMMENT '运势摘要',
+    `career_score` INT DEFAULT 70 COMMENT '事业评分',
+    `career_desc` VARCHAR(500) DEFAULT '' COMMENT '事业描述',
+    `wealth_score` INT DEFAULT 70 COMMENT '财富评分',
+    `wealth_desc` VARCHAR(500) DEFAULT '' COMMENT '财富描述',
+    `love_score` INT DEFAULT 70 COMMENT '感情评分',
+    `love_desc` VARCHAR(500) DEFAULT '' COMMENT '感情描述',
+    `health_score` INT DEFAULT 70 COMMENT '健康评分',
+    `health_desc` VARCHAR(500) DEFAULT '' COMMENT '健康描述',
+    `yi` VARCHAR(500) DEFAULT '' COMMENT '宜（宜做的事）',
+    `ji` VARCHAR(500) DEFAULT '' COMMENT '忌（忌做的事）',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    UNIQUE KEY `uk_user_date_type` (`user_id`, `date`, `fortune_type`),
-    INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_date` (`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日运势记录表';
+    UNIQUE KEY `uk_date` (`date`),
+    INDEX `idx_overall_score` (`overall_score`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日运势表';
 
 -- 流年运势记录表
 CREATE TABLE IF NOT EXISTS `tc_yearly_fortune` (

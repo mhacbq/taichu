@@ -74,15 +74,26 @@ class RechargeOrder extends Model
     /**
      * 创建订单
      */
-    public static function createOrder(int $userId, float $amount, int $points, string $clientIp = '', string $userAgent = ''): array
-    {
+    public static function createOrder(
+        int $userId,
+        float $amount,
+        int $points,
+        string $clientIp = '',
+        string $userAgent = '',
+        string $paymentType = 'wechat_jsapi'
+    ): array {
+        $normalizedPaymentType = strtolower(trim($paymentType));
+        if (!in_array($normalizedPaymentType, ['wechat', 'wechat_jsapi', 'alipay'], true)) {
+            $normalizedPaymentType = 'wechat_jsapi';
+        }
+
         $order = new self();
         $order->order_no = self::generateOrderNo();
         $order->user_id = $userId;
         $order->amount = $amount;
         $order->points = $points;
         $order->status = self::STATUS_PENDING;
-        $order->payment_type = 'wechat_jsapi';
+        $order->payment_type = $normalizedPaymentType;
         $order->expire_time = date('Y-m-d H:i:s', strtotime('+30 minutes'));
         $order->client_ip = $clientIp;
         $order->user_agent = $userAgent;
@@ -95,11 +106,13 @@ class RechargeOrder extends Model
                 'points' => $order->points,
                 'expire_time' => $order->expire_time,
                 'status' => $order->status,
+                'payment_type' => $order->payment_type,
             ];
         }
         
         return [];
     }
+
     
     /**
      * 根据订单号查找订单

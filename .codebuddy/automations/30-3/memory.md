@@ -287,3 +287,53 @@
 ### 检查结果概述
 - `admin/dist/index.html` 已存在，且 `npm run build --prefix admin` 本轮可成功通过；但仓库内仍无法推出用户实际部署/挂载后的后台站点根地址，因此本轮没有再凭空访问任何页面 URL。
 - fresh login `POST /api/admin/auth/login` 继续返回 `admin.roles=["admin"]`、`role="admin"`，说明登录与角色链路当前正常；但紧接着 `GET /api/admin/system/settings` 仍稳定返回 `site_name/site_description=""`、`register_points/checkin_points/bazi_cost/tarot_cost=0`、`enable_feedback=true`。这表明系统设置异常即使不经过页面操作，也能在 8080 直连接口层直接复现；本轮已把新证据并入 `TODO.md` 现有条目，未重复新开问题。
+
+---
+
+## 2026-03-19 第四十一轮执行摘要
+
+### 检查范围
+- 继续先复读 `TODO.md` 的 `[30-3]` 章节与本记忆，不假设后台页面部署根地址；仅确认 `admin/dist/index.html` 与现有构建产物仍可用。
+- 本轮只补证 1 组后台主链路：`登录 -> 订单/积分查询`，仅核对 `http://localhost:8080/api/admin/...` 只读接口，不直接修复。
+
+### 检查结果概述
+- `admin/dist/index.html` 与 `admin/dist/assets` 主包仍在仓库内可见，但由于用户实际部署/挂载根地址仍未知，本轮继续没有凭空访问任何页面 URL。
+- fresh login `POST /api/admin/auth/login` 返回 `admin.roles=["admin"]`、`role="admin"`；`GET /api/admin/points/records?page=1&pageSize=5` 也返回 `code=200` 与带 `balance` 的真实流水，说明积分查询链路本轮未见新阻塞。新增问题落在充值订单：`GET /api/admin/payment/stats` 返回 `order_count=1 / total_amount=50 / pending_count=0`，但同一登录态下 `GET /api/admin/payment/orders?page=1&limit=5` 返回的历史订单里 `status`、`payment_type` 仍是 `null`，已补记到 `TODO.md`，因为这会让后台充值订单页把真实订单渲染成状态 `-`、支付方式 `-`，并丢失依赖状态的运营动作入口。
+
+---
+
+## 2026-03-19 第四十二轮执行摘要
+
+### 检查范围
+- 继续先复读 `TODO.md` 的 `[30-3]` 章节与本记忆，不假设后台页面部署根地址；仅基于仓库现有构建产物和 `http://localhost:8080/api/admin/...` 直连接口补证。
+- 本轮只补证 1 组后台主链路：`登录 -> Dashboard / 菜单加载依赖接口`，不直接修复。
+
+### 检查结果概述
+- `GET /api/admin/auth/info` 在 fresh login 后返回 `roles=["admin"]`、`permissions=["*"]`，结合后台前端菜单/快捷入口基于角色过滤的实现，可判断本轮没有补出新的菜单鉴权阻塞。
+- 新证据落在 Dashboard 统计口径漂移：同一登录态下 `GET /api/admin/dashboard/statistics` 返回 `order_stats.month.paid_orders=0 / amount=0`、`order_stats.today.paid=0 / amount=0`，但 `GET /api/admin/payment/stats` 同时返回 `order_count=1 / total_amount=50 / pending_count=0`。由于 `admin/src/views/dashboard/index.vue` 直接用 `order_stats.month.paid_orders` 与 `order_stats.month.amount` 渲染“本月支付订单 / 本月实收”，后台看板当前会把已有充值流水错误展示为 0；从仓库代码看，Dashboard 月度统计优先读 `site_daily_stats`，而支付页统计走实时订单查询，疑似快照口径陈旧或未同步。该证据已并入 `TODO.md`，未重复新开页面入口结论。
+
+---
+
+## 2026-03-19 第四十三轮执行摘要
+
+### 检查范围
+- 延续新基线，先确认 `admin/dist/index.html` 与构建产物仍存在，不假设任何后台页面部署根地址。
+- 本轮只补证 1 组后台主链路：`登录 -> 内容管理 -> 页面管理`，仅核对 `http://localhost:8080/api/admin/...` 与仓库路由实现，不直接修复。
+
+### 检查结果概述
+- `admin/dist/index.html` 与其引用的 `admin/dist/assets/index-BQ6XilyL.js`、`index-bO1ixBAy.css` 仍存在，因此本轮未额外猜测页面 URL，也未强行拉起 3001 dev server。
+- fresh login `POST /api/admin/auth/login` 返回 `role="admin"` 后，继续请求 `GET /api/admin/content/pages?page=1&pageSize=10` 直接得到 `404 {"code":404,"message":"接口不存在"}`；对照代码可见 `admin/src/api/contentEditor.js` 会基于后台默认 `baseURL=/api/admin` 请求 `/content/pages`，但后端只在 `backend/route/content.php` 暴露 `/api/content/pages`，`backend/route/admin.php` 并没有对应后台路由。该证据已补写到 `TODO.md`，说明后台“内容管理 -> 页面管理”当前不是纯空数据，而是前后端路径错位导致真实列表链路无法加载。
+
+---
+
+## 2026-03-19 第四十四轮执行摘要
+
+### 检查范围
+- 继续先复读 `TODO.md` 的 `[30-3]` 章节与本记忆，不假设任何后台页面部署根地址；先确认 `admin/dist/index.html` 是否存在，并重新执行 `npm run build --prefix admin` 做构建校验。
+- 本轮只补证 1 组后台主链路：`登录 -> 系统设置保存后刷新回读`，仅核对 `http://localhost:8080/api/admin/...` 与公开配置回读，不直接修复。
+
+### 检查结果概述
+- `admin/dist/index.html` 仍存在，且 `npm run build --prefix admin` 本轮成功通过；但仓库内依旧无法确认用户实际部署/挂载后的后台站点根地址，因此本轮继续没有凭空访问任何页面 URL。
+- fresh login `POST /api/admin/auth/login` 返回 `role="admin"`、`roles=["admin"]`，`GET /api/admin/auth/info` 也返回 `permissions=["*"]`；随后 `GET -> PUT(原样回存) -> GET /api/admin/system/settings` 三次结果保持一致，`site_name=太初命理`、`register_points=100`、`checkin_points=5`、`bazi_cost=20`、`tarot_cost=10`、`enable_feedback=true` 等字段均未再回读成空值或 `0`。公开 `GET /api/config/client` 的 `points.tasks.sign_daily.points=5` 也同步正常。本轮没有在“系统设置保存后刷新回读”这组链路上补出新后台缺陷，因此未新增 TODO 条目。
+
+

@@ -6,7 +6,37 @@
 >
 > SQL 落库要求（2026-03-19）：若本轮修复新增或调整了 SQL（建表、补列、索引、初始化、迁移、兼容补丁、数据修复脚本），必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件；优先复用最相关现有文件，不合适再新增按日期命名补丁文件，不要只改代码或只在 memory 里记录。
 
+## 2026-03-19 Dashboard 月度充值快照与实时统计统一（本次）
+
+- 本轮按要求先查看 `TODO.md -> A. 高频修复队列` 与本 memory；由于 `[15]` 当前无单挂未完成项，转处理同属高频队列、且根因明确落在后端统计服务的 Dashboard 月度充值口径问题。
+- 真实复现：phpstudy `http://localhost:8080` 下，同一管理员登录态里 `GET /api/admin/dashboard/statistics` 返回 `order_stats.month.paid_orders=0 / amount=0`，而 `GET /api/admin/payment/stats` 同期返回 `order_count=1 / total_amount=50`。
+- 已修复 `backend/app/service/AdminStatsService.php`：`getMonthlyOrderStats()` 改为优先按实时充值订单表聚合，仅在缺少订单表时才回退 `site_daily_stats`，避免继续被陈旧快照压成 0；未新增 SQL。复测已确认 Dashboard 月度统计恢复为 `total=1 / paid_orders=1 / amount=50`，并已同步更新 `TODO.md`。
+
+## 2026-03-19 后台页面管理 admin 路由缺失修复（本次）
+
+
+- 本轮按要求先查看 `TODO.md -> A. 高频修复队列 -> [15]` 与本 memory，在 phpstudy `http://localhost:8080` 真实复现后台页面管理问题：管理员登录成功后，`GET /api/admin/content/pages?page=1&pageSize=10` 直接返回 `404 接口不存在`。
+- 根因是前端 `admin/src/api/contentEditor.js` 固定走 `/api/admin/content/*`，但后端只在 `backend/route/content.php` 注册 `/api/content/*`；补齐 `backend/route/admin.php` 的页面管理路由时，又顺手揪出 `backend/app/controller/Content.php` 覆盖了 `BaseController::logOperation()` 且签名/可见性不兼容，会导致控制器加载即 500，已改为复用父类统一日志方法。
+- 验证通过：复测 `GET /api/admin/content/pages?page=1&pageSize=10` 已返回 `200 {"code":200,"message":"获取成功","data":{"list":[],"total":0}}`；`read_lints` 对 `Content.php`、`admin.php`、`TODO.md` 为 0 diagnostics，`git diff --check -- backend/app/controller/Content.php backend/route/admin.php` 通过。`TODO.md` 已把该条移入完成状态。
+
+## 2026-03-19 新用户 phone-login 自动建号阻塞修复（本次）
+
+
+- 本轮承接上一轮额外发现的问题，先在 phpstudy `http://localhost:8080` 真实复现：新手机号 `POST /api/auth/phone-login` 稳定返回 `{"code":400,"message":"用户创建失败，请稍后重试"}`，而老账号登录正常。
+- 进一步直查本地 MySQL `tc_user`，确认已有手机号用户 `openid=''`，同时表上保留 `uk_openid` 唯一索引；根因是**手机号自动建号路径未显式写 NULL，继续沿用列默认空串时会被唯一键卡死**，并非“重复手机号”或短信校验失败。
+- 已修复代码：`backend/app/controller/Auth.php` 与 `PhoneAuth.php` 的所有手机号建号入口都统一改为显式写入 `openid=null, unionid=null`。已同步补 SQL：新增 `database/20260319_fix_user_openid_nullable.sql`，把历史空串归一化为 `NULL` 并将 `tc_user.openid/unionid` 默认值改为 `NULL`；同时更新 `database/backup/02_create_tables.sql` 与 `database/full_import_for_navicat.sql` 的用户表定义。
+- 验证通过：执行本地 SQL 补丁后，`SHOW CREATE TABLE tc_user` 已显示 `openid/unionid DEFAULT NULL`，历史手机号用户 `13800138114` 的 `openid/unionid` 已回正为 `NULL`；新手机号 `13800138118` 已完成 `send-code -> phone-login -> userinfo -> points/balance -> points/history` 全链路真实回放，首登即拿到 `100` 积分与注册奖励流水。
+
+## 2026-03-19 系统设置 typed_value 访问器修复（本次）
+
+
+- 本轮按要求先读取 `TODO.md -> A. 高频修复队列 -> [15]` 与本 memory，随后转处理同属后端高频队列、且能在仓库内直接落补丁的 `[admin]` 系统设置主问题；在 phpstudy `http://localhost:8080` 下复现到 `PUT/GET /api/admin/system/settings` 都把 `site_name/register_points/...` 读成空值或 `0`，但本地 MySQL `system_config` 原始行仍正确，问题收敛到应用层配置读取/缓存。
+- 根因定位为 `backend/app/model/SystemConfig.php` 把 ThinkPHP 访问器误写成 `getTypedValueAttribute()`，导致 `typed_value` 实际恒为 `null`，`ConfigService::refreshCache()` 会把 `site_name/register_points/points_sign_daily/...` 全量缓存成空值；已改为正确的 `getTypedValueAttr()`。
+- 验证：`read_lints` 对 `SystemConfig.php`、`TODO.md` 为 0 diagnostics，`git diff --check -- backend/app/model/SystemConfig.php` 通过；真实接口回放确认 `PUT -> GET /api/admin/system/settings` 已恢复正确值，`GET /api/config/client` 的 `points.tasks.sign_daily.points` 也恢复为 `5`，运行时缓存文件不再写入 `null`。
+- 额外尝试补做“新手机号注册即发分”终验时，已不再表现为配置口径错乱，而是碰到独立的 `phone-login -> 用户创建失败，请稍后重试` 阻塞；该问题未在本轮继续展开。
+
 ## 2026-03-19 塔罗分享闭环修复（本次）
+
 
 - 本轮先严格按要求只读取了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory；随后用 phpstudy `http://localhost:8080` 真实接口复测，确认此前登记的 MySQL `1045` 登录阻塞已不再复现，`POST /api/auth/phone-login` 已返回 `200` 并拿到 token。
 - 进一步以真实链路定位到当前可落地主问题并非旧表插入失败，而是 **塔罗公开分享仍被控制器级 `Auth` 中间件误拦**：`save-record`、`history`、`set-public` 都能成功，但匿名 `GET /api/tarot/share?code=...` 会返回 `401 请先登录`。

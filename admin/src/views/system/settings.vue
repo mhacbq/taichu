@@ -18,7 +18,27 @@
         </el-result>
       </div>
 
-      <el-form v-else :model="form" :disabled="settingsReadonly" label-width="150px">
+      <el-alert
+        v-else-if="settingsSaveFeedback"
+        :title="settingsSaveFeedback.title"
+        :type="settingsSaveFeedback.type"
+        :closable="false"
+        show-icon
+        class="mb-4"
+      >
+        <template #default>
+          <div class="settings-save-feedback">
+            <p>{{ settingsSaveFeedback.description }}</p>
+            <ul v-if="settingsSaveFeedback.mismatches?.length" class="settings-save-feedback__list">
+              <li v-for="item in settingsSaveFeedback.mismatches" :key="item.key">
+                {{ item.label }}：提交 {{ item.expectedText }}，回读 {{ item.actualText }}
+              </li>
+            </ul>
+          </div>
+        </template>
+      </el-alert>
+
+      <el-form v-if="!settingsError" :model="form" :disabled="settingsReadonly" label-width="150px">
         <el-divider content-position="left">网站信息</el-divider>
 
         <el-form-item label="网站名称">
@@ -182,6 +202,7 @@ const savingAi = ref(false)
 const testingAi = ref(false)
 const settingsError = ref(null)
 const aiError = ref(null)
+const settingsSaveFeedback = ref(null)
 const isApiKeyMasked = ref(false)
 const apiKeyPlaceholder = ref('请输入 API 密钥')
 
@@ -203,6 +224,88 @@ function createDefaultSettings() {
     enable_ai_analysis: false
   }
 }
+
+const SETTINGS_FIELDS = [
+  { key: 'site_name', label: '网站名称', type: 'string' },
+  { key: 'logo', label: '网站 Logo', type: 'string' },
+  { key: 'site_description', label: '网站描述', type: 'string' },
+  { key: 'register_points', label: '注册赠送积分', type: 'number' },
+  { key: 'checkin_points', label: '每日签到积分', type: 'number' },
+  { key: 'bazi_cost', label: '八字排盘消耗', type: 'number' },
+  { key: 'tarot_cost', label: '塔罗占卜消耗', type: 'number' },
+  { key: 'enable_register', label: '注册功能', type: 'boolean' },
+  { key: 'enable_daily', label: '每日运势', type: 'boolean' },
+  { key: 'enable_feedback', label: '用户反馈', type: 'boolean' },
+  { key: 'enable_ai_analysis', label: 'AI 解盘', type: 'boolean' }
+]
+
+function normalizeSettingsValue(value, type) {
+  if (type === 'number') {
+    const nextValue = Number(value)
+    return Number.isFinite(nextValue) ? nextValue : 0
+  }
+
+  if (type === 'boolean') {
+    return Boolean(value)
+  }
+
+  return value == null ? '' : String(value)
+}
+
+function normalizeSettingsPayload(settings = {}) {
+  const normalized = createDefaultSettings()
+
+  SETTINGS_FIELDS.forEach(({ key, type }) => {
+    normalized[key] = normalizeSettingsValue(settings[key], type)
+  })
+
+  return normalized
+}
+
+function applySettingsForm(settings = {}) {
+  const nextForm = normalizeSettingsPayload(settings)
+  form.value = nextForm
+  originalForm.value = { ...nextForm }
+  return nextForm
+}
+
+function formatSettingsValue(value, type) {
+  if (type === 'boolean') {
+    return value ? '开启' : '关闭'
+  }
+
+  if (type === 'number') {
+    return String(value)
+  }
+
+  return value ? `“${value}”` : '（空）'
+}
+
+function getSettingsMismatches(expected, actual) {
+  return SETTINGS_FIELDS.reduce((list, field) => {
+    if (expected[field.key] === actual[field.key]) {
+      return list
+    }
+
+    list.push({
+      key: field.key,
+      label: field.label,
+      expectedText: formatSettingsValue(expected[field.key], field.type),
+      actualText: formatSettingsValue(actual[field.key], field.type)
+    })
+    return list
+  }, [])
+}
+
+function createSettingsFeedback(type, title, description, mismatches = []) {
+  return {
+    type,
+    title,
+    description,
+    mismatches
+  }
+}
+
 
 function createDefaultAiSettings() {
   return {
@@ -231,15 +334,16 @@ onMounted(() => {
   loadAiConfigData()
 })
 
+async function fetchSettingsSnapshot() {
+  const { data } = await getSettings({ showErrorMessage: false })
+  return normalizeSettingsPayload(data)
+}
+
 async function loadSettingsData() {
   loadingSettings.value = true
   try {
-    const { data } = await getSettings({ showErrorMessage: false })
-    form.value = {
-      ...createDefaultSettings(),
-      ...data
-    }
-    originalForm.value = { ...form.value }
+    const nextForm = await fetchSettingsSnapshot()
+    applySettingsForm(nextForm)
     settingsError.value = null
   } catch (error) {
     settingsError.value = createReadonlyErrorState(error, '系统基础配置', 'config_manage')
@@ -247,6 +351,7 @@ async function loadSettingsData() {
     loadingSettings.value = false
   }
 }
+
 
 async function loadAiConfigData() {
   loadingAi.value = true
@@ -300,12 +405,53 @@ async function handleSave() {
     return
   }
 
+  settingsSaveFeedback.value = null
+  const payload = normalizeSettingsPayload(form.value)
+
   savingSettings.value = true
   try {
-    await saveSettings(form.value, { showErrorMessage: false })
-    ElMessage.success('系统设置已保存')
-    await loadSettingsData()
+    await saveSettings(payload, { showErrorMessage: false })
+
+    let latestSettings = null
+    try {
+      latestSettings = await fetchSettingsSnapshot()
+    } catch (verifyError) {
+      settingsSaveFeedback.value = createSettingsFeedback(
+        'warning',
+        '保存请求已提交，但暂时无法确认是否真正生效',
+        verifyError.message || '重新读取系统设置失败，请稍后刷新页面或再次尝试保存。'
+      )
+      ElMessage.warning('保存请求已提交，但回读校验失败')
+      return
+    }
+
+    applySettingsForm(latestSettings)
+    settingsError.value = null
+
+    const mismatches = getSettingsMismatches(payload, latestSettings)
+    if (mismatches.length) {
+      settingsSaveFeedback.value = createSettingsFeedback(
+        'error',
+        '保存请求已返回成功，但服务端回读与提交值不一致',
+        '页面已刷新为服务端当前值，请先排查系统设置接口的读写口径，再继续操作。',
+        mismatches
+      )
+      ElMessage.error('系统设置未真实生效，已刷新为服务端当前配置')
+      return
+    }
+
+    settingsSaveFeedback.value = createSettingsFeedback(
+      'success',
+      '系统设置已保存并通过回读校验',
+      '当前页面展示的就是服务端刚刚回读的最新配置。'
+    )
+    ElMessage.success('系统设置已保存并生效')
   } catch (error) {
+    settingsSaveFeedback.value = createSettingsFeedback(
+      'error',
+      '系统设置保存失败',
+      error.message || '请稍后重试。'
+    )
     ElMessage.error(error.message || '保存系统设置失败')
   } finally {
     savingSettings.value = false
@@ -318,8 +464,10 @@ function handleReset() {
     return
   }
 
+  settingsSaveFeedback.value = null
   form.value = { ...originalForm.value }
 }
+
 
 async function handleSaveAiConfig() {
   if (aiReadonly.value) {
@@ -384,7 +532,22 @@ async function handleTestAiConnection() {
   padding: 12px 0;
 }
 
+.settings-save-feedback {
+  font-size: 13px;
+  line-height: 1.6;
+
+  p {
+    margin: 0;
+  }
+}
+
+.settings-save-feedback__list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
 .avatar-uploader {
+
   :deep(.el-upload) {
     border: 1px dashed var(--el-border-color);
     border-radius: 6px;
