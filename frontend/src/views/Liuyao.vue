@@ -2,16 +2,12 @@
   <div class="liuyao-page">
     <div class="container">
       <!-- 页面标题 -->
-      <div class="page-header">
-        <BackButton fallback="/" />
-        <div class="page-header-content">
-          <h1 class="page-title">
-            <el-icon class="title-icon"><MagicStick /></el-icon>
-            六爻占卜
-          </h1>
-          <p class="page-subtitle">传统周易六爻，为您解答心中疑惑</p>
-        </div>
-      </div>
+      <PageHeroHeader
+        title="六爻占卜"
+        subtitle="传统周易六爻，以三枚铜钱摇出六爻，为您解答心中疑惑、指引行事方向。"
+        :icon="MagicStick"
+        fallback="/"
+      />
 
       <!-- 占卜结果 -->
       <div v-if="result" class="result-section">
@@ -403,6 +399,7 @@ import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecor
 import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
+import PageHeroHeader from '../components/PageHeroHeader.vue'
 
 
 

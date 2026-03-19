@@ -70,15 +70,15 @@
     
     <!-- 底部操作 -->
     <div class="ai-actions">
-      <button class="action-btn" @click="regenerate">
+      <button class="action-btn" @click="regenerate" aria-label="重新生成解读">
         <el-icon><Refresh /></el-icon>
         <span>重新解读</span>
       </button>
-      <button class="action-btn primary" @click="shareResult">
+      <button class="action-btn primary" @click="shareResult" aria-label="分享解读结果">
         <el-icon><Share /></el-icon>
         <span>分享解读</span>
       </button>
-      <button class="action-btn" @click="saveResult">
+      <button class="action-btn" @click="saveResult" aria-label="保存解读结果">
         <el-icon><Star /></el-icon>
         <span>收藏</span>
       </button>

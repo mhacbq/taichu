@@ -15,7 +15,7 @@
         <div class="achievement-name">{{ title }}</div>
         <div class="achievement-desc">{{ description }}</div>
       </div>
-      <button class="achievement-close" @click="close">
+      <button class="achievement-close" @click="close" aria-label="关闭成就提示">
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"/>
         </svg>

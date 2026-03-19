@@ -1,5 +1,5 @@
 <template>
-  <button class="back-button" type="button" @click="goBack">
+  <button class="back-button" type="button" @click="goBack" aria-label="返回上一页">
     <el-icon class="back-icon"><ArrowLeft /></el-icon>
     <span class="back-text">{{ text }}</span>
   </button>
