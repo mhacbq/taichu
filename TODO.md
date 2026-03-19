@@ -98,6 +98,8 @@
 
 - [x] [2026-03-19] 合婚免费预览历史闭环修复：`Hehun::calculate()` 免费层（tier=free）原先直接返回基础结果而不写库，用户离开页面后无法回看刚出的合婚结果。现已在 free 层返回前，尝试通过 `HehunRecord::createCompatible()` 保存一条 tier=free、points_cost=0 的历史记录，并在响应中返回 `record_id`；历史记录保存失败时仅记录 warning 日志，不影响主流程和免费结果的正常返回。
 
+- [x] [2026-03-19] 管理端表格空状态优化：为 `admin/src/views/user/list.vue`、`payment/orders.vue`、`points/records.vue` 三个核心列表页的 `el-table` 补充 `empty-text` 属性，改为"暂无用户数据"/"暂无订单数据"/"暂无积分记录"，避免空列表时展示 Element Plus 默认英文 "No Data" 提示。
+
 - [x] [2026-03-19] 前端登录页优化：① 用户协议/隐私政策从"开发中"弹窗改为在新标签页打开 `/legal/agreement` 和 `/legal/privacy` 路由（已有对应 Vue 组件）；② 登录按钮 submitButtonText 在 loading 中途展示"验证中..."，防止用户重复点击。
 
 - [x] [2026-03-19] 前端路由补全：在 `frontend/src/router/index.js` 中新增 `/legal/agreement`（UserAgreement.vue）和 `/legal/privacy`（PrivacyPolicy.vue）两条公开路由，对应已存在的 `Legal/` 目录下的组件，确保协议页面可正常访问。

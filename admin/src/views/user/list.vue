@@ -67,6 +67,7 @@
           v-loading="loading"
           :data="userList"
           stripe
+          empty-text="暂无用户数据"
           @selection-change="handleSelectionChange"
         >
           <el-table-column type="selection" width="55" />
