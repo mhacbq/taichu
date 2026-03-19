@@ -90,9 +90,63 @@ class Task extends BaseController
     ];
     
     /**
+     * 路由别名：GET /tasks/list
+     */
+    public function list()
+    {
+        return $this->getTasks();
+    }
+
+    /**
+     * 路由别名：POST /tasks/complete
+     */
+    public function complete()
+    {
+        return $this->claimReward();
+    }
+
+    /**
+     * 路由别名：GET /tasks/checkin-status
+     */
+    public function checkinStatus()
+    {
+        return $this->getCheckinHistory();
+    }
+
+    /**
+     * 任务统计
+     */
+    public function stats()
+    {
+        $user = $this->request->user;
+        $userId = $user['sub'];
+
+        $totalTasks = count(self::TASK_CONFIGS);
+        $today = date('Y-m-d');
+
+        $completedToday = Db::name('tc_task_log')
+            ->where('user_id', $userId)
+            ->whereDate('created_at', $today)
+            ->distinct(true)
+            ->count('task_id');
+
+        $totalPointsEarned = Db::name('tc_task_log')
+            ->where('user_id', $userId)
+            ->sum('points');
+
+        $consecutiveDays = $this->getConsecutiveCheckinDays($userId);
+
+        return $this->success([
+            'total_tasks' => $totalTasks,
+            'completed_today' => $completedToday,
+            'total_points_earned' => (int) $totalPointsEarned,
+            'consecutive_days' => $consecutiveDays,
+        ]);
+    }
+
+    /**
      * 获取任务列表
      */
-
     public function getTasks()
     {
         $user = $this->request->user;

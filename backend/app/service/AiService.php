@@ -62,6 +62,35 @@ class AiService
     }
 
     /**
+     * 通用AI生成接口（供外部控制器调用）
+     *
+     * @param string $prompt  用户输入提示词
+     * @param string $system  系统提示词（可选）
+     * @param int    $maxTokens 最大生成token数
+     * @return string|null
+     */
+    public function generate(string $prompt, string $system = '', int $maxTokens = 2000): ?string
+    {
+        if (!empty($system)) {
+            // 临时覆盖 system prompt：拼接到用户 prompt 中传给 callAiApi
+            $fullPrompt = "[SYSTEM]\n{$system}\n[/SYSTEM]\n\n{$prompt}";
+        } else {
+            $fullPrompt = $prompt;
+        }
+        // 临时调整 max_tokens
+        $originalMaxTokens = $this->config[$this->defaultProvider]['max_tokens'] ?? 2000;
+        if (isset($this->config[$this->defaultProvider])) {
+            $this->config[$this->defaultProvider]['max_tokens'] = $maxTokens;
+        }
+        $result = $this->callAiApi($fullPrompt);
+        // 还原
+        if (isset($this->config[$this->defaultProvider])) {
+            $this->config[$this->defaultProvider]['max_tokens'] = $originalMaxTokens;
+        }
+        return $result;
+    }
+
+    /**
      * 八字合婚AI分析
      *
      * @param array $hehunResult 合婚结果
