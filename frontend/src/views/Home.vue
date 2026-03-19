@@ -9,15 +9,15 @@
           <h1 class="hero-title">在迷茫中找到方向</h1>
           <p class="hero-subtitle">不是替你决定命运，而是帮你看清自己。<br>从八字、塔罗到每日运势，把困惑拆成更容易行动的下一步。</p>
           <div class="hero-actions">
-            <router-link to="/daily" class="btn-primary">
+            <router-link to="/bazi" class="btn-primary">
+              <el-icon class="btn-icon"><Calendar /></el-icon>
+              八字排盘
+              <span v-if="!isLoggedIn" class="btn-badge btn-badge--free">首测免费</span>
+            </router-link>
+            <router-link to="/daily" class="btn-secondary">
               <el-icon class="btn-icon"><Star /></el-icon>
               免费体验每日运势
               <span class="btn-badge btn-badge--free">无需登录</span>
-            </router-link>
-            <router-link to="/bazi" class="btn-secondary">
-              <el-icon class="btn-icon"><Calendar /></el-icon>
-              八字排盘
-              <span v-if="!isLoggedIn" class="btn-badge btn-badge--login btn-badge--outline">需登录</span>
             </router-link>
           </div>
 
@@ -1366,7 +1366,7 @@ onUnmounted(() => {
 
 .features {
   padding: 80px 0;
-  background: linear-gradient(180deg, #fffdf8 0%, #fffaf1 100%);
+  background: linear-gradient(180deg, #fffaf1 0%, #fff7ee 100%);
 }
 
 .features .section-subtitle {
@@ -1385,13 +1385,12 @@ onUnmounted(() => {
 
 /* 主功能卡片：第一行 3个，更突出 */
 .feature-card {
-  background: rgba(14, 12, 28, 0.85);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 236, 0.95));
   border-radius: var(--radius-xl);
   padding: 32px 24px;
   text-align: center;
-  border: 1px solid rgba(184, 134, 11, 0.2);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(227, 184, 104, 0.32);
+  box-shadow: 0 12px 32px rgba(145, 103, 34, 0.1);
   transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
   overflow: hidden;
@@ -1404,25 +1403,25 @@ onUnmounted(() => {
   top: 0;
   left: 15%;
   right: 15%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5), transparent);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
 }
 
 .feature-card:hover {
   transform: translateY(-6px);
-  border-color: rgba(212, 175, 55, 0.45);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 20px 48px rgba(145, 103, 34, 0.16), 0 0 0 1px rgba(212, 175, 55, 0.1);
 }
 
 /* 次要功能卡片：视觉退后 */
 .feature-card--secondary {
-  background: rgba(10, 10, 20, 0.7);
-  border-color: rgba(184, 134, 11, 0.12);
+  background: rgba(255, 253, 246, 0.9);
+  border-color: rgba(227, 184, 104, 0.2);
   padding: 24px 20px;
 }
 
 .feature-card--secondary:hover {
-  border-color: rgba(212, 175, 55, 0.28);
+  border-color: rgba(212, 175, 55, 0.35);
 }
 
 /* 命理符号图标 */
@@ -1466,17 +1465,17 @@ onUnmounted(() => {
   font-size: var(--font-h4);
   font-weight: var(--weight-bold);
   margin-bottom: 10px;
-  color: rgba(240, 208, 96, 0.9);
+  color: #3d3428;
   letter-spacing: 0.04em;
 }
 
 .feature-card--secondary h3 {
   font-size: var(--font-body);
-  color: rgba(212, 175, 55, 0.75);
+  color: #5f5446;
 }
 
 .feature-card p {
-  color: rgba(200, 180, 140, 0.6);
+  color: #6b6254;
   font-size: var(--font-small);
   line-height: 1.7;
   margin-bottom: 16px;
@@ -1497,9 +1496,9 @@ onUnmounted(() => {
   align-items: center;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(184, 134, 11, 0.14);
-  border: 1px solid rgba(184, 134, 11, 0.22);
-  color: rgba(212, 175, 55, 0.85);
+  background: rgba(184, 134, 11, 0.1);
+  border: 1px solid rgba(184, 134, 11, 0.18);
+  color: #9b6a20;
   font-size: 12px;
   font-weight: 600;
 }
@@ -1512,11 +1511,11 @@ onUnmounted(() => {
 
 .feature-access {
   font-size: 12px;
-  color: rgba(200, 180, 140, 0.5);
+  color: #8a7a68;
 }
 
 .feature-access--free {
-  color: rgba(76, 175, 130, 0.7);
+  color: #2d8a5e;
 }
 
 .feature-link {
@@ -2223,7 +2222,7 @@ onUnmounted(() => {
 
 .features {
   padding: 88px 0;
-  background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #fffaf1 0%, #fff7ee 100%);
 }
 
 .features .section-title,
@@ -2233,13 +2232,13 @@ onUnmounted(() => {
 
 .feature-card {
   height: 100%;
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(var(--primary-rgb), 0.05);
+  border: 1px solid rgba(227, 184, 104, 0.28);
+  box-shadow: 0 12px 32px rgba(145, 103, 34, 0.1);
 }
 
 .feature-card:hover {
   transform: translateY(-10px);
-  box-shadow: 0 24px 46px rgba(15, 23, 42, 0.12), 0 12px 28px rgba(var(--primary-rgb), 0.08);
+  box-shadow: 0 24px 48px rgba(145, 103, 34, 0.16), 0 12px 28px rgba(212, 175, 55, 0.08);
 }
 
 .feature-link {

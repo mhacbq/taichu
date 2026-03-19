@@ -1258,7 +1258,7 @@ onBeforeUnmount(() => {
   }
   
   .floating-companion {
-    bottom: 20px;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px);
     right: 20px;
   }
   
