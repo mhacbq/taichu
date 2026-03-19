@@ -27,16 +27,28 @@ export default defineConfig({
     assetsDir: 'assets',
     // 生成sourcemap用于调试
     sourcemap: process.env.NODE_ENV !== 'production',
+    // chunk 体积警告阈值
+    chunkSizeWarningLimit: 1000,
     // 代码分割
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // ECharts 体积最大，单独拆分
+          if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
+            return 'echarts'
+          }
+
           if (id.includes('node_modules/element-plus')) {
             return 'element-plus'
           }
 
           if (id.includes('node_modules/vue-router') || id.includes('node_modules/vue')) {
             return 'vue-vendor'
+          }
+
+          // pinia、@vueuse 等 vue 生态轻量库
+          if (id.includes('node_modules/pinia') || id.includes('node_modules/@vueuse/')) {
+            return 'vue-ecosystem'
           }
 
           return undefined

@@ -5,7 +5,9 @@ import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import NotFound from '../views/NotFound.vue'
-import Bazi from '../views/Bazi.vue'
+
+// 功能页面 - 懒加载（需登录访问）
+const Bazi = () => import('../views/Bazi.vue')
 
 // 非首屏页面 - 懒加载
 const Tarot = () => import('../views/Tarot.vue')
