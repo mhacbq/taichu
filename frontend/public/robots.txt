@@ -1,22 +1,27 @@
-# robots.txt for 太初文化
+# robots.txt for 太初命理
 # https://www.robotstxt.org/robotstxt.html
 
 User-agent: *
 
-# 允许访问的页面
+# 允许访问的公开页面
 Allow: /
-Allow: /cultural_calculation
-Allow: /cultural_analysis
+Allow: /bazi
+Allow: /tarot
+Allow: /liuyao
+Allow: /hehun
 Allow: /daily
 Allow: /help
 Allow: /recharge
+Allow: /legal/agreement
+Allow: /legal/privacy
 
-# 禁止访问的页面
+# 禁止访问后台和用户私密页面
 Disallow: /admin/
 Disallow: /profile/
 Disallow: /api/
 Disallow: /login
 Disallow: /404
+Disallow: /tarot/share/
 
 # 禁止访问特定文件类型
 Disallow: /*.pdf$
