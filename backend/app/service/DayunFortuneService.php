@@ -47,12 +47,13 @@ class DayunFortuneService
             throw new \Exception('积分不足，需要' . self::DAYUN_ANALYSIS_POINTS_COST . '积分', 403);
         }
 
+        // 先完成所有业务计算，计算成功后再扣积分，避免计算异常时误扣费
         $scores = $this->calculateDayunScores($dayun, $bazi);
         $analysis = $this->generateDayunAnalysis($dayun, $bazi, $scores);
         $overallScore = $this->normalizeScore($scores['overall'] ?? 0);
         $fortuneLevel = $this->getFortuneLevel($overallScore);
 
-
+        // 计算完成后再扣积分（确保计算异常时不扣费）
         $pointsService = new PointsService();
         $consumeResult = $pointsService->consume(
             $userId,

@@ -371,15 +371,46 @@ class Hehun extends BaseController
         $hehunResult = $this->analyzeHehun($maleBazi, $femaleBazi, $maleName, $femaleName, $data['maleBirthDate'], $data['femaleBirthDate']);
         $storageStatus = HehunRecord::getStorageStatus();
         
-        // 如果是免费层，只返回基础信息
+        // 如果是免费层，只返回基础信息，但同时保存历史记录供用户回看
         if ($tier === self::TIER_FREE) {
             $pricing = $this->getQuickPricing($user['sub']);
             $pricing['unlock_ready'] = $storageStatus['ready'];
             $pricing['unlock_message'] = $storageStatus['message'];
             $pricing['storage_table'] = $storageStatus['table'];
 
+            // 免费层也保存历史记录（无需积分，tier=free），确保用户离开后仍可回看
+            $freeRecordId = 0;
+            if ($storageStatus['ready']) {
+                try {
+                    $freeRecordId = HehunRecord::createCompatible([
+                        'user_id' => (int) $user['sub'],
+                        'male_name' => $maleName,
+                        'female_name' => $femaleName,
+                        'male_birthdate' => $data['maleBirthDate'],
+                        'female_birthdate' => $data['femaleBirthDate'],
+                        'male_bazi' => json_encode($maleBazi, JSON_UNESCAPED_UNICODE),
+                        'female_bazi' => json_encode($femaleBazi, JSON_UNESCAPED_UNICODE),
+                        'result' => json_encode([
+                            'score' => $hehunResult['score'],
+                            'level' => $hehunResult['level'],
+                            'level_text' => $hehunResult['level_text'],
+                            'comment' => $hehunResult['comment'],
+                            'suggestions' => $hehunResult['suggestions'],
+                        ], JSON_UNESCAPED_UNICODE),
+                        'score' => $hehunResult['score'],
+                        'level' => $hehunResult['level'],
+                        'tier' => self::TIER_FREE,
+                        'points_cost' => 0,
+                    ]);
+                } catch (\Exception $e) {
+                    // 历史记录保存失败不影响主流程
+                    \think\facade\Log::warning('合婚免费记录保存失败: ' . $e->getMessage());
+                }
+            }
+
             return $this->success([
                 'tier' => self::TIER_FREE,
+                'record_id' => $freeRecordId,
                 'male_bazi' => [
                     'year' => $maleBazi['year']['gan'] . $maleBazi['year']['zhi'],
                     'month' => $maleBazi['month']['gan'] . $maleBazi['month']['zhi'],
