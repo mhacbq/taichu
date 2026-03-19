@@ -475,7 +475,7 @@ class Hehun extends BaseController
                     : '当前详细报告链路正在维护，建议先等待库表修复完成后再解锁。',
                 'storage_status' => $storageStatus,
                 'pricing' => $pricing
-            ];
+            ]);
 
             if ($storageStatus['ready']) {
                 try {

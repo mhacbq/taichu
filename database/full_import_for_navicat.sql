@@ -647,7 +647,14 @@ INSERT INTO `tc_system_config` (`key`, `value`, `type`, `group`, `description`, 
 ('marketing.new_user_discount', 'true', 'bool', 'marketing', '新用户优惠', 1, 1),
 ('marketing.new_user_discount_rate', '50', 'int', 'marketing', '新用户折扣率(%)', 1, 2),
 ('marketing.limited_time_offer', 'false', 'bool', 'marketing', '限时优惠', 1, 3),
-('marketing.limited_time_discount', '20', 'int', 'marketing', '限时优惠折扣(%)', 1, 4);
+('marketing.limited_time_discount', '20', 'int', 'marketing', '限时优惠折扣(%)', 1, 4)
+ON DUPLICATE KEY UPDATE
+    `value` = VALUES(`value`),
+    `type` = VALUES(`type`),
+    `group` = VALUES(`group`),
+    `description` = VALUES(`description`),
+    `is_public` = VALUES(`is_public`),
+    `sort` = VALUES(`sort`);
 
 -- =====================================================
 -- 2. 插入功能开关数据
@@ -667,7 +674,11 @@ INSERT INTO `tc_feature_switch` (`key`, `name`, `enabled`, `description`) VALUES
 ('tarot', '塔罗占卜', 1, '塔罗占卜功能'),
 ('feedback', '用户反馈', 1, '用户反馈功能'),
 ('checkin', '每日签到', 1, '每日签到功能'),
-('invite', '邀请好友', 1, '邀请好友功能');
+('invite', '邀请好友', 1, '邀请好友功能')
+ON DUPLICATE KEY UPDATE
+    `name` = VALUES(`name`),
+    `enabled` = VALUES(`enabled`),
+    `description` = VALUES(`description`);
 
 -- =====================================================
 -- 3. 插入管理员权限数据
@@ -688,7 +699,11 @@ INSERT INTO `tc_admin_permission` (`name`, `code`, `module`, `description`) VALU
 ('订单查看', 'order_view', 'order', '查看订单'),
 ('订单处理', 'order_process', 'order', '处理订单'),
 ('VIP管理', 'vip_manage', 'vip', '管理VIP会员'),
-('营销管理', 'marketing_manage', 'marketing', '管理营销活动');
+('营销管理', 'marketing_manage', 'marketing', '管理营销活动')
+ON DUPLICATE KEY UPDATE
+    `name` = VALUES(`name`),
+    `module` = VALUES(`module`),
+    `description` = VALUES(`description`);
 
 -- =====================================================
 -- 4. 插入管理员角色数据
@@ -698,27 +713,31 @@ INSERT INTO `tc_admin_role` (`name`, `code`, `description`, `is_super`) VALUES
 ('超级管理员', 'super_admin', '拥有所有权限', 1),
 ('普通管理员', 'normal_admin', '拥有常规管理权限', 0),
 ('运营人员', 'operator', '仅限查看和部分编辑权限', 0),
-('客服人员', 'customer_service', '仅限处理用户反馈和订单', 0);
+('客服人员', 'customer_service', '仅限处理用户反馈和订单', 0)
+ON DUPLICATE KEY UPDATE
+    `name` = VALUES(`name`),
+    `description` = VALUES(`description`),
+    `is_super` = VALUES(`is_super`);
 
 -- =====================================================
 -- 5. 插入角色权限关联数据
 -- =====================================================
 
 -- 普通管理员权限
-INSERT INTO `tc_admin_role_permission` (`role_id`, `permission_id`)
+INSERT IGNORE INTO `tc_admin_role_permission` (`role_id`, `permission_id`)
 SELECT 2, id FROM `tc_admin_permission` WHERE code IN (
     'user_view', 'user_edit', 'points_view', 'config_view', 
     'stats_view', 'content_manage', 'order_view', 'order_process'
 );
 
 -- 运营人员权限
-INSERT INTO `tc_admin_role_permission` (`role_id`, `permission_id`)
+INSERT IGNORE INTO `tc_admin_role_permission` (`role_id`, `permission_id`)
 SELECT 3, id FROM `tc_admin_permission` WHERE code IN (
     'user_view', 'points_view', 'stats_view', 'marketing_manage'
 );
 
 -- 客服人员权限
-INSERT INTO `tc_admin_role_permission` (`role_id`, `permission_id`)
+INSERT IGNORE INTO `tc_admin_role_permission` (`role_id`, `permission_id`)
 SELECT 4, id FROM `tc_admin_permission` WHERE code IN (
     'user_view', 'order_view', 'order_process'
 );

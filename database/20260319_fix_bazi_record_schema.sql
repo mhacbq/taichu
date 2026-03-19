@@ -88,7 +88,11 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @sql = IF(
   EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tc_bazi_record' AND COLUMN_NAME = 'is_public'),
   'SELECT ''skip is_public''',
-  'ALTER TABLE `tc_bazi_record` ADD COLUMN `is_public` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否公开分享'' AFTER `points_used`'
+  IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tc_bazi_record' AND COLUMN_NAME = 'points_used'),
+    'ALTER TABLE `tc_bazi_record` ADD COLUMN `is_public` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否公开分享'' AFTER `points_used`',
+    'ALTER TABLE `tc_bazi_record` ADD COLUMN `is_public` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否公开分享'' AFTER `is_first`'
+  )
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
