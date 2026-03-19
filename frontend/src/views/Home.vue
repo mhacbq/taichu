@@ -9,17 +9,25 @@
           <h1 class="hero-title">在迷茫中找到方向</h1>
           <p class="hero-subtitle">不是替你决定命运，而是帮你看清自己。<br>从八字、塔罗到每日运势，把困惑拆成更容易行动的下一步。</p>
           <div class="hero-actions">
-            <router-link to="/bazi" class="btn-primary">
-              <el-icon class="btn-icon"><Calendar /></el-icon>
-              开始排盘
-              <span v-if="!isLoggedIn" class="btn-badge btn-badge--login">需登录</span>
-              <span v-if="heroPrimaryBadge" :class="['btn-badge', heroPrimaryBadge.className]">{{ heroPrimaryBadge.text }}</span>
+            <router-link to="/daily" class="btn-primary">
+              <el-icon class="btn-icon"><Star /></el-icon>
+              免费体验每日运势
+              <span class="btn-badge btn-badge--free">无需登录</span>
             </router-link>
-            <router-link to="/tarot" class="btn-secondary">
-              <el-icon class="btn-icon"><MagicStick /></el-icon>
-              塔罗占卜
+            <router-link to="/bazi" class="btn-secondary">
+              <el-icon class="btn-icon"><Calendar /></el-icon>
+              八字排盘
               <span v-if="!isLoggedIn" class="btn-badge btn-badge--login btn-badge--outline">需登录</span>
             </router-link>
+          </div>
+
+          <!-- 积分说明条 -->
+          <div class="hero-points-strip">
+            <span class="points-strip-item">🎁 注册即送积分</span>
+            <span class="points-strip-sep">·</span>
+            <span class="points-strip-item">📅 每日签到领积分</span>
+            <span class="points-strip-sep">·</span>
+            <span class="points-strip-item">⚡ 积分解锁所有功能</span>
           </div>
           <p class="hero-hint" :class="{ 'hero-hint--muted': statsLoading || statsError }"><el-icon><Star /></el-icon> {{ heroHintText }}</p>
 
@@ -119,67 +127,90 @@
     <!-- Features Section -->
     <section class="features">
       <div class="container">
-        <h2 class="section-title">我们的服务</h2>
+        <h2 class="section-title">选择你想探索的方向</h2>
+        <p class="section-subtitle">核心功能消耗积分，注册即送，每日签到可持续领取</p>
         <div class="features-grid">
-          <div class="feature-card card-hover">
-            <div class="feature-icon"><el-icon :size="48"><Calendar /></el-icon></div>
+          <!-- 主功能 3个 -->
+          <div class="feature-card feature-card--primary card-hover" data-type="bazi">
+            <div class="feature-icon-wrap">
+              <span class="feature-symbol">☯</span>
+            </div>
             <h3>八字排盘</h3>
             <p>基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考</p>
-            <div class="feature-access">
-              <span class="feature-note">{{ isLoggedIn ? '已登录可用' : '需登录' }}</span>
-              <span v-if="baziFeatureBadge" :class="['feature-note', baziFeatureBadge.className]">{{ baziFeatureBadge.text }}</span>
+            <div class="feature-meta">
+              <span class="feature-cost">⚡ 5积分/次</span>
+              <span class="feature-access">{{ isLoggedIn ? '已登录可用' : '需登录' }}</span>
             </div>
             <router-link to="/bazi" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
-          <div class="feature-card card-hover">
-            <div class="feature-icon"><el-icon :size="48"><MagicStick /></el-icon></div>
+          <div class="feature-card feature-card--primary card-hover" data-type="tarot">
+            <div class="feature-icon-wrap">
+              <span class="feature-symbol">✴</span>
+            </div>
             <h3>塔罗占卜</h3>
             <p>通过牌阵与问题模板梳理关系、工作与决策困惑，获得更聚焦的思路</p>
-            <div class="feature-access">
-              <span class="feature-note">需登录</span>
+            <div class="feature-meta">
+              <span class="feature-cost">⚡ 5积分/次</span>
+              <span class="feature-access">需登录</span>
             </div>
             <router-link to="/tarot" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
-          <div class="feature-card card-hover">
-            <div class="feature-icon"><el-icon :size="48"><Switch /></el-icon></div>
-            <h3>六爻占卜</h3>
-            <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
-            <div class="feature-access">
-              <span class="feature-note">需登录</span>
+          <div class="feature-card feature-card--primary card-hover" data-type="daily">
+            <div class="feature-icon-wrap">
+              <span class="feature-symbol">◉</span>
             </div>
-            <router-link to="/liuyao" class="feature-link">
-              立即体验 <el-icon><ArrowRight /></el-icon>
-            </router-link>
-          </div>
-          <div class="feature-card card-hover">
-            <div class="feature-icon"><el-icon :size="48"><Link /></el-icon></div>
-            <h3>八字合婚</h3>
-            <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
-            <div class="feature-access">
-              <span class="feature-note">需登录</span>
-            </div>
-            <router-link to="/hehun" class="feature-link">
-              立即体验 <el-icon><ArrowRight /></el-icon>
-            </router-link>
-          </div>
-          <div class="feature-card card-hover">
-            <div class="feature-icon"><el-icon :size="48"><Star /></el-icon></div>
             <h3>每日运势</h3>
             <p>查看今日宜忌、幸运提示与节奏建议，作为轻量的日常状态参考</p>
+            <div class="feature-meta">
+              <span class="feature-cost feature-cost--free">✨ 完全免费</span>
+              <span class="feature-access feature-access--free">无需登录</span>
+            </div>
             <router-link to="/daily" class="feature-link">
-              立即体验 <el-icon><ArrowRight /></el-icon>
+              立即查看 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
-          <div class="feature-card card-hover">
-            <div class="feature-icon"><el-icon :size="48"><Aim /></el-icon></div>
+          <!-- 次要功能 3个 -->
+          <div class="feature-card feature-card--secondary card-hover" data-type="liuyao">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">☰</span>
+            </div>
+            <h3>六爻占卜</h3>
+            <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
+            <div class="feature-meta">
+              <span class="feature-cost">⚡ 积分消耗</span>
+            </div>
+            <router-link to="/liuyao" class="feature-link feature-link--sm">
+              体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
+          <div class="feature-card feature-card--secondary card-hover" data-type="hehun">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">◎</span>
+            </div>
+            <h3>八字合婚</h3>
+            <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
+            <div class="feature-meta">
+              <span class="feature-cost">⚡ 积分消耗</span>
+            </div>
+            <router-link to="/hehun" class="feature-link feature-link--sm">
+              体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
+          <div class="feature-card feature-card--secondary card-hover" data-type="profile">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">★</span>
+            </div>
             <h3>个人中心</h3>
-            <p>在这里查看历史记录、积分权益与签到入口，也能继续管理你的命理体验进度</p>
-            <router-link to="/profile" class="feature-link">
-              进入个人中心 <el-icon><ArrowRight /></el-icon>
+            <p>查看历史记录、每日签到领积分，管理你的命理体验进度</p>
+            <div class="feature-meta">
+              <span class="feature-cost feature-cost--free">📅 签到领积分</span>
+            </div>
+            <router-link to="/profile" class="feature-link feature-link--sm">
+              进入 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
         </div>
@@ -989,6 +1020,31 @@ onUnmounted(() => {
   color: #7c7264;
 }
 
+/* 积分说明条 */
+.hero-points-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px 18px;
+  background: rgba(184, 134, 11, 0.07);
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.points-strip-item {
+  font-size: 13px;
+  color: rgba(184, 134, 11, 0.8);
+  white-space: nowrap;
+}
+
+.points-strip-sep {
+  color: rgba(184, 134, 11, 0.35);
+  font-size: 12px;
+}
+
 .hero-highlights {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1313,69 +1369,175 @@ onUnmounted(() => {
   background: linear-gradient(180deg, #fffdf8 0%, #fffaf1 100%);
 }
 
+.features .section-subtitle {
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-small);
+  margin-top: -12px;
+  margin-bottom: 32px;
+}
+
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
+/* 主功能卡片：第一行 3个，更突出 */
 .feature-card {
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(14, 12, 28, 0.85);
   backdrop-filter: blur(10px);
   border-radius: var(--radius-xl);
-  padding: 40px 30px;
+  padding: 32px 24px;
   text-align: center;
-  border: 1px solid rgba(227, 184, 104, 0.28);
-  box-shadow: 0 14px 32px rgba(145, 103, 34, 0.1);
-  transition: all 0.3s ease;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 卡片顶部金色装饰线 */
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5), transparent);
 }
 
 .feature-card:hover {
-  transform: translateY(-8px);
-  background: rgba(255, 255, 255, 1);
-  border-color: rgba(210, 154, 64, 0.42);
-  box-shadow: 0 18px 38px rgba(145, 103, 34, 0.16);
+  transform: translateY(-6px);
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.12);
 }
 
-.feature-icon {
-  font-size: 48px;
-  margin-bottom: 20px;
+/* 次要功能卡片：视觉退后 */
+.feature-card--secondary {
+  background: rgba(10, 10, 20, 0.7);
+  border-color: rgba(184, 134, 11, 0.12);
+  padding: 24px 20px;
 }
+
+.feature-card--secondary:hover {
+  border-color: rgba(212, 175, 55, 0.28);
+}
+
+/* 命理符号图标 */
+.feature-icon-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(184, 134, 11, 0.1);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+.feature-icon-wrap--sm {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+}
+
+.feature-symbol {
+  font-size: 28px;
+  color: #D4AF37;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.4));
+}
+
+.feature-icon-wrap--sm .feature-symbol {
+  font-size: 22px;
+}
+
+/* 不同功能的图标颜色 */
+[data-type="daily"] .feature-icon-wrap { background: rgba(76, 175, 130, 0.1); border-color: rgba(76, 175, 130, 0.2); }
+[data-type="daily"] .feature-symbol { color: #4CAF82; filter: drop-shadow(0 0 6px rgba(76, 175, 130, 0.4)); }
+[data-type="tarot"] .feature-icon-wrap { background: rgba(155, 127, 212, 0.1); border-color: rgba(155, 127, 212, 0.2); }
+[data-type="tarot"] .feature-symbol { color: #A090E0; filter: drop-shadow(0 0 6px rgba(155, 127, 212, 0.4)); }
 
 .feature-card h3 {
-  font-size: var(--font-h3);
+  font-size: var(--font-h4);
   font-weight: var(--weight-bold);
-  margin-bottom: 12px;
-  color: var(--text-primary);
+  margin-bottom: 10px;
+  color: rgba(240, 208, 96, 0.9);
+  letter-spacing: 0.04em;
+}
+
+.feature-card--secondary h3 {
+  font-size: var(--font-body);
+  color: rgba(212, 175, 55, 0.75);
 }
 
 .feature-card p {
-  color: var(--text-secondary);
-  font-size: var(--font-body);
-  line-height: var(--line-height-base);
+  color: rgba(200, 180, 140, 0.6);
+  font-size: var(--font-small);
+  line-height: 1.7;
   margin-bottom: 16px;
 }
 
-.feature-access {
+/* 积分/权限信息行 */
+.feature-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 18px;
-}
-
-.feature-note {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 24px;
-  padding: 4px 10px;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.feature-cost {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(245, 196, 103, 0.16);
-  border: 1px solid rgba(210, 154, 64, 0.32);
-  color: #8f6120;
+  background: rgba(184, 134, 11, 0.14);
+  border: 1px solid rgba(184, 134, 11, 0.22);
+  color: rgba(212, 175, 55, 0.85);
   font-size: 12px;
-  font-weight: var(--weight-semibold);
+  font-weight: 600;
+}
+
+.feature-cost--free {
+  background: rgba(76, 175, 130, 0.12);
+  border-color: rgba(76, 175, 130, 0.2);
+  color: rgba(76, 175, 130, 0.9);
+}
+
+.feature-access {
+  font-size: 12px;
+  color: rgba(200, 180, 140, 0.5);
+}
+
+.feature-access--free {
+  color: rgba(76, 175, 130, 0.7);
+}
+
+.feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #D4AF37;
+  text-decoration: none;
+  font-size: var(--font-small);
+  font-weight: 600;
+  transition: gap 0.2s ease, opacity 0.2s ease;
+}
+
+.feature-link--sm {
+  font-size: 13px;
+  color: rgba(212, 175, 55, 0.7);
+}
+
+.feature-link:hover {
+  gap: 10px;
+  opacity: 0.85;
 }
 
 .feature-note--free {

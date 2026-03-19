@@ -20,7 +20,18 @@
       </div>
 
       <div v-if="currentPoints !== null && currentPoints < 5" class="insufficient-points card card-hover">
-        <p><el-icon><MagicStick /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+        <div class="insufficient-header">
+          <el-icon :size="28"><Warning /></el-icon>
+          <p>积分不足（当前 {{ currentPoints ?? 0 }} 积分，需要 5 积分）</p>
+        </div>
+        <div class="insufficient-actions">
+          <router-link to="/profile" class="insufficient-btn insufficient-btn--primary">
+            📅 每日签到 +积分
+          </router-link>
+          <router-link to="/recharge" class="insufficient-btn insufficient-btn--secondary">
+            💰 充值积分
+          </router-link>
+        </div>
       </div>
 
       <div class="tarot-intro card card-hover">
@@ -1223,13 +1234,59 @@ const getCardAdvice = (card) => {
 .insufficient-points {
   max-width: 900px;
   margin: 0 auto 20px;
-  padding: 15px 20px;
-  text-align: center;
+  padding: 20px 24px;
+  border-color: rgba(232, 160, 32, 0.3);
+  background: rgba(232, 160, 32, 0.05);
 }
 
-.insufficient-points a {
-  color: var(--primary-color);
-  text-decoration: underline;
+.insufficient-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: rgba(232, 160, 32, 0.9);
+  font-weight: 600;
+  justify-content: center;
+}
+
+.insufficient-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.insufficient-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.insufficient-btn--primary {
+  background: rgba(184, 134, 11, 0.15);
+  border: 1px solid rgba(184, 134, 11, 0.3);
+  color: #D4AF37;
+}
+
+.insufficient-btn--primary:hover {
+  background: rgba(184, 134, 11, 0.25);
+  transform: translateY(-1px);
+}
+
+.insufficient-btn--secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.insufficient-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .tarot-intro {

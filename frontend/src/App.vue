@@ -4,26 +4,57 @@
       <div class="container nav-container">
         <router-link to="/" class="logo">
           <el-icon class="logo-icon" :size="26"><YinYang /></el-icon>
-          <span>太初文化</span>
+          <span>太初命理</span>
         </router-link>
         
         <!-- 桌面端导航 -->
         <div class="nav-links desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/cultural_calculation" class="nav-link">文化测算</router-link>
-          <router-link to="/cultural_analysis" class="nav-link">文化分析</router-link>
-          <router-link to="/decision_analysis" class="nav-link">决策分析</router-link>
-          <router-link to="/relationship_assessment" class="nav-link">关系评估</router-link>
-          <router-link to="/daily" class="nav-link">日常参考</router-link>
+          <router-link to="/bazi" class="nav-link">
+            八字排盘<span class="nav-cost">5积分</span>
+          </router-link>
+          <router-link to="/tarot" class="nav-link">
+            塔罗占卜<span class="nav-cost">5积分</span>
+          </router-link>
+          <router-link to="/daily" class="nav-link">每日运势<span class="nav-free">免费</span></router-link>
+          <!-- 更多服务下拉 -->
+          <el-dropdown trigger="hover" placement="bottom-start">
+            <span class="nav-link nav-link--more">
+              更多服务 <el-icon :size="12" style="margin-left:2px"><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu class="nav-more-dropdown">
+                <el-dropdown-item>
+                  <router-link to="/liuyao" class="nav-more-item">
+                    <span class="more-icon">☰</span>
+                    <span class="more-info">
+                      <strong>六爻占卜</strong>
+                      <span>传统周易问事</span>
+                    </span>
+                  </router-link>
+                </el-dropdown-item>
+                <el-dropdown-item>
+                  <router-link to="/hehun" class="nav-more-item">
+                    <span class="more-icon">◎</span>
+                    <span class="more-info">
+                      <strong>八字合婚</strong>
+                      <span>婚姻配对分析</span>
+                    </span>
+                  </router-link>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
 
         <!-- 用户操作区 -->
         <div class="user-actions">
           <template v-if="isLoggedIn">
-            <span class="points-badge">
+            <router-link to="/recharge" class="points-badge" title="点击充值积分">
               <el-icon class="points-icon" :size="16"><Star /></el-icon>
               <span class="points-value">{{ userPoints }}</span>
-            </span>
+              <span class="points-unit">积分</span>
+            </router-link>
             <el-dropdown @command="handleCommand" trigger="click">
               <span class="user-info">
                 <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
@@ -73,25 +104,25 @@
             <el-icon class="nav-icon" :size="18"><House /></el-icon>
             <span>首页</span>
           </router-link>
-          <router-link to="/cultural_calculation" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/bazi" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Calendar /></el-icon>
-            <span>文化测算</span>
+            <span>八字排盘</span>
           </router-link>
-          <router-link to="/cultural_analysis" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/tarot" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon>
-            <span>文化分析</span>
+            <span>塔罗占卜</span>
           </router-link>
-          <router-link to="/decision_analysis" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/liuyao" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><YinYang /></el-icon>
-            <span>决策分析</span>
+            <span>六爻占卜</span>
           </router-link>
-          <router-link to="/relationship_assessment" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/hehun" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Link /></el-icon>
-            <span>关系评估</span>
+            <span>八字合婚</span>
           </router-link>
           <router-link to="/daily" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Star /></el-icon>
-            <span>日常参考</span>
+            <span>每日运势</span>
           </router-link>
         </div>
         <div class="mobile-nav-footer">
@@ -115,7 +146,7 @@
       <div class="mobile-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
     </nav>
     
-    <main class="main-content" :class="{ 'main-content--companion-safe': shouldReserveCompanionSpace }">
+    <main class="main-content" :class="{ 'main-content--companion-safe': shouldReserveCompanionSpace, 'main-content--mobile-nav': true }">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component v-if="Component" :is="Component" />
@@ -124,13 +155,37 @@
       </router-view>
     </main>
 
+    <!-- 移动端底部导航栏 -->
+    <nav class="mobile-bottom-nav" aria-label="底部导航">
+      <router-link to="/" class="bottom-nav-item" :class="{ active: $route.path === '/' }">
+        <el-icon class="bottom-icon"><House /></el-icon>
+        <span class="bottom-label">首页</span>
+      </router-link>
+      <router-link to="/daily" class="bottom-nav-item" :class="{ active: $route.path === '/daily' }">
+        <el-icon class="bottom-icon"><Star /></el-icon>
+        <span class="bottom-label">运势</span>
+      </router-link>
+      <router-link to="/bazi" class="bottom-nav-item bottom-nav-item--primary" :class="{ active: $route.path === '/bazi' }">
+        <span class="bottom-primary-icon">☯</span>
+      </router-link>
+      <router-link to="/tarot" class="bottom-nav-item" :class="{ active: $route.path === '/tarot' }">
+        <el-icon class="bottom-icon"><MagicStick /></el-icon>
+        <span class="bottom-label">塔罗</span>
+      </router-link>
+      <router-link :to="isLoggedIn ? '/profile' : '/login'" class="bottom-nav-item" :class="{ active: $route.path === '/profile' }">
+        <el-icon class="bottom-icon"><User /></el-icon>
+        <span class="bottom-label">{{ isLoggedIn ? '我的' : '登录' }}</span>
+      </router-link>
+    </nav>
+
+
     
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <span class="footer-logo"><YinYangIcon :size="24" style="margin-right: 10px;" /> 太初文化</span>
-            <p class="footer-tagline">传承千年智慧，提供决策参考</p>
+            <span class="footer-logo"><YinYangIcon :size="24" style="margin-right: 10px;" /> 太初命理</span>
+            <p class="footer-tagline">传承千年智慧，指引人生方向</p>
           </div>
           <div class="footer-quote">
             <p>{{ randomQuote }}</p>
@@ -142,7 +197,7 @@
             <a href="#" @click.prevent="showAbout">关于我们</a>
           </div>
           <div class="footer-divider"></div>
-          <p class="footer-copyright">© 2025 太初文化 - 愿你在决策时获得参考</p>
+          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向</p>
         </div>
       </div>
     </footer>
@@ -164,15 +219,15 @@
         <div class="companion-actions">
           <router-link to="/daily" class="companion-btn" @click="showCompanion = false">
             <el-icon :size="16"><Sunrise /></el-icon>
-            <span>查看参考</span>
+            <span>查看运势</span>
           </router-link>
-          <router-link to="/cultural_calculation" class="companion-btn" @click="showCompanion = false">
+          <router-link to="/bazi" class="companion-btn" @click="showCompanion = false">
             <el-icon :size="16"><Calendar /></el-icon>
-            <span>文化测算</span>
+            <span>八字排盘</span>
           </router-link>
-          <router-link to="/cultural_analysis" class="companion-btn" @click="showCompanion = false">
+          <router-link to="/tarot" class="companion-btn" @click="showCompanion = false">
             <el-icon :size="16"><Magic /></el-icon>
-            <span>文化分析</span>
+            <span>塔罗占卜</span>
           </router-link>
         </div>
       </div>
@@ -488,6 +543,12 @@ watch(() => route.path, () => {
 onMounted(() => {
   checkLoginStatus()
   window.addEventListener('points-updated', handlePointsUpdated)
+  // 滚动时导航栏加深
+  const navbar = document.querySelector('.navbar')
+  const handleScroll = () => {
+    if (navbar) navbar.classList.toggle('scrolled', window.scrollY > 20)
+  }
+  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
 onBeforeUnmount(() => {
@@ -1230,182 +1291,441 @@ onBeforeUnmount(() => {
 
 /* 2026-03 UI polish: global shell refresh */
 .navbar {
-  padding: 12px 0 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.72));
-  backdrop-filter: blur(26px) saturate(160%);
-  -webkit-backdrop-filter: blur(26px) saturate(160%);
-  border-bottom: none;
-  box-shadow: none;
+  padding: 0;
+  background: rgba(8, 8, 20, 0.88);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.navbar.scrolled {
+  background: rgba(6, 6, 16, 0.97);
+  border-bottom-color: rgba(212, 175, 55, 0.35);
 }
 
 .nav-container {
-  min-height: 72px;
+  min-height: 68px;
   height: auto;
-  padding: 14px 22px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(var(--primary-rgb), 0.06);
+  padding: 12px 20px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .nav-links {
-  gap: 10px;
-  padding: 5px;
-  border-radius: 999px;
-  background: rgba(248, 250, 252, 0.88);
-  border: 1px solid var(--border-light);
+  gap: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
 }
 
 .nav-link {
-  padding: 10px 18px;
-  border-radius: 999px;
+  color: rgba(212, 175, 55, 0.75);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
 }
 
 .nav-link:hover {
-  background: rgba(var(--primary-rgb), 0.08);
-  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.1);
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.1);
+  box-shadow: none;
 }
 
 .nav-link.router-link-active {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.18));
-  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.14), 0 8px 18px rgba(var(--primary-rgb), 0.1);
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.2);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
+/* 导航积分提示标签 */
+.nav-cost {
+  font-size: 10px;
+  background: rgba(184, 134, 11, 0.18);
+  color: rgba(212, 175, 55, 0.7);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  white-space: nowrap;
+  margin-left: 2px;
+}
+
+.nav-free {
+  font-size: 10px;
+  background: rgba(76, 175, 130, 0.18);
+  color: rgba(76, 175, 130, 0.85);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(76, 175, 130, 0.2);
+  margin-left: 2px;
+}
+
+/* 更多服务下拉 */
+.nav-link--more {
+  user-select: none;
+}
+
+.nav-more-dropdown .el-dropdown-menu__item {
+  padding: 0 !important;
+}
+
+.nav-more-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+  min-width: 180px;
+}
+
+.more-icon {
+  font-size: 20px;
+  color: #D4AF37;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.more-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.more-info strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.more-info span {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* Logo：金色渐变文字 */
+.logo {
+  background: linear-gradient(135deg, #F0D060 0%, #D4AF37 50%, #B8860B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 20px;
+}
+
+.logo:hover {
+  opacity: 0.85;
+  color: unset;
+}
+
+.logo-icon {
+  -webkit-text-fill-color: #D4AF37;
+  color: #D4AF37;
+}
+
+/* 积分徽章：可点击，链接到充值 */
 .points-badge {
-  padding: 7px 14px;
-  background: linear-gradient(135deg, rgba(245, 196, 103, 0.18), rgba(255, 245, 225, 0.92));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(184, 134, 11, 0.12);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #D4AF37;
+  border: 1px solid rgba(184, 134, 11, 0.25);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.points-badge:hover {
+  background: rgba(184, 134, 11, 0.2);
+  border-color: rgba(212, 175, 55, 0.4);
+  transform: translateY(-1px);
+}
+
+.points-unit {
+  font-size: 11px;
+  opacity: 0.7;
 }
 
 .user-info {
-  background: rgba(248, 250, 252, 0.92);
-  border-color: rgba(var(--primary-rgb), 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(212, 175, 55, 0.25);
+  box-shadow: none;
+}
+
+.nickname {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .login-btn {
-  border-radius: 999px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #D4AF37, #B8860B);
+  color: #0a0a1a !important;
+  border: none;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.28);
 }
 
+.login-btn:hover {
+  box-shadow: 0 6px 24px rgba(212, 175, 55, 0.4);
+  transform: translateY(-1px);
+}
+
+/* 移动端菜单按钮 */
 .mobile-menu-btn {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(var(--primary-rgb), 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
+.mobile-menu-btn span {
+  background: rgba(212, 175, 55, 0.9);
+}
+
+/* 移动端侧滑导航 */
 .mobile-nav {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 239, 0.94));
-  box-shadow: -24px 0 52px rgba(15, 23, 42, 0.16);
+  background: rgba(8, 8, 20, 0.97);
+  border-left: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-nav-title {
+  color: #D4AF37;
+}
+
+.mobile-nav-link {
+  color: rgba(212, 175, 55, 0.7);
 }
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
-  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.14), rgba(255, 255, 255, 0));
+  color: #D4AF37;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.12), transparent 85%);
+  border-left-color: #D4AF37;
+  padding-left: 34px;
 }
 
 .mobile-overlay {
-  background: rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .main-content--companion-safe {
   padding-bottom: 112px;
 }
 
+/* ── 移动端底部导航栏 ── */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(8, 8, 20, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(184, 134, 11, 0.25);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 14px;
+    color: rgba(212, 175, 55, 0.45);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    min-width: 52px;
+    flex: 1;
+  }
+
+  .bottom-icon {
+    font-size: 20px;
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+
+  .bottom-label {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .bottom-nav-item.active {
+    color: #D4AF37;
+  }
+
+  .bottom-nav-item.active .bottom-icon {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
+  }
+
+  /* 中间主功能按钮（起卦） */
+  .bottom-nav-item--primary {
+    position: relative;
+    top: -10px;
+    background: linear-gradient(135deg, #D4AF37, #B8860B);
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    max-width: 52px;
+    flex: none;
+    padding: 0;
+    color: #0a0a1a;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.45);
+    font-size: 22px;
+    border: 2px solid rgba(240, 208, 96, 0.3);
+  }
+
+  .bottom-primary-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .bottom-nav-item--primary.active {
+    color: #0a0a1a;
+    box-shadow: 0 6px 24px rgba(212, 175, 55, 0.6);
+  }
+
+  /* 页面内容底部留出导航栏高度 */
+  .main-content--mobile-nav {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Footer 深色风格 */
 .footer {
-  padding: 76px 0 36px;
-  background: linear-gradient(180deg, #fffdf8 0%, #fff8ef 100%);
-  border-top: none;
+  padding: 60px 0 30px;
+  background: rgba(6, 6, 16, 0.99);
+  border-top: 1px solid rgba(184, 134, 11, 0.15);
 }
 
 .footer-content {
-  padding: 34px 32px 28px;
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(var(--primary-rgb), 0.1);
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+  padding: 32px;
+  border-radius: 24px;
+  background: rgba(12, 12, 28, 0.8);
+  border: 1px solid rgba(184, 134, 11, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
-.footer-brand {
-  display: grid;
-  gap: 10px;
+.footer-logo {
+  color: #D4AF37;
+}
+
+.footer-tagline {
+  color: rgba(212, 175, 55, 0.45);
 }
 
 .footer-quote {
-  background: linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(255, 247, 231, 0.98));
-  border-radius: 20px;
-  border-color: rgba(var(--primary-rgb), 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
-}
-
-.footer-links {
-  gap: 14px;
+  background: rgba(184, 134, 11, 0.06);
+  border-color: rgba(184, 134, 11, 0.12);
 }
 
 .footer-links a {
-  min-height: 40px;
-  padding: 0 16px;
+  color: rgba(212, 175, 55, 0.6);
+  min-height: 36px;
+  padding: 0 14px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   border-radius: 999px;
-  background: rgba(248, 250, 252, 0.84);
-  border: 1px solid var(--border-light);
-  transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .footer-links a:hover {
-  border-color: rgba(var(--primary-rgb), 0.18);
-  background: rgba(var(--primary-rgb), 0.08);
-  transform: translateY(-1px);
+  color: #D4AF37;
+  border-color: rgba(184, 134, 11, 0.3);
+  background: rgba(184, 134, 11, 0.1);
 }
 
 .footer-divider {
   max-width: 100%;
-  background: linear-gradient(90deg, transparent 0%, rgba(var(--primary-rgb), 0.16) 20%, rgba(var(--primary-rgb), 0.24) 50%, rgba(var(--primary-rgb), 0.16) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.2), transparent);
 }
 
+.footer-copyright {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* 浮动陪伴组件 */
 .floating-companion {
   bottom: 24px;
   right: 24px;
 }
 
 .companion-avatar {
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
-  box-shadow: 0 18px 38px rgba(var(--primary-rgb), 0.22), 0 10px 24px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(184, 134, 11, 0.25);
+  box-shadow: 0 8px 28px rgba(184, 134, 11, 0.25), 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .companion-content {
-  width: 320px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.16), 0 12px 28px rgba(var(--primary-rgb), 0.08);
+  width: 300px;
+  background: rgba(12, 12, 28, 0.97);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(184, 134, 11, 0.1);
 }
 
 .companion-message {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(245, 196, 103, 0.12));
-  border-color: rgba(var(--primary-rgb), 0.12);
+  background: rgba(184, 134, 11, 0.06);
+  border-color: rgba(184, 134, 11, 0.12);
 }
 
 .companion-btn {
-  background: rgba(248, 250, 252, 0.92);
-  border: 1px solid rgba(var(--primary-rgb), 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(212, 175, 55, 0.75);
 }
 
 .companion-btn:hover {
-  background: rgba(var(--primary-rgb), 0.1);
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
   transform: translateX(3px);
 }
 
 @media (max-width: 768px) {
   .navbar {
-    padding: 10px 0 12px;
+    padding: 0;
   }
 
   .nav-container {
-    min-height: 60px;
-    padding: 10px 14px;
-    border-radius: 22px;
+    min-height: 56px;
+    padding: 8px 14px;
+    border-radius: 0;
   }
 
   .main-content--companion-safe {
@@ -1413,20 +1733,16 @@ onBeforeUnmount(() => {
   }
 
   .footer {
-    padding: 52px 0 24px;
+    padding: 40px 0 24px;
   }
 
   .footer-content {
-    padding: 26px 20px 22px;
-    border-radius: 24px;
-  }
-
-  .footer-links a {
-    width: calc(50% - 8px);
+    padding: 22px 18px;
+    border-radius: 20px;
   }
 
   .companion-content {
-    width: min(320px, calc(100vw - 28px));
+    width: min(300px, calc(100vw - 24px));
   }
 }
 </style>

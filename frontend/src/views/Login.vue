@@ -12,6 +12,24 @@
           <p v-if="isRegisterIntent" class="intent-tip">当前入口会在验证成功后直接发放新手积分，无需再额外找注册按钮。</p>
         </div>
 
+        <!-- 注册福利提示 -->
+        <div class="login-benefits" v-if="!isLoggedIn">
+          <div class="benefit-item">
+            <span class="benefit-icon">🎁</span>
+            <div>
+              <strong>注册即送积分</strong>
+              <span>可直接体验八字排盘</span>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">📅</span>
+            <div>
+              <strong>每日签到</strong>
+              <span>连续签到积分翻倍</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 登录表单 -->
         <div class="login-methods">
           <div class="phone-login-form">
@@ -386,5 +404,45 @@ onUnmounted(() => {
     width: 100%;
     padding: 0 10px;
   }
+}
+
+/* 注册福利展示区 */
+.login-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: rgba(184, 134, 11, 0.06);
+  border: 1px solid rgba(184, 134, 11, 0.14);
+  border-radius: 12px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.benefit-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.benefit-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.benefit-item strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(212, 175, 55, 0.9);
+}
+
+.benefit-item span {
+  font-size: 11px;
+  color: rgba(200, 180, 140, 0.55);
 }
 </style>

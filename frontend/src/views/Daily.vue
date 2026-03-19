@@ -258,6 +258,29 @@
             </div>
           </div>
         </div>
+
+        <!-- 深度引导区：将日运用户引向更多功能 -->
+        <div class="daily-deepen-section">
+          <p class="deepen-title">想了解更多？</p>
+          <div class="deepen-cards">
+            <router-link to="/bazi" class="deepen-card">
+              <span class="deepen-symbol">☯</span>
+              <div class="deepen-info">
+                <strong>八字排盘</strong>
+                <span>基于生辰的深度性格与运势分析</span>
+              </div>
+              <el-icon><ArrowRight /></el-icon>
+            </router-link>
+            <router-link to="/tarot" class="deepen-card">
+              <span class="deepen-symbol">✴</span>
+              <div class="deepen-info">
+                <strong>塔罗占卜</strong>
+                <span>聚焦当下困惑，获得具体指引</span>
+              </div>
+              <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
+        </div>
       </div>
 
 
@@ -1736,6 +1759,81 @@ onUnmounted(() => {
   .aspect-grid,
   .lucky-grid,
   .personal-lucky-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 深度引导区 */
+.daily-deepen-section {
+  margin-top: 24px;
+  padding: 24px;
+  background: rgba(184, 134, 11, 0.05);
+  border: 1px solid rgba(184, 134, 11, 0.12);
+  border-radius: var(--radius-xl);
+}
+
+.deepen-title {
+  font-size: 14px;
+  color: rgba(184, 134, 11, 0.6);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.deepen-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.deepen-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(14, 12, 28, 0.6);
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.deepen-card:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+  background: rgba(184, 134, 11, 0.08);
+  transform: translateY(-2px);
+}
+
+.deepen-symbol {
+  font-size: 22px;
+  color: #D4AF37;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.deepen-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.deepen-info strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(240, 208, 96, 0.85);
+}
+
+.deepen-info span {
+  font-size: 12px;
+  color: rgba(200, 180, 140, 0.55);
+}
+
+@media (max-width: 600px) {
+  .deepen-cards {
     grid-template-columns: 1fr;
   }
 }
