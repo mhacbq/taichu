@@ -701,18 +701,26 @@ class LiuyaoService
         }
 
         // 2. 转换为农历分值
-        $lunar = LunarService::solarToLunar($calcDate);
-        
-        // 检查农历数据是否完整，提供默认值
-        $yearNum = $lunar['year_zhi_index'] ?? 1;
-        $monthNum = $lunar['lunar_month'] ?? 1;
-        $dayNum = $lunar['lunar_day'] ?? 1;
-        
-        // 如果农历数据不完整，使用公历数据作为备选
-        if (empty($lunar) {
+        try {
+            $lunar = LunarService::solarToLunar($calcDate);
+            
+            // 检查农历数据是否完整，提供默认值
+            $yearNum = $lunar['year_zhi_index'] ?? 1;
+            $monthNum = $lunar['lunar_month'] ?? 1;
+            $dayNum = $lunar['lunar_day'] ?? 1;
+            
+            // 如果农历数据不完整，使用公历数据作为备选
+            if (empty($lunar) || $yearNum < 1 || $monthNum < 1 || $dayNum < 1) {
+                $yearNum = (int)date('Y', strtotime($calcDate)) % 12 + 1;
+                $monthNum = (int)date('n', strtotime($calcDate));
+                $dayNum = (int)date('j', strtotime($calcDate));
+            }
+        } catch (\Throwable $e) {
+            // 农历转换失败，使用公历数据作为备选
             $yearNum = (int)date('Y', strtotime($calcDate)) % 12 + 1;
             $monthNum = (int)date('n', strtotime($calcDate));
             $dayNum = (int)date('j', strtotime($calcDate));
+            $lunar = [];
         }
         
         // 时辰支数计算 (子=1, 丑=2, ..., 亥=12)

@@ -155,16 +155,19 @@ class PointsService
                 return ['success' => false, 'message' => '积分增加失败', 'balance' => $userData['points']];
             }
 
+            $newBalance = (int) $userData['points'] + $points;
+
             // 3. 记录积分变动
-            $recordId = Db::name('tc_points_record')->insertGetId([
-                'user_id' => $userId,
-                'action' => $action,
-                'points' => $points,
-                'type' => $type,
-                'related_id' => $relatedId,
-                'remark' => $remark,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            $recordPayload = PointsRecord::buildRecordPayload(
+                $userId,
+                $action,
+                $points,
+                $type,
+                $relatedId,
+                $remark,
+                ['balance' => $newBalance]
+            );
+            $recordId = Db::name('tc_points_record')->insertGetId($recordPayload);
 
             if (!$recordId) {
                 Db::rollback();
@@ -173,7 +176,6 @@ class PointsService
 
             Db::commit();
 
-            $newBalance = $userData['points'] + $points;
 
             return [
                 'success' => true,

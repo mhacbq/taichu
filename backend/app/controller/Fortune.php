@@ -443,7 +443,8 @@ class Fortune extends BaseController
             return $this->error($forbiddenMessage, 403);
         }
 
-        return $this->error('运势分析失败：' . $e->getMessage(), 500);
+        return $this->error('运势分析失败，请稍后重试', 500);
+
 
     }
     
