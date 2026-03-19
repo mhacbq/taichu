@@ -147,12 +147,14 @@
     </nav>
     
     <main class="main-content" :class="{ 'main-content--companion-safe': shouldReserveCompanionSpace, 'main-content--mobile-nav': true }">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component v-if="Component" :is="Component" />
-          <div v-else class="route-loading-placeholder" aria-live="polite"></div>
-        </transition>
-      </router-view>
+      <ErrorBoundary>
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component v-if="Component" :is="Component" />
+            <div v-else class="route-loading-placeholder" aria-live="polite"></div>
+          </transition>
+        </router-view>
+      </ErrorBoundary>
     </main>
 
     <!-- 移动端底部导航栏 -->
@@ -241,6 +243,8 @@ import { ref, onMounted, onBeforeUnmount, watch, computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
+import YinYangIcon from './components/YinYangIcon.vue'
+import ErrorBoundary from './components/ErrorBoundary.vue'
 import { 
   ArrowDown,
   Calendar, 

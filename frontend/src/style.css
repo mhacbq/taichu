@@ -438,13 +438,13 @@ small {
 
 /* 玻璃拟态卡片（浅色版） */
 .card-glass {
-  background: rgba(10, 10, 26, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: var(--radius-xl);
   padding: 30px;
-  border: 1px solid var(--primary-light-20);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 15px 35px rgba(145, 103, 34, 0.1);
 }
 
 /* 标题样式 */

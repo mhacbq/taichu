@@ -20,21 +20,22 @@ export function analyzeCulturalAi(cultural_data, prompt = '', signal = null) {
 }
 
 /**
- * AI文化测算分析（流式SSE）
- * @param {Object} cultural_data - 文化数据
+ * AI八字分析（非流式）- analyzeCulturalAi 的别名，供 Bazi.vue 使用
+ * @param {Object} bazi - 八字数据
  * @param {string} prompt - 自定义提示（可选）
  * @param {AbortSignal} signal - 取消信号（可选）
  */
-export function analyzeCulturalAiStream(cultural_data, prompt = '', signal = null) {
-  const url = `${import.meta.env.VITE_API_BASE_URL || ''}/api/ai/analyze/cultural/stream`
-  
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-    },
-    body: JSON.stringify({ cultural_data, prompt }),
-    signal
-  })
+export function analyzeBaziAi(bazi, prompt = '', signal = null) {
+  return analyzeCulturalAi(bazi, prompt, signal)
 }
+
+/**
+ * AI八字分析（流式SSE）- analyzeCulturalAiStream 的别名，供 Bazi.vue 使用
+ * @param {Object} bazi - 八字数据
+ * @param {string} prompt - 自定义提示（可选）
+ * @param {AbortSignal} signal - 取消信号（可选）
+ */
+export function analyzeBaziAiStream(bazi, prompt = '', signal = null) {
+  return analyzeCulturalAiStream(bazi, prompt, signal)
+}
+

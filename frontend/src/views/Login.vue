@@ -273,7 +273,6 @@ onUnmounted(() => {
 
 .login-box {
   background: var(--bg-card);
-  backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 40px;
   border: 1px solid var(--border-light);
@@ -438,11 +437,11 @@ onUnmounted(() => {
 .benefit-item strong {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(212, 175, 55, 0.9);
+  color: #7a5c1e;
 }
 
 .benefit-item span {
   font-size: 11px;
-  color: rgba(200, 180, 140, 0.55);
+  color: #9b8060;
 }
 </style>

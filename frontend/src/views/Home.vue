@@ -977,7 +977,7 @@ onUnmounted(() => {
 }
 
 .btn-badge--login {
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(0, 0, 0, 0.08);
   color: currentColor;
 }
 

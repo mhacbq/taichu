@@ -3138,8 +3138,8 @@ onMounted(() => {
   align-items: center;
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(184, 134, 11, 0.06);
+  border: 1px solid rgba(184, 134, 11, 0.14);
 }
 
 .summary-role {
