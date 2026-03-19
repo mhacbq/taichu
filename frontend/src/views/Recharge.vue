@@ -37,6 +37,9 @@
             </div>
 
             <div v-if="option.desc" class="desc">{{ option.desc }}</div>
+            <div v-if="option.type !== 'vip'" class="unlock-hint">
+              可解锁 {{ Math.floor((option.points + (option.bonus || 0)) / 5) }}+ 次占卜
+            </div>
 
             <div v-if="option.bonus > 0" class="bonus">+{{ option.bonus }}赠送</div>
             <div v-if="option.bonus > 0" class="hot-tag">HOT</div>
