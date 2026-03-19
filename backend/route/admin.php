@@ -238,6 +238,7 @@ Route::group('api/admin', function () {
     })->middleware(\app\middleware\AdminAuth::class);
 })->middleware([
     \app\middleware\HttpsEnforce::class,
+    \app\middleware\SecurityHeaders::class,
     \app\middleware\Cors::class,
     \app\middleware\SensitiveDataFilter::class,
     \app\middleware\RateLimit::class,

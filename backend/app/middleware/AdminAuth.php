@@ -29,6 +29,18 @@ class AdminAuth
 
     public function handle(Request $request, \Closure $next): Response
     {
+        // ── IP 白名单检测（可选，配置 ADMIN_IP_WHITELIST=x.x.x.x,y.y.y.y 启用）──
+        $ipWhitelistRaw = trim((string) \think\facade\Env::get('ADMIN_IP_WHITELIST', ''));
+        if ($ipWhitelistRaw !== '') {
+            $allowedIps = array_filter(array_map('trim', explode(',', $ipWhitelistRaw)));
+            $clientIp   = (string) $request->ip();
+            if (!empty($allowedIps) && !in_array($clientIp, $allowedIps, true)) {
+                Log::warning('管理后台 IP 访问被拒绝', ['ip' => $clientIp, 'url' => $request->url()]);
+                return json(['code' => 403, 'message' => '访问被拒绝', 'data' => null], 403);
+            }
+        }
+
+        // ── Authorization 头校验 ──────────────────────────────────────────────
         $authHeader = $request->header('Authorization');
 
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {

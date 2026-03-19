@@ -393,13 +393,70 @@ function isAdmin() {
 }
 
 // 路由守卫 - SEO优化和权限验证
+/**
+ * 解析 JWT payload（不验签，仅读取 exp 字段做前端过期检测）
+ * 真正的验签在后端 AdminAuth 中间件完成
+ */
+function parseJwtPayload(token) {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return payload
+  } catch {
+    return null
+  }
+}
+
+/** 检查 Token 是否已过期（前端快速判断，减少无效请求） */
+function isTokenExpired(token) {
+  const payload = parseJwtPayload(token)
+  if (!payload || !payload.exp) return false // 没有 exp 字段则交给后端判断
+  return Date.now() / 1000 > payload.exp
+}
+
+/** 管理端访问频率限制（防暴力枚举，5分钟内超过20次拒绝访问） */
+const adminAccessLog = { count: 0, resetAt: 0 }
+function checkAdminRateLimit() {
+  const now = Date.now()
+  if (now > adminAccessLog.resetAt) {
+    adminAccessLog.count = 0
+    adminAccessLog.resetAt = now + 5 * 60 * 1000
+  }
+  adminAccessLog.count++
+  return adminAccessLog.count <= 20
+}
+
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
+  let token = localStorage.getItem('token')
+  const isAdminPath = to.path.startsWith('/admin')
+
+  // 检测 Token 格式（防止 localStorage 被注入伪造数据）
+  if (token && (typeof token !== 'string' || token.split('.').length !== 3)) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userInfo')
+    token = null
+  }
+
+  // 前端检测 Token 是否过期（仅快速判断，真正鉴权在后端）
+  if (token && isTokenExpired(token)) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userInfo')
+    token = null
+  }
+
   const isAuthenticated = !!token
 
   // 已登录用户访问登录页，重定向到首页
   if (to.name === 'Login' && isAuthenticated) {
     next('/')
+    return
+  }
+
+  // 管理端路由：限制访问频率（防暴力枚举）
+  if (isAdminPath && !checkAdminRateLimit()) {
+    console.warn('[Security] 管理端访问频率过高，已限制')
+    next({ name: 'Home' })
     return
   }
 
@@ -412,13 +469,16 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 需要管理员权限的页面
-  if (to.meta.requiresAdmin && !isAdmin()) {
-    // 可以重定向到403页面或首页
-    next({
-      name: 'Home'
-    })
-    return
+  // 需要管理员权限的页面：未登录 → 登录页，已登录非管理员 → 首页
+  if (to.meta.requiresAdmin) {
+    if (!isAuthenticated) {
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+      return
+    }
+    if (!isAdmin()) {
+      next({ name: 'Home' })
+      return
+    }
   }
 
   next()
@@ -430,6 +490,18 @@ router.afterEach((to) => {
   if (typeof document !== 'undefined' && document.body) {
     document.body.classList.toggle('route-admin', isAdminRoute)
     document.body.classList.toggle('route-frontend', !isAdminRoute)
+  }
+
+  // ⚠️ 管理后台路由：强制 noindex，禁止 canonical，不注入结构化数据
+  if (isAdminRoute) {
+    useSEO({
+      title: '管理后台',
+      description: '',
+      keywords: '',
+      robots: 'noindex, nofollow, noarchive',
+      canonical: '',   // 清空 canonical，防止 link rel=canonical 被爬虫收录
+    })
+    return
   }
 
   // 获取页面SEO配置

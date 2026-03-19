@@ -31,6 +31,9 @@ export function useSEO(options = {}) {
     robots = 'index,follow'
   } = options
 
+  // 是否为不可索引页（管理后台、个人中心等）
+  const isNoIndex = typeof robots === 'string' && robots.includes('noindex')
+
   // 格式化关键词
   const keywordsString = computed(() => {
     if (Array.isArray(keywords)) {
@@ -41,6 +44,8 @@ export function useSEO(options = {}) {
 
   // 完整标题（带品牌后缀）
   const fullTitle = computed(() => {
+    // noindex 页面不暴露品牌信息
+    if (isNoIndex) return title
     const brandSuffix = ' - 太初命理'
     if (title.includes('太初命理')) {
       return title
@@ -59,9 +64,9 @@ export function useSEO(options = {}) {
     title: fullTitle.value,
     meta: [
       // 基础SEO
-      { name: 'description', content: description },
-      { name: 'keywords', content: keywordsString.value },
-      { name: 'author', content: author },
+      { name: 'description', content: isNoIndex ? '' : description },
+      { name: 'keywords', content: isNoIndex ? '' : keywordsString.value },
+      { name: 'author', content: isNoIndex ? '' : author },
       { name: 'robots', content: robots },
       
       // 视口和兼容性
@@ -72,23 +77,27 @@ export function useSEO(options = {}) {
       { name: 'theme-color', content: '#6366f1' },
       { name: 'msapplication-TileColor', content: '#6366f1' },
       
-      // Open Graph
-      { property: 'og:title', content: fullTitle.value },
-      { property: 'og:description', content: description },
-      { property: 'og:type', content: type },
-      { property: 'og:url', content: fullUrl },
-      { property: 'og:image', content: fullImage },
-      { property: 'og:image:width', content: '1200' },
-      { property: 'og:image:height', content: '630' },
-      { property: 'og:site_name', content: '太初命理' },
-      { property: 'og:locale', content: 'zh_CN' },
+      // Open Graph（noindex 页面不输出，避免社交爬虫索引内容）
+      ...(!isNoIndex ? [
+        { property: 'og:title', content: fullTitle.value },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: type },
+        { property: 'og:url', content: fullUrl },
+        { property: 'og:image', content: fullImage },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:site_name', content: '太初命理' },
+        { property: 'og:locale', content: 'zh_CN' },
+      ] : []),
       
-      // Twitter Card
-      { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: fullTitle.value },
-      { name: 'twitter:description', content: description },
-      { name: 'twitter:image', content: fullImage },
-      { name: 'twitter:site', content: '@taichu_mingli' },
+      // Twitter Card（noindex 页面不输出）
+      ...(!isNoIndex ? [
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: fullTitle.value },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: fullImage },
+        { name: 'twitter:site', content: '@taichu_mingli' },
+      ] : []),
       
       // 百度专用
       { name: 'baidu-site-verification', content: '' },
@@ -106,12 +115,12 @@ export function useSEO(options = {}) {
     
     // 链接标签
     link: [
-      // 规范链接
-      canonical ? { rel: 'canonical', href: canonical } : {},
+      // 规范链接：noindex 页面不输出 canonical（清空，防止爬虫通过 canonical 发现管理端）
+      (!isNoIndex && canonical) ? { rel: 'canonical', href: canonical } : null,
       
-      // 多语言/地区替代链接
-      { rel: 'alternate', hreflang: 'zh-CN', href: fullUrl },
-      { rel: 'alternate', hreflang: 'x-default', href: fullUrl },
+      // 多语言/地区替代链接（noindex 页面不输出）
+      (!isNoIndex) ? { rel: 'alternate', hreflang: 'zh-CN', href: fullUrl } : null,
+      (!isNoIndex) ? { rel: 'alternate', hreflang: 'x-default', href: fullUrl } : null,
       
       // 预连接优化
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
