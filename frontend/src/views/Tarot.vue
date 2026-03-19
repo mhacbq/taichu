@@ -224,17 +224,13 @@
 
         
         <!-- 操作按钮 -->
-        <div class="result-actions">
-          <el-button type="primary" @click="saveTarotResult" :disabled="!interpretation">
-            <el-icon class="btn-icon"><Download /></el-icon> 保存记录
-          </el-button>
-          <el-button @click="shareTarotResult" :disabled="!interpretation">
-            <el-icon class="btn-icon"><Document /></el-icon> 分享
-          </el-button>
-          <el-button @click="resetTarot">
-            <el-icon class="btn-icon"><RefreshRight /></el-icon> 重新占卜
-          </el-button>
-        </div>
+        <ResultNextSteps
+          description="先把这次牌阵存下来，再决定是分享给对方，还是顺手切到别的服务补一层视角。"
+          :highlights="tarotResultHighlights"
+          :actions="tarotResultActions"
+          :recommendations="tarotRelatedRecommendations"
+        />
+
       </div>
 
       <!-- 单张牌详情弹窗 -->
@@ -293,9 +289,11 @@ import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotP
 
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import TarotCard from '../components/TarotCard.vue'
+import ResultNextSteps from '../components/ResultNextSteps.vue'
 
 import EmptyState from '../components/EmptyState.vue'
 import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
+
 
 const spreads = [
   { id: 'single', name: '单张牌', icon: 'card', description: '简单直接，适合快速解答' },
@@ -1062,9 +1060,95 @@ const resetTarot = () => {
   clearFlowError()
 }
 
+const shouldShowTarotRechargeAction = computed(() => Number.isFinite(currentPoints.value) && currentPoints.value < 5)
+
+const tarotResultHighlights = computed(() => {
+  const highlights = [
+    {
+      key: 'spread',
+      label: `牌阵：${submittedSpreadName.value}`,
+    },
+    {
+      key: 'record',
+      label: savedRecordId.value ? '已同步到云端记录' : '可先保存到云端记录',
+      tone: savedRecordId.value ? 'success' : 'warning',
+    },
+    {
+      key: 'share',
+      label: sharePublicConfirmed.value ? '当前已允许分享' : '默认仍为私密状态',
+    },
+  ]
+
+  if (flowError.value?.stage === 'interpret') {
+    highlights.push({
+      key: 'retry-interpret',
+      label: '解读中断后可直接重试，无需重新抽牌',
+      tone: 'danger',
+    })
+  }
+
+  return highlights
+})
+
+const tarotResultActions = computed(() => {
+  return [
+    {
+      key: 'save',
+      label: savedRecordId.value ? '已保存到云端' : '保存记录',
+      type: 'primary',
+      disabled: !interpretation.value || Boolean(savedRecordId.value),
+      onClick: saveTarotResult,
+    },
+    {
+      key: 'share',
+      label: '分享结果',
+      onClick: shareTarotResult,
+      disabled: !interpretation.value,
+    },
+    {
+      key: 'history',
+      label: '查看我的记录',
+      to: '/profile',
+    },
+    shouldShowTarotRechargeAction.value
+      ? {
+          key: 'recharge',
+          label: '去充值 / 补积分',
+          plain: true,
+          to: '/recharge',
+        }
+      : null,
+    {
+      key: 'retry',
+      label: '重新占卜',
+      plain: true,
+      onClick: resetTarot,
+    },
+  ].filter(Boolean)
+})
+
+const tarotRelatedRecommendations = computed(() => {
+  return [
+    {
+      key: 'daily',
+      title: '去看今日运势',
+      description: '把这次塔罗结论和当天整体节奏放在一起看，更容易判断要不要立刻行动。',
+      to: '/daily',
+      badge: '相关推荐',
+    },
+    {
+      key: 'bazi',
+      title: '补一版八字排盘',
+      description: '如果你想把短期问题放回长期命盘里再核对，可以继续看八字主线。',
+      to: '/bazi',
+      badge: '继续深入',
+    },
+  ]
+})
 
 
 // 显示卡片详情
+
 const showCardDetail = (card, index = 0) => {
   const currentSpread = getCurrentTarotSpread()
   selectedCard.value = {
@@ -1880,4 +1964,318 @@ const getCardAdvice = (card) => {
   }
 }
 
+
+
+/* 2026-03 UI polish: tarot refresh */
+.tarot-page {
+  padding: 10px 0 78px;
+  background:
+    radial-gradient(circle at top left, rgba(var(--primary-rgb), 0.14), transparent 32%),
+    radial-gradient(circle at 88% 14%, rgba(245, 196, 103, 0.18), transparent 26%),
+    linear-gradient(180deg, #fffdf8 0%, #fff9f2 48%, #fff7ef 100%);
+}
+
+.points-hint,
+.insufficient-points,
+.tarot-intro,
+.question-guide,
+.question-section,
+.cards-result,
+.flow-error {
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+}
+
+.points-hint,
+.insufficient-points,
+.tarot-intro,
+.question-guide,
+.question-section,
+.cards-result,
+.flow-error {
+  border-radius: 28px;
+}
+
+.points-hint,
+.insufficient-points,
+.tarot-intro,
+.cards-result,
+.flow-error {
+  max-width: 940px;
+}
+
+.points-hint {
+  margin-bottom: 22px;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(255, 245, 225, 0.94));
+}
+
+.current-points {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: #8c5c15;
+  font-weight: 700;
+}
+
+.points-warning {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 247, 237, 0.9);
+  border: 1px solid rgba(217, 119, 6, 0.14);
+}
+
+.tarot-intro,
+.question-guide,
+.question-section,
+.cards-result,
+.flow-error {
+  padding: 28px;
+}
+
+.tarot-intro {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 241, 0.94));
+}
+
+.tarot-intro h2,
+.question-section h3,
+.cards-result h3,
+.interpretation h3 {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.spread-options {
+  gap: 18px;
+}
+
+.spread-card {
+  min-height: 240px;
+  padding: 28px 22px 24px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 234, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.spread-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -24px -48px auto;
+  width: 140px;
+  height: 140px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 0.16), rgba(var(--primary-rgb), 0));
+  pointer-events: none;
+}
+
+.spread-card.active {
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 242, 215, 0.96));
+  box-shadow: 0 22px 40px rgba(var(--primary-rgb), 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.spread-card h3 {
+  font-size: 22px;
+}
+
+.spread-card p {
+  max-width: 20ch;
+}
+
+.spread-icon {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 10px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+}
+
+.question-guide,
+.question-section {
+  max-width: 940px;
+}
+
+.question-guide {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 242, 0.94));
+}
+
+.question-guide__header h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.topic-tab {
+  min-height: 98px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(var(--primary-rgb), 0.1);
+}
+
+.topic-tab.active {
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.92), rgba(207, 160, 74, 0.92));
+  box-shadow: 0 16px 28px rgba(var(--primary-rgb), 0.18);
+}
+
+.template-hint {
+  margin-bottom: 12px;
+  color: #63584a;
+}
+
+.template-item {
+  min-height: 76px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 237, 0.92));
+}
+
+.question-section {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 244, 0.94));
+}
+
+.question-section--locked {
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(255, 246, 229, 0.94));
+}
+
+:deep(.question-section .el-textarea__inner) {
+  min-height: 148px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1) inset;
+  line-height: 1.8;
+  padding: 16px 18px;
+}
+
+.question-hint,
+.question-lock-note {
+  border-radius: 16px;
+}
+
+.draw-btn {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 18px;
+  font-weight: 700;
+  box-shadow: 0 18px 32px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.cards-result {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 239, 0.95));
+}
+
+.cards-hint {
+  margin-bottom: 22px;
+}
+
+.result-context-summary {
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.result-context-chip {
+  min-height: 42px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.card-detail-trigger {
+  padding: 14px;
+  border-radius: 26px;
+  transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-detail-trigger:hover {
+  background: rgba(255, 255, 255, 0.72);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.interpretation {
+  margin-top: 6px;
+  padding: 26px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 245, 224, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.interpretation-content,
+.interpretation-placeholder {
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.result-actions {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(var(--primary-rgb), 0.12);
+  gap: 14px;
+}
+
+.result-actions .el-button {
+  min-width: 150px;
+  border-radius: 16px;
+}
+
+.flow-error--inline {
+  margin: 0 0 24px;
+}
+
+@media (max-width: 768px) {
+  .tarot-page {
+    padding: 0 0 56px;
+  }
+
+  .points-hint,
+  .insufficient-points,
+  .tarot-intro,
+  .question-guide,
+  .question-section,
+  .cards-result,
+  .flow-error {
+    padding: 20px 18px;
+    border-radius: 24px;
+  }
+
+  .points-hint {
+    align-items: flex-start;
+  }
+
+  .current-points {
+    margin-left: 0;
+  }
+
+  .spread-options,
+  .template-list {
+    grid-template-columns: 1fr;
+  }
+
+  .topic-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .spread-card {
+    min-height: 0;
+  }
+
+  .question-guide__header {
+    flex-direction: column;
+  }
+
+  .interpretation {
+    padding: 20px 18px;
+  }
+
+  .result-actions .el-button {
+    width: 100%;
+  }
+}
 </style>

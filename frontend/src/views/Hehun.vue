@@ -1,17 +1,12 @@
 <template>
   <div class="hehun-page">
     <div class="container">
-      <!-- 页面标题 -->
-      <div class="page-header">
-        <BackButton fallback="/" />
-        <div class="page-header-content">
-          <h1 class="page-title">
-            <el-icon class="title-icon" :size="36"><Link /></el-icon>
-            八字合婚
-          </h1>
-          <p class="page-subtitle">通过双方八字，分析婚姻匹配度与缘分</p>
-        </div>
-      </div>
+      <PageHeroHeader
+        title="八字合婚"
+        subtitle="把双方信息、结果精度与解锁路径放在同一条清晰链路里，先看趋势，再决定是否继续深入。"
+        :icon="Link"
+      />
+
 
       <!-- 免费预览结果 -->
       <div v-if="freeResult" class="result-section">
@@ -101,9 +96,17 @@
 
           </div>
 
-          <div class="action-buttons action-buttons--free">
-            <el-button plain @click="returnToForm">返回修改</el-button>
-            <el-button @click="resetForm">重新测算（清空）</el-button>
+          <div class="action-buttons-wrap">
+            <div class="action-buttons-heading">
+              <span class="action-buttons-heading__eyebrow">下一步动作</span>
+              <p>先回看记录，再决定是否继续解锁完整版；结果页和首页都按同一套“记录 / 深入 / 再来一次”节奏走。</p>
+            </div>
+            <div class="action-buttons action-buttons--free">
+              <el-button plain @click="openHehunRecords">查看我的记录</el-button>
+              <el-button type="primary" :disabled="!canUnlockPremium" :loading="unlockLoading" @click="unlockPremium">继续深入解读</el-button>
+              <el-button @click="openRechargeCenter">去充值</el-button>
+              <el-button @click="resetForm">重新测算（清空）</el-button>
+            </div>
           </div>
 
 
@@ -182,14 +185,21 @@
           </div>
           
           <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <el-button plain @click="returnToForm">返回修改</el-button>
-            <el-button @click="resetForm">
-              <el-icon><RefreshRight /></el-icon> 重新测算（清空）
-            </el-button>
-            <el-button type="primary" @click="exportReport" :disabled="exporting || !canExportReport">
-              <el-icon><Document /></el-icon> {{ exporting ? '导出中...' : '导出报告' }}
-            </el-button>
+          <div class="action-buttons-wrap">
+            <div class="action-buttons-heading">
+              <span class="action-buttons-heading__eyebrow">下一步动作</span>
+              <p>详细报告出来后，优先回看记录、导出成果或继续后续服务，不再把主动作拆散在多个区域。</p>
+            </div>
+            <div class="action-buttons">
+              <el-button plain @click="openHehunRecords">查看我的记录</el-button>
+              <el-button type="primary" @click="exportReport" :disabled="exporting || !canExportReport">
+                <el-icon><Document /></el-icon> {{ exporting ? '导出中...' : '导出报告' }}
+              </el-button>
+              <el-button @click="openDailySuggestion">看今日运势</el-button>
+              <el-button @click="resetForm">
+                <el-icon><RefreshRight /></el-icon> 重新测算（清空）
+              </el-button>
+            </div>
           </div>
 
         </div>
@@ -199,21 +209,54 @@
       <div v-else class="form-section">
         <div class="form-card card-hover">
           <h2>输入双方出生信息</h2>
-          <p class="form-intro">支持精确时分、大概时段和仅生日三种输入方式；系统会自动切换日期控件、时段选择和结果可信度说明，移动端也能保持稳定触达。</p>
+          <p class="form-intro">先各自补齐生日，再按记忆精度选择精确时分、大概时段或仅生日模式即可。</p>
           <div class="form-meta-list">
             <span class="form-meta-item">精确时分</span>
             <span class="form-meta-item">大概时段</span>
             <span class="form-meta-item">仅生日趋势</span>
           </div>
 
-          <div class="role-mode-toggle card-hover">
-            <div>
-              <strong>显示方式</strong>
-              <p>只切换页面上的称呼，不改后端字段和合婚算法。</p>
+          <div class="strategy-summary-card">
+            <div class="strategy-summary-card__header">
+              <div class="strategy-summary-card__copy">
+                <span class="strategy-summary-card__eyebrow">填写策略</span>
+                <strong>{{ hehunStrategySummary }}</strong>
+                <p>首屏只保留必要说明；想看精度、可信度和完整版路径，再展开细节就好。</p>
+              </div>
+              <el-button link type="primary" class="strategy-summary-card__toggle" @click="hehunStrategyExpanded = !hehunStrategyExpanded">
+                {{ hehunStrategyExpanded ? '收起详情' : '查看详情' }}
+              </el-button>
             </div>
-            <el-radio-group v-model="roleDisplayMode" size="small">
-              <el-radio-button label="gender">男方 / 女方</el-radio-button>
-              <el-radio-button label="neutral">A方 / B方</el-radio-button>
+            <div v-if="hehunStrategyExpanded" class="strategy-summary-card__details">
+              <article v-for="item in hehunStrategyDetails" :key="item.key" class="strategy-detail-item">
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="role-mode-toggle card-hover">
+            <div class="role-mode-toggle__header">
+              <div class="role-mode-toggle__copy">
+                <span class="role-mode-toggle__eyebrow">称呼偏好</span>
+                <strong>结果里如何称呼双方</strong>
+                <p>只影响页面上的展示文案，不会改动后端字段、历史记录或合婚算法。</p>
+              </div>
+              <span class="role-mode-toggle__status">{{ roleDisplayMode === 'gender' ? '当前：男方 / 女方' : '当前：A方 / B方' }}</span>
+            </div>
+            <el-radio-group v-model="roleDisplayMode" size="small" class="role-mode-group premium-segment premium-segment--card">
+              <el-radio-button label="gender">
+                <span class="role-mode-option">
+                  <span class="role-mode-option__title">男方 / 女方</span>
+                  <small class="role-mode-option__desc">更贴近日常习惯，适合传统表达场景</small>
+                </span>
+              </el-radio-button>
+              <el-radio-button label="neutral">
+                <span class="role-mode-option">
+                  <span class="role-mode-option__title">A方 / B方</span>
+                  <small class="role-mode-option__desc">更中性，适合不想预设双方角色时使用</small>
+                </span>
+              </el-radio-button>
             </el-radio-group>
           </div>
           
@@ -225,7 +268,7 @@
               {{ getRolePanelTitle('male') }}
             </h3>
 
-            <p class="person-subtitle">先填生日，再按记忆精度选择具体时间、时段估算或仅生日模式。</p>
+            <p class="person-subtitle">先填生日，再补具体时间或选择时段估算即可。</p>
             <div class="form-row">
               <div class="form-group">
                 <label>姓名（可选）</label>
@@ -259,7 +302,7 @@
               </el-radio-group>
               <p class="precision-helper">{{ getBirthPrecisionHint(form.maleBirthPrecision) }}</p>
             </div>
-            <div class="form-row">
+            <div class="form-row" data-hehun-field="male-birth">
               <div class="form-group">
                 <label>{{ getBirthInputLabel(form.maleBirthPrecision) }} <span class="required">*</span></label>
                 <el-date-picker
@@ -274,7 +317,7 @@
                 <p class="field-helper">{{ getBirthFieldHelper(form.maleBirthPrecision) }}</p>
               </div>
             </div>
-            <div v-if="form.maleBirthPrecision === 'range'" class="time-range-panel">
+            <div v-if="form.maleBirthPrecision === 'range'" class="time-range-panel" data-hehun-field="male-range">
               <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
               <el-radio-group v-model="form.maleBirthTimeRange" class="time-range-options time-range-options--group premium-segment premium-segment--card">
                 <el-radio-button
@@ -305,7 +348,7 @@
               {{ getRolePanelTitle('female') }}
             </h3>
 
-            <p class="person-subtitle">若只记得白天、晚上等大概时段，也可以先用时段估算后再继续完善。</p>
+            <p class="person-subtitle">若只记得大概时段，也可以先按时段估算，后续再补精确时间。</p>
             <div class="form-row">
               <div class="form-group">
                 <label>姓名（可选）</label>
@@ -339,7 +382,7 @@
               </el-radio-group>
               <p class="precision-helper">{{ getBirthPrecisionHint(form.femaleBirthPrecision) }}</p>
             </div>
-            <div class="form-row">
+            <div class="form-row" data-hehun-field="female-birth">
               <div class="form-group">
                 <label>{{ getBirthInputLabel(form.femaleBirthPrecision) }} <span class="required">*</span></label>
                 <el-date-picker
@@ -354,7 +397,7 @@
                 <p class="field-helper">{{ getBirthFieldHelper(form.femaleBirthPrecision) }}</p>
               </div>
             </div>
-            <div v-if="form.femaleBirthPrecision === 'range'" class="time-range-panel">
+            <div v-if="form.femaleBirthPrecision === 'range'" class="time-range-panel" data-hehun-field="female-range">
               <label class="time-range-label">大概出生时段 <span class="required">*</span></label>
               <el-radio-group v-model="form.femaleBirthTimeRange" class="time-range-options time-range-options--group premium-segment premium-segment--card">
                 <el-radio-button
@@ -385,7 +428,7 @@
                 <span class="plan-badge plan-badge--free">免费预览</span>
                 <span class="plan-badge plan-badge--premium">完整版</span>
               </div>
-              <p class="plan-summary">免费预览仅返回基础匹配分与简要建议；解锁完整版后会优先启用 AI 深度分析，若 AI 暂不可用则自动切换为规则解读。</p>
+              <p class="plan-summary">先看免费趋势，再决定是否解锁完整版和 AI 深度分析。</p>
             </div>
             <div class="option-item" :class="{ active: form.useAi }">
               <el-checkbox v-model="form.useAi" class="option-checkbox">
@@ -429,11 +472,33 @@
 
           
           <!-- 提交按钮 -->
+          <section v-if="hehunSubmitIssues.length" class="submit-summary-card" role="alert" aria-live="assertive">
+            <div class="submit-summary-card__header">
+              <div>
+                <strong>开始分析前还差这几步</strong>
+                <p>{{ hehunSubmitSummaryText }}</p>
+              </div>
+              <el-icon><WarningFilled /></el-icon>
+            </div>
+            <div class="submit-summary-card__actions">
+              <button
+                v-for="issue in hehunSubmitIssues"
+                :key="issue.key"
+                type="button"
+                class="submit-summary-card__action"
+                @click="handleHehunIssue(issue)"
+              >
+                <span>{{ issue.actionLabel }}</span>
+                <small>{{ issue.message }}</small>
+              </button>
+            </div>
+          </section>
+
           <el-button
             class="btn-submit"
             type="primary"
             :loading="isLoading"
-            :disabled="!isFormValid"
+            :disabled="isLoading"
             @click="submitForm"
           >
             <template v-if="!isLoading">
@@ -509,7 +574,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
 import { Male, Female, UserFilled, Unlock, Lock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled, Calendar, ArrowRight, StarFilled, CircleCheckFilled } from '@element-plus/icons-vue'
@@ -517,10 +583,14 @@ import { Male, Female, UserFilled, Unlock, Lock, Link, RefreshRight, Document, C
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 import BackButton from '../components/BackButton.vue'
 
+
+
 /**
  * HTML净化函数 - 防止XSS攻击
  * 使用DOMPurify库进行专业清理
  */
+const router = useRouter()
+
 const sanitizeHtml = (html) => {
   if (!html) return ''
   return DOMPurify.sanitize(html, {
@@ -528,6 +598,7 @@ const sanitizeHtml = (html) => {
     ALLOWED_ATTR: ['class', 'style']
   })
 }
+
 
 const birthPrecisionOptions = [
   { value: 'exact', label: '精确时分', desc: '已知具体出生时间，结果最完整' },
@@ -561,6 +632,9 @@ const form = reactive({
   femaleBirthTimeRange: '',
   useAi: true,
 })
+
+const hehunStrategyExpanded = ref(false)
+const hehunSubmitIssues = ref([])
 
 const roleDisplayMode = ref('gender')
 const roleCopyMap = {
@@ -858,7 +932,39 @@ const isFormValid = computed(() => {
   return isBirthInputComplete('male') && isBirthInputComplete('female')
 })
 
+const hehunStrategySummary = computed(() => {
+  const accuracyText = hasReducedPrecision.value ? '当前包含估算输入' : '当前为双精确输入'
+  const unlockText = form.useAi ? '解锁时优先走 AI 深度分析' : '解锁时走规则版完整版'
+  return `${accuracyText}，先看趋势，再决定是否继续解锁；${unlockText}。`
+})
 
+const hehunStrategyDetails = computed(() => ([
+  {
+    key: 'precision',
+    title: '输入精度怎么选',
+    description: '能填准确时分就优先填准确时分；只记得早上或晚上也可以先用时段估算，系统会在结果页同步标注可信度。'
+  },
+  {
+    key: 'flow',
+    title: '免费预览与完整版',
+    description: '免费预览先返回基础匹配趋势与简要建议；确认值得继续后，再解锁完整版查看五维分析、传统风险与更细化建议。'
+  },
+  {
+    key: 'ai',
+    title: 'AI 深度分析策略',
+    description: form.useAi
+      ? '当前已勾选 AI；解锁时会优先调用 AI，若服务暂不可用，会自动切回规则解读并在结果页说明。'
+      : '当前未勾选 AI；解锁后会先给出规则版完整版，如需更长的深度分析可再开启 AI。'
+  }
+]))
+
+const hehunSubmitSummaryText = computed(() => {
+  if (!hehunSubmitIssues.value.length) {
+    return ''
+  }
+
+  return `已整理出 ${hehunSubmitIssues.value.length} 个待处理项，点一下即可直接定位。`
+})
 
 const normalizePricingData = (rawPricing) => {
   if (!rawPricing) {
@@ -971,8 +1077,100 @@ const hasUnsavedDraft = computed(() => {
   return hasFilledValue || form.maleBirthPrecision !== 'exact' || form.femaleBirthPrecision !== 'exact'
 })
 
+const clearHehunSubmitIssues = () => {
+  hehunSubmitIssues.value = []
+}
 
+const focusHehunField = async (selector) => {
+  if (!selector) {
+    return
+  }
 
+  await nextTick()
+  const target = document.querySelector(selector)
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const focusable = target.querySelector('input, textarea, button, [tabindex]:not([tabindex="-1"])')
+  if (focusable instanceof HTMLElement) {
+    focusable.focus({ preventScroll: true })
+  }
+}
+
+const buildHehunSubmitIssues = () => {
+  const issues = []
+
+  if (!form.maleBirthDate) {
+    issues.push({
+      key: 'male-birth',
+      actionLabel: `补充${getRoleLabel('male')}生日`,
+      message: `${getRoleLabel('male')}还缺出生日期信息。`,
+      selector: '[data-hehun-field="male-birth"]'
+    })
+  }
+
+  if (form.maleBirthPrecision === 'range' && !form.maleBirthTimeRange) {
+    issues.push({
+      key: 'male-range',
+      actionLabel: `选择${getRoleLabel('male')}时段`,
+      message: `当前是大概时段模式，还需要明确选择${getRoleLabel('male')}的出生时段。`,
+      selector: '[data-hehun-field="male-range"]'
+    })
+  }
+
+  if (!form.femaleBirthDate) {
+    issues.push({
+      key: 'female-birth',
+      actionLabel: `补充${getRoleLabel('female')}生日`,
+      message: `${getRoleLabel('female')}还缺出生日期信息。`,
+      selector: '[data-hehun-field="female-birth"]'
+    })
+  }
+
+  if (form.femaleBirthPrecision === 'range' && !form.femaleBirthTimeRange) {
+    issues.push({
+      key: 'female-range',
+      actionLabel: `选择${getRoleLabel('female')}时段`,
+      message: `当前是大概时段模式，还需要明确选择${getRoleLabel('female')}的出生时段。`,
+      selector: '[data-hehun-field="female-range"]'
+    })
+  }
+
+  return issues
+}
+
+const handleHehunIssue = (issue) => {
+  focusHehunField(issue?.selector)
+}
+
+const openHehunRecords = () => {
+  router.push('/profile')
+}
+
+const openRechargeCenter = () => {
+  router.push('/recharge')
+}
+
+const openDailySuggestion = () => {
+  router.push('/daily')
+}
+
+watch([
+  () => form.maleBirthDate,
+  () => form.maleBirthTimeRange,
+  () => form.maleBirthPrecision,
+  () => form.femaleBirthDate,
+  () => form.femaleBirthTimeRange,
+  () => form.femaleBirthPrecision,
+  () => form.useAi,
+  roleDisplayMode
+], () => {
+  if (hehunSubmitIssues.value.length) {
+    clearHehunSubmitIssues()
+  }
+})
 
 const escapeHtml = (value = '') => String(value)
   .replace(/&/g, '&amp;')
@@ -1464,9 +1662,13 @@ const syncHistorySelection = async (preferredId = null) => {
 
 // 提交表单（免费预览）
 const submitForm = async () => {
+  clearHehunSubmitIssues()
+  const issues = buildHehunSubmitIssues()
 
-  if (!isFormValid.value) {
-    ElMessage.warning('请完整填写双方出生信息；若选择“大概时段”，还需显式选择对应时段')
+  if (issues.length) {
+    hehunSubmitIssues.value = issues
+    handleHehunIssue(issues[0])
+    ElMessage.warning('提交前还有信息未完成，已帮你定位到第一个问题')
     return
   }
 
@@ -1932,22 +2134,168 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.role-mode-toggle {
+.strategy-summary-card,
+.submit-summary-card {
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--primary-light-20);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(255, 248, 232, 0.96));
+  box-shadow: 0 14px 28px rgba(var(--primary-rgb), 0.08);
+}
+
+.strategy-summary-card__header,
+.submit-summary-card__header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.strategy-summary-card__copy,
+.submit-summary-card__header div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.strategy-summary-card__eyebrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.strategy-summary-card__copy strong,
+.submit-summary-card__header strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.strategy-summary-card__copy p,
+.submit-summary-card__header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.strategy-summary-card__toggle {
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.strategy-summary-card__details,
+.submit-summary-card__actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.strategy-detail-item {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+}
+
+.strategy-detail-item strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.strategy-detail-item p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.submit-summary-card {
+  border-color: rgba(230, 162, 60, 0.24);
+  background: linear-gradient(135deg, rgba(255, 250, 242, 0.98), rgba(255, 245, 228, 0.98));
+}
+
+.submit-summary-card__header > .el-icon {
+  margin-top: 2px;
+  color: var(--warning-color);
+  font-size: 20px;
+}
+
+.submit-summary-card__action {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(230, 162, 60, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.submit-summary-card__action span {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.submit-summary-card__action small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.submit-summary-card__action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(230, 162, 60, 0.32);
+  box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.08);
+}
+
+.role-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 24px;
-  padding: 16px 18px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-rgb), 0.02));
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(255, 248, 232, 0.94));
   border: 1px solid var(--primary-light-20);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 28px rgba(var(--primary-rgb), 0.08);
+}
+
+.role-mode-toggle__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.role-mode-toggle__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.role-mode-toggle__eyebrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .role-mode-toggle strong {
   display: block;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin: 0;
+  font-size: 16px;
 }
 
 .role-mode-toggle p {
@@ -1955,6 +2303,70 @@ onMounted(() => {
   color: var(--text-tertiary);
   font-size: 13px;
   line-height: 1.6;
+}
+
+.role-mode-toggle__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid var(--primary-light-20);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.role-mode-group {
+  width: 100%;
+}
+
+.role-mode-group :deep(.el-radio-button),
+.role-mode-group :deep(.el-radio-button__inner) {
+  width: 100%;
+}
+
+.role-mode-group :deep(.el-radio-button__inner) {
+  min-height: 78px;
+  padding: 14px 16px;
+}
+
+.role-mode-group :deep(.el-radio-button:first-child .el-radio-button__inner),
+.role-mode-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: var(--radius-md);
+}
+
+.role-mode-group :deep(.el-radio-button__original-radio:focus-visible + .el-radio-button__inner) {
+  box-shadow: inset 0 0 0 1px var(--primary-color), var(--focus-ring);
+}
+
+.role-mode-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.role-mode-option__title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.role-mode-option__desc {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.role-mode-group :deep(.el-radio-button.is-active .role-mode-option__title) {
+  color: var(--primary-color);
+}
+
+.role-mode-group :deep(.el-radio-button.is-active .role-mode-option__desc) {
+  color: rgba(111, 74, 23, 0.84);
 }
 
 .person-section {
@@ -3036,12 +3448,39 @@ onMounted(() => {
 }
 
 /* 操作按钮 */
+.action-buttons-wrap {
+  margin-top: 28px;
+}
+
+.action-buttons-heading {
+  max-width: 720px;
+  margin: 0 auto 16px;
+  text-align: center;
+}
+
+.action-buttons-heading__eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.action-buttons-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .action-buttons {
   display: flex;
   gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 32px;
+  margin-top: 0;
 }
 
 .action-buttons :deep(.el-button) {
@@ -3050,8 +3489,9 @@ onMounted(() => {
 }
 
 .action-buttons--free {
-  margin-top: 20px;
+  margin-top: 0;
 }
+
 
 .btn-primary,
 .btn-secondary {
@@ -3320,12 +3760,22 @@ onMounted(() => {
     justify-content: flex-start;
   }
 
-  .role-mode-toggle {
+  .role-mode-toggle,
+  .role-mode-toggle__header {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .role-mode-toggle__status {
+    white-space: normal;
+  }
+
+  .role-mode-group :deep(.el-radio-button__inner) {
+    min-height: 64px;
+  }
   
   .form-card,
+
 
   .result-card {
     padding: 24px;

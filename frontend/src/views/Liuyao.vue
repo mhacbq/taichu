@@ -55,13 +55,24 @@
               >
                 <!-- 伏神显示 -->
                 <div v-if="result.fushen && result.fushen[index]" class="fushen-box">
-                   <span class="fushen-label">伏</span>
-                   <span class="fushen-name">{{ result.fushen[index].name }}</span>
-                   <span class="fushen-ganzhi">{{ result.fushen[index].ganzhi }}</span>
+                  <span class="fushen-label">伏神</span>
+                  <span class="fushen-name">{{ result.fushen[index].name }}</span>
+                  <span class="fushen-ganzhi">{{ result.fushen[index].ganzhi }}</span>
                 </div>
-                <span class="yao-mark">{{ getYaoMark(yao) }}</span>
-                <span class="yao-bar"></span>
-                <span class="yao-name">{{ result.yao_names[index] }}</span>
+                <div class="yao-line__meta">
+                  <span class="yao-line__index">{{ yaoResultLineLabels[index] }}</span>
+                  <span class="yao-line__type">{{ getYaoName(yao) }}</span>
+                </div>
+                <div class="yao-line__visual">
+                  <span class="yao-mark" :class="{ 'yao-mark--quiet': !getYaoMark(yao) }">{{ getYaoMark(yao) || '•' }}</span>
+                  <span class="yao-bar" aria-hidden="true"></span>
+                  <span v-if="isMovingYao(yao)" class="moving-badge">动爻</span>
+                </div>
+                <div class="yao-line__info">
+                  <span class="yao-name">{{ result.yao_names[index] }}</span>
+                  <span class="yao-line__state">{{ isYangYao(yao) ? '阳爻' : '阴爻' }} · {{ isMovingYao(yao) ? '动爻' : '静爻' }}</span>
+                </div>
+
               </div>
             </div>
           </div>
@@ -75,6 +86,13 @@
               </span>
             </div>
 
+            <div v-if="result.moving_line_details.length" class="moving-line-list">
+              <div v-for="line in result.moving_line_details" :key="`moving-${line.position}`" class="moving-line-card">
+                <span class="moving-line-card__title">第{{ line.position }}爻 · {{ line.change_summary }}</span>
+                <span v-if="formatMovingLineMeta(line)" class="moving-line-card__meta">{{ formatMovingLineMeta(line) }}</span>
+              </div>
+            </div>
+
             <div v-if="result.line_details.length" class="line-detail-list">
               <div v-for="line in result.line_details" :key="line.position" class="line-detail-card">
                 <div class="line-detail-card__header">
@@ -86,11 +104,15 @@
                   </div>
                 </div>
                 <div class="line-detail-card__meta">
+                  <span>{{ line.yin_yang }} · {{ line.change_summary }}</span>
                   <span v-if="line.liuqin">六亲：{{ line.liuqin }}</span>
                   <span v-if="line.liushen">六神：{{ line.liushen }}</span>
+                  <span v-if="line.di_zhi">纳甲：{{ line.di_zhi }}</span>
+                  <span v-if="line.fushen?.name">伏神：{{ line.fushen.name }}<template v-if="line.fushen.ganzhi"> · {{ line.fushen.ganzhi }}</template></span>
                 </div>
               </div>
             </div>
+
           </div>
 
           <!-- 卦辞 -->
@@ -124,20 +146,13 @@
 
 
           <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <el-button type="info" round size="large" @click="resetForm">
-              <el-icon><RefreshRight /></el-icon> 再次占卜
-            </el-button>
-            <div class="saved-status" :class="{ 'saved-status--history': result.is_history }" role="status" aria-live="polite">
-              <el-icon><Collection v-if="result.is_history" /><CircleCheckFilled v-else /></el-icon>
-              <span>{{ savedStatusText }}</span>
-            </div>
-            <el-button v-if="historyLoaded || historyLoading || historyError" round size="large" @click="openHistoryDialog($event)">
-              <el-icon><Collection /></el-icon> {{ historyTriggerText }}
-            </el-button>
+          <ResultNextSteps
+            description="这次结果已经自动存进历史，下一步可以回看记录、补积分，或切到别的服务换个视角继续判断。"
+            :highlights="liuyaoResultHighlights"
+            :actions="liuyaoResultActions"
+            :recommendations="liuyaoRelatedRecommendations"
+          />
 
-
-          </div>
         </div>
       </div>
 
@@ -147,7 +162,7 @@
           <h2>心诚则灵</h2>
           <p class="form-tip">请静心思考您要询问的问题，问题越具体，占卜结果越准确</p>
 
-          <div class="form-group">
+          <div class="form-group" data-liuyao-field="question">
             <label>您的问题 <span class="required">*</span></label>
             <el-input
               v-model="form.question"
@@ -178,7 +193,7 @@
             <p class="helper-card__desc">将按当前北京时间 {{ currentBeijingTime }} 自动起卦，无需额外输入数字或摇卦结果。</p>
           </div>
 
-          <div v-else-if="form.method === 'number'" class="helper-card">
+          <div v-else-if="form.method === 'number'" class="helper-card" data-liuyao-field="number-method">
             <p class="helper-card__title">数字起卦</p>
             <p class="helper-card__desc">请输入 1-999 的数字。单数字可只填第一个，双数字会按上下卦分别计算。</p>
             <div class="input-grid input-grid--double">
@@ -193,7 +208,7 @@
             </div>
           </div>
 
-          <div v-else class="helper-card">
+          <div v-else class="helper-card" data-liuyao-field="manual-method">
             <p class="helper-card__title">手动摇卦</p>
             <p class="helper-card__desc">请按从初爻到上爻的顺序，依次录入 6 次摇卦结果。</p>
             <div class="manual-grid">
@@ -261,7 +276,8 @@
           </div>
 
           <!-- 定价信息 -->
-          <div class="pricing-info" v-if="pricingLoading || pricing || pricingError">
+          <div class="pricing-info" v-if="pricingLoading || pricing || pricingError" data-liuyao-field="pricing">
+
             <div v-if="pricingLoading" class="pricing-loading">
               <span>正在同步当前占卜价格...</span>
             </div>
@@ -283,12 +299,34 @@
             </div>
           </div>
 
+          <section v-if="submitErrors.length" class="submit-summary-card" role="alert" aria-live="assertive">
+            <div class="submit-summary-card__header">
+              <div>
+                <strong>提交前还差这几步</strong>
+                <p>{{ submitSummaryText }}</p>
+              </div>
+              <el-icon><MagicStick /></el-icon>
+            </div>
+            <div class="submit-summary-card__actions">
+              <button
+                v-for="issue in submitErrors"
+                :key="issue.key"
+                type="button"
+                class="submit-summary-card__action"
+                @click="handleSubmitIssue(issue)"
+              >
+                <span>{{ issue.actionLabel }}</span>
+                <small>{{ issue.message }}</small>
+              </button>
+            </div>
+          </section>
+
           <el-button
             type="primary"
             size="large"
             class="btn-submit"
             @click="submitDivination"
-            :disabled="isLoading || !canSubmitDivination"
+            :disabled="isLoading"
             :loading="isLoading"
           >
             <template #icon v-if="!isLoading">
@@ -359,11 +397,15 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { RefreshRight, Delete, MagicStick, Present, Trophy, CircleCheckFilled, Collection, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
-import BackButton from '../components/BackButton.vue'
+import ResultNextSteps from '../components/ResultNextSteps.vue'
+
+
+
 
 
 const methodOptions = [
@@ -374,7 +416,9 @@ const methodOptions = [
 
 const questionTypeOptions = ['求财', '感情', '事业', '健康', '学业', '出行', '其他']
 const yaoLineLabels = ['初爻（下）', '二爻', '三爻', '四爻', '五爻', '上爻（上）']
+const yaoResultLineLabels = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻']
 const yaoValueOptions = [
+
   { label: '老阴（6）', value: 6 },
   { label: '少阳（7）', value: 7 },
   { label: '少阴（8）', value: 8 },
@@ -383,8 +427,10 @@ const yaoValueOptions = [
 const tianGanOptions = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸']
 const diZhiOptions = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 const yaoNameMap = ['老阴', '少阳', '少阴', '老阳']
+const router = useRouter()
 
 const createDefaultForm = () => ({
+
   question: '',
   useAi: true,
   method: 'time',
@@ -409,7 +455,7 @@ const history = ref([])
 const historyLoading = ref(false)
 const historyLoaded = ref(false)
 const historyError = ref('')
-const submitError = ref('')
+const submitErrors = ref([])
 const showHistory = ref(false)
 const showAdvancedSettings = ref(false)
 const historyListRef = ref(null)
@@ -436,29 +482,108 @@ const currentMethodDescription = computed(() => {
   return methodOptions.find((item) => item.value === form.method)?.description || ''
 })
 
-const canSubmit = computed(() => {
-  if (!form.question.trim()) {
-    return false
+const clearSubmitErrors = () => {
+  submitErrors.value = []
+}
+
+const focusLiuyaoField = async (selector) => {
+  if (!selector) {
+    return
   }
 
-  if (form.method === 'number') {
-    return Number.isFinite(form.numbers[0])
+  await nextTick()
+  const target = document.querySelector(selector)
+  if (!(target instanceof HTMLElement)) {
+    return
   }
 
-  if (form.method === 'manual') {
-    return form.yaoResults.every((item) => Number.isFinite(item))
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const focusable = target.querySelector('input, textarea, button, [tabindex]:not([tabindex="-1"])')
+  if (focusable instanceof HTMLElement) {
+    focusable.focus({ preventScroll: true })
+  }
+}
+
+const handleSubmitIssue = (issue) => {
+  if (issue?.handler) {
+    issue.handler()
+    return
   }
 
-  return true
+  if (issue?.route) {
+    router.push(issue.route)
+    return
+  }
+
+  focusLiuyaoField(issue?.selector)
+}
+
+const buildSubmitIssues = () => {
+  const issues = []
+  const trimmedQuestion = form.question.trim()
+
+  if (pricingLoading.value) {
+    issues.push({
+      key: 'pricing-loading',
+      actionLabel: '等待价格同步',
+      message: '正在同步当前占卜价格，等价格卡片刷新后再提交更稳。',
+      selector: '[data-liuyao-field="pricing"]'
+    })
+  } else if (pricingError.value || !pricing.value) {
+    issues.push({
+      key: 'pricing-error',
+      actionLabel: '重新获取价格',
+      message: pricingError.value || '当前价格信息还没同步成功，先刷新后再提交。',
+      handler: () => loadPricing(),
+      selector: '[data-liuyao-field="pricing"]'
+    })
+  }
+
+  if (!trimmedQuestion) {
+    issues.push({
+      key: 'question-empty',
+      actionLabel: '先写下你的问题',
+      message: '六爻更适合问一件具体的事，先把问题补充完整。',
+      selector: '[data-liuyao-field="question"]'
+    })
+  } else if (trimmedQuestion.length < 2) {
+    issues.push({
+      key: 'question-short',
+      actionLabel: '把问题写具体一点',
+      message: '问题至少写到 2 个字，越具体越容易得到可判断的结果。',
+      selector: '[data-liuyao-field="question"]'
+    })
+  }
+
+  if (form.method === 'number' && !Number.isFinite(form.numbers[0])) {
+    issues.push({
+      key: 'number-method',
+      actionLabel: '补第一个数字',
+      message: '数字起卦至少需要先填写第一个 1-999 的数字。',
+      selector: '[data-liuyao-field="number-method"]'
+    })
+  }
+
+  if (form.method === 'manual' && form.yaoResults.some((item) => !Number.isFinite(item))) {
+    issues.push({
+      key: 'manual-method',
+      actionLabel: '补齐 6 次摇卦结果',
+      message: '手动摇卦需要从初爻到上爻依次填满 6 次结果。',
+      selector: '[data-liuyao-field="manual-method"]'
+    })
+  }
+
+  return issues
+}
+
+const submitSummaryText = computed(() => {
+  if (!submitErrors.value.length) {
+    return ''
+  }
+
+  return `已整理出 ${submitErrors.value.length} 个待处理项，点一下即可直接定位。`
 })
 
-const isPricingReady = computed(() => {
-  return !pricingLoading.value && !pricingError.value && Boolean(pricing.value)
-})
-
-const canSubmitDivination = computed(() => {
-  return canSubmit.value && isPricingReady.value
-})
 
 const submitButtonText = computed(() => {
   if (pricingLoading.value) {
@@ -526,7 +651,22 @@ watch(showHistory, (visible) => {
   }
 })
 
+watch([
+  () => form.question,
+  () => form.method,
+  () => form.numbers[0],
+  () => form.numbers[1],
+  () => form.yaoResults.join(','),
+  pricingLoading,
+  pricingError
+], () => {
+  if (submitErrors.value.length) {
+    clearSubmitErrors()
+  }
+})
+
 const formatDateTime = (dateStr) => {
+
 
   const rawValue = typeof dateStr === 'string' ? dateStr.trim() : ''
   if (!rawValue) {
@@ -690,7 +830,66 @@ const normalizeAiAnalysis = (value) => {
   return null
 }
 
+const normalizeFushen = (value) => {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const name = String(value.name || '').trim()
+  const ganzhi = String(value.ganzhi || '').trim()
+  if (!name && !ganzhi) {
+    return null
+  }
+
+  return { name, ganzhi }
+}
+
+const getYinYangLabel = (value) => (isYangYao(value) ? '阳爻' : '阴爻')
+
+const describeLineChange = (line = {}) => {
+  const fromName = line.name || getYaoName(line.value)
+  const toName = line.bian_name || getYaoName(line.bian_value ?? line.value)
+  return line.is_moving ? `${fromName} → ${toName}` : '静爻不变'
+}
+
+const formatMovingLineMeta = (line = {}) => {
+  return [
+    line.liuqin ? `六亲：${line.liuqin}` : '',
+    line.liushen ? `六神：${line.liushen}` : '',
+    line.di_zhi ? `纳甲：${line.di_zhi}` : '',
+  ].filter(Boolean).join(' ｜ ')
+}
+
+const normalizeLineDetail = (line = {}, index = 0, fallbackValue = 1, liuqinMap = {}, liushenMap = {}, shiYing = {}, movingPositions = []) => {
+  const position = Number(line.position || index + 1)
+  const value = normalizeYaoCode(line.value ?? fallbackValue)
+  const bianValue = normalizeYaoCode(line.bian_value ?? value)
+  const isMoving = line.is_moving !== undefined ? Boolean(line.is_moving) : movingPositions.includes(position)
+  const normalized = {
+    position,
+    value,
+    name: line.name || getYaoName(value),
+    yin_yang: line.yin_yang || getYinYangLabel(value),
+    is_yang: line.is_yang !== undefined ? Boolean(line.is_yang) : isYangYao(value),
+    liuqin: line.liuqin || liuqinMap[String(position)] || liuqinMap[position] || '',
+    liushen: line.liushen || liushenMap[String(position)] || liushenMap[position] || '',
+    di_zhi: line.di_zhi || '',
+    bian_value: bianValue,
+    bian_name: line.bian_name || getYaoName(bianValue),
+    bian_yin_yang: line.bian_yin_yang || getYinYangLabel(bianValue),
+    bian_is_yang: line.bian_is_yang !== undefined ? Boolean(line.bian_is_yang) : isYangYao(bianValue),
+    change_summary: line.change_summary || '',
+    is_moving: isMoving,
+    is_shi: line.is_shi !== undefined ? Boolean(line.is_shi) : Number(shiYing.shi || 0) === position,
+    is_ying: line.is_ying !== undefined ? Boolean(line.is_ying) : Number(shiYing.ying || 0) === position,
+    fushen: normalizeFushen(line.fushen),
+  }
+  normalized.change_summary = normalized.change_summary || describeLineChange(normalized)
+  return normalized
+}
+
 const normalizeResult = (data = {}, isHistory = false) => {
+
   const gua = data.gua || {}
   const bianGua = data.bian_gua || {}
   const huGua = data.hu_gua || {}
@@ -700,28 +899,14 @@ const normalizeResult = (data = {}, isHistory = false) => {
   const shiYing = (data.shi_ying && typeof data.shi_ying === 'object') ? data.shi_ying : {}
   const dongYao = Array.isArray(bianGua.dong_yao) ? bianGua.dong_yao.map((item) => Number(item)) : []
   const lineDetails = Array.isArray(data.line_details) && data.line_details.length
-    ? data.line_details.map((line, index) => ({
-      position: Number(line.position || index + 1),
-      value: normalizeYaoCode(line.value ?? yaoResult[index] ?? 1),
-      name: line.name || getYaoName(line.value ?? yaoResult[index] ?? 1),
-      liuqin: line.liuqin || liuqinMap[String(line.position || index + 1)] || liuqinMap[line.position || index + 1] || '',
-      liushen: line.liushen || liushenMap[String(line.position || index + 1)] || liushenMap[line.position || index + 1] || '',
-      is_moving: Boolean(line.is_moving),
-      is_shi: Boolean(line.is_shi),
-      is_ying: Boolean(line.is_ying),
-    }))
-    : yaoResult.map((item, index) => ({
-      position: index + 1,
-      value: item,
-      name: getYaoName(item),
-      liuqin: liuqinMap[String(index + 1)] || liuqinMap[index + 1] || '',
-      liushen: liushenMap[String(index + 1)] || liushenMap[index + 1] || '',
-      is_moving: dongYao.includes(index + 1),
-      is_shi: Number(shiYing.shi || 0) === index + 1,
-      is_ying: Number(shiYing.ying || 0) === index + 1,
-    }))
+    ? data.line_details.map((line, index) => normalizeLineDetail(line, index, yaoResult[index] ?? 1, liuqinMap, liushenMap, shiYing, dongYao))
+    : yaoResult.map((item, index) => normalizeLineDetail({ value: item }, index, item, liuqinMap, liushenMap, shiYing, dongYao))
+  const movingLineDetails = Array.isArray(data.moving_line_details) && data.moving_line_details.length
+    ? data.moving_line_details.map((line, index) => normalizeLineDetail(line, index, line.value ?? yaoResult[index] ?? 1, liuqinMap, liushenMap, shiYing, dongYao))
+    : lineDetails.filter((line) => line.is_moving)
 
   return {
+
     id: data.id,
     question: data.question || '',
     method: data.method || '',
@@ -754,7 +939,9 @@ const normalizeResult = (data = {}, isHistory = false) => {
       ? data.yong_shen
       : { liuqin: data.yongshen || '' },
     line_details: lineDetails,
+    moving_line_details: movingLineDetails,
     interpretation: data.interpretation || '',
+
     ai_analysis: normalizeAiAnalysis(data.ai_analysis || data.ai_interpretation),
     points_cost: Number(data.points_cost ?? data.consumed_points ?? 0) || 0,
     remaining_points: data.remaining_points ?? null,
@@ -844,33 +1031,12 @@ const buildDivinationPayload = () => {
 
 // 提交占卜
 const submitDivination = async () => {
-  if (pricingLoading.value) {
-    ElMessage.warning('占卜价格还在同步，请稍候再试')
-    return
-  }
+  clearSubmitErrors()
+  const issues = buildSubmitIssues()
 
-  if (pricingError.value || !pricing.value) {
-    ElMessage.warning(pricingError.value || '请先重新获取价格后再提交占卜')
-    return
-  }
-
-  if (!form.question.trim()) {
-    ElMessage.warning('请输入占卜问题')
-    return
-  }
-
-  if (form.question.trim().length < 2) {
-    ElMessage.warning('问题太短了，请详细描述您的问题')
-    return
-  }
-
-  if (form.method === 'number' && !Number.isFinite(form.numbers[0])) {
-    ElMessage.warning('数字起卦至少需要填写第一个数字')
-    return
-  }
-
-  if (form.method === 'manual' && form.yaoResults.some((item) => !Number.isFinite(item))) {
-    ElMessage.warning('请完整填写 6 次摇卦结果')
+  if (issues.length) {
+    submitErrors.value = issues
+    handleSubmitIssue(issues[0])
     return
   }
 
@@ -878,8 +1044,8 @@ const submitDivination = async () => {
   try {
     const response = await liuyaoDivination(buildDivinationPayload())
 
-
     if (response.code === 200) {
+      clearSubmitErrors()
       result.value = normalizeResult(response.data, false)
       await loadHistory()
       await loadPricing()
@@ -893,16 +1059,108 @@ const submitDivination = async () => {
   }
 }
 
+
 // 重置表单
 const resetForm = () => {
+  clearSubmitErrors()
   Object.assign(form, createDefaultForm())
   result.value = null
   loadPricing()
 }
 
 
+const shouldShowLiuyaoRechargeAction = computed(() => {
+  const remaining = Number(result.value?.remaining_points)
+  const cost = Number(pricing.value?.cost ?? 0)
+  return Number.isFinite(remaining) && Number.isFinite(cost) && cost > 0 && remaining < cost
+})
+
+const liuyaoResultHighlights = computed(() => {
+  const highlights = [
+    {
+      key: 'saved-status',
+      label: savedStatusText.value,
+      tone: result.value?.is_history ? '' : 'success',
+    },
+    {
+      key: 'cost',
+      label: result.value?.points_cost > 0 ? `本次消耗 ${result.value.points_cost} 积分` : '本次免费',
+      tone: result.value?.points_cost > 0 ? 'warning' : '',
+    },
+  ]
+
+  if (shouldShowRemainingPoints.value) {
+    highlights.push({
+      key: 'remaining',
+      label: `剩余 ${result.value.remaining_points} 积分`,
+      tone: shouldShowLiuyaoRechargeAction.value ? 'danger' : '',
+    })
+  }
+
+  if (result.value?.ai_analysis) {
+    highlights.push({
+      key: 'ai',
+      label: '含 AI 深度分析',
+    })
+  }
+
+  return highlights
+})
+
+const liuyaoResultActions = computed(() => {
+  return [
+    historyLoaded.value || historyLoading.value || historyError.value
+      ? {
+          key: 'history',
+          label: historyTriggerText.value,
+          type: 'primary',
+          onClick: () => openHistoryDialog(),
+        }
+      : null,
+    {
+      key: 'profile',
+      label: '查看我的积分',
+      to: '/profile',
+    },
+    shouldShowLiuyaoRechargeAction.value
+      ? {
+          key: 'recharge',
+          label: '去充值 / 补积分',
+          plain: true,
+          to: '/recharge',
+        }
+      : null,
+    {
+      key: 'retry',
+      label: '再次占卜',
+      plain: true,
+      onClick: resetForm,
+    },
+  ].filter(Boolean)
+})
+
+const liuyaoRelatedRecommendations = computed(() => {
+  return [
+    {
+      key: 'tarot',
+      title: '换成塔罗再看一层',
+      description: '如果你想把当前问事换成更偏情绪与关系的视角，可以顺手切到塔罗继续问。',
+      to: '/tarot',
+      badge: '相关推荐',
+    },
+    {
+      key: 'daily',
+      title: '看看今日运势',
+      description: '把六爻判断和当天整体节奏放一起看，方便决定是马上行动还是先等等。',
+      to: '/daily',
+      badge: '继续承接',
+    },
+  ]
+})
+
 
 // 加载历史记录详情
+
 const loadHistoryDetail = (item) => {
   result.value = normalizeResult(item, true)
   showHistory.value = false
@@ -1461,111 +1719,146 @@ onUnmounted(() => {
 .yao-container {
   display: flex;
   flex-direction: column-reverse; /* 从下往上排 */
-  gap: 20px;
+  gap: 16px;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 30px 40px;
-  border-radius: 20px;
-  border: 1px solid var(--primary-light-15);
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(180deg, rgba(13, 11, 7, 0.88), rgba(5, 5, 5, 0.72));
+  padding: 28px 32px;
+  border-radius: 24px;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 36px rgba(0, 0, 0, 0.45);
 }
 
 .yao-line {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 25px;
-  padding: 8px 20px;
-  border-radius: 12px;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 1px solid transparent;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(212, 175, 55, 0.05));
 }
 
-
 .yao-line:hover {
-  background: var(--primary-light-10);
-  transform: translateX(-10px) scale(1.05);
-  border-color: var(--primary-light-30);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  background: rgba(212, 175, 55, 0.09);
+  transform: translateX(-4px);
+  border-color: rgba(212, 175, 55, 0.28);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
 }
 
 .yao-line.moving {
-  position: relative;
-  background: var(--primary-light-05);
-  animation: moving-glow 2s ease-in-out infinite;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(255, 255, 255, 0.05));
+  border-color: rgba(212, 175, 55, 0.36);
+  animation: moving-glow 2.4s ease-in-out infinite;
 }
 
 @keyframes moving-glow {
-  0%, 100% { box-shadow: 0 0 5px var(--primary-light-20); }
-  50% { box-shadow: 0 0 15px var(--primary-light-40); }
+  0%, 100% { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.08), 0 10px 24px rgba(0, 0, 0, 0.18); }
+  50% { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.18), 0 18px 34px rgba(0, 0, 0, 0.26); }
 }
 
-.yao-line.moving::before {
-  content: '动';
-  position: absolute;
-  left: -35px;
-  color: var(--primary-color);
-  font-size: 12px;
-  font-weight: 800;
-  background: var(--primary-light-10);
-  width: 24px;
-  height: 24px;
+.yao-line__main {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.yao-line__meta {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid var(--primary-color);
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0.7; }
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .yao-mark {
-  width: 40px;
-  text-align: center;
-  font-size: 28px;
-  color: var(--primary-light);
-  font-weight: 900;
-  filter: drop-shadow(0 0 8px var(--primary-color));
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 20px;
+  color: var(--primary-color);
+  font-weight: 800;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.yao-mark--placeholder {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  opacity: 0.6;
 }
 
 .yao-bar {
-  width: 140px;
-  height: 14px;
-  border-radius: 7px;
-  position: relative;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 140px;
 }
 
-.yao-line.yang .yao-bar {
-  background: linear-gradient(90deg, #8B6914 0%, #D4AF37 20%, #FFF3D1 50%, #D4AF37 80%, #8B6914 100%);
-  border: 1px solid var(--primary-light-40);
+.yao-bar__segment {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(110, 84, 19, 0.96) 0%, rgba(212, 175, 55, 0.96) 44%, rgba(255, 243, 209, 0.98) 50%, rgba(212, 175, 55, 0.96) 56%, rgba(110, 84, 19, 0.96) 100%);
+  border: 1px solid rgba(255, 235, 180, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 16px rgba(0, 0, 0, 0.18);
 }
 
-.yao-line.yin .yao-bar::before,
-.yao-line.yin .yao-bar::after {
-  content: '';
-  position: absolute;
-  width: 42%;
-  height: 100%;
-  background: linear-gradient(90deg, #2D2209 0%, #8B6914 20%, #B8860B 50%, #8B6914 80%, #2D2209 100%);
-  border-radius: 7px;
-  border: 1px solid var(--primary-light-20);
+.yao-bar__segment--full {
+  width: 100%;
 }
 
-.yao-line.yin .yao-bar::after {
-  right: 0;
+.yao-line.yang .yao-bar__segment--full {
+  flex: 1;
+}
+
+.yao-line.yin .yao-bar__segment {
+  flex: 1;
+  min-width: 0;
+}
+
+.yao-bar__gap {
+  width: 18px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.16);
 }
 
 .yao-name {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 14px;
-  min-width: 60px;
-  font-weight: 500;
+  min-width: 72px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-align: right;
+}
+
+.yao-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.yao-badge--moving {
+  color: var(--primary-color);
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.28);
 }
 
 /* 伏神样式 */
@@ -1642,7 +1935,36 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+.moving-line-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.moving-line-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+.moving-line-card__title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.moving-line-card__meta {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .line-detail-list {
+
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
@@ -2015,7 +2337,7 @@ onUnmounted(() => {
   .gua-decoration,
   .yao-line,
   .yao-line.moving,
-  .yao-line.moving::before,
+  .yao-line.moving,
   .btn-submit,
   .delete-btn {
     animation: none !important;
@@ -2079,35 +2401,22 @@ onUnmounted(() => {
   .yao-container {
     width: 100%;
     padding: 18px 16px;
-    gap: 14px;
+    gap: 12px;
   }
 
   .yao-line {
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 10px;
     padding: 12px 14px;
-    flex-wrap: wrap;
-    row-gap: 10px;
   }
 
   .yao-line:hover {
     transform: none;
   }
 
-  .yao-line.moving::before {
-    left: auto;
-    right: 12px;
-    top: 10px;
-  }
-
   .fushen-box {
-    position: static;
-    flex-direction: row;
-    flex-basis: 100%;
-    justify-content: flex-start;
-    gap: 6px;
     min-width: 0;
     padding: 6px 10px;
-    margin-bottom: 2px;
   }
 
   .fushen-label,
@@ -2116,23 +2425,42 @@ onUnmounted(() => {
     font-size: 12px;
   }
 
+  .yao-line__meta,
+  .yao-line__info {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .yao-line__visual {
+    width: 100%;
+    gap: 10px;
+  }
+
   .yao-mark {
-    width: 24px;
-    font-size: 22px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .yao-mark--quiet {
+    font-size: 14px;
   }
 
   .yao-bar {
-    flex: 1;
-    min-width: 96px;
-    width: auto;
+    min-width: 0;
+  }
+
+  .moving-badge {
+    padding: 4px 8px;
+    font-size: 11px;
   }
 
   .yao-name {
-    min-width: auto;
-    margin-left: auto;
-    text-align: right;
     font-size: 13px;
   }
+
 
   .history-item {
     flex-direction: column;

@@ -22,8 +22,10 @@
         <div class="points-hint" :class="{ 'points-hint--loading': accountStatus === 'loading', 'points-hint--error': accountStatus === 'error' }">
           <el-icon class="hint-icon"><Coin /></el-icon>
           <span v-if="accountStatus === 'loading'">正在查询账户与价格信息...</span>
-          <span v-else-if="accountStatus === 'error'">账户与价格暂不可用，确认前不展示消费承诺</span>
+          <span v-else-if="accountStatus === 'guest'">登录后可查看当前积分与排盘说明；填写完信息后，提交前会再次确认。</span>
+          <span v-else-if="accountStatus === 'error'">当前账户信息还没同步成功，先重新获取一下即可继续。</span>
           <template v-else>
+
             <span>
               <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
               <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
@@ -33,74 +35,127 @@
           <el-button v-if="accountStatus === 'error'" link type="primary" class="points-retry" @click="loadPoints()">重新获取</el-button>
         </div>
 
+        <div class="strategy-summary-card">
+          <div class="strategy-summary-card__header">
+            <div class="strategy-summary-card__copy">
+              <span class="strategy-summary-card__eyebrow">填写策略</span>
+              <strong>{{ baziStrategySummary }}</strong>
+              <p>先按当前记忆精度完成一次排盘，细节说明需要时再展开看，不把首屏挤成说明书。</p>
+            </div>
+            <el-button link type="primary" class="strategy-summary-card__toggle" @click="baziStrategyExpanded = !baziStrategyExpanded">
+              {{ baziStrategyExpanded ? '收起详情' : '查看详情' }}
+            </el-button>
+          </div>
+          <div v-if="baziStrategyExpanded" class="strategy-summary-card__details">
+            <article v-for="item in baziStrategyDetails" :key="item.key" class="strategy-detail-item">
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.description }}</p>
+            </article>
+          </div>
+        </div>
+
         <!-- 简版/专业版切换 -->
         <div class="version-toggle">
-          <span class="toggle-label">排盘模式：</span>
-          <el-radio-group v-model="versionMode" size="small" class="premium-segment premium-segment--compact">
+          <div class="version-toggle__header">
+            <div class="version-toggle__copy">
+              <span class="version-toggle__eyebrow">排盘模式</span>
+              <h3 class="version-toggle__title">选择这次想看的解读深度</h3>
+            </div>
+            <span class="version-toggle__status">{{ versionMode === 'pro' ? '当前：专业版' : '当前：简化版' }}</span>
+          </div>
+          <el-radio-group v-model="versionMode" size="small" class="version-toggle__group premium-segment premium-segment--card">
             <el-radio-button label="simple">
-              <span class="mode-option">
-                <el-icon class="mode-icon"><MagicStick /></el-icon>
-
-                简化版
+              <span class="mode-option mode-option--stacked">
+                <span class="mode-option__title">
+                  <el-icon class="mode-icon"><MagicStick /></el-icon>
+                  简化版
+                </span>
+                <small class="mode-option__desc">快速查看命局轮廓与核心提示</small>
               </span>
             </el-radio-button>
             <el-radio-button label="pro">
-              <span class="mode-option">
-                <el-icon class="mode-icon"><Coin /></el-icon>
-                专业版
+              <span class="mode-option mode-option--stacked">
+                <span class="mode-option__title">
+                  <el-icon class="mode-icon"><Coin /></el-icon>
+                  专业版
+                </span>
+                <small class="mode-option__desc">补充更多结构信息与进阶分析</small>
               </span>
             </el-radio-button>
           </el-radio-group>
           <p class="version-hint">{{ versionHint }}</p>
         </div>
 
-        <div class="form-group">
-          <label>出生日期与时间</label>
+        <div class="form-group form-group--time" data-bazi-field="birth-time">
+          <div class="form-group__header form-group__header--time">
+            <label>出生日期与时间</label>
+            <span class="form-group__status">{{ birthTimeAccuracy === 'exact' ? '精确排盘' : '估算模式' }}</span>
+          </div>
           <div class="time-accuracy-switch">
-            <span class="switch-label">时间确认度</span>
-            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group premium-segment premium-segment--compact">
-              <el-radio-button label="exact">精确到分钟</el-radio-button>
-              <el-radio-button label="estimated">大概时段 / 未知时辰</el-radio-button>
+            <div class="time-accuracy-switch__copy">
+              <span class="switch-label">时间确认度</span>
+              <p class="time-accuracy-switch__hint">先选你记忆的准确程度，再填写对应时间信息。</p>
+            </div>
+            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group premium-segment premium-segment--card">
+              <el-radio-button label="exact">
+                <span class="precision-option">
+                  <span class="precision-option__title">精确到分钟</span>
+                  <small class="precision-option__desc">适合已知完整出生时刻</small>
+                </span>
+              </el-radio-button>
+              <el-radio-button label="estimated">
+                <span class="precision-option">
+                  <span class="precision-option__title">大概时段 / 未知时辰</span>
+                  <small class="precision-option__desc">只记得白天、晚上或完全不记得</small>
+                </span>
+              </el-radio-button>
             </el-radio-group>
           </div>
 
-          <template v-if="birthTimeAccuracy === 'exact'">
-            <el-date-picker
-              v-model="exactBirthDate"
-              type="datetime"
-              placeholder="选择出生日期时间（精确到分钟）"
-              format="YYYY-MM-DD HH:mm"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              class="full-width"
-            />
-            <p class="form-hint">建议填写准确出生时间；若只记得大概时段，可切换为估算模式，结果页会同步标记时刻精度。</p>
-          </template>
-
-          <template v-else>
-            <div class="estimate-birth-grid">
-              <el-date-picker
-                v-model="estimatedBirthDate"
-                type="date"
-                placeholder="选择出生日期"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-                class="full-width"
-              />
-              <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段或未知时辰" class="full-width" clearable>
-                <el-option
-                  v-for="option in estimatedTimeOptions"
-                  :key="option.value"
-                  :label="option.label"
-                  :value="option.value"
-                />
-              </el-select>
+          <div class="time-entry-panel" :class="`time-entry-panel--${birthTimeAccuracy}`">
+            <div class="time-entry-panel__header">
+              <span class="time-entry-panel__badge">{{ birthTimeAccuracy === 'exact' ? '精确填写' : '估算填写' }}</span>
+              <p class="time-entry-panel__title">{{ birthTimeAccuracy === 'exact' ? '请选择出生时间' : '请选择出生日期与大概时段' }}</p>
             </div>
-            <p class="form-hint form-hint--precision"><el-icon><Warning /></el-icon> {{ estimatedModeHint }}</p>
-          </template>
+
+            <template v-if="birthTimeAccuracy === 'exact'">
+              <el-date-picker
+                v-model="exactBirthDate"
+                type="datetime"
+                placeholder="选择出生日期时间（精确到分钟）"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                class="full-width time-entry-panel__control"
+              />
+              <p class="form-hint time-entry-panel__hint">精确到分钟时，命盘细节最完整；若记不清，可先切到估算模式。</p>
+            </template>
+
+            <template v-else>
+              <div class="estimate-birth-grid time-entry-panel__grid">
+                <el-date-picker
+                  v-model="estimatedBirthDate"
+                  type="date"
+                  placeholder="选择出生日期"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  class="full-width time-entry-panel__control"
+                />
+                <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段或未知时辰" class="full-width time-entry-panel__control" clearable>
+                  <el-option
+                    v-for="option in estimatedTimeOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
+              </div>
+              <p class="form-hint form-hint--precision time-entry-panel__hint"><el-icon><Warning /></el-icon> {{ estimatedModeHint }}</p>
+            </template>
+          </div>
 
         </div>
         
-        <div class="form-group">
+        <div class="form-group" data-bazi-field="gender">
           <label>性别</label>
           <el-radio-group v-model="gender">
             <el-radio label="male">男</el-radio>
@@ -108,7 +163,7 @@
           </el-radio-group>
         </div>
         
-        <div class="form-group" v-if="versionMode === 'pro'">
+        <div class="form-group" v-if="versionMode === 'pro'" data-bazi-field="location">
           <label>
             出生地点
             <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
@@ -124,15 +179,37 @@
             clearable
             :height="200"
           />
-          <p class="form-hint"><el-icon><MagicStick /></el-icon> 不知道出生地可以跳过，默认使用北京时间</p>
+          <p class="form-hint"><el-icon><MagicStick /></el-icon> 出生地可先留空，系统会默认按北京时间排盘。</p>
         </div>
+
+        <section v-if="baziSubmitIssues.length" class="submit-summary-card" role="alert" aria-live="assertive">
+          <div class="submit-summary-card__header">
+            <div>
+              <strong>提交前还差这几步</strong>
+              <p>{{ baziSubmitSummaryText }}</p>
+            </div>
+            <el-icon><Warning /></el-icon>
+          </div>
+          <div class="submit-summary-card__actions">
+            <button
+              v-for="issue in baziSubmitIssues"
+              :key="issue.key"
+              type="button"
+              class="submit-summary-card__action"
+              @click="handleBaziIssue(issue)"
+            >
+              <span>{{ issue.actionLabel }}</span>
+              <small>{{ issue.message }}</small>
+            </button>
+          </div>
+        </section>
         
         <el-button 
           type="primary" 
           size="large" 
           @click="showConfirm" 
           :loading="loading"
-          :disabled="!canStartBazi"
+          :disabled="loading"
         >
           <el-icon v-if="isAccountReady && isFirstBazi"><Present /></el-icon>
           {{ startBaziButtonText }}
@@ -1015,16 +1092,28 @@
         </div> <!-- End of Tab 2/3 container -->
 
         <!-- 操作按钮 -->
-        <div class="result-actions">
-          <el-button type="primary" @click="saveResult" :loading="saving">
-            <el-icon><Download /></el-icon> 保存结果
-          </el-button>
-          <el-button @click="shareResult">
-            <el-icon><Share /></el-icon> 分享
-          </el-button>
-          <el-button @click="resetCurrentResult">
-            <el-icon><RefreshRight /></el-icon> 重新排盘
-          </el-button>
+        <div class="result-actions-wrap">
+          <div class="result-actions-heading">
+            <span class="result-actions-heading__eyebrow">下一步动作</span>
+            <p>先保存或回看记录，再决定要不要继续深入解读；动作顺序和首页入口保持同一套节奏。</p>
+          </div>
+          <div class="result-actions">
+            <el-button type="primary" @click="saveResult" :loading="saving">
+              <el-icon><Download /></el-icon> 保存到当前设备
+            </el-button>
+            <el-button @click="openBaziHistoryCenter">
+              <el-icon><Document /></el-icon> 查看我的记录
+            </el-button>
+            <el-button @click="continueBaziJourney">
+              <el-icon><Cpu /></el-icon> 继续深入解读
+            </el-button>
+            <el-button @click="shareResult">
+              <el-icon><Share /></el-icon> 分享摘要
+            </el-button>
+            <el-button @click="resetCurrentResult">
+              <el-icon><RefreshRight /></el-icon> 重新排盘
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -1032,8 +1121,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
@@ -1053,6 +1142,7 @@ import { sanitizeHtml } from '../utils/sanitize'
 
 import { CHINA_CITIES } from '../utils/constants'
 
+const router = useRouter()
 const activeTab = ref('chart')
 
 const BAZI_BASE_COST = 10
@@ -1111,14 +1201,55 @@ const birthDate = computed(() => {
 })
 const estimatedModeHint = computed(() => {
   if (!estimatedTimeSlot.value) {
-    return '请选择一个大概时段，或直接选择“未知时辰（仅按生日趋势）”，系统不会再默认替你预设中午。'
+    return '请选择一个大概时段，或明确选择“未知时辰”。'
   }
 
   if (isEstimatedDateOnly.value) {
-    return '当前按“未知时辰”仅基于生日趋势排盘，系统会弱化时柱与流年细节判断，并在结果页醒目标注。'
+    return '当前仅按生日趋势排盘，时柱细节会保守展示。'
   }
 
-  return `当前将按“${selectedEstimatedTimeOption.value.label}”估算时刻排盘，时柱和流年细节更适合做方向参考，结果页会醒目标记“估算时刻”。`
+  return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻，结果页会同步标记为估算模式。`
+})
+
+const baziStrategyExpanded = ref(false)
+const baziSubmitIssues = ref([])
+
+const baziStrategySummary = computed(() => {
+  const modeText = versionMode.value === 'pro' ? '专业版' : '简化版'
+  const accuracyText = birthTimeAccuracy.value === 'exact' ? '精确时刻' : '估算时刻'
+  return `先用${modeText} + ${accuracyText}完成一次排盘，再按结果决定是否继续深入。`
+})
+
+const baziStrategyDetails = computed(() => ([
+  {
+    key: 'mode',
+    title: versionMode.value === 'pro' ? '当前选择：专业版' : '当前选择：简化版',
+    description: versionMode.value === 'pro'
+      ? '会补充出生地、进阶结构和后续分析入口，适合已经确定要看更完整结论时使用。'
+      : '先看命局轮廓与核心提示，适合第一次体验或只想快速确认整体方向。'
+  },
+  {
+    key: 'accuracy',
+    title: birthTimeAccuracy.value === 'exact' ? '当前时间策略：精确到分钟' : '当前时间策略：估算时刻 / 未知时辰',
+    description: birthTimeAccuracy.value === 'exact'
+      ? '精确时间更适合看时柱、起运点和后续流年细节；如果暂时记不清，再切换估算模式即可。'
+      : '估算模式适合先拿到方向参考，结果页会明确提示当前精度，避免把估算口径误读成精确结论。'
+  },
+  {
+    key: 'pricing',
+    title: '提交节奏',
+    description: isFirstBazi.value
+      ? '当前仍保留首次免费资格；填写完再提交，系统会在关键步骤前再次确认。'
+      : '当前按单次排盘计费；若你想先确认投入节奏，可先保存结果、回看记录，再决定是否继续深入解读。'
+  }
+]))
+
+const baziSubmitSummaryText = computed(() => {
+  if (!baziSubmitIssues.value.length) {
+    return ''
+  }
+
+  return `已整理出 ${baziSubmitIssues.value.length} 个待处理项，点一下即可定位或直接处理。`
 })
 
 const gender = ref('male')
@@ -1149,7 +1280,20 @@ const aiLoadingTime = ref(0)
 const aiAbortController = ref(null)
 const aiLoadingTimer = ref(null)
 
+const isUnauthorizedResult = (settledResult) => {
+  if (!settledResult) {
+    return false
+  }
+
+  if (settledResult.status === 'fulfilled') {
+    return settledResult.value?.code === 401
+  }
+
+  return settledResult.reason?.response?.status === 401
+}
+
 const syncCurrentPoints = (remainingPoints, fallbackCost = 0) => {
+
   const parsedRemainingPoints = Number(remainingPoints)
   if (Number.isFinite(parsedRemainingPoints)) {
     currentPoints.value = parsedRemainingPoints
@@ -1325,9 +1469,12 @@ const wuxingDistributionItems = computed(() => {
 })
 
 const isAccountReady = computed(() => accountStatus.value === 'ready')
+const isGuestAccount = computed(() => accountStatus.value === 'guest')
+const isGuestFortunePricing = computed(() => fortunePricingStatus.value === 'guest')
 
 const isFortunePricingReady = computed(() => fortunePricingStatus.value === 'ready')
 const isAiPricingReady = computed(() => aiPricingStatus.value === 'ready' || aiPricingStatus.value === 'fallback')
+
 
 const confirmDialogConfig = computed(() => {
   if (isFirstBazi.value) {
@@ -1360,13 +1507,153 @@ const startBaziButtonText = computed(() => {
     return '账户信息查询中...'
   }
 
+  if (accountStatus.value === 'guest') {
+    return '请先登录后排盘'
+  }
+
   if (accountStatus.value === 'error') {
-    return '请先获取价格信息'
+    return '请先同步账户信息'
   }
 
   return isFirstBazi.value ? '首次免费排盘' : '开始排盘'
 })
 
+const clearBaziSubmitIssues = () => {
+  baziSubmitIssues.value = []
+}
+
+const focusBaziField = async (selector) => {
+  if (!selector) {
+    return
+  }
+
+  await nextTick()
+  const target = document.querySelector(selector)
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const focusable = target.querySelector('input, textarea, button, [tabindex]:not([tabindex="-1"])')
+  if (focusable instanceof HTMLElement) {
+    focusable.focus({ preventScroll: true })
+  }
+}
+
+const handleBaziIssue = (issue) => {
+  if (issue?.handler) {
+    issue.handler()
+    return
+  }
+
+  if (issue?.route) {
+    router.push(issue.route)
+    return
+  }
+
+  focusBaziField(issue?.selector)
+}
+
+const buildBaziSubmitIssues = () => {
+  const issues = []
+
+  if (birthTimeAccuracy.value === 'estimated') {
+    if (!estimatedBirthDate.value) {
+      issues.push({
+        key: 'estimated-date',
+        actionLabel: '补充出生日期',
+        message: '估算模式下仍需先选择出生日期。',
+        selector: '[data-bazi-field="birth-time"]'
+      })
+    }
+
+    if (!estimatedTimeSlot.value) {
+      issues.push({
+        key: 'estimated-slot',
+        actionLabel: '选择时段',
+        message: '请选择一个大概时段，或明确标记为未知时辰。',
+        selector: '[data-bazi-field="birth-time"]'
+      })
+    }
+  } else if (!birthDate.value) {
+    issues.push({
+      key: 'exact-date',
+      actionLabel: '填写出生时间',
+      message: '请先选择精确到分钟的出生日期时间。',
+      selector: '[data-bazi-field="birth-time"]'
+    })
+  }
+
+  if (!gender.value) {
+    issues.push({
+      key: 'gender',
+      actionLabel: '确认性别',
+      message: '排盘前还需要确认性别。',
+      selector: '[data-bazi-field="gender"]'
+    })
+  }
+
+  if (isGuestAccount.value) {
+    issues.push({
+      key: 'guest',
+      actionLabel: '先去登录',
+      message: '登录后才能同步积分、免费资格和提交说明。',
+      route: '/login'
+    })
+  }
+
+  if (accountStatus.value === 'error') {
+    issues.push({
+      key: 'account-error',
+      actionLabel: '重新获取账户状态',
+      message: '账户信息还没同步成功，刷新后再提交更稳。',
+      handler: () => loadPoints()
+    })
+  }
+
+  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
+    issues.push({
+      key: 'points',
+      actionLabel: '去充值或补积分',
+      message: `当前积分不足，本次排盘还需要 ${BAZI_BASE_COST} 积分。`,
+      route: '/recharge'
+    })
+  }
+
+  return issues
+}
+
+const openBaziHistoryCenter = () => {
+  router.push('/profile')
+}
+
+const continueBaziJourney = async () => {
+  activeTab.value = showAdvancedResultSections.value ? 'career' : 'personality'
+  await nextTick()
+  const selector = showAdvancedResultSections.value ? '.tools-section-wrapper, .fortune-section-wrapper' : '.ai-section-wrapper, .bazi-analysis'
+  const target = document.querySelector(selector)
+  if (target instanceof HTMLElement) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return
+  }
+
+  ElMessage.info(showAdvancedResultSections.value ? '已切到进阶分析区，继续往下看即可。' : '已切到性格与 AI 解读区，继续往下看即可。')
+}
+
+watch([
+  birthDate,
+  estimatedBirthDate,
+  estimatedTimeSlot,
+  birthTimeAccuracy,
+  gender,
+  accountStatus,
+  currentPoints,
+  versionMode
+], () => {
+  if (baziSubmitIssues.value.length) {
+    clearBaziSubmitIssues()
+  }
+})
 
 const getFortuneToolCost = (type) => {
   const costKeyMap = {
@@ -1406,14 +1693,19 @@ const getFortuneToolTagText = (type) => {
     return '价格查询中'
   }
 
+  if (isGuestAccount.value || isGuestFortunePricing.value) {
+    return '登录后显示'
+  }
+
   if (fortunePricingStatus.value === 'error') {
-    return '价格稍后确认'
+    return '说明稍后确认'
   }
 
   const cost = getFortuneToolCost(type)
   if (!Number.isFinite(cost)) {
-    return '价格待确认'
+    return '说明待确认'
   }
+
 
   return cost > 0 ? `消耗${cost}积分` : '本次免费'
 }
@@ -1432,13 +1724,17 @@ const getFortuneToolActionText = (type, readyText) => {
     return '价格查询中'
   }
 
+  if (isGuestAccount.value || isGuestFortunePricing.value) {
+    return '请先登录'
+  }
+
   if (accountStatus.value === 'error' || fortunePricingStatus.value === 'error') {
-    return '请先刷新价格信息'
+    return '请先刷新当前说明'
   }
 
   const cost = getFortuneToolCost(type)
   if (!Number.isFinite(cost)) {
-    return '价格暂不可用'
+    return '说明待确认'
   }
 
   if (cost > 0 && currentPoints.value < cost) {
@@ -1447,6 +1743,7 @@ const getFortuneToolActionText = (type, readyText) => {
 
   return readyText
 }
+
 
 watch(birthTimeAccuracy, (mode) => {
   if (mode === 'estimated') {
@@ -1555,11 +1852,11 @@ const needsFortunePriceRecovery = computed(() => accountStatus.value === 'error'
 
 const fortunePriceRecoveryText = computed(() => {
   if (accountStatus.value === 'error') {
-    return '当前账户与积分状态暂未同步成功，请先重新获取，避免误判剩余积分或消费承诺。'
+    return '当前账户状态还没同步成功，重新获取后即可继续查看积分与操作说明。'
   }
 
   if (fortunePricingStatus.value === 'error') {
-    return '深度工具价格暂未同步成功，刷新后即可继续流年分析、大运评分和运势 K 线。'
+    return '深度工具说明还没同步成功，刷新后即可继续流年分析、大运评分和运势 K 线。'
   }
 
   return ''
@@ -1567,9 +1864,10 @@ const fortunePriceRecoveryText = computed(() => {
 const aiNeedsAccountRecovery = computed(() => accountStatus.value === 'error')
 const aiRecoveryText = computed(() => {
   return aiNeedsAccountRecovery.value
-    ? 'AI 解盘依赖当前账户积分，刷新账户信息后即可继续使用。'
+    ? 'AI 解盘依赖当前账户积分，重新获取账户状态后即可继续使用。'
     : ''
 })
+
 
 const refreshFortunePricing = () => {
   loadPoints()
@@ -1582,10 +1880,16 @@ const loadPoints = async ({ silent = false } = {}) => {
   fortunePricingStatus.value = 'loading'
   aiPricingStatus.value = 'loading'
 
+  const preloadRequestConfig = {
+    silent: true,
+    skipGlobalError: true,
+    skipAuthRedirect: true,
+  }
+
   const [accountResult, pricingResult, clientConfigResult] = await Promise.allSettled([
-    getPointsBalance(),
-    getFortunePointsCost(),
-    getClientConfig(),
+    getPointsBalance(preloadRequestConfig),
+    getFortunePointsCost(preloadRequestConfig),
+    getClientConfig({ silent: true, skipGlobalError: true }),
   ])
 
 
@@ -1594,12 +1898,15 @@ const loadPoints = async ({ silent = false } = {}) => {
     currentPoints.value = Number(accountResponse.data?.balance ?? 0)
     isFirstBazi.value = accountResponse.data?.first_bazi !== false
     accountStatus.value = 'ready'
+  } else if (isUnauthorizedResult(accountResult)) {
+    currentPoints.value = 0
+    accountStatus.value = 'guest'
   } else {
     currentPoints.value = 0
     accountStatus.value = 'error'
     console.error('获取账户信息失败:', accountResult.status === 'rejected' ? accountResult.reason : accountResponse)
     if (!silent) {
-      ElMessage.error(accountResponse?.message || '获取账户信息失败，请尝试刷新页面')
+      ElMessage.error(accountResponse?.message || '获取账户信息失败，请尝试重新获取')
     }
   }
 
@@ -1617,14 +1924,20 @@ const loadPoints = async ({ silent = false } = {}) => {
       dayun_analysis: null,
       dayun_chart: null,
     }
-    fortunePricingStatus.value = 'error'
-    console.error('获取深度工具价格失败:', pricingResult.status === 'rejected' ? pricingResult.reason : pricingResponse)
-    if (!silent) {
-      ElMessage.error(pricingResponse?.message || '获取深度工具价格失败，请稍后重试')
+
+    if (isUnauthorizedResult(pricingResult)) {
+      fortunePricingStatus.value = 'guest'
+    } else {
+      fortunePricingStatus.value = 'error'
+      console.error('获取深度工具说明失败:', pricingResult.status === 'rejected' ? pricingResult.reason : pricingResponse)
+      if (!silent) {
+        ElMessage.error(pricingResponse?.message || '获取深度工具说明失败，请稍后重试')
+      }
     }
   }
 
   const clientConfigResponse = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
+
   if (clientConfigResponse?.code === 200) {
     const resolvedAiCost = resolveAiAnalysisCost(clientConfigResponse.data)
     if (Number.isFinite(resolvedAiCost)) {
@@ -1649,16 +1962,22 @@ const showPointsConfirm = (type, data = {}) => {
   const isAiAction = type === 'ai'
   const isPricingReady = isAiAction ? isAiPricingReady.value : isFortunePricingReady.value
 
+  if (isGuestAccount.value || (!isAiAction && isGuestFortunePricing.value)) {
+    ElMessage.warning('请先登录后再继续使用深度分析')
+    return
+  }
+
   if (!isAccountReady.value || !isPricingReady) {
-    ElMessage.warning(isAiAction ? 'AI 解盘价格还在同步，请稍后再试' : '价格信息还在同步，请稍后再试')
+    ElMessage.warning(isAiAction ? 'AI 解盘说明还在同步，请稍后再试' : '当前说明还在同步，请稍后再试')
     return
   }
 
   const cost = getPointsConfirmCost(type)
   if (!Number.isFinite(cost)) {
-    ElMessage.warning(isAiAction ? 'AI 解盘价格暂不可用，请稍后重试' : '当前价格信息暂不可用，请稍后重试')
+    ElMessage.warning(isAiAction ? 'AI 解盘说明暂未同步完成，请稍后重试' : '当前说明暂未同步完成，请稍后重试')
     return
   }
+
 
   if (currentPoints.value < cost) {
     ElMessage.warning(`积分不足，需要${cost}积分，请先签到领取积分`)
@@ -1794,30 +2113,13 @@ const getScoreClass = (score) => {
 
 // 显示确认对话框
 const showConfirm = () => {
-  if (birthTimeAccuracy.value === 'estimated') {
-    if (!estimatedBirthDate.value) {
-      ElMessage.warning('请选择出生日期')
-      return
-    }
+  clearBaziSubmitIssues()
+  const issues = buildBaziSubmitIssues()
 
-    if (!estimatedTimeSlot.value) {
-      ElMessage.warning('请选择一个大概时段，或明确选择“未知时辰”后再继续')
-      return
-    }
-  } else if (!birthDate.value) {
-    ElMessage.warning('请选择出生日期')
-    return
-  }
-
-
-
-  if (!isAccountReady.value) {
-    ElMessage.warning(accountStatus.value === 'error' ? '账户信息暂不可用，请先刷新价格信息' : '账户信息还在同步，请稍候')
-    return
-  }
-
-  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
-    ElMessage.warning('积分不足，请先签到领取积分')
+  if (issues.length) {
+    baziSubmitIssues.value = issues
+    handleBaziIssue(issues[0])
+    ElMessage.warning('提交前还有信息未完成，已帮你定位到第一个问题')
     return
   }
   
@@ -1926,7 +2228,7 @@ const saveResult = async () => {
       savedResults.pop()
     }
     localStorage.setItem('bazi_saved', JSON.stringify(savedResults))
-    ElMessage.success('保存成功，可在个人中心查看')
+    ElMessage.success('已保存到当前设备；云端历史请以个人中心记录为准')
   } catch (error) {
     ElMessage.error('保存失败')
   } finally {
@@ -2042,10 +2344,16 @@ const startAiAnalysis = () => {
 }
 
 const startAiAnalysisCore = async () => {
-  if (!isAccountReady.value || !isAiPricingReady.value) {
-    ElMessage.warning('AI 解盘价格还在同步，请稍后再试')
+  if (isGuestAccount.value) {
+    ElMessage.warning('请先登录后再使用 AI 解盘')
     return
   }
+
+  if (!isAccountReady.value || !isAiPricingReady.value) {
+    ElMessage.warning('AI 解盘说明还在同步，请稍后再试')
+    return
+  }
+
 
   if (currentPoints.value < aiAnalysisCost.value) {
     ElMessage.warning('积分不足，请先签到领取积分')
@@ -2786,6 +3094,131 @@ const formatAiContent = (content) => {
   margin-left: auto;
 }
 
+.strategy-summary-card,
+.submit-summary-card {
+  max-width: 600px;
+  margin: 0 auto 24px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 236, 0.96));
+  box-shadow: 0 14px 28px rgba(149, 111, 45, 0.08);
+}
+
+.strategy-summary-card__header,
+.submit-summary-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.strategy-summary-card__copy,
+.submit-summary-card__header div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.strategy-summary-card__eyebrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.strategy-summary-card__copy strong,
+.submit-summary-card__header strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.strategy-summary-card__copy p,
+.submit-summary-card__header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.strategy-summary-card__toggle {
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.strategy-summary-card__details,
+.submit-summary-card__actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.strategy-detail-item {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.strategy-detail-item strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.strategy-detail-item p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.submit-summary-card {
+  border-color: rgba(230, 162, 60, 0.24);
+  background: linear-gradient(135deg, rgba(255, 250, 242, 0.98), rgba(255, 245, 228, 0.98));
+}
+
+.submit-summary-card__header > .el-icon {
+  margin-top: 2px;
+  color: var(--warning-color);
+  font-size: 20px;
+}
+
+.submit-summary-card__action {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(230, 162, 60, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.submit-summary-card__action span {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.submit-summary-card__action small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.submit-summary-card__action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(230, 162, 60, 0.32);
+  box-shadow: 0 12px 24px rgba(149, 111, 45, 0.08);
+}
+
 .insufficient-points {
 
   margin-top: 15px;
@@ -2813,6 +3246,36 @@ const formatAiContent = (content) => {
   font-weight: 500;
 }
 
+.form-group--time {
+  margin-bottom: 34px;
+}
+
+.form-group__header--time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-group__header--time label {
+  margin-bottom: 0;
+}
+
+.form-group__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .help-icon {
   margin-left: 5px;
   cursor: help;
@@ -2832,24 +3295,111 @@ const formatAiContent = (content) => {
 
 .time-accuracy-switch {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(250, 244, 228, 0.92));
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 12px 24px rgba(149, 111, 45, 0.08);
+}
+
+.time-accuracy-switch__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 240px;
 }
 
 .switch-label {
   color: var(--text-primary);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.time-accuracy-switch__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .time-accuracy-group {
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.precision-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.precision-option__title {
+  font-weight: 700;
+}
+
+.precision-option__desc {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.time-entry-panel {
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 236, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 22px rgba(149, 111, 45, 0.08);
+}
+
+.time-entry-panel--exact {
+  border-color: rgba(64, 158, 255, 0.22);
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(240, 247, 255, 0.98));
+}
+
+.time-entry-panel--estimated {
+  border-color: rgba(230, 162, 60, 0.24);
+  background: linear-gradient(180deg, rgba(255, 250, 242, 0.98), rgba(255, 246, 232, 0.98));
+}
+
+.time-entry-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.time-entry-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.time-entry-panel__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time-entry-panel__grid {
+  margin-top: 0;
+}
+
+.time-entry-panel__hint {
+  margin-top: 12px;
 }
 
 .estimate-birth-grid {
@@ -2970,41 +3520,107 @@ const formatAiContent = (content) => {
 /* 版本切换 */
 .version-toggle {
   margin-bottom: 35px;
-  text-align: center;
-  padding: 25px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--primary-light-20);
-  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 244, 229, 0.96));
+  border-radius: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 18px 32px rgba(149, 111, 45, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.toggle-label {
+.version-toggle__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.version-toggle__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.version-toggle__eyebrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.version-toggle__title {
+  margin: 0;
   color: var(--text-primary);
-  margin-right: 15px;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.version-toggle__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .mode-option {
   display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mode-option--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.mode-option__title {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
+  font-weight: 700;
+}
+
+.mode-option__desc {
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .mode-icon {
   font-size: 18px;
 }
 
+:deep(.version-toggle__group .el-radio-button),
+:deep(.time-accuracy-group .el-radio-button) {
+  flex: 1 1 180px;
+}
+
+:deep(.version-toggle__group .el-radio-button__inner),
+:deep(.time-accuracy-group .el-radio-button__inner) {
+  width: 100%;
+}
+
 .version-hint {
+  margin: 0;
   color: var(--primary-color);
   font-size: 14px;
-  margin-top: 15px;
+  line-height: 1.7;
   font-weight: 500;
-  background: rgba(184, 134, 11, 0.1);
-  padding: 8px;
-  border-radius: 8px;
-  display: inline-block;
+  background: rgba(184, 134, 11, 0.08);
+  border: 1px solid rgba(184, 134, 11, 0.14);
+  padding: 12px 14px;
+  border-radius: 14px;
+  display: block;
 }
 
 /* 专业解读区域 */
@@ -3598,11 +4214,38 @@ const formatAiContent = (content) => {
 }
 
 /* 操作按钮 */
+.result-actions-wrap {
+  margin-top: 30px;
+}
+
+.result-actions-heading {
+  max-width: 720px;
+  margin: 0 auto 16px;
+  text-align: center;
+}
+
+.result-actions-heading__eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.result-actions-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .result-actions {
   display: flex;
   justify-content: center;
   gap: 15px;
-  margin-top: 30px;
+  margin-top: 0;
   flex-wrap: wrap;
 }
 
@@ -3616,6 +4259,8 @@ const formatAiContent = (content) => {
 .result-actions .btn-icon {
   margin-right: 5px;
 }
+
+
 
 
 /* 大运区域样式 */
@@ -4644,26 +5289,39 @@ const formatAiContent = (content) => {
     justify-content: flex-start;
   }
 
+  .version-toggle,
+  .time-entry-panel,
+  .year-selector {
+    padding: 18px;
+  }
+
+  .version-toggle__header,
   .time-accuracy-switch,
+  .time-entry-panel__header,
+  .form-group__header--time,
   .year-selector__header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .year-selector {
-    padding: 16px;
-    gap: 12px;
+  .version-toggle__status,
+  .form-group__status,
+  .time-entry-panel__badge {
+    white-space: normal;
   }
 
+  .time-accuracy-switch__copy,
   .year-selector__meta,
   .time-accuracy-group,
   .estimate-birth-grid {
     width: 100%;
+    max-width: none;
   }
 
   .estimate-birth-grid {
     grid-template-columns: 1fr;
   }
+
 
   .selected-year {
     text-align: left;
@@ -4902,6 +5560,333 @@ const formatAiContent = (content) => {
     width: 100%;
     margin-left: 0 !important;
     margin-bottom: 10px;
+  }
+}
+
+/* 2026-03 UI polish: bazi refresh */
+.bazi-page {
+  padding: 10px 0 78px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(var(--primary-rgb), 0.14), transparent 34%),
+    radial-gradient(circle at 100% 12%, rgba(245, 196, 103, 0.18), transparent 26%),
+    linear-gradient(180deg, #fffdf8 0%, #fff9f1 46%, #fff7ee 100%);
+}
+
+.warm-tip,
+.bazi-form,
+.bazi-result {
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+}
+
+.warm-tip {
+  max-width: 920px;
+  margin: 0 auto 22px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 22px 24px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255, 250, 239, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.tip-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #9a6612;
+  background: linear-gradient(135deg, rgba(245, 196, 103, 0.28), rgba(255, 243, 214, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.tip-title {
+  margin-bottom: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tip-desc {
+  color: #5c5143;
+  line-height: 1.7;
+}
+
+.bazi-form,
+.bazi-result {
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 30px;
+  border-radius: 30px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.points-hint,
+.strategy-summary-card,
+.version-toggle,
+.form-group,
+.time-entry-panel,
+.result-context-note {
+  border-radius: 22px;
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.points-hint {
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  gap: 12px;
+}
+
+.current-points {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: #8a5c16;
+  font-weight: 700;
+}
+
+.strategy-summary-card,
+.version-toggle,
+.form-group {
+  padding: 22px 22px 20px;
+}
+
+.strategy-summary-card__header,
+.version-toggle__header,
+.form-group__header--time {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.strategy-summary-card__eyebrow,
+.version-toggle__eyebrow,
+.switch-label,
+.time-entry-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: #8d5f1c;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.strategy-summary-card__copy strong,
+.version-toggle__title,
+.time-entry-panel__title {
+  color: var(--text-primary);
+}
+
+.strategy-summary-card__copy p,
+.version-hint,
+.time-accuracy-switch__hint,
+.time-entry-panel__hint,
+.form-hint,
+.form-hint--precision {
+  color: #5f5548;
+  line-height: 1.75;
+}
+
+.strategy-summary-card__toggle,
+.version-toggle__status,
+.form-group__status {
+  border-radius: 999px;
+}
+
+.version-toggle__status,
+.form-group__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  background: rgba(255, 248, 232, 0.92);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  color: #8f611c;
+  font-weight: 700;
+}
+
+.version-toggle__group {
+  margin: 18px 0 14px;
+}
+
+:deep(.version-toggle__group .el-radio-button__inner),
+:deep(.time-accuracy-group .el-radio-button__inner) {
+  min-height: 74px;
+  padding: 14px 18px;
+  border-radius: 18px !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.12) !important;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: none !important;
+}
+
+:deep(.version-toggle__group .el-radio-button:first-child .el-radio-button__inner),
+:deep(.time-accuracy-group .el-radio-button:first-child .el-radio-button__inner),
+:deep(.version-toggle__group .el-radio-button:last-child .el-radio-button__inner),
+:deep(.time-accuracy-group .el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 18px !important;
+}
+
+:deep(.version-toggle__group .el-radio-button__original-radio:checked + .el-radio-button__inner),
+:deep(.time-accuracy-group .el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.18));
+  border-color: rgba(var(--primary-rgb), 0.24) !important;
+  color: var(--text-primary);
+  box-shadow: 0 12px 26px rgba(var(--primary-rgb), 0.14) !important;
+}
+
+.time-accuracy-switch,
+.time-entry-panel {
+  padding: 18px;
+}
+
+.time-entry-panel {
+  margin-top: 16px;
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 246, 232, 0.94));
+}
+
+.time-entry-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+:deep(.time-entry-panel__control .el-input__wrapper),
+:deep(.form-group .el-input__wrapper),
+:deep(.form-group .el-select__wrapper),
+:deep(.form-group .el-textarea__inner) {
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1) inset;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+:deep(.form-group .el-radio) {
+  min-height: 40px;
+  margin-right: 18px;
+}
+
+.bazi-form > .el-button {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 18px 34px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.insufficient-points {
+  margin-top: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  background: rgba(255, 247, 237, 0.92);
+}
+
+.bazi-result {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 241, 0.95));
+}
+
+.result-header {
+  margin-bottom: 22px;
+  padding: 24px 24px 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(255, 245, 225, 0.94));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.result-header h2 {
+  font-size: clamp(26px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.result-meta {
+  gap: 12px;
+}
+
+.meta-tag {
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.result-tabs {
+  padding: 8px;
+  border-radius: 20px;
+  border-color: rgba(var(--primary-rgb), 0.1);
+  background: rgba(255, 250, 241, 0.9);
+}
+
+.tab-item {
+  min-height: 48px;
+  border-radius: 14px;
+}
+
+.tab-item.active {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.16), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.12);
+}
+
+@media (max-width: 768px) {
+  .bazi-page {
+    padding: 0 0 56px;
+  }
+
+  .warm-tip {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .bazi-form,
+  .bazi-result {
+    padding: 22px 18px;
+    border-radius: 24px;
+  }
+
+  .strategy-summary-card,
+  .version-toggle,
+  .form-group,
+  .time-entry-panel {
+    padding: 18px 16px;
+  }
+
+  .strategy-summary-card__header,
+  .version-toggle__header,
+  .form-group__header--time {
+    flex-direction: column;
+  }
+
+  .version-toggle__status,
+  .form-group__status,
+  .current-points {
+    width: fit-content;
+  }
+
+  :deep(.version-toggle__group .el-radio-button__inner),
+  :deep(.time-accuracy-group .el-radio-button__inner) {
+    min-height: 66px;
+    padding: 12px 14px;
+  }
+
+  .result-header {
+    padding: 18px;
   }
 }
 </style>
