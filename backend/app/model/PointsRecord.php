@@ -353,7 +353,7 @@ class PointsRecord extends Model
         }
 
         return in_array(strtolower(trim($type)), [
-            'reduce', 'sub', 'subtract', 'minus', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem', 'refund', 'tarot', 'bazi', 'hehun', 'liuyao'
+            'reduce', 'sub', 'subtract', 'minus', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem', 'refund', 'cultural_analysis', 'cultural_calculation', 'relationship_assessment', 'decision_analysis'
         ], true) ? 'reduce' : 'add';
     }
 
