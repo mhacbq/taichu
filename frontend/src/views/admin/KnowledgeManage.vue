@@ -218,6 +218,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, View } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import {
   getArticleList, getArticleCategories,
   saveArticle, updateArticle, deleteArticle as deleteArticleApi,
@@ -428,7 +429,11 @@ const submitForm = async () => {
 }
 
 const preview = (row) => {
-  previewContent.value = marked(row.content)
+  previewContent.value = DOMPurify.sanitize(marked(row.content), {
+    ALLOWED_TAGS: ['h1','h2','h3','h4','h5','h6','p','br','strong','em','ul','ol','li','code','pre','blockquote','a','img','table','thead','tbody','tr','th','td'],
+    ALLOWED_ATTR: ['href','src','alt','title','class'],
+    ALLOW_DATA_ATTR: false
+  })
   previewVisible.value = true
 }
 

@@ -124,3 +124,48 @@ export const getAdminUsers = () => request.get('/admin/system/admins')
 export const saveAdminUser = (data) => request.post('/admin/system/admins', data)
 export const deleteAdminUser = (id) => request.delete(`/admin/system/admins/${id}`)
 
+
+// 内容记录 - 八字
+export const getBaziRecords = (params) => request.get('/admin/content/bazi', { params })
+export const getBaziDetail = (id) => request.get(`/admin/content/bazi/${id}`)
+export const deleteBaziRecord = (id) => request.delete(`/admin/content/bazi/${id}`)
+
+// 内容记录 - 塔罗
+export const getTarotRecords = (params) => request.get('/admin/content/tarot', { params })
+export const getTarotDetail = (id) => request.get(`/admin/content/tarot/${id}`)
+export const deleteTarotRecord = (id) => request.delete(`/admin/content/tarot/${id}`)
+
+// 内容记录 - 每日运势
+export const getDailyFortuneList = (params) => request.get('/admin/content/daily', { params })
+export const createDailyFortune = (data) => request.post('/admin/content/daily', data)
+export const updateDailyFortune = (id, data) => request.put(`/admin/content/daily/${id}`, data)
+export const deleteDailyFortune = (id) => request.delete(`/admin/content/daily/${id}`)
+
+// 公告管理
+export const getNotices = (params) => request.get('/admin/system/notices', { params })
+export const saveNotice = (data) => request.post('/admin/system/notices', data)
+export const deleteNotice = (id) => request.delete(`/admin/system/notices/${id}`)
+
+// 敏感词管理
+export const getSensitiveWords = (params) => request.get('/admin/system/sensitive', { params })
+export const createSensitiveWord = (data) => request.post('/admin/system/sensitive', data)
+export const updateSensitiveWord = (id, data) => request.put(`/admin/system/sensitive/${id}`, data)
+export const deleteSensitiveWord = (id) => request.delete(`/admin/system/sensitive/${id}`)
+export const importSensitiveWords = (data) => request.post('/admin/system/sensitive/import', data)
+
+// 短信管理
+export const getSmsConfig = () => request.get('/admin/sms/config')
+export const saveSmsConfig = (data) => request.post('/admin/sms/config', data)
+export const testSmsSend = (data) => request.post('/admin/sms/test', data)
+export const getSmsStats = () => request.get('/admin/sms/stats')
+export const getSmsRecords = (params) => request.get('/admin/sms/records', { params })
+
+// 角色管理
+export const getRoles = () => request.get('/admin/system/roles')
+export const createRole = (data) => request.post('/admin/system/roles', data)
+export const updateRole = (id, data) => request.put(`/admin/system/roles/${id}`, data)
+export const deleteRole = (id) => request.delete(`/admin/system/roles/${id}`)
+
+// 套餐管理
+export const getPackages = () => request.get('/admin/order/packages')
+export const savePackage = (data) => request.post('/admin/order/save-package', data)
