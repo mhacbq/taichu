@@ -41,6 +41,14 @@
               <span class="stat-value">{{ tarotCount }}</span>
               <span class="stat-label">占卜次数</span>
             </div>
+            <div class="stat">
+              <span class="stat-value">{{ liuyaoCount }}</span>
+              <span class="stat-label">六爻次数</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">{{ hehunCount }}</span>
+              <span class="stat-label">合婚次数</span>
+            </div>
           </div>
         </div>
 
@@ -112,6 +120,38 @@
             </div>
           </div>
           <el-empty v-else description="暂无占卜记录" />
+        </div>
+
+        <!-- 六爻占卜历史 -->
+        <div class="history-section card card-hover">
+          <h3>六爻占卜历史</h3>
+          <div class="history-list" v-if="liuyaoHistory.length > 0">
+            <div v-for="record in liuyaoHistory" :key="record.id" class="history-item">
+              <div class="history-info">
+                <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
+                <span class="history-question" :title="record.question">{{ record.question || '六爻占卜' }}</span>
+                <span class="history-birth">{{ record.method_name || '铜钱起卦' }}</span>
+              </div>
+              <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
+            </div>
+          </div>
+          <el-empty v-else description="暂无六爻记录" />
+        </div>
+
+        <!-- 八字合婚历史 -->
+        <div class="history-section card card-hover">
+          <h3>八字合婚历史</h3>
+          <div class="history-list" v-if="hehunHistory.length > 0">
+            <div v-for="record in hehunHistory" :key="record.id" class="history-item">
+              <div class="history-info">
+                <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
+                <span class="history-birth">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
+                <span v-if="record.total_score" class="history-score">综合得分：{{ record.total_score }}</span>
+              </div>
+              <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
+            </div>
+          </div>
+          <el-empty v-else description="暂无合婚记录" />
         </div>
 
         <!-- 积分获取攻略 -->
@@ -229,13 +269,13 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, submitFeedback, getClientConfig } from '../api'
+import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig } from '../api'
 
 
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
-import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar } from '@element-plus/icons-vue'
+import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, Check } from '@element-plus/icons-vue'
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
@@ -244,6 +284,10 @@ const tarotCount = ref(0)
 const pointsHistory = ref([])
 const baziHistory = ref([])
 const tarotHistory = ref([])
+const liuyaoHistory = ref([])
+const hehunHistory = ref([])
+const liuyaoCount = ref(0)
+const hehunCount = ref(0)
 const feedbackContent = ref('')
 const feedbackContact = ref('')
 const feedbackLoading = ref(false)
@@ -422,6 +466,10 @@ const loadUserData = async () => {
     
     // 加载塔罗历史
     await loadTarotHistory()
+    // 加载六爻历史
+    await loadLiuyaoHistory()
+    // 加载合婚历史
+    await loadHehunHistory()
   } catch (error) {
 
 
@@ -464,6 +512,34 @@ const loadTarotHistory = async () => {
   } catch (error) {
     tarotHistory.value = []
     reportProfileError('load_tarot_history_failed', error)
+  }
+}
+
+// 加载六爻历史
+const loadLiuyaoHistory = async () => {
+  try {
+    const response = await getLiuyaoHistory({ page: 1, page_size: 10 })
+    if (response.code === 200) {
+      liuyaoHistory.value = response.data?.list || []
+      liuyaoCount.value = response.data?.pagination?.total || liuyaoHistory.value.length
+    }
+  } catch (error) {
+    reportProfileError('load_liuyao_history_failed', error)
+    liuyaoHistory.value = []
+  }
+}
+
+// 加载合婚历史
+const loadHehunHistory = async () => {
+  try {
+    const response = await getHehunHistory({ page: 1, page_size: 10 })
+    if (response.code === 200) {
+      hehunHistory.value = response.data?.list || []
+      hehunCount.value = response.data?.pagination?.total || hehunHistory.value.length
+    }
+  } catch (error) {
+    reportProfileError('load_hehun_history_failed', error)
+    hehunHistory.value = []
   }
 }
 
