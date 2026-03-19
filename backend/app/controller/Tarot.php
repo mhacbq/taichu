@@ -18,7 +18,10 @@ class Tarot extends BaseController
     // 塔罗占卜所需积分
     const TAROT_POINTS_COST = 5;
     
-    protected $middleware = [\app\middleware\Auth::class];
+    protected $middleware = [
+        \app\middleware\Auth::class => ['only' => ['draw', 'interpret', 'saveRecord', 'history', 'detail', 'deleteRecord', 'setPublic']],
+    ];
+
     
     // 塔罗牌数组（包含图片/emoji、颜色和正逆位含义）
     protected $tarotCards = [
@@ -982,15 +985,22 @@ class Tarot extends BaseController
         
         // 增加查看次数
         $record->incrementViewCount();
+        $record = TarotRecord::find((int) $record->id) ?: $record;
         
         return $this->success([
-            'spread_type' => $record->spread_type,
+            'id' => (int) $record->id,
+            'user_id' => (int) $record->user_id,
+            'spread_type' => $record->getSpreadTypeValue(),
             'spread_name' => $record->getSpreadName(),
-            'question' => $record->question,
-            'cards' => is_string($record->cards) ? json_decode($record->cards, true) : $record->cards,
+            'question' => $record->getQuestionValue(),
+            'cards' => is_string($record->cards) ? (json_decode($record->cards, true) ?: []) : ($record->cards ?: []),
             'interpretation' => $record->interpretation,
-            'view_count' => $record->view_count,
-            'created_at' => $record->created_at,
+            'ai_analysis' => $record->ai_analysis,
+            'is_public' => $record->isPublicRecord() ? 1 : 0,
+            'share_code' => $record->getShareCodeValue(),
+            'view_count' => $record->getViewCountValue(),
+            'created_at' => $record->getCreatedAtValue(),
+            'share_supported' => $record->canShare(),
         ]);
     }
 }

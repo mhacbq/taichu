@@ -232,6 +232,23 @@
 - 已把最新时间戳与“临时 JWT 直探受保护入口”的影响范围补写到 `TODO.md` 的 `[15]` 条目。
 - 本轮未做代码修复；下一步仍应先修正 phpstudy MySQL 凭据，再回到八字 / 六爻 / 塔罗 / 合婚 / 每日运势的扣费、历史、分享闭环。
 
+## 2026-03-19 第三十四轮执行记录
+
+### 检查概览
+- **检查时间**: 2026-03-19 10:24
+- **检查人员**: 资深占卜爱好者（AI自动化巡检）
+- **检查范围**: phpstudy 直连 `http://localhost:8080/api/...` 下重测登录前置、公开日运、八字首次免费、合婚免费预览与前台积分口径。
+- **核心发现**:
+  1. 登录前置已从旧的 MySQL 1045 阻塞恢复：`POST /api/sms/send-code` 能返回测试验证码，`POST /api/auth/phone-login` 可成功拿到 JWT。
+  2. 公开日运不再是凭据问题，现稳定命中 `Unknown column 'lunar_date'`，属于 `daily_fortune` 字段结构错位。
+  3. 八字首次免费链路被 `tc_bazi_record` 结构漂移拦住：`POST /api/paipan/bazi` 直接 `500`，`GET /api/paipan/history` 命中 `Unknown column 'location'`，结果 / 历史 / 分享无法闭环。
+  4. 合婚免费预览可返回 `score=81 / level=good`，但 `GET /api/hehun/history?limit=5` 在调用前后都为空，确认存在“结果能看、历史不留”的失忆问题。
+  5. 新用户注册奖励口径继续外溢：`GET /api/auth/userinfo`、`GET /api/points/balance`、`GET /api/points/history` 都显示新用户奖励实际记为 `0` 分，已与后台 `register_points` 读写错乱问题形成互证。
+
+### 处理结果
+- 已将本轮新增的 3 条占卜链路证据写回 `TODO.md` 的 `[30-4]` 章节，并把“注册奖励变 0 分”的前台实害证据补写到后台系统设置读写错乱条目。
+- 本轮未做代码修复；下一轮建议优先排查 `daily_fortune.lunar_date`、`tc_bazi_record.location` 与合婚 free 结果未落历史三条链路。
+
 
 
 

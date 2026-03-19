@@ -1,8 +1,16 @@
 # admin 自动化执行记忆
 
 > 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续后台修复不要再默认依赖 Docker、`docker compose`、源码挂载或容器重建；历史记录中的容器相关内容仅保留为旧排障背景。
+>
+> 执行策略修正（2026-03-19）：不要再因为问题涉及后台登录、初始化 SQL、权限/鉴权入口或 phpstudy 本地启动链路就直接退出。只要能通过 **幂等 SQL、bootstrap/兼容逻辑、错误提示与只读保护** 在仓库内安全落地，就继续修；只有需要猜真实凭据或直接改真实业务数据时才停下。
+>
+> SQL 落库要求（2026-03-19）：若本轮修复新增或调整了 SQL（建表、补列、索引、初始化、迁移、兼容补丁、数据修复脚本），必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件；优先复用最相关现有文件，不合适再新增按日期命名补丁文件，不要只保留“请手动执行某 SQL”的口头建议。
+>
+> 后台登录入口修正（2026-03-19）：后台页面验证不要再默认猜 `http://localhost:3001/login`、`http://localhost:8080/admin` 或 `/admin/login`。当前后台源码在 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin`，是独立 Vite 项目；登录页前端路由是 `/login`，登录接口是 `POST /api/admin/auth/login`。做页面级验证前先确认 `admin/dist/index.html` 是否已存在，必要时先执行 `npm run build --prefix admin`，再按用户实际部署/挂载后的后台站点根地址访问“站点根地址 + /login”。
 
+- 2026-03-19 07:20：本轮改为处理 `[admin]` 队列里可直接落地的前台壳层问题，静态复核确认 `frontend/src/App.vue` 在桌面端与移动端顶部导航都硬编码了“需登录”徽标；已移除对应徽标和无用样式，保留原有登录拦截逻辑不变，并同步把该项从 `TODO.md` 高频队列移入最近完成。最小闭环验证：`frontend/src/App.vue` 诊断 0、`npm run build --prefix frontend` 通过。
 - 2026-03-19 07:02：继续按 phpstudy `http://localhost:8080` 复现 `[admin]` 唯一高优主问题；`/api/health` 返回 `code=200`，`POST /api/admin/auth/login`（`admin / admin123`）仍返回“管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql”，`GET /api/admin/dashboard/statistics` 仍为 `401`，`GET /admin/login` 仍是 `404`。复核 `backend/app/controller/admin/Auth.php`、`backend/app/service/AdminAuthService.php`、`database/20260317_create_admin_users_table.sql`、`backend/docker-entrypoint.sh` 后，结论仍是 phpstudy 本机 `taichu` 库未导入管理员初始化 SQL；该项属于登录鉴权 + 数据库迁移高风险边界，本轮未改业务代码、未动 SQL、未更新 TODO 完成状态，建议人工导入 SQL 后先复测 `login -> auth/info -> dashboard/statistics`。
+
 
 
 

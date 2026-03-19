@@ -76,12 +76,15 @@ request.interceptors.response.use(
     // 处理不同类型的错误
     handleApiError(error)
     
-    // 401 未授权，清除登录状态
+    // 401 未授权：默认清理登录态；仅在未显式跳过时才强制回首页
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
-      window.location.href = '/'
+      if (!config.skipAuthRedirect) {
+        window.location.href = '/'
+      }
     }
+
     
     return Promise.reject(error)
   }

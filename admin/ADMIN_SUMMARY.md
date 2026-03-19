@@ -141,17 +141,35 @@ taichu-unified/admin/
 - 操作日志记录
 - 数据导出功能
 
-## 🚀 快速启动
+## 🚀 快速验证 / 启动
+
+### 1. 先做构建校验（推荐）
 
 ```bash
 cd taichu-unified/admin
 npm install
+npm run build
+```
+
+构建成功后会生成 `admin/dist/index.html`。如果后台已经挂在某个站点根地址，请访问“站点根地址 + `/login`”打开登录页。
+
+### 2. 需要热更新时再启动 dev server
+
+```powershell
+Set-Location "C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin"
+npm install
+$env:VITE_PROXY_TARGET = 'http://localhost:8080'
 npm run dev
 ```
 
-访问 http://localhost:3001
+访问终端打印出来的 dev URL 即可（常见是 `http://localhost:3001`，但不要把 3001 当成固定后台站点地址）。
 
-默认账号: admin / admin123
+### 3. 登录口径
+
+- 登录页前端路由：`/login`
+- 登录接口：`POST /api/admin/auth/login`
+- 若数据库使用了 `database/20260317_create_admin_users_table.sql` 的初始化数据，可用默认账号 `admin / admin123`
+- 若当前环境已有自己的管理员数据，请直接使用真实账号，不要机械假设默认密码一定可用
 
 ## 📡 API接口
 

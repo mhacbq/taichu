@@ -61,6 +61,9 @@ function resolvePath(routePath) {
   if (isExternal(routePath)) {
     return routePath
   }
+  if (props.basePath && routePath) {
+    return props.basePath + '/' + routePath.replace(/^\//, '')
+  }
   return routePath
 }
 </script>

@@ -1,8 +1,23 @@
 # 自动化任务执行内存
 
 > 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续算法修复与验证不要再默认使用 Docker、`docker exec` 或容器内 PHP；优先走本机可用的 HTTP 接口、本机 PHP CLI（若已可用）和代码静态检查。
+>
+> 执行策略修正（2026-03-19）：若 `TODO.md` 里其他栏位的占卜问题主根因仍落在 `service/controller`、评分/解读、结构化输出或结果一致性逻辑，不要因为条目暂时不挂在 `[automation]` 就机械退出；可直接接手 1 条修到闭环。
+>
+> SQL 落库要求（2026-03-19）：若算法修复最终需要补充或调整 SQL / 表结构兼容（如补列、兼容迁移、初始化脚本、数据修复脚本），必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件，不要只改 service/controller 或只写说明。
+
+## 2026-03-19 八字页友好提示修复
+- **任务目标**: 处理 `[automation]` 中高优项“不要显示‘账户与价格暂不可用，确认前不展示消费承诺’这类不友好提示”，并完成最小闭环。
+- **执行摘要**:
+    1. 开始时按要求只读取了 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与本 memory；随后用真实接口复测 `GET /api/points/balance`、`GET /api/fortune/points-cost`，确认无 token 下两者都返回 `401 请先登录`。
+    2. 结合 `frontend/src/views/Bazi.vue`、`frontend/src/api/index.js`、`frontend/src/api/request.js` 复核，确认原问题不是“价格接口坏了”，而是八字页把游客态 401 直接落成错误态并展示了生硬文案。
+    3. 本轮把八字页初始化请求改为静默探测，并在前端拆出 `guest` 状态：未登录时不再跳首页，也不再显示“账户与价格暂不可用”；顶部提示、主按钮、AI/深度工具入口统一改为“登录后查看 / 请先登录 / 重新获取”等更自然的说明。
+    4. 已同步更新 `TODO.md`：移除 `[automation]` 中该高优项，并转入 `D. 最近已完成 / 已确认`。
+- **验证摘要**: 真实接口复测 `/api/points/balance` 与 `/api/fortune/points-cost`（无 token）均为 `401`；`read_lints` 检查 `frontend/src/views/Bazi.vue`、`frontend/src/api/index.js`、`frontend/src/api/request.js` 为 0 diagnostics。
+- **状态**: 已完成 1 条高优项闭环；后续可继续接手 `[automation]` 剩余高优问题中的下一条，但仍需坚持“一轮只做 1 项”。
 
 ## 2026-03-19 轮询（无动作，phpstudy 续检）
+
 - **任务目标**: 按自动化要求仅检查 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 是否重新出现可独立处理的高优算法项。
 - **执行摘要**:
     1. 开始时仅读取了指定 TODO 章节与本 memory，未扩扫其他模块，也未触发 Docker、容器日志、容器内 PHP 或 `docker compose`。
@@ -286,41 +301,34 @@
     3. 因无匹配高优待办，本轮按规则立即退出，未做接口复测、未改代码、未更新 TODO，也未尝试高风险数据库/登录态操作。
 - **状态**: no-op；继续等待 `[automation]` 章节重新出现新的高优未完成算法项后，再进入“复现 → 修复 → 最小验证”闭环。
 
+## 2026-03-19 塔罗记录旧表兼容修复
+- **任务目标**: 直接接手 `A` 队列里仍属于 controller/model/结构化输出范畴的塔罗 `save-record/history/share` 闭环问题，优先修复旧 `tc_tarot_record` 字段不兼容导致的保存/历史/分享断链。
+- **执行摘要**:
+    1. 结合 `TODO.md` 既有运行日志与代码静态复核，确认主根因不是新的环境问题，而是 `TarotRecord` 长期写死 `spread_type/is_public/share_code/view_count`，未兼容旧表里的 `type/topic/create_time` 等字段口径；同时 `Tarot` 控制器虽然有公开路由，但控制器级 `Auth` 仍会拦住匿名分享。
+    2. 已重写 `backend/app/model/TarotRecord.php` 的记录读写口径：创建时按实际字段动态写入，兼容 `type/spread_type`、`topic/question`、`created_at/create_time`，并统一通过 `toApiArray()` 输出历史/详情/分享数据。
+    3. 已同步收口 `backend/app/controller/Tarot.php`：`share` action 从控制器鉴权中排除，`detail/share` 改为复用模型标准化输出，`set-public` 在旧表缺分享字段时会返回明确业务错误，不再直接爆 SQL。
+    4. 新增 `backend/tests/Unit/TarotRecordCompatibilityTest.php`，并接入 `backend/tests/run.php`，为后续环境恢复后的快速回归预留探针。
+- **验证摘要**: `read_lints` 对 `TarotRecord.php`、`Tarot.php`、`backend/tests/run.php`、`TarotRecordCompatibilityTest.php` 均为 `0 diagnostics`；本机 `where.exe php` 仍未找到 PHP CLI，因此本轮未能直接执行测试脚本；真实 8080 接口回放仍受 phpstudy MySQL `1045` 阻塞。
+- **状态**: 代码侧修复、TODO 回写与测试补位已完成；后续若数据库连接恢复，应优先补做 `/api/tarot/save-record`、`/api/tarot/history`、`/api/tarot/share` 的真实回放。
 
+## 2026-03-19 积分余额与塔罗闭环复验
+- **任务目标**: 在用户声明已修复接口后，补做 phpstudy 本地真实回放，先验证 `points/balance` 是否恢复，再继续把塔罗 `save-record/history/share` 闭环在真实环境里跑通。
+- **执行摘要**:
+    1. 真实复测 `GET /api/health`、`POST /api/auth/phone-login`、`GET /api/points/balance`（含 `8080` 直连与 `5173` 代理）后，均返回 `200`；此前 `Unknown column 'points'` 已不再复现，说明登录前置与积分余额链路都已恢复。
+    2. 随后串行回放 `POST /api/tarot/save-record -> GET /api/tarot/history -> POST /api/tarot/set-public -> GET /api/tarot/share -> POST /api/tarot/delete-record`，初次验证时发现分享接口虽返回 `200`，但 `cards` 稳定为空数组，而同一记录在 `history/detail` 中正常。
+    3. 已在 `backend/app/controller/Tarot.php` 调整分享输出：浏览次数递增后先重新加载记录，再显式组装卡牌、分享码、浏览次数等字段；同时保留 `TarotRecord.php` 的 cards 兜底读取，避免后续模型口径漂移再把卡牌清空。
+    4. 终验再次回放上述塔罗闭环后，`share` 与 `history` 均返回完整 `cards`，`view_count` 也正确递增为 `1`；测试记录已调用 `delete-record` 清理。
+- **验证摘要**: 登录、积分余额、塔罗保存/历史/公开分享/删除接口本轮均真实返回 `200`；`share` 最终返回的首张牌已与历史记录一致，不再出现空数组。
+- **状态**: 本地 phpstudy 口径下，积分余额与塔罗保存/分享闭环均已通过真实接口验证；后续可转向新的命理主问题。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+## 2026-03-19 六爻结构化字段回补
+- **任务目标**: 处理 `TODO.md -> A. 高频修复队列 -> [automation]` 中“六爻占卜没有返回变爻、动爻、六亲、六神等详细信息，且历史记录回读时相关字段缩水”的高优项，并完成最小闭环。
+- **执行摘要**:
+    1. 先用 phpstudy 真实接口复测 `POST /api/liuyao/divination`、`GET /api/liuyao/history`、`GET /api/liuyao/detail`，确认当时逐爻结构仅有 `position/value/name/liuqin/liushen/is_moving/is_shi/is_ying`，缺少纳甲地支、变爻去向与动爻摘要，问题真实存在。
+    2. 已在 `backend/app/service/LiuyaoService.php` 新增公开的纳甲地支读取入口，并重构 `backend/app/controller/Liuyao.php` 的逐爻快照构建逻辑，让新起卦结果、历史回读、详情接口统一补出 `di_zhi / bian_value / bian_name / change_summary / moving_line_details / fushen` 等字段，同时为旧快照增加 `hexagram_original` 回退。
+    3. 同步更新 `frontend/src/views/Liuyao.vue`，结果区新增动爻摘要卡与逐爻明细扩展展示，前端归一化逻辑也接住了新增字段。
+    4. 已同步更新 `TODO.md`：移除该高优项，并转入 `D. 最近已完成 / 已确认`。
+- **验证摘要**: 真实接口终验 `divination/history/detail` 三条链路均已返回 `di_zhi / bian_name / change_summary / moving_line_details` 等新增字段；`read_lints` 检查 `Liuyao.php`、`LiuyaoService.php`、`frontend/src/views/Liuyao.vue` 为 0 diagnostics；`npm run build --prefix frontend` 通过。
+- **状态**: 已完成 1 条六爻结构化输出高优问题闭环；当前 `[automation]` 仅剩低优“每日运势文案专业性不足”待后续处理。
 
 

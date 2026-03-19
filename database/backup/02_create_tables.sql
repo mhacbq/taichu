@@ -284,15 +284,20 @@ CREATE TABLE IF NOT EXISTS `tc_sms_code` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
     `code` VARCHAR(10) NOT NULL COMMENT '验证码',
-    `type` VARCHAR(20) NOT NULL COMMENT '类型 register/login/reset',
-    `ip` VARCHAR(45) DEFAULT '' COMMENT 'IP地址',
-    `used` TINYINT DEFAULT 0 COMMENT '是否已使用 0否 1是',
-    `expired_at` DATETIME NOT NULL COMMENT '过期时间',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `type` VARCHAR(20) NOT NULL DEFAULT 'register' COMMENT '类型 register/login/reset',
+    `expire_time` DATETIME NOT NULL COMMENT '过期时间',
+    `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用 0否 1是',
+    `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT 'IP地址',
+    `user_agent` VARCHAR(500) NOT NULL DEFAULT '' COMMENT 'User-Agent',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     INDEX `idx_phone` (`phone`),
+    INDEX `idx_code` (`code`),
     INDEX `idx_type` (`type`),
-    INDEX `idx_expired_at` (`expired_at`)
+    INDEX `idx_is_used` (`is_used`),
+    INDEX `idx_phone_type` (`phone`, `type`),
+    INDEX `idx_expire_time` (`expire_time`),
+    INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='短信验证码表';
 
 -- 短信配置表

@@ -1,6 +1,43 @@
 # 运营人员后台检查 - 执行历史
 
 > 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续巡检不要再把 Docker、容器状态、`docker compose` 或 `localhost:3001` 代理当作默认前提；历史记录里的 3001 / 容器表述仅代表旧轮次现场，不代表当前执行基线。
+>
+> 后台登录入口修正（2026-03-19）：`admin/` 是独立 Vite 后台项目，登录页前端路由是 `/login`，登录接口是 `POST /api/admin/auth/login`。页面级巡检前先确认 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin\dist\index.html` 是否已存在或需重建；必要时先执行 `npm run build --prefix admin`。除非用户明确说明已启动 dev server，否则不要默认 `http://localhost:3001/login`；也不要机械把 `http://localhost:8080/admin` 或 `/admin/login` 当成固定入口。应先核对用户实际部署/挂载后的后台站点根地址，再访问“站点根地址 + /login”。
+
+## 2026-03-19 积分统计接口修复补记
+
+### 检查范围
+- 直接修复并回归 `GET /api/admin/points/stats` 的单点 500。
+
+### 检查结果概述
+- 根因已确认并修复：`Admin::pointsStats()` 调用了缺失的 `AdminStatsService::getPointsStatsSnapshot()`；现已补齐该方法及积分统计聚合逻辑，接口恢复 `code=200`，不再抛“获取积分统计失败，请稍后重试”。
+- 回归结果显示接口当前已返回 `date / today_given / today_consumed / balance / top_consumers / total_records` 字段；后续若继续巡检后台积分模块，可直接基于该接口做可用性验证。
+
+---
+
+## 2026-03-19 第三十九轮执行摘要
+
+### 检查范围
+- 仅按 phpstudy 基线直连 `http://localhost:8080/api/admin/...`，本轮深查登录 → Dashboard、用户/积分查询、系统设置/系统公告 3 组后台运营链路，并在不额外拉起环境的前提下补看现成页面入口。
+
+### 检查结果概述
+- `admin / admin123` 现可正常登录，`dashboard/statistics`、`dashboard/trend`、`users list/detail`、`points/records`、`system/notices` 都返回 `code=200` 真实数据；系统公告也已实测“新增 → 列表可见 → 删除回滚”闭环正常，说明登录后全局 403 已不再是当前主阻塞。
+- 本轮仍确认 1 条需要继续盯的后台问题：`PUT /api/admin/system/settings` 提交完整配置后虽然返回“保存成功”，但随后的 `GET /api/admin/system/settings` 会把文本/数值字段回读成空串和 `0`，`enable_feedback` 仍固定为 `true`；同时直接查询本地 MySQL `system_config` 表时原始值仍保持正常，说明当前更像是配置读取 / 缓存口径失真，而不是简单的单个开关未保存。该证据已去重补写到 `TODO.md`。
+
+---
+
+
+
+## 2026-03-19 第三十八轮执行摘要
+
+### 检查范围
+- 仅按 phpstudy 基线直连 `http://localhost:8080/api/admin/...`，深查登录、Dashboard、用户、系统设置、系统公告 3 组后台运营链路，并在无需额外拉起环境的前提下补测现成页面入口。
+
+### 检查结果概述
+- `POST /api/admin/auth/login`（`admin / admin123`）本轮已成功返回 token，不再复现“管理员账号表不存在”；但登录响应里 `admin.roles=[]`、`role=""`，继续携带该 token 访问 `dashboard statistics/trend`、`users list/detail`、`system settings/notices` 时全部返回 `HTTP 200 + code 403`，说明主阻塞已切换为登录后鉴权/角色种子缺失，而不是登录前缺表。
+- 页面侧仍仅确认 `http://localhost:3001/login` 可返回“太初管理后台”Vite 壳页，`http://localhost:8080/admin` 与 `/admin/login` 继续 `404`。已把旧 TODO 里的“登录前缺表”证据替换为新的权限阻塞证据，未新增重复条目。
+
+---
 
 ## 2026-03-19 第三十七轮执行摘要
 
@@ -238,3 +275,15 @@
 
 ## 2026-03-17 第十七轮执行摘要
 ...
+
+---
+
+## 2026-03-19 第四十轮执行摘要
+
+### 检查范围
+- 先按要求复读 `TODO.md` 的 `[30-3]` 章节与本记忆，不假设后台页面部署根地址；优先确认 `admin/dist/index.html` 与独立后台构建状态。
+- 本轮只补证 1 组后台主链路：`登录 -> 系统设置读取口径`，仅核对 `http://localhost:8080/api/admin/...`，不直接修复。
+
+### 检查结果概述
+- `admin/dist/index.html` 已存在，且 `npm run build --prefix admin` 本轮可成功通过；但仓库内仍无法推出用户实际部署/挂载后的后台站点根地址，因此本轮没有再凭空访问任何页面 URL。
+- fresh login `POST /api/admin/auth/login` 继续返回 `admin.roles=["admin"]`、`role="admin"`，说明登录与角色链路当前正常；但紧接着 `GET /api/admin/system/settings` 仍稳定返回 `site_name/site_description=""`、`register_points/checkin_points/bazi_cost/tarot_cost=0`、`enable_feedback=true`。这表明系统设置异常即使不经过页面操作，也能在 8080 直连接口层直接复现；本轮已把新证据并入 `TODO.md` 现有条目，未重复新开问题。

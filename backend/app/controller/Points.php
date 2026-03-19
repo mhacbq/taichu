@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\PointsRecord;
 use app\model\BaziRecord;
 use app\service\PointsService;
+use app\service\SchemaInspector;
 
 class Points extends BaseController
 {
@@ -38,20 +39,32 @@ class Points extends BaseController
             return $this->error('用户不存在', 404);
         }
         
+        $userId = (int) $user['sub'];
+
         // 获取使用统计
-        $baziCount = BaziRecord::where('user_id', $user['sub'])->count();
-        
+        $baziCount = BaziRecord::where('user_id', $userId)->count();
+
+        // 兼容 tc_points_record 可能缺少 points 列（老建表脚本无此列）
+        $cols = SchemaInspector::getTableColumns('tc_points_record');
+        $hasPointsCol = isset($cols['points']);
+
+        if ($hasPointsCol) {
+            $totalSpent  = (int) abs((int) PointsRecord::where('user_id', $userId)->where('points', '<', 0)->sum('points'));
+            $totalEarned = (int) PointsRecord::where('user_id', $userId)->where('points', '>', 0)->sum('points');
+        } else {
+            // 降级：用 amount + type 字段推算
+            $spentTypes  = ['reduce', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem'];
+            $totalSpent  = (int) PointsRecord::where('user_id', $userId)->whereIn('type', $spentTypes)->sum('amount');
+            $totalEarned = (int) PointsRecord::where('user_id', $userId)->whereNotIn('type', $spentTypes)->sum('amount');
+        }
+
         return $this->success([
-            'balance' => $userModel->points,
-            'baziCount' => $baziCount,
-            'first_bazi' => $baziCount === 0, // 首次排盘标记
-            'tarotCount' => \app\model\TarotRecord::where('user_id', $user['sub'])->count(),
-            'totalSpent' => abs(PointsRecord::where('user_id', $user['sub'])
-                ->where('points', '<', 0)
-                ->sum('points')),
-            'totalEarned' => PointsRecord::where('user_id', $user['sub'])
-                ->where('points', '>', 0)
-                ->sum('points'),
+            'balance'     => (int) $userModel->points,
+            'baziCount'   => $baziCount,
+            'first_bazi'  => $baziCount === 0,
+            'tarotCount'  => \app\model\TarotRecord::where('user_id', $userId)->count(),
+            'totalSpent'  => $totalSpent,
+            'totalEarned' => $totalEarned,
         ]);
     }
     

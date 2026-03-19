@@ -207,36 +207,187 @@ class AdminStatsService
     }
 
     /**
+     * 获取积分统计快照（供积分管理页单独调用）
+     */
+    public static function getPointsStatsSnapshot(?string $date = null): array
+    {
+        $targetDate = self::normalizeStatsDate($date);
+
+        return array_merge([
+            'date' => $targetDate,
+        ], self::buildPointsStatsPayload($targetDate));
+    }
+
+    /**
      * 获取积分统计
      */
     private static function getPointsStats(string $today): array
     {
-        $stats = self::getDailyStatsSnapshot($today);
+        return self::buildPointsStatsPayload($today);
+    }
+
+    /**
+     * 构建积分统计输出
+     */
+    private static function buildPointsStatsPayload(string $date): array
+    {
+        [$todayGiven, $todayConsumed, $topConsumers, $recordCount] = self::collectPointsStatsByDate($date);
+
+        return [
+            'today_given' => $todayGiven,
+            'today_consumed' => $todayConsumed,
+            'balance' => self::getCurrentPointsBalance(),
+            'top_consumers' => $topConsumers,
+            'total_records' => $recordCount,
+        ];
+    }
+
+    /**
+     * 汇总某日积分数据与高消耗用户
+     */
+    private static function collectPointsStatsByDate(string $date): array
+    {
+        if (!self::tableExists('tc_points_record')
+            || !self::tableHasColumn('tc_points_record', 'created_at')) {
+            return [0, 0, [], 0];
+        }
+
+        $baseQuery = Db::table('tc_points_record')
+            ->where('created_at', '>=', $date . ' 00:00:00')
+            ->where('created_at', '<=', $date . ' 23:59:59');
+
+        $recordCount = (int) (clone $baseQuery)->count();
+        if ($recordCount === 0) {
+            return [0, 0, [], 0];
+        }
+
+        $todayGiven = 0;
+        $todayConsumed = 0;
         $topConsumers = [];
 
-        if (self::tableExists('tc_points_record')
-            && self::tableHasColumn('tc_points_record', 'type')
-            && self::tableHasColumn('tc_points_record', 'created_at')
-            && self::tableHasColumn('tc_points_record', 'user_id')
-            && self::tableHasColumn('tc_points_record', 'points')) {
-            $topConsumers = Db::table('tc_points_record')
-                ->where('type', 'consume')
-                ->whereLike('created_at', $today . '%')
-                ->field('user_id, SUM(points) as total_points')
-                ->group('user_id')
-                ->order('total_points', 'DESC')
-                ->limit(10)
-                ->select()
-                ->toArray();
+        if (self::tableHasColumn('tc_points_record', 'points')) {
+            $todayGiven = (int) ((clone $baseQuery)->where('points', '>', 0)->sum('points') ?? 0);
+            $todayConsumed = abs((int) ((clone $baseQuery)->where('points', '<', 0)->sum('points') ?? 0));
+
+            if (self::tableHasColumn('tc_points_record', 'user_id')) {
+                $topConsumers = (clone $baseQuery)
+                    ->where('points', '<', 0)
+                    ->field('user_id, ABS(SUM(points)) as total_points')
+                    ->group('user_id')
+                    ->order('total_points', 'DESC')
+                    ->limit(10)
+                    ->select()
+                    ->toArray();
+            }
+        } elseif (self::tableHasColumn('tc_points_record', 'amount')
+            && self::tableHasColumn('tc_points_record', 'type')) {
+            $spentTypes = ['reduce', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem', 'refund', 'tarot', 'bazi', 'hehun', 'liuyao'];
+
+            $todayConsumed = (int) ((clone $baseQuery)->whereIn('type', $spentTypes)->sum('amount') ?? 0);
+            $todayGiven = (int) ((clone $baseQuery)->whereNotIn('type', $spentTypes)->sum('amount') ?? 0);
+
+            if (self::tableHasColumn('tc_points_record', 'user_id')) {
+                $topConsumers = (clone $baseQuery)
+                    ->whereIn('type', $spentTypes)
+                    ->field('user_id, SUM(amount) as total_points')
+                    ->group('user_id')
+                    ->order('total_points', 'DESC')
+                    ->limit(10)
+                    ->select()
+                    ->toArray();
+            }
         }
 
         return [
-            'today_given' => (int) ($stats['points_given'] ?? 0),
-            'today_consumed' => (int) ($stats['points_consumed'] ?? 0),
-            'balance' => (int) ($stats['points_balance'] ?? 0),
-            'top_consumers' => $topConsumers,
+            $todayGiven,
+            $todayConsumed,
+            self::enrichTopPointsConsumers($topConsumers),
+            $recordCount,
         ];
     }
+
+    /**
+     * 为高消耗用户补充展示字段
+     */
+    private static function enrichTopPointsConsumers(array $rows): array
+    {
+        if (empty($rows)) {
+            return [];
+        }
+
+        $userIds = array_values(array_unique(array_filter(array_map(
+            static fn (array $row): int => (int) ($row['user_id'] ?? 0),
+            $rows
+        ), static fn (int $userId): bool => $userId > 0)));
+
+        $userMap = [];
+        $userTable = self::resolveUserTable();
+        if (!empty($userIds)
+            && $userTable !== null
+            && self::tableExists($userTable)
+            && self::tableHasColumn($userTable, 'id')) {
+            $fields = ['id'];
+            $fields[] = self::tableHasColumn($userTable, 'username') ? 'username' : "'' as username";
+            $fields[] = self::tableHasColumn($userTable, 'nickname') ? 'nickname' : "'' as nickname";
+            $fields[] = self::tableHasColumn($userTable, 'phone') ? 'phone' : "'' as phone";
+
+            $users = Db::table($userTable)
+                ->whereIn('id', $userIds)
+                ->field($fields)
+                ->select()
+                ->toArray();
+
+            foreach ($users as $user) {
+                $userMap[(int) ($user['id'] ?? 0)] = $user;
+            }
+        }
+
+        foreach ($rows as &$row) {
+            $userId = (int) ($row['user_id'] ?? 0);
+            $user = $userMap[$userId] ?? [];
+            $rawUsername = trim((string) ($user['username'] ?? ''));
+            $rawNickname = trim((string) ($user['nickname'] ?? ''));
+            $rawPhone = trim((string) ($user['phone'] ?? ''));
+            $displayName = self::resolveDisplayUserName($rawUsername, $rawNickname, $rawPhone, $userId);
+
+            $row['user_id'] = $userId;
+            $row['total_points'] = abs((int) ($row['total_points'] ?? 0));
+            $row['username'] = $displayName;
+            $row['nickname'] = $rawNickname !== '' && !self::isPhoneLikeUserName($rawNickname, $rawPhone)
+                ? $rawNickname
+                : $displayName;
+            $row['phone'] = $rawPhone;
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /**
+     * 获取当前积分总余额
+     */
+    private static function getCurrentPointsBalance(): int
+    {
+        if (!self::tableExists('tc_user') || !self::tableHasColumn('tc_user', 'points')) {
+            return 0;
+        }
+
+        return (int) (Db::table('tc_user')->sum('points') ?? 0);
+    }
+
+    /**
+     * 归一化统计日期
+     */
+    private static function normalizeStatsDate(?string $date): string
+    {
+        $value = trim((string) ($date ?? ''));
+        if ($value !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        return date('Y-m-d');
+    }
+
 
     /**
      * 获取趋势统计（兼容旧后台结构）
@@ -418,15 +569,16 @@ class AdminStatsService
         $refundAmount = $refundTimeField !== null
             ? self::sumFieldByDate($rechargeOrderTable, $refundTimeField, $date, 'refund_amount', $refundConditions)
             : 0;
+        $pointsStats = self::collectPointsStatsByDate($date);
 
         return [
             'stat_date' => $date,
             'new_users' => self::countRowsByDate('tc_user', 'created_at', $date),
             'active_users' => self::countRowsByDate('tc_user', 'last_login_at', $date),
             'total_users' => self::countAllRows('tc_user'),
-            'points_given' => self::sumPointsByTypeAndDate($date, ['income', 'recharge']),
-            'points_consumed' => abs(self::sumPointsByTypeAndDate($date, ['consume'])),
-            'points_balance' => self::tableExists('tc_user') ? (int) (Db::table('tc_user')->sum('points') ?? 0) : 0,
+            'points_given' => (int) ($pointsStats[0] ?? 0),
+            'points_consumed' => (int) ($pointsStats[1] ?? 0),
+            'points_balance' => self::getCurrentPointsBalance(),
             'bazi_count' => self::countRowsByDate('tc_bazi_record', 'created_at', $date),
             'tarot_count' => self::countRowsByDate('tc_tarot_record', 'created_at', $date),
             'liuyao_count' => self::countRowsByDate(self::resolveLiuyaoRecordTable(), 'created_at', $date),

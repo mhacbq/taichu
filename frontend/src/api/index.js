@@ -45,7 +45,8 @@ export const consumePoints = (data) => request.post('/points/consume', data)
 export const submitFeedback = (data) => request.post('/feedback/submit', data)
 
 // 运势分析（积分消耗功能）
-export const getFortunePointsCost = () => request.get('/fortune/points-cost')
+export const getFortunePointsCost = (config = {}) => request.get('/fortune/points-cost', config)
+
 export const getYearlyFortune = (data) => request.post('/fortune/yearly', data)
 export const getYearlyTrend = (params) => request.get('/fortune/yearly-trend', { params })
 export const getDayunAnalysis = (data) => request.post('/fortune/dayun-analysis', data)

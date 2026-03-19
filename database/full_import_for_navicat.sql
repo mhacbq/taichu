@@ -292,15 +292,20 @@ CREATE TABLE IF NOT EXISTS `tc_sms_code` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
     `code` VARCHAR(10) NOT NULL COMMENT '验证码',
-    `type` VARCHAR(20) NOT NULL COMMENT '类型 register/login/reset',
-    `ip` VARCHAR(45) DEFAULT '' COMMENT 'IP地址',
-    `used` TINYINT DEFAULT 0 COMMENT '是否已使用 0否 1是',
-    `expired_at` DATETIME NOT NULL COMMENT '过期时间',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `type` VARCHAR(20) NOT NULL DEFAULT 'register' COMMENT '类型 register/login/reset',
+    `expire_time` DATETIME NOT NULL COMMENT '过期时间',
+    `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用 0否 1是',
+    `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT 'IP地址',
+    `user_agent` VARCHAR(500) NOT NULL DEFAULT '' COMMENT 'User-Agent',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     INDEX `idx_phone` (`phone`),
+    INDEX `idx_code` (`code`),
     INDEX `idx_type` (`type`),
-    INDEX `idx_expired_at` (`expired_at`)
+    INDEX `idx_is_used` (`is_used`),
+    INDEX `idx_phone_type` (`phone`, `type`),
+    INDEX `idx_expire_time` (`expire_time`),
+    INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='短信验证码表';
 
 -- 短信配置表
@@ -1647,18 +1652,99 @@ USE taichu;
 -- 1. 重命名 sms_codes 为 tc_sms_code
 SET @check_sms_codes := (
     SELECT COUNT(*) FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = 'taichu' AND TABLE_NAME = 'sms_codes'
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sms_codes'
+);
+SET @check_tc_sms_code := (
+    SELECT COUNT(*) FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tc_sms_code'
 );
 
 SET @sql_sms_codes := IF(
-    @check_sms_codes > 0,
+    @check_sms_codes > 0 AND @check_tc_sms_code = 0,
     "ALTER TABLE `sms_codes` RENAME TO `tc_sms_code`",
-    "SELECT '表 sms_codes 不存在，跳过' AS info"
+    "SELECT '表 sms_codes 不存在或 tc_sms_code 已存在，跳过' AS info"
 );
 
 PREPARE stmt_sms_codes FROM @sql_sms_codes;
 EXECUTE stmt_sms_codes;
 DEALLOCATE PREPARE stmt_sms_codes;
+
+-- 1.1 修复 tc_sms_code 旧字段兼容（used / expired_at -> is_used / expire_time）
+SET @has_sms_code_expire_time := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tc_sms_code'
+      AND COLUMN_NAME = 'expire_time'
+);
+SET @has_sms_code_is_used := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tc_sms_code'
+      AND COLUMN_NAME = 'is_used'
+);
+SET @has_sms_code_user_agent := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tc_sms_code'
+      AND COLUMN_NAME = 'user_agent'
+);
+SET @has_sms_code_expired_at := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tc_sms_code'
+      AND COLUMN_NAME = 'expired_at'
+);
+SET @has_sms_code_used := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tc_sms_code'
+      AND COLUMN_NAME = 'used'
+);
+
+SET @sql_add_sms_expire_time := IF(
+    @has_sms_code_expire_time = 0,
+    "ALTER TABLE `tc_sms_code` ADD COLUMN `expire_time` DATETIME NULL DEFAULT NULL COMMENT '过期时间' AFTER `type`",
+    'SELECT 1'
+);
+PREPARE stmt_add_sms_expire_time FROM @sql_add_sms_expire_time;
+EXECUTE stmt_add_sms_expire_time;
+DEALLOCATE PREPARE stmt_add_sms_expire_time;
+
+SET @sql_add_sms_is_used := IF(
+    @has_sms_code_is_used = 0,
+    "ALTER TABLE `tc_sms_code` ADD COLUMN `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用 0否 1是' AFTER `expire_time`",
+    'SELECT 1'
+);
+PREPARE stmt_add_sms_is_used FROM @sql_add_sms_is_used;
+EXECUTE stmt_add_sms_is_used;
+DEALLOCATE PREPARE stmt_add_sms_is_used;
+
+SET @sql_add_sms_user_agent := IF(
+    @has_sms_code_user_agent = 0,
+    "ALTER TABLE `tc_sms_code` ADD COLUMN `user_agent` VARCHAR(500) NOT NULL DEFAULT '' COMMENT 'User-Agent' AFTER `ip`",
+    'SELECT 1'
+);
+PREPARE stmt_add_sms_user_agent FROM @sql_add_sms_user_agent;
+EXECUTE stmt_add_sms_user_agent;
+DEALLOCATE PREPARE stmt_add_sms_user_agent;
+
+SET @sql_backfill_sms_expire_time := IF(
+    @has_sms_code_expired_at > 0,
+    "UPDATE `tc_sms_code` SET `expire_time` = `expired_at` WHERE `expire_time` IS NULL AND `expired_at` IS NOT NULL",
+    'SELECT 1'
+);
+PREPARE stmt_backfill_sms_expire_time FROM @sql_backfill_sms_expire_time;
+EXECUTE stmt_backfill_sms_expire_time;
+DEALLOCATE PREPARE stmt_backfill_sms_expire_time;
+
+SET @sql_backfill_sms_is_used := IF(
+    @has_sms_code_used > 0,
+    "UPDATE `tc_sms_code` SET `is_used` = `used` WHERE `is_used` = 0 AND `used` <> 0",
+    'SELECT 1'
+);
+PREPARE stmt_backfill_sms_is_used FROM @sql_backfill_sms_is_used;
+EXECUTE stmt_backfill_sms_is_used;
+DEALLOCATE PREPARE stmt_backfill_sms_is_used;
 
 -- 2. 重命名 sms_configs 为 tc_sms_config
 SET @check_sms_configs := (
@@ -2400,11 +2486,16 @@ CREATE TABLE IF NOT EXISTS `tc_sms_code` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
     `code` VARCHAR(10) NOT NULL COMMENT '验证码',
-    `type` VARCHAR(50) NOT NULL DEFAULT 'register' COMMENT '验证码类型: register/login/reset',
+    `type` VARCHAR(20) NOT NULL DEFAULT 'register' COMMENT '类型 register/login/reset',
     `expire_time` DATETIME NOT NULL COMMENT '过期时间',
     `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用 0否 1是',
-    `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT '请求IP',
+    `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT 'IP地址',
+    `user_agent` VARCHAR(500) NOT NULL DEFAULT '' COMMENT 'User-Agent',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_phone` (`phone`),
+    INDEX `idx_code` (`code`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_is_used` (`is_used`),
     INDEX `idx_phone_type` (`phone`, `type`),
     INDEX `idx_expire_time` (`expire_time`),
     INDEX `idx_created_at` (`created_at`)
@@ -2564,26 +2655,11 @@ USE taichu;
 
 -- 修复历史神煞数据中的 ?? / ???? / 乱码占位。
 -- 仅针对默认种子对应的 sort + type + category 组合执行兜底回填，避免误伤自定义神煞。
+-- 注意：`tc_shensha` 在导入链路里存在 `uk_name_category(name, category)` 唯一键。
+-- 启动 / 导入阶段不直接改 `name`，避免把历史乱码行更新成已存在的标准名称（如“福星贵人”）后撞唯一键。
+-- 标准中文名称由 `20260317_create_shensha_table.sql` 的默认种子兜底，后台读取时也有 DisplayTextRepairService 按 sort/type/category 做展示修复。
 UPDATE `tc_shensha`
 SET
-    `name` = CASE
-        WHEN `sort` = 1 AND `type` = 'daji' AND `category` = 'guiren' THEN '天乙贵人'
-        WHEN `sort` = 2 AND `type` = 'ji' AND `category` = 'xueye' THEN '文昌贵人'
-        WHEN `sort` = 3 AND `type` = 'ji' AND `category` = 'guiren' THEN '太极贵人'
-        WHEN `sort` = 4 AND `type` = 'daji' AND `category` = 'guiren' THEN '天德贵人'
-        WHEN `sort` = 5 AND `type` = 'daji' AND `category` = 'guiren' THEN '月德贵人'
-        WHEN `sort` = 6 AND `type` = 'ji' AND `category` = 'guiren' THEN '福星贵人'
-        WHEN `sort` = 7 AND `type` = 'ping' AND `category` = 'ganqing' THEN '桃花'
-        WHEN `sort` = 8 AND `type` = 'xiong' AND `category` = 'jiankang' THEN '羊刃'
-        WHEN `sort` = 9 AND `type` = 'xiong' AND `category` = 'caiyun' THEN '劫煞'
-        WHEN `sort` = 10 AND `type` = 'xiong' AND `category` = 'ganqing' THEN '孤辰'
-        WHEN `sort` = 11 AND `type` = 'xiong' AND `category` = 'ganqing' THEN '寡宿'
-        WHEN `sort` = 12 AND `type` = 'xiong' AND `category` = 'ganqing' THEN '阴差阳错'
-        WHEN `sort` = 13 AND `type` = 'xiong' AND `category` = 'caiyun' THEN '十恶大败'
-        WHEN `sort` = 14 AND `type` = 'ji' AND `category` = 'caiyun' THEN '金舆'
-        WHEN `sort` = 15 AND `type` = 'ping' AND `category` = 'guiren' THEN '华盖'
-        ELSE `name`
-    END,
     `description` = CASE
         WHEN `sort` = 1 AND `type` = 'daji' AND `category` = 'guiren' THEN '最吉之神，命中逢之，遇事有人帮，遇危难有人救'
         WHEN `sort` = 2 AND `type` = 'ji' AND `category` = 'xueye' THEN '主聪明好学，利文途考学'

@@ -267,6 +267,15 @@ class LiuyaoService
     }
 
     /**
+     * 对外暴露六爻纳甲地支，供控制器/历史回填统一构建结构化排盘。
+     */
+    public static function getYaoDiZhiMap(string $yaoCode): array
+    {
+        return self::getYaoDiZhi(self::getGuaName($yaoCode), $yaoCode);
+    }
+
+
+    /**
      * 动态计算卦宫和世应 (寻宫认世法)
      * 算法逻辑：
      * XOR = 上卦 ^ 下卦

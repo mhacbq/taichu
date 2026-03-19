@@ -82,12 +82,17 @@ class Auth extends BaseController
                 ->update($updatePayload);
         }
 
-        $roles = $this->normalizeClientRoles(AdminAuthService::getAdminRoleCodes((int) $admin['id']));
+        $adminId = (int) $admin['id'];
+
+        // 登录时主动清除旧的权限缓存，确保获取到最新角色/权限
+        AdminAuthService::clearPermissionCache($adminId);
+
+        $roles = $this->normalizeClientRoles(AdminAuthService::getAdminRoleCodes($adminId));
         $payload = [
             'iss' => 'taichu-admin',
             'iat' => time(),
             'exp' => time() + 86400,
-            'sub' => (int) $admin['id'],
+            'sub' => $adminId,
             'username' => (string) ($admin['username'] ?? $username),
             'roles' => $roles,
             'is_admin' => true,
@@ -99,7 +104,7 @@ class Auth extends BaseController
             'token' => $token,
             'expires_in' => 86400,
             'admin' => [
-                'id' => (int) $admin['id'],
+                'id' => $adminId,
                 'username' => (string) ($admin['username'] ?? $username),
                 'nickname' => (string) (($admin['nickname'] ?? '') ?: ($admin['username'] ?? $username)),
                 'roles' => $roles,

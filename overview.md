@@ -2,18 +2,85 @@
 
 ## 最近更新
 
-### 后端修复专家（自动化执行，2026-03-19 本轮）
+### 后台运营巡检（自动化执行，2026-03-19 第三十九轮）
 
-- 本轮严格按要求开始时只读取了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与 `.codebuddy/automations/15/memory.md`。
-- 当前 `[15]` 下仍是同 4 条未完成高风险项：bootstrap 神煞 SQL 唯一键冲突、phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
-- 结合现有证据复核后，判断这 4 项仍全部落在高风险边界：分别涉及初始化 SQL、环境凭据、缺表建表、历史 schema 迁移；按当前规则本轮不自动接单、不改业务代码、不改 SQL、不更新 `TODO.md` 完成状态。
-- 本轮仅更新了 `.codebuddy/automations/15/memory.md` 与 `overview.md`，用于记录“继续不接单”的结论，避免后续自动化重复在同一批前置问题上空转。
+- 本轮先严格只读取 `TODO.md -> B. 高频巡检关注清单 -> [30-3] 后台运营体验检查` 与 `.codebuddy/automations/30-3/memory.md`，随后按 phpstudy 基线直连 `http://localhost:8080/api/admin/...`，深查 3 组后台运营链路：登录 → Dashboard、用户/积分查询、系统设置/系统公告；页面侧仅补看现成入口，不额外拉起任何环境。
+- 本轮未修改业务代码；只更新了 `TODO.md`、`.codebuddy/automations/30-3/memory.md` 与 `overview.md`。
+
+#### 关键发现
+1. **后台登录、Dashboard、用户/积分查询、系统公告闭环当前可用**
+   - `POST /api/admin/auth/login`（`admin / admin123`）返回 `code=200`，且 `admin.roles=["admin"]`、`role="admin"`。
+   - `GET /api/admin/dashboard/statistics`、`GET /api/admin/dashboard/trend?days=7`、`GET /api/admin/users?page=1&pageSize=10`、`GET /api/admin/users/5`、`GET /api/admin/points/records?page=1&pageSize=10` 都返回 `code=200` 和真实数据。
+   - `POST /api/admin/system/notices` 新增测试公告后，`GET /api/admin/system/notices?page=1&pageSize=10` 能立刻查到该条记录；随后 `DELETE /api/admin/system/notices/{id}` 返回 `删除成功`，列表恢复为空，说明公告读写回滚闭环正常。
+2. **系统设置链路仍存在“保存成功但回读失真”的高误导风险**
+   - `PUT /api/admin/system/settings` 提交完整 payload（含 `site_name/site_description/register_points/checkin_points/bazi_cost/tarot_cost/enable_feedback`）后返回 `{"code":200,"message":"保存成功","data":{"updated_count":18,...}}`。
+   - 但紧接着 `GET /api/admin/system/settings` 会把 `site_name/site_description` 回读成空串、`register_points/checkin_points/bazi_cost/tarot_cost` 回读成 `0`，`enable_feedback` 仍固定为 `true`。
+   - 同时直接查询本地 MySQL `system_config` 表，原始值仍保持 `site_name=太初命理`、`register_points=100`、`feature_feedback_enabled=1`；说明当前更像是后台配置读取 / 缓存口径失真，而不是数据库已经被实际清空。该证据已去重补写到 `TODO.md` 既有条目。
+3. **页面入口补充现状未变**
+   - `GET http://localhost:8080/admin` 仍是 `404`；
+   - `GET http://localhost:3001/login` 返回 `200` 且标题为“太初管理后台”。因此本轮主判断继续以 8080 直连后台接口为准。
 
 #### 本轮验证
-- 已验证：仅完成指定 TODO 章节与自动化记忆的只读复核，未执行 8080 接口复测。
-- 已复核：`TODO.md` 的 `[15]` 条目、`.codebuddy/automations/15/memory.md`。
-- 已更新：`.codebuddy/automations/15/memory.md`、`overview.md`。
-- 截图 / 录屏：本轮无新增截图；这次属于判单止损，代码和接口都没被拉出来加班。
+- 已验证：`GET /api/health`、`POST /api/admin/auth/login`、`GET /api/admin/dashboard/statistics`、`GET /api/admin/dashboard/trend?days=7`、`GET /api/admin/users?page=1&pageSize=10`、`GET /api/admin/users/5`、`GET /api/admin/points/records?page=1&pageSize=10`、`GET/PUT /api/admin/system/settings`、`POST/GET/DELETE /api/admin/system/notices`、`GET http://localhost:8080/admin`、`GET http://localhost:3001/login`。
+- 已更新记录：`TODO.md` 的 `[admin] 管理后台修复专家` 既有系统设置条目、`.codebuddy/automations/30-3/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；这次主要靠真实接口回放和数据库对照来拆穿“保存成功”的假动作。
+
+
+### 前端修复（自动化执行，2026-03-19 六爻结果区 UI 二次收口）
+
+- 本轮继续处理 `TODO.md -> A. 高频修复队列 -> [15-2] 前端修复专家` 中已补证的六爻结果区问题，聚焦 `frontend/src/views/Liuyao.vue` 的 `yao-bar` 与整条爻位信息布局做小步闭环优化。
+- 修改要点：
+  - 把原先信息拥挤的“符号 + 粗条 + 徽标”排布改成 **爻位 / 爻线 / 结果信息** 三栏结构；
+  - `yao-bar` 改为更贴近卦爻语义的轨道式阴阳爻展示，阳爻整条、阴爻断开，静爻只保留轻量占位；
+  - 动爻状态改为内联 `动爻` 徽标，不再靠突兀的外置标记抢占视觉；
+  - 伏神从左侧绝对定位改成随行胶囊标签，小屏下也不会被裁切；
+  - 移动端同步改成单列收口，避免 `yao-bar`、爻名、状态在窄屏下互相挤压。
+- 本轮未新增后端或数据库改动；`TODO.md` 对应问题在当前工作区里已处于 `D. 最近已完成 / 已确认`，因此未重复改写队列条目。
+
+#### 本轮验证
+- `read_lints`：`frontend/src/views/Liuyao.vue` 为 0 diagnostics。
+- `git diff --check -- frontend/src/views/Liuyao.vue`：通过。
+- `npm run build --prefix c:/Users/v_boqchen/WorkBuddy/Claw/taichu-unified/frontend`：通过；仍有既有大包体告警，但不影响构建。
+- 页面复测：已在本地前端会话中注入同结构预览数据，确认新的爻位文案、伏神胶囊、阴阳爻轨道与动爻徽标均可正常渲染。
+
+#### 截图 / 录屏
+- 修改前（爻位预览取证）：
+  ![六爻结果区优化前](c:/Users/v_boqchen/AppData/Roaming/WorkBuddy/User/globalStorage/tencent-cloud.coding-copilot/brain/f96e95868d76417ebd021fbdca9b9ea7/liuyao-ui-before.png)
+- 修改后（爻位预览复测）：
+  ![六爻结果区优化后](c:/Users/v_boqchen/AppData/Roaming/WorkBuddy/User/globalStorage/tencent-cloud.coding-copilot/brain/f96e95868d76417ebd021fbdca9b9ea7/liuyao-ui-after.png)
+
+
+### 命理算法修复（自动化执行，2026-03-19 八字页游客态提示）
+
+- 本轮先只读取了 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与 `.codebuddy/automations/automation/memory.md`，随后只处理 1 条高优项：八字页把未登录 401 误显示成“账户与价格暂不可用，确认前不展示消费承诺”。
+- 真实接口复现：`GET http://localhost:8080/api/points/balance` 与 `GET http://localhost:8080/api/fortune/points-cost` 在无 token 下都返回 `401 请先登录`，说明原问题根因是前端把游客态误归类成错误态，而不是单纯的价格接口故障。
+- 本轮修改：
+  - `frontend/src/api/index.js` 让 `getPointsBalance / getFortunePointsCost / getClientConfig` 支持传入静默配置；
+  - `frontend/src/api/request.js` 新增可跳过 401 强制跳首页的能力，避免背景探测把游客直接踢回首页；
+  - `frontend/src/views/Bazi.vue` 把初始化探测改为静默请求并拆出 `guest` 状态，顶部提示、主按钮、AI/深度工具入口都改成更自然的“登录后查看 / 请先登录 / 重新获取”文案。
+- 本轮已同步更新 `TODO.md`：从 `[automation]` 移除该高优项，并转入 `D. 最近已完成 / 已确认`；同时回写 `.codebuddy/automations/automation/memory.md`。
+
+#### 本轮验证
+- 已验证：`GET /api/points/balance`、`GET /api/fortune/points-cost`（无 token）均返回 `401 请先登录`。
+- 已检查：`read_lints` 对 `frontend/src/views/Bazi.vue`、`frontend/src/api/index.js`、`frontend/src/api/request.js` 返回 0 diagnostics。
+- 截图 / 录屏：本轮无新增截图；这次修的是“说话方式”，不是把页面再拽出来跑 T 台。
+
+### 后端修复专家（自动化执行，2026-03-19 本轮）
+
+
+- 本轮先严格按要求只读取了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与 `.codebuddy/automations/15/memory.md`，随后挑选 1 个可在仓库内直接落地的主问题继续推进。
+- 真实接口复测先确认环境基线已变化：`POST http://localhost:8080/api/auth/phone-login` 现已返回 `200` 并成功拿到 token，说明此前 `[15]` 中持续挂着的 MySQL `1045` 登录前置阻塞已不再是当前主问题。
+- 本轮实际修复的是 **塔罗公开分享被控制器级鉴权误拦**：`save-record`、`history`、`set-public` 已能正常工作，但匿名 `GET /api/tarot/share?code=...` 仍返回 `401 请先登录`，导致 `save-record/history/share` 闭环名义上恢复、实际上最后一跳还没通。
+- 已修改 `backend/app/controller/Tarot.php`：将 `Auth` 中间件范围收窄到 `draw/interpret/saveRecord/history/detail/deleteRecord/setPublic`，公开 `share` 不再要求登录；未新增 SQL。
+- 已同步更新 `TODO.md`、`.codebuddy/automations/15/memory.md` 与 `overview.md`：把已不再复现的 `1045` 条目移出高频修复队列，并将塔罗闭环问题转入“最近已完成 / 已确认”。
+
+#### 本轮验证
+- 已验证：`POST /api/auth/phone-login`、`POST /api/tarot/save-record`、`POST /api/tarot/set-public`、`GET /api/tarot/share?code=...`、`GET /api/tarot/history`。
+- 验证结果：上述链路均返回 `200`；塔罗分享匿名访问恢复可用，历史回读也能看到刚保存并公开的记录。
+- 已复核：`TODO.md` 的 `[15]` 条目、`.codebuddy/automations/15/memory.md`、`backend/app/controller/Tarot.php`。
+- 已更新：`backend/app/controller/Tarot.php`、`TODO.md`、`.codebuddy/automations/15/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；这次是纯接口闭环修复，靠真实 8080 响应说话。
+
 
 
 ### 管理后台修复（自动化执行，2026-03-19 07:02）

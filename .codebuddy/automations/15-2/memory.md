@@ -1,5 +1,34 @@
 # 前端修复专家 - 执行记录
 
+> 执行策略修正（2026-03-19）：若 `TODO.md` 自己栏位暂空，但 `A. 高频修复队列` 里其他条目的主要工作已明显落在 `frontend/`、`admin/src/` 的状态承接、CTA、错误提示、分享回流或表单交互，允许直接接手 1 条，不要继续原地 no-op。
+
+## 2026-03-19 自动执行摘要（结果页 CTA 收口）
+
+- 本轮接手 `A. 高频修复队列` 中“前台关键结果页下一步动作不统一”这一前端问题，沿用当前工作区已存在的八字 / 合婚动作区方向，新增 `frontend/src/components/ResultNextSteps.vue`，把 `Tarot.vue`、`Liuyao.vue` 结果页统一到同一套 CTA 与相关推荐承接节奏。
+- 验证结果：`frontend/src/views/Tarot.vue`、`frontend/src/views/Liuyao.vue`、`frontend/src/components/ResultNextSteps.vue` 文件级诊断为 0，`git diff --check` 针对本轮前端文件通过，`npm run build --prefix frontend` 成功；仍有既有大包体告警，但不影响构建。
+
+
+## 2026-03-19 自动执行摘要（继续优化-合婚称呼区）
+
+- 本轮接手 `TODO.md` 中“八字合婚不需要类似 el-radio-group 这样的称呼”对应的前端问题，聚焦 `frontend/src/views/Hehun.vue` 顶部称呼切换区。
+- 调整内容：把原先偏裸控件感的“显示方式”切换改成“称呼偏好”产品文案区，补齐当前状态、用途说明和带场景描述的卡片式选项，让 `男方 / 女方`、`A方 / B方` 的切换更自然，不再像技术控件直接露出。
+- 验证结果：`frontend/src/views/Hehun.vue` 文件级诊断为 0，`git diff --check -- frontend/src/views/Hehun.vue TODO.md` 通过，`npm run build --prefix frontend` 成功；仍有既有大包体告警，但不影响构建。
+
+## 2026-03-19 自动执行摘要（继续优化）
+
+- 本轮继续接手 `A. 高频修复队列` 中八字页表单 UI 问题，聚焦 `frontend/src/views/Bazi.vue` 的 `.version-toggle` 与出生时间选择区。
+- 调整内容：将模式切换改为卡片式头部 + 双列选项，补充当前模式状态与说明；同时把出生时间区域改为“时间确认度 + 填写面板”的两段式布局，并同步收口精确/估算模式标题、提示文案和移动端堆叠方式。
+- 验证结果：`frontend/src/views/Bazi.vue` 文件级诊断为 0，`git diff --check -- frontend/src/views/Bazi.vue TODO.md` 通过，`npm run build --prefix frontend` 成功；仍有既有大包体告警，但不影响构建。
+
+## 2026-03-19 自动执行摘要（本轮）
+
+- 本轮继续收口 `frontend/src/views/Liuyao.vue` 的六爻结果区：将 `yao-bar` 周边重排为“爻位 / 爻线 / 结果信息”三栏结构，伏神改成随行胶囊，动爻徽标与移动端布局一并整理。
+- 验证结果：`frontend/src/views/Liuyao.vue` 诊断为 0，`git diff --check -- frontend/src/views/Liuyao.vue` 通过，`npm run build --prefix frontend` 成功；已补取六爻结果区前后对比截图。
+
+
+
+
+
 ## 2026-03-19 自动执行摘要（本轮再复核）
 
 - 仅按约束复核 `TODO.md` 中 `### [15-2] 前端修复专家` 与本记忆文件；该章节仍只有“当前暂无已证实且可独立归因到前端”的说明。

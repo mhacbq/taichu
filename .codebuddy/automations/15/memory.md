@@ -1,6 +1,37 @@
 # 后端修复专家 - 执行记录
 
 > 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续执行不要再默认使用 Docker、`docker compose`、`docker exec`、容器网络或 `localhost:3001` 代理；历史记录里出现的相关表述仅作旧证据参考，不再作为当前执行前提。
+>
+> 执行策略修正（2026-03-19）：不要再因为问题带有 SQL / 初始化 / 表结构标签就一律“不接单”。只要能在仓库内做 **幂等 SQL、兼容旧表结构、启动链路兜底、缺表检测与失败承接** 这类可逆、可验证补丁，就继续修；只有在需要猜真实凭据、直接改真实业务数据或执行不可逆修数时才停下。
+>
+> SQL 落库要求（2026-03-19）：若本轮修复新增或调整了 SQL（建表、补列、索引、初始化、迁移、兼容补丁、数据修复脚本），必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件；优先复用最相关现有文件，不合适再新增按日期命名补丁文件，不要只改代码或只在 memory 里记录。
+
+## 2026-03-19 塔罗分享闭环修复（本次）
+
+- 本轮先严格按要求只读取了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory；随后用 phpstudy `http://localhost:8080` 真实接口复测，确认此前登记的 MySQL `1045` 登录阻塞已不再复现，`POST /api/auth/phone-login` 已返回 `200` 并拿到 token。
+- 进一步以真实链路定位到当前可落地主问题并非旧表插入失败，而是 **塔罗公开分享仍被控制器级 `Auth` 中间件误拦**：`save-record`、`history`、`set-public` 都能成功，但匿名 `GET /api/tarot/share?code=...` 会返回 `401 请先登录`。
+- 已修复 `backend/app/controller/Tarot.php`：把 `Auth` 缩到 `draw/interpret/saveRecord/history/detail/deleteRecord/setPublic`，公开 `share` 不再要求登录；未新增 SQL。
+- 最小闭环验证已通过：`phone-login -> save-record -> set-public -> share -> history` 全链路返回 `200`；同时把 `TODO.md` 中已不再复现的 `1045` 条目移出，并更新塔罗闭环完成项。当前 `[15]` 剩余值得继续跟进的高优问题主要是 `tc_sms_code` 缺表与 `points/balance` 的用户积分列兼容错误。
+
+
+## 2026-03-19 神煞 bootstrap 唯一键冲突修复（本次）
+
+- 仅处理 `TODO.md -> [15]` 的神煞启动链路主问题；先在 `database/full_import_for_navicat.sql` 里复核到 `uk_name_category(name, category)`、标准种子 `福星贵人`，以及同链路的历史修复段会按 `sort=6/type=ji/category=guiren` 回写 `name`，静态复现唯一键冲突风险。
+- 已新增 `database/20260318_fix_shensha_display_encoding.sql`，并同步更新 `database/full_import_for_navicat.sql`；两条导入/启动链路现在都只修 `description/effect/check_rule`，不再批量改 `name`。
+- 验证：`git diff --check` 通过，关键检索确认补丁里已去掉 `name = CASE`；`TODO.md` 已将该项移入“最近已完成 / 已确认”。
+
+## 2026-03-19 tc_sms_code 缺表 / 错表漂移修复（本次）
+
+- 仅处理 `TODO.md -> [15]` 的短信验证码登录前置主问题；先静态复核 `route/app.php -> controller/Sms.php -> service/SmsService.php -> model/SmsCode.php`，确认发送 / 校验链路都硬依赖 `expire_time`、`is_used`、`created_at`，而 `database/backup/02_create_tables.sql` 与 `database/full_import_for_navicat.sql` 前段仍在创建旧结构 `used/expired_at`。
+- 已新增 `database/20260319_fix_sms_code_table.sql`，用于幂等处理 `sms_codes -> tc_sms_code` 旧表名、补齐 `expire_time/is_used/user_agent`、回填旧列值并补索引；同时已把 `database/backup/02_create_tables.sql` 和 `database/full_import_for_navicat.sql` 的 `tc_sms_code` 建表定义统一到当前模型口径，并将全量导入里的重命名逻辑改为仅在目标表不存在时才执行。
+- 验证：`read_lints` 对 3 个变更 SQL 文件均为 0 diagnostics，`git diff --check -- database/20260319_fix_sms_code_table.sql database/backup/02_create_tables.sql database/full_import_for_navicat.sql` 通过；尚未在真实 MySQL 上补跑 `POST /api/sms/send-code`。
+
+## 2026-03-19 后台积分统计口径继续收口（本次）
+
+- 继续处理 `TODO.md` 里后台积分统计相关问题时，先静态复核 `backend/route/admin.php -> backend/app/controller/Admin.php -> backend/app/service/AdminStatsService.php`，确认当前仓库其实已经存在 `getPointsStatsSnapshot()`，因此早先“缺方法导致 `/api/admin/points/stats` 500”的说法对当前代码已过时。
+- 进一步定位到真正还会漂移的点在 `AdminStatsService::buildLiveDailyStats()`：该方法仍按旧逻辑只统计 `type in ['income','recharge']` 与 `type='consume'`，既会在旧 schema 缺少 `points` 列时直接归零，也会漏掉 `tarot/bazi/hehun/liuyao/refund` 等非 `consume` 类型扣分记录，导致 `site_daily_stats` / Dashboard 趋势与独立积分统计接口口径不一致。
+- 已修复 `backend/app/service/AdminStatsService.php`：让 `buildLiveDailyStats()` 直接复用 `collectPointsStatsByDate()` 与 `getCurrentPointsBalance()`，把后台日统计、趋势和独立积分统计统一到同一套兼容聚合逻辑上。
+- 验证：后续对 `AdminStatsService.php`、`TODO.md`、本 memory 和 overview 做文件级诊断，并执行 `git diff --check`；本轮仍未对真实 `GET /api/admin/points/stats` / Dashboard 接口做在线回放，因此若真实环境还报旧 500，应优先排查部署版本或 PHP opcode/cache。
 
 ## 2026-03-19 本轮自动化复核：继续不接单（本次）
 

@@ -1235,4 +1235,374 @@ onUnmounted(() => {
   }
 }
 
+
+/* 2026-03 UI polish: daily refresh */
+.daily-page {
+  padding: 10px 0 78px;
+  background:
+    radial-gradient(circle at top left, rgba(var(--primary-rgb), 0.12), transparent 30%),
+    radial-gradient(circle at 90% 10%, rgba(245, 196, 103, 0.16), transparent 24%),
+    linear-gradient(180deg, #fffdf8 0%, #fff9f2 48%, #fff7ef 100%);
+}
+
+.fortune-content {
+  max-width: 920px;
+  display: grid;
+  gap: 24px;
+}
+
+.date-display,
+.personalized-fortune,
+.personalized-state-card,
+.overall-score,
+.aspect-card,
+.lucky-section,
+.details-section,
+.section-empty,
+.loading-state,
+.error-state {
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+}
+
+.date-display,
+.personalized-fortune,
+.personalized-state-card,
+.overall-score,
+.lucky-section,
+.details-section,
+.section-empty,
+.loading-state,
+.error-state {
+  border-radius: 28px;
+}
+
+.date-display {
+  max-width: 920px;
+  margin-bottom: 0;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(255, 245, 225, 0.94));
+}
+
+.lunar-date,
+.solar-date {
+  flex: 1;
+  padding: 12px 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(var(--primary-rgb), 0.08);
+}
+
+.label {
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+
+.value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.personalized-fortune,
+.personalized-state-card,
+.overall-score,
+.lucky-section,
+.details-section,
+.section-empty {
+  padding: 28px;
+}
+
+.personalized-fortune {
+  margin-bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 245, 226, 0.94));
+}
+
+.personalized-fortune h2,
+.overall-score h2,
+.lucky-section h3,
+.details-section h3 {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.master-card,
+.today-card,
+.luck-summary,
+.personal-score,
+.personal-lucky-item {
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.master-card,
+.today-card {
+  min-width: 180px;
+  padding: 22px 28px;
+  border-radius: 22px;
+}
+
+.relation-arrow {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8f601b;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.luck-indicator {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) 1fr auto;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.luck-badge,
+.luck-summary,
+.personal-score {
+  border-radius: 22px;
+  padding: 20px;
+}
+
+.luck-badge {
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.16));
+}
+
+.luck-summary-label,
+.score-label,
+.personal-lucky-label,
+.personal-lucky-caption {
+  color: #6a5b47;
+}
+
+.personal-score {
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-value {
+  text-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.14);
+}
+
+.personal-lucky-grid {
+  gap: 16px;
+}
+
+.personal-lucky-item {
+  border-radius: 22px;
+  padding: 20px;
+}
+
+.personal-lucky-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary-color);
+}
+
+.personalized-state-card {
+  margin-bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.94));
+}
+
+.state-content {
+  align-items: center;
+  gap: 20px;
+}
+
+.state-icon {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: #95661a;
+}
+
+.state-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.state-copy {
+  color: #605545;
+  line-height: 1.8;
+}
+
+.overall-score {
+  margin-bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 236, 0.95));
+}
+
+.score-display {
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.score-circle {
+  width: 138px;
+  height: 138px;
+  box-shadow: 0 20px 36px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.score-number {
+  font-size: 52px;
+}
+
+.score-rating,
+.fortune-summary,
+.aspect-desc,
+.details-section p {
+  color: #605545;
+  line-height: 1.8;
+}
+
+.aspect-grid {
+  gap: 18px;
+  margin-bottom: 0;
+}
+
+.aspect-card {
+  padding: 24px 22px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.94));
+}
+
+.aspect-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 44px rgba(15, 23, 42, 0.1), 0 12px 28px rgba(var(--primary-rgb), 0.07);
+}
+
+.lucky-section,
+.details-section {
+  margin-bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 241, 0.94));
+}
+
+.lucky-grid {
+  gap: 18px;
+}
+
+.lucky-item {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(var(--primary-rgb), 0.08);
+}
+
+.lucky-label {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+:deep(.details-section .el-collapse) {
+  border-top: none;
+  border-bottom: none;
+}
+
+:deep(.details-section .el-collapse-item__header) {
+  min-height: 60px;
+  padding: 0 8px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: transparent;
+  border-bottom-color: rgba(var(--primary-rgb), 0.1);
+}
+
+:deep(.details-section .el-collapse-item__wrap) {
+  background: transparent;
+  border-bottom-color: rgba(var(--primary-rgb), 0.1);
+}
+
+:deep(.details-section .el-collapse-item__content) {
+  padding: 8px 8px 18px;
+}
+
+.daily-action-zone {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .luck-indicator {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .daily-page {
+    padding: 0 0 56px;
+  }
+
+  .fortune-content {
+    gap: 18px;
+  }
+
+  .date-display,
+  .personalized-fortune,
+  .personalized-state-card,
+  .overall-score,
+  .lucky-section,
+  .details-section,
+  .section-empty,
+  .loading-state,
+  .error-state {
+    padding: 20px 18px;
+    border-radius: 24px;
+  }
+
+  .date-display {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .master-card,
+  .today-card,
+  .personal-score {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .state-content {
+    align-items: flex-start;
+  }
+
+  .state-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
+  }
+
+  .score-circle {
+    width: 122px;
+    height: 122px;
+  }
+
+  .score-number {
+    font-size: 40px;
+  }
+
+  .aspect-grid,
+  .lucky-grid,
+  .personal-lucky-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
+

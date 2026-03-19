@@ -6,11 +6,13 @@ require __DIR__ . '/TestCase.php';
 require __DIR__ . '/Unit/SensitiveConfigCryptTest.php';
 require __DIR__ . '/Unit/PointsRecordNormalizationTest.php';
 require __DIR__ . '/Unit/DisplayTextRepairServiceTest.php';
+require __DIR__ . '/Unit/TarotRecordCompatibilityTest.php';
 
 $tests = [
     tests\Unit\SensitiveConfigCryptTest::class,
     tests\Unit\PointsRecordNormalizationTest::class,
     tests\Unit\DisplayTextRepairServiceTest::class,
+    tests\Unit\TarotRecordCompatibilityTest::class,
 ];
 
 

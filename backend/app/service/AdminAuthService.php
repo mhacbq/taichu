@@ -191,13 +191,97 @@ class AdminAuthService
             return array_values(array_unique(array_filter($roleIds, static fn (int $roleId): bool => $roleId > 0)));
         }
 
+        // 兜底1：从 tc_admin.role_id 字段读取（旧结构兼容）
         $admin = self::findActiveAdmin($adminId);
         $fallbackRoleId = isset($admin['role_id']) ? (int) $admin['role_id'] : 0;
         if ($fallbackRoleId > 0) {
+            // 同时写入 tc_admin_user_role，修复种子缺失问题，避免下次再走兜底路径
+            self::autoRepairRoleBinding($adminId, $fallbackRoleId);
             return [$fallbackRoleId];
         }
 
-        return [];
+        // 兜底2：若 tc_admin_user_role 完全没有此管理员的记录（首次初始化/种子缺失），
+        //         自动为第一个管理员账号绑定 super_admin 角色，避免全局 403
+        return self::autoSeedSuperAdminIfFirst($adminId, $admin);
+    }
+
+    /**
+     * 将 role_id 写入 tc_admin_user_role，修复种子缺失后不再走兜底路径
+     */
+    private static function autoRepairRoleBinding(int $adminId, int $roleId): void
+    {
+        if (!SchemaInspector::tableExists('tc_admin_user_role')) {
+            return;
+        }
+        try {
+            $exists = AdminUserRole::where('admin_id', $adminId)->where('role_id', $roleId)->find();
+            if (!$exists) {
+                AdminUserRole::create(['admin_id' => $adminId, 'role_id' => $roleId]);
+                Log::info('AdminAuthService: 自动修复 tc_admin_user_role 角色绑定', [
+                    'admin_id' => $adminId,
+                    'role_id'  => $roleId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('AdminAuthService: 自动修复角色绑定失败', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 首次初始化/种子缺失时自动为第一位管理员绑定 super_admin 角色
+     * 仅在 tc_admin_user_role 对该管理员完全没有记录时触发
+     */
+    private static function autoSeedSuperAdminIfFirst(int $adminId, ?array $admin): array
+    {
+        if ($admin === null || !SchemaInspector::tableExists('tc_admin_role')) {
+            return [];
+        }
+
+        try {
+            // 只对 id=1 或 username=admin 的账号自动授予 super_admin（避免误授其他账号）
+            $username = strtolower(trim((string) ($admin['username'] ?? '')));
+            $isFirstAdmin = ((int) ($admin['id'] ?? 0) === 1) || $username === 'admin';
+            if (!$isFirstAdmin) {
+                return [];
+            }
+
+            $superRole = AdminRole::where('code', 'super_admin')->find();
+            if (!$superRole) {
+                // super_admin 角色本身也不存在，自动创建
+                $superRole = AdminRole::create([
+                    'name'        => '超级管理员',
+                    'code'        => 'super_admin',
+                    'description' => '拥有所有后台权限',
+                    'is_super'    => 1,
+                ]);
+                Log::info('AdminAuthService: 自动创建 super_admin 角色', ['role_id' => $superRole->id]);
+            }
+
+            $roleId = (int) $superRole->id;
+
+            // 更新 tc_admin.role_id 字段
+            Db::table(self::resolveAdminTable() ?? 'tc_admin')
+                ->where('id', $adminId)
+                ->update(['role_id' => $roleId]);
+
+            // 写入 tc_admin_user_role
+            if (SchemaInspector::tableExists('tc_admin_user_role')) {
+                $exists = AdminUserRole::where('admin_id', $adminId)->where('role_id', $roleId)->find();
+                if (!$exists) {
+                    AdminUserRole::create(['admin_id' => $adminId, 'role_id' => $roleId]);
+                }
+            }
+
+            Log::info('AdminAuthService: 自动为首位管理员补种 super_admin 角色', [
+                'admin_id' => $adminId,
+                'role_id'  => $roleId,
+            ]);
+
+            return [$roleId];
+        } catch (\Throwable $e) {
+            Log::error('AdminAuthService: 自动补种 super_admin 角色失败', ['error' => $e->getMessage()]);
+            return [];
+        }
     }
 
     /**

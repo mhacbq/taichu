@@ -886,6 +886,8 @@ PROMPT;
     {
         $guaCi = $coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? '';
         $createdAt = date('Y-m-d H:i:s');
+        $lineDetails = $this->buildLineSnapshots($coreResult);
+        $fushenDisplay = $this->buildFushenDisplay($coreResult);
 
         return [
             'id' => $recordId,
@@ -913,7 +915,8 @@ PROMPT;
             'liuqin' => $coreResult['liuqin'] ?? [],
             'liushen' => $coreResult['liu_shen'] ?? [],
             'yong_shen' => $coreResult['yong_shen'] ?? [],
-            'line_details' => $this->buildLineSnapshots($coreResult),
+            'line_details' => $lineDetails,
+            'moving_line_details' => $this->buildMovingLineDetails($lineDetails),
             'yao_result' => $coreResult['yao_result'],
             'yao_names' => $coreResult['yao_names'],
             'interpretation' => $interpretation,
@@ -921,9 +924,10 @@ PROMPT;
             'points_cost' => $pointsCost,
             'remaining_points' => $remainingPoints,
             'is_first' => $isFirst,
-            'fushen' => $this->buildFushenDisplay($coreResult),
+            'fushen' => $fushenDisplay,
         ];
     }
+
 
 
     /**
@@ -1095,6 +1099,10 @@ PROMPT;
         $changedGua = $this->decodeJsonField($record['hexagram_changed'] ?? null);
         $mutualGua = $this->decodeJsonField($record['hexagram_mutual'] ?? null);
         $storedLines = $this->decodeJsonField($record['lines'] ?? null);
+        if ($storedLines === [] && is_array($originalGua['line_details'] ?? null)) {
+            $storedLines = $originalGua['line_details'];
+        }
+
         $mainGuaName = (string) ($record['main_gua_name'] ?? $record['gua_name'] ?? $originalGua['name'] ?? '');
         $mainGuaCode = (string) ($record['main_gua_code'] ?? $record['gua_code'] ?? $originalGua['code'] ?? '');
         $bianGuaName = (string) ($record['bian_gua_name'] ?? $changedGua['name'] ?? '');
@@ -1137,6 +1145,10 @@ PROMPT;
             $liushenMap = $this->normalizePositionMap(is_array($originalGua['liushen'] ?? null) ? $originalGua['liushen'] : []);
         }
         $dongYao = array_values(array_map('intval', $this->decodeJsonField($record['moving_lines'] ?? null)));
+        if ($dongYao === [] && is_array($originalGua['moving_lines'] ?? null)) {
+            $dongYao = array_values(array_map('intval', $originalGua['moving_lines']));
+        }
+
         $gong = (string) ($originalGua['gong'] ?? '');
         $shiYing = is_array($originalGua['shi_ying'] ?? null) ? $originalGua['shi_ying'] : [];
         $bianGuaCode = (string) ($record['bian_gua_code'] ?? $changedGua['code'] ?? '');
@@ -1177,11 +1189,21 @@ PROMPT;
             }
         }
 
-        $lineDetails = $this->normalizeStoredLineDetails($storedLines, $yaoResult, $liuqinMap, $liushenMap, $shiYing, $dongYao);
         $storedYongShen = is_array($originalGua['yong_shen'] ?? null) ? $originalGua['yong_shen'] : [];
         if (($storedYongShen['liuqin'] ?? '') === '' && !empty($record['yongshen'])) {
             $storedYongShen['liuqin'] = (string) $record['yongshen'];
         }
+        $fushenDisplay = $storedYongShen !== [] ? $this->buildFushenDisplay(['yong_shen' => $storedYongShen]) : null;
+        $lineDetails = $this->normalizeStoredLineDetails(
+            $storedLines,
+            $yaoCode,
+            $yaoResult,
+            $liuqinMap,
+            $liushenMap,
+            $shiYing,
+            $dongYao,
+            $this->buildFushenPositionMap($storedYongShen)
+        );
 
         return [
             'id' => (int) ($record['id'] ?? 0),
@@ -1214,12 +1236,14 @@ PROMPT;
             'liushen' => $liushenMap,
             'yong_shen' => $storedYongShen !== [] ? $storedYongShen : ['liuqin' => ''],
             'line_details' => $lineDetails,
+            'moving_line_details' => $this->buildMovingLineDetails($lineDetails),
             'interpretation' => $interpretation,
             'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
             'consumed_points' => $consumedPoints,
             'created_at' => $createdAt,
-            'fushen' => $storedYongShen !== [] ? $this->buildFushenDisplay(['yong_shen' => $storedYongShen]) : null,
+            'fushen' => $fushenDisplay,
         ];
+
 
     }
 
@@ -1286,6 +1310,8 @@ PROMPT;
 
     private function buildOriginalHexagramSnapshot(array $coreResult): array
     {
+        $lineDetails = $this->buildLineSnapshots($coreResult);
+
         return [
             'name' => $coreResult['main_gua'] ?? '',
             'code' => $coreResult['clean_gua_code'] ?? '',
@@ -1298,31 +1324,83 @@ PROMPT;
             'liuqin' => $coreResult['liuqin'] ?? [],
             'liushen' => $coreResult['liu_shen'] ?? [],
             'yong_shen' => $coreResult['yong_shen'] ?? [],
+            'moving_lines' => array_map('intval', (array) ($coreResult['bian_gua']['dong_yao'] ?? [])),
+            'moving_line_details' => $this->buildMovingLineDetails($lineDetails),
+            'line_details' => $lineDetails,
         ];
     }
 
     private function buildLineSnapshots(array $coreResult): array
     {
-        $snapshots = [];
-        $shiPosition = (int) ($coreResult['shi_ying']['shi'] ?? 0);
-        $yingPosition = (int) ($coreResult['shi_ying']['ying'] ?? 0);
-        $movingLines = array_map('intval', (array) ($coreResult['bian_gua']['dong_yao'] ?? []));
+        return $this->normalizeStoredLineDetails(
+            [],
+            (string) ($coreResult['yao_code'] ?? ''),
+            $coreResult['yao_result'] ?? [],
+            $coreResult['liuqin'] ?? [],
+            $coreResult['liu_shen'] ?? [],
+            $coreResult['shi_ying'] ?? [],
+            array_map('intval', (array) ($coreResult['bian_gua']['dong_yao'] ?? [])),
+            $this->buildFushenPositionMap($coreResult['yong_shen'] ?? [])
+        );
+    }
 
-        foreach (($coreResult['yao_result'] ?? []) as $index => $value) {
-            $position = $index + 1;
-            $snapshots[] = [
-                'position' => $position,
-                'value' => (int) $value,
-                'name' => $this->getYaoName((int) $value),
-                'liuqin' => $coreResult['liuqin'][$position] ?? '',
-                'liushen' => $coreResult['liu_shen'][$position] ?? '',
-                'is_moving' => in_array($position, $movingLines, true),
-                'is_shi' => $position === $shiPosition,
-                'is_ying' => $position === $yingPosition,
-            ];
+    private function buildMovingLineDetails(array $lineDetails): array
+    {
+        return array_values(array_filter(
+            $lineDetails,
+            static fn(array $line): bool => !empty($line['is_moving'])
+        ));
+    }
+
+    private function buildFushenPositionMap(array $yongShen): array
+    {
+        if (empty($yongShen['is_fushen']) || empty($yongShen['fushen_info']['position'])) {
+            return [];
         }
 
-        return $snapshots;
+        $position = (int) $yongShen['fushen_info']['position'];
+        if ($position < 1 || $position > 6) {
+            return [];
+        }
+
+        return [
+            $position => [
+                'name' => $yongShen['liuqin'] ?? '伏神',
+                'ganzhi' => $yongShen['fushen_info']['di_zhi'] ?? '',
+            ],
+        ];
+    }
+
+    private function isYangYaoValue(int $value): bool
+    {
+        return in_array($value, [1, 3], true);
+    }
+
+    private function getYinYangLabel(int $value): string
+    {
+        return $this->isYangYaoValue($value) ? '阳爻' : '阴爻';
+    }
+
+    private function resolveChangedYaoValue(int $value, bool $isMoving): int
+    {
+        if (!$isMoving) {
+            return $value;
+        }
+
+        return match ($value) {
+            0 => 1,
+            3 => 2,
+            default => $value,
+        };
+    }
+
+    private function buildLineChangeSummary(int $value, int $changedValue, bool $isMoving): string
+    {
+        if (!$isMoving) {
+            return '静爻不变';
+        }
+
+        return $this->getYaoName($value) . ' → ' . $this->getYaoName($changedValue);
     }
 
     private function normalizePositionMap(array $value): array
@@ -1405,53 +1483,73 @@ PROMPT;
         ];
     }
 
-    private function normalizeStoredLineDetails(array $storedLines, array $yaoResult, array $liuqinMap, array $liushenMap, array $shiYing, array $dongYao): array
+    private function normalizeStoredLineDetails(array $storedLines, string $yaoCode, array $yaoResult, array $liuqinMap, array $liushenMap, array $shiYing, array $dongYao, array $fushenMap = []): array
     {
         $lineDetails = [];
         $shiPosition = (int) ($shiYing['shi'] ?? 0);
         $yingPosition = (int) ($shiYing['ying'] ?? 0);
         $movingLines = array_map('intval', $dongYao);
+        $diZhiMap = $yaoCode !== '' ? LiuyaoService::getYaoDiZhiMap($yaoCode) : [];
+        $storedByPosition = [];
 
-        if ($storedLines !== []) {
-            foreach ($storedLines as $line) {
-                $position = (int) ($line['position'] ?? 0);
-                if ($position <= 0) {
-                    continue;
-                }
-                $value = isset($line['value']) ? (int) $line['value'] : (int) ($yaoResult[$position - 1] ?? 1);
-                $lineDetails[] = [
-                    'position' => $position,
-                    'value' => $value,
-                    'name' => (string) ($line['name'] ?? $this->getYaoName($value)),
-                    'liuqin' => (string) ($line['liuqin'] ?? ($liuqinMap[$position] ?? '')),
-                    'liushen' => (string) ($line['liushen'] ?? ($liushenMap[$position] ?? '')),
-                    'is_moving' => array_key_exists('is_moving', $line) ? (bool) $line['is_moving'] : in_array($position, $movingLines, true),
-                    'is_shi' => array_key_exists('is_shi', $line) ? (bool) $line['is_shi'] : $position === $shiPosition,
-                    'is_ying' => array_key_exists('is_ying', $line) ? (bool) $line['is_ying'] : $position === $yingPosition,
-                ];
+        foreach ($storedLines as $line) {
+            if (!is_array($line)) {
+                continue;
             }
-
-            if ($lineDetails !== []) {
-                return $lineDetails;
+            $position = (int) ($line['position'] ?? 0);
+            if ($position <= 0) {
+                continue;
             }
+            $storedByPosition[$position] = $line;
         }
 
-        foreach ($yaoResult as $index => $value) {
-            $position = $index + 1;
+        $maxStoredPosition = $storedByPosition !== [] ? max(array_keys($storedByPosition)) : 0;
+        $lineCount = max(count($yaoResult), $maxStoredPosition, 6);
+
+        for ($position = 1; $position <= $lineCount; $position++) {
+            if ($position > count($yaoResult) && !isset($storedByPosition[$position])) {
+                continue;
+            }
+
+            $stored = $storedByPosition[$position] ?? [];
+            $value = array_key_exists('value', $stored)
+                ? (int) $stored['value']
+                : (int) ($yaoResult[$position - 1] ?? 1);
+            $isMoving = array_key_exists('is_moving', $stored)
+                ? (bool) $stored['is_moving']
+                : (in_array($position, $movingLines, true) || in_array($value, [0, 3], true));
+            $changedValue = array_key_exists('bian_value', $stored)
+                ? (int) $stored['bian_value']
+                : $this->resolveChangedYaoValue($value, $isMoving);
+            $fushen = $stored['fushen'] ?? ($fushenMap[$position] ?? null);
+            if (!is_array($fushen) || (($fushen['name'] ?? '') === '' && ($fushen['ganzhi'] ?? '') === '')) {
+                $fushen = null;
+            }
+
             $lineDetails[] = [
                 'position' => $position,
-                'value' => (int) $value,
-                'name' => $this->getYaoName((int) $value),
-                'liuqin' => $liuqinMap[$position] ?? '',
-                'liushen' => $liushenMap[$position] ?? '',
-                'is_moving' => in_array($position, $movingLines, true),
-                'is_shi' => $position === $shiPosition,
-                'is_ying' => $position === $yingPosition,
+                'value' => $value,
+                'name' => (string) ($stored['name'] ?? $this->getYaoName($value)),
+                'yin_yang' => (string) ($stored['yin_yang'] ?? $this->getYinYangLabel($value)),
+                'is_yang' => array_key_exists('is_yang', $stored) ? (bool) $stored['is_yang'] : $this->isYangYaoValue($value),
+                'liuqin' => (string) ($stored['liuqin'] ?? ($liuqinMap[$position] ?? '')),
+                'liushen' => (string) ($stored['liushen'] ?? ($liushenMap[$position] ?? '')),
+                'di_zhi' => (string) ($stored['di_zhi'] ?? ($diZhiMap[$position] ?? '')),
+                'bian_value' => $changedValue,
+                'bian_name' => (string) ($stored['bian_name'] ?? $this->getYaoName($changedValue)),
+                'bian_yin_yang' => (string) ($stored['bian_yin_yang'] ?? $this->getYinYangLabel($changedValue)),
+                'bian_is_yang' => array_key_exists('bian_is_yang', $stored) ? (bool) $stored['bian_is_yang'] : $this->isYangYaoValue($changedValue),
+                'change_summary' => (string) ($stored['change_summary'] ?? $this->buildLineChangeSummary($value, $changedValue, $isMoving)),
+                'is_moving' => $isMoving,
+                'is_shi' => array_key_exists('is_shi', $stored) ? (bool) $stored['is_shi'] : $position === $shiPosition,
+                'is_ying' => array_key_exists('is_ying', $stored) ? (bool) $stored['is_ying'] : $position === $yingPosition,
+                'fushen' => $fushen,
             ];
         }
 
         return $lineDetails;
     }
+
 
     private function decodeJsonField($value): array
     {

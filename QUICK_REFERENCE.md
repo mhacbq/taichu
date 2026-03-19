@@ -30,7 +30,9 @@ mysql -u root -p taichu -e "SHOW TABLES LIKE 'tc_%';"
 systemctl restart php-fpm
 ```
 
-### Docker 环境
+### 可选：Docker 环境（仅仍在使用容器时）
+
+> 当前本地默认环境是 phpstudy / 本机 MySQL，上面的“本地/开发环境”命令应优先适用。下面这组 Docker 命令只给仍在跑旧容器链路的场景参考。
 
 ```bash
 # 进入 MySQL 容器

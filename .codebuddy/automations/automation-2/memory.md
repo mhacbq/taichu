@@ -1,5 +1,7 @@
 # automation-2 执行记忆
 
+> SQL 落库要求（2026-03-19）：若本轮维护/结构收口涉及字段、索引、表结构、初始化、迁移或数据修复脚本变更，必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件；优先复用最相关现有文件，不合适再新增按日期命名补丁文件，不要只在 TODO 或 memory 里留下建议。
+
 - 2026-03-17：完成一轮 4 点代码维护批次，主要处理神煞管理 API、通知/退款脱敏日志、Tarot/Liuyao 冗余逻辑，以及前端构建配置兼容性。
 - 已同步更新 `TODO.md`，标记完成未使用逻辑清理、后端日志优化、神煞管理 API、微信退款接口等条目。
 - 验证结果：`npm run build` 通过，`git diff --check` 通过，提交为 `53e616b`（`refactor-clean-code-maintenance-batch`）。

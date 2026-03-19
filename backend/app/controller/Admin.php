@@ -11,7 +11,9 @@ use app\model\Feedback;
 use app\model\AdminLog;
 use app\model\DailyFortune;
 use app\model\TarotRecord;
+use app\model\SystemConfig;
 use app\service\AdminAuthService;
+
 use app\service\AdminStatsService;
 use app\service\ConfigService;
 use app\service\SchemaInspector;
@@ -1272,9 +1274,11 @@ class Admin extends BaseController
                 return $this->error('没有可保存的系统设置项', 400);
             }
 
+            $configTable = $this->getSystemConfigTable();
+
             // 获取操作前的设置用于日志记录
             $configKeys = array_keys($normalizedSettings);
-            $oldSettings = Db::table('system_config')
+            $oldSettings = Db::table($configTable)
                 ->whereIn('config_key', $configKeys)
                 ->column('config_value', 'config_key');
 
@@ -1287,7 +1291,7 @@ class Admin extends BaseController
                 }
 
                 // 获取配置类型
-                $config = Db::table('system_config')
+                $config = Db::table($configTable)
                     ->where('config_key', $key)
                     ->find();
 
@@ -1295,7 +1299,7 @@ class Admin extends BaseController
                 if ($config) {
                     $processedValue = $this->processConfigValue($value, $configType);
 
-                    Db::table('system_config')
+                    Db::table($configTable)
                         ->where('config_key', $key)
                         ->update([
                             'config_value' => $processedValue,
@@ -1305,7 +1309,7 @@ class Admin extends BaseController
                         ]);
                     $updateCount++;
                 } else {
-                    Db::table('system_config')->insert([
+                    Db::table($configTable)->insert([
                         'config_key' => $key,
                         'config_value' => $this->processConfigValue($value, $configType),
                         'config_type' => $configType,
@@ -1319,8 +1323,11 @@ class Admin extends BaseController
 
             }
 
+
             ConfigService::clearCache();
+            ConfigService::refreshCache();
             $latestSettings = $this->buildSystemSettingsResponse();
+
 
             // 记录操作日志
             $this->logOperation('update', 'config', [
@@ -2021,6 +2028,12 @@ class Admin extends BaseController
             'enable_ai_analysis' => $this->normalizeSettingBool(ConfigService::get('feature_ai_analysis_enabled', ConfigService::get('enable_ai_analysis', true)), true),
         ];
     }
+
+    protected function getSystemConfigTable(): string
+    {
+        return (new SystemConfig())->getTable();
+    }
+
 
     /**
      * 把后台设置页的旧字段映射为真实业务配置键

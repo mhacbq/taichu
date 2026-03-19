@@ -1,0 +1,3 @@
+.codebuddy/automations/automation/memory.md:302: new blank line at EOF.
+TODO.md:58: trailing whitespace.
++- 

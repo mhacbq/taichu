@@ -289,7 +289,10 @@ class PointsRecord extends Model
         }
 
         $columns = self::getTableColumns();
-        if (!isset($columns['points'])) {
+        $hasPointsCol = isset($columns['points']);
+
+        // 如果既无 points 列又无 amount 列，无法估算
+        if (!$hasPointsCol && !isset($columns['amount'])) {
             return null;
         }
 
@@ -300,7 +303,7 @@ class PointsRecord extends Model
 
         $laterQuery = Db::table('tc_points_record')->where('user_id', $userId);
         $createdAt = trim((string) ($row['created_at'] ?? ''));
-        $recordId = (int) ($row['id'] ?? 0);
+        $recordId  = (int) ($row['id'] ?? 0);
 
         if ($createdAt !== '') {
             $laterQuery->where(function ($query) use ($createdAt, $recordId) {
@@ -315,7 +318,16 @@ class PointsRecord extends Model
             $laterQuery->where('id', '>', $recordId);
         }
 
-        $laterDelta = (int) ($laterQuery->sum('points') ?? 0);
+        if ($hasPointsCol) {
+            $laterDelta = (int) ($laterQuery->sum('points') ?? 0);
+        } else {
+            // 降级：用 amount + type 推算有符号 delta
+            $spentTypes  = ['reduce', 'consume', 'deduct', 'expense', 'cost', 'exchange', 'redeem'];
+            $spentAmount   = (int) (clone $laterQuery)->whereIn('type', $spentTypes)->sum('amount');
+            $earnedAmount  = (int) (clone $laterQuery)->whereNotIn('type', $spentTypes)->sum('amount');
+            $laterDelta    = $earnedAmount - $spentAmount;
+        }
+
         return $currentBalance - $laterDelta;
     }
 

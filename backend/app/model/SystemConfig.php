@@ -28,15 +28,12 @@ class SystemConfig extends Model
         'updated_at' => 'datetime',
     ];
 
-    protected $json = ['config_value'];
-
-    protected $jsonAssoc = true;
-
     public function __construct(array $data = [])
     {
         $this->table = self::resolveTableName();
         parent::__construct($data);
     }
+
 
     /**
      * 获取配置值（自动转换类型）
@@ -121,11 +118,12 @@ class SystemConfig extends Model
             }
             $result[$category][] = [
                 'key' => $config->config_key,
-                'value' => $config->config_value,
+                'value' => $config->typed_value,
                 'type' => $config->config_type,
                 'description' => $config->description,
                 'editable' => (bool) $config->is_editable,
             ];
+
         }
 
         return $result;

@@ -10,22 +10,10 @@
         <!-- 桌面端导航 -->
         <div class="nav-links desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/bazi" class="nav-link nav-link--gated">
-            <span>八字排盘</span>
-            <span class="nav-require-badge">需登录</span>
-          </router-link>
-          <router-link to="/tarot" class="nav-link nav-link--gated">
-            <span>塔罗占卜</span>
-            <span class="nav-require-badge">需登录</span>
-          </router-link>
-          <router-link to="/liuyao" class="nav-link nav-link--gated">
-            <span>六爻占卜</span>
-            <span class="nav-require-badge">需登录</span>
-          </router-link>
-          <router-link to="/hehun" class="nav-link nav-link--gated">
-            <span>八字合婚</span>
-            <span class="nav-require-badge">需登录</span>
-          </router-link>
+          <router-link to="/bazi" class="nav-link">八字排盘</router-link>
+          <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
+          <router-link to="/liuyao" class="nav-link">六爻占卜</router-link>
+          <router-link to="/hehun" class="nav-link">八字合婚</router-link>
           <router-link to="/daily" class="nav-link">每日运势</router-link>
         </div>
 
@@ -85,25 +73,21 @@
             <el-icon class="nav-icon" :size="18"><House /></el-icon>
             <span>首页</span>
           </router-link>
-          <router-link to="/bazi" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+          <router-link to="/bazi" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Calendar /></el-icon>
             <span>八字排盘</span>
-            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/tarot" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+          <router-link to="/tarot" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon>
             <span>塔罗占卜</span>
-            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/liuyao" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+          <router-link to="/liuyao" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><YinYang /></el-icon>
             <span>六爻占卜</span>
-            <span class="mobile-nav-badge">需登录</span>
           </router-link>
-          <router-link to="/hehun" class="mobile-nav-link mobile-nav-link--gated" @click="closeMobileMenu">
+          <router-link to="/hehun" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Link /></el-icon>
             <span>八字合婚</span>
-            <span class="mobile-nav-badge">需登录</span>
           </router-link>
           <router-link to="/daily" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Star /></el-icon>
@@ -579,24 +563,8 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.nav-link--gated {
-  gap: 10px;
-}
 
-.nav-require-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 20px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.12);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
-  color: var(--primary-color);
-  font-size: 11px;
-  font-weight: var(--weight-semibold);
-  line-height: 1;
-}
+
 
 
 .nav-link:hover {
@@ -832,29 +800,12 @@ onBeforeUnmount(() => {
   border-left: 4px solid transparent;
 }
 
-.mobile-nav-link > span:not(.mobile-nav-badge) {
+
+.mobile-nav-link > span {
   flex: 1;
 }
 
-.mobile-nav-link--gated {
-  padding-right: 24px;
-}
 
-.mobile-nav-badge {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.12);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
-  color: var(--primary-color);
-  font-size: 11px;
-  font-weight: var(--weight-semibold);
-  line-height: 1;
-}
 
 
 .mobile-nav-link:hover,
@@ -1276,4 +1227,207 @@ onBeforeUnmount(() => {
     display: none !important;
   }
 }
+
+/* 2026-03 UI polish: global shell refresh */
+.navbar {
+  padding: 12px 0 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  border-bottom: none;
+  box-shadow: none;
+}
+
+.nav-container {
+  min-height: 72px;
+  height: auto;
+  padding: 14px 22px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(var(--primary-rgb), 0.06);
+}
+
+.nav-links {
+  gap: 10px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid var(--border-light);
+}
+
+.nav-link {
+  padding: 10px 18px;
+  border-radius: 999px;
+}
+
+.nav-link:hover {
+  background: rgba(var(--primary-rgb), 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.1);
+}
+
+.nav-link.router-link-active {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.14), 0 8px 18px rgba(var(--primary-rgb), 0.1);
+}
+
+.points-badge {
+  padding: 7px 14px;
+  background: linear-gradient(135deg, rgba(245, 196, 103, 0.18), rgba(255, 245, 225, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+.user-info {
+  background: rgba(248, 250, 252, 0.92);
+  border-color: rgba(var(--primary-rgb), 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.login-btn {
+  border-radius: 999px;
+}
+
+.mobile-menu-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(var(--primary-rgb), 0.1);
+}
+
+.mobile-nav {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 239, 0.94));
+  box-shadow: -24px 0 52px rgba(15, 23, 42, 0.16);
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link.router-link-active {
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.14), rgba(255, 255, 255, 0));
+}
+
+.mobile-overlay {
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.main-content--companion-safe {
+  padding-bottom: 112px;
+}
+
+.footer {
+  padding: 76px 0 36px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff8ef 100%);
+  border-top: none;
+}
+
+.footer-content {
+  padding: 34px 32px 28px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+}
+
+.footer-brand {
+  display: grid;
+  gap: 10px;
+}
+
+.footer-quote {
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(255, 247, 231, 0.98));
+  border-radius: 20px;
+  border-color: rgba(var(--primary-rgb), 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.footer-links {
+  gap: 14px;
+}
+
+.footer-links a {
+  min-height: 40px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.84);
+  border: 1px solid var(--border-light);
+  transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+}
+
+.footer-links a:hover {
+  border-color: rgba(var(--primary-rgb), 0.18);
+  background: rgba(var(--primary-rgb), 0.08);
+  transform: translateY(-1px);
+}
+
+.footer-divider {
+  max-width: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(var(--primary-rgb), 0.16) 20%, rgba(var(--primary-rgb), 0.24) 50%, rgba(var(--primary-rgb), 0.16) 80%, transparent 100%);
+}
+
+.floating-companion {
+  bottom: 24px;
+  right: 24px;
+}
+
+.companion-avatar {
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  box-shadow: 0 18px 38px rgba(var(--primary-rgb), 0.22), 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.companion-content {
+  width: 320px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.16), 0 12px 28px rgba(var(--primary-rgb), 0.08);
+}
+
+.companion-message {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(245, 196, 103, 0.12));
+  border-color: rgba(var(--primary-rgb), 0.12);
+}
+
+.companion-btn {
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(var(--primary-rgb), 0.08);
+}
+
+.companion-btn:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+  transform: translateX(3px);
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 10px 0 12px;
+  }
+
+  .nav-container {
+    min-height: 60px;
+    padding: 10px 14px;
+    border-radius: 22px;
+  }
+
+  .main-content--companion-safe {
+    padding-bottom: 96px;
+  }
+
+  .footer {
+    padding: 52px 0 24px;
+  }
+
+  .footer-content {
+    padding: 26px 20px 22px;
+    border-radius: 24px;
+  }
+
+  .footer-links a {
+    width: calc(50% - 8px);
+  }
+
+  .companion-content {
+    width: min(320px, calc(100vw - 28px));
+  }
+}
 </style>
+
