@@ -462,7 +462,57 @@ const defaultExpandedDetailNames = computed(() => {
   return detailSections.value.length ? [detailSections.value[0].key] : []
 })
 
+const DAILY_CACHE_KEY = 'daily_fortune_cache'
+
+const getTodayDateStr = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const readDailyCache = () => {
+  try {
+    const raw = localStorage.getItem(DAILY_CACHE_KEY)
+    if (!raw) return null
+    const cached = JSON.parse(raw)
+    if (cached.date === getTodayDateStr()) return cached.data
+    // 日期已过，清除旧缓存
+    localStorage.removeItem(DAILY_CACHE_KEY)
+    return null
+  } catch {
+    return null
+  }
+}
+
+const writeDailyCache = (data) => {
+  try {
+    localStorage.setItem(DAILY_CACHE_KEY, JSON.stringify({ date: getTodayDateStr(), data }))
+  } catch {
+    // 缓存写入失败不影响主流程
+  }
+}
+
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
+
+  // 非用户主动刷新时，优先读取当天缓存
+  if (!userInitiated) {
+    const cached = readDailyCache()
+    if (cached) {
+      fortune.value = {
+        ...cached,
+        yi: cached.yi || [],
+        ji: cached.ji || [],
+        aspects: cached.aspects || [],
+        details: cached.details || {},
+        personalized: cached.personalized || null
+      }
+      solarDate.value = cached.date || ''
+      lunarDate.value = cached.lunarDate || ''
+      activeNames.value = defaultExpandedDetailNames.value
+      error.value = false
+      isLoading.value = false
+      return
+    }
+  }
 
   isLoading.value = true
   error.value = false
@@ -486,6 +536,8 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
       lunarDate.value = data.lunarDate || ''
       activeNames.value = defaultExpandedDetailNames.value
       error.value = false
+      // 成功后写入当天缓存
+      writeDailyCache(data)
     } else {
       fortune.value = null
       solarDate.value = ''
