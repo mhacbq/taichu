@@ -361,6 +361,27 @@
 - **验证摘要**: 真实接口终验 `POST /api/tarot/draw` 已恢复 `code=200` 并返回 3 张牌；`remaining_points=370` 且余额从 `375 -> 370` 与 `points_cost=5` 对齐；`read_lints` 检查 `backend/app/controller/Tarot.php` 为 0 diagnostics。
 - **状态**: 已完成 1 条塔罗主链路高优问题闭环；后续可继续转向“新用户首登失败”或“合婚免费预览历史不落记录”这类仍未闭环问题。
 
+## 2026-03-19 大运图表与积分流水兼容修复
+- **任务目标**: 处理 `automation-4` 中仍卡住的大运图表 / 大运分析闭环，优先确认真实 500 根因并修复扣费承接。
+- **执行摘要**:
+    1. phpstudy 真实接口复测后确认老记录 `bazi_id=7` 的 `dayun-chart/dayun-analysis` 先被 `Fortune.php` 直接读取旧 `tc_bazi_record.gender` 整型值绊倒，再继续暴露 `PointsService` 直写旧版 `tc_points_record` 字段导致的 `amount` 缺失异常。
+    2. 本轮已让 `Fortune` 统一走标准化性别 / 出生时分与历史大运快照回退；`PointsService::consume()/add()` 改为复用 `PointsRecord::buildRecordPayload()`；`DayunFortuneService` 额外补上“先生成摘要再扣费”与按用户隔离缓存。
+    3. 已同步更新 `TODO.md`，把该高优项转入 `D. 最近已完成 / 已确认`；本轮未新增 SQL。
+- **验证摘要**: 真实接口终验 `bazi_id=8` 下 `dayun-chart` 首次 `code=200` 且余额 `240 -> 210`，`dayun-analysis` 再次 `code=200` 且余额 `210 -> 160`；同一 `dayun-chart` 二次请求命中缓存后 `points_cost=0`、余额不再变化；`/api/fortune/yearly` 同根因也恢复 `code=200`。
+- **状态**: 已完成 1 个主问题 + 2 个同根因接口闭环；后续可继续转向剩余未收口的登录 / 合婚类高优项。
+
+## 2026-03-19 每日运势文案去模板化
+- **任务目标**: 处理 `TODO.md -> A. 高频修复队列 -> [automation]` 中剩余低优项“每日运势四项解读文案仍偏固定模板，专业性不足”，做 1 次可验证的算法收口。
+- **执行摘要**:
+    1. 先用 phpstudy 真实接口复测 `GET /api/daily/fortune`，确认事业 / 财运 / 感情 / 健康四项说明仍主要按分数档位输出固定句式，虽然分数稳定，但专业感和当天盘面关联度偏弱。
+    2. 本轮重写 `backend/app/model/DailyFortune.php` 的四项解读生成逻辑，让描述同时参考当日 `day_gan_zhi`、`zhiri`、宜忌关键词与吉凶神；并让 `getToday()` 在快照文案与新生成结果不一致时自动刷新当天缓存，避免接口继续吐旧模板。
+    3. 同步更新 `backend/tests/daily_fortune_probe.php` 的回归口径，后续环境具备 PHP CLI 时可直接校验“描述匹配生成函数 + 带有盘面上下文”。
+    4. 已同步更新 `TODO.md`：移除 automation 队列中的该低优项，并转入 `D. 最近已完成 / 已确认`。
+- **验证摘要**: 真实接口终验 `GET /api/daily/fortune` 返回 `code=200`，四项文案已出现“甲辰日里 / 除日利清障减负 / 黄历宜沐浴、求医 / 吉神天德、月空可借力”等动态上下文；`read_lints` 检查 `DailyFortune.php` 与 `daily_fortune_probe.php` 为 0 diagnostics；`git diff --check` 对本轮改动文件通过。
+- **状态**: 已完成 1 条每日运势算法文案收口；当前 automation 栏位已无未完成独立高优 / 低优算法项，后续可继续按规则从 A 队列中接手新的占卜逻辑问题。
+
+
+
 
 
 

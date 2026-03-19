@@ -4,6 +4,8 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use app\model\DailyFortune;
+use app\service\LunarService;
+
 
 $reflection = new ReflectionClass(DailyFortune::class);
 $buildMethod = $reflection->getMethod('buildFortunePayload');
@@ -27,6 +29,9 @@ $failures = [];
 foreach ($dates as $date) {
     $first = $buildMethod->invoke(null, $date);
     $second = $buildMethod->invoke(null, $date);
+    $almanac = LunarService::solarToLunar($date);
+    $yi = array_values(array_filter(explode(',', (string) ($first['yi'] ?? ''))));
+    $ji = array_values(array_filter(explode(',', (string) ($first['ji'] ?? ''))));
 
     if ($first !== $second) {
         $failures[] = [
@@ -38,10 +43,15 @@ foreach ($dates as $date) {
     $aspectChecks = [];
     foreach ($aspectMap as $aspect => $descField) {
         $scoreField = $aspect . '_score';
-        $expectedDescription = $descriptionMethod->invoke(null, $aspect, (int) $first[$scoreField]);
+        $expectedDescription = $descriptionMethod->invoke(null, $aspect, (int) $first[$scoreField], $almanac, $yi, $ji);
         $actualDescription = (string) ($first[$descField] ?? '');
         $usedLegacyText = in_array($actualDescription, $legacyDescriptions[$descField] ?? [], true);
-        $matched = $actualDescription === $expectedDescription && !$usedLegacyText;
+        $hasContextualMarkers = str_contains($actualDescription, '黄历宜')
+            || str_contains($actualDescription, '忌')
+            || str_contains($actualDescription, '日里')
+            || str_contains($actualDescription, '吉神')
+            || str_contains($actualDescription, '需留意');
+        $matched = $actualDescription === $expectedDescription && !$usedLegacyText && $hasContextualMarkers;
 
         if (!$matched) {
             $failures[] = [
@@ -52,6 +62,7 @@ foreach ($dates as $date) {
                 'description' => $actualDescription,
                 'expected' => $expectedDescription,
                 'usedLegacyText' => $usedLegacyText,
+                'hasContextualMarkers' => $hasContextualMarkers,
             ];
         }
 
@@ -59,8 +70,10 @@ foreach ($dates as $date) {
             'score' => $first[$scoreField],
             'description' => $actualDescription,
             'matched_rule' => $matched,
+            'has_contextual_markers' => $hasContextualMarkers,
         ];
     }
+
 
     $results[] = [
         'date' => $date,

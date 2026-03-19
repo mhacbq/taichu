@@ -1,6 +1,13 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-19 自动执行摘要（充值订单筛选失败承接）
+
+- 本轮先复核了 `TODO.md` 的 `[15-2]` 提示，以及 `.codebuddy/automations/15-2`、`30-4`、`30-3`、`30` 的最近记录；最终接手 `30-3` / `TODO.md` 已证实的“充值订单页用户ID筛选不生效、关键词搜索失败时整页退化”前端问题。
+- 已在 `admin/src/views/payment/orders.vue` 增加查询失败兜底：搜索 / 翻页失败时保留上一份成功列表并给出显式提示，不再整页切成只读错误卡；若接口返回结果仍混入其他 `user_id`，页面会直接告知当前仍在展示原始返回结果。同时已更新 `TODO.md`，把剩余问题收敛为后端接口仍需支持 `user_id` 筛选并修复 `keyword` 搜索 500。
+- 验证结果：`admin/src/views/payment/orders.vue` 文件级诊断为 0，`git diff --check -- admin/src/views/payment/orders.vue TODO.md` 通过，`npm run build --prefix admin` 成功；接口回放仍确认 `FILTER_TOTAL=4 / FILTER_USER_IDS=1,1,2,4 / KEYWORD_STATUS=500`，说明前端兜底已落地，但后端根因未收口。
+
 ## 2026-03-19 自动执行摘要（合婚免费预览本机暂存）
+
 
 - 本轮先复核了 `TODO.md` 的 `[15-2]` 提示，以及 `.codebuddy/automations/15-2`、`30-4`、`30-3`、`30` 的最近记录；最终接手 `30-4` 已证实的“合婚免费预览结果可见但历史不闭环”前端问题。
 - 已在 `frontend/src/views/Hehun.vue` 增加免费预览本机暂存、恢复上次结果入口、历史区暂存记录与准确 CTA，避免后端 free 未落库时继续把用户引向并不存在的云端记录；`TODO.md` 已同步标记为前端兜底完成，剩余后端未落库问题待后端收口。

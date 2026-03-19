@@ -31,7 +31,7 @@
 ### 🧠 [automation] 命理算法修复专家
 - 当前暂无单独挂出的高优算法项；但如果 `A` 里其他占卜问题的主要根因仍落在 `backend/app/service/`、`controller/`、评分/解读/结构化输出逻辑，而不是纯环境或凭据问题，`automation` 可以直接接手 1 条继续修，不要因为条目暂时挂在 `[15]` 就机械退出。
 - 执行备注：若算法修复最终需要补充或调整 SQL / 表结构兼容，必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件，不要只改 service/controller。
-- [ ] [低] 每日运势四项解读文案仍偏固定模板，专业性不足；后续可结合当日干支、宜忌与用户喜用神提升口径。
+
 
 
 
@@ -96,7 +96,10 @@
 
 ## ✅ D. 最近已完成 / 已确认
 
+- [x] [2026-03-19] 每日运势四项解读文案已去模板化：phpstudy `http://localhost:8080` 下先复测 `GET /api/daily/fortune`，确认此前四项说明仍主要是按分数档位吐固定句式。现已重写 `backend/app/model/DailyFortune.php` 的解读生成逻辑，让事业 / 财运 / 感情 / 健康四项同时参考当日 `day_gan_zhi`、`zhiri`、宜忌关键词与吉凶神；并让 `getToday()` 在发现旧快照文案与新生成结果不一致时自动刷新当天缓存，避免接口继续返回旧模板。同步更新 `backend/tests/daily_fortune_probe.php` 的回归口径，要求描述既匹配生成函数，也必须带有实际盘面上下文。真实接口终验：`GET /api/daily/fortune` 已返回“甲辰日里……除日利清障减负……黄历宜沐浴、求医/吉神天德、月空可借力”等动态文案，不再是纯固定模板句。
+
 - [x] [2026-03-19] 大运图表 / 大运分析积分闭环已恢复：phpstudy `http://localhost:8080` 下先用老记录 `bazi_id=7` 复现 `POST /api/fortune/dayun-chart` 与 `POST /api/fortune/dayun-analysis`，确认原先不是单纯前端误报，而是两层同根因串联：`backend/app/controller/Fortune.php` 直接把 `tc_bazi_record.gender` 的旧 `TINYINT` 原值喂给 `Paipan::calculateDaYun()`，先触发 `Argument #2 ($gender) must be of type string, int given`；修正后又继续暴露 `backend/app/service/PointsService.php` 仍按旧字段直写 `tc_points_record`，在当前 schema 下稳定报 `Field 'amount' doesn't have a default value`。现已统一让 `Fortune` 入口走标准化的记录性别 / 出生时分与历史大运快照回退，并把 `PointsService::consume()/add()` 改为复用 `backend/app/model/PointsRecord.php::buildRecordPayload()` 兼容写入 `amount/balance/reason/description`，同时把 `DayunFortuneService` 的 K 线图缓存改为按用户隔离，且把摘要生成放到扣费前，避免后处理异常时“失败仍扣费”。真实接口终验：对新记录 `bazi_id=8` 首次回放 `dayun-chart` 已返回 `code=200`，余额 `240 -> 210` 与 `points_cost=30` 对齐；随后 `dayun-analysis` 也返回 `code=200`，余额 `210 -> 160` 与 `points_cost=50` 对齐；再次请求同一 `dayun-chart` 时 `from_cache=true`、`points_cost=0`、余额保持 `160`。同根因的 `POST /api/fortune/yearly` 也已恢复 `code=200` 并成功扣费。
+
 
 - [x] [2026-03-19] 大运分析积分扣费顺序修复：`DayunFortuneService::analyzeDayun()` 原先在业务计算前就扣积分，若计算过程中出现异常会导致积分被扣但无结果返回。现已改为先完成全部业务计算（calculateDayunScores / generateDayunAnalysis / getLuckyYears 等），计算成功后再调用 PointsService::consume() 扣费，确保计算异常时积分零损耗。同步更新了 analyzeDayun 的注释说明扣费顺序原则。
 
