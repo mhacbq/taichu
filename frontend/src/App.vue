@@ -165,13 +165,13 @@
         <el-icon class="bottom-icon"><Star /></el-icon>
         <span class="bottom-label">运势</span>
       </router-link>
-      <router-link to="/liuyao" class="bottom-nav-item bottom-nav-item--primary" :class="{ active: $route.path === '/liuyao' }">
-        <span class="bottom-primary-icon">☰</span>
-        <span class="bottom-primary-label">起卦</span>
+      <router-link to="/bazi" class="bottom-nav-item bottom-nav-item--primary" :class="{ active: $route.path === '/bazi' }">
+        <span class="bottom-primary-icon">☯</span>
+        <span class="bottom-primary-label">排盘</span>
       </router-link>
-      <router-link to="/bazi" class="bottom-nav-item" :class="{ active: $route.path === '/bazi' }">
-        <el-icon class="bottom-icon"><Calendar /></el-icon>
-        <span class="bottom-label">八字</span>
+      <router-link to="/liuyao" class="bottom-nav-item" :class="{ active: $route.path === '/liuyao' }">
+        <el-icon class="bottom-icon"><YinYang /></el-icon>
+        <span class="bottom-label">六爻</span>
       </router-link>
       <router-link :to="isLoggedIn ? '/profile' : '/login'" class="bottom-nav-item" :class="{ active: $route.path === '/profile' }">
         <el-icon class="bottom-icon"><User /></el-icon>
@@ -1594,7 +1594,7 @@ onBeforeUnmount(() => {
     filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
   }
 
-  /* 中间主功能按钮（起卦） */
+  /* 中间主功能按钮（八字排盘） */
   .bottom-nav-item--primary {
     position: relative;
     top: -10px;
