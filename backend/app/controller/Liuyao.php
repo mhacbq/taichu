@@ -1000,13 +1000,7 @@ PROMPT;
                 'user_id' => (int) ($data['user_id'] ?? 0),
                 'question' => (string) ($data['question'] ?? ''),
                 'method' => (string) ($data['method'] ?? 'time'),
-                'hexagram_original' => json_encode([
-                    'name' => $coreResult['main_gua'] ?? '',
-                    'code' => $coreResult['clean_gua_code'] ?? '',
-                    'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
-                    'yao_code' => $coreResult['yao_code'] ?? '',
-                    'yao_result' => $coreResult['yao_result'] ?? [],
-                ], JSON_UNESCAPED_UNICODE),
+                'hexagram_original' => json_encode($this->buildOriginalHexagramSnapshot($coreResult), JSON_UNESCAPED_UNICODE),
                 'hexagram_changed' => json_encode([
                     'name' => $coreResult['bian_gua']['bian_name'] ?? '',
                     'code' => $coreResult['bian_gua']['bian_code'] ?? '',
@@ -1119,27 +1113,32 @@ PROMPT;
         $interpretation = (string) ($record['interpretation'] ?? $record['analysis'] ?? '');
         $consumedPoints = (int) ($record['consumed_points'] ?? $record['points_used'] ?? 0);
         $createdAt = (string) ($record['created_at'] ?? '');
-        $riChen = trim((string) ($record['rigan'] ?? ''));
-        $yueJian = trim((string) ($record['yuejian'] ?? ''));
-        $riGan = $riChen !== '' ? mb_substr($riChen, 0, 1) : '';
-        $riZhi = $riChen !== '' ? mb_substr($riChen, 1) : '';
-        $xunkong = $this->decodeJsonField($record['xunkong'] ?? $record['xun_kong'] ?? null);
-        if (!is_array($xunkong)) {
-            $xunkong = [];
+        $storedTimeInfo = is_array($originalGua['time_info'] ?? null) ? $originalGua['time_info'] : [];
+        if (!empty($record['rigan'])) {
+            $storedTimeInfo['ri_chen'] = (string) $record['rigan'];
         }
-        if (empty($xunkong) && $riGan !== '' && $riZhi !== '') {
-            try {
-                $xunkong = LiuyaoService::calculateXunKong($riGan, $riZhi);
-            } catch (\Throwable $exception) {
-                $xunkong = [];
-            }
+        if (!empty($record['yuejian'])) {
+            $storedTimeInfo['yue_jian'] = (string) $record['yuejian'];
         }
+        $recordXunkong = $this->decodeJsonField($record['xunkong'] ?? $record['xun_kong'] ?? null);
+        if ($recordXunkong !== []) {
+            $storedTimeInfo['xunkong'] = $recordXunkong;
+        }
+        $timeInfo = $this->hydrateHistoricalTimeInfo($storedTimeInfo, $createdAt);
+        $riGan = $timeInfo['ri_gan'];
+        $riZhi = $timeInfo['ri_zhi'];
 
         $liuqinMap = $this->normalizePositionMap($this->decodeJsonField($record['liuqin'] ?? null));
+        if ($liuqinMap === []) {
+            $liuqinMap = $this->normalizePositionMap(is_array($originalGua['liuqin'] ?? null) ? $originalGua['liuqin'] : []);
+        }
         $liushenMap = $this->normalizePositionMap($this->decodeJsonField($record['liushen'] ?? null));
+        if ($liushenMap === []) {
+            $liushenMap = $this->normalizePositionMap(is_array($originalGua['liushen'] ?? null) ? $originalGua['liushen'] : []);
+        }
         $dongYao = array_values(array_map('intval', $this->decodeJsonField($record['moving_lines'] ?? null)));
-        $gong = '';
-        $shiYing = [];
+        $gong = (string) ($originalGua['gong'] ?? '');
+        $shiYing = is_array($originalGua['shi_ying'] ?? null) ? $originalGua['shi_ying'] : [];
         $bianGuaCode = (string) ($record['bian_gua_code'] ?? $changedGua['code'] ?? '');
         $huGuaName = (string) ($record['hu_gua_name'] ?? $mutualGua['name'] ?? '');
         $huGuaCode = (string) ($record['hu_gua_code'] ?? $mutualGua['code'] ?? '');
@@ -1149,27 +1148,40 @@ PROMPT;
                 $bianData = LiuyaoService::getBianGua($yaoCode);
                 $huData = LiuyaoService::getHuGua($yaoCode);
                 $guaMeta = LiuyaoService::getGuaInfo($yaoCode);
-                $shiYing = LiuyaoService::getShiYing($mainGuaName, $yaoCode);
+                $computedShiYing = LiuyaoService::getShiYing($mainGuaName, $yaoCode);
+                $shiYing = $computedShiYing !== [] ? $computedShiYing : $shiYing;
                 $dongYao = $dongYao !== [] ? $dongYao : array_values(array_map('intval', (array) ($bianData['dong_yao'] ?? [])));
                 $bianGuaName = $bianGuaName !== '' ? $bianGuaName : (string) ($bianData['bian_name'] ?? '');
                 $bianGuaCode = $bianGuaCode !== '' ? $bianGuaCode : (string) ($bianData['bian_code'] ?? '');
                 $huGuaName = $huGuaName !== '' ? $huGuaName : (string) ($huData['hu_name'] ?? '');
                 $huGuaCode = $huGuaCode !== '' ? $huGuaCode : (string) ($huData['hu_code'] ?? '');
-                $gong = (string) ($guaMeta['gong'] ?? '');
+                $gong = $gong !== '' ? $gong : (string) ($guaMeta['gong'] ?? '');
             } catch (\Throwable $exception) {
-                $shiYing = [];
+                $shiYing = $shiYing ?: [];
+            }
+        }
+
+        if ($liuqinMap === [] && $yaoCode !== '' && $mainGuaName !== '' && $gong !== '') {
+            try {
+                $gongWuxing = LiuyaoService::BA_GUA_WUXING[$gong] ?? '金';
+                $liuqinMap = $this->normalizePositionMap(LiuyaoService::getLiuQin($mainGuaName, $gongWuxing, $yaoCode));
+            } catch (\Throwable $exception) {
+                $liuqinMap = [];
+            }
+        }
+        if ($liushenMap === [] && $riGan !== '') {
+            try {
+                $liushenMap = $this->normalizePositionMap(LiuyaoService::getLiuShen($riGan));
+            } catch (\Throwable $exception) {
+                $liushenMap = [];
             }
         }
 
         $lineDetails = $this->normalizeStoredLineDetails($storedLines, $yaoResult, $liuqinMap, $liushenMap, $shiYing, $dongYao);
-        $timeInfo = [
-            'ri_gan' => $riGan,
-            'ri_zhi' => $riZhi,
-            'ri_chen' => $riChen,
-            'yue_jian' => $yueJian,
-            'divination_at' => $createdAt,
-            'xunkong' => array_values(array_filter(array_map('strval', $xunkong))),
-        ];
+        $storedYongShen = is_array($originalGua['yong_shen'] ?? null) ? $originalGua['yong_shen'] : [];
+        if (($storedYongShen['liuqin'] ?? '') === '' && !empty($record['yongshen'])) {
+            $storedYongShen['liuqin'] = (string) $record['yongshen'];
+        }
 
         return [
             'id' => (int) ($record['id'] ?? 0),
@@ -1200,13 +1212,13 @@ PROMPT;
             'shi_ying' => $shiYing,
             'liuqin' => $liuqinMap,
             'liushen' => $liushenMap,
-            'yong_shen' => ['liuqin' => (string) ($record['yongshen'] ?? '')],
+            'yong_shen' => $storedYongShen !== [] ? $storedYongShen : ['liuqin' => ''],
             'line_details' => $lineDetails,
             'interpretation' => $interpretation,
             'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
             'consumed_points' => $consumedPoints,
             'created_at' => $createdAt,
-            'fushen' => null,
+            'fushen' => $storedYongShen !== [] ? $this->buildFushenDisplay(['yong_shen' => $storedYongShen]) : null,
         ];
 
     }
@@ -1272,6 +1284,23 @@ PROMPT;
         );
     }
 
+    private function buildOriginalHexagramSnapshot(array $coreResult): array
+    {
+        return [
+            'name' => $coreResult['main_gua'] ?? '',
+            'code' => $coreResult['clean_gua_code'] ?? '',
+            'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
+            'yao_code' => $coreResult['yao_code'] ?? '',
+            'yao_result' => $coreResult['yao_result'] ?? [],
+            'time_info' => $coreResult['time_info'] ?? [],
+            'gong' => (string) ($coreResult['gong'] ?? ''),
+            'shi_ying' => $coreResult['shi_ying'] ?? [],
+            'liuqin' => $coreResult['liuqin'] ?? [],
+            'liushen' => $coreResult['liu_shen'] ?? [],
+            'yong_shen' => $coreResult['yong_shen'] ?? [],
+        ];
+    }
+
     private function buildLineSnapshots(array $coreResult): array
     {
         $snapshots = [];
@@ -1308,6 +1337,72 @@ PROMPT;
         }
 
         return $normalized;
+    }
+
+    private function parseStoredMoment(string $value): ?\DateTimeImmutable
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($value, new \DateTimeZone('Asia/Shanghai'));
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function hydrateHistoricalTimeInfo(array $timeInfo, string $createdAt): array
+    {
+        $riGan = trim((string) ($timeInfo['ri_gan'] ?? ''));
+        $riZhi = trim((string) ($timeInfo['ri_zhi'] ?? ''));
+        $riChen = trim((string) ($timeInfo['ri_chen'] ?? ''));
+        if ($riChen !== '' && ($riGan === '' || $riZhi === '')) {
+            $riGan = mb_substr($riChen, 0, 1);
+            $riZhi = mb_substr($riChen, 1);
+        }
+
+        $moment = $this->parseStoredMoment((string) ($timeInfo['divination_at'] ?? $createdAt));
+        if (($riGan === '' || $riZhi === '') && $moment !== null) {
+            try {
+                [$riGan, $riZhi] = $this->resolveRiChen([], $moment);
+            } catch (\Throwable $exception) {
+                $riGan = $riGan ?: '';
+                $riZhi = $riZhi ?: '';
+            }
+        }
+
+        if ($riGan !== '' && $riZhi !== '' && $riChen === '') {
+            $riChen = $riGan . $riZhi;
+        }
+
+        $yueJian = trim((string) ($timeInfo['yue_jian'] ?? ''));
+        if ($yueJian === '' && $moment !== null) {
+            try {
+                $yueJian = $this->resolveYueJian($moment);
+            } catch (\Throwable $exception) {
+                $yueJian = '';
+            }
+        }
+
+        $xunkong = array_values(array_filter(array_map('strval', (array) ($timeInfo['xunkong'] ?? []))));
+        if ($xunkong === [] && $riGan !== '' && $riZhi !== '') {
+            try {
+                $xunkong = LiuyaoService::calculateXunKong($riGan, $riZhi);
+            } catch (\Throwable $exception) {
+                $xunkong = [];
+            }
+        }
+
+        return [
+            'ri_gan' => $riGan,
+            'ri_zhi' => $riZhi,
+            'ri_chen' => $riChen,
+            'yue_jian' => $yueJian,
+            'divination_at' => trim((string) ($timeInfo['divination_at'] ?? $createdAt)),
+            'xunkong' => $xunkong,
+        ];
     }
 
     private function normalizeStoredLineDetails(array $storedLines, array $yaoResult, array $liuqinMap, array $liushenMap, array $shiYing, array $dongYao): array

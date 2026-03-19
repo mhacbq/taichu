@@ -1,5 +1,8 @@
 # 占卜爱好者体验检查 - 执行历史
 
+> 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续占卜巡检不要再默认使用 Docker、容器日志、`docker compose` 或 3001 代理；历史记录中的相关内容仅作旧证据，不再作为当前执行前提。
+
+
 ## 2026-03-17 第十九轮执行记录
 
 ### 检查概览
@@ -164,4 +167,77 @@
 ### 处理结果
 已将本轮新增的 2 项高优先级、1 项中优先级、1 项低优先级问题写入 `TODO.md` 的“2026-03-18 占卜深度体验检查（第三十一次）”部分。
 建议优先修复：先把神煞乱码修复 SQL 改成真正幂等，恢复后端启动；随后重做每日运势公共底盘，取消 `mt_rand()` 随机分数与随机文案拼接。
+
+## 2026-03-18 第三十轮执行记录
+
+### 检查概览
+- **检查时间**: 2026-03-18
+- **检查人员**: 资深占卜爱好者（AI自动化巡检）
+- **检查范围**: 从塔罗“历史/保存/分享”闭环继续往下补查，并复核当前本地运行态是否还能支撑真实用户链路。
+- **核心发现**:
+  1. **环境阻塞**：当前 `localhost:8080` 虽然 `GET /api/health` 仍返回 200，但端口实际由多进程 `nginx.exe` 占用；`POST /api/auth/phone-login` 等依赖数据库的接口已不再进入可用运行态，而是直接抛出 `php_network_getaddresses: getaddrinfo for mysql failed`。说明当前本机后端仍沿用 `DB_HOST=mysql`，但并未处在可解析该主机名的 Docker 网络里。
+  2. **塔罗闭环**：基于上一轮已成功的 `draw + interpret` 结果继续回看代码与日志，`TarotRecord` 模型固定依赖 `spread_type/is_public/share_code/view_count`；而运行日志里先后出现 `Field 'type' doesn't have a default value` 与 `Unknown column 'is_public' in 'field list'`，高度指向 `tc_tarot_record` 仍存在旧表结构/脏结构漂移，保存、历史、公开分享链路不能稳定闭环。
+  3. **六爻状态更新**：旧问题“`id = null` / history 全空”已不再成立；当前更准确的问题定义应改为“实时结果完整，但历史回读字段缩水”，根因仍在 `Liuyao::storeDivinationRecord()` 按表结构分支持久化。
+
+### 处理结果
+已把本轮确认的新环境阻塞与问题状态迁移写回 `TODO.md`：新增“本地 8080 运行态与数据库容器脱节”以及“塔罗 save/history/share 闭环疑似卡在旧表结构”两项高优问题，同时把已被前次实测证伪的“塔罗 interpret 全失败”“六爻 id=null/history 全空”移入已确认区。
+本轮未继续做代码修复；后续若要恢复真实占卜链路，应先统一 8080 对应的后端运行方式（容器 / 本机二选一），再复打塔罗保存、公开分享与历史回看接口。
+
+## 2026-03-18 第三十一轮执行记录
+
+### 检查概览
+- **检查时间**: 2026-03-18 21:32
+- **检查人员**: 资深占卜爱好者（AI自动化巡检）
+- **检查范围**: phpstudy 基线下复测登录前置、每日运势公开链路，以及六爻 / 塔罗 / 合婚的登录后入口可用性。
+- **核心发现**:
+  1. `GET /api/health` 仍为 200，但 `POST /api/auth/phone-login` 稳定报 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+  2. `GET /api/daily/fortune` 在游客态与带 JWT 两种情况下都直接 500，说明公开日运也被当前 MySQL 凭据问题拖死。
+  3. 带有效 JWT 复测时，`GET /api/hehun/pricing`、`GET /api/tarot/history` 报同一条 1045，`GET /api/liuyao/pricing` 则返回 `HTTP 200 + code 500`；当前无法继续进入扣费 / 历史 / 分享闭环。
+  4. `http://localhost:5173/bazi` 与 `http://localhost/bazi` 都是连接拒绝，本轮没有可补测的前台页面实例。
+
+### 处理结果
+- 已把 `[15]` 数据库凭据阻塞项的影响范围补写到 `TODO.md`，明确其已扩散到每日运势公开链路与多条占卜入口/历史链路。
+- 原始接口证据已落盘到产物目录 `divination_probe_30_4_output.json`，供后续接力时直接复用。
+- 本轮未做代码修复；下一步仍应先确认 phpstudy 正在使用的 MySQL 用户名/密码，再重跑真实占卜闭环。
+
+## 2026-03-19 第三十二轮执行记录
+
+### 检查概览
+- **检查时间**: 2026-03-19 01:45
+- **检查人员**: 资深占卜爱好者（AI自动化巡检）
+- **检查范围**: phpstudy 基线下复测登录前置、每日运势公开链路，以及登录后占卜入口（合婚 / 六爻 / 塔罗）的可进入性；同步确认本地前台页面是否存在可直接访问实例。
+- **核心发现**:
+  1. `GET /api/health` 仍为 200，但 `POST /api/auth/phone-login` 继续在 `User::findByPhone()` 查询 `tc_user` 时抛出 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+  2. `GET /api/daily/fortune`（游客）同样在 `DailyFortune::getToday()` 查询 `tc_daily_fortune` 时命中 1045，公开日运仍不可用。
+  3. 无 token 抽测 `GET /api/hehun/pricing`、`GET /api/liuyao/pricing`、`GET /api/tarot/history` 均只返回 `401 请先登录`；在登录前置未恢复前，本轮无法继续进入扣费 / 历史 / 分享闭环。
+  4. `http://localhost:5173/daily` 与 `http://localhost/daily` 都连接拒绝，本轮没有可补测的前台页面实例。
+
+### 处理结果
+- 已将新的时间戳、报错落点与页面不可达证据补写到 `TODO.md` 的 `[15]` 条目，避免后续继续沿用旧的 `21:32` 证据。
+- 本轮未做代码修复；下一步仍应先恢复 phpstudy 本机 MySQL 凭据与用户登录，再重跑八字 / 六爻 / 塔罗 / 合婚 / 每日运势闭环。
+
+## 2026-03-19 第三十三轮执行记录
+
+### 检查概览
+- **检查时间**: 2026-03-19 05:55
+- **检查人员**: 资深占卜爱好者（AI自动化巡检）
+- **检查范围**: 登录转化、每日运势公开链路，以及用临时 JWT 绕过登录后对积分/合婚/六爻入口做最小化复测。
+- **核心发现**:
+  1. `GET /api/health` 仍为 200，但 `POST /api/auth/phone-login`（真实 JSON 体）继续在 `tc_user` 查询阶段命中 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+  2. `GET /api/daily/fortune`（游客）继续在 `tc_daily_fortune` 查询阶段命中同一条 1045，公开日运仍不可用。
+  3. 用临时 JWT 直探后，`GET /api/points/balance` 与 `GET /api/hehun/pricing` 同样回到 1045；`GET /api/liuyao/pricing` 返回 `code=500`，结合控制器首句 `User::find($userId)`，六爻入口也被同一数据库查询前置卡住。
+  4. `http://localhost/daily` 与 `http://localhost:5173/daily` 继续连接拒绝，本轮依旧没有可直接补测的前台页面实例。
+
+### 处理结果
+- 已把最新时间戳与“临时 JWT 直探受保护入口”的影响范围补写到 `TODO.md` 的 `[15]` 条目。
+- 本轮未做代码修复；下一步仍应先修正 phpstudy MySQL 凭据，再回到八字 / 六爻 / 塔罗 / 合婚 / 每日运势的扣费、历史、分享闭环。
+
+
+
+
+
+
+
+
+
 

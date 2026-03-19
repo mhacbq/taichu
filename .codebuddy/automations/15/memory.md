@@ -1,5 +1,111 @@
 # 后端修复专家 - 执行记录
 
+> 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续执行不要再默认使用 Docker、`docker compose`、`docker exec`、容器网络或 `localhost:3001` 代理；历史记录里出现的相关表述仅作旧证据参考，不再作为当前执行前提。
+
+## 2026-03-19 本轮自动化复核：继续不接单（本次）
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory，未扩读其他代码、配置、日志，也未执行 8080 接口或 PHP CLI 复测。
+- 当前 `[15]` 下仍只有 4 条证据充分但属于高风险边界的未完成项：bootstrap 神煞 SQL 唯一键冲突、phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表 schema 漂移。
+- 结论维持不变：这些问题分别涉及初始化 SQL、环境凭据、缺表建表、历史 schema 迁移，按当前规则均不自动硬改；本轮不接单修复、不改代码/SQL/配置、不回写 `TODO.md`。
+- 后续仍建议先由人工统一确认 phpstudy MySQL 账号口径，并决定缺表/迁移处理策略；待这些高风险前置解除后，再回到 `[15]` 做 8080 真实接口复测与应用层收口。
+
+
+## 2026-03-19 本轮自动化复核：继续不接单（最新）
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory，未扩读其他代码、配置、日志，也未执行接口/CLI 复测。
+- 当前 `[15]` 下仍只有 4 条证据充分但处于高风险边界的未完成项：bootstrap 神煞 SQL 唯一键冲突、phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表 schema 漂移。
+- 结论维持不变：这些问题分别涉及初始化 SQL、环境凭据、缺表建表、历史表结构迁移，按当前规则都不自动硬改；本轮不接单修复、不改代码/SQL/配置、不回写 `TODO.md`。
+- 后续仍建议先由人工统一确认 phpstudy MySQL 账号口径，并决定缺表/迁移处理策略；待这些高风险前置解除后，再回到 `[15]` 做 8080 真实接口复测与应用层收口。
+
+
+## 2026-03-19 本轮自动化复核：仍不接单（最新）
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory，未扩读其他代码、配置、日志，也未执行接口/CLI 复测。
+- 当前 `[15]` 下仍只有 4 条已充分取证但属于高风险边界的未完成项：bootstrap 神煞 SQL 唯一键冲突、phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表 schema 漂移。
+- 结论维持不变：上述问题分别落在初始化 SQL、环境凭据、缺表建表、历史 schema 迁移边界；按当前规则都不自动硬改。本轮不接单修复、不改代码/SQL/配置、不回写 `TODO.md`。
+- 后续仍建议先由人工统一确认 phpstudy MySQL 账号口径，并决定缺表/迁移处理策略；待这些高风险前置解除后，再回到 `[15]` 做 8080 真实接口复测与应用层收口。
+
+## 2026-03-19 本轮自动化复核：继续不接单（本次）
+
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory，未扩读其他代码、配置、日志或执行接口/CLI 复测。
+- 当前 `[15]` 下仍只有 4 条已充分取证但均属高风险边界的未完成项：bootstrap 神煞 SQL 唯一键冲突、phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表 schema 漂移。
+- 结论维持不变：以上问题分别涉及初始化 SQL、环境凭据、缺表建表、历史迁移/表结构兼容，按当前规则均不自动硬改；本轮不接单修复、不改代码/SQL/配置、不回写 `TODO.md`。
+- 后续仍建议先由人工统一确认 phpstudy MySQL 账号口径，并决定缺表/迁移处理策略；待这些高风险前置解除后，再回到 `[15]` 做 8080 真实接口复测与应用层收口。
+
+## 2026-03-19 本轮自动化复核：仍不接单（最新）
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory，未扩读其他代码/配置/日志文件。
+- 当前 `[15]` 下仍是同 4 条未完成高风险项：bootstrap 神煞 SQL 唯一键冲突、本机 phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结论维持不变：这些问题分别落在初始化 SQL、环境凭据、缺表建表、历史 schema 迁移边界；按当前规则都不适合自动硬改。本轮不接单修复、不改代码/SQL/配置、不回写 `TODO.md`。
+- 建议仍是先由人工确认 phpstudy MySQL 实际账号口径，并统一缺表/迁移处理策略；待高风险前置解除后，再回到 `[15]` 做 8080 真实接口复测与应用层收口。
+
+## 2026-03-19 本轮自动化复核：仍不接单
+
+
+- 按指令开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory，未扩读其他代码/配置/日志文件。
+- 当前 `[15]` 下仍只有 4 条未完成高风险项：启动阶段神煞 SQL 唯一键冲突、本机 phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结论维持不变：以上分别落在初始化 SQL、数据库凭据、缺表建表、历史表结构迁移边界，证据已充分但都不适合自动硬改；本轮未接单修复、未改代码、未改 SQL、未更新 `TODO.md`。
+- 建议仍是先由人工处理环境凭据与迁移/建表策略，解除前置阻塞后，再回到 `[15]` 做 8080 真实接口复测与应用层收口。
+
+## 2026-03-19 本轮评估：继续不接高风险项
+
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory；当前 `[15]` 下仍有 4 条未完成项：bootstrap 阶段神煞 SQL 唯一键冲突、本机 MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结论不变：这 4 条分别涉及启动/初始化 SQL、phpstudy 本机数据库凭据、缺表建表、历史表结构迁移，均落在当前规则的高风险边界；本轮不自动接单、不改代码、不改 SQL、不改 `.env`、不回写 `TODO.md`。
+- 本轮也未额外扩读其他业务文件，避免在证据已充分时继续空转；后续仍建议先由人工处理环境凭据、缺表与迁移策略，再回到 `[15]` 做真实接口复测与应用层收口。
+
+## 2026-03-19 本轮评估：仍无可安全自动接单项
+
+- 按本轮指令，开始时仅查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与本 memory；当前 `[15]` 下仍有 4 条未完成项：bootstrap 阶段神煞 SQL 唯一键冲突、本机 MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结论：这 4 条依旧全部落在高风险边界——分别涉及启动/初始化 SQL、phpstudy 本机数据库凭据、缺表建表、历史表结构迁移；按当前规则都不适合自动硬改。
+- 本轮未接单修复、未改代码、未改 SQL、未回写 `TODO.md` 完成状态，也未额外扩读其他业务文件；避免在证据已充分时继续空转或误把环境/迁移问题当成应用代码缺陷。
+- 后续建议维持不变：先由人工确认并修正 phpstudy MySQL 实际账号口径，再手工补齐缺失表/初始化 SQL，待高风险前置解除后，再回到 `[15]` 继续做真实接口复测与应用层收口。
+
+## 2026-03-18 本轮评估：高风险项未接单
+
+
+- 仅按指令查看 `TODO.md` 中 `## A. 高频修复队列 -> ### [15] 后端修复专家` 与本 memory；当前未完成项共有 4 条，分别是启动阶段神煞 SQL 唯一键冲突、本机 MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结论：这 4 条分别落在部署/启动链路、登录前置、本地数据库凭据、数据库迁移/表结构兼容等高风险边界，且 memory 中已有较充分证据；按当前执行规则，本轮不自动硬改代码、SQL、TODO 或环境配置，只保留人工处置建议。
+- 建议优先级：先人工确认 phpstudy MySQL 实际账号口径并解除 1045；再处理 `tc_sms_code` 建表与塔罗记录 schema 对齐；启动阶段唯一键冲突建议在确认迁移策略后再做幂等化修补。
+
+## 2026-03-18 22:10 phpstudy MySQL 凭据阻塞复核（本次）
+
+- 仅复核 `[15]` 的数据库凭据主问题；真实接口 `GET /api/health` 正常，但 `POST /api/auth/phone-login` 与 `GET /api/daily/fortune` 都稳定返回 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+- 代码 / 配置核对：`backend/.env` 当前是 `DB_HOST=127.0.0.1`、`DB_PORT=3306`、`DB_NAME=taichu`、`DB_USER=taichu`、`DB_PASSWORD=taichu123`；`backend/config/database.php` 直接读取这些 env，因此当前阻塞已明确落在 phpstudy 本机 MySQL 实际账号口径与 `.env` 不匹配，而不是应用代码层。
+- 取证补充：`GET /api/daily/fortune` 的错误页已直接落到 `SELECT * FROM \`tc_daily_fortune\`` 查询；工作区 `backend/runtime/log` 当前为空，所以本轮主要依赖真实接口返回与配置静态核对收敛证据。
+- 风险判断：该项属于登录前置 + 本地数据库凭据高风险边界，本轮未自动改账号密码、未猜测凭据、未回写 TODO 完成状态，也未继续误追短信表 / 塔罗表结构等后续症状。
+- 建议：人工先确认 phpstudy / MySQL 正在使用的账号密码，并以 `taichu` 库做一次最小连接验证；凭据确认后优先重测 `phone-login`、`daily/fortune`，通过后再继续处理 `[15]` 里的短信缺表与塔罗记录结构问题。
+
+## 2026-03-18 21:05 六爻历史字段缩水修复（本次）
+
+- 仅处理 `[15]` 的六爻历史回读字段缩水问题；先复核 8080 运行态，`GET /api/health` 仍返回 `code=200`，但登录接口依旧抛 ThinkPHP 错误页，说明登录态真实回放继续受本机 MySQL 凭据阻塞。
+- 代码定位到 `backend/app/controller/Liuyao.php`：新表分支保存时未把 `time_info / gong / shi_ying / liuqin / liushen / yong_shen` 一起快照，历史回读也缺少对旧记录按 `created_at + yao_code` 的补全逻辑，因此刷新后字段容易缩水。
+- 已修复：新记录会把上述排盘元数据写入 `hexagram_original`，历史回读优先使用快照；若旧记录缺字段，则按已有 `created_at / yao_code` 兜底恢复 `ri_gan / yue_jian / xunkong / liuqin / liushen / fushen`。
+- 验证：`backend/app/controller/Liuyao.php` 的 IDE 诊断为 0 条，`git diff --check -- backend/app/controller/Liuyao.php` 通过；本机 `php -v` 不可用，且登录链路仍被 MySQL 凭据问题阻断，所以暂未完成 8080 登录态真实接口回放。
+- TODO 已将该项移入“最近已完成 / 已确认”；后续只需在数据库凭据问题解除后补一轮在线复测。
+
+
+## 2026-03-18 19:48 phpstudy 本机 MySQL 凭据阻塞复核（本次）
+
+- 仅处理 `[15]` 当前高频队列中的数据库连接主问题；用真实接口复测 `GET /api/health` 与 `POST /api/auth/phone-login`，并核对 `backend/.env` 当前数据库配置。
+- 结果：健康检查仍返回 `code=200`；登录接口稳定报 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。`backend/.env` 已是 `DB_HOST=127.0.0.1`，不再是旧的 `mysql` 主机名解析问题。
+- 结论：当前 8080 / phpstudy 阻塞已收敛为 **本机 MySQL 用户名或密码与 `.env` 不匹配**，仍属于本地环境 / 登录前置高风险项；本轮未硬改数据库凭据，只把 `TODO.md` 对应未完成条目的证据更新为最新现象，避免后续继续追旧症状。
+- 后续建议：由人工确认 phpstudy/MySQL 实际账号口径后，再继续复测登录后的历史、保存与六爻 / 塔罗闭环问题。
+
+## 2026-03-18 18:45 本地 8080 数据库主机阻塞复现（本次）
+
+- 仅按 `[15]` 当前高频队列处理 1 个主问题：先用 `curl http://localhost:8080/api/health` 确认站点存活，再直连 `POST /api/auth/phone-login`（测试号 `13800138055` + `123456`）复现登录链路。
+- 结果：健康检查返回 `code=200`，但登录接口直接抛 ThinkPHP 错误页，核心报错为 `SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for mysql failed`，异常页同时显示 `hostname=mysql`、`HTTP_HOST=localhost:8080`。
+- 结论：当前 phpstudy/Windows 运行态仍在读取 `backend/.env` 中的 `DB_HOST=mysql` 容器口径，导致所有依赖 MySQL 的真实接口在 8080 下都会被环境配置阻断；该项属于本地环境/登录高风险问题，本轮未自动改 `.env`、未回写 TODO 完成状态。
+- 后续建议：先由人工确认本机 MySQL 实际 host/port/user/password，并把本地环境切到非容器口径后，再继续复测六爻 history、塔罗 save-record 等后续应用层问题。
+
+## 2026-03-18 17:35 六爻落库问题复核（本次）
+
+- 本轮仅复核 `TODO.md` 中 `[15]` 的“六爻起卦返回 `id = null` / history 为空”问题；`docker exec taichu-app php /var/www/html/tests/liuyao_http_probe.php` 返回 `code=200` 且 `data.id=5`，未复现 `id=null`。
+- 进一步执行 `docker exec taichu-app php /var/www/html/tests/liuyao_internal_debug.php`，返回 `record_id=6`，说明当前控制器持久化主链可正常生成记录 ID。
+- 阻塞：现有 `backend/tests/liuyao_*` 探针主要只看旧表 `liuyao_records`，而控制器/模型优先解析 `tc_liuyao_record`；本轮未改代码、未回写 TODO，待补统一探针后再判断是否为旧证据失效。
+
 ## 2026-03-18 用户资料 / 功能开关 / 神煞 / 通知配置修复记录（本次）
 
 - 本轮完成 5 个后端/运营收口项：系统设置功能开关保存后立即回读失效、用户详情资料编辑入口缺失、神煞历史乱码展示不可读、后台缺少独立通知配置入口、后台缺少测试通知能力；并补了神煞历史脏数据回填 SQL。
@@ -60,7 +166,7 @@
 
 
 - 完成 5 个后台 / 运营类问题：移除后台 JWT 固定默认密钥回退、补齐管理员 Token 声明与启用状态校验、为 `auth/info` 返回真实角色/权限/状态、收紧系统角色/权限/字典接口的 `config_manage` 权限边界、统一以 `SchemaInspector` 替代 MySQL `SHOW TABLES / SHOW COLUMNS` 探测。
-- 关键代码：新增 `backend/app/service/SchemaInspector.php`；更新 `backend/app/controller/admin/Auth.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/AdminAuthService.php`、`backend/app/service/AdminStatsService.php`、`backend/app/controller/admin/System.php`，并已在 `TODO.md` 回写第二十四轮完成项。
+- 关键代码：新增 `backend/app/service/SchemaInspector.php`；更新 `backend/app/controller/admin/{Auth,System}.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/{AdminAuthService,AdminStatsService}.php`，并已在 `TODO.md` 回写第二十四轮完成项。
 - 验证：已对 `backend/app/controller/admin/{Auth,System}.php`、`backend/app/middleware/AdminAuth.php`、`backend/app/service/{AdminAuthService,AdminStatsService,SchemaInspector}.php` 执行 IDE 诊断检查，结果均为 0 条；待提交前继续执行 `git diff --check` 做补丁格式校验。
 - Git：本轮提交信息使用 `fix-backend-admin-auth-hardening-20260318-0030`。
 
@@ -182,7 +288,7 @@
 ### 验证结果
 - 已对本轮重点文件执行 `read_lints`，结果为 0 条诊断。
 - 已执行 `git diff --check`，当前 `AdminPayment.php`、`System.php`、`backend/route/admin.php`、`backend/route/app.php` 通过基础格式检查。
-- 当前环境未提供 `php` 命令，暂未执行 `php -l` 语法检查。
+- 当前环境未提供 `php` 命令，暂未执行 `php -l`。
 
 ### 提交状态
 - 提交 ID：`965e024`
@@ -349,4 +455,3 @@
 - 说明：本次提交实际额外带入了 `backend/docker-compose.yml`、`backend/docker-entrypoint.sh` 的已暂存内容，不属于本轮核心修复；当前工作区中 `backend/docker-compose.yml` 仍有后续未提交改动。
 
 ---
-

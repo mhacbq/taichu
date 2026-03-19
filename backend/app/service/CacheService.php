@@ -194,10 +194,10 @@ class CacheService
      * @param int $year 年份
      * @return string
      */
-    public static function yearlyFortuneKey(array $bazi, int $year): string
+    public static function yearlyFortuneKey(array $bazi, int $year, int $userId = 0): string
     {
         $baziString = json_encode($bazi);
-        $hash = md5($baziString . $year);
+        $hash = md5($baziString . $year . ':' . max(0, $userId));
         return self::KEY_PREFIX . 'yearly:fortune:' . $year . ':' . $hash;
     }
     

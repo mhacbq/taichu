@@ -49,8 +49,9 @@ class DayunFortuneService
 
         $scores = $this->calculateDayunScores($dayun, $bazi);
         $analysis = $this->generateDayunAnalysis($dayun, $bazi, $scores);
-        $overallScore = (int) ($scores['overall'] ?? 0);
+        $overallScore = $this->normalizeScore($scores['overall'] ?? 0);
         $fortuneLevel = $this->getFortuneLevel($overallScore);
+
 
         $pointsService = new PointsService();
         $consumeResult = $pointsService->consume(
@@ -124,9 +125,10 @@ class DayunFortuneService
             // 细化到每一年的数据点
             $startYear = $dayun['start_year'] ?? (date('Y') - $dayun['start_age'] + 20);
             $years = [];
-            $overallScore = (int) ($scores['overall'] ?? 0);
+            $overallScore = $this->normalizeScore($scores['overall'] ?? 0);
 
             for ($i = 0; $i < 10; $i++) {
+
                 $year = $startYear + $i;
                 $age = $dayun['start_age'] + $i;
 
@@ -356,6 +358,15 @@ class DayunFortuneService
 
         return max(1, min(100, (int) round($yearScore)));
     }
+
+    /**
+     * 统一归一化评分，避免严格类型链路里把 float 直接传给只接收 int 的方法。
+     */
+    protected function normalizeScore($score): int
+    {
+        return max(0, min(100, (int) round((float) $score)));
+    }
+
     
     /**
      * 生成大运分析

@@ -1,5 +1,61 @@
 # 自动化任务执行内存
 
+> 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续算法修复与验证不要再默认使用 Docker、`docker exec` 或容器内 PHP；优先走本机可用的 HTTP 接口、本机 PHP CLI（若已可用）和代码静态检查。
+
+## 2026-03-19 轮询（无动作，phpstudy 续检）
+- **任务目标**: 按自动化要求仅检查 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 是否重新出现可独立处理的高优算法项。
+- **执行摘要**:
+    1. 开始时仅读取了指定 TODO 章节与本 memory，未扩扫其他模块，也未触发 Docker、容器日志、容器内 PHP 或 `docker compose`。
+    2. 当前 `[automation]` 章节仍写明“暂无需继续独立推进的高优算法项”；唯一未完成条目仍是低优的“每日运势四项解读文案仍偏固定模板”，不属于本轮处理范围。
+    3. 因无匹配高优待办，本轮按规则立即退出，未做接口复测、未改代码、未更新 TODO，也未尝试登录态、扣费链路或数据库结构类高风险操作。
+- **状态**: no-op；继续等待 `[automation]` 章节出现新的高优未完成算法项后，再进入“复现 → 修复 → 最小验证”闭环。
+
+## 2026-03-19 轮询（无动作，续检）
+- **任务目标**: 按自动化要求仅检查 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 是否重新出现可独立处理的高优算法项。
+- **执行摘要**:
+    1. 开始时只读取了指定 TODO 章节与本 memory，未扩扫其他模块，也未触发 Docker、容器日志、容器内 PHP 或 `docker compose`。
+    2. 当前 `[automation]` 章节仍明确写明“当前暂无需继续独立推进的高优算法项”；现阶段剩余真实阻塞已归并到 `[15]` 的数据库 / 登录前置问题，不属于本轮算法自动化可独立处理范围。
+    3. 因无匹配高优待办，本轮按规则立即退出，未做接口复测、未改代码、未更新 TODO，也未尝试高风险数据库或登录态操作。
+- **状态**: no-op；继续等待 `[automation]` 章节出现新的高优未完成算法项后，再进入“复现 → 修复 → 最小验证”闭环。
+
+## 2026-03-19 轮询（无动作，新增）
+- **任务目标**: 按自动化要求仅检查 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 是否重新出现可独立处理的高优算法项。
+- **执行摘要**:
+    1. 开始时仅读取了指定 TODO 章节与本 memory，未扩扫全站，也未触发 Docker、容器日志或容器内 PHP。
+    2. 当前 `[automation]` 章节仍明确写明“暂无需继续独立推进的高优算法项”；唯一未完成条目仍是低优的“每日运势四项解读文案偏固定模板”。
+    3. 因无匹配高优待办，本轮按规则立即退出，未做接口复测、未改代码、未更新 TODO。
+- **状态**: no-op；继续等待 `[automation]` 章节出现新的高优未完成算法项后，再进入“复现 → 修复 → 最小验证”闭环。
+
+
+## 2026-03-19 轮询（无动作）
+- **任务目标**: 按自动化要求只检查 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 是否还有可独立处理的高优算法项。
+- **执行摘要**:
+    1. 仅读取了指定 TODO 章节与本 memory，未扩扫全站，也未触发 Docker / 容器链路。
+    2. 当前 `[automation]` 章节明确写明“暂无需继续独立推进的高优算法项”；剩余低优项是“每日运势文案专业性不足”，不属于本轮高优修复范围。
+    3. 因无匹配高优待办，本轮按规则立即退出，未做接口复测、未改代码、未更新 TODO。
+- **状态**: no-op；后续仅当 `[automation]` 章节重新出现新的高优未完成算法项时再进入复现 / 修复 / 验证闭环。
+
+## 2026-03-19 02:26
+- **任务目标**: 继续处理 `[automation]` 首个高优项“八字流年深度分析主链路失败”，确认该项是否仍应留在算法修复队列。
+- **执行摘要**:
+    1. 按要求先只读取 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与本 memory；随后用真实接口复测 `GET http://localhost:8080/api/health`，结果仍为 `code=200`。
+    2. 直接复测无 token 的 `POST /api/fortune/yearly`，返回 `401 请先登录`，说明当前 phpstudy 口径下仍未进入流年算法主体；本机 `where.exe php` 也仍未找到 PHP CLI。
+    3. 结合历史真实失败样本 `fortune_yearly.json`、`automation-4` 已记录的成功 / 失败扣费闭环验证，以及当前工作区 `YearlyFortuneService / CacheService` 的补丁复核，确认此前“`HTTP 200 + code 500`”算法级问题已不再是当前独立待修项。
+    4. 本轮已把该高优项从 `[automation]` 修复队列移出，转入 `TODO.md -> D. 最近已完成 / 已确认`；当前剩余阻塞应继续并入 `[15]` 跟进的 phpstudy MySQL `1045` / 登录前置问题。
+- **验证摘要**: `/api/health` 成功；`/api/fortune/yearly`（无 token）返回 `401`；`where.exe php` 未找到本机 PHP CLI；本轮未使用 Docker。
+- **状态**: 已完成 TODO 去重与记忆回写；后续 automation 若再轮询到本章节，应视为“当前无高优算法项”，不要再围绕这条已收口问题反复空转。
+
+## 2026-03-19 01:16
+
+- **任务目标**: 继续处理 `[automation]` 首个高优项“八字流年深度分析主链路失败”，先确认当前是否已进入可做算法闭环的阶段。
+- **执行摘要**:
+    1. 按要求先只读取 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与本 memory；随后用真实接口复测 `GET http://localhost:8080/api/health`，结果仍为 `code=200`。
+    2. 重新用表单口径请求 `POST /api/auth/phone-login`（`phone=13800138000&code=123456`），本次已排除命令行请求体误差，服务端稳定返回 ThinkPHP 500 异常页；临时落盘精读后，核心异常仍是 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+    3. 直接复测 `POST /api/fortune/yearly`（无 token）仍只返回 `401 请先登录`，说明当前依旧卡在登录/数据库前置，尚未进入流年算法主体；本轮不存在可安全落地的算法补丁入口。
+    4. 临时异常 HTML 已在读取后删除；本轮未修改业务代码、未更新 `TODO.md` 完成状态。
+- **验证摘要**: `/api/health` 成功；`/api/auth/phone-login` 再次确认仍为 `1045 Access denied`；`/api/fortune/yearly`（无 token）返回 `401`；本轮未使用 Docker，也未切回容器链路。
+- **状态**: 结论仍无变化——当前主阻塞仍是 phpstudy 本机 MySQL 凭据与 `.env` 不匹配；需先恢复真实登录态，之后才能继续复现、修复并闭环 `POST /api/fortune/yearly` 的算法级问题。
+
 ## 2026-03-18 继续修复每日运势底盘
 - **任务目标**: 只处理 1 个有实证支撑的高优先级 `[占卜]` 算法问题，优先修复每日运势公共底盘的随机结果矛盾。
 - **执行摘要**:
@@ -162,6 +218,103 @@
     5. 复查 `TODO.md` 后 `[占卜]` 搜索结果仍为 0，本轮无需额外删除待办条目。
 - **验证摘要**: 4 个服务文件 `read_lints` 均为 0；容器内 `php -l` 全部通过；一次性回归脚本验证了 `2000-02-04` 立春、六爻女命感情取官鬼、极端偏枯命局平衡分、五行并列最旺与塔罗英文牌名映射，6 项全部通过。
 - **状态**: 已完成并提交 Git（`705aa47`）。
+
+## 2026-03-18 18:20
+- **任务目标**: 按 `TODO.md > A. 高频修复队列 > [automation]` 继续处理首个高优算法项：八字流年深度分析主链路失败。
+- **执行摘要**:
+    1. 先按要求只读取指定 TODO 章节与自动化 memory，再用真实接口确认本地 phpstudy 入口：`GET http://localhost:8080/api/health` 返回 `code=200`。
+    2. 为进入流年接口前置登录态，尝试真实登录接口 `POST /api/auth/phone-login`（测试手机号 `13800138000`、测试码 `123456`），但接口未返回业务 JSON，而是直接抛出 ThinkPHP HTML 异常页。
+    3. 结合当前 `backend/.env` 仍为 `DB_HOST = mysql`，以及 phpstudy 本机直连口径已切换这一环境基线，判断本轮先被数据库连接配置阻断，尚未进入“流年算法本身 code 500”复现阶段。
+    4. 同时复核 `backend/app/service/YearlyFortuneService.php` 与 `backend/app/service/CacheService.php`，当前工作区已包含此前针对流年缓存隔离与失败扣费顺序的补丁；在登录/数据库阻塞未解除前，本轮不再冒进改动算法代码，也不误勾 TODO。
+- **验证摘要**: `GET /api/health` 成功；`POST /api/auth/phone-login` 未返回业务 JSON 而是服务端异常页；`where.exe php` 仍找不到本机 PHP CLI，无法按要求做本机 PHP 级 CLI 回归。
+- **状态**: 本轮未修改业务代码、未更新 TODO；核心结论是当前被上游运行态/数据库连接问题阻断，需先解除 `DB_HOST=mysql` 与 phpstudy 本机运行态不匹配的问题后，再继续复现 `POST /api/fortune/yearly`。
+
+## 2026-03-18 19:26
+- **任务目标**: 继续处理 `[automation]` 首个高优项“八字流年深度分析主链路失败”，优先在 phpstudy 口径下打通最小登录前置链路。
+- **执行摘要**:
+    1. 真实接口复测 `POST /api/auth/phone-login` 仍失败后，仅对本地环境做了 1 处最小修正：`backend/.env` 的 `DB_HOST` 从 `mysql` 改为 `127.0.0.1`。
+    2. 同一路径再次复测后，错误从主机名解析失败收敛为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+    3. 结论已从“容器主机名不匹配”进一步收敛到“phpstudy 本机 MySQL 凭据与当前 `.env` 不匹配”；在未确认真实 `DB_USER/DB_PASSWORD` 前，本轮不继续猜测密码、不硬改数据库用户，也未误改流年算法代码或 TODO 状态。
+- **验证摘要**: `GET /api/health` 仍为 200；`phone-login` 两次异常核心分别为 `getaddrinfo for mysql failed` 与 `Access denied for user 'taichu'@'localhost'`；本机仍未找到可用 PHP CLI。
+- **状态**: 已完成最小环境修正与再次复测，但仍被本机 MySQL 凭据阻断；`POST /api/fortune/yearly` 的算法级复现和修复需等待正确数据库账号信息后继续。
+
+## 2026-03-18 20:31
+- **任务目标**: 继续处理 `[automation]` 首个高优项“八字流年深度分析主链路失败”，在不越过登录态 / 数据库高风险边界的前提下确认当前阻塞是否有变化。
+- **执行摘要**:
+    1. 再次用真实接口复测 phpstudy 本地入口：`GET http://localhost:8080/api/health` 正常返回 `code=200`。
+    2. 对 `POST /api/auth/phone-login` 复测后，将 ThinkPHP 异常页落到临时文件并精读，核心异常仍稳定为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`，说明登录前置依然被本机 MySQL 凭据阻断。
+    3. 复核 `Fortune.php`、`YearlyFortuneService.php` 与 `CacheService.php` 后，确认工作区已包含流年缓存按用户隔离、余额实时回填与统一异常收口等补丁；在真实登录态无法打通前，本轮不再盲改算法代码，也不误勾 TODO。
+- **验证摘要**: `GET /api/health` 成功；`POST /api/auth/phone-login` 仍返回 `1045 Access denied`；`where.exe php` 未找到本机 PHP CLI。
+- **状态**: 本轮未修改业务代码、未更新 TODO；结论仍是需先确认 phpstudy 实际 MySQL 用户名 / 密码后，才能继续闭环复现并验证 `POST /api/fortune/yearly`。
+
+## 2026-03-18 21:36
+- **任务目标**: 继续处理 `[automation]` 首个高优项“八字流年深度分析主链路失败”，优先确认 phpstudy 直连接口下是否仍被前置数据库凭据阻断。
+- **执行摘要**:
+    1. 真实接口复测 `GET http://localhost:8080/api/health` 仍返回 `code=200`，说明 phpstudy 入口在线。
+    2. 继续用 `POST /api/auth/phone-login`（`13800138000 / 123456`）做最小登录前置复现，并把异常页临时落盘精读；核心异常仍是 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+    3. 补测游客态 `GET /api/daily/fortune` 后，同样命中相同的 1045，说明当前不只是登录态没打通，连公开日运链路也先被本机 MySQL 凭据拦住。
+    4. 复核 `Fortune.php`、`YearlyFortuneService.php`、`CacheService.php` 后，当前工作区已保留流年缓存隔离、缓存命中余额回填与统一异常收口补丁；在真实数据库连接未恢复前，本轮不再冒进修改流年算法代码，也不误勾 TODO。
+- **验证摘要**: `GET /api/health` 成功；`POST /api/auth/phone-login` 与 `GET /api/daily/fortune` 都稳定返回 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`；`where.exe php` 未找到本机 PHP CLI；两份临时异常 HTML 已在读取后删除。
+- **状态**: 本轮未修改业务代码、未更新 TODO；当前仍被 phpstudy 本机 MySQL 用户名 / 密码不匹配阻断，需先修复该高风险前置条件后，才能继续闭环 `POST /api/fortune/yearly` 的真实算法问题。
+
+## 2026-03-19 00:08
+- **任务目标**: 继续处理 `[automation]` 首个高优项“八字流年深度分析主链路失败”，先确认 phpstudy 直连接口下是否已具备进入算法层的前置条件。
+- **执行摘要**:
+    1. 真实接口复测 `GET http://localhost:8080/api/health`，结果仍为 `code=200`，说明本地入口在线。
+    2. 继续用 `POST /api/auth/phone-login`（`13800138000 / 123456`）做最小登录前置复现；异常关键字仍稳定是 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+    3. 直接请求 `POST /api/fortune/yearly`（无 token）只返回 `401 请先登录`，结合 `Fortune.php` 上的 `Auth` 中间件，确认本轮依旧无法进入流年算法主体，当前没有新的可独立修补入口。
+    4. 为稳定取证曾临时生成 `backend/tests/yearly_http_probe.ps1` 与异常 HTML，读取后已全部删除；本轮未修改业务代码、未更新 TODO。
+- **验证摘要**: `/api/health` 成功；`/api/auth/phone-login` 仍为 1045；`/api/fortune/yearly`（无 token）返回 401；本轮未使用 Docker，也未找到需要补跑的本机 PHP CLI 验证点。
+- **状态**: 本轮结论无变化——当前仍被 phpstudy 本机 MySQL 凭据不匹配阻断，需先恢复真实登录态，才能继续闭环 `POST /api/fortune/yearly` 的算法级问题。
+
+## 2026-03-18 22:55
+- **任务目标**: 处理 `[automation]` 下一个高优项“八字大运 K 线图接口崩溃”，先确认运行态，再补上类型归一化防线。
+- **执行摘要**:
+    1. 真实接口先做环境复核：`GET http://localhost:8080/api/health` 返回 `code=200`，但 `POST /api/auth/phone-login` 临时落盘后仍是 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`，说明当前 phpstudy 口径下无法重放需要登录态的 `/api/fortune/dayun-chart`。
+    2. 改读已留存的真实报错证据：上一轮产物 `fortune_dayun_chart.json` 明确记录 `/api/fortune/dayun-chart` 曾因 `DayunFortuneService::calculateYearScoreInDayun()` 收到 float 而抛 `TypeError`；同批 `points_probe.json` 也记录了失败态 `dayun_chart -30`。
+    3. 在 `backend/app/service/DayunFortuneService.php` 新增统一 `normalizeScore()`，并让 `analyzeDayun()`、`getDayunChartData()` 都先把 `scores['overall']` 归一化为 int，再传入后续严格类型链路，避免同类回归。
+    4. `TODO.md` 已将该高优项从 `[automation]` 修复队列移出，并转入 `D. 最近已完成 / 已确认`；同时保留“本轮未能走 8080 登录态真实回放，受 phpstudy MySQL 1045 阻塞”的边界说明。
+- **验证摘要**: `GET /api/health` 成功；临时异常页确认 `phone-login` 仍是 `1045 Access denied`；`fortune_dayun_chart.json` 复核到历史真实 `TypeError`；`read_lints` 对 `DayunFortuneService.php` 为 0 diagnostics；`where.exe php` 与 `where /R C:\ php.exe` 均未找到本机 PHP CLI。
+- **状态**: 已完成代码加固、TODO 更新与记录回写；未执行 Git 提交。
+若后续 phpstudy MySQL 凭据恢复，可优先补做 `/api/fortune/dayun-chart` 的 8080 真实回放，并继续处理 `automation-4` 中“失败仍扣 30 积分”的闭环问题。
+
+## 2026-03-19 轮询（无动作，续）
+- **任务目标**: 按自动化要求仅检查 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 是否出现新的高优未完成算法项。
+- **执行摘要**:
+    1. 开始时只读取了指定 TODO 章节与本 memory，未扩扫其他模块，也未触发 Docker、容器内 PHP、容器日志或 `docker compose`。
+    2. 当前 `[automation]` 章节仍明确写明“暂无需继续独立推进的高优算法项”；唯一未完成项仍是低优的“每日运势四项解读文案仍偏固定模板”。
+    3. 因无匹配高优待办，本轮按规则立即退出，未做接口复测、未改代码、未更新 TODO，也未尝试高风险数据库/登录态操作。
+- **状态**: no-op；继续等待 `[automation]` 章节重新出现新的高优未完成算法项后，再进入“复现 → 修复 → 最小验证”闭环。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

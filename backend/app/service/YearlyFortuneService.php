@@ -36,23 +36,26 @@ class YearlyFortuneService
      */
     public function getYearlyFortune(array $bazi, string $gender, int $year, int $userId): array
     {
-        // 检查缓存
-        $cacheKey = CacheService::yearlyFortuneKey($bazi, $year);
-        if (self::ENABLE_CACHE) {
-            $cached = CacheService::get($cacheKey);
-            if ($cached) {
-                $cached['from_cache'] = true;
-                $cached['points_cost'] = 0;
-                return $cached;
-            }
-        }
-
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
             throw new \Exception('用户不存在');
         }
 
-        if ((int) ($userModel->points ?? 0) < self::YEARLY_FORTUNE_POINTS_COST) {
+        $currentBalance = (int) ($userModel->points ?? 0);
+
+        // 检查缓存（按用户隔离缓存，并实时回填当前余额，避免串用历史扣费结果）
+        $cacheKey = CacheService::yearlyFortuneKey($bazi, $year, $userId);
+        if (self::ENABLE_CACHE) {
+            $cached = CacheService::get($cacheKey);
+            if ($cached) {
+                $cached['from_cache'] = true;
+                $cached['points_cost'] = 0;
+                $cached['remaining_points'] = $currentBalance;
+                return $cached;
+            }
+        }
+
+        if ($currentBalance < self::YEARLY_FORTUNE_POINTS_COST) {
             throw new \Exception('积分不足，需要' . self::YEARLY_FORTUNE_POINTS_COST . '积分', 403);
         }
 

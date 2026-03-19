@@ -2,6 +2,192 @@
 
 ## 最近更新
 
+### 后端修复专家（自动化执行，2026-03-19 本轮）
+
+- 本轮严格按要求开始时只读取了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与 `.codebuddy/automations/15/memory.md`。
+- 当前 `[15]` 下仍是同 4 条未完成高风险项：bootstrap 神煞 SQL 唯一键冲突、phpstudy MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结合现有证据复核后，判断这 4 项仍全部落在高风险边界：分别涉及初始化 SQL、环境凭据、缺表建表、历史 schema 迁移；按当前规则本轮不自动接单、不改业务代码、不改 SQL、不更新 `TODO.md` 完成状态。
+- 本轮仅更新了 `.codebuddy/automations/15/memory.md` 与 `overview.md`，用于记录“继续不接单”的结论，避免后续自动化重复在同一批前置问题上空转。
+
+#### 本轮验证
+- 已验证：仅完成指定 TODO 章节与自动化记忆的只读复核，未执行 8080 接口复测。
+- 已复核：`TODO.md` 的 `[15]` 条目、`.codebuddy/automations/15/memory.md`。
+- 已更新：`.codebuddy/automations/15/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；这次属于判单止损，代码和接口都没被拉出来加班。
+
+
+### 管理后台修复（自动化执行，2026-03-19 07:02）
+
+- 本轮继续严格只读取 `TODO.md -> A. 高频修复队列 -> [admin] 管理后台修复专家` 与 `.codebuddy/automations/admin/memory.md`，只处理当前唯一高优主问题：phpstudy 直连后台登录被管理员主表缺失阻断。
+- 8080 真实接口复现结果：
+  - `GET http://localhost:8080/api/health` 返回 `code=200`，phpstudy 后端在线；
+  - `POST http://localhost:8080/api/admin/auth/login`（`admin / admin123`）稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql","data":null}`；
+  - `GET http://localhost:8080/api/admin/dashboard/statistics` 在无 token 条件下返回 `401 未授权，请先登录`；
+  - `GET http://localhost:8080/admin/login` 返回 `404`，本轮仍不补做页面级回归。
+- 工作区复核结果：`backend/app/controller/admin/Auth.php` 会在 `tc_admin / admin` 主表缺失时直接拒绝登录；`backend/app/service/AdminAuthService.php` 仅在检测到管理员主表存在时才继续鉴权；`database/20260317_create_admin_users_table.sql` 已包含 `tc_admin`、`tc_admin_role`、`tc_admin_user_role` 与默认 `admin / admin123` 初始化数据；`backend/docker-entrypoint.sh` 中的自动补跑逻辑只覆盖容器 bootstrap。
+- 结论：当前阻塞仍是 **phpstudy 正在使用的本机 `taichu` 库未手动导入管理员初始化 SQL**，不是新的后台业务代码回归。
+- 风险处置：该项落在登录鉴权 + 数据库迁移高风险边界，本轮未自动执行 SQL、未改登录代码、未更新 `TODO.md` 完成状态；建议人工导入 `database/20260317_create_admin_users_table.sql` 后，按 `login -> auth/info -> dashboard/statistics` 做最小闭环复测。`/admin/login` 的 `404` 另属页面承载/部署口径问题，等登录恢复后再决定是否单独开单。
+
+#### 本轮验证
+- 已验证：`GET /api/health`、`POST /api/admin/auth/login`、`GET /api/admin/dashboard/statistics`、`GET /admin/login`。
+- 已复核：`TODO.md` 的 `[admin]` 条目、`.codebuddy/automations/admin/memory.md`、`backend/app/controller/admin/Auth.php`、`backend/app/service/AdminAuthService.php`、`database/20260317_create_admin_users_table.sql`、`backend/docker-entrypoint.sh`。
+- 已更新：`.codebuddy/automations/admin/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；后台登录入口在 8080 下仍是 `404`，页面这轮依旧没有上场机会。
+
+### 管理后台修复（自动化执行，2026-03-19 04:58）
+
+
+- 本轮继续严格只读取 `TODO.md -> A. 高频修复队列 -> [admin] 管理后台修复专家` 与 `.codebuddy/automations/admin/memory.md`，只处理当前唯一高优主问题：phpstudy 直连后台登录被管理员主表缺失阻断。
+- 8080 真实接口复现结果：
+  - `GET http://localhost:8080/api/health` 返回 `code=200`，phpstudy 后端在线；
+  - `POST http://localhost:8080/api/admin/auth/login`（`admin / admin123`）稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql","data":null}`；
+  - `GET http://localhost:8080/api/admin/dashboard/statistics` 在无 token 条件下返回 `401 未授权，请先登录`；
+  - `GET http://localhost:8080/admin/login` 返回 `404`，本轮不补做页面级回归。
+- 工作区复核结果：`backend/app/controller/admin/Auth.php` 会在 `tc_admin / admin` 主表缺失时直接拒绝登录；`backend/app/service/AdminAuthService.php` 仅在检测到管理员主表存在时才继续鉴权；`database/20260317_create_admin_users_table.sql` 已包含 `tc_admin`、`tc_admin_role`、`tc_admin_user_role` 与默认 `admin / admin123` 初始化数据；`backend/docker-entrypoint.sh` 中的自动补跑逻辑只覆盖容器 bootstrap。
+- 结论：当前阻塞仍是 **phpstudy 正在使用的本机 `taichu` 库未手动导入管理员初始化 SQL**，不是新的后台业务代码回归。
+- 风险处置：该项落在登录鉴权 + 数据库迁移高风险边界，本轮未自动执行 SQL、未改登录代码、未更新 `TODO.md` 完成状态；建议人工导入 `database/20260317_create_admin_users_table.sql` 后，按 `login -> auth/info -> dashboard/statistics` 做最小闭环复测。
+
+#### 本轮验证
+- 已验证：`GET /api/health`、`POST /api/admin/auth/login`、`GET /api/admin/dashboard/statistics`、`GET /admin/login`。
+- 已复核：`TODO.md` 的 `[admin]` 条目、`.codebuddy/automations/admin/memory.md`、`backend/app/controller/admin/Auth.php`、`backend/app/service/AdminAuthService.php`、`database/20260317_create_admin_users_table.sql`、`backend/docker-entrypoint.sh`。
+- 已更新：`.codebuddy/automations/admin/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；后台页入口还是 404，页面这次依旧没有出场机会。
+
+
+### 管理后台修复（自动化执行，2026-03-19 02:54）
+
+- 本轮严格按要求开始时只读取 `TODO.md -> A. 高频修复队列 -> [admin] 管理后台修复专家` 与 `.codebuddy/automations/admin/memory.md`，只处理当前唯一高优主问题：phpstudy 直连后台登录被管理员主表缺失阻断。
+- 8080 真实接口复现结果：
+  - `GET http://localhost:8080/api/health` 返回 `code=200`，phpstudy 后端在线；
+  - `POST http://localhost:8080/api/admin/auth/login`（`admin / admin123`）稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql","data":null}`；
+  - `GET http://localhost:8080/api/admin/dashboard/statistics` 在无 token 条件下返回 `401 未授权，请先登录`；
+  - `GET http://localhost:8080/admin/login` 返回 `404`，本轮不补做页面级回归。
+- 工作区复核结果：`backend/app/controller/admin/Auth.php` 会在 `tc_admin / admin` 主表缺失时直接拒绝登录；`backend/app/service/AdminAuthService.php` 仅在检测到管理员主表存在时才继续鉴权；`database/20260317_create_admin_users_table.sql` 已包含 `tc_admin`、`tc_admin_role`、`tc_admin_user_role` 与默认 `admin / admin123` 初始化数据。
+- 结论：当前阻塞仍是 **phpstudy 正在使用的本机 `taichu` 库未手动导入管理员初始化 SQL**，不是新的后台业务代码回归。
+- 风险处置：该项落在登录鉴权 + 数据库迁移高风险边界，本轮未自动执行 SQL、未改登录代码、未更新 `TODO.md` 完成状态；建议人工导入 `database/20260317_create_admin_users_table.sql` 后，按 `login -> auth/info -> dashboard/statistics` 做最小闭环复测。
+
+#### 本轮验证
+- 已验证：`GET /api/health`、`POST /api/admin/auth/login`、`GET /api/admin/dashboard/statistics`、`GET /admin/login`。
+- 已复核：`TODO.md` 的 `[admin]` 条目、`.codebuddy/automations/admin/memory.md`、`backend/app/controller/admin/Auth.php`、`backend/app/service/AdminAuthService.php`、`database/20260317_create_admin_users_table.sql`。
+- 已更新：`.codebuddy/automations/admin/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；8080 下后台入口还是 `404`，页面这次继续坐冷板凳。
+
+### 命理算法修复（自动化执行，2026-03-19 02:26）
+
+- 本轮继续严格只消费 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与 `.codebuddy/automations/automation/memory.md`，只处理首个高优项“`POST /api/fortune/yearly` 主链路失败”。
+- 当前真实接口复核：
+  - `GET http://localhost:8080/api/health` 返回 `code=200`，phpstudy 8080 入口仍在线；
+  - `POST http://localhost:8080/api/fortune/yearly` 在无 token 条件下返回 `401 请先登录`，说明当前并未进入流年算法主体；
+  - `where.exe php` 仍未找到本机 PHP CLI，无法补做本机 `php -l` 回归。
+- 结合历史真实失败样本 `fortune_yearly.json`、`automation-4` 已完成的流年成功 / 积分闭环验证（2033 成功、2034 积分不足 403 不扣费），以及当前工作区 `YearlyFortuneService / CacheService` 的补丁复核，已将“流年深度分析 `HTTP 200 + code 500`”从 `[automation]` 高频修复队列移出，转入 `D. 最近已完成 / 已确认`。
+- 当前剩余阻塞不再属于独立算法缺陷，而是 `[15]` 已登记的 phpstudy MySQL `1045` / 登录前置问题；后续应等环境恢复后，再补一次 8080 真实登录态回放。
+
+#### 本轮验证
+- 已验证：`/api/health`、`/api/fortune/yearly`（无 token）、`where.exe php`。
+- 已复核：历史证据 `fortune_yearly.json`、`TODO.md`、`overview.md`、`YearlyFortuneService.php`、`CacheService.php`。
+- 已更新：`TODO.md`、`.codebuddy/automations/automation/memory.md`、`overview.md`。
+- 截图 / 录屏：本轮无新增截图；这次主要是在给已收口问题“销项”，不让自动化继续原地打转。
+
+### 命理算法修复（自动化执行，2026-03-19 01:16）
+
+
+- 本轮仍严格按要求只先读取 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与 `.codebuddy/automations/automation/memory.md`，并且只处理首个高优项：`POST /api/fortune/yearly` 主链路失败。
+- 真实接口复现结果：
+  - `GET http://localhost:8080/api/health` 返回 `code=200`，phpstudy 本地入口在线；
+  - 改用表单口径重新请求 `POST http://localhost:8080/api/auth/phone-login`（`phone=13800138000&code=123456`）后，已排除命令行请求体误差，服务端仍稳定返回 ThinkPHP 500 异常页；临时落盘精读确认核心错误还是 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`；
+  - `POST http://localhost:8080/api/fortune/yearly` 在无 token 条件下仍只返回 `401 请先登录`，说明当前并未进入流年算法本体。
+- 本轮未修改业务代码、未更新 `TODO.md` 完成状态；原因不是偷懒，而是当前阻塞点依旧落在 **phpstudy 本机 MySQL 凭据 / 登录前置** 这条高风险边界上，继续硬改只会把锅从算法甩到环境。
+
+#### 本轮验证
+- 已验证：`/api/health`、`/api/auth/phone-login`、`/api/fortune/yearly`（无 token）。
+- 临时文件：曾把登录异常页短暂落到 `.codebuddy/tmp_phone_login.html` 做精读，确认后已删除。
+- 截图 / 录屏：本轮无新增截图；接口还堵在门禁口，算法还没拿到上场资格。
+
+### 后台运营巡检（第三十六轮自动化执行，2026-03-19 00:34）
+
+- 本轮严格按要求开始时只读取了 `TODO.md -> B. 高频巡检关注清单 -> [30-3] 后台运营体验检查` 与 `.codebuddy/automations/30-3/memory.md`，随后优先直连 phpstudy 基线 `http://localhost:8080/api/admin/...` 做后台真链路巡检；仅在确认本地已有页面入口后，才补做 `http://localhost:3001/login` 的页面级可达性验证。
+- 本轮未修改业务代码；只更新了 `TODO.md`、`.codebuddy/automations/30-3/memory.md` 与 `overview.md`，用于补充最新阻塞证据并收敛影响范围。
+
+#### 关键发现
+1. **后台登录前置仍被管理员主表缺失阻断**
+   - `GET http://localhost:8080/api/health` 返回 `code=200`，说明 phpstudy 入口在线；但 `POST http://localhost:8080/api/admin/auth/login`（表单 `username=admin&password=admin123`）与 `POST http://localhost:3001/api/admin/auth/login` 都稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql"}`。
+   - 这说明当前不是单独某个页面壳子坏了，而是后台登录前置本身还没恢复；拿不到 token，后面的运营链路连起跑线都过不去。
+2. **三条代表性运营链路已确认被登录阻塞外溢影响**
+   - `GET /api/admin/dashboard/statistics`、`GET /api/admin/users`、`GET /api/admin/system/settings` 在无 token 条件下都返回 `401 未授权，请先登录`，对应 Dashboard、用户管理、系统设置三条高频运营链路本轮均无法继续做真实可用性验证。
+3. **当前仅存在 3001 登录页入口，8080 不直接承载后台页面**
+   - `HEAD http://localhost:3001/login` 返回 `200 OK`，说明本机确实已有现成后台入口可打开；但 `GET http://localhost:8080/admin` 与 `GET http://localhost:8080/admin/login` 都返回 `404`，因此页面级验证只能作为补充，主判断仍应以 8080 后台接口真响应为准。
+
+#### 验证情况
+- 已验证：`GET /api/health`、`POST /api/admin/auth/login`（8080 直连）、`GET /api/admin/dashboard/statistics`、`GET /api/admin/users`、`GET /api/admin/system/settings`。
+- 已补充页面入口验证：`HEAD http://localhost:3001/login`、`POST http://localhost:3001/api/admin/auth/login`、`GET http://localhost:3001/api/admin/dashboard/statistics`。
+- 已更新记录：把本轮新增证据去重后补写回 `TODO.md` 的 `[admin] 管理后台修复专家` 条目，以及 `.codebuddy/automations/30-3/memory.md`。
+- 截图 / 录屏：本轮无新增截图；接口阻塞还没放人进场，页面暂时没有更多发挥空间。
+
+### 后端修复专家（自动化执行，2026-03-19）
+
+
+- 本轮严格按要求开始时只查看了 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家` 与 `.codebuddy/automations/15/memory.md`，未直接扩读其他业务文件。
+- 当前 `[15]` 仍有 4 个未完成高优项：启动阶段神煞 SQL 唯一键冲突、本机 MySQL 凭据不匹配、`tc_sms_code` 缺表、塔罗记录表结构漂移。
+- 结合既有 memory 证据复核后，判断这 4 项仍全部落在高风险边界：分别涉及环境凭据、数据库初始化/迁移、缺表建表、旧表 schema 对齐；按当前规则本轮不自动硬改。
+- 本轮未修改业务代码、未变更 SQL、未更新 `TODO.md` 完成状态；只回写了自动化记忆，避免后续轮次继续在同一批高风险前置上空转。
+
+#### 本轮结论
+- 当前没有适合在自动化内安全直接接单的 `[15]` 项。
+- 若要继续推进，优先顺序仍是：1) 人工确认 phpstudy MySQL 实际账号并解除 1045；2) 手工补齐 `tc_sms_code` 与必要初始化 SQL；3) 再回到塔罗记录表结构与启动 SQL 幂等化问题做真实接口闭环。
+- 截图 / 录屏：本轮无新增截图；这轮属于只读判单，没有让代码上台表演。
+
+### 命理算法修复（自动化执行，2026-03-19 00:08）
+
+
+- 本轮严格按要求只读取 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 与 `.codebuddy/automations/automation/memory.md` 后开始执行，并只处理首个高优项：`POST /api/fortune/yearly` 主链路失败。
+- 真实接口复现结果：
+  - `GET http://localhost:8080/api/health` 返回 `code=200`，phpstudy 本地入口在线；
+  - `POST http://localhost:8080/api/auth/phone-login`（`13800138000 / 123456`）仍直接返回 ThinkPHP 500 异常页，核心错误稳定为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`；
+  - `POST http://localhost:8080/api/fortune/yearly` 在**无 token** 条件下只会返回 `401 请先登录`，说明当前仍然卡在登录前置，尚未进入流年算法本身。
+- 代码复核：`backend/app/controller/Fortune.php` 仍受 `Auth` 中间件保护，且工作区内 `YearlyFortuneService / CacheService` 的流年缓存隔离与异常收口补丁仍在；本轮没有发现新的可独立落地的算法缺陷入口。
+- 风险判断：当前主阻塞仍是 **phpstudy 本机 MySQL 凭据与 `backend/.env` 不匹配**，属于登录态 / 数据库凭据高风险边界；因此本轮未猜测密码、未硬改数据库用户、未误勾 `TODO.md`。
+
+#### 本轮验证
+- 已验证：`/api/health`、`/api/auth/phone-login`、`/api/fortune/yearly`（无 token）。
+- 临时文件：为稳定抓取异常，曾在 `backend/tests/` 下临时生成 HTTP 探针与异常 HTML，收尾前已全部删除，未留下新残留。
+- 截图 / 录屏：本轮无新增截图；接口仍堵在登录前置，页面没机会表演。
+
+### 管理后台修复（自动化执行，2026-03-18 22:47）
+
+
+- 本轮严格只消费 `TODO.md -> A. 高频修复队列 -> [admin] 管理后台修复专家` 的唯一未完成项，并先读取 `.codebuddy/automations/admin/memory.md` 后再执行。
+- 真实接口复现：`GET http://localhost:8080/api/health` 返回 `code=200`；随后用默认账号 `admin / admin123` 直连 `POST http://localhost:8080/api/admin/auth/login`，稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql","data":null}`。
+- 代码 / SQL 交叉核验：`backend/app/controller/admin/Auth.php` 会在 `tc_admin / admin` 主表缺失时直接拦截登录；`backend/app/service/AdminAuthService.php` 通过 `SchemaInspector::tableExists()` 仅在检测到 `tc_admin` 或 `admin` 存在时才允许继续；`database/20260317_create_admin_users_table.sql` 已包含 `tc_admin`、`tc_admin_role`、`tc_admin_user_role` 以及默认 `admin / admin123` 初始化数据。
+- 初始化链路判断：`backend/docker-compose.yml` 与 `backend/docker-entrypoint.sh` 的自动导入逻辑只覆盖容器链路；当前本地标准环境是 phpstudy，因此不会自动把这份 SQL 打进正在使用的本机 `taichu` 库。这次不是新代码回归，更像是 **phpstudy 本地库尚未手动导入管理员初始化 SQL**。
+- 风险判断：该问题同时落在**登录鉴权 + 数据库迁移**边界，按当前规则本轮不自动执行 SQL、不改登录业务代码，也不把 `TODO.md` 对应条目标记完成。
+
+#### 建议处置
+- 在 phpstudy 正在使用的 `taichu` 库里手动导入 `database/20260317_create_admin_users_table.sql`。
+- 导入完成后先做 2 个最小复测：1) `POST /api/admin/auth/login` 是否返回 token；2) 带 token 请求 `GET /api/admin/auth/info` 是否返回管理员信息与角色。
+- 只有登录链路恢复后，再继续补做 Dashboard、用户、内容、订单、积分、系统设置、公告等后台页面级回归；当前前置仍堵着，先别让页面背锅。
+
+#### 本轮验证
+- 已验证：`GET /api/health`、`POST /api/admin/auth/login`。
+- 已核对：`backend/app/controller/admin/Auth.php`、`backend/app/service/AdminAuthService.php`、`database/20260317_create_admin_users_table.sql`、`backend/docker-compose.yml`、`backend/docker-entrypoint.sh`。
+- 截图 / 录屏：本轮无新增截图；登录前置仍阻断，未继续做后台页面级回归。
+
+
+### 后端修复专家（自动化执行，2026-03-18 22:10）
+
+- 本轮严格只复核 `TODO.md -> A. 高频修复队列 -> [15]` 的数据库凭据主阻塞，未改业务代码。
+- 真实接口结果：
+  - `GET http://localhost:8080/api/health` 返回 `HTTP 200`，入口服务在线；
+  - `POST http://localhost:8080/api/auth/phone-login` 稳定返回 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`；
+  - `GET http://localhost:8080/api/daily/fortune` 同样命中 1045，且错误页已落到 `tc_daily_fortune` 查询。
+- 配置核对：`backend/.env` 当前为 `DB_HOST=127.0.0.1`、`DB_PORT=3306`、`DB_NAME=taichu`、`DB_USER=taichu`、`DB_PASSWORD=taichu123`；`backend/config/database.php` 直接读取这些 env，说明当前不是新的应用层代码回归，而是 phpstudy 本机 MySQL 实际凭据与 `.env` 不匹配。
+- 运行态补充：工作区 `backend/runtime/log` 当前为空，本轮主要依赖真实接口错误页与配置静态核对收敛证据。
+- 风险处置：该项属于登录鉴权前置 + 本地数据库凭据高风险边界，本轮未自动改用户名 / 密码、未猜测凭据，也未误把 TODO 条目标记完成。
+
+#### 验证情况
+- 已验证：`/api/health`、`/api/auth/phone-login`、`/api/daily/fortune`。
+- 已核对：`backend/.env`、`backend/config/database.php`。
+- 截图 / 录屏：本轮无新增截图；接口先炸了，页面还没轮到上场。
+
 ### UI 设计巡检（第五十四次自动化执行，2026-03-18）
 
 - 本轮先读取 `.codebuddy/automations/ui/memory.md` 与 `TODO.md`，继续以代码级 UI/UX 审查方式复核首页、八字、塔罗、六爻、合婚、每日运势，并严格跳过已登记或高度相似的问题。
@@ -973,6 +1159,18 @@
 - 说明：新建的 `OptionalAuth.php` 尚未同步进当前运行中的容器，因此该文件以本地 IDE / LSP 诊断作为语法校验依据；本机 `where.exe php` 仍未找到可直接调用的 PHP CLI。
 - 截图 / 录屏：本轮为后端规则与前端文案/状态修复，未新增界面截图。
 
+### 后端修复专家（自动化执行，2026-03-18 18:45）
+
+- 本轮未直接改业务代码，先按 `TODO.md -> A. 高频修复队列 -> [15]` 只复现 1 个主阻塞：**phpstudy 8080 运行态仍使用 `DB_HOST=mysql`，导致真实接口无法连库**。
+- 运行态验证：
+  - `GET http://localhost:8080/api/health` 返回 `{"code":200,"message":"success"...}`，说明 Nginx/PHP 入口活着；
+  - `POST http://localhost:8080/api/auth/phone-login`（测试号 `13800138055` + `123456`）直接返回 ThinkPHP 异常页；
+  - 错误核心为 `SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for mysql failed`，异常页同时暴露 `hostname=mysql`、`HTTP_HOST=localhost:8080`。
+- 结论：当前 8080 本机运行态与容器网络配置脱节，登录以及所有依赖 MySQL 的历史/保存链路都先被环境层拦住；因此本轮没有继续误判六爻 history、塔罗 save-record 等应用层问题。
+- 风险判断：该项属于**本地环境 + 登录链路**高风险问题，按约定本轮只给结论与建议，未自动改 `backend/.env`，也未把 `TODO.md` 对应条目标记完成。
+- 建议下一步：人工确认 phpstudy 实际 MySQL host/port/user/password 后，把本地环境改为非容器口径（例如 `127.0.0.1`），再用真实 8080 接口重跑 `phone-login`、`liuyao/history`、`tarot/save-record` 做后续收口。
+
+
 ### 占卜深度体验巡检（自动化执行，2026-03-18 第三十次）
 
 - 本轮先读取 `.codebuddy/automations/30-4/memory.md` 与 `TODO.md`，随后在本地运行态用真实接口批量复测八字、六爻、塔罗、合婚、每日运势，并把原始响应与积分流水保存到产物目录下的 `divination-probe-output/` 以便交叉核验。
@@ -1000,3 +1198,174 @@
   - `liuyao_time.json` / `liuyao_manual.json`：均返回 `id: null`；`liuyao_history.json` 同轮仍为空。
   - `tarot.json` / `extra_tarot.json`：单张牌、三张牌、凯尔特十字的 `interpret` 全部失败。
 - 截图 / 录屏：当前 Windows 环境下未能启用浏览器自动化插件，故本轮以真实接口返回、数据库积分流水与代码实现交叉核验为主，未新增 UI 截图。
+
+### automation-4 跨模块闭环执行（2026-03-18）
+
+- 本轮只处理 `TODO.md` 中 `### [automation-4] 跨模块闭环执行器` 的首个高优问题：八字流年深度分析积分链路异常。
+- 先用真实接口链路复测 `points/balance -> fortune/points-cost -> fortune/yearly -> points/history`，确认此前运行态存在一个新的跨模块根因：`YearlyFortuneService` 的流年缓存仅按 `八字 + 年份` 建 key，缓存命中时会直接返回历史 `remaining_points`，并绕过当前用户的积分上下文；同一八字/年份的结果会被跨请求复用，导致余额回读错误，且低积分场景也可能拿到已缓存结果。
+- 随后仅做最小补丁：`backend/app/service/CacheService.php` 的 `yearlyFortuneKey()` 增加 `userId` 维度；`backend/app/service/YearlyFortuneService.php` 在读取缓存前先确认当前用户并记录实时余额，缓存命中时强制回填最新 `remaining_points`，未命中时再按当前余额执行扣费校验。
+- `TODO.md` 已把该项从未完成改为已完成，避免后续自动化重复消费。
+
+#### 本轮验证
+- 成功态复测：将烟测账号积分重置为 500 后，请求 `2033` 年流年分析，接口返回 `code 200` 与完整结果，响应 `points_cost = 30`、`remaining_points = 470`；随后 `points/balance` 回读为 `470`，`points/history` 新增 `yearly_fortune -30`，扣费与结果一致。
+- 失败态复测：将同账号积分压到 10 后，请求 `2034` 年流年分析，接口返回 `code 403` / `message=积分不足，解锁流年运势需要30积分`；`points/balance` 仍为 `10`，`points/history` 未新增新的 `yearly_fortune` 记录，失败承接与扣费回滚口径一致。
+- 环境备注：验证过程中 Docker 守护进程中途掉线，恢复后容器内 Apache 的重写规则暂未生效，需要走 `/index.php/api/...` 入口才能继续复测；因此本轮最终以两段真实接口复测 + 代码变更核对完成闭环，未额外保留临时探针文件。
+- 截图 / 录屏：本轮仍为后端积分与缓存链路修复，未新增 UI 截图。
+
+### 命理算法修复（自动化执行，2026-03-18 19:26）
+
+- 本轮只处理 `TODO.md -> A. 高频修复队列 -> [automation]` 的首个高优项“八字流年深度分析主链路失败”，先按要求只读取指定 TODO 章节与自动化 memory，再走本地 phpstudy `http://localhost:8080` 真实接口复现。
+- 为了先打通最小登录前置链路，我仅做了 1 处本地环境最小修正：把 `backend/.env` 中的 `DB_HOST` 从 `mysql` 改成 `127.0.0.1`，避免继续命中容器网络主机名解析失败。
+- 修正后再次实测 `POST /api/auth/phone-login`（测试号 `13800138000` + `123456`），错误已从 `getaddrinfo for mysql failed` 前移为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`，说明当前阻塞已收敛到 **phpstudy 本机 MySQL 凭据与 `.env` 中 `DB_USER/DB_PASSWORD` 不匹配**，仍未进入流年算法本身。
+- 由于当前首要阻塞已落在登录态 / 本地数据库凭据这一高风险边界，本轮没有继续猜测密码或硬改数据库用户，也没有误勾 `TODO.md` 中的流年算法待办。
+
+#### 本轮验证
+- `GET http://localhost:8080/api/health`：`HTTP 200`，入口正常。
+- `POST http://localhost:8080/api/auth/phone-login`：首次报 `php_network_getaddresses: getaddrinfo for mysql failed`；把 `DB_HOST` 调整为 `127.0.0.1` 后，复测改为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+- 结论：本轮已完成“先复现 + 最小环境修正 + 再复测”，但由于缺少正确的本机 MySQL 用户名/密码，尚无法继续闭环 `POST /api/fortune/yearly` 的算法级修复。
+- 截图 / 录屏：本轮为本地运行态与接口异常定位，未新增 UI 截图。
+
+### 后端修复专家（自动化执行，2026-03-18 19:48）
+
+- 本轮严格只消费 `TODO.md -> A. 高频修复队列 -> [15] 后端修复专家`，并只处理 1 个主问题：**phpstudy 本地 8080 运行态下数据库连接配置仍阻断登录与所有依赖 MySQL 的业务接口**。
+- 真实接口复现结果：`GET http://localhost:8080/api/health` 返回 `code=200`，说明入口服务可用；但 `POST http://localhost:8080/api/auth/phone-login`（测试号 `13800138055` + `123456`）直接返回 ThinkPHP 错误页，核心异常为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+- 代码 / 配置核对：`backend/.env` 当前已是 `DB_HOST=127.0.0.1`、`DB_PORT=3306`、`DB_NAME=taichu`、`DB_USER=taichu`，已不再是旧的容器主机名问题；阻塞已进一步收敛为 **phpstudy 本机 MySQL 账户口径与 `.env` 中用户名 / 密码不匹配**。
+- 本轮未硬改数据库凭据、未猜测密码、未动登录链路业务代码；仅把 `TODO.md` 对应未完成条目的证据更新为当前真实现象，避免后续自动化继续追旧的 `DB_HOST=mysql` 症状。
+
+#### 本轮验证
+- `GET http://localhost:8080/api/health`：成功返回 `{"code":200,"message":"success"...}`。
+- `POST http://localhost:8080/api/auth/phone-login`：稳定复现 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+- 结论：当前仍属于**本地环境 / 登录鉴权前置 / 数据库凭据**高风险边界，本轮只完成复现、证据收敛与 TODO 校准，未将条目标记完成。
+- 截图 / 录屏：本轮为后端接口与环境阻塞定位，未新增 UI 截图。
+
+### 命理算法修复（自动化执行，2026-03-18 20:31）
+
+- 本轮继续只处理 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 的首个高优项：**八字流年深度分析主链路失败**。
+- 真实接口复测：`GET http://localhost:8080/api/health` 仍返回 `code=200`；但为进入 `/api/fortune/yearly` 所必需的 `POST http://localhost:8080/api/auth/phone-login` 依旧直接抛 ThinkPHP HTML 异常页。
+- 为避免只看整页报错，我把异常响应临时落盘后精读，核心异常稳定为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`；说明当前依旧卡在 **phpstudy 本机 MySQL 凭据与 `backend/.env` 不匹配**，尚未进入流年算法本身的真实运行阶段。
+- 同步复核 `backend/app/controller/Fortune.php`、`backend/app/service/YearlyFortuneService.php`、`backend/app/service/CacheService.php`：工作区已包含流年缓存按用户隔离、缓存命中回填实时余额、统一异常收口等补丁；在真实登录态未打通前，本轮不再冒进修改算法代码，也不误改 `TODO.md` 状态。
+- 本轮仅创建了一个用于读取错误详情的临时 HTML 文件，读完后已删除，未保留额外探针残留。
+
+#### 本轮验证
+- `GET http://localhost:8080/api/health`：成功返回 `{"code":200,"message":"success"...}`。
+- `POST http://localhost:8080/api/auth/phone-login`：稳定复现 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+- `where.exe php`：未找到本机 PHP CLI，因此本轮没有做 CLI 级补充验证。
+- 结论：当前仍被**登录态 / 数据库凭据**高风险前置条件阻断，本轮完成的是复现、证据收敛与代码现状复核；`POST /api/fortune/yearly` 的真实算法级闭环需等待正确的 phpstudy MySQL 账号信息后继续。
+- 截图 / 录屏：本轮为后端接口与代码现状核对，未新增 UI 截图。
+
+### 管理后台修复（自动化执行，2026-03-18 20:40）
+
+- 本轮严格只消费 `TODO.md -> A. 高频修复队列 -> [admin] 管理后台修复专家` 的唯一未完成项，并先读取 `.codebuddy/automations/admin/memory.md` 后再执行。
+- 真实接口复现：`GET http://localhost:8080/api/health` 返回 `code=200`；随后用默认账号 `admin / admin123` 请求 `POST http://localhost:8080/api/admin/auth/login`，稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql"}`，与 TODO 当前描述一致。
+- 代码核对结果：`backend/app/controller/admin/Auth.php` 与 `backend/app/service/AdminAuthService.php` 当前都会在 `tc_admin / admin` 主表缺失时直接拦截登录；`database/20260317_create_admin_users_table.sql` 已包含 `tc_admin`、`tc_admin_role`、`tc_admin_user_role`、默认超级管理员角色以及 `admin / admin123` 初始账号；`backend/docker-entrypoint.sh` / `backend/docker-compose.yml` 里虽有自动补跑逻辑，但这是容器链路，**不适用于当前 phpstudy 本地标准环境**。
+- 风险判断：该问题同时落在**登录鉴权 + 数据库迁移**边界，按当前自动化规则本轮只做复现、代码/SQL 交叉核验与处置方案输出，**未自动执行 SQL、未改登录代码、未误勾 TODO 完成**。
+
+#### 建议处置
+- 在 phpstudy 正在使用的 `taichu` 库里手动导入 `database/20260317_create_admin_users_table.sql`；如果本地是走 Navicat / phpMyAdmin 一次性初始化，也可以改用 `database/本地导入使用/full_import_for_navicat.sql`。
+- 导入完成后优先复测 2 个最小点：1) `POST /api/admin/auth/login` 是否返回 token；2) `GET /api/admin/auth/info` 是否能带 token 正常回出管理员信息。
+- 只有在真实 token 获取成功后，才继续做 Dashboard、用户、内容、订单、积分、系统设置、公告等页面级回归，避免把“进不去后台”误判成页面自身故障。
+
+#### 本轮验证
+- `GET http://localhost:8080/api/health`：成功返回 `{"code":200,"message":"success"...}`。
+- `POST http://localhost:8080/api/admin/auth/login`：稳定返回 `{"code":500,"message":"管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql","data":null}`。
+- 本轮为复现 + 方案收敛，曾临时生成探针脚本辅助请求，收尾前已全部删除，未留下新的仓库文件。
+- 截图 / 录屏：本轮未新增 UI 截图；由于登录前置仍阻断，未继续做深层后台页面回归。
+
+### 占卜体验巡检（30-4 自动化执行，2026-03-18 21:32）
+
+- 本轮先按要求只读取 `TODO.md` 的 `### [30-4] 占卜爱好者体验检查` 与 `.codebuddy/automations/30-4/memory.md`，随后直连 `http://localhost:8080/api/...` 复测 3 条主链：登录前置、每日运势公开链路、登录后占卜入口（六爻 / 塔罗 / 合婚）。
+- 为稳定取证，在产物目录新增只读脚本 `c:/Users/v_boqchen/AppData/Roaming/WorkBuddy/User/globalStorage/tencent-cloud.coding-copilot/brain/8a5fa414ac2544cfae75556aba3da400/divination_probe_30_4.ps1`，原始响应已落到 `.../divination_probe_30_4_output.json`；仓库业务代码未改。
+
+#### 关键发现
+1. **登录前置仍被 phpstudy MySQL 凭据阻断**
+   - `GET /api/health` 返回 200，但 `POST /api/auth/phone-login`（`13800138000 / 123456`）稳定返回 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+2. **每日运势公开兜底也已经失效**
+   - `GET /api/daily/fortune` 在游客态和携带有效 JWT 两种情况下都直接 500，查询失败点都落在 `tc_daily_fortune`；说明当前不仅是登录态不可用，连公开日运也无法返回结果。
+3. **登录后占卜入口无法进入扣费 / 历史 / 分享闭环**
+   - 带有效 JWT 复测时，`GET /api/hehun/pricing`、`GET /api/tarot/history` 都直接报同一条 1045；`GET /api/liuyao/pricing` 表现为 `HTTP 200 + code 500`。当前连定价/历史入口都进不去，无法继续验证扣费、结果、历史、分享闭环。
+4. **本地前台页面当前没有可直接访问的运行实例**
+   - `http://localhost:5173/bazi` 与 `http://localhost/bazi` 都是连接拒绝，因此本轮无法补做前台页面体验验证，只能停留在接口级取证。
+
+#### 本轮处理
+- 已将新的影响范围补回 `TODO.md` 的 `[15]` 数据库凭据阻塞项：把“仅登录、历史、保存受阻”更新为“已扩散到每日运势公开链路与多条占卜入口/历史链路”。
+- 本轮未做任何业务修复；当前更像环境层先把整条占卜体验链压扁了，后面的算法和闭环问题暂时连出场机会都没有。
+
+#### 本轮验证
+- 真实接口：`/api/health`、`/api/auth/phone-login`、`/api/daily/fortune`、`/api/liuyao/pricing`、`/api/tarot/history`、`/api/hehun/pricing`。
+- 页面可达性：`http://localhost:5173/bazi`、`http://localhost/bazi`。
+- 原始证据文件：`c:/Users/v_boqchen/AppData/Roaming/WorkBuddy/User/globalStorage/tencent-cloud.coding-copilot/brain/8a5fa414ac2544cfae75556aba3da400/divination_probe_30_4_output.json`。
+- 截图 / 录屏：本轮无新增 UI 截图，原因是前台页面端口未起、接口层已先阻断。
+
+### 占卜体验巡检（第三十二轮自动化执行，2026-03-19 01:45）
+
+- 本轮开始时严格只读取了 `TODO.md -> B. 高频巡检关注清单 -> [30-4] 占卜爱好者体验检查` 与 `.codebuddy/automations/30-4/memory.md`，随后直连 `http://localhost:8080/api/...` 复测 3 条主链：登录前置、每日运势公开链路、登录后占卜入口（合婚 / 六爻 / 塔罗）；再补测本地前台页面是否可直接访问。
+- 本轮未修改业务代码；只更新了 `TODO.md`、`.codebuddy/automations/30-4/memory.md` 与 `overview.md`，并临时生成 `tmp_30_4_phone_login.html`、`tmp_30_4_daily.html` 抽取错误细节，收尾前已删除。
+
+#### 关键发现
+1. **登录前置仍卡在 phpstudy MySQL 凭据层**
+   - `GET http://localhost:8080/api/health` 返回 `200`，但 `POST http://localhost:8080/api/auth/phone-login`（`13800138000 / 123456`）继续在 `User::findByPhone()` 查询 `tc_user` 时抛出 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+2. **每日运势公开链路依旧没有兜住**
+   - `GET http://localhost:8080/api/daily/fortune` 仍直接 500，错误页指向 `DailyFortune::getToday()` 查询 `tc_daily_fortune` 时命中同一条 1045；这说明现在连游客看日运都进不去，不只是登录态问题。
+3. **合婚 / 六爻 / 塔罗本轮仍止步于登录门口**
+   - 无 token 抽测 `GET /api/hehun/pricing`、`GET /api/liuyao/pricing`、`GET /api/tarot/history` 均返回 `401 请先登录`；在登录前置未恢复前，本轮无法继续验证扣费、结果、历史、分享闭环。
+4. **本地前台页面本轮仍无可用实例**
+   - `http://localhost:5173/daily` 与 `http://localhost/daily` 都是连接拒绝，因此本轮仍只能停留在接口级取证，做不了真实页面体验回放。
+
+#### 本轮处理
+- 已把最新时间戳、报错落点与页面不可达证据补写回 `TODO.md` 的 `[15]` 数据库凭据阻塞项。
+- 本轮未做任何业务修复；当前主阻塞仍是 phpstudy 本机 MySQL 凭据 / 登录前置，继续讨论扣费或分享闭环就像在门没开的情况下挑客厅灯色，多少有点超前。
+
+#### 本轮验证
+- 真实接口：`/api/health`、`/api/auth/phone-login`、`/api/daily/fortune`、`/api/hehun/pricing`、`/api/liuyao/pricing`、`/api/tarot/history`。
+- 页面可达性：`http://localhost:5173/daily`、`http://localhost/daily`。
+- 截图 / 录屏：本轮无新增 UI 截图；原因是前台端口未起，接口层已先阻断。
+
+### 命理算法修复（自动化执行，2026-03-18 21:36）
+
+
+- 本轮继续只消费 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家` 的首个高优项：**八字流年深度分析主链路失败**。
+- 先用真实接口确认 phpstudy 入口仍在线：`GET http://localhost:8080/api/health` 返回 `{"code":200,...}`。
+- 为进入 `/api/fortune/yearly` 的登录前置，再次请求 `POST http://localhost:8080/api/auth/phone-login`（`13800138000 / 123456`），并把异常页临时落盘后精读；核心异常仍稳定为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+- 为确认阻塞范围是否继续外溢，又补测了游客态 `GET http://localhost:8080/api/daily/fortune`；结果同样命中相同的 1045，说明当前不仅拿不到登录态，连公开日运查询也先被本机 MySQL 凭据问题卡住。
+- 同步复核 `backend/app/controller/Fortune.php`、`backend/app/service/YearlyFortuneService.php`、`backend/app/service/CacheService.php`：工作区里用于流年链路的用户隔离缓存、缓存命中余额回填、统一异常收口补丁仍在；在真实数据库连接恢复前，本轮没有继续盲改流年算法代码，也没有误勾 `TODO.md`。
+
+#### 本轮验证
+- `GET http://localhost:8080/api/health`：成功返回 `{"code":200,"message":"success"...}`。
+- `POST http://localhost:8080/api/auth/phone-login`：稳定复现 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+- `GET http://localhost:8080/api/daily/fortune`：同样稳定复现 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost' (using password: YES)`。
+- `where.exe php`：未找到本机 PHP CLI，因此本轮没有做 CLI 级补充验证。
+- 临时文件：本轮为精读异常页曾在 `backend/runtime/` 下临时落了 2 份 HTML，收尾前已删除。
+- 截图 / 录屏：本轮未新增 UI 截图；原因很直接，接口先炸了，页面还没轮到出场。
+
+### 命理算法修复（自动化执行，2026-03-18 22:55）
+
+- 本轮继续只消费 `TODO.md -> A. 高频修复队列 -> [automation] 命理算法修复专家`，但跳过仍被 phpstudy MySQL 凭据阻断的“流年主链路失败”，转而处理同章节下下一个可独立收口的高优项：**八字大运 K 线图 `float/int` 类型错误**。
+- 先用真实接口确认当前运行态边界：`GET http://localhost:8080/api/health` 返回 `code=200`；但 `POST http://localhost:8080/api/auth/phone-login` 仍会落到 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`，说明本轮无法在 phpstudy 直连接口下直接重放需要登录态的 `/api/fortune/dayun-chart`。
+- 为避免空转，我改读了已留存的真实报错产物：`fortune_dayun_chart.json` 明确记录此前 `POST /api/fortune/dayun-chart` 因 `DayunFortuneService::calculateYearScoreInDayun(): Argument #1 ($dayunScore) must be of type int, float given` 直接 500；同批 `points_probe.json` 也证明失败态曾新增 `dayun_chart -30` 流水。
+- 在代码侧做了最小加固：`backend/app/service/DayunFortuneService.php` 新增统一 `normalizeScore()`，并让 `analyzeDayun()`、`getDayunChartData()` 都先把 `scores['overall']` 归一化为 int，再传入 `calculateYearScoreInDayun(int ...)`，把这条严格类型崩溃路径在源头封死。
+- `TODO.md` 已把“八字大运 K 线图接口崩溃”从 `[automation]` 高频修复队列移出，并转入 `D. 最近已完成 / 已确认`；仍保留“phpstudy 8080 真实回放被 1045 阻断”的验证边界说明，避免误报成已完成的全链路回放。
+
+#### 本轮验证
+- 真实接口：`GET http://localhost:8080/api/health` 成功；`POST http://localhost:8080/api/auth/phone-login` 临时落盘后确认仍为 `SQLSTATE[HY000] [1045] Access denied for user 'taichu'@'localhost'`。
+- 历史真实证据：`c:/Users/v_boqchen/AppData/Roaming/WorkBuddy/User/globalStorage/tencent-cloud.coding-copilot/brain/3450da8886ae4ddfaacb692a518771a6/divination-probe-output/fortune_dayun_chart.json` 明确记录 `float -> int` `TypeError`；同目录 `points_probe.json` 记录失败态 `dayun_chart -30`。
+- 静态校验：`read_lints` 对 `backend/app/service/DayunFortuneService.php` 返回 0 diagnostics。
+- CLI 边界：`where.exe php` 与 `where /R C:\ php.exe` 均未找到本机 PHP CLI，因此本轮没有做本机 PHP 级回归。
+- 临时文件：为提取登录异常曾在 `backend/tests/` 下生成 `tmp_login_error.html`，收尾前已删除。
+- 截图 / 录屏：本轮仍是后端算法与证据收敛，未新增 UI 截图。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

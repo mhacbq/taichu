@@ -1,5 +1,14 @@
 # 待办处理执行器 - 执行记录
 
+> 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续跨模块闭环执行不要再默认依赖 Docker、容器内入口或 `docker compose`；历史记录中的容器相关描述只保留为旧轮次上下文。
+
+
+## 2026-03-18 执行记录（跨模块闭环）
+- 处理问题：八字流年深度分析积分链路异常（automation-4 第 1 项）。
+- 涉及模块：`backend/app/service/YearlyFortuneService.php`、`backend/app/service/CacheService.php`、`TODO.md`。
+- 结果：流年缓存改为按用户隔离，缓存命中时回填当前余额；实测成功态返回结果并扣 30 分，积分不足态返回 `code 403` 且未新增 `yearly_fortune` 扣费记录。
+- 阻塞：Docker 守护进程中途掉线，恢复后容器内需改走 `/index.php/api/...` 入口复测；未保留临时探针文件。
+
 ## 2026-03-17 执行记录（第二十次）
 
 ### 本次处理任务

@@ -1,6 +1,44 @@
 # 运营人员后台检查 - 执行历史
 
+> 环境基线更新（2026-03-18）：当前本地标准环境已切换为 **phpstudy + `http://localhost:8080` 直连接口**。后续巡检不要再把 Docker、容器状态、`docker compose` 或 `localhost:3001` 代理当作默认前提；历史记录里的 3001 / 容器表述仅代表旧轮次现场，不代表当前执行基线。
+
+## 2026-03-19 第三十七轮执行摘要
+
+### 检查范围
+- 按 phpstudy 基线仅直连 `http://localhost:8080/api/admin/...`，优先深查后台登录、Dashboard、用户、系统设置、系统公告这 5 条代表性运营链路；并在不额外拉起环境的前提下补测已存在的页面入口。
+
+### 检查结果概述
+- `GET /api/health` 返回 `code=200`，但 `POST /api/admin/auth/login`（表单 `admin / admin123`）仍直接返回“管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql”`code=500`；说明当前后台真实阻塞点依旧在登录前置，而不是单纯页面空壳。
+- 在拿不到后台 token 的前提下，`GET /api/admin/dashboard/statistics`、`/api/admin/users`、`/api/admin/system/settings`、`/api/admin/system/notices` 均返回 `401 未授权，请先登录`；页面侧仅确认 `http://localhost:3001/login` 仍可返回标题为“太初管理后台”的 Vite 壳页，`http://localhost:8080/admin` 与 `/admin/login` 继续 `404`。本轮仅给现有高优阻塞补充时间戳和受影响范围，未新增可独立归因的新后台缺陷。
+
+---
+
+## 2026-03-19 第三十六轮执行摘要
+
+
+### 检查范围
+- 先按要求只读取 `TODO.md` 的 `[30-3]` 章节与本记忆，再直连 `http://localhost:8080/api/admin/...` 复测后台登录、Dashboard、用户、系统设置代表链路；在确认本地已有 `http://localhost:3001/login` 可访问后，补做最小页面入口级验证。
+
+### 检查结果概述
+- `GET /api/health` 仍返回 `code=200`，但 `POST /api/admin/auth/login`（8080 直连）与 `POST http://localhost:3001/api/admin/auth/login`（3001 代理）都稳定返回“管理员账号表不存在，请先执行 `database/20260317_create_admin_users_table.sql`”；说明当前不是单一页面壳子问题，而是后台登录前置仍被管理员主表缺失卡死。
+- 代表性受保护接口 `GET /api/admin/dashboard/statistics`、`/api/admin/users`、`/api/admin/system/settings` 在无 token 条件下均返回 `401 未授权，请先登录`；`http://localhost:3001/login` 可打开，但 `http://localhost:8080/admin` 与 `/admin/login` 仍是 `404`。本轮仅补充阻塞范围证据并更新 `TODO.md`，未新增可独立归因的新运营缺陷。
+
+---
+
+
+## 2026-03-18 第三十五轮执行摘要
+
+### 检查范围
+- 仅按 phpstudy 基线直连 `http://localhost:8080`，优先核对后台登录链路，并确认本地是否已有可直接访问的后台页面可补做页面级验证。
+
+### 检查结果概述
+- `GET /api/health` 返回 `code=200`，`http://localhost:3001/login` 也能打开，说明当前并非整站未启动；但 `POST /api/admin/auth/login` 用默认管理员 `admin / admin123` 仍返回“管理员账号表不存在”，后台 token 无法获取。
+- 已把该新阻塞问题转写到 `TODO.md` 的 `[admin] 管理后台修复专家`；由于登录前置即失败，Dashboard、用户、内容、订单、积分、系统设置、公告等受保护后台链路本轮均无法继续做真实可用性验证，未硬判正常。
+
+---
+
 ## 2026-03-18 第三十四轮执行摘要
+
 
 ### 检查范围
 - 复测独立后台 `http://localhost:3001/login`，并通过 3001 代理检查 `/api/health`、`/api/admin/auth/login`；同时核对本地 `backend` 容器状态与最近启动日志。
