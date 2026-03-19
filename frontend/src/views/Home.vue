@@ -1505,7 +1505,7 @@ onUnmounted(() => {
   margin-top: auto;
 }
 
-
+.feature-icon-wrap--gold {
   width: 64px;
   height: 64px;
   margin: 0 auto 20px;

@@ -24,7 +24,12 @@ const Liuyao = () => import('../views/Liuyao.vue')
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
 const PrivacyPolicy = () => import('../views/Legal/PrivacyPolicy.vue')
 
+// 管理后台布局
+const AdminLayout = () => import('../layouts/AdminLayout.vue')
+
 // 管理后台页面（懒加载）
+const AdminDashboard = () => import('../views/admin/Dashboard.vue')
+const AdminUserManage = () => import('../views/admin/UserManage.vue')
 const AdminConfig = () => import('../views/admin/Config.vue')
 const AdminAlmanacManage = () => import('../views/admin/AlmanacManage.vue')
 const AdminKnowledgeManage = () => import('../views/admin/KnowledgeManage.vue')
@@ -96,6 +101,26 @@ const routes = [
       seo: seoConfigs.daily,
       breadcrumb: [{ name: '首页', url: '/' }, { name: '每日运势', url: '/daily' }]
     }
+  },
+  // 管理端统一布局入口（Dashboard + 仪表板）
+  {
+    path: '/admin',
+    component: AdminLayout,
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'AdminDashboard',
+        component: AdminDashboard,
+        meta: { title: '仪表板 - 太初命理管理后台' }
+      },
+      {
+        path: 'users',
+        name: 'AdminUserManage',
+        component: AdminUserManage,
+        meta: { title: '用户管理 - 太初命理管理后台' }
+      },
+    ]
   },
   {
     path: '/admin/config',
