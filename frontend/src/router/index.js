@@ -39,6 +39,9 @@ const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
 const AdminPointsRecords = () => import('../views/admin/PointsRecords.vue')
 const AdminFeedbackManage = () => import('../views/admin/FeedbackManage.vue')
 const AdminOrderManage = () => import('../views/admin/OrderManage.vue')
+const AdminContentRecords = () => import('../views/admin/ContentRecords.vue')
+const AdminSystemTools = () => import('../views/admin/SystemTools.vue')
+const AdminPackageManage = () => import('../views/admin/PackageManage.vue')
 
 const routes = [
   {
@@ -176,6 +179,24 @@ const routes = [
         name: 'AdminOrderManage',
         component: AdminOrderManage,
         meta: { title: '订单管理 - 太初命理管理后台' }
+      },
+      {
+        path: 'content',
+        name: 'AdminContentRecords',
+        component: AdminContentRecords,
+        meta: { title: '内容记录 - 太初命理管理后台' }
+      },
+      {
+        path: 'packages',
+        name: 'AdminPackageManage',
+        component: AdminPackageManage,
+        meta: { title: '套餐管理 - 太初命理管理后台' }
+      },
+      {
+        path: 'system-tools',
+        name: 'AdminSystemTools',
+        component: AdminSystemTools,
+        meta: { title: '系统工具 - 太初命理管理后台' }
       },
     ]
   },

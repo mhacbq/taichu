@@ -35,6 +35,7 @@
             <span>支付订单</span>
           </template>
           <el-menu-item index="/admin/orders">订单列表</el-menu-item>
+          <el-menu-item index="/admin/packages">套餐管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="content">
@@ -45,6 +46,7 @@
           <el-menu-item index="/admin/almanac">黄历管理</el-menu-item>
           <el-menu-item index="/admin/knowledge">知识库</el-menu-item>
           <el-menu-item index="/admin/shensha">神煞管理</el-menu-item>
+          <el-menu-item index="/admin/content">内容记录</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="seo">
@@ -62,6 +64,7 @@
             <span>系统设置</span>
           </template>
           <el-menu-item index="/admin/config">系统配置</el-menu-item>
+          <el-menu-item index="/admin/system-tools">系统工具</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -121,12 +124,15 @@ const pageTitles = {
   '/admin/points': '积分记录',
   '/admin/feedback': '用户反馈',
   '/admin/orders': '订单列表',
+  '/admin/packages': '套餐管理',
   '/admin/almanac': '黄历管理',
   '/admin/knowledge': '知识库管理',
   '/admin/shensha': '神煞管理',
+  '/admin/content': '内容记录',
   '/admin/seo': 'SEO配置',
   '/admin/seo/stats': 'SEO统计',
   '/admin/config': '系统配置',
+  '/admin/system-tools': '系统工具',
 }
 const currentPageTitle = computed(() => pageTitles[route.path] || '')
 
