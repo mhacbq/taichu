@@ -6,6 +6,13 @@
 >
 > SQL 落库要求（2026-03-19）：若本轮修复新增或调整了 SQL（建表、补列、索引、初始化、迁移、兼容补丁、数据修复脚本），必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件；优先复用最相关现有文件，不合适再新增按日期命名补丁文件，不要只改代码或只在 memory 里记录。
 
+## 2026-03-19 合婚免费预览历史落库收口（本次）
+
+- 本轮按要求先读取 `TODO.md -> A. 高频修复队列 -> [15]` 与本 memory，并在 phpstudy `http://localhost:8080` 真实回放 `phone-login -> hehun/history -> hehun/calculate(tier=free) -> hehun/history`；复现到老账号 `13800138000` 在 `calcCode=200` 后仍是 `calcId=null / afterCount=0`，确认是**免费预览成功但历史未落库**。
+- 根因不止一处：`backend/app/controller/Hehun.php` 的 free 分支直接返回结果，完全没写 `HehunRecord::createCompatible()`；而 `backend/app/model/HehunRecord.php` 又没有把 `is_premium` 写入新表字段，`getUserCount()` 还把所有合婚记录都算进“是否新用户”，若直接补存 free 记录会立刻污染 `GET /api/hehun/pricing` 的新用户折扣，并可能在历史里把 free 记录误判成 premium/vip。
+- 已修复：free 分支现在会保存受控的 preview-only 历史记录，只落基础 `score/level/comment/1 条建议`，并在 `result.report_tier` 显式写 `free`；premium/vip 保存时同步显式写 `is_premium=1` 与 `report_tier`；`HehunRecord::getUserCount()` 改为仅统计“已解锁记录”，免费预览不再影响新用户折扣判断。未新增 SQL。
+- 终验通过：同一账号复测后已拿到 `calcId=1`，`GET /api/hehun/history?limit=5` 返回 `afterCount=1 / firstAfterTier=free / firstAfterPremium=false / firstAfterPointsCost=0`；同时修复前后的 `GET /api/hehun/pricing` 仍保持 `price=40 / discount.reason=新用户专享`，说明历史闭环恢复且价格口径未被 free 记录污染。
+
 ## 2026-03-19 Dashboard 月度充值快照与实时统计统一（本次）
 
 - 本轮按要求先查看 `TODO.md -> A. 高频修复队列` 与本 memory；由于 `[15]` 当前无单挂未完成项，转处理同属高频队列、且根因明确落在后端统计服务的 Dashboard 月度充值口径问题。
