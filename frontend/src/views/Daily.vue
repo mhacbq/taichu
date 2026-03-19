@@ -3,33 +3,40 @@
     <div class="container">
       <PageHeroHeader
         title="每日运势"
-        subtitle="先看今天的公共日运，再根据登录状态继续查看专属运势和签到入口，首屏不再让签到状态抢戏。"
+        subtitle="开启美好一天，为您提供精准的运势分析和实用建议"
         :icon="Calendar"
       />
 
-
-      <div v-if="isLoading" class="date-display date-display--loading card card-hover">
-        <div class="date-skeleton-block">
-          <el-skeleton-item variant="text" class="date-skeleton-label" />
-          <el-skeleton-item variant="text" class="date-skeleton-value" />
-        </div>
-        <div class="date-skeleton-block">
-          <el-skeleton-item variant="text" class="date-skeleton-label" />
-          <el-skeleton-item variant="text" class="date-skeleton-value" />
+      <!-- 运势概览卡片 -->
+      <div v-if="isLoading" class="fortune-overview fortune-overview--loading card card-hover">
+        <div class="overview-skeleton">
+          <el-skeleton-item variant="circle" class="score-skeleton" />
+          <div class="skeleton-content">
+            <el-skeleton-item variant="text" class="title-skeleton" />
+            <el-skeleton-item variant="text" class="subtitle-skeleton" />
+          </div>
         </div>
       </div>
 
-      <div v-else-if="fortune" class="fortune-content">
-        <div class="date-display card card-hover">
-          <div class="lunar-date">
-            <span class="label">农历</span>
-            <span class="value">{{ lunarDate }}</span>
+        <div v-else-if="fortune" class="fortune-content">
+          <!-- 运势概览卡片 -->
+          <div class="fortune-overview card card-hover">
+            <div class="overview-header">
+              <div class="date-info">
+                <span class="solar-date">{{ solarDate }}</span>
+                <span class="lunar-date">{{ lunarDate }}</span>
+              </div>
+              <div class="fortune-score">
+                <div class="score-circle" :class="getScoreClass(fortune.overall)">
+                  <span class="score-value">{{ fortune.overall }}</span>
+                  <span class="score-label">综合评分</span>
+                </div>
+              </div>
+            </div>
+            <div class="overview-summary">
+              <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
+            </div>
           </div>
-          <div class="solar-date">
-            <span class="label">公历</span>
-            <span class="value">{{ solarDate }}</span>
-          </div>
-        </div>
 
         <!-- 个性化运势卡片 -->
         <div v-if="dailyPersonalizedState === 'ready'" class="personalized-fortune card card-hover">
@@ -1094,6 +1101,134 @@ onUnmounted(() => {
   background: rgba(var(--primary-light-rgb), 0.12);
   border: 1px solid rgba(var(--primary-light-rgb), 0.18);
   color: var(--text-primary);
+}
+
+/* 运势概览卡片 */
+.fortune-overview {
+  margin-bottom: 30px;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-card);
+}
+
+.fortune-overview--loading {
+  padding: 24px;
+}
+
+.overview-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.score-skeleton {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title-skeleton {
+  height: 24px;
+  max-width: 200px;
+}
+
+.subtitle-skeleton {
+  height: 16px;
+  max-width: 300px;
+}
+
+.overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.date-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.solar-date {
+  font-size: 18px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.lunar-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.fortune-score {
+  display: flex;
+  align-items: center;
+}
+
+.score-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-light-10), var(--primary-light-05));
+  border: 2px solid var(--primary-light-20);
+}
+
+.score-circle.excellent {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.score-circle.good {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.score-circle.normal {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.score-circle.poor {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.score-value {
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+  color: white;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 4px;
+}
+
+.overview-summary {
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.summary-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* 个性化状态提示 */

@@ -160,11 +160,13 @@ export default {
 .reminder-card {
   position: relative;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .reminder-decoration {
@@ -229,16 +231,19 @@ export default {
   padding: 140px 24px 24px;
   text-align: center;
   color: white;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
 }
 
 .reminder-title {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   margin: 0 0 12px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .reminder-desc {
@@ -249,39 +254,54 @@ export default {
 }
 
 .reminder-fortune {
-  background: var(--white-10);
-  border-radius: 16px;
-  padding: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  border-radius: 20px;
+  padding: 20px;
   margin-bottom: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .fortune-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fortune-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .fortune-label {
-  font-size: 14px;
-  color: var(--white-70);
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  min-width: 80px;
 }
 
 .fortune-stars {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .star-icon {
-  font-size: 18px;
-  color: var(--white-30);
-  transition: color 0.3s;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .star-icon.active {
-  color: var(--star-color);
-  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
+  transform: scale(1.1);
 }
 
 .fortune-lucky {
@@ -301,42 +321,67 @@ export default {
 
 .reminder-actions {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
 }
 
 .btn {
-  padding: 14px 24px;
-  border-radius: 12px;
+  padding: 16px 32px;
+  border-radius: 16px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   border: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 52px;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+  color: #1a1a2e;
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 8px 25px rgba(251, 191, 36, 0.6);
+}
+
+.btn-primary:hover::before {
+  left: 100%;
 }
 
 .btn-text {
-  background: transparent;
-  color: var(--white-60);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
 }
 
 .btn-text:hover {
-  color: var(--white-90);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 1);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .btn-icon {

@@ -34,8 +34,17 @@
           </div>
           
           <p class="result-comment">{{ freeResult.hehun.comment }}</p>
+
+          <div v-if="freeResult.is_local_only" class="free-preview-status">
+            <el-icon><WarningFilled /></el-icon>
+            <div>
+              <strong>本次免费预览暂未写入云端记录</strong>
+              <p>已帮你临时保存在当前设备；稍后回到本页仍可继续查看，但个人中心暂不会出现这条记录。</p>
+            </div>
+          </div>
           
           <div class="bazi-compare">
+
             <div class="bazi-side">
               <h4>{{ getRoleBaziTitle('male') }}</h4>
               <div class="bazi-pillars">
@@ -102,11 +111,12 @@
               <p>先回看记录，再决定是否继续解锁完整版；结果页和首页都按同一套“记录 / 深入 / 再来一次”节奏走。</p>
             </div>
             <div class="action-buttons action-buttons--free">
-              <el-button plain @click="openHehunRecords">查看我的记录</el-button>
+              <el-button plain @click="handleFreeResultRecordAction">{{ freeResultRecordButtonText }}</el-button>
               <el-button type="primary" :disabled="!canUnlockPremium" :loading="unlockLoading" @click="unlockPremium">继续深入解读</el-button>
               <el-button @click="openRechargeCenter">去充值</el-button>
               <el-button @click="resetForm">重新测算（清空）</el-button>
             </div>
+
           </div>
 
 
@@ -207,7 +217,20 @@
 
       <!-- 输入表单 -->
       <div v-else class="form-section">
+        <div v-if="localFreePreviewRecord" class="local-preview-recovery card-hover">
+          <div class="local-preview-recovery__body">
+            <span class="local-preview-recovery__eyebrow">上次免费预览仍可回看</span>
+            <strong>{{ formatHistoryNames(localFreePreviewRecord) }}</strong>
+            <p>这条免费预览在 {{ formatDate(localFreePreviewRecord.created_at) }} 暂存到当前设备；云端历史暂未生成，但你仍可继续查看，再决定是否升级完整版。</p>
+          </div>
+          <div class="local-preview-recovery__actions">
+            <el-button plain type="primary" @click="restoreLocalFreePreview">恢复上次结果</el-button>
+            <el-button link type="primary" @click="scrollToHistorySection">查看暂存记录</el-button>
+          </div>
+        </div>
+
         <div class="form-card card-hover">
+
           <h2>输入双方出生信息</h2>
           <p class="form-intro">先各自补齐生日，再按记忆精度选择精确时分、大概时段或仅生日模式即可。</p>
           <div class="form-meta-list">
@@ -509,22 +532,26 @@
 
           
           <p class="form-hint">
-            <el-icon><Collection /></el-icon> 首次查看基础分析免费；提交后的最近记录会自动保留，方便回看后再决定是否解锁完整版。
+            <el-icon><Collection /></el-icon> 首次查看基础分析免费；最近一次结果会先保存在当前设备，云端历史可用时也会同步展示，方便回看后再决定是否解锁完整版。
           </p>
+
         </div>
       </div>
 
       <!-- 历史记录 -->
-      <div class="history-section" v-if="historyLoaded || historyLoading || historyError">
+      <div ref="historySectionRef" class="history-section" v-if="historyLoaded || historyLoading || historyError">
         <div class="history-header">
-          <h3>历史记录</h3>
+          <div>
+            <h3>历史记录</h3>
+            <p v-if="localFreePreviewRecord" class="history-header-note">含 1 条当前设备暂存的免费预览，避免离开页面后找不到刚出的结果。</p>
+          </div>
           <el-button v-if="historyError" type="primary" link @click="loadHistory">重新加载</el-button>
         </div>
         <div v-if="historyLoading" class="history-state">
           <p>正在加载历史记录...</p>
           <span>最近的合婚分析会在这里展示。</span>
         </div>
-        <div v-else-if="historyError" class="history-state history-state--error">
+        <div v-else-if="history.length === 0 && historyError" class="history-state history-state--error">
           <p>{{ historyError }}</p>
           <span>可以稍后重试，或重新做一次合婚分析生成新记录。</span>
         </div>
@@ -532,7 +559,13 @@
           <p>还没有合婚记录</p>
           <span>完成一次分析后，这里会展示最近的 5 条记录。</span>
         </div>
-        <div v-else class="history-list">
+        <div v-else>
+          <div v-if="historyError" class="history-inline-warning">
+            <p>{{ historyError }}</p>
+            <span>云端历史暂时不可用，你仍可先继续查看当前设备暂存的免费预览。</span>
+          </div>
+          <div class="history-list">
+
           <button
             v-for="item in history"
             :key="item.id"
@@ -567,11 +600,13 @@
               <el-icon><ArrowRight /></el-icon>
             </span>
           </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
@@ -590,8 +625,10 @@ import BackButton from '../components/BackButton.vue'
  * 使用DOMPurify库进行专业清理
  */
 const router = useRouter()
+const HEHUN_LOCAL_FREE_PREVIEW_STORAGE_KEY = 'hehun_local_free_preview_v1'
 
 const sanitizeHtml = (html) => {
+
   if (!html) return ''
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'],
@@ -699,7 +736,10 @@ const historyLoading = ref(false)
 const historyLoaded = ref(false)
 const historyError = ref('')
 const activeHistoryId = ref(null)
+const historySectionRef = ref(null)
+const localFreePreview = ref(null)
 const showAllFreeSuggestions = ref(false)
+
 
 const historyTierCopy = {
 
@@ -911,8 +951,96 @@ const buildHehunPayload = ({ tier, useAi }) => ({
   useAi,
 })
 
+const normalizeFingerprintText = (value = '') => String(value || '').trim().toLowerCase()
+const buildHehunFingerprint = ({ maleName = '', maleBirthDate = '', femaleName = '', femaleBirthDate = '', score = 0, level = '' } = {}) => ([
+  normalizeFingerprintText(maleName),
+  normalizeFingerprintText(maleBirthDate),
+  normalizeFingerprintText(femaleName),
+  normalizeFingerprintText(femaleBirthDate),
+  Number(score || 0),
+  normalizeFingerprintText(level),
+].join('|'))
+
+const readLocalFreePreview = () => {
+  try {
+    const rawValue = localStorage.getItem(HEHUN_LOCAL_FREE_PREVIEW_STORAGE_KEY)
+    if (!rawValue) {
+      return null
+    }
+
+    const parsedValue = JSON.parse(rawValue)
+    const record = parsedValue?.record || parsedValue
+    return record && typeof record === 'object' ? record : null
+  } catch (error) {
+    console.warn('读取合婚暂存结果失败:', error)
+    return null
+  }
+}
+
+const persistLocalFreePreview = (record) => {
+  localFreePreview.value = record
+
+  try {
+    localStorage.setItem(HEHUN_LOCAL_FREE_PREVIEW_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      record,
+    }))
+  } catch (error) {
+    console.warn('保存合婚暂存结果失败:', error)
+  }
+}
+
+const clearLocalFreePreview = () => {
+  localFreePreview.value = null
+
+  try {
+    localStorage.removeItem(HEHUN_LOCAL_FREE_PREVIEW_STORAGE_KEY)
+  } catch (error) {
+    console.warn('清除合婚暂存结果失败:', error)
+  }
+}
+
+const buildLocalFreePreviewRecord = (freePayload) => {
+  const maleBirthDate = resolveBirthDatePayload(form.maleBirthDate, form.maleBirthPrecision, form.maleBirthTimeRange)
+  const femaleBirthDate = resolveBirthDatePayload(form.femaleBirthDate, form.femaleBirthPrecision, form.femaleBirthTimeRange)
+  const score = Number(freePayload?.hehun?.score ?? 0)
+  const level = freePayload?.hehun?.level || ''
+  const createdAt = freePayload?.created_at || freePayload?.create_time || new Date().toISOString()
+
+  return {
+    id: freePayload?.id || `local-free-${Date.now()}`,
+    tier: 'free',
+    is_local_only: true,
+    male_name: form.maleName || '',
+    female_name: form.femaleName || '',
+    male_birth_date: maleBirthDate,
+    female_birth_date: femaleBirthDate,
+    male_birth_precision: form.maleBirthPrecision,
+    female_birth_precision: form.femaleBirthPrecision,
+    male_birth_time_range: form.maleBirthTimeRange,
+    female_birth_time_range: form.femaleBirthTimeRange,
+    score,
+    level,
+    level_text: freePayload?.hehun?.level_text || '',
+    result: freePayload?.hehun || {},
+    male_bazi: freePayload?.male_bazi || {},
+    female_bazi: freePayload?.female_bazi || {},
+    pricing: freePayload?.pricing || null,
+    created_at: createdAt,
+    create_time: createdAt,
+    fingerprint: buildHehunFingerprint({
+      maleName: form.maleName || '',
+      maleBirthDate,
+      femaleName: form.femaleName || '',
+      femaleBirthDate,
+      score,
+      level,
+    }),
+  }
+}
 
 const isBirthInputComplete = (role) => {
+
   const birthDateValue = form[`${role}BirthDate`]
   const precision = form[`${role}BirthPrecision`]
 
@@ -1032,7 +1160,9 @@ const pricingDisplayText = computed(() => {
 
 const canExportReport = computed(() => Boolean(premiumResult.value?.id))
 const canUnlockPremium = computed(() => Boolean(freeResult.value) && Boolean(normalizedPricing.value) && !isLoading.value && !unlockLoading.value)
+const freeResultRecordButtonText = computed(() => freeResult.value?.is_local_only ? '查看本机暂存结果' : '查看我的记录')
 const freeSuggestionList = computed(() => {
+
   const suggestions = freeResult.value?.hehun?.suggestions
   return Array.isArray(suggestions) ? suggestions.filter((item) => typeof item === 'string' && item.trim()) : []
 })
@@ -1157,7 +1287,33 @@ const openDailySuggestion = () => {
   router.push('/daily')
 }
 
+const scrollToHistorySection = async () => {
+  await nextTick()
+  historySectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const restoreLocalFreePreview = async () => {
+  if (!localFreePreviewRecord.value) {
+    return
+  }
+
+  applyHistoryDetail(localFreePreviewRecord.value)
+  await nextTick()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const handleFreeResultRecordAction = async () => {
+  if (freeResult.value?.is_local_only) {
+    await scrollToHistorySection()
+    ElMessage.info('这条免费预览当前仅保存在本机，可在本页历史区继续查看。')
+    return
+  }
+
+  openHehunRecords()
+}
+
 watch([
+
   () => form.maleBirthDate,
   () => form.maleBirthTimeRange,
   () => form.maleBirthPrecision,
@@ -1575,8 +1731,20 @@ const normalizeHistoryItem = (item = {}) => {
   const createdAt = item.create_time || item.created_at || ''
   const analysisMeta = normalizeAnalysisMeta(item.analysis_meta || resultData.analysis_meta, aiAnalysis)
   const analysisPresentation = buildAnalysisPresentation(analysisMeta)
-
   const inputMeta = resultData.input_meta || {}
+  const score = Number(item.score ?? resultData.score ?? 0)
+  const level = item.level || resultData.level || ''
+  const isLocalOnly = Boolean(item.is_local_only)
+  const maleBirthDate = item.male_birth_date || inputMeta.male_birth_date || ''
+  const femaleBirthDate = item.female_birth_date || inputMeta.female_birth_date || ''
+  const fingerprint = item.fingerprint || buildHehunFingerprint({
+    maleName: item.male_name || inputMeta.male_name || '',
+    maleBirthDate,
+    femaleName: item.female_name || inputMeta.female_name || '',
+    femaleBirthDate,
+    score,
+    level,
+  })
 
   return {
     ...item,
@@ -1585,30 +1753,56 @@ const normalizeHistoryItem = (item = {}) => {
     analysis_meta: analysisMeta,
     male_bazi: normalizeObjectField(item.male_bazi, {}),
     female_bazi: normalizeObjectField(item.female_bazi, {}),
+    male_birth_date: maleBirthDate,
+    female_birth_date: femaleBirthDate,
     male_birth_precision: item.male_birth_precision || inputMeta.male_birth_precision || '',
     female_birth_precision: item.female_birth_precision || inputMeta.female_birth_precision || '',
     male_birth_time_range: item.male_birth_time_range || inputMeta.male_birth_time_range || '',
     female_birth_time_range: item.female_birth_time_range || inputMeta.female_birth_time_range || '',
-
-
     male_birth_time: item.male_birth_time || '',
     female_birth_time: item.female_birth_time || '',
-    score: Number(item.score ?? resultData.score ?? 0),
-    level: item.level || resultData.level || '',
+    score,
+    level,
     level_text: item.level_text || resultData.level_text || '',
     points_cost: pointsCost,
     tier,
-    is_premium: tier !== 'free',
+    is_local_only: isLocalOnly,
+    fingerprint,
+    is_premium: isLocalOnly ? false : tier !== 'free',
     hasAiAnalysis: analysisPresentation.state === 'ai',
     analysisState: analysisPresentation.state,
-    analysisBadgeText: analysisPresentation.badgeText,
-    typeLabel: historyTierCopy[tier]?.label || '历史记录',
-    ctaLabel: historyTierCopy[tier]?.cta || '查看记录',
-    accessLabel: resolveHistoryAccessLabel(tier, pointsCost),
-    summary: buildHistorySummary(tier, analysisPresentation, pointsCost),
+    analysisBadgeText: isLocalOnly ? '暂存预览' : analysisPresentation.badgeText,
+    typeLabel: isLocalOnly ? '本机暂存' : (historyTierCopy[tier]?.label || '历史记录'),
+    ctaLabel: isLocalOnly ? '继续查看暂存结果' : (historyTierCopy[tier]?.cta || '查看记录'),
+    accessLabel: isLocalOnly ? '仅当前设备暂存' : resolveHistoryAccessLabel(tier, pointsCost),
+    summary: isLocalOnly
+      ? '云端历史暂未生成，这条免费预览已临时保存在当前设备；点击后可继续查看或升级完整版。'
+      : buildHistorySummary(tier, analysisPresentation, pointsCost),
     created_at: createdAt,
     create_time: createdAt,
   }
+}
+
+const localFreePreviewRecord = computed(() => {
+  if (!localFreePreview.value) {
+    return null
+  }
+
+  return normalizeHistoryItem(localFreePreview.value)
+})
+
+const mergeLocalFreePreviewIntoHistory = (items = []) => {
+  if (!localFreePreviewRecord.value) {
+    return items
+  }
+
+  const hasSyncedRecord = items.some((item) => item.fingerprint === localFreePreviewRecord.value.fingerprint && !item.is_local_only)
+  if (hasSyncedRecord) {
+    clearLocalFreePreview()
+    return items
+  }
+
+  return [localFreePreviewRecord.value, ...items.filter((item) => item.id !== localFreePreviewRecord.value.id)]
 }
 
 const resolveHistoryList = (payload) => {
@@ -1622,6 +1816,7 @@ const resolveHistoryList = (payload) => {
 
   return []
 }
+
 
 // 获取定价信息
 const loadPricing = async () => {
@@ -1681,8 +1876,11 @@ const submitForm = async () => {
 
     if (response.code === 200) {
       const normalizedFreeResult = normalizeFreeResultData(response.data)
+      const localPreviewRecord = buildLocalFreePreviewRecord(normalizedFreeResult)
+      persistLocalFreePreview(localPreviewRecord)
+
       premiumResult.value = null
-      freeResult.value = normalizedFreeResult
+      freeResult.value = buildHistoryFreeResult(localPreviewRecord, normalizedFreeResult.hehun, normalizedFreeResult.male_bazi, normalizedFreeResult.female_bazi)
       showAllFreeSuggestions.value = false
 
       clearUnlockFeedback()
@@ -1690,11 +1888,16 @@ const submitForm = async () => {
       ElMessage.success('基础合婚分析完成')
 
       try {
-        await syncHistorySelection(normalizedFreeResult.id)
+        const preferredHistoryId = normalizedFreeResult.id || localPreviewRecord.id
+        const matchedHistoryItem = await syncHistorySelection(preferredHistoryId)
+        if (matchedHistoryItem) {
+          applyHistoryDetail(matchedHistoryItem)
+        }
       } catch (historyError) {
         console.warn('合婚结果已生成，但历史记录刷新失败:', historyError)
       }
     } else {
+
 
       ElMessage.error(response.message)
     }
@@ -1735,9 +1938,11 @@ const unlockPremium = async () => {
     
     if (response.code === 200) {
       const normalizedPremiumResult = normalizePremiumResultData(response.data)
+      clearLocalFreePreview()
       freeResult.value = null
       premiumResult.value = normalizedPremiumResult
       window.dispatchEvent(new Event('points-updated'))
+
 
       try {
         await syncHistorySelection(normalizedPremiumResult.id)
@@ -1837,19 +2042,21 @@ const loadHistory = async () => {
   try {
     const response = await getHehunHistory({ limit: 5 })
     if (response.code === 200) {
-      history.value = resolveHistoryList(response.data).map(normalizeHistoryItem)
+      const normalizedHistory = resolveHistoryList(response.data).map(normalizeHistoryItem)
+      history.value = mergeLocalFreePreviewIntoHistory(normalizedHistory)
       if (activeHistoryId.value && !history.value.some((item) => item.id === activeHistoryId.value)) {
         activeHistoryId.value = null
       }
     } else {
-      history.value = []
+      history.value = mergeLocalFreePreviewIntoHistory([])
       historyError.value = response.message || '历史记录加载失败，请稍后重试'
     }
   } catch (error) {
-    history.value = []
+    history.value = mergeLocalFreePreviewIntoHistory([])
     historyError.value = '历史记录加载失败，请稍后重试'
     console.error('获取历史记录失败:', error)
   } finally {
+
     historyLoading.value = false
     historyLoaded.value = true
   }
@@ -1884,6 +2091,7 @@ const formatHistoryNames = (item = {}) => {
 const buildHistoryFreeResult = (item, hehunData, maleBaziData, femaleBaziData) => normalizeFreeResultData({
   ...item,
   tier: 'free',
+  is_local_only: Boolean(item.is_local_only),
   hehun: {
     ...hehunData,
     suggestions: Array.isArray(hehunData.suggestions) && hehunData.suggestions.length
@@ -1892,8 +2100,12 @@ const buildHistoryFreeResult = (item, hehunData, maleBaziData, femaleBaziData) =
   },
   male_bazi: maleBaziData,
   female_bazi: femaleBaziData,
-  preview_hint: '这是你之前保存的免费预览记录；如需五维分析和 AI 解读，请重新解锁完整版。',
+  pricing: item.pricing || null,
+  preview_hint: item.is_local_only
+    ? '云端历史暂未生成，这次免费预览已临时保存在当前设备；稍后回到本页仍可继续查看。'
+    : '这是你之前保存的免费预览记录；如需五维分析和 AI 解读，请重新解锁完整版。',
 })
+
 
 const buildHistoryPremiumResult = (item, hehunData, aiAnalysisData, maleBaziData, femaleBaziData) => normalizePremiumResultData({
   id: item.id,
@@ -2043,9 +2255,11 @@ const formatDate = (dateStr) => {
 
 // 初始化
 onMounted(() => {
+  localFreePreview.value = readLocalFreePreview()
   loadPricing()
   loadHistory()
 })
+
 </script>
 
 <style scoped>

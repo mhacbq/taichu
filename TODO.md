@@ -1,19 +1,22 @@
-# TODO（按定时任务类型分流）
+# TODO 任务清单（按定时任务类型分流）
 
-## 使用规则
+## 📋 使用规则说明
 1. 巡检类 `30 / 30-3 / 30-4` 只负责发现、补证、去重、转单，不直接修复。
 2. 修复类 `15 / 15-2 / admin / automation / automation-4` 优先处理 `A. 高频修复队列` 下自己标题中的未完成条目；若本栏为空、或只剩需要外部确认的阻塞项，可继续领取 `A` 中与自己技术域最匹配、且能在仓库内落地补丁的条目，不要因为标签不完美就直接退出。
 3. 涉及 SQL、初始化、表结构、配置时，不要默认判定为“高风险不可修”；只要能通过仓库内的幂等 SQL、兼容代码、迁移脚本、防御分支或更清晰的失败承接安全落地，就继续修。只有需要猜测真实凭据、直接改真实业务数据、或执行不可逆修数时才停下并明确说明。
 4. `automation-2 / ui / ui-15` 只看 `C. 低频专项 / 手动规划池`，默认低频或手动，不进入高频修复节奏。
 5. 产品规划、新功能、视觉统一放在低频规划池，不作为高频修复输入。
 6. 已完成项移入 `D. 最近已完成 / 已确认`，避免被自动化重复消费。
+7. 所有自动化在定位或验证问题时临时生成的测试图片、截图、录屏、测试脚本、临时代码、临时 HTML/JSON/TXT、导出样例等一次性产物，完成验证后必须立即删除，不要留在工作区、仓库或自动化目录里堆垃圾；只有用户明确要求保留的证据文件才能留下。
 
-## A. 高频修复队列（修复类自动化直接消费）
 
-### [15] 后端修复专家
+## 🚀 A. 高频修复队列（修复类自动化直接消费）
 
-### [15-2] 前端修复专家
+### 🔧 [15] 后端修复专家
+
+### 🎨 [15-2] 前端修复专家
 - 当前本栏暂时没有单独挂出的高优前端项；但如果 `A` 里其他条目的主要工作落在 `frontend/`、`admin/src/` 的错误承接、状态展示、CTA、分享回流或表单交互，`15-2` 可以直接接手 1 条，不要因为标签写在 `[15]` 或 `[automation-4]` 就原地 no-op。
+- 执行备注：在判定“本轮无前端项”前，至少先复核 `B. 高频巡检关注清单` 中最近新增的 `30-4 / 30-3 / 30` 证据，以及 `.codebuddy/automations/30-4/memory.md`、`.codebuddy/automations/30-3/memory.md`。凡是已经证实的样式错位、按钮不可点、提交无反馈、接口 200 但 UI 仍报错/空白/卡加载等用户可见问题，都应优先按前端承接或修复问题接手，不要继续机械 no-op。
 ### [admin] 管理后台修复专家
 - 执行备注：若问题卡在后台登录、初始化 SQL、权限/鉴权入口或 phpstudy 本地启动链路，允许通过仓库内的幂等 SQL、bootstrap/兼容逻辑、错误提示与只读保护去修；不要因为涉及数据库或登录就直接退出。只有需要猜真实凭据或直接改真实业务数据时才停下。若本轮新增或调整了 SQL，也必须同步落到 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件。
 - 登录口径修正：后台页面验证不要再默认猜 `http://localhost:3001/login`、`http://localhost:8080/admin` 或 `/admin/login`。当前后台源码在 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin`，是独立 Vite 项目；登录页前端路由是 `/login`，登录接口是 `/api/admin/auth/login`。做页面级验证前先确认是否已有 `admin/dist/index.html` 构建产物；必要时先执行 `npm run build --prefix admin`，再按用户实际部署/挂载后的后台站点根地址访问“站点根地址 + /login”，不要把 dev server 3001 当成默认前提。
@@ -24,7 +27,7 @@
 - [x] [2026-03-19] 后台“页面管理”链路前后端路径错位已修复：先在 phpstudy `http://localhost:8080` 下用真实管理员登录复现，`GET /api/admin/content/pages?page=1&pageSize=10` 确认曾直接返回 `404 {"code":404,"message":"接口不存在"}`。根因是 `admin/src/api/contentEditor.js` 固定走后台 `baseURL=/api/admin` 请求 `/content/*`，而后端只在 `backend/route/content.php` 注册了 `/api/content/*`，`backend/route/admin.php` 缺少对应后台入口；补齐 `admin` 侧 `content/pages/page/version/block-config` 路由后，又继续暴露出 `backend/app/controller/Content.php` 自己声明了与 `BaseController` 同名但签名不兼容的私有 `logOperation()`，会让控制器加载即 500，现已一并改为复用父类统一日志方法。最小闭环验证：复测 `GET /api/admin/content/pages?page=1&pageSize=10` 已返回 `200 {"code":200,"message":"获取成功","data":{"list":[],"total":0}}`，后台页面管理列表入口恢复可访问。
 
 
-### [automation] 命理算法修复专家
+### 🧠 [automation] 命理算法修复专家
 - 当前暂无单独挂出的高优算法项；但如果 `A` 里其他占卜问题的主要根因仍落在 `backend/app/service/`、`controller/`、评分/解读/结构化输出逻辑，而不是纯环境或凭据问题，`automation` 可以直接接手 1 条继续修，不要因为条目暂时挂在 `[15]` 就机械退出。
 - 执行备注：若算法修复最终需要补充或调整 SQL / 表结构兼容，必须把最终 SQL 同步写入 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\database` 目录下的 `.sql` 文件，不要只改 service/controller。
 - [ ] [低] 每日运势四项解读文案仍偏固定模板，专业性不足；后续可结合当日干支、宜忌与用户喜用神提升口径。
@@ -32,23 +35,23 @@
 
 
 
-### [automation-4] 跨模块闭环执行器
+### 🔄 [automation-4] 跨模块闭环执行器
 - [x] [2026-03-18] 八字流年深度分析积分链路已闭环：`YearlyFortuneService` 改为按用户隔离流年缓存并在缓存命中时回填当前余额；实测 2033 年分析成功返回结果且新增 `yearly_fortune -30`，2034 年在仅 10 积分时返回 `code 403` 且未新增扣费记录。
 - [ ] [高] 八字大运 K 线图接口崩溃后仍扣 30 积分，异常分支缺少前后端失败承接与积分回滚闭环。
 
 
 ## B. 高频巡检关注清单（巡检类只补证，不直接修复）
 
-### [30] 网站逻辑检查任务
+### 🌐 [30] 网站逻辑检查任务
 - [ ] [关注] 新接口契约不一致、异常分支误扣费、初始化 SQL / 启动脚本冲突、落库或历史写入断裂。
 - [ ] [关注] 只补充“有证据的新问题”，不要再产出“整体良好 / 整体正常”式结论。
 
-### [30-3] 后台运营体验检查
+### 📊 [30-3] 后台运营体验检查
 - 执行备注：后台页面巡检不要再默认使用 `http://localhost:3001/login`、`http://localhost:8080/admin` 或 `/admin/login` 作为固定入口。当前后台源码在 `C:\Users\v_boqchen\WorkBuddy\Claw\taichu-unified\admin`，是独立 Vite 项目；页面登录路由是 `/login`，接口登录是 `POST /api/admin/auth/login`。页面级巡检前先确认 `admin/dist/index.html` 是否已存在或需重新构建；必要时先执行 `npm run build --prefix admin`，再按用户实际部署/挂载后的后台站点根地址访问“站点根地址 + /login”。若部署地址未知，就先做构建与接口链路核对，不要凭空写死页面 URL。
 - [ ] [关注] 登录、Dashboard、菜单加载、内容管理、订单/积分查询、系统设置保存后刷新回读是否真实生效。
 - [ ] [关注] 如果环境阻塞未解除，只记录阻塞范围与新增证据，不重复长写。
 
-### [30-4] 占卜爱好者体验检查
+### 🔮 [30-4] 占卜爱好者体验检查
 - [ ] [关注] 八字、六爻、合婚、塔罗的输入、结果、历史、分享等链路是否真实可用，结果是否合理。
 
 
@@ -59,13 +62,13 @@
 
 ## C. 低频专项 / 手动规划池
 
-### [ui / ui-15] 视觉与 UI
+### 🎨 [ui / ui-15] 视觉与 UI
 - [ ] [设计] 前台存在白金浅色与深色高对比两套风格混用，首页、占卜页、结果页视觉语言跳变明显；建议统一单一主题基线与页面/组件 token。
 - [ ] [设计] 卡片阴影、边框饱和度、按钮主次对比、表单控件圆角与 hover 节奏仍不统一；建议统一卡片三级层级与控件规范。
 - [ ] [设计] 标题/正文/辅助文字对比阈值、模块纵向间距、弹层圆角阴影、图标风格仍未统一；建议整理全局排版与浮层 token。
 - [ ] [设计] 前后台品牌语义割裂较强，且缺少统一的空态、错误态、加载态模板；建议做“同品牌不同密度”的状态组件体系。
 
-### [automation-2] 维护与结构收口
+### 🏗️ [automation-2] 维护与结构收口
 - [ ] [数据] 在 `users` 表补充验证码相关字段，建议增加 `last_sms_code_time`、`sms_code_attempts` 以优化验证码状态查询。
 - [ ] [数据] 在 `points_records` 表补充更多业务分类，统一 `action` 字段枚举与场景口径。
 - [ ] [数据] 在 `bazi_records` 表添加 `ai_analysis_model` 字段，用于记录 AI 模型来源，便于追溯与结果对比。
@@ -89,7 +92,7 @@
 - [ ] [产品] Core 6：在 Loading、空状态、结果页底部加入“心法”文案层，降低纯工具感。
 - [ ] [产品] Core 6：结果页增加“深度对话”入口，把单次结果变成可持续服务。
 
-## D. 最近已完成 / 已确认
+## ✅ D. 最近已完成 / 已确认
 
 - [x] [2026-03-19] 塔罗抽牌 500 已恢复：phpstudy `http://localhost:8080` 下先复现 `POST /api/tarot/draw`（`spread=three`,`question=我应该继续推进这个合作吗？`）稳定返回 `{"code":500,"message":"抽牌失败，请稍后重试"}`，且失败前后 `GET /api/points/balance` 均保持 `380`，确认是“失败未扣费”而不是余额问题。根因收敛为 `backend/app/controller/Tarot.php` 的 `draw()` 事务仍按旧口径直写 `tc_points_record`，缺少当前表结构要求的 `amount/balance/reason/description`，导致插入流水时报错并把整次抽牌回滚。现已改为复用 `backend/app/model/PointsRecord.php::buildRecordPayload()` 统一生成兼容新旧 schema 的积分流水；真实接口终验同一路径已返回 `code=200` 与 3 张牌数据，`remaining_points=370`，且前后余额从 `375 -> 370` 与 `points_cost=5` 对齐。现阶段无需新增 SQL：`database/full_import_for_navicat.sql` 与 `database/all_repairs.sql` 已包含 `tc_points_record` 兼容字段补齐脚本，本轮主修复点是控制器写入口径补齐。
 - [x] [2026-03-19] Dashboard 月度充值快照已与实时统计统一：phpstudy `http://localhost:8080` 下先复现同一管理员登录态里 `GET /api/admin/dashboard/statistics` 返回 `order_stats.month.paid_orders=0 / amount=0`，但 `GET /api/admin/payment/stats` 同期返回 `order_count=1 / total_amount=50`。根因是 `backend/app/service/AdminStatsService.php` 的 `getMonthlyOrderStats()` 只要检测到 `site_daily_stats` 就直接吃旧快照，导致月度充值汇总被陈旧统计表压成 0；现已改为优先按实时充值订单表聚合，只有缺少订单表时才回退 `site_daily_stats`。真实接口复测确认 Dashboard 已返回 `order_stats.month.total=1 / paid_orders=1 / amount=50`，与支付统计口径一致。
