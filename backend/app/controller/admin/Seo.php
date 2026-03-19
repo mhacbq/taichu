@@ -1039,4 +1039,64 @@ class Seo extends BaseController
 
         return $suggestions;
     }
+
+    /**
+     * 按路由（route字段）删除SEO配置（前端POST /seo/delete调用）
+     * POST /api/admin/seo/delete  body: { route: '/xxx' }
+     */
+    public function deleteSeoConfigByRoute(Request $request)
+    {
+        $route = trim($request->post('route', ''));
+        if (empty($route)) {
+            return $this->error('请传入路由参数');
+        }
+        $affected = Db::name('tc_seo_config')->where('route', $route)->delete();
+        if ($affected === 0) {
+            return $this->error('未找到对应路由的SEO配置');
+        }
+        return $this->success(null, '删除成功');
+    }
+
+    /**
+     * 生成 Sitemap
+     * POST /api/admin/seo/sitemap-generate
+     */
+    public function generateSitemap()
+    {
+        $siteUrl = rtrim(config('app.site_url', 'https://taichu.chat'), '/');
+        $staticRoutes = ['/', '/bazi', '/tarot', '/liuyao', '/hehun', '/daily', '/help'];
+        $urls = [];
+
+        foreach ($staticRoutes as $route) {
+            $urls[] = [
+                'loc'        => $siteUrl . $route,
+                'changefreq' => ($route === '/daily') ? 'daily' : 'weekly',
+                'priority'   => ($route === '/') ? '1.0' : '0.8',
+                'lastmod'    => date('Y-m-d'),
+            ];
+        }
+
+        // 构建 XML
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        foreach ($urls as $u) {
+            $xml .= "  <url>\n";
+            $xml .= "    <loc>{$u['loc']}</loc>\n";
+            $xml .= "    <changefreq>{$u['changefreq']}</changefreq>\n";
+            $xml .= "    <priority>{$u['priority']}</priority>\n";
+            $xml .= "    <lastmod>{$u['lastmod']}</lastmod>\n";
+            $xml .= "  </url>\n";
+        }
+        $xml .= '</urlset>';
+
+        // 写入public目录
+        $sitemapPath = app()->getRootPath() . 'public/sitemap.xml';
+        file_put_contents($sitemapPath, $xml);
+
+        return $this->success([
+            'url_count' => count($urls),
+            'sitemap_url' => $siteUrl . '/sitemap.xml',
+            'generated_at' => date('Y-m-d H:i:s'),
+        ], 'Sitemap 生成成功');
+    }
 }

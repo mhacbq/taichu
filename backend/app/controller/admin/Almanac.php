@@ -556,4 +556,70 @@ class Almanac extends BaseController
             'shichen' => $lunar['shichen'] ?? [],
         ];
     }
+
+    /**
+     * 黄历详情（按日期查询）
+     * GET /api/admin/almanac/detail?date=YYYY-MM-DD
+     */
+    public function almanacDetail(Request $request)
+    {
+        $date = trim($request->get('date', ''));
+        if (empty($date)) {
+            return $this->error('请传入日期参数');
+        }
+        if (!$this->tableExists('tc_almanac')) {
+            return $this->error('黄历数据表不存在');
+        }
+        $record = Db::name('tc_almanac')
+            ->where('date', $date)
+            ->find();
+        if (!$record) {
+            return $this->error('该日期暂无黄历数据');
+        }
+        // 解码JSON字段
+        foreach (['yi', 'ji', 'jishen', 'xiongsha', 'shichen'] as $field) {
+            if (isset($record[$field]) && is_string($record[$field])) {
+                $record[$field] = json_decode($record[$field], true) ?: [];
+            }
+        }
+        return $this->success($record);
+    }
+
+    /**
+     * 获取已有黄历数据的月份列表
+     * GET /api/admin/almanac/months
+     */
+    public function almanacMonths()
+    {
+        if (!$this->tableExists('tc_almanac')) {
+            return $this->success([]);
+        }
+        $months = Db::name('tc_almanac')
+            ->field('LEFT(date, 7) as month, COUNT(*) as day_count')
+            ->group('LEFT(date, 7)')
+            ->order('month', 'asc')
+            ->select()
+            ->toArray();
+        return $this->success($months);
+    }
+
+    /**
+     * 按日期删除黄历记录
+     * POST /api/admin/almanac/delete  body: { date: 'YYYY-MM-DD' }
+     */
+    public function deleteAlmanacByDate(Request $request)
+    {
+        $date = trim($request->post('date', ''));
+        if (empty($date)) {
+            return $this->error('请传入日期参数');
+        }
+        if (!$this->tableExists('tc_almanac')) {
+            return $this->error('黄历数据表不存在');
+        }
+        $affected = Db::name('tc_almanac')->where('date', $date)->delete();
+        if ($affected === 0) {
+            return $this->error('未找到该日期的黄历数据');
+        }
+        return $this->success(null, '删除成功');
+    }
 }

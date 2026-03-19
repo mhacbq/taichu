@@ -218,6 +218,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, View } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+import {
+  getArticleList, getArticleCategories,
+  saveArticle, updateArticle, deleteArticle as deleteArticleApi,
+  saveArticleCategory, deleteArticleCategory
+} from '@/api/admin'
 
 // 防抖函数
 const debounce = (fn, delay) => {
@@ -237,14 +242,7 @@ const formRef = ref(null)
 const contentRef = ref(null)
 
 // 分类
-const categories = ref([
-  { id: 1, name: '八字基础', count: 12 },
-  { id: 2, name: '十神详解', count: 10 },
-  { id: 3, name: '格局分析', count: 8 },
-  { id: 4, name: '大运流年', count: 6 },
-  { id: 5, name: '塔罗入门', count: 5 },
-  { id: 6, name: '风水基础', count: 4 }
-])
+const categories = ref([])
 
 // 筛选
 const searchKeyword = ref('')
@@ -255,25 +253,10 @@ const selectedCategory = ref(null)
 // 分页
 const page = ref(1)
 const pageSize = ref(20)
-const total = ref(100)
+const total = ref(0)
 
 // 文章列表
-const articleList = ref([
-  {
-    id: 1,
-    title: '如何看懂自己的八字命盘',
-    categoryId: 1,
-    categoryName: '八字基础',
-    level: 'beginner',
-    author: '命理大师',
-    publishTime: Date.now() - 86400000,
-    readCount: 1234,
-    status: 1,
-    summary: '八字入门指南，教你快速读懂命盘信息',
-    cover: '',
-    content: '# 如何看懂自己的八字命盘\n\n## 什么是八字\n\n八字，又称四柱...'
-  }
-])
+const articleList = ref([])
 
 // 表单
 const form = ref({
@@ -300,32 +283,15 @@ const debouncedSearchKeyword = ref('')
 // 搜索防抖处理
 watch(searchKeyword, debounce((val) => {
   debouncedSearchKeyword.value = val
-}, 300))
+  loadArticles()
+}, 400))
 
-const filteredList = computed(() => {
-  let list = articleList.value
-  
-  if (debouncedSearchKeyword.value) {
-    list = list.filter(item => 
-      item.title.includes(debouncedSearchKeyword.value) ||
-      item.summary?.includes(debouncedSearchKeyword.value)
-    )
-  }
-  
-  if (filterLevel.value) {
-    list = list.filter(item => item.level === filterLevel.value)
-  }
-  
-  if (filterStatus.value !== '') {
-    list = list.filter(item => item.status === filterStatus.value)
-  }
-  
-  if (selectedCategory.value) {
-    list = list.filter(item => item.categoryId === selectedCategory.value)
-  }
-  
-  return list
+watch([filterLevel, filterStatus, selectedCategory], () => {
+  page.value = 1
+  loadArticles()
 })
+
+const filteredList = computed(() => articleList.value)
 
 const getLevelType = (level) => {
   const map = { beginner: 'success', intermediate: 'warning', advanced: 'danger' }
@@ -441,20 +407,21 @@ const submitForm = async () => {
 
   submitLoading.value = true
   try {
+    let res
     if (isEdit.value) {
-      const index = articleList.value.findIndex(item => item.id === form.value.id)
-      if (index > -1) {
-        articleList.value[index] = { ...form.value }
-      }
-      ElMessage.success('更新成功')
+      res = await updateArticle(form.value.id, form.value)
     } else {
-      form.value.id = Date.now()
-      form.value.publishTime = Date.now()
-      form.value.categoryName = categories.value.find(c => c.id === form.value.categoryId)?.name
-      articleList.value.unshift({ ...form.value })
-      ElMessage.success('发布成功')
+      res = await saveArticle(form.value)
     }
-    dialogVisible.value = false
+    if (res.code === 200) {
+      ElMessage.success(isEdit.value ? '更新成功' : '发布成功')
+      dialogVisible.value = false
+      loadArticles()
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch (e) {
+    ElMessage.error('操作失败，请稍后重试')
   } finally {
     submitLoading.value = false
   }
@@ -468,20 +435,73 @@ const preview = (row) => {
 const deleteArticle = async (row) => {
   try {
     await ElMessageBox.confirm('确定要删除此文章吗？', '提示', { type: 'warning' })
-    const index = articleList.value.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      articleList.value.splice(index, 1)
+    const res = await deleteArticleApi(row.id)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      loadArticles()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
     }
-    ElMessage.success('删除成功')
   } catch {}
 }
 
-const updateStatus = (row) => {
-  ElMessage.success(row.status === 1 ? '已发布' : '已设为草稿')
+const updateStatus = async (row) => {
+  try {
+    const res = await updateArticle(row.id, { status: row.status })
+    if (res.code === 200) {
+      ElMessage.success(row.status === 1 ? '已发布' : '已设为草稿')
+    } else {
+      ElMessage.error(res.msg || '状态更新失败')
+      row.status = row.status === 1 ? 0 : 1  // 回滚
+    }
+  } catch {
+    row.status = row.status === 1 ? 0 : 1  // 回滚
+  }
+}
+
+// 加载文章列表
+const loadArticles = async () => {
+  loading.value = true
+  try {
+    const params = {
+      page: page.value,
+      page_size: pageSize.value,
+      keyword: debouncedSearchKeyword.value || undefined,
+      level: filterLevel.value || undefined,
+      status: filterStatus.value !== '' ? filterStatus.value : undefined,
+      category_id: selectedCategory.value || undefined,
+    }
+    const res = await getArticleList(params)
+    if (res.code === 200) {
+      articleList.value = res.data?.list || []
+      total.value = res.data?.total || 0
+    }
+  } catch (e) {
+    ElMessage.error('加载文章列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载分类列表
+const loadCategories = async () => {
+  try {
+    const res = await getArticleCategories()
+    if (res.code === 200) {
+      categories.value = res.data?.list || res.data || []
+    }
+  } catch {}
+}
+
+// 分页变化
+const handlePageChange = (p) => {
+  page.value = p
+  loadArticles()
 }
 
 onMounted(() => {
-  // 加载数据
+  loadCategories()
+  loadArticles()
 })
 </script>
 

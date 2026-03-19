@@ -42,4 +42,84 @@ export const saveShensha = (data) => request.post('/admin/shensha/save', data)
 export const deleteShenshaApi = (id) => request.post(`/admin/shensha/delete/${id}`)
 export const toggleShenshaStatus = (id, status) => request.post('/admin/shensha/toggle-status', { id, status })
 
+// 知识库管理 - 文章
+export const getArticleList = (params) => request.get('/admin/knowledge/articles', { params })
+export const getArticleDetail = (id) => request.get(`/admin/knowledge/articles/${id}`)
+export const saveArticle = (data) => request.post('/admin/knowledge/articles', data)
+export const updateArticle = (id, data) => request.put(`/admin/knowledge/articles/${id}`, data)
+export const deleteArticle = (id) => request.delete(`/admin/knowledge/articles/${id}`)
+
+// 知识库管理 - 分类
+export const getArticleCategories = (params) => request.get('/admin/knowledge/categories', { params })
+export const saveArticleCategory = (data) => request.post('/admin/knowledge/categories', data)
+export const deleteArticleCategory = (id) => request.delete(`/admin/knowledge/categories/${id}`)
+
+// 仪表板
+export const getDashboardStats = () => request.get('/admin/dashboard/statistics')
+export const getDashboardTrend = (params) => request.get('/admin/dashboard/trend', { params })
+export const getDashboardChart = (type) => request.get(`/admin/dashboard/chart/${type}`)
+export const getDashboardRealtime = () => request.get('/admin/dashboard/realtime')
+export const getPendingFeedback = () => request.get('/admin/dashboard/pending-feedback')
+
+// 用户管理
+export const getUserList = (params) => request.get('/admin/users', { params })
+export const getUserDetail = (id) => request.get(`/admin/users/${id}`)
+export const updateUserProfile = (id, data) => request.put(`/admin/users/${id}`, data)
+export const toggleUserStatus = (id, status) => request.put(`/admin/users/${id}/status`, { status })
+export const batchUpdateUserStatus = (ids, status) => request.put('/admin/users/batch-status', { ids, status })
+export const exportUsers = (params) => request.get('/admin/users/export', { params, responseType: 'blob' })
+export const getUserBehavior = (id) => request.get('/admin/users/behavior', { params: { id } })
+
+// 积分管理
+export const getPointsRecords = (params) => request.get('/admin/points/records', { params })
+export const adjustUserPoints = (data) => request.post('/admin/points/adjust', data)
+export const getPointsRules = () => request.get('/admin/points/rules')
+export const savePointsRules = (data) => request.put('/admin/points/rules', data)
+export const getPointsStats = (params) => request.get('/admin/points/stats', { params })
+
+// 支付/订单管理
+export const getPaymentOrders = (params) => request.get('/admin/payment/orders', { params })
+export const getPaymentOrderDetail = (id) => request.get(`/admin/payment/orders/${id}`)
+export const exportPaymentOrders = (params) => request.get('/admin/payment/orders/export', { params, responseType: 'blob' })
+export const updateOrderStatus = (id, status) => request.put(`/admin/payment/orders/${id}/status`, { status })
+export const refundOrder = (id, data) => request.post(`/admin/payment/orders/${id}/refund`, data)
+export const manualCompleteOrder = (id) => request.post(`/admin/payment/orders/${id}/complete`)
+export const cancelOrder = (id) => request.post(`/admin/payment/orders/${id}/cancel`)
+export const getPaymentStats = () => request.get('/admin/payment/stats')
+export const getPaymentTrend = (params) => request.get('/admin/payment/trend', { params })
+
+// 反馈管理
+export const getFeedbackList = (params) => request.get('/admin/feedback', { params })
+export const getFeedbackDetail = (id) => request.get(`/admin/feedback/${id}`)
+export const replyFeedback = (id, content) => request.post(`/admin/feedback/${id}/reply`, { content })
+export const updateFeedbackStatus = (id, status) => request.put(`/admin/feedback/${id}/status`, { status })
+export const deleteFeedback = (id) => request.delete(`/admin/feedback/${id}`)
+export const getFeedbackCategories = () => request.get('/admin/feedback/categories')
+
+// 系统设置
+export const getSystemSettings = () => request.get('/admin/system/settings')
+export const saveSystemSettings = (data) => request.put('/admin/system/settings', data)
+
+// 操作日志
+export const getOperationLogs = (params) => request.get('/admin/logs/operation', { params })
+export const getLoginLogs = (params) => request.get('/admin/logs/login', { params })
+export const getApiLogs = (params) => request.get('/admin/logs/api', { params })
+export const clearLogs = (type) => request.delete(`/admin/logs/${type}/clear`)
+export const exportLogs = (type, params) => request.get(`/admin/logs/${type}/export`, { params, responseType: 'blob' })
+
+// 反作弊
+export const getRiskEvents = (params) => request.get('/admin/anticheat/events', { params })
+export const getRiskEventDetail = (id) => request.get(`/admin/anticheat/events/${id}`)
+export const handleRiskEvent = (id, data) => request.put(`/admin/anticheat/events/${id}/handle`, data)
+export const getRiskRules = () => request.get('/admin/anticheat/rules')
+
+// 通知配置
+export const getNotificationConfig = () => request.get('/admin/system/notification/config')
+export const saveNotificationConfig = (data) => request.put('/admin/system/notification/config', data)
+export const sendNotificationTest = (data) => request.post('/admin/system/notification/test', data)
+
+// 管理员管理
+export const getAdminUsers = () => request.get('/admin/system/admins')
+export const saveAdminUser = (data) => request.post('/admin/system/admins', data)
+export const deleteAdminUser = (id) => request.delete(`/admin/system/admins/${id}`)
 

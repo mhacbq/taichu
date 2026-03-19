@@ -23,6 +23,21 @@ Route::group('api/admin', function () {
         Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
         Route::get('dashboard/pending-feedback', 'admin.Feedback/pendingSummary');
         
+        // 系统配置管理
+        Route::get('config/features', 'admin.Config/features');
+        Route::post('config/update-feature', 'admin.Config/updateFeature');
+        Route::post('config/update-features', 'admin.Config/updateFeatures');
+        Route::get('config/vip', 'admin.Config/vip');
+        Route::post('config/update-vip', 'admin.Config/updateVip');
+        Route::get('config/points', 'admin.Config/points');
+        Route::post('config/update-points', 'admin.Config/updatePoints');
+        Route::get('config/marketing', 'admin.Config/marketing');
+        Route::post('config/update-marketing', 'admin.Config/updateMarketing');
+        Route::post('config/refresh-cache', 'admin.Config/refreshCache');
+        Route::get('config', 'admin.Config/index');
+        Route::post('config/update', 'admin.Config/update');
+        Route::post('config/update-batch', 'admin.Config/updateBatch');
+
         // 用户管理
         Route::get('users/export', 'Admin/exportUsers');
         Route::get('users/behavior', 'Admin/userBehavior');
@@ -161,6 +176,16 @@ Route::group('api/admin', function () {
         Route::get('system/seo/robots', 'admin.Seo/seoRobots');
         Route::put('system/seo/robots', 'admin.Seo/saveSeoRobots');
         Route::post('system/seo/submit', 'admin.Seo/seoSubmit');
+        // Shensha别名路由（兼容前端admin.js调用）
+        Route::get('shensha/list', 'admin.Shensha/index');
+        Route::post('shensha/save', 'admin.Shensha/save');
+        Route::post('shensha/delete/:id', 'admin.Shensha/delete');
+        Route::post('shensha/toggle-status', 'admin.Shensha/toggleStatus');
+        // SEO别名路由（兼容前端admin.js调用）
+        Route::post('seo/save', 'admin.Seo/saveSeoConfig');
+        Route::post('seo/delete', 'admin.Seo/deleteSeoConfigByRoute');
+        Route::post('seo/robots', 'admin.Seo/saveSeoRobots');
+        Route::post('seo/sitemap-generate', 'admin.Seo/generateSitemap');
         Route::get('system/admins', 'Admin/getAdminUsers');
         Route::post('system/admins', 'Admin/saveAdminUser');
         Route::delete('system/admins/:id', 'Admin/deleteAdminUser');
@@ -205,7 +230,10 @@ Route::group('api/admin', function () {
         
         // 黄历管理
         Route::get('almanac/list', 'admin.Almanac/almanacList');
+        Route::get('almanac/detail', 'admin.Almanac/almanacDetail');
+        Route::get('almanac/months', 'admin.Almanac/almanacMonths');
         Route::post('almanac/save', 'admin.Almanac/saveAlmanac');
+        Route::post('almanac/delete', 'admin.Almanac/deleteAlmanacByDate');
         Route::post('almanac/generate-month', 'admin.Almanac/generateAlmanacMonth');
     })->middleware(\app\middleware\AdminAuth::class);
 })->middleware([

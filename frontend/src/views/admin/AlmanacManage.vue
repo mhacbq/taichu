@@ -362,10 +362,39 @@ const generateCalendar = (year, month) => {
   calendarDates.value = dates
 }
 
-const loadMonthData = () => {
+const loadMonthData = async () => {
   if (!selectedMonth.value) return
   const [year, month] = selectedMonth.value.split('-')
   generateCalendar(parseInt(year), parseInt(month))
+  // 从后台加载该月真实黄历数据
+  try {
+    const startDate = `${year}-${month}-01`
+    const endDate = `${year}-${month}-31`
+    const res = await getAlmanacList({ start_date: startDate, end_date: endDate, page_size: 35 })
+    if (res.code === 200) {
+      const almanacMap = {}
+      ;(res.data?.list || []).forEach(item => {
+        almanacMap[item.date] = item
+      })
+      // 将黄历数据合并到日历格子
+      calendarDates.value = calendarDates.value.map(d => {
+        if (almanacMap[d.date]) {
+          const a = almanacMap[d.date]
+          return {
+            ...d,
+            hasData: true,
+            yi: Array.isArray(a.yi) ? a.yi : (typeof a.yi === 'string' ? JSON.parse(a.yi || '[]') : []),
+            ji: Array.isArray(a.ji) ? a.ji : (typeof a.ji === 'string' ? JSON.parse(a.ji || '[]') : []),
+            ganzhi: a.ganzhi || d.ganzhi,
+            lunar: a.lunar_date || d.lunar,
+          }
+        }
+        return { ...d, hasData: false }
+      })
+    }
+  } catch (e) {
+    console.error('加载黄历数据失败:', e)
+  }
 }
 
 const loadToday = () => {
