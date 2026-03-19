@@ -5,9 +5,11 @@
 .env.*
 backend/.env
 frontend/.env
+frontend/.env.*
 admin/.env
 !.env.example
 !.env.sample
+!frontend/.env.example
 
 # =========================
 # Dependencies & package manager caches
