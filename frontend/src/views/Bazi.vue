@@ -5576,6 +5576,17 @@ const formatAiContent = (content) => {
 
   .estimate-birth-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .time-entry-panel__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .time-entry-panel__badge {
+    align-self: flex-start;
   }
 
 

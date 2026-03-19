@@ -818,11 +818,8 @@ onUnmounted(() => {
   letter-spacing: var(--tracking-tight);
   margin-bottom: 18px;
   max-width: 11ch;
-  color: #916018;
-  background: linear-gradient(135deg, #7f5415 0%, #bf8428 45%, #f0c566 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #5e4318;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
 }
 
 .hero-subtitle {
