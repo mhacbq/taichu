@@ -131,12 +131,12 @@
       </div>
     </div>
 
-    <!-- 神煞区域 -->
+    <!-- 特殊星曜区域 -->
     <div class="shensha-section" v-if="shensha && shensha.length > 0">
       <h4 class="section-title">
         <el-icon><StarFilled /></el-icon>
-        神煞
-        <el-tooltip content="神煞是传统命理中的特殊星曜，影响命局吉凶" placement="top">
+        特殊星曜
+        <el-tooltip content="特殊星曜是传统文化中的特殊符号，用于文化分析参考" placement="top">
           <el-icon class="help-icon"><QuestionFilled /></el-icon>
         </el-tooltip>
       </h4>

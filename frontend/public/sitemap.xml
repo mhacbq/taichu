@@ -17,40 +17,40 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/"/>
     <image:image>
       <image:loc>https://taichu.chat/images/og-home.jpg</image:loc>
-      <image:title>太初命理 - AI智能命理分析平台</image:title>
-      <image:caption>专业的八字排盘、塔罗占卜、每日运势服务</image:caption>
+      <image:title>太初文化 - AI智能文化心理分析平台</image:title>
+      <image:caption>专业的文化测算、心理分析、决策参考服务</image:caption>
     </image:image>
   </url>
 
-  <!-- 八字排盘 -->
+  <!-- 文化测算 -->
   <url>
-    <loc>https://taichu.chat/bazi</loc>
+    <loc>https://taichu.chat/cultural_calculation</loc>
     <lastmod>2026-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/bazi"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/cultural_calculation"/>
     <image:image>
       <image:loc>https://taichu.chat/images/og-bazi.jpg</image:loc>
-      <image:title>免费八字排盘 - 太初命理</image:title>
-      <image:caption>在线生辰八字测算，专业命理分析</image:caption>
+      <image:title>免费文化测算 - 太初文化</image:title>
+      <image:caption>在线文化心理分析，专业决策参考</image:caption>
     </image:image>
   </url>
 
-  <!-- 塔罗占卜 -->
+  <!-- 文化分析 -->
   <url>
-    <loc>https://taichu.chat/tarot</loc>
+    <loc>https://taichu.chat/cultural_analysis</loc>
     <lastmod>2026-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/tarot"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/cultural_analysis"/>
     <image:image>
       <image:loc>https://taichu.chat/images/og-tarot.jpg</image:loc>
-      <image:title>免费塔罗占卜 - 太初命理</image:title>
-      <image:caption>在线塔罗测试，AI智能解牌</image:caption>
+      <image:title>免费文化分析 - 太初文化</image:title>
+      <image:caption>在线文化心理分析，专业决策参考</image:caption>
     </image:image>
   </url>
 
-  <!-- 每日运势 -->
+  <!-- 日常参考 -->
   <url>
     <loc>https://taichu.chat/daily</loc>
     <lastmod>2026-03-15</lastmod>
@@ -59,8 +59,8 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/daily"/>
     <image:image>
       <image:loc>https://taichu.chat/images/og-daily.jpg</image:loc>
-      <image:title>今日运势查询 - 太初命理</image:title>
-      <image:caption>每日星座运势，黄历宜忌</image:caption>
+      <image:title>今日参考查询 - 太初文化</image:title>
+      <image:caption>每日生活参考，文化习俗</image:caption>
     </image:image>
   </url>
 

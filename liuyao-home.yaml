@@ -1,0 +1,305 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - link "太初命理" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e13]: 太初命理
+      - generic [ref=e14]:
+        - link "首页" [ref=e15] [cursor=pointer]:
+          - /url: /
+        - link "八字排盘" [ref=e16] [cursor=pointer]:
+          - /url: /bazi
+        - link "塔罗占卜" [ref=e17] [cursor=pointer]:
+          - /url: /tarot
+        - link "六爻占卜" [ref=e18] [cursor=pointer]:
+          - /url: /liuyao
+        - link "八字合婚" [ref=e19] [cursor=pointer]:
+          - /url: /hehun
+        - link "每日运势" [ref=e20] [cursor=pointer]:
+          - /url: /daily
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - img [ref=e24]
+          - generic [ref=e26]: "160"
+        - button "u u" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: u
+          - generic [ref=e30]: u
+          - img [ref=e32]
+  - main [ref=e34]:
+    - generic [ref=e58]:
+      - generic [ref=e60]:
+        - generic [ref=e61]:
+          - generic [ref=e62]: 传统文化探索 · 年轻人的人生参考
+          - heading "在迷茫中找到方向" [level=1] [ref=e63]
+          - paragraph [ref=e64]:
+            - text: 不是替你决定命运，而是帮你看清自己。
+            - text: 从八字、塔罗到每日运势，把困惑拆成更容易行动的下一步。
+          - generic [ref=e65]:
+            - link "开始排盘 权益确认中" [ref=e66] [cursor=pointer]:
+              - /url: /bazi
+              - img [ref=e68]
+              - text: 开始排盘
+              - generic [ref=e70]: 权益确认中
+            - link "塔罗占卜" [ref=e71] [cursor=pointer]:
+              - /url: /tarot
+              - img [ref=e73]
+              - text: 塔罗占卜
+          - paragraph [ref=e75]:
+            - img [ref=e77]
+            - text: 统计数据暂时不可用，先体验核心功能也不耽误
+          - generic [ref=e79]:
+            - article [ref=e80]:
+              - img [ref=e83]
+              - generic [ref=e85]:
+                - strong [ref=e86]: 持续为用户提供参考
+                - generic [ref=e87]: 把人生阶段、当下困惑和下一步行动拆开来看，先理解自己再做决定。
+            - article [ref=e88]:
+              - img [ref=e91]
+              - generic [ref=e93]:
+                - strong [ref=e94]: 5 类核心服务一站体验
+                - generic [ref=e95]: 八字、塔罗、六爻、合婚与每日运势统一从首页进入，路径更清楚。
+            - article [ref=e96]:
+              - img [ref=e99]
+              - generic [ref=e102]:
+                - strong [ref=e103]: 体验说明已单独呈现
+                - generic [ref=e104]: 登录门槛、示例反馈和积分权益分开展示，避免把提示误读成结果承诺。
+          - generic [ref=e105]:
+            - article [ref=e106]:
+              - img [ref=e109]
+              - generic [ref=e111]:
+                - strong [ref=e112]: 完整入口已为你解锁
+                - generic [ref=e113]: 八字、塔罗、六爻与合婚现在都能直接进入，八字权益正在同步。
+            - article [ref=e114]:
+              - img [ref=e117]
+              - generic [ref=e119]:
+                - strong [ref=e120]: 每日运势可随时浏览
+                - generic [ref=e121]: 今日宜忌、节奏提醒和轻量建议无需登录即可查看。
+            - article [ref=e122]:
+              - img [ref=e125]
+              - generic [ref=e129]:
+                - strong [ref=e130]: 账户积分状态
+                - generic [ref=e131]: 积分正在同步中，也可以先去个人中心确认今日签到状态。
+          - generic [ref=e132]:
+            - generic [ref=e133]:
+              - img [ref=e135]
+              - text: 先用一句话说清每项服务能帮你解决什么问题
+            - generic [ref=e137]:
+              - img [ref=e139]
+              - text: 积分、入口与下一步操作收在同一张状态卡里
+            - generic [ref=e144]:
+              - img [ref=e146]
+              - text: 先告诉你能做什么，再决定要不要深入探索
+        - complementary [ref=e148]:
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - img [ref=e153]
+              - generic [ref=e155]:
+                - paragraph [ref=e156]: 今日状态
+                - heading "下午好，愿你的努力都有收获" [level=3] [ref=e157]
+              - generic [ref=e158]: 已登录
+            - paragraph [ref=e159]: "\"迷茫不是软弱，而是你在认真思考人生\""
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - img [ref=e163]
+                - generic [ref=e167]:
+                  - generic [ref=e168]: 我的积分
+                  - strong [ref=e169]: "--"
+              - paragraph [ref=e170]: 积分正在同步中，也可以先去个人中心确认今日签到状态。
+            - generic [ref=e171]:
+              - link "签到领积分" [ref=e172] [cursor=pointer]:
+                - /url: /profile
+              - link "去排盘" [ref=e173] [cursor=pointer]:
+                - /url: /bazi
+      - generic [ref=e175]:
+        - heading "我们的服务" [level=2] [ref=e176]
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - img [ref=e181]
+            - heading "八字排盘" [level=3] [ref=e183]
+            - paragraph [ref=e184]: 基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考
+            - generic [ref=e185]:
+              - generic [ref=e186]: 已登录可用
+              - generic [ref=e187]: 权益确认中
+            - link "立即体验" [ref=e188] [cursor=pointer]:
+              - /url: /bazi
+              - text: 立即体验
+          - generic [ref=e190]:
+            - img [ref=e193]
+            - heading "塔罗占卜" [level=3] [ref=e195]
+            - paragraph [ref=e196]: 通过牌阵与问题模板梳理关系、工作与决策困惑，获得更聚焦的思路
+            - generic [ref=e198]: 需登录
+            - link "立即体验" [ref=e199] [cursor=pointer]:
+              - /url: /tarot
+              - text: 立即体验
+          - generic [ref=e201]:
+            - img [ref=e204]
+            - heading "六爻占卜" [level=3] [ref=e206]
+            - paragraph [ref=e207]: 传统周易六爻问事，为您解答工作、感情、决策等各类疑惑
+            - generic [ref=e209]: 需登录
+            - link "立即体验" [ref=e210] [cursor=pointer]:
+              - /url: /liuyao
+              - text: 立即体验
+          - generic [ref=e212]:
+            - img [ref=e215]
+            - heading "八字合婚" [level=3] [ref=e217]
+            - paragraph [ref=e218]: 通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道
+            - generic [ref=e220]: 需登录
+            - link "立即体验" [ref=e221] [cursor=pointer]:
+              - /url: /hehun
+              - text: 立即体验
+          - generic [ref=e223]:
+            - img [ref=e226]
+            - heading "每日运势" [level=3] [ref=e228]
+            - paragraph [ref=e229]: 查看今日宜忌、幸运提示与节奏建议，作为轻量的日常状态参考
+            - link "立即体验" [ref=e230] [cursor=pointer]:
+              - /url: /daily
+              - text: 立即体验
+          - generic [ref=e232]:
+            - img [ref=e235]
+            - heading "个人中心" [level=3] [ref=e238]
+            - paragraph [ref=e239]: 在这里查看历史记录、积分权益与签到入口，也能继续管理你的命理体验进度
+            - link "进入个人中心" [ref=e240] [cursor=pointer]:
+              - /url: /profile
+              - text: 进入个人中心
+      - generic [ref=e243]:
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - paragraph [ref=e246]: 体验故事
+            - heading "体验案例" [level=2] [ref=e247]
+            - paragraph [ref=e248]: 以下内容为整理后的体验案例，用来展示不同服务更适合帮助梳理哪类困惑，并不代表对个人结果的直接承诺。
+          - generic [ref=e249]:
+            - generic [ref=e250]: 说明
+            - paragraph [ref=e251]: 示例内容按服务场景整理展示，不使用实时评分、具体昵称或头像式背书，重点只放在“这类问题更适合怎么用”。
+        - generic [ref=e252]:
+          - article [ref=e253]:
+            - generic [ref=e254]:
+              - generic [ref=e255]: 体验故事
+              - generic [ref=e256]: 八字排盘
+            - generic [ref=e257]:
+              - generic [ref=e258]:
+                - generic [ref=e259]: 适用场景
+                - heading "毕业转行期 · 职业方向迷茫" [level=4] [ref=e260]
+              - generic [ref=e261]: 示例反馈
+            - paragraph [ref=e262]: 毕业后一直很迷茫，不知道自己适合什么工作。排盘后看到自己的优势节奏和适合的发展方向，至少先知道下一步该往哪走。
+            - generic [ref=e263]:
+              - generic [ref=e264]: 更适合用来梳理职业方向
+              - generic [ref=e265]: 适合先从 八字排盘 入手
+          - article [ref=e266]:
+            - generic [ref=e267]:
+              - generic [ref=e268]: 体验故事
+              - generic [ref=e269]: 塔罗占卜
+            - generic [ref=e270]:
+              - generic [ref=e271]:
+                - generic [ref=e272]: 适用场景
+                - heading "关系调整期 · 想看清真实需求" [level=4] [ref=e273]
+              - generic [ref=e274]: 示例反馈
+            - paragraph [ref=e275]: 感情遇到瓶颈期时，塔罗没有替我做决定，而是帮我把真正纠结的点拆开来看，最后更清楚自己到底在意什么。
+            - generic [ref=e276]:
+              - generic [ref=e277]: 更适合梳理关系里的优先级
+              - generic [ref=e278]: 适合先从 塔罗占卜 入手
+          - article [ref=e279]:
+            - generic [ref=e280]:
+              - generic [ref=e281]: 体验故事
+              - generic [ref=e282]: 每日运势
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - generic [ref=e285]: 适用场景
+                - heading "高压上班族 · 需要每日提醒" [level=4] [ref=e286]
+              - generic [ref=e287]: 示例反馈
+            - paragraph [ref=e288]: 工作压力大的时候，我更在意有没有一个轻量提醒告诉我今天该冲还是该缓。每日运势给我的价值，是让我在忙乱里停一下。
+            - generic [ref=e289]:
+              - generic [ref=e290]: 适合做日常节奏提醒
+              - generic [ref=e291]: 适合先从 每日运势 入手
+          - article [ref=e292]:
+            - generic [ref=e293]:
+              - generic [ref=e294]: 体验故事
+              - generic [ref=e295]: 八字排盘
+            - generic [ref=e296]:
+              - generic [ref=e297]:
+                - generic [ref=e298]: 适用场景
+                - heading "自我探索期 · 容易反复内耗" [level=4] [ref=e299]
+              - generic [ref=e300]: 示例反馈
+            - paragraph [ref=e301]: 以前总觉得自己想太多，八字分析反而让我先理解自己的性格底色。被看见之后，很多自我怀疑就没那么重了。
+            - generic [ref=e302]:
+              - generic [ref=e303]: 适合建立更稳定的自我认知
+              - generic [ref=e304]: 适合先从 八字排盘 入手
+          - article [ref=e305]:
+            - generic [ref=e306]:
+              - generic [ref=e307]: 体验故事
+              - generic [ref=e308]: 塔罗占卜
+            - generic [ref=e309]:
+              - generic [ref=e310]:
+                - generic [ref=e311]: 适用场景
+                - heading "跳槽决策期 · 需要理清取舍" [level=4] [ref=e312]
+              - generic [ref=e313]: 示例反馈
+            - paragraph [ref=e314]: 一直纠结要不要换工作，塔罗最大的帮助不是“准不准”，而是把风险、期待和顾虑都摆到了明面上，决策时没那么乱。
+            - generic [ref=e315]:
+              - generic [ref=e316]: 更适合辅助做阶段性判断
+              - generic [ref=e317]: 适合先从 塔罗占卜 入手
+          - article [ref=e318]:
+            - generic [ref=e319]:
+              - generic [ref=e320]: 体验故事
+              - generic [ref=e321]: 八字排盘
+            - generic [ref=e322]:
+              - generic [ref=e323]:
+                - generic [ref=e324]: 适用场景
+                - heading "长期规划期 · 想看未来节奏" [level=4] [ref=e325]
+              - generic [ref=e326]: 示例反馈
+            - paragraph [ref=e327]: 第一次接触时本来只是抱着试试看的心态，但长周期分析给我的感觉是：至少能把未来几年要留意的节点先放进心里。
+            - generic [ref=e328]:
+              - generic [ref=e329]: 适合做长期规划参考
+              - generic [ref=e330]: 适合先从 八字排盘 入手
+      - generic [ref=e333]:
+        - generic [ref=e334]:
+          - heading "关于太初文化" [level=2] [ref=e335]
+          - paragraph [ref=e336]: 太初文化是一款结合传统文化与人工智能技术的趣味探索平台。我们致力于：
+          - list [ref=e337]:
+            - listitem [ref=e338]:
+              - img [ref=e340]
+              - text: 传承中华传统历法文化
+            - listitem [ref=e342]:
+              - img [ref=e344]
+              - text: 运用AI技术提供趣味分析
+            - listitem [ref=e346]:
+              - img [ref=e348]
+              - text: 为用户提供个性化的性格参考
+            - listitem [ref=e350]:
+              - img [ref=e352]
+              - text: 让传统文化探索更加有趣、便捷
+        - generic [ref=e354]:
+          - generic [ref=e355]:
+            - img [ref=e358]
+            - generic [ref=e360]: "--"
+            - text: 服务用户
+            - generic [ref=e361]: 数据更新中
+          - generic [ref=e362]:
+            - img [ref=e365]
+            - generic [ref=e367]: "--"
+            - text: 分析次数
+            - generic [ref=e368]: 数据更新中
+          - generic [ref=e369]:
+            - img [ref=e372]
+            - generic [ref=e375]: "--"
+            - text: 好评率
+            - generic [ref=e376]: 数据更新中
+        - generic [ref=e377]:
+          - paragraph [ref=e378]: 统计数据暂时不可用，先体验核心功能也不耽误。
+          - button "刷新统计" [ref=e379] [cursor=pointer]
+  - contentinfo [ref=e36]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: 太初命理
+        - paragraph [ref=e41]: 传承千年智慧，指引人生方向
+      - paragraph [ref=e43]: 相信自己，你比想象中更有力量
+      - generic [ref=e44]:
+        - link "帮助中心" [ref=e45] [cursor=pointer]:
+          - /url: /help
+        - link "个人中心" [ref=e46] [cursor=pointer]:
+          - /url: /profile
+        - link "意见反馈" [ref=e47] [cursor=pointer]:
+          - /url: "#"
+        - link "关于我们" [ref=e48] [cursor=pointer]:
+          - /url: "#"
+      - paragraph [ref=e50]: © 2025 太初命理 - 愿你在迷茫中找到方向
+  - img [ref=e54] [cursor=pointer]

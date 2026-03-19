@@ -1,12 +1,12 @@
-# robots.txt for 太初命理
+# robots.txt for 太初文化
 # https://www.robotstxt.org/robotstxt.html
 
 User-agent: *
 
 # 允许访问的页面
 Allow: /
-Allow: /bazi
-Allow: /tarot
+Allow: /cultural_calculation
+Allow: /cultural_analysis
 Allow: /daily
 Allow: /help
 Allow: /recharge

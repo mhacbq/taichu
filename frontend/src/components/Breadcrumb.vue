@@ -41,9 +41,9 @@ const route = useRoute()
 // 面包屑配置
 const breadcrumbMap = {
   'Home': { name: '首页', path: '/' },
-  'Bazi': { name: '八字排盘', path: '/bazi' },
-  'Tarot': { name: '塔罗占卜', path: '/tarot' },
-  'Daily': { name: '每日运势', path: '/daily' },
+  'Bazi': { name: '文化测算', path: '/cultural_calculation' },
+  'Tarot': { name: '文化分析', path: '/cultural_analysis' },
+  'Daily': { name: '日常参考', path: '/daily' },
   'Profile': { name: '个人中心', path: '/profile' },
   'Recharge': { name: '积分充值', path: '/recharge' },
   'Help': { name: '帮助中心', path: '/help' },

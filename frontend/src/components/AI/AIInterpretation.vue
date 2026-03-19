@@ -7,8 +7,8 @@
         <el-icon :size="28" color="#667eea"><MagicStick /></el-icon>
       </div>
       <div class="ai-info">
-        <h3 class="ai-name">AI命理大师</h3>
-        <p class="ai-desc">基于千年命理智慧 + 现代AI技术</p>
+        <h3 class="ai-name">AI文化分析</h3>
+        <p class="ai-desc">基于千年文化智慧 + 现代AI技术</p>
       </div>
       <div class="ai-badge">
         <el-icon><StarFilled /></el-icon>
@@ -61,7 +61,7 @@
             <el-icon :size="24" color="#10b981"><CircleCheck /></el-icon>
           </div>
           <div class="advice-content">
-            <h4>大师建议</h4>
+            <h4>分析建议</h4>
             <p>{{ advice }}</p>
           </div>
         </div>
@@ -127,13 +127,13 @@ const analytics = useAnalytics()
 
 const loading = ref(true)
 const progress = ref(0)
-const thinkingText = ref('正在分析命理数据...')
+const thinkingText = ref('正在分析文化数据...')
 
 const thinkingTexts = [
-  '正在分析命理数据...',
-  '结合五行生克关系...',
-  '参考千年古籍记载...',
-  '生成专属解读方案...',
+  '正在分析文化数据...',
+  '结合传统文化智慧...',
+  '参考千年文化记载...',
+  '生成专属分析方案...',
   '即将为您呈现...'
 ]
 

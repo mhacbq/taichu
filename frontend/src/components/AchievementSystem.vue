@@ -111,7 +111,7 @@ const achievements = ref([
   {
     id: 1,
     name: '初次见面',
-    description: '完成首次八字排盘',
+    description: '完成首次文化测算',
     icon: '🎯',
     category: 'usage',
     points: 10,
@@ -120,8 +120,8 @@ const achievements = ref([
   },
   {
     id: 2,
-    name: '命理探索者',
-    description: '累计完成10次八字排盘',
+    name: '文化探索者',
+    description: '累计完成10次文化测算',
     icon: '🔮',
     category: 'explore',
     points: 30,

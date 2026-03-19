@@ -148,11 +148,11 @@
       </div>
     </div>
 
-    <!-- 生肖运势 -->
+    <!-- 生肖参考 -->
     <div class="shengxiao-section">
       <h4 class="section-title">
         <el-icon><User /></el-icon>
-        生肖运势
+        生肖参考
       </h4>
       <div class="shengxiao-grid">
         <div class="shengxiao-card teji" v-if="shengxiao.teji">

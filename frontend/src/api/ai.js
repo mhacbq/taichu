@@ -1,32 +1,32 @@
 import request from './request'
 
 /**
- * AI解盘API
+ * AI分析API
  */
 
 /**
- * AI八字解盘（非流式）
- * @param {Object} bazi - 八字数据
+ * AI文化测算分析（非流式）
+ * @param {Object} cultural_data - 文化数据
  * @param {string} prompt - 自定义提示（可选）
  * @param {AbortSignal} signal - 取消信号（可选）
  */
-export function analyzeBaziAi(bazi, prompt = '', signal = null) {
+export function analyzeCulturalAi(cultural_data, prompt = '', signal = null) {
   return request({
-    url: '/api/ai/analyze/bazi',
+    url: '/api/ai/analyze/cultural',
     method: 'post',
-    data: { bazi, prompt },
+    data: { cultural_data, prompt },
     signal
   })
 }
 
 /**
- * AI八字解盘（流式SSE）
- * @param {Object} bazi - 八字数据
+ * AI文化测算分析（流式SSE）
+ * @param {Object} cultural_data - 文化数据
  * @param {string} prompt - 自定义提示（可选）
  * @param {AbortSignal} signal - 取消信号（可选）
  */
-export function analyzeBaziAiStream(bazi, prompt = '', signal = null) {
-  const url = `${import.meta.env.VITE_API_BASE_URL || ''}/api/ai/analyze/bazi/stream`
+export function analyzeCulturalAiStream(cultural_data, prompt = '', signal = null) {
+  const url = `${import.meta.env.VITE_API_BASE_URL || ''}/api/ai/analyze/cultural/stream`
   
   return fetch(url, {
     method: 'POST',
@@ -34,7 +34,7 @@ export function analyzeBaziAiStream(bazi, prompt = '', signal = null) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
     },
-    body: JSON.stringify({ bazi, prompt }),
+    body: JSON.stringify({ cultural_data, prompt }),
     signal
   })
 }

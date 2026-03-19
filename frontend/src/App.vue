@@ -4,17 +4,17 @@
       <div class="container nav-container">
         <router-link to="/" class="logo">
           <el-icon class="logo-icon" :size="26"><YinYang /></el-icon>
-          <span>太初命理</span>
+          <span>太初文化</span>
         </router-link>
         
         <!-- 桌面端导航 -->
         <div class="nav-links desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/bazi" class="nav-link">八字排盘</router-link>
-          <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
-          <router-link to="/liuyao" class="nav-link">六爻占卜</router-link>
-          <router-link to="/hehun" class="nav-link">八字合婚</router-link>
-          <router-link to="/daily" class="nav-link">每日运势</router-link>
+          <router-link to="/cultural_calculation" class="nav-link">文化测算</router-link>
+          <router-link to="/cultural_analysis" class="nav-link">文化分析</router-link>
+          <router-link to="/decision_analysis" class="nav-link">决策分析</router-link>
+          <router-link to="/relationship_assessment" class="nav-link">关系评估</router-link>
+          <router-link to="/daily" class="nav-link">日常参考</router-link>
         </div>
 
         <!-- 用户操作区 -->
@@ -73,25 +73,25 @@
             <el-icon class="nav-icon" :size="18"><House /></el-icon>
             <span>首页</span>
           </router-link>
-          <router-link to="/bazi" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/cultural_calculation" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Calendar /></el-icon>
-            <span>八字排盘</span>
+            <span>文化测算</span>
           </router-link>
-          <router-link to="/tarot" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/cultural_analysis" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><MagicStick /></el-icon>
-            <span>塔罗占卜</span>
+            <span>文化分析</span>
           </router-link>
-          <router-link to="/liuyao" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/decision_analysis" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><YinYang /></el-icon>
-            <span>六爻占卜</span>
+            <span>决策分析</span>
           </router-link>
-          <router-link to="/hehun" class="mobile-nav-link" @click="closeMobileMenu">
+          <router-link to="/relationship_assessment" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Link /></el-icon>
-            <span>八字合婚</span>
+            <span>关系评估</span>
           </router-link>
           <router-link to="/daily" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Star /></el-icon>
-            <span>每日运势</span>
+            <span>日常参考</span>
           </router-link>
         </div>
         <div class="mobile-nav-footer">
@@ -129,8 +129,8 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <span class="footer-logo"><YinYangIcon :size="24" style="margin-right: 10px;" /> 太初命理</span>
-            <p class="footer-tagline">传承千年智慧，指引人生方向</p>
+            <span class="footer-logo"><YinYangIcon :size="24" style="margin-right: 10px;" /> 太初文化</span>
+            <p class="footer-tagline">传承千年智慧，提供决策参考</p>
           </div>
           <div class="footer-quote">
             <p>{{ randomQuote }}</p>
@@ -142,7 +142,7 @@
             <a href="#" @click.prevent="showAbout">关于我们</a>
           </div>
           <div class="footer-divider"></div>
-          <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向</p>
+          <p class="footer-copyright">© 2025 太初文化 - 愿你在决策时获得参考</p>
         </div>
       </div>
     </footer>
@@ -164,15 +164,15 @@
         <div class="companion-actions">
           <router-link to="/daily" class="companion-btn" @click="showCompanion = false">
             <el-icon :size="16"><Sunrise /></el-icon>
-            <span>查看运势</span>
+            <span>查看参考</span>
           </router-link>
-          <router-link to="/bazi" class="companion-btn" @click="showCompanion = false">
+          <router-link to="/cultural_calculation" class="companion-btn" @click="showCompanion = false">
             <el-icon :size="16"><Calendar /></el-icon>
-            <span>八字排盘</span>
+            <span>文化测算</span>
           </router-link>
-          <router-link to="/tarot" class="companion-btn" @click="showCompanion = false">
+          <router-link to="/cultural_analysis" class="companion-btn" @click="showCompanion = false">
             <el-icon :size="16"><Magic /></el-icon>
-            <span>塔罗占卜</span>
+            <span>文化分析</span>
           </router-link>
         </div>
       </div>

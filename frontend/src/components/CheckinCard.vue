@@ -79,7 +79,7 @@ const todayPoints = ref(5)
 const monthCheckins = ref([])
 const consecutiveBonus = ref({})
 const statusUnavailable = ref(false)
-const availabilityMessage = ref('签到功能暂时不可用，不影响查看今日运势')
+const availabilityMessage = ref('签到功能暂时不可用，不影响查看日常参考')
 
 const truncateCheckinErrorMessage = (message) => {
   const normalized = typeof message === 'string' ? message.trim() : ''
