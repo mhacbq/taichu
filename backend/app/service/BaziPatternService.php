@@ -197,6 +197,9 @@ class BaziPatternService
         // 生成命理定语
         $mingliDingyu = $this->generateMingliDingyu($bazi, $eightPatterns, $specialPatterns, $shenShaAnalysis);
         
+        // 生成盲派铁口直断定语
+        $tiekoAnalysis = $this->generateTiekoZhijuanDingyu($bazi, $eightPatterns, $specialPatterns, $shenShaAnalysis);
+        
         // 分析格局层次
         $patternLevel = $this->analyzePatternLevel($bazi, $eightPatterns, $specialPatterns);
         
@@ -205,6 +208,10 @@ class BaziPatternService
             'special_patterns' => $specialPatterns,
             'shen_sha' => $shenShaAnalysis,
             'mingli_dingyu' => $mingliDingyu,
+            'tiekoDingyu' => $tiekoAnalysis['tiekoDingyu'] ?? [],
+            'tiekoMatchCount' => $tiekoAnalysis['tiekoMatchCount'] ?? 0,
+            'tiekoMatchLevel' => $tiekoAnalysis['tiekoMatchLevel'] ?? '',
+            'tiekoAccuracy' => $tiekoAnalysis['tiekoAccuracy'] ?? 0,
             'pattern_level' => $patternLevel,
             'pattern_summary' => $this->generatePatternSummary($eightPatterns, $specialPatterns, $patternLevel),
         ];
@@ -1586,6 +1593,394 @@ class BaziPatternService
         }
         
         return $dingyu;
+    }
+    
+    /**
+     * 生成盲派铁口直断定语
+     * 
+     * 盲派八字的核心特点：
+     * 1. 强调铁口直断，一语中的
+     * 2. 重视特殊格局和神煞组合
+     * 3. 注重五行生克制化的实际效果
+     * 4. 强调命局的气势和层次
+     * 
+     * @param array $bazi 八字数据
+     * @param array $eightPatterns 八格分析
+     * @param array $specialPatterns 特殊格局
+     * @param array $shenSha 神煞分析
+     * @return array 铁口直断定语数组
+     */
+    protected function generateTiekoZhijuanDingyu(array $bazi, array $eightPatterns, array $specialPatterns, array $shenSha): array
+    {
+        $tiekoDingyu = [];
+        $matchCount = 0; // 匹配条件数量
+        
+        // 获取基础信息
+        $strength = $bazi['strength'] ?? [];
+        $status = $strength['status'] ?? '';
+        $score = $strength['score'] ?? 50;
+        $wuxingStats = $bazi['wuxing_stats'] ?? [];
+        $dayGan = $bazi['day_gan'] ?? '';
+        $dayZhi = $bazi['day_zhi'] ?? '';
+        
+        // ===== 铁口直断条件判断 =====
+        
+        // 1. 日主身旺且七杀旺 - 武将命格
+        $qishaCount = $this->countShishen($bazi, '七杀');
+        if ($status === '身旺' && $qishaCount >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '日主身旺配七杀，武将命格，有军警武职之运。一生有魄力，敢作敢为，适合从事军队、警察、武术等职业。',
+                'score' => 5,
+                'tags' => ['事业', '武职'],
+                'category' => '事业',
+            ];
+            $matchCount += 5;
+        }
+        
+        // 2. 食神制杀成格 - 聪明机智，善于谋略
+        $shishenCount = $this->countShishen($bazi, '食神');
+        $yinCount = $this->countShishen($bazi, '正印') + $this->countShishen($bazi, '偏印');
+        if ($qishaCount >= 1 && $shishenCount >= 1 && $yinCount >= 1) {
+            $tiekoDingyu[] = [
+                'content' => '食神制杀配印星，文武双全，聪明机智，善于谋略。既有武力魄力，又有智慧策略，是难得的将帅之才。',
+                'score' => 6,
+                'tags' => ['综合', '将帅'],
+                'category' => '综合',
+                'tags' => ['综合', '富贵'],
+            ];
+            $matchCount += 6;
+        }
+        
+        // 3. 官印相生 - 贵命，仕途亨通
+        $guanCount = $this->countShishen($bazi, '正官');
+        $zhengYinCount = $this->countShishen($bazi, '正印');
+        if ($guanCount >= 2 && $zhengYinCount >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '官印相生成格，贵命无疑，仕途亨通。有贵人相助，能够步步高升，终成大器。',
+                'score' => 5,
+                'tags' => ['事业', '仕途'],
+                'category' => '事业',
+            ];
+            $matchCount += 5;
+        }
+        
+        // 4. 财官双美 - 富贵双全
+        $caiCount = $this->countShishen($bazi, '正财') + $this->countShishen($bazi, '偏财');
+        if ($guanCount >= 1 && $caiCount >= 1 && $status === '中和偏旺') {
+            $tiekoDingyu[] = [
+                'content' => '财官双美，富贵双全。既有事业成就，又有财富积累，一生富贵荣华。',
+                'score' => 4,
+                'category' => '综合',
+                'tags' => ['综合', '富贵'],
+            ];
+            $matchCount += 4;
+        }
+        
+        // 5. 食神旺配偏财 - 商贾之才
+        if ($shishenCount >= 2 && $this->countShishen($bazi, '偏财') >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '食神旺配偏财，商贾之才，善于经营。有商业头脑，能够白手起家，积累财富。',
+                'score' => 4,
+                'category' => '财运',
+                'tags' => ['财运', '商业'],
+            ];
+            $matchCount += 4;
+        }
+        
+        // 6. 羊刃驾杀 - 威猛刚强，适合武职
+        $yangren = $this->checkYangren($dayZhi);
+        if ($yangren && $qishaCount >= 1) {
+            $tiekoDingyu[] = [
+                'content' => '羊刃驾杀格，威猛刚强，有统帅之才。一生刚正不阿，适合军警武职，威震四方。',
+                'score' => 5,
+                'category' => '事业',
+                'tags' => ['事业', '武职'],
+            ];
+            $matchCount += 5;
+        }
+        
+        // 7. 伤官见官 - 职场不顺，容易招灾
+        $shangguanCount = $this->countShishen($bazi, '伤官');
+        if ($shangguanCount >= 1 && $guanCount >= 1) {
+            $tiekoDingyu[] = [
+                'content' => '伤官见官，为祸百端。职场不顺，容易招惹是非。建议克制傲气，谨言慎行，避免冲动行事。',
+                'score' => 5,
+                'category' => '警示',
+                'tags' => ['警示', '职场'],
+            ];
+            $matchCount += 5;
+        }
+        
+        // 8. 从格判断
+        $congPattern = $this->checkCongPattern($bazi);
+        if ($congPattern['is_cong']) {
+            $congType = $congPattern['type'] ?? '';
+            if ($congType === '真从格') {
+                $tiekoDingyu[] = [
+                    'content' => '真从格成，顺势而为，富贵可期。一生贵人运极佳，能够把握机会，成就非凡。',
+                    'score' => 6,
+                    'category' => '格局',
+                'tags' => ['格局', '特殊'],
+                ];
+            } elseif ($congType === '假从格') {
+                $tiekoDingyu[] = [
+                    'content' => '假从格成，需要变通。虽然格局特殊，但需要灵活应变，方能成就。',
+                    'score' => 4,
+                    'category' => '格局',
+                'tags' => ['格局', '特殊'],
+                ];
+            }
+            $matchCount += $congType === '真从格' ? 6 : 4;
+        }
+        
+        // 9. 五行极端旺衰
+        arsort($wuxingStats);
+        $maxWuxing = array_key_first($wuxingStats);
+        $minWuxing = array_key_last($wuxingStats);
+        $maxWuxingValue = $wuxingStats[$maxWuxing];
+        $minWuxingValue = $wuxingStats[$minWuxing];
+        
+        if ($maxWuxingValue >= 3.5) {
+            $wuxingExtremeDingyu = [
+                '金' => '金旺至极，性格刚毅，有领导才能。但需注意控制脾气，避免过于严厉。',
+                '木' => '木旺至极，有仁爱之心，有上进心。但需保持耐心，避免过于急躁。',
+                '水' => '水旺至极，智慧超群，善于变通。但需保持专注，避免过于善变。',
+                '火' => '火旺至极，热情洋溢，有感染力。但需控制情绪，避免过于冲动。',
+                '土' => '土旺至极，稳重可靠，有担当。但需保持灵活，避免过于固执。',
+            ];
+            $tiekoDingyu[] = [
+                'content' => $wuxingExtremeDingyu[$maxWuxing],
+                'score' => 3,
+                'category' => '性格',
+                'tags' => ['性格', '五行'],
+            ];
+            $matchCount += 3;
+        }
+        
+        if ($minWuxingValue === 0) {
+            $wuxingMissingDingyu = [
+                '金' => '命中缺金，缺乏决断力，行事犹豫。建议培养果断性格，多锻炼领导能力。',
+                '木' => '命中缺木，缺乏进取心，安于现状。建议培养上进心，多学习新知识。',
+                '水' => '命中缺水，缺乏灵活性，应变能力差。建议培养智慧，多思考总结。',
+                '火' => '命中缺火，缺乏热情，感染力不足。建议培养热情，多参与社交活动。',
+                '土' => '命中缺土，缺乏稳重，缺乏责任感。建议培养稳重，做好规划管理。',
+            ];
+            $tiekoDingyu[] = [
+                'content' => $wuxingMissingDingyu[$minWuxing],
+                'score' => 3,
+                'category' => '补足',
+                'tags' => ['补足', '五行'],
+            ];
+            $matchCount += 3;
+        }
+        
+        // 10. 神煞组合判断
+        $goodShenShaNames = array_filter(array_column($shenSha, 'name'), fn($name) => in_array($name, ['天乙贵人', '天德', '月德', '文昌'], true));
+        $badShenShaNames = array_filter(array_column($shenSha, 'name'), fn($name) => in_array($name, ['羊刃', '桃花', '劫煞'], true));
+        
+        if (count($goodShenShaNames) >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '命中吉神汇聚，贵人运极佳，一生顺遂。关键时刻总有贵人相助，逢凶化吉。',
+                'score' => 4,
+                'category' => '贵人',
+                'tags' => ['贵人', '吉神'],
+            ];
+            $matchCount += 4;
+        }
+        
+        if (count($badShenShaNames) >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '命中凶煞齐聚，需要特别谨慎。建议修身养性，积德行善，化解凶煞，避免冒险。',
+                'score' => 4,
+                'category' => '警示',
+            ];
+            $matchCount += 4;
+        }
+        
+        // 11. 桃花旺 - 感情丰富
+        $taohuaCount = count(array_filter($shenSha, fn($item) => $item['name'] === '桃花'));
+        if ($taohuaCount >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '桃花旺盛，感情丰富，异性缘极佳。但需注意感情管理，避免陷入复杂关系。',
+                'score' => 3,
+                'category' => '感情',
+                'tags' => ['感情', '桃花'],
+            ];
+            $matchCount += 3;
+        }
+        
+        // 12. 华盖旺 - 聪明好学
+        $huagaiCount = count(array_filter($shenSha, fn($item) => $item['name'] === '华盖'));
+        if ($huagaiCount >= 1) {
+            $tiekoDingyu[] = [
+                'content' => '命带华盖，聪明好学，有学术天赋。适合从事研究、教育、文化等事业，能够有所成就。',
+                'score' => 3,
+                'category' => '学业',
+                'tags' => ['学业', '学术'],
+            ];
+            $matchCount += 3;
+        }
+        
+        // 13. 驿马旺 - 奔波劳碌，适合外务
+        $yimaCount = count(array_filter($shenSha, fn($item) => $item['name'] === '驿马'));
+        if ($yimaCount >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '驿马旺盛，一生奔波劳碌，适合外务。有旅行运，能够通过外出发展事业。',
+                'score' => 3,
+                'category' => '事业',
+                'tags' => ['事业', '外务'],
+            ];
+            $matchCount += 3;
+        }
+        
+        // 14. 三合局成格 - 气势磅礴
+        foreach ($specialPatterns as $pattern) {
+            $patternName = $pattern['name'] ?? '';
+            if (strpos($patternName, '三合局') !== false) {
+                $tiekoDingyu[] = [
+                    'content' => "{$patternName}成格，气势磅礴，有强大的气场和影响力。能够团结众人，成就大业。",
+                    'score' => 5,
+                    'category' => '格局',
+                'tags' => ['格局', '特殊'],
+                ];
+                $matchCount += 5;
+                break;
+            }
+        }
+        
+        // 15. 三会方成格 - 局势稳固
+        foreach ($specialPatterns as $pattern) {
+            $patternName = $pattern['name'] ?? '';
+            if (strpos($patternName, '三会方') !== false) {
+                $tiekoDingyu[] = [
+                    'content' => "{$patternName}成格，局势稳固，根基深厚。做事踏实，能够稳步发展，终成大器。",
+                    'score' => 5,
+                    'category' => '格局',
+                'tags' => ['格局', '特殊'],
+                ];
+                $matchCount += 5;
+                break;
+            }
+        }
+        
+        // 16. 日主身弱 - 需要扶助
+        if ($status === '身弱' && $score <= 35) {
+            $tiekoDingyu[] = [
+                'content' => '日主身弱至极，需要大力扶助。建议多结交贵人，借助外力。要注意保重身体，避免过度劳累。',
+                'score' => 3,
+                'category' => '健康',
+                'tags' => ['健康', '身弱'],
+            ];
+            $matchCount += 3;
+        }
+        
+        // 17. 建禄格 - 有领导才能
+        $jianlu = $this->checkJianlu($dayZhi);
+        if ($jianlu && $guanCount >= 1) {
+            $tiekoDingyu[] = [
+                'content' => '建禄格配正官，有领导才能，能够胜任管理职位。一生仕途顺利，步步高升。',
+                'score' => 4,
+                'category' => '事业',
+                'tags' => ['事业', '领导'],
+            ];
+            $matchCount += 4;
+        }
+        
+        // 18. 伤官配印 - 文才出众
+        if ($shangguanCount >= 2 && $yinCount >= 2) {
+            $tiekoDingyu[] = [
+                'content' => '伤官配印成格，文才出众，善于表达。适合从事创作、演艺、传媒等工作，能够脱颖而出。',
+                'score' => 5,
+                'category' => '事业',
+                'tags' => ['事业', '文才'],
+            ];
+            $matchCount += 5;
+        }
+        
+        // ===== 计算整体匹配度 =====
+        $matchLevel = '一般';
+        $accuracy = min(100, $matchCount * 5); // 假设最高匹配分为20分，对应100%准确度
+        
+        if ($matchCount >= 10) {
+            $matchLevel = '极高';
+            $accuracy = 95;
+        } elseif ($matchCount >= 7) {
+            $matchLevel = '很高';
+            $accuracy = 85;
+        } elseif ($matchCount >= 5) {
+            $matchLevel = '较高';
+            $accuracy = 75;
+        } elseif ($matchCount >= 3) {
+            $matchLevel = '一般';
+            $accuracy = 60;
+        } else {
+            $matchLevel = '较低';
+            $accuracy = 45;
+        }
+        
+        // ===== 返回结果 =====
+        return [
+            'tiekoDingyu' => $tiekoDingyu,
+            'tiekoMatchCount' => $matchCount,
+            'tiekoMatchLevel' => $matchLevel,
+            'tiekoAccuracy' => $accuracy,
+        ];
+    }
+    
+    /**
+     * 统计十神数量
+     */
+    protected function countShishen(array $bazi, string $shishen): int
+    {
+        $shishenAnalysis = $bazi['shishen_analysis'] ?? [];
+        $shishenCount = $shishenAnalysis['shishen_count'] ?? [];
+        return $shishenCount[$shishen] ?? 0;
+    }
+    
+    /**
+     * 检查是否有羊刃
+     */
+    protected function checkYangren(string $dayZhi): bool
+    {
+        $yangrenZhi = ['午', '子', '卯', '酉'];
+        return in_array($dayZhi, $yangrenZhi, true);
+    }
+    
+    /**
+     * 检查是否有建禄
+     */
+    protected function checkJianlu(string $dayZhi): bool
+    {
+        $jianluZhi = ['寅', '卯', '巳', '午', '申', '酉', '戌', '亥'];
+        return in_array($dayZhi, $jianluZhi, true);
+    }
+    
+    /**
+     * 检查从格
+     */
+    protected function checkCongPattern(array $bazi): array
+    {
+        $strength = $bazi['strength'] ?? [];
+        $status = $strength['status'] ?? '';
+        $score = $strength['score'] ?? 50;
+        $isCong = false;
+        $congType = '';
+        
+        // 日主极弱（score <= 25）可能是真从格
+        if ($score <= 25) {
+            $isCong = true;
+            $congType = '真从格';
+        }
+        // 日主很弱（score <= 35）可能是假从格
+        elseif ($score <= 35 && $status === '身弱') {
+            $isCong = true;
+            $congType = '假从格';
+        }
+        
+        return [
+            'is_cong' => $isCong,
+            'type' => $congType,
+        ];
     }
     
     /**

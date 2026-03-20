@@ -604,6 +604,40 @@
                   <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
                 </div>
                 
+                <!-- 盲派铁口直断 -->
+                <div class="reading-card tieko-card card-hover" v-if="result.tiekoDingyu && result.tiekoDingyu.length > 0" v-show="activeTab === 'personality'">
+                  <div class="rc-header tieko-header">
+                    <el-icon class="rc-icon tieko-icon"><Lightning /></el-icon>
+                    <div class="tieko-title-group">
+                      <h4>盲派铁口直断</h4>
+                      <div class="tieko-match-info">
+                        <span class="match-count">匹配{{ result.tiekoMatchCount || 0 }}项</span>
+                        <span class="match-level" :class="result.tiekoMatchLevel">
+                          {{ result.tiekoMatchLevel === 'high' ? '高准确度' : result.tiekoMatchLevel === 'medium' ? '中等准确度' : '较低准确度' }}
+                        </span>
+                        <span class="match-accuracy">{{ result.tiekoAccuracy || 0 }}%置信度</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tieko-dingyu-list">
+                    <div v-for="(item, index) in result.tiekoDingyu" :key="index" class="tieko-item">
+                      <div class="tieko-item-tags">
+                        <span v-for="(tag, tagIdx) in item.tags || []" :key="tagIdx" class="tieko-tag" :class="tag">
+                          {{ tag }}
+                        </span>
+                      </div>
+                      <p class="tieko-item-content">{{ item.content }}</p>
+                      <div class="tieko-item-score">
+                        <el-rate v-model="item.score" disabled show-score text-color="#D4AF37"></el-rate>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tieko-hint">
+                    <el-icon><InfoFilled /></el-icon>
+                    <span>铁口直断基于盲派命理理论，条件匹配越多，定语准确度越高。仅供参考，命运掌握在自己手中。</span>
+                  </div>
+                </div>
+                
                 <!-- 流年大运内容 -->
                 <div class="reading-card card-hover fortune-card" v-if="result.fullInterpretation.fortune" v-show="activeTab === 'fortune'">
                   <div class="rc-header">
@@ -4078,6 +4112,134 @@ const formatAiContent = (content) => {
   grid-column: span 3;
   background: linear-gradient(135deg, rgba(103, 194, 58, 0.15), rgba(133, 206, 97, 0.1));
   border-color: rgba(103, 194, 58, 0.3);
+}
+
+.reading-card.tieko-card {
+  grid-column: span 3;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(255, 215, 0, 0.1));
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.tieko-header {
+  justify-content: space-between;
+}
+
+.tieko-icon {
+  font-size: 28px;
+  color: #D4AF37;
+}
+
+.tieko-title-group {
+  flex: 1;
+}
+
+.tieko-title-group h4 {
+  margin: 0;
+  font-size: 17px;
+  color: #D4AF37;
+}
+
+.tieko-match-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.match-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.match-level {
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.match-level.high {
+  background: rgba(103, 194, 58, 0.2);
+  color: #67c23a;
+}
+
+.match-level.medium {
+  background: rgba(230, 162, 60, 0.2);
+  color: #e6a23c;
+}
+
+.match-level.low {
+  background: rgba(245, 108, 108, 0.2);
+  color: #f56c6c;
+}
+
+.match-accuracy {
+  font-size: 12px;
+  color: #D4AF37;
+  font-weight: 600;
+}
+
+.tieko-dingyu-list {
+  margin-top: 18px;
+}
+
+.tieko-item {
+  padding: 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid #D4AF37;
+}
+
+.tieko-item:last-child {
+  margin-bottom: 0;
+}
+
+.tieko-item-tags {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.tieko-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+}
+
+.tieko-item-content {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+
+.tieko-item-score {
+  display: flex;
+  align-items: center;
+}
+
+.tieko-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tieko-hint .el-icon {
+  color: #D4AF37;
 }
 
 .rc-header {
