@@ -36,18 +36,18 @@ const goBack = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  min-width: 48px;
-  padding: 0 16px;
+  gap: 6px;
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0 12px;
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(var(--primary-rgb), 0.14);
   border-radius: 999px;
-  color: var(--text-primary);
-  font-size: 14px;
+  color: #7a5520;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(var(--primary-rgb), 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(var(--primary-rgb), 0.05);
   backdrop-filter: blur(18px);
   transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
 }
@@ -71,11 +71,11 @@ const goBack = () => {
 }
 
 .back-icon {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .back-text {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
 }
 

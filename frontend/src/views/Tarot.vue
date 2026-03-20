@@ -1251,6 +1251,12 @@ const downloadAsImage = async () => {
   padding: 60px 0;
 }
 
+.tarot-page :deep(.page-hero) {
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .points-hint {
 
   max-width: 900px;

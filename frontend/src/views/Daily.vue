@@ -1633,9 +1633,10 @@ onUnmounted(() => {
 }
 
 .state-actions :deep(.el-button) {
-  min-height: 44px;
+  min-height: 36px;
   border-radius: 999px;
-  padding-inline: 18px;
+  padding-inline: 16px;
+  font-size: 13px;
 }
 
 
@@ -1721,8 +1722,15 @@ onUnmounted(() => {
     linear-gradient(180deg, #fffdf8 0%, #fff9f2 48%, #fff7ef 100%);
 }
 
+.daily-page :deep(.page-hero) {
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .fortune-content {
   max-width: 920px;
+  margin: 0 auto;
   display: grid;
   gap: 24px;
 }
