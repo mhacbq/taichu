@@ -201,50 +201,18 @@ class Daily extends BaseController
         $shengMei = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金']; // 生我者
         $isStrong = ($monthWx === $dayMasterWuxing || $monthWx === $shengMei[$dayMasterWuxing]);
         
-        // 五行关系
-        $wuxingShengKe = [
-            '金' => ['生' => '水', '克' => '木', '被生' => '土', '被克' => '火'],
-            '木' => ['生' => '火', '克' => '土', '被生' => '水', '被克' => '金'],
-            '水' => ['生' => '木', '克' => '火', '被生' => '金', '被克' => '土'],
-            '火' => ['生' => '土', '克' => '金', '被生' => '木', '被克' => '水'],
-            '土' => ['生' => '金', '克' => '水', '被生' => '火', '被克' => '木']
-        ];
+        // 使用李虚中命书算法分析流日与日柱关系
+        $liXuZhongService = new \app\service\LiXuZhongService();
+        $dayPillar = $baziRecord['day_pillar'] ?? ($dayMaster . ($baziRecord['day_zhi'] ?? '子'));
+        $lxzResult = $liXuZhongService->analyzeRelationship($todayGanZhi, $dayPillar);
         
-        // 计算今日与日主的关系
-        $relation = '';
-        $luckLevel = '平';
-        $advice = '';
+        $relation = $lxzResult['category'];
+        $luckLevel = $lxzResult['level'];
+        $advice = $lxzResult['description'];
         
-        if ($todayGanWuxing === $dayMasterWuxing) {
-            $relation = '比劫';
-            $luckLevel = $isStrong ? '平' : '吉';
-            $advice = $isStrong ? '今日比劫林立，竞争压力较大，需防范同辈竞争，不宜过度自信。' : '今日比劫帮身，贵人缘佳，适合与朋友合作、共谋大计。';
-        } elseif ($wuxingShengKe[$dayMasterWuxing]['被生'] === $todayGanWuxing) {
-            $relation = '印绶';
-            $luckLevel = $isStrong ? '平' : '吉';
-            $advice = $isStrong ? '今日印星过旺，容易思虑过多、固执己见，建议放空心态。' : '今日印绶护身，利于学习进修、考证求职，易得长辈提携。';
-        } elseif ($wuxingShengKe[$dayMasterWuxing]['生'] === $todayGanWuxing) {
-            $relation = '食伤';
-            $luckLevel = $isStrong ? '吉' : '平';
-            $advice = $isStrong ? '今日食伤泄秀，才华横溢，创意灵感迸发，事业有望取得新突破。' : '今日精力消耗较快，容易思虑过度，需注意言语分寸，防范口舌。';
-        } elseif ($wuxingShengKe[$dayMasterWuxing]['被克'] === $todayGanWuxing) {
-            $relation = '官杀';
-            $luckLevel = $isStrong ? '吉' : '凶';
-            $advice = $isStrong ? '今日官杀制身，威望提升，适合处理公职或重要事务，易获领导赏识。' : '今日官杀攻身，压力倍增，需谨慎行事，防范突发状况，注意身体。';
-        } else {
-            $relation = '财星';
-            $luckLevel = $isStrong ? '吉' : '凶';
-            $advice = $isStrong ? '今日财星高照，财源广进，适合理财投资、商务谈判，有意外收获。' : '今日财多身弱，不宜盲目跟风投资，注意守财，防范因财生事。';
-        }
-        
-        // 根据今日运势基础分和个人关系调整
+        // 根据今日运势基础分和李虚中算法调整
         $baseScore = $fortune->overall_score;
-        $adjustedScore = $baseScore;
-        if ($luckLevel === '吉') {
-            $adjustedScore = min(100, $baseScore + 5);
-        } elseif ($luckLevel === '凶') {
-            $adjustedScore = max(40, $baseScore - 5);
-        }
+        $adjustedScore = max(40, min(100, $baseScore + $lxzResult['score_adjustment']));
         
         return [
             'hasBazi' => true,
