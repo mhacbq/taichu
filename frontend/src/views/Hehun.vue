@@ -119,7 +119,7 @@
 
           </div>
 
-
+          <WisdomText />
         </div>
       </div>
 
@@ -205,6 +205,18 @@
               <el-button type="primary" @click="exportReport" :disabled="exporting || !canExportReport">
                 <el-icon><Document /></el-icon> {{ exporting ? '导出中...' : '导出报告' }}
               </el-button>
+              <ShareCard
+                title="八字合婚"
+                :summary="hehunShareSummary"
+                :tags="hehunShareTags"
+                :sharePath="`/hehun?id=${premiumResult.id}`"
+              >
+                <template #trigger>
+                  <el-button>
+                    <el-icon><Share /></el-icon> 分享摘要
+                  </el-button>
+                </template>
+              </ShareCard>
               <el-button @click="openDailySuggestion">看今日运势</el-button>
               <el-button @click="resetForm">
                 <el-icon><RefreshRight /></el-icon> 重新测算（清空）
@@ -212,6 +224,7 @@
             </div>
           </div>
 
+          <WisdomText />
         </div>
       </div>
 
@@ -627,10 +640,13 @@ import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
-import { Male, Female, UserFilled, Unlock, Lock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled, Calendar, ArrowRight, StarFilled, CircleCheckFilled } from '@element-plus/icons-vue'
+import { Male, Female, UserFilled, Unlock, Lock, Link, RefreshRight, Document, Collection, Present, Cpu, WarningFilled, Calendar, ArrowRight, StarFilled, CircleCheckFilled, Share } from '@element-plus/icons-vue'
 
 import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../api'
 import BackButton from '../components/BackButton.vue'
+import ShareCard from '../components/ShareCard.vue'
+import WisdomText from '../components/WisdomText.vue'
+import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 
 
 
@@ -1099,6 +1115,23 @@ const hehunStrategyDetails = computed(() => ([
       : '当前未勾选 AI；解锁后会先给出规则版完整版，如需更长的深度分析可再开启 AI。'
   }
 ]))
+
+const hehunShareSummary = computed(() => {
+  if (!premiumResult.value) return '我在太初命理测算了八字合婚，结果很准！'
+  const score = premiumResult.value.hehun?.score || 0
+  const level = premiumResult.value.hehun?.level_text || ''
+  return `我们的合婚匹配度高达${score}分（${level}），快来看看你们的缘分吧！`
+})
+
+const hehunShareTags = computed(() => {
+  if (!premiumResult.value) return []
+  const tags = []
+  if (premiumResult.value.hehun?.score) tags.push(`匹配度${premiumResult.value.hehun.score}分`)
+  if (premiumResult.value.hehun?.level_text) tags.push(premiumResult.value.hehun.level_text)
+  return tags
+})
+
+// 格式化日期时间
 
 const hehunSubmitSummaryText = computed(() => {
   if (!hehunSubmitIssues.value.length) {
@@ -1883,12 +1916,14 @@ const submitForm = async () => {
 
   isLoading.value = true
   try {
-    const response = await calculateHehun(buildHehunPayload({
+    const payload = buildHehunPayload({
       tier: 'free',
       useAi: false,
-    }))
+    })
+    const response = await calculateHehun(payload)
 
     if (response.code === 200) {
+      trackSubmit('hehun_calculate', true, { tier: 'free' })
       const normalizedFreeResult = normalizeFreeResultData(response.data)
       const localPreviewRecord = buildLocalFreePreviewRecord(normalizedFreeResult)
       persistLocalFreePreview(localPreviewRecord)
@@ -1911,12 +1946,13 @@ const submitForm = async () => {
         console.warn('合婚结果已生成，但历史记录刷新失败:', historyError)
       }
     } else {
-
-
+      trackSubmit('hehun_calculate', false, { tier: 'free', error: response.message })
       ElMessage.error(response.message)
     }
 
   } catch (error) {
+    trackSubmit('hehun_calculate', false, { tier: 'free', error: error.message })
+    trackError('hehun_calculate_error', error.message)
     ElMessage.error('合婚分析失败，请重试')
   } finally {
     isLoading.value = false
@@ -1961,12 +1997,14 @@ const unlockPremium = async () => {
     
     isLoading.value = true
     unlockLoading.value = true
-    const response = await calculateHehun(buildHehunPayload({
+    const payload = buildHehunPayload({
       tier: 'premium',
       useAi: form.useAi,
-    }))
+    })
+    const response = await calculateHehun(payload)
     
     if (response.code === 200) {
+      trackSubmit('hehun_calculate', true, { tier: 'premium' })
       const normalizedPremiumResult = normalizePremiumResultData(response.data)
       clearLocalFreePreview()
       freeResult.value = null
@@ -1982,8 +2020,7 @@ const unlockPremium = async () => {
 
       ElMessage.success('解锁成功！')
     } else {
-
-
+      trackSubmit('hehun_calculate', false, { tier: 'premium', error: response.message })
       unlockError.value = response.code === 403
         ? '积分不足，请先充值后再解锁详细报告。'
         : (response.message || '解锁失败，请重试。')
@@ -1991,6 +2028,8 @@ const unlockPremium = async () => {
     }
   } catch (error) {
     if (error !== 'cancel') {
+      trackSubmit('hehun_calculate', false, { tier: 'premium', error: error.message })
+      trackError('hehun_calculate_error', error.message)
       unlockError.value = '解锁失败，请重试。'
       ElMessage.error(unlockError.value)
     }
@@ -2285,6 +2324,7 @@ const formatDate = (dateStr) => {
 
 // 初始化
 onMounted(() => {
+  trackPageView('hehun')
   localFreePreview.value = readLocalFreePreview()
   loadPricing()
   loadHistory()

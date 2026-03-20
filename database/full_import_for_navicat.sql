@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS `tc_user` (
     `vip_expire_at` DATETIME NULL COMMENT 'VIP到期时间',
     `status` TINYINT DEFAULT 1 COMMENT '状态 0禁用 1正常',
     `last_login_at` DATETIME NULL COMMENT '最后登录时间',
+    `last_sms_code_time` DATETIME NULL COMMENT '最后一次发送验证码时间',
+    `sms_code_attempts` INT UNSIGNED DEFAULT 0 COMMENT '验证码尝试次数',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -78,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `tc_points_record` (
     `reason` VARCHAR(255) NOT NULL COMMENT '变动原因',
     `source_id` INT UNSIGNED DEFAULT 0 COMMENT '来源ID',
     `source_type` VARCHAR(50) DEFAULT '' COMMENT '来源类型',
+    `action` VARCHAR(50) DEFAULT '' COMMENT '业务动作枚举',
     `remark` VARCHAR(500) DEFAULT '' COMMENT '备注',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     
@@ -166,6 +169,7 @@ CREATE TABLE IF NOT EXISTS `tc_bazi_record` (
     `is_public` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否公开分享',
     `share_code` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '分享码',
     `view_count` INT NOT NULL DEFAULT 0 COMMENT '查看次数',
+    `ai_analysis_model` VARCHAR(50) DEFAULT '' COMMENT 'AI 分析模型来源',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     KEY `idx_user_id` (`user_id`),

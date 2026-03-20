@@ -254,6 +254,7 @@
           :actions="tarotResultActions"
           :recommendations="tarotRelatedRecommendations"
         />
+        <WisdomText />
 
       </div>
 
@@ -314,8 +315,10 @@ import html2canvas from 'html2canvas'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import TarotCard from '../components/TarotCard.vue'
 import ResultNextSteps from '../components/ResultNextSteps.vue'
+import WisdomText from '../components/WisdomText.vue'
 
 import EmptyState from '../components/EmptyState.vue'
+import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
 
 
@@ -829,6 +832,7 @@ const drawCards = async () => {
     })
 
     if (drawResponse.code === 200) {
+      trackSubmit('tarot_draw', true, { spread: lockedSpread })
       cards.value = drawResponse.data.cards
       interpretation.value = ''
       submittedQuestion.value = lockedQuestion
@@ -896,6 +900,7 @@ const handlePointsUpdated = () => {
 }
 
 onMounted(() => {
+  trackPageView('tarot')
   loadPoints()
   window.addEventListener('points-updated', handlePointsUpdated)
 })

@@ -46,37 +46,39 @@
 
       <!-- 常见问题分类 -->
       <div class="faq-section">
-        <el-collapse v-model="activeNames" class="faq-collapse">
-          <el-collapse-item 
-            v-for="(category, idx) in filteredCategories" 
-            :key="idx"
-            :name="idx"
-          >
-            <template #title>
-              <span class="category-title">
-                <el-icon v-if="category.icon"><component :is="category.icon" /></el-icon>
-                {{ category.title }}
-              </span>
-            </template>
-            <div class="faq-list">
-              <div 
-                v-for="(item, itemIdx) in category.items" 
-                :key="itemIdx"
-                class="faq-item"
-              >
-                <div class="faq-question" @click="toggleQuestion(item)">
-                  <span class="q-icon">Q</span>
-                  <span class="question-text">{{ item.question }}</span>
-                  <el-icon class="expand-icon" :class="{ expanded: item.expanded }"><ArrowDown /></el-icon>
-                </div>
-                <div class="faq-answer" v-show="item.expanded">
-                  <span class="a-icon">A</span>
-                  <p>{{ item.answer }}</p>
+        <AsyncState :status="faqStatus" :error="faqError" loadingText="正在加载帮助内容..." @retry="loadFaqs">
+          <el-collapse v-model="activeNames" class="faq-collapse">
+            <el-collapse-item 
+              v-for="(category, idx) in filteredCategories" 
+              :key="idx"
+              :name="idx"
+            >
+              <template #title>
+                <span class="category-title">
+                  <el-icon v-if="category.icon"><component :is="category.icon" /></el-icon>
+                  {{ category.title }}
+                </span>
+              </template>
+              <div class="faq-list">
+                <div 
+                  v-for="(item, itemIdx) in category.items" 
+                  :key="itemIdx"
+                  class="faq-item"
+                >
+                  <div class="faq-question" @click="toggleQuestion(item)">
+                    <span class="q-icon">Q</span>
+                    <span class="question-text">{{ item.question }}</span>
+                    <el-icon class="expand-icon" :class="{ expanded: item.expanded }"><ArrowDown /></el-icon>
+                  </div>
+                  <div class="faq-answer" v-show="item.expanded">
+                    <span class="a-icon">A</span>
+                    <p>{{ item.answer }}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </el-collapse-item>
-        </el-collapse>
+            </el-collapse-item>
+          </el-collapse>
+        </AsyncState>
       </div>
 
       <!-- 联系客服 -->
@@ -136,6 +138,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import BackButton from '../components/BackButton.vue'
+import AsyncState from '../components/AsyncState.vue'
 import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, Coin, Lock } from '@element-plus/icons-vue'
 import { getFaqs } from '../api/siteContent'
 
@@ -144,7 +147,8 @@ const searchQuery = ref('')
 const activeNames = ref([0, 1, 2])
 const faqData = ref([])
 const searchSuggestions = ref([])
-const isLoading = ref(false)
+const faqStatus = ref('loading')
+const faqError = ref(null)
 
 // 热门搜索标签
 const hotTags = ['积分', '八字', '登录', '塔罗', '充值']
@@ -170,19 +174,24 @@ const categoryIcons = {
 // 加载FAQ数据
 const loadFaqs = async () => {
   try {
-    isLoading.value = true
+    faqStatus.value = 'loading'
+    faqError.value = null
     const response = await getFaqs()
     if (response.code === 200) {
       faqData.value = response.data.map(item => ({
         ...item,
         expanded: false
       }))
+      faqStatus.value = faqData.value.length > 0 ? 'success' : 'empty'
+    } else {
+      faqStatus.value = 'error'
+      faqError.value = response.message || '加载失败'
     }
   } catch (error) {
     console.error('加载FAQ数据失败:', error)
+    faqStatus.value = 'error'
+    faqError.value = error.message || '网络错误，请稍后重试'
     ElMessage.error('加载帮助内容失败，请稍后重试')
-  } finally {
-    isLoading.value = false
   }
 }
 

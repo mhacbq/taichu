@@ -17,7 +17,7 @@
       </span>
     </div>
 
-    <div v-if="actions.length" class="result-next-steps__actions">
+    <div v-if="actions.length || $slots.actions" class="result-next-steps__actions">
       <template v-for="action in actions" :key="action.key || action.label">
         <router-link
           v-if="action.to && !action.disabled && !action.loading"
@@ -48,6 +48,7 @@
           {{ action.label }}
         </el-button>
       </template>
+      <slot name="actions"></slot>
     </div>
 
     <div v-if="recommendations.length" class="result-next-steps__recommendations">

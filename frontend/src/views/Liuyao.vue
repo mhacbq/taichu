@@ -147,7 +147,23 @@
             :highlights="liuyaoResultHighlights"
             :actions="liuyaoResultActions"
             :recommendations="liuyaoRelatedRecommendations"
-          />
+          >
+            <template #actions>
+              <ShareCard
+                title="六爻占卜"
+                :summary="liuyaoShareSummary"
+                :tags="liuyaoShareTags"
+                :sharePath="`/liuyao?id=${result.id}`"
+              >
+                <template #trigger>
+                  <el-button class="result-next-steps__action-btn">
+                    <el-icon><Share /></el-icon> 分享摘要
+                  </el-button>
+                </template>
+              </ShareCard>
+            </template>
+          </ResultNextSteps>
+          <WisdomText />
 
         </div>
       </div>
@@ -410,10 +426,13 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share } from '@element-plus/icons-vue'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
+import ShareCard from '../components/ShareCard.vue'
+import WisdomText from '../components/WisdomText.vue'
+import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 
 
 
@@ -1069,17 +1088,22 @@ const submitDivination = async () => {
 
   isLoading.value = true
   try {
-    const response = await liuyaoDivination(buildDivinationPayload())
+    const payload = buildDivinationPayload()
+    const response = await liuyaoDivination(payload)
 
     if (response.code === 200) {
+      trackSubmit('liuyao_divination', true, { method: payload.method })
       clearSubmitErrors()
       result.value = normalizeResult(response.data, false)
       await loadHistory()
       await loadPricing()
     } else {
+      trackSubmit('liuyao_divination', false, { method: payload.method, error: response.message })
       ElMessage.error(response.message || '占卜失败，请重试')
     }
   } catch (error) {
+    trackSubmit('liuyao_divination', false, { error: error.message })
+    trackError('liuyao_divination_error', error.message)
     reportUiError('提交六爻占卜失败', error, '占卜失败，请重试')
   } finally {
     isLoading.value = false
@@ -1185,6 +1209,23 @@ const liuyaoRelatedRecommendations = computed(() => {
   ]
 })
 
+const liuyaoShareSummary = computed(() => {
+  if (!result.value) return '我在太初命理测算了六爻，结果很准！'
+  const guaName = result.value.gua?.name || ''
+  const bianGuaName = result.value.bian_gua?.name || ''
+  if (bianGuaName) {
+    return `我卜得【${guaName}】变【${bianGuaName}】，快来看看你的运势吧！`
+  }
+  return `我卜得【${guaName}】，快来看看你的运势吧！`
+})
+
+const liuyaoShareTags = computed(() => {
+  if (!result.value) return []
+  const tags = []
+  if (result.value.gua?.name) tags.push(`本卦${result.value.gua.name}`)
+  if (result.value.bian_gua?.name) tags.push(`变卦${result.value.bian_gua.name}`)
+  return tags
+})
 
 // 加载历史记录详情
 
@@ -1231,6 +1272,7 @@ const formatDate = (dateStr) => {
 
 // 初始化
 onMounted(() => {
+  trackPageView('liuyao')
   beijingTimer = window.setInterval(() => {
     currentBeijingTimestamp.value = Date.now()
   }, 1000)

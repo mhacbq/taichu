@@ -1158,14 +1158,24 @@
             <el-button @click="continueBaziJourney">
               <el-icon><Cpu /></el-icon> 继续深入解读
             </el-button>
-            <el-button @click="shareResult">
-              <el-icon><Share /></el-icon> 分享摘要
-            </el-button>
+            <ShareCard
+              title="八字排盘"
+              :summary="baziShareSummary"
+              :tags="baziShareTags"
+              :sharePath="`/bazi?id=${result.id}`"
+            >
+              <template #trigger>
+                <el-button>
+                  <el-icon><Share /></el-icon> 分享摘要
+                </el-button>
+              </template>
+            </ShareCard>
             <el-button @click="resetCurrentResult">
               <el-icon><RefreshRight /></el-icon> 重新排盘
             </el-button>
           </div>
         </div>
+        <WisdomText />
       </div>
     </div>
   </div>
@@ -1178,6 +1188,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
 
+import WisdomText from '../components/WisdomText.vue'
+
 import {
   calculateBazi as calculateBaziApi, 
   getPointsBalance, 
@@ -1189,7 +1201,9 @@ import {
 } from '../api'
 import { analyzeBaziAi, analyzeBaziAiStream } from '../api/ai'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
+import ShareCard from '../components/ShareCard.vue'
 import { sanitizeHtml } from '../utils/sanitize'
+import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 
 import { CHINA_CITIES } from '../utils/constants'
 
@@ -2232,6 +2246,7 @@ const calculateBazi = async () => {
     await new Promise(resolve => setTimeout(resolve, 300))
     
     if (response.code === 200) {
+      trackSubmit('bazi_calculate', true, { mode: versionMode.value })
       result.value = response.data
       activeNames.value = getDefaultActiveNames()
       syncCurrentPoints(response.data.remaining_points)
@@ -2239,6 +2254,7 @@ const calculateBazi = async () => {
       ElMessage.success('排盘成功！为你生成详细的命理解读')
 
     } else {
+      trackSubmit('bazi_calculate', false, { mode: versionMode.value, error: response.message })
       ElMessage.error(response.message || '排盘失败')
       // 如果是积分不足，刷新积分
       if (response.code === 403) {
@@ -2246,6 +2262,8 @@ const calculateBazi = async () => {
       }
     }
   } catch (error) {
+    trackSubmit('bazi_calculate', false, { mode: versionMode.value, error: error.message })
+    trackError('bazi_calculate_error', error.message)
     ElMessage.error('网络错误，请稍后重试')
     console.error(error)
   } finally {
@@ -2259,6 +2277,7 @@ const calculateBazi = async () => {
 }
 
 onMounted(() => {
+  trackPageView('bazi')
   updateViewportState()
   window.addEventListener('resize', updateViewportState)
   loadPoints({ silent: true })
@@ -2356,6 +2375,21 @@ const shareBaziText = async (shareText, clipboardSuccessText) => {
   await navigator.clipboard.writeText(shareText)
   ElMessage.success(clipboardSuccessText)
 }
+
+const baziShareSummary = computed(() => {
+  if (!result.value?.bazi) return '我在太初命理测算了八字，结果很准！'
+  const dm = result.value.bazi.day_master || ''
+  const dmWuxing = result.value.bazi.day_master_wuxing || ''
+  return `我的日主是${dmWuxing}${dm}，快来看看你的八字命盘吧！`
+})
+
+const baziShareTags = computed(() => {
+  if (!result.value?.bazi) return []
+  const tags = []
+  if (result.value.bazi.day_master) tags.push(`日主${result.value.bazi.day_master}`)
+  if (result.value.bazi.day_master_wuxing) tags.push(`五行属${result.value.bazi.day_master_wuxing}`)
+  return tags
+})
 
 const shareResult = async () => {
   if (!result.value?.bazi) {

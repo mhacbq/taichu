@@ -8,17 +8,23 @@
       />
 
       <!-- 运势概览卡片 -->
-      <div v-if="isLoading" class="fortune-overview fortune-overview--loading card card-hover">
-        <div class="overview-skeleton">
-          <el-skeleton-item variant="circle" class="score-skeleton" />
-          <div class="skeleton-content">
-            <el-skeleton-item variant="text" class="title-skeleton" />
-            <el-skeleton-item variant="text" class="subtitle-skeleton" />
+      <AsyncState :status="dailyStatus" :error="errorMessage" loadingText="正在为您推算今日运势..." @retry="loadDailyFortune">
+        <template #loading>
+          <div class="fortune-overview fortune-overview--loading card card-hover">
+            <div class="overview-skeleton">
+              <el-skeleton-item variant="circle" class="score-skeleton" />
+              <div class="skeleton-content">
+                <el-skeleton-item variant="text" class="title-skeleton" />
+                <el-skeleton-item variant="text" class="subtitle-skeleton" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+          <div class="loading-state card card-hover">
+            <el-skeleton :rows="10" animated />
+          </div>
+        </template>
 
-        <div v-else-if="fortune" class="fortune-content">
+        <div v-if="fortune" class="fortune-content">
           <!-- 运势概览卡片 -->
           <div class="fortune-overview card card-hover">
             <div class="overview-header">
@@ -320,19 +326,8 @@
             </router-link>
           </div>
         </div>
-      </div>
-
-
-      <!-- 错误状态 -->
-      <div v-else-if="error" class="error-state card card-hover">
-        <el-icon class="error-icon" :size="48"><WarningFilled /></el-icon>
-        <p class="error-message">{{ errorMessage }}</p>
-        <el-button type="primary" @click="loadDailyFortune">重新加载</el-button>
-      </div>
-
-      <div v-else class="loading-state card card-hover">
-        <el-skeleton :rows="10" animated />
-      </div>
+        </div>
+      </AsyncState>
     </div>
   </div>
 </template>
@@ -344,7 +339,7 @@ import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Righ
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
-
+import AsyncState from '../components/AsyncState.vue'
 
 const solarDate = ref('')
 const lunarDate = ref('')
@@ -355,6 +350,13 @@ const activeNames = ref([])
 const error = ref(false)
 const errorMessage = ref('')
 const dailyLoginRoute = { path: '/login', query: { redirect: '/daily' } }
+
+const dailyStatus = computed(() => {
+  if (isLoading.value) return 'loading'
+  if (error.value) return 'error'
+  if (fortune.value) return 'success'
+  return 'empty'
+})
 
 // 明日预告相关状态
 const showTomorrowPreview = ref(false)

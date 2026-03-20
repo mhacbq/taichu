@@ -94,18 +94,26 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Phone, Lock, Star, Lock as LockIcon } from '@element-plus/icons-vue'
 import { phoneLogin, sendSmsCode } from '../api'
 import { validatePhone } from '../utils/validators'
+import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const countdown = ref(0)
 let countdownTimer = null
+
+onMounted(() => {
+  trackPageView('login');
+  if (isRegisterIntent.value) {
+    trackEvent('register_intent_view');
+  }
+})
 
 // 手机号表单
 const phoneForm = ref({
@@ -235,15 +243,22 @@ const handlePhoneLogin = async () => {
       // 如果是新注册用户，设置标记以触发新手指引
       if (response.data.is_new_user) {
         localStorage.setItem('isNewUser', 'true')
+        trackEvent('register_success', { method: 'phone' })
+      } else {
+        trackEvent('login_success', { method: 'phone' })
       }
+      trackSubmit('login_form', true, { method: 'phone' })
       
       ElMessage.success(isRegisterIntent.value ? '注册成功，欢迎来到太初命理！' : '登录成功！')
       const redirect = route.query.redirect || '/'
       router.push(redirect)
     } else {
+      trackSubmit('login_form', false, { method: 'phone', error: response.message })
       ElMessage.error(response.message || '登录失败')
     }
   } catch (error) {
+    trackSubmit('login_form', false, { method: 'phone', error: error.message })
+    trackError('login_error', error.message)
     reportLoginError('phone_login_failed', error, {
       phone: maskPhone(phoneForm.value.phone),
       intent: isRegisterIntent.value ? 'register' : 'login'

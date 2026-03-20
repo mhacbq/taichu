@@ -174,6 +174,7 @@ import { getRechargeOptions, createRechargeOrder, queryRechargeOrder, getRecharg
 import { createAlipayOrder } from '../api/alipay'
 import BackButton from '../components/BackButton.vue'
 import { formatDate } from '../utils/format'
+import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 
 const pointsBalance = ref(0)
 const rechargeOptions = ref([])
@@ -248,6 +249,7 @@ const checkWechatBrowser = () => {
 }
 
 onMounted(() => {
+  trackPageView('recharge')
   isWechatBrowser.value = checkWechatBrowser()
   loadPointsBalance()
   loadRechargeOptions()
@@ -320,6 +322,7 @@ const handleRecharge = async () => {
     return
   }
 
+  trackEvent('recharge_click', { amount: selectedAmount.value, method: paymentMethod.value })
   creatingOrder.value = true
   try {
     if (paymentMethod.value === 'wechat') {
@@ -328,10 +331,12 @@ const handleRecharge = async () => {
       })
 
       if (res.code !== 200) {
+        trackSubmit('recharge_order', false, { amount: selectedAmount.value, method: 'wechat', error: res.message })
         showCreateOrderError(res.message)
         return
       }
 
+      trackSubmit('recharge_order', true, { amount: selectedAmount.value, method: 'wechat', order_no: res.data.order_no })
       currentOrderNo.value = res.data.order_no
 
       if (isWechatBrowser.value && res.data.pay_params) {
@@ -351,10 +356,12 @@ const handleRecharge = async () => {
       })
 
       if (res.code !== 200) {
+        trackSubmit('recharge_order', false, { amount: selectedAmount.value, method: 'alipay', error: res.message })
         showCreateOrderError(res.message)
         return
       }
 
+      trackSubmit('recharge_order', true, { amount: selectedAmount.value, method: 'alipay', order_no: res.data.order_no })
       currentOrderNo.value = res.data.order_no
 
       if (res.data.pay_form) {

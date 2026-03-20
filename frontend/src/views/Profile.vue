@@ -92,80 +92,88 @@
         <div class="history-tabs-section card card-hover">
           <el-tabs v-model="activeHistoryTab" class="history-tabs">
             <el-tab-pane label="八字排盘" name="bazi">
-              <div class="history-list" v-if="baziHistory.length > 0">
-                <div v-for="record in baziHistory" :key="record.id" class="history-item">
-                  <div class="history-info">
-                    <span class="history-date" :title="formatDateTime(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
-                    <span class="history-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+              <AsyncState :status="baziStatus" loadingText="正在加载排盘记录..." @retry="loadBaziHistory">
+                <div class="history-list" v-if="baziHistory.length > 0">
+                  <div v-for="record in baziHistory" :key="record.id" class="history-item">
+                    <div class="history-info">
+                      <span class="history-date" :title="formatDateTime(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
+                      <span class="history-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+                    </div>
+                    <div class="history-bazi">
+                      <span class="bazi-pillar">{{ record.yearGan }}{{ record.yearZhi }}</span>
+                      <span class="bazi-pillar">{{ record.monthGan }}{{ record.monthZhi }}</span>
+                      <span class="bazi-pillar highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
+                      <span class="bazi-pillar">{{ record.hourGan }}{{ record.hourZhi }}</span>
+                    </div>
+                    <el-button type="primary" size="small" @click="viewDetail(record)">查看</el-button>
                   </div>
-                  <div class="history-bazi">
-                    <span class="bazi-pillar">{{ record.yearGan }}{{ record.yearZhi }}</span>
-                    <span class="bazi-pillar">{{ record.monthGan }}{{ record.monthZhi }}</span>
-                    <span class="bazi-pillar highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
-                    <span class="bazi-pillar">{{ record.hourGan }}{{ record.hourZhi }}</span>
-                  </div>
-                  <el-button type="primary" size="small" @click="viewDetail(record)">查看</el-button>
                 </div>
-              </div>
-              <el-empty v-else description="暂无排盘记录" />
-              <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
-                <el-pagination
-                  v-model:current-page="baziCurrentPage"
-                  v-model:page-size="baziPageSize"
-                  :total="baziTotal"
-                  layout="prev, pager, next"
-                  @current-change="loadBaziHistory"
-                />
-              </div>
+                <el-empty v-else description="暂无排盘记录" />
+                <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
+                  <el-pagination
+                    v-model:current-page="baziCurrentPage"
+                    v-model:page-size="baziPageSize"
+                    :total="baziTotal"
+                    layout="prev, pager, next"
+                    @current-change="loadBaziHistory"
+                  />
+                </div>
+              </AsyncState>
             </el-tab-pane>
 
             <el-tab-pane label="塔罗占卜" name="tarot">
-              <div class="history-list" v-if="tarotHistory.length > 0">
-                <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
-                  <div class="history-info">
-                    <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
-                    <span class="history-question" :title="record.question">{{ record.question }}</span>
-                    <span class="history-birth">{{ record.spreadName }}</span>
-                  </div>
+              <AsyncState :status="tarotStatus" loadingText="正在加载占卜记录..." @retry="loadTarotHistory">
+                <div class="history-list" v-if="tarotHistory.length > 0">
+                  <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
+                    <div class="history-info">
+                      <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
+                      <span class="history-question" :title="record.question">{{ record.question }}</span>
+                      <span class="history-birth">{{ record.spreadName }}</span>
+                    </div>
 
-                  <div class="tarot-cards">
-                    <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
-                      {{ card.emoji }}<small v-if="card.reversed">逆</small>
-                    </span>
-                    <span v-if="record.cards.length > 3" class="more-cards">+{{ record.cards.length - 3 }}</span>
+                    <div class="tarot-cards">
+                      <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
+                        {{ card.emoji }}<small v-if="card.reversed">逆</small>
+                      </span>
+                      <span v-if="record.cards.length > 3" class="more-cards">+{{ record.cards.length - 3 }}</span>
+                    </div>
+                    <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看</el-button>
                   </div>
-                  <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看</el-button>
                 </div>
-              </div>
-              <el-empty v-else description="暂无占卜记录" />
+                <el-empty v-else description="暂无占卜记录" />
+              </AsyncState>
             </el-tab-pane>
 
             <el-tab-pane label="六爻占卜" name="liuyao">
-              <div class="history-list" v-if="liuyaoHistory.length > 0">
-                <div v-for="record in liuyaoHistory" :key="record.id" class="history-item">
-                  <div class="history-info">
-                    <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
-                    <span class="history-question" :title="record.question">{{ record.question || '六爻占卜' }}</span>
-                    <span class="history-birth">{{ record.method_name || '铜钱起卦' }}</span>
+              <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
+                <div class="history-list" v-if="liuyaoHistory.length > 0">
+                  <div v-for="record in liuyaoHistory" :key="record.id" class="history-item">
+                    <div class="history-info">
+                      <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
+                      <span class="history-question" :title="record.question">{{ record.question || '六爻占卜' }}</span>
+                      <span class="history-birth">{{ record.method_name || '铜钱起卦' }}</span>
+                    </div>
+                    <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
                   </div>
-                  <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
                 </div>
-              </div>
-              <el-empty v-else description="暂无六爻记录" />
+                <el-empty v-else description="暂无六爻记录" />
+              </AsyncState>
             </el-tab-pane>
 
             <el-tab-pane label="八字合婚" name="hehun">
-              <div class="history-list" v-if="hehunHistory.length > 0">
-                <div v-for="record in hehunHistory" :key="record.id" class="history-item">
-                  <div class="history-info">
-                    <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
-                    <span class="history-birth">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
-                    <span v-if="record.total_score" class="history-score">综合得分：{{ record.total_score }}</span>
+              <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
+                <div class="history-list" v-if="hehunHistory.length > 0">
+                  <div v-for="record in hehunHistory" :key="record.id" class="history-item">
+                    <div class="history-info">
+                      <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
+                      <span class="history-birth">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
+                      <span v-if="record.total_score" class="history-score">综合得分：{{ record.total_score }}</span>
+                    </div>
+                    <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
                   </div>
-                  <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
                 </div>
-              </div>
-              <el-empty v-else description="暂无合婚记录" />
+                <el-empty v-else description="暂无合婚记录" />
+              </AsyncState>
             </el-tab-pane>
           </el-tabs>
         </div>
@@ -291,6 +299,7 @@ import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTar
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
+import AsyncState from '../components/AsyncState.vue'
 import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, Check } from '@element-plus/icons-vue'
 
 const userInfo = ref({})
@@ -309,6 +318,14 @@ const feedbackContact = ref('')
 const feedbackLoading = ref(false)
 const feedbackEnabled = ref(true)
 const activeHistoryTab = ref('bazi')
+
+// 状态管理
+const profileStatus = ref('loading')
+const profileError = ref(null)
+const baziStatus = ref('loading')
+const tarotStatus = ref('loading')
+const liuyaoStatus = ref('loading')
+const hehunStatus = ref('loading')
 
 // 分页相关
 const baziCurrentPage = ref(1)
@@ -532,6 +549,7 @@ const loadUserData = async () => {
 
 // 加载排盘历史（后端分页）
 const loadBaziHistory = async () => {
+  baziStatus.value = 'loading'
   try {
     const baziRes = await getBaziHistory({
       page: baziCurrentPage.value,
@@ -540,8 +558,12 @@ const loadBaziHistory = async () => {
     if (baziRes.code === 200) {
       baziHistory.value = baziRes.data.list || []
       baziTotal.value = baziRes.data.pagination?.total || 0
+      baziStatus.value = baziHistory.value.length > 0 ? 'success' : 'empty'
+    } else {
+      baziStatus.value = 'error'
     }
   } catch (error) {
+    baziStatus.value = 'error'
     reportProfileError('load_bazi_history_failed', error, {
       page: baziCurrentPage.value,
       page_size: baziPageSize.value
@@ -551,47 +573,61 @@ const loadBaziHistory = async () => {
 
 // 加载塔罗历史
 const loadTarotHistory = async () => {
+  tarotStatus.value = 'loading'
   try {
     const response = await getTarotHistory({ page: 1, page_size: 10 })
     if (response.code === 200) {
       const list = Array.isArray(response.data?.list) ? response.data.list : []
       tarotHistory.value = list.map(normalizeTarotRecord)
+      tarotStatus.value = tarotHistory.value.length > 0 ? 'success' : 'empty'
       return
     }
 
     tarotHistory.value = []
+    tarotStatus.value = 'error'
     ElMessage.warning(response.message || '获取塔罗历史失败，请稍后重试')
   } catch (error) {
     tarotHistory.value = []
+    tarotStatus.value = 'error'
     reportProfileError('load_tarot_history_failed', error)
   }
 }
 
 // 加载六爻历史
 const loadLiuyaoHistory = async () => {
+  liuyaoStatus.value = 'loading'
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 10 })
     if (response.code === 200) {
       liuyaoHistory.value = response.data?.list || []
       liuyaoCount.value = response.data?.pagination?.total || liuyaoHistory.value.length
+      liuyaoStatus.value = liuyaoHistory.value.length > 0 ? 'success' : 'empty'
+    } else {
+      liuyaoStatus.value = 'error'
     }
   } catch (error) {
     reportProfileError('load_liuyao_history_failed', error)
     liuyaoHistory.value = []
+    liuyaoStatus.value = 'error'
   }
 }
 
 // 加载合婚历史
 const loadHehunHistory = async () => {
+  hehunStatus.value = 'loading'
   try {
     const response = await getHehunHistory({ page: 1, page_size: 10 })
     if (response.code === 200) {
       hehunHistory.value = response.data?.list || []
       hehunCount.value = response.data?.pagination?.total || hehunHistory.value.length
+      hehunStatus.value = hehunHistory.value.length > 0 ? 'success' : 'empty'
+    } else {
+      hehunStatus.value = 'error'
     }
   } catch (error) {
     reportProfileError('load_hehun_history_failed', error)
     hehunHistory.value = []
+    hehunStatus.value = 'error'
   }
 }
 
