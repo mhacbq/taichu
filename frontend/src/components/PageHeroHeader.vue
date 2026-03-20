@@ -1,7 +1,7 @@
 <template>
   <div class="page-hero">
-    <BackButton :fallback="fallback" class="page-hero__back" />
     <div class="page-hero__panel">
+      <BackButton :fallback="fallback" class="page-hero__back" />
       <span class="page-hero__halo page-hero__halo--primary" aria-hidden="true"></span>
       <span class="page-hero__halo page-hero__halo--secondary" aria-hidden="true"></span>
       <div class="page-hero__content">
@@ -49,15 +49,7 @@ defineProps({
 
 <style scoped>
 .page-hero {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: stretch;
-  gap: 20px;
   margin-bottom: 36px;
-}
-
-.page-hero__back {
-  align-self: flex-start;
 }
 
 .page-hero__panel {
@@ -69,6 +61,13 @@ defineProps({
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 238, 0.96));
   border: 1px solid rgba(var(--primary-rgb), 0.14);
   box-shadow: var(--shadow-card);
+}
+
+.page-hero__back {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  z-index: 2;
 }
 
 .page-hero__halo {
@@ -98,6 +97,7 @@ defineProps({
   position: relative;
   z-index: 1;
   max-width: 760px;
+  padding-top: 52px;
 }
 
 .page-hero__eyebrow {
@@ -154,8 +154,6 @@ defineProps({
 
 @media (max-width: 768px) {
   .page-hero {
-    grid-template-columns: 1fr;
-    gap: 14px;
     margin-bottom: 28px;
   }
 
@@ -163,6 +161,15 @@ defineProps({
     min-height: 0;
     padding: 22px 20px;
     border-radius: 22px;
+  }
+
+  .page-hero__back {
+    top: 16px;
+    left: 16px;
+  }
+
+  .page-hero__content {
+    padding-top: 48px;
   }
 
   .page-hero__title {

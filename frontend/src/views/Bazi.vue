@@ -53,7 +53,10 @@
                 <div class="version-card__icon">
                   <el-icon><MagicStick /></el-icon>
                 </div>
-                <span class="version-card__name">简化版{{ versionMode === 'simple' ? '（当前选择）' : '' }}</span>
+                <div class="version-card__info">
+                  <span class="version-card__name">简化版</span>
+                  <span v-if="versionMode === 'simple'" class="version-card__badge">当前选择</span>
+                </div>
                 <span class="version-card__pts">10 pts</span>
               </div>
               <ul class="version-card__features">
@@ -72,7 +75,10 @@
                 <div class="version-card__icon">
                   <el-icon><Coin /></el-icon>
                 </div>
-                <span class="version-card__name">专业版{{ versionMode === 'pro' ? '（当前选择）' : '' }}</span>
+                <div class="version-card__info">
+                  <span class="version-card__name">专业版</span>
+                  <span v-if="versionMode === 'pro'" class="version-card__badge">当前选择</span>
+                </div>
                 <span class="version-card__pts">50 pts</span>
               </div>
               <ul class="version-card__features">
@@ -239,7 +245,8 @@
           </el-button>
           <!-- 积分不足提示 -->
           <div v-if="accountStatus === 'ready' && !isFirstBazi && currentPoints < BAZI_BASE_COST" class="insufficient-points">
-            <p><el-icon><StarFilled /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+            <el-icon><StarFilled /></el-icon>
+            积分不足，请先 <router-link to="/profile">签到领取积分</router-link>
           </div>
         </div>
       </div>
@@ -3904,72 +3911,95 @@ const formatAiContent = (content) => {
 }
 
 .version-select-section__title {
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 16px;
+  margin: 0 0 14px;
+  letter-spacing: 0.01em;
 }
 
 .version-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 12px;
 }
 
 .version-card {
-  padding: 18px;
-  border-radius: 16px;
+  padding: 16px 18px;
+  border-radius: 14px;
   border: 1.5px solid var(--border-color);
-  background: var(--bg-primary);
+  background: #fff;
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .version-card:hover {
-  border-color: rgba(184, 134, 11, 0.35);
+  border-color: rgba(184, 134, 11, 0.4);
+  box-shadow: 0 2px 10px rgba(184, 134, 11, 0.08);
 }
 
 .version-card--active {
   border-color: var(--primary-color);
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.06));
-  box-shadow: 0 4px 16px rgba(184, 134, 11, 0.12);
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.12), rgba(245, 196, 103, 0.07));
+  box-shadow: 0 4px 18px rgba(184, 134, 11, 0.14);
 }
 
 .version-card__header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .version-card__icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 9px;
   background: rgba(184, 134, 11, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 17px;
   color: var(--primary-color);
   flex-shrink: 0;
 }
 
 .version-card--active .version-card__icon {
-  background: rgba(184, 134, 11, 0.18);
+  background: rgba(184, 134, 11, 0.2);
+}
+
+.version-card__info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
 
 .version-card__name {
-  flex: 1;
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.version-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .version-card__pts {
   font-size: 13px;
   font-weight: 700;
   color: var(--primary-color);
+  white-space: nowrap;
 }
 
 .version-card__features {
@@ -3978,20 +4008,20 @@ const formatAiContent = (content) => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .version-card__features li {
   display: flex;
   align-items: flex-start;
-  gap: 7px;
-  font-size: 12.5px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .version-card__features li .el-icon {
-  color: var(--success-color, #67c23a);
+  color: #52c41a;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -3999,36 +4029,38 @@ const formatAiContent = (content) => {
 /* 费用与权益确认 */
 .cost-confirm-section {
   margin-top: 28px;
-  padding: 22px;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  padding: 22px 24px 24px;
+  border-radius: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: linear-gradient(160deg, rgba(255, 252, 244, 0.98), rgba(255, 248, 230, 0.95));
+  box-shadow: 0 2px 16px rgba(184, 134, 11, 0.07);
 }
 
 .cost-confirm-section__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .cost-confirm-section__title {
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  letter-spacing: 0.01em;
 }
 
 .cost-confirm-section__points {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 5px 12px 5px 10px;
   border-radius: 999px;
-  background: rgba(184, 134, 11, 0.08);
-  border: 1px solid rgba(184, 134, 11, 0.18);
+  background: rgba(184, 134, 11, 0.1);
+  border: 1px solid rgba(184, 134, 11, 0.22);
   font-size: 13px;
-  color: var(--primary-color);
+  color: #8c641f;
   font-weight: 600;
 }
 
@@ -4045,20 +4077,29 @@ const formatAiContent = (content) => {
   font-weight: 700;
   text-decoration: none;
   line-height: 1;
+  transition: opacity 0.15s;
+}
+
+.cost-confirm-section__add:hover {
+  opacity: 0.82;
 }
 
 .cost-confirm-section__cost {
   font-size: 14px;
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 14px;
+}
+
+.cost-confirm-section__cost strong {
+  color: #8c641f;
 }
 
 .cost-confirm-section__benefits {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
-  margin-bottom: 20px;
+  gap: 9px 20px;
+  margin-bottom: 22px;
 }
 
 .cost-confirm-benefit {
@@ -4067,25 +4108,56 @@ const formatAiContent = (content) => {
   gap: 7px;
   font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .cost-confirm-benefit .el-icon {
-  color: var(--success-color, #67c23a);
+  color: #52c41a;
   flex-shrink: 0;
   margin-top: 2px;
 }
 
 .cost-confirm-section__btn {
   width: 100%;
-  height: 52px;
+  height: 54px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #c8960c, #d4af37) !important;
   border: none !important;
   color: #fff !important;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 16px rgba(184, 134, 11, 0.28);
+  transition: opacity 0.18s, box-shadow 0.18s;
+}
+
+.cost-confirm-section__btn:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 6px 22px rgba(184, 134, 11, 0.36);
+}
+
+.insufficient-points {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.insufficient-points .el-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.insufficient-points a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.insufficient-points a:hover {
+  text-decoration: underline;
 }
 
 /* 版本切换 */
