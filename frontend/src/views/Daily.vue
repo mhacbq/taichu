@@ -221,7 +221,12 @@
         </div>
 
         <div class="lucky-section card card-hover">
-          <h3>今日宜忌</h3>
+          <div class="lucky-header">
+            <h3>今日宜忌</h3>
+            <el-button v-if="hasLuckySection" type="primary" plain size="small" @click="addToCalendar" class="add-calendar-btn">
+              <el-icon><Calendar /></el-icon> 添加到日历
+            </el-button>
+          </div>
           <div v-if="hasLuckySection" class="lucky-grid">
             <div v-if="hasYiItems" class="lucky-item good">
               <span class="lucky-label">宜</span>
@@ -250,6 +255,27 @@
           </el-collapse>
           <div v-else class="section-empty section-empty--compact">
             <p>今日详细运势仍在整理中，稍后再看。</p>
+          </div>
+        </div>
+
+        <!-- 明日预告模块 -->
+        <div v-if="showTomorrowPreview" class="tomorrow-preview-section card card-hover">
+          <h3><el-icon><Sunrise /></el-icon> 明日预告</h3>
+          <div class="tomorrow-content">
+            <div class="tomorrow-score">
+              <span class="score-label">明日综合运势</span>
+              <div class="score-stars">
+                <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= tomorrowStarCount }">
+                  <StarFilled />
+                </el-icon>
+              </div>
+            </div>
+            <p class="tomorrow-summary">{{ tomorrowSummary }}</p>
+            <div class="tomorrow-action">
+              <el-button type="primary" plain size="small" @click="loadTomorrowFortune">
+                提前查看明日运势
+              </el-button>
+            </div>
           </div>
         </div>
 
@@ -314,7 +340,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny, UserFilled, RefreshRight, Calendar, Present } from '@element-plus/icons-vue'
+import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny, UserFilled, RefreshRight, Calendar, Present, Sunrise, ArrowRight } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
 import CheckinCard from '../components/CheckinCard.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
@@ -329,6 +355,85 @@ const activeNames = ref([])
 const error = ref(false)
 const errorMessage = ref('')
 const dailyLoginRoute = { path: '/login', query: { redirect: '/daily' } }
+
+// 明日预告相关状态
+const showTomorrowPreview = ref(false)
+const tomorrowStarCount = ref(0)
+const tomorrowSummary = ref('')
+
+const checkTomorrowPreview = () => {
+  const now = new Date()
+  const hour = now.getHours()
+  // 18:00 后显示明日预告
+  if (hour >= 18) {
+    showTomorrowPreview.value = true
+    // 模拟明日运势数据，实际应从后端获取
+    tomorrowStarCount.value = Math.floor(Math.random() * 3) + 3 // 3-5星
+    tomorrowSummary.value = '明日运势平稳，适合按部就班推进计划，注意劳逸结合。'
+  } else {
+    showTomorrowPreview.value = false
+  }
+}
+
+const loadTomorrowFortune = () => {
+  ElMessage.info('明日运势功能开发中，敬请期待')
+}
+
+const addToCalendar = () => {
+  if (!fortune.value) return
+
+  const title = `太初命理 - 今日运势 (${solarDate.value})`
+  let description = `综合评分：${fortune.value.overallScore}分\n`
+  description += `运势简评：${fortune.value.summary}\n\n`
+  
+  if (hasYiItems.value) {
+    description += `宜：${fortune.value.yi.join('、')}\n`
+  }
+  if (hasJiItems.value) {
+    description += `忌：${fortune.value.ji.join('、')}\n`
+  }
+  
+  if (personalizedFortune.value?.advice) {
+    description += `\n专属建议：${personalizedFortune.value.advice}`
+  }
+
+  // 生成 ICS 文件内容
+  const now = new Date()
+  const dtstamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  
+  // 设置为全天事件
+  const dateStr = solarDate.value.replace(/-/g, '')
+  const dtstart = dateStr
+  
+  // 结束日期为开始日期的下一天
+  const nextDay = new Date(solarDate.value)
+  nextDay.setDate(nextDay.getDate() + 1)
+  const dtend = nextDay.toISOString().split('T')[0].replace(/-/g, '')
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Taichu//Daily Fortune//CN',
+    'BEGIN:VEVENT',
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART;VALUE=DATE:${dtstart}`,
+    `DTEND;VALUE=DATE:${dtend}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n')
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+  const link = document.createElement('a')
+  link.href = window.URL.createObjectURL(blob)
+  link.download = `今日运势_${dateStr}.ics`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  
+  ElMessage.success('已生成日历文件，请在下载后打开以添加到系统日历')
+}
 
 const personalizedRelationGuides = {
   比劫: {
@@ -590,6 +695,7 @@ const handleVisibilityChange = () => {
 onMounted(() => {
   syncLoginState()
   loadDailyFortune()
+  checkTomorrowPreview()
   window.addEventListener('storage', syncLoginState)
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
@@ -816,10 +922,20 @@ onUnmounted(() => {
   margin-bottom: 30px;
 }
 
-.lucky-section h3 {
-  color: var(--text-primary);
+.lucky-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
-  text-align: center;
+}
+
+.lucky-header h3 {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.add-calendar-btn {
+  border-radius: 16px;
 }
 
 .lucky-grid {
@@ -1713,6 +1829,53 @@ onUnmounted(() => {
 .details-section p {
   color: #605545;
   line-height: 1.8;
+}
+
+/* 明日预告样式 */
+.tomorrow-preview-section {
+  margin-bottom: 30px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 249, 255, 0.94));
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.tomorrow-preview-section h3 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tomorrow-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.tomorrow-score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tomorrow-score .score-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tomorrow-summary {
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tomorrow-action {
+  margin-top: 8px;
 }
 
 .aspect-grid {

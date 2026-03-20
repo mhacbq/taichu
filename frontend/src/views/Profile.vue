@@ -50,6 +50,25 @@
               <span class="stat-label">合婚次数</span>
             </div>
           </div>
+          
+          <!-- 积分进度条 -->
+          <div class="points-progress-section">
+            <div class="points-progress-header">
+              <span class="points-progress-title">积分等级</span>
+              <span class="points-progress-level">{{ pointsLevelName }}</span>
+            </div>
+            <el-progress 
+              :percentage="pointsPercentage" 
+              :format="pointsProgressFormat"
+              :color="pointsProgressColor"
+              :stroke-width="12"
+              class="points-progress-bar"
+            />
+            <div class="points-progress-footer">
+              <span>距离下一等级还需 {{ pointsToNextLevel }} 积分</span>
+              <router-link to="/recharge" class="points-recharge-link">去充值 ></router-link>
+            </div>
+          </div>
         </div>
 
         <!-- 积分明细 -->
@@ -69,89 +88,86 @@
           <el-empty v-else description="暂无积分记录" />
         </div>
 
-        <!-- 排盘历史 -->
-        <div class="history-section card card-hover">
-          <h3>排盘历史</h3>
-          <div class="history-list" v-if="baziHistory.length > 0">
-            <div v-for="record in baziHistory" :key="record.id" class="history-item">
-              <div class="history-info">
-                <span class="history-date" :title="formatDateTime(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
-                <span class="history-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+        <!-- 历史记录 Tab 区域 -->
+        <div class="history-tabs-section card card-hover">
+          <el-tabs v-model="activeHistoryTab" class="history-tabs">
+            <el-tab-pane label="八字排盘" name="bazi">
+              <div class="history-list" v-if="baziHistory.length > 0">
+                <div v-for="record in baziHistory" :key="record.id" class="history-item">
+                  <div class="history-info">
+                    <span class="history-date" :title="formatDateTime(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
+                    <span class="history-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+                  </div>
+                  <div class="history-bazi">
+                    <span class="bazi-pillar">{{ record.yearGan }}{{ record.yearZhi }}</span>
+                    <span class="bazi-pillar">{{ record.monthGan }}{{ record.monthZhi }}</span>
+                    <span class="bazi-pillar highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
+                    <span class="bazi-pillar">{{ record.hourGan }}{{ record.hourZhi }}</span>
+                  </div>
+                  <el-button type="primary" size="small" @click="viewDetail(record)">查看</el-button>
+                </div>
               </div>
-              <div class="history-bazi">
-                <span class="bazi-pillar">{{ record.yearGan }}{{ record.yearZhi }}</span>
-                <span class="bazi-pillar">{{ record.monthGan }}{{ record.monthZhi }}</span>
-                <span class="bazi-pillar highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
-                <span class="bazi-pillar">{{ record.hourGan }}{{ record.hourZhi }}</span>
+              <el-empty v-else description="暂无排盘记录" />
+              <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
+                <el-pagination
+                  v-model:current-page="baziCurrentPage"
+                  v-model:page-size="baziPageSize"
+                  :total="baziTotal"
+                  layout="prev, pager, next"
+                  @current-change="loadBaziHistory"
+                />
               </div>
-              <el-button type="primary" size="small" @click="viewDetail(record)">查看</el-button>
-            </div>
-          </div>
-          <el-empty v-else description="暂无排盘记录" />
-          <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
-            <el-pagination
-              v-model:current-page="baziCurrentPage"
-              v-model:page-size="baziPageSize"
-              :total="baziTotal"
-              layout="prev, pager, next"
-              @current-change="loadBaziHistory"
-            />
-          </div>
-        </div>
+            </el-tab-pane>
 
-        <!-- 塔罗历史 -->
-        <div class="history-section card card-hover">
-          <h3>塔罗占卜历史</h3>
-          <div class="history-list" v-if="tarotHistory.length > 0">
-            <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
-              <div class="history-info">
-                <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
-                <span class="history-question" :title="record.question">{{ record.question }}</span>
-                <span class="history-birth">{{ record.spreadName }}</span>
-              </div>
+            <el-tab-pane label="塔罗占卜" name="tarot">
+              <div class="history-list" v-if="tarotHistory.length > 0">
+                <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
+                  <div class="history-info">
+                    <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
+                    <span class="history-question" :title="record.question">{{ record.question }}</span>
+                    <span class="history-birth">{{ record.spreadName }}</span>
+                  </div>
 
-              <div class="tarot-cards">
-                <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
-                  {{ card.emoji }}<small v-if="card.reversed">逆</small>
-                </span>
-                <span v-if="record.cards.length > 3" class="more-cards">+{{ record.cards.length - 3 }}</span>
+                  <div class="tarot-cards">
+                    <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
+                      {{ card.emoji }}<small v-if="card.reversed">逆</small>
+                    </span>
+                    <span v-if="record.cards.length > 3" class="more-cards">+{{ record.cards.length - 3 }}</span>
+                  </div>
+                  <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看</el-button>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看</el-button>
-            </div>
-          </div>
-          <el-empty v-else description="暂无占卜记录" />
-        </div>
+              <el-empty v-else description="暂无占卜记录" />
+            </el-tab-pane>
 
-        <!-- 六爻占卜历史 -->
-        <div class="history-section card card-hover">
-          <h3>六爻占卜历史</h3>
-          <div class="history-list" v-if="liuyaoHistory.length > 0">
-            <div v-for="record in liuyaoHistory" :key="record.id" class="history-item">
-              <div class="history-info">
-                <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
-                <span class="history-question" :title="record.question">{{ record.question || '六爻占卜' }}</span>
-                <span class="history-birth">{{ record.method_name || '铜钱起卦' }}</span>
+            <el-tab-pane label="六爻占卜" name="liuyao">
+              <div class="history-list" v-if="liuyaoHistory.length > 0">
+                <div v-for="record in liuyaoHistory" :key="record.id" class="history-item">
+                  <div class="history-info">
+                    <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
+                    <span class="history-question" :title="record.question">{{ record.question || '六爻占卜' }}</span>
+                    <span class="history-birth">{{ record.method_name || '铜钱起卦' }}</span>
+                  </div>
+                  <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
+                </div>
               </div>
-              <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
-            </div>
-          </div>
-          <el-empty v-else description="暂无六爻记录" />
-        </div>
+              <el-empty v-else description="暂无六爻记录" />
+            </el-tab-pane>
 
-        <!-- 八字合婚历史 -->
-        <div class="history-section card card-hover">
-          <h3>八字合婚历史</h3>
-          <div class="history-list" v-if="hehunHistory.length > 0">
-            <div v-for="record in hehunHistory" :key="record.id" class="history-item">
-              <div class="history-info">
-                <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
-                <span class="history-birth">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
-                <span v-if="record.total_score" class="history-score">综合得分：{{ record.total_score }}</span>
+            <el-tab-pane label="八字合婚" name="hehun">
+              <div class="history-list" v-if="hehunHistory.length > 0">
+                <div v-for="record in hehunHistory" :key="record.id" class="history-item">
+                  <div class="history-info">
+                    <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
+                    <span class="history-birth">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
+                    <span v-if="record.total_score" class="history-score">综合得分：{{ record.total_score }}</span>
+                  </div>
+                  <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
+                </div>
               </div>
-              <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
-            </div>
-          </div>
-          <el-empty v-else description="暂无合婚记录" />
+              <el-empty v-else description="暂无合婚记录" />
+            </el-tab-pane>
+          </el-tabs>
         </div>
 
         <!-- 积分获取攻略 -->
@@ -292,11 +308,47 @@ const feedbackContent = ref('')
 const feedbackContact = ref('')
 const feedbackLoading = ref(false)
 const feedbackEnabled = ref(true)
+const activeHistoryTab = ref('bazi')
 
 // 分页相关
 const baziCurrentPage = ref(1)
 const baziPageSize = ref(5)
 const baziTotal = ref(0)
+
+// 积分等级相关
+const pointsLevels = [
+  { name: '初学乍练', min: 0, max: 100, color: '#909399' },
+  { name: '略有小成', min: 101, max: 500, color: '#67C23A' },
+  { name: '融会贯通', min: 501, max: 2000, color: '#E6A23C' },
+  { name: '登峰造极', min: 2001, max: 10000, color: '#F56C6C' },
+  { name: '返璞归真', min: 10001, max: Infinity, color: '#D4AF37' }
+]
+
+const currentPointsLevel = computed(() => {
+  return pointsLevels.find(level => pointsBalance.value >= level.min && pointsBalance.value <= level.max) || pointsLevels[0]
+})
+
+const pointsLevelName = computed(() => currentPointsLevel.value.name)
+
+const pointsPercentage = computed(() => {
+  const level = currentPointsLevel.value
+  if (level.max === Infinity) return 100
+  const range = level.max - level.min
+  const current = pointsBalance.value - level.min
+  return Math.min(100, Math.max(0, (current / range) * 100))
+})
+
+const pointsProgressColor = computed(() => currentPointsLevel.value.color)
+
+const pointsToNextLevel = computed(() => {
+  const level = currentPointsLevel.value
+  if (level.max === Infinity) return 0
+  return level.max - pointsBalance.value + 1
+})
+
+const pointsProgressFormat = (percentage) => {
+  return `${pointsBalance.value} / ${currentPointsLevel.value.max === Infinity ? '∞' : currentPointsLevel.value.max}`
+}
 
 // 积分获取方式
 const pointMethodDefinitions = [
@@ -835,17 +887,86 @@ onUnmounted(() => {
   color: var(--text-tertiary);
 }
 
+.points-progress-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-light);
+  text-align: left;
+}
+
+.points-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.points-progress-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.points-progress-level {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.points-progress-bar {
+  margin-bottom: 12px;
+}
+
+.points-progress-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.points-recharge-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.points-recharge-link:hover {
+  text-decoration: underline;
+}
+
 .points-section,
-.history-section,
+.history-tabs-section,
 .feedback-section {
   grid-column: 2;
 }
 
 .points-section h3,
-.history-section h3,
 .feedback-section h3 {
   color: var(--text-primary);
   margin-bottom: 20px;
+}
+
+.history-tabs-section {
+  padding: 20px;
+}
+
+:deep(.history-tabs .el-tabs__nav-wrap::after) {
+  height: 1px;
+  background-color: var(--border-light);
+}
+
+:deep(.history-tabs .el-tabs__item) {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+:deep(.history-tabs .el-tabs__item.is-active) {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+:deep(.history-tabs .el-tabs__active-bar) {
+  background-color: var(--primary-color);
 }
 
 .points-list {
@@ -1230,7 +1351,7 @@ onUnmounted(() => {
   }
   
   .points-section,
-  .history-section,
+  .history-tabs-section,
   .feedback-section {
     grid-column: 1;
   }

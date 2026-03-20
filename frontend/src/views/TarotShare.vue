@@ -65,13 +65,24 @@
           <div class="interpretation-content">{{ shareRecord.interpretation }}</div>
         </div>
 
-        <div class="share-actions">
-          <router-link to="/tarot">
-            <el-button type="primary">我也要抽牌</el-button>
-          </router-link>
-          <router-link to="/">
-            <el-button>返回首页</el-button>
-          </router-link>
+        <div class="hot-questions-section">
+          <h3>大家都在问</h3>
+          <div class="hot-questions-list">
+            <router-link to="/tarot" class="hot-question-item card-hover" v-for="(q, index) in hotQuestions" :key="index">
+              <span class="hot-question-rank" :class="`rank-${index + 1}`">{{ index + 1 }}</span>
+              <span class="hot-question-text">{{ q }}</span>
+              <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
+        </div>
+
+        <div class="share-actions-fixed">
+          <div class="share-actions-content">
+            <p class="share-actions-hint">想知道你的专属答案吗？</p>
+            <router-link to="/tarot" class="share-actions-btn">
+              我也来占一卦 <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -82,7 +93,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { WarningFilled } from '@element-plus/icons-vue'
+import { WarningFilled, ArrowRight } from '@element-plus/icons-vue'
 import { getTarotShare } from '../api'
 import BackButton from '../components/BackButton.vue'
 import TarotCard from '../components/TarotCard.vue'
@@ -91,6 +102,14 @@ const route = useRoute()
 const loading = ref(true)
 const errorMessage = ref('')
 const shareRecord = ref(null)
+
+const hotQuestions = [
+  '我最近的财运走向如何？',
+  '这段感情值得我继续投入吗？',
+  '我应该接受这份新工作offer吗？',
+  '如何突破目前的职业瓶颈？',
+  '我什么时候能遇到正缘？'
+]
 
 const spreadPositionLabels = {
   single: ['今日指引'],
@@ -133,6 +152,7 @@ const loadShareRecord = async () => {
 
     if (response.code === 200) {
       shareRecord.value = response.data
+      updateOGMeta(response.data)
       return
     }
 
@@ -144,6 +164,39 @@ const loadShareRecord = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const updateOGMeta = (data) => {
+  if (!data) return
+  
+  const title = `塔罗占卜分享 - ${data.spread_name}`
+  const description = data.question ? `占问：${data.question}` : '查看我的塔罗占卜结果'
+  
+  document.title = `${title} | 太初命理`
+  
+  const metaTags = {
+    'og:title': title,
+    'og:description': description,
+    'og:type': 'article',
+    'og:site_name': '太初命理',
+    'twitter:card': 'summary',
+    'twitter:title': title,
+    'twitter:description': description
+  }
+  
+  Object.entries(metaTags).forEach(([name, content]) => {
+    let tag = document.querySelector(`meta[property="${name}"]`) || document.querySelector(`meta[name="${name}"]`)
+    if (!tag) {
+      tag = document.createElement('meta')
+      if (name.startsWith('og:')) {
+        tag.setAttribute('property', name)
+      } else {
+        tag.setAttribute('name', name)
+      }
+      document.head.appendChild(tag)
+    }
+    tag.setAttribute('content', content)
+  })
 }
 
 onMounted(() => {
@@ -289,6 +342,112 @@ onMounted(() => {
   white-space: pre-line;
 }
 
+.hot-questions-section {
+  margin-top: 40px;
+  padding-bottom: 80px; /* 为底部固定按钮留出空间 */
+}
+
+.hot-questions-section h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.hot-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hot-question-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.hot-question-item:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+  transform: translateX(4px);
+}
+
+.hot-question-rank {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 12px;
+}
+
+.hot-question-rank.rank-1 { background: #ff4d4f; color: white; }
+.hot-question-rank.rank-2 { background: #ff7a45; color: white; }
+.hot-question-rank.rank-3 { background: #ffa940; color: white; }
+
+.hot-question-text {
+  flex: 1;
+  font-size: 15px;
+}
+
+.share-actions-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border-light);
+  padding: 16px 20px;
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.share-actions-content {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.share-actions-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.share-actions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  color: white;
+  border-radius: 24px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+}
+
+.share-actions-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.3);
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
@@ -297,6 +456,17 @@ onMounted(() => {
 
   .cards-display {
     gap: 16px;
+  }
+  
+  .share-actions-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .share-actions-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

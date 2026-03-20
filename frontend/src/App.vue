@@ -50,11 +50,31 @@
         <!-- 用户操作区 -->
         <div class="user-actions">
           <template v-if="isLoggedIn">
-            <router-link to="/recharge" class="points-badge" title="点击充值积分">
-              <el-icon class="points-icon" :size="16"><Star /></el-icon>
-              <span class="points-value">{{ userPoints }}</span>
-              <span class="points-unit">积分</span>
-            </router-link>
+            <el-dropdown trigger="hover" placement="bottom-end">
+              <router-link to="/recharge" class="points-badge" title="点击充值积分">
+                <el-icon class="points-icon" :size="16"><Star /></el-icon>
+                <span class="points-value">{{ userPoints }}</span>
+                <span class="points-unit">积分</span>
+              </router-link>
+              <template #dropdown>
+                <el-dropdown-menu class="points-dropdown">
+                  <div class="points-dropdown-header">
+                    <span class="points-dropdown-title">当前积分余额</span>
+                    <span class="points-dropdown-value">{{ userPoints }}</span>
+                  </div>
+                  <el-dropdown-item>
+                    <router-link to="/recharge" class="points-dropdown-link">
+                      <el-icon><Money /></el-icon> 去充值
+                    </router-link>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <router-link to="/profile" class="points-dropdown-link">
+                      <el-icon><Calendar /></el-icon> 每日签到领积分
+                    </router-link>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <el-dropdown @command="handleCommand" trigger="click">
               <span class="user-info">
                 <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
@@ -258,7 +278,8 @@ import {
   Collection,
   Sunrise,
   Link,
-  House
+  House,
+  Money
 } from '@element-plus/icons-vue'
 
 // 自定义太极图标组件
@@ -544,10 +565,17 @@ watch(() => route.path, () => {
   showCompanion.value = false
 })
 
+// 监听 storage 变化，同步多标签页登录状态
+const handleStorageChange = (e) => {
+  if (e.key === 'token' || e.key === 'userInfo') {
+    checkLoginStatus()
+  }
+}
 
 onMounted(() => {
   checkLoginStatus()
   window.addEventListener('points-updated', handlePointsUpdated)
+  window.addEventListener('storage', handleStorageChange)
   // 滚动时导航栏加深
   const navbar = document.querySelector('.navbar')
   const handleScroll = () => {
@@ -558,6 +586,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('points-updated', handlePointsUpdated)
+  window.removeEventListener('storage', handleStorageChange)
   unlockPageScroll()
 })
 
@@ -1466,6 +1495,47 @@ onBeforeUnmount(() => {
 .points-unit {
   font-size: 11px;
   opacity: 0.7;
+}
+
+.points-dropdown {
+  padding: 0;
+  min-width: 200px;
+}
+
+.points-dropdown-header {
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(184, 134, 11, 0.05));
+  border-bottom: 1px solid rgba(184, 134, 11, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.points-dropdown-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.points-dropdown-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.points-dropdown-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.points-dropdown-link:hover {
+  color: var(--primary-color);
+  background: rgba(212, 175, 55, 0.05);
 }
 
 .user-info {

@@ -2164,6 +2164,22 @@ const showConfirm = () => {
     return
   }
   
+  // 积分不足前置拦截
+  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
+    ElMessageBox.confirm(
+      '当前积分不足，是否前往签到或充值获取积分？',
+      '积分不足',
+      {
+        confirmButtonText: '去获取积分',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    ).then(() => {
+      router.push('/profile')
+    }).catch(() => {})
+    return
+  }
+
   // 首次排盘直接计算，不显示确认框
   if (isFirstBazi.value) {
     calculateBazi()
@@ -6154,6 +6170,11 @@ const formatAiContent = (content) => {
 @media (max-width: 768px) {
   .bazi-page {
     padding: 0 0 56px;
+  }
+
+  /* 修复移动端大表单输入键盘遮挡问题 */
+  .bazi-form {
+    padding-bottom: 30vh; /* 为键盘留出空间 */
   }
 
   .warm-tip {

@@ -167,7 +167,7 @@
         </EmptyState>
       </div>
 
-      <div v-if="cards.length > 0" class="cards-result card card-hover">
+      <div v-if="cards.length > 0" class="cards-result card card-hover" :class="`cards-result--${displayedSpread}`">
         <h3>您的牌阵</h3>
         <p class="cards-hint"><el-icon><MagicStick /></el-icon> 点击或按回车查看详细解读</p>
         <div v-if="submittedQuestionDisplay" class="result-context-summary" aria-label="本次塔罗结果上下文">
@@ -296,7 +296,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic } from '../api'
-
+import html2canvas from 'html2canvas'
 
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import TarotCard from '../components/TarotCard.vue'
@@ -773,7 +773,17 @@ const showConfirm = async () => {
   }
 
   if (currentPoints.value < 5) {
-    ElMessage.warning('积分不足，请先签到领取积分')
+    ElMessageBox.confirm(
+      '当前积分不足，是否前往签到或充值获取积分？',
+      '积分不足',
+      {
+        confirmButtonText: '去获取积分',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    ).then(() => {
+      router.push('/profile')
+    }).catch(() => {})
     return
   }
 
@@ -1117,6 +1127,12 @@ const tarotResultActions = computed(() => {
       disabled: !interpretation.value,
     },
     {
+      key: 'download',
+      label: '保存为图片',
+      onClick: downloadAsImage,
+      disabled: !interpretation.value,
+    },
+    {
       key: 'history',
       label: '查看我的记录',
       to: '/profile',
@@ -1186,6 +1202,29 @@ const getCardAdvice = (card) => {
   const meaning = cardDetailedMeanings[card.name]
   if (!meaning) return '相信直觉，找到属于你的答案'
   return meaning.advice
+}
+
+// 保存为图片
+const downloadAsImage = async () => {
+  const resultElement = document.querySelector('.cards-result')
+  if (!resultElement) return
+
+  try {
+    const canvas = await html2canvas(resultElement, {
+      useCORS: true,
+      scale: 2,
+      backgroundColor: '#fffdf8'
+    })
+    
+    const link = document.createElement('a')
+    link.download = `塔罗占卜结果_${new Date().getTime()}.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+    
+    ElMessage.success('图片保存成功')
+  } catch (error) {
+    reportUiError('保存图片失败', error, '保存图片失败，请稍后重试')
+  }
 }
 </script>
 
@@ -2487,6 +2526,19 @@ const getCardAdvice = (card) => {
   box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
   position: relative;
   overflow: hidden;
+  transition: background 0.5s ease;
+}
+
+.cards-result--single {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 248, 255, 0.95));
+}
+
+.cards-result--three {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 240, 245, 0.95));
+}
+
+.cards-result--celtic {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 245, 255, 0.95));
 }
 
 .cards-result::before {

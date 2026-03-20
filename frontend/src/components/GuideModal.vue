@@ -250,10 +250,17 @@ const shouldDelayGuide = () => {
 
 onMounted(() => {
   const guideShown = localStorage.getItem(GUIDE_SHOWN_KEY)
-  const token = localStorage.getItem('token')
+  const isNewUser = localStorage.getItem('isNewUser') === 'true'
 
-  if (guideShown === 'true' || token || shouldDelayGuide()) {
+  // 如果已经显示过，或者不是新用户且被延迟，则不显示
+  if (guideShown === 'true' || (!isNewUser && shouldDelayGuide())) {
     return
+  }
+
+  // 如果是新用户，清除延迟标记，强制显示
+  if (isNewUser) {
+    localStorage.removeItem(GUIDE_DEFERRED_AT_KEY)
+    localStorage.removeItem('isNewUser') // 消费掉新用户标记
   }
 
   setTimeout(() => {

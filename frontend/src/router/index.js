@@ -17,6 +17,7 @@ const Profile = () => import('../views/Profile.vue')
 
 const Help = () => import('../views/Help.vue')
 const Recharge = () => import('../views/Recharge.vue')
+const Vip = () => import('../views/Vip.vue')
 const Hehun = () => import('../views/Hehun.vue')
 const Liuyao = () => import('../views/Liuyao.vue')
 
@@ -247,6 +248,20 @@ const routes = [
       requiresAuth: true,
       seo: seoConfigs.recharge,
       breadcrumb: [{ name: '首页', url: '/' }, { name: '积分充值', url: '/recharge' }]
+    }
+  },
+  {
+    path: '/vip',
+    name: 'Vip',
+    component: Vip,
+    meta: { 
+      requiresAuth: true,
+      seo: {
+        title: 'VIP会员 - 太初命理',
+        description: '开通太初命理VIP会员，享受更多专属权益',
+        keywords: 'VIP,会员,特权,专属服务'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: 'VIP会员', url: '/vip' }]
     }
   },
   {

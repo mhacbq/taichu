@@ -225,9 +225,9 @@
             <div class="feature-meta">
               <span class="feature-cost">✨ 五行取名</span>
             </div>
-            <span class="feature-link feature-link--sm feature-link--disabled">
-              敬请期待
-            </span>
+            <el-button type="primary" plain size="small" class="feature-link feature-link--sm" @click="handleReserve('qiming')">
+              感兴趣？点击预约
+            </el-button>
           </div>
 
           <!-- 吉日查询（即将推出） -->
@@ -241,9 +241,9 @@
             <div class="feature-meta">
               <span class="feature-cost">📆 择日黄历</span>
             </div>
-            <span class="feature-link feature-link--sm feature-link--disabled">
-              敬请期待
-            </span>
+            <el-button type="primary" plain size="small" class="feature-link feature-link--sm" @click="handleReserve('jiri')">
+              感兴趣？点击预约
+            </el-button>
           </div>
         </div>
       </div>
@@ -829,6 +829,16 @@ const loadUserPoints = async () => {
 
 const refreshHomeAccountState = () => {
   loadUserPoints()
+}
+
+const handleReserve = (type) => {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录后再预约')
+    return
+  }
+  
+  const featureName = type === 'qiming' ? '取名建议' : '吉日查询'
+  ElMessage.success(`已成功预约「${featureName}」功能，上线后将第一时间通知您！`)
 }
 
 onMounted(() => {

@@ -1037,6 +1037,22 @@ const submitDivination = async () => {
     return
   }
 
+  // 积分不足前置拦截
+  if (pricing.value && !pricing.value.is_free && pricing.value.balance < pricing.value.cost) {
+    ElMessageBox.confirm(
+      '当前积分不足，是否前往签到或充值获取积分？',
+      '积分不足',
+      {
+        confirmButtonText: '去获取积分',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    ).then(() => {
+      router.push('/profile')
+    }).catch(() => {})
+    return
+  }
+
   isLoading.value = true
   try {
     const response = await liuyaoDivination(buildDivinationPayload())

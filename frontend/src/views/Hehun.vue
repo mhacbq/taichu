@@ -1916,6 +1916,22 @@ const unlockPremium = async () => {
     return
   }
 
+  // 积分不足前置拦截
+  if (pricing.value && pricing.value.balance < pricing.value.cost) {
+    ElMessageBox.confirm(
+      '当前积分不足，是否前往签到或充值获取积分？',
+      '积分不足',
+      {
+        confirmButtonText: '去获取积分',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    ).then(() => {
+      router.push('/profile')
+    }).catch(() => {})
+    return
+  }
+
   unlockError.value = null
 
   try {
@@ -4063,6 +4079,11 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 14px;
+  }
+
+  /* 修复移动端大表单输入键盘遮挡问题 */
+  .hehun-form {
+    padding-bottom: 30vh; /* 为键盘留出空间 */
   }
 
   .page-title {

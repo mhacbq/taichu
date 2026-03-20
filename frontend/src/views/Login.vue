@@ -231,6 +231,12 @@ const handlePhoneLogin = async () => {
     if (response.code === 200) {
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('userInfo', JSON.stringify(response.data.user))
+      
+      // 如果是新注册用户，设置标记以触发新手指引
+      if (response.data.is_new_user) {
+        localStorage.setItem('isNewUser', 'true')
+      }
+      
       ElMessage.success(isRegisterIntent.value ? '注册成功，欢迎来到太初命理！' : '登录成功！')
       const redirect = route.query.redirect || '/'
       router.push(redirect)
