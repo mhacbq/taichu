@@ -7,7 +7,8 @@
     "topthink/framework": "^8.0",
     "topthink/think-orm": "^3.0",
     "firebase/php-jwt": "^6.10",
-    "topthink/think-filesystem": "^2.0"
+    "topthink/think-filesystem": "^2.0",
+    "ext-mbstring": "*"
   },
   "autoload": {
     "psr-4": {
