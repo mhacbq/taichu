@@ -32,3 +32,48 @@ export const trackSubmit = (formName, isSuccess, extraData = {}) => {
 export const trackError = (errorType, errorMessage, extraData = {}) => {
   trackEvent('error', { type: errorType, message: errorMessage, ...extraData });
 };
+
+// 六爻占卜专用埋点
+export const trackLiuyaoMethodChange = (method) => {
+  trackEvent('liuyao_method_change', { method });
+};
+
+export const trackLiuyaoSubmitStart = (data) => {
+  trackEvent('liuyao_submit_start', data);
+};
+
+export const trackLiuyaoSubmitSuccess = (data) => {
+  trackEvent('liuyao_submit_success', data);
+};
+
+export const trackLiuyaoSubmitFail = (data) => {
+  trackEvent('liuyao_submit_fail', data);
+};
+
+export const trackLiuyaoAiToggle = (useAi) => {
+  trackEvent('liuyao_ai_toggle', { useAi });
+};
+
+export const trackLiuyaoHistoryView = () => {
+  trackEvent('liuyao_history_view');
+};
+
+export const trackLiuyaoHistoryDelete = () => {
+  trackEvent('liuyao_history_delete');
+};
+
+export const trackLiuyaoShare = (platform) => {
+  trackEvent('liuyao_share', { platform });
+};
+
+export const trackLiuyaoResultView = (hasAiAnalysis) => {
+  trackEvent('liuyao_result_view', { hasAiAnalysis });
+};
+
+export const trackLiuyaoPricingView = () => {
+  trackEvent('liuyao_pricing_view');
+};
+
+export const trackLiuyaoPricingError = (error) => {
+  trackEvent('liuyao_pricing_error', { error });
+};

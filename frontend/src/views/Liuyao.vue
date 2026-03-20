@@ -210,11 +210,17 @@
           <div class="form-group">
             <label>起卦方式</label>
             <el-radio-group v-model="form.method" class="method-group premium-segment premium-segment--compact">
-              <el-radio-button v-for="option in methodOptions" :key="option.value" :label="option.value">
-                {{ option.label }}
+              <el-radio-button v-for="option in methodOptions" :key="option.value" :label="option.value" :class="{ 'is-recommend': option.recommend }">
+                <span class="method-label">{{ option.label }}</span>
+                <span v-if="option.recommend" class="method-tag method-tag--recommend">新手推荐</span>
+                <span v-if="option.highlight" class="method-tag method-tag--highlight">{{ option.highlight }}</span>
               </el-radio-button>
             </el-radio-group>
             <p class="form-helper">{{ currentMethodDescription }}</p>
+            <p v-if="currentMethodAudience" class="method-audience">
+              <el-icon><ArrowRight /></el-icon>
+              <span>{{ currentMethodAudience }}</span>
+            </p>
           </div>
 
           <div v-if="form.method === 'time'" class="helper-card">
@@ -476,22 +482,22 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Shield } from '@element-plus/icons-vue'
+import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Shield, ArrowRight } from '@element-plus/icons-vue'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import ShareCard from '../components/ShareCard.vue'
 import WisdomText from '../components/WisdomText.vue'
-import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
+import { trackPageView, trackEvent, trackSubmit, trackError, trackLiuyaoMethodChange, trackLiuyaoSubmitStart, trackLiuyaoSubmitSuccess, trackLiuyaoSubmitFail, trackLiuyaoAiToggle, trackLiuyaoHistoryView, trackLiuyaoHistoryDelete, trackLiuyaoShare, trackLiuyaoResultView, trackLiuyaoPricingView, trackLiuyaoPricingError } from '../utils/tracker'
 
 
 
 
 
 const methodOptions = [
-  { label: '时间起卦', value: 'time', description: '按当前北京时间起卦，适合快速问事。' },
-  { label: '数字起卦', value: 'number', description: '通过数字拆分上下卦，适合已有灵感数字时使用。' },
-  { label: '手动摇卦', value: 'manual', description: '录入 6 次摇卦结果，满足标准六爻问卦流程。' },
+  { label: '时间起卦', value: 'time', description: '按当前北京时间起卦，适合快速问事。', recommend: true, audience: '新手推荐·快速问事', highlight: '最便捷' },
+  { label: '数字起卦', value: 'number', description: '通过数字拆分上下卦，适合已有灵感数字时使用。', audience: '有灵感数字时', highlight: '更有针对性' },
+  { label: '手动摇卦', value: 'manual', description: '录入 6 次摇卦结果，满足标准六爻问卦流程。', audience: '传统方式·问卦严谨', highlight: '最传统' },
 ]
 
 const questionTypeOptions = ['求财', '感情', '事业', '健康', '学业', '出行', '其他']
@@ -542,6 +548,11 @@ const showAdvancedSettings = ref(false)
 const historyListRef = ref(null)
 const currentBeijingTimestamp = ref(Date.now())
 
+// 监听起卦方式变化
+watch(() => form.method, (newMethod) => {
+  trackLiuyaoMethodChange(newMethod)
+})
+
 let beijingTimer = null
 let historyTriggerEl = null
 
@@ -561,6 +572,10 @@ const currentBeijingTime = computed(() => new Intl.DateTimeFormat('zh-CN', {
 
 const currentMethodDescription = computed(() => {
   return methodOptions.find((item) => item.value === form.method)?.description || ''
+})
+
+const currentMethodAudience = computed(() => {
+  return methodOptions.find((item) => item.value === form.method)?.audience || ''
 })
 
 const clearSubmitErrors = () => {
@@ -1223,26 +1238,52 @@ const submitDivination = async () => {
   }
 
   isLoading.value = true
+  isSubmitting.value = true
+  
+  // 埋点：提交开始
+  const payload = buildDivinationPayload()
+  trackLiuyaoSubmitStart({
+    method: payload.method,
+    useAi: payload.use_ai,
+    questionType: payload.question_type
+  })
+
   try {
-    const payload = buildDivinationPayload()
     const response = await liuyaoDivination(payload)
 
     if (response.code === 200) {
       trackSubmit('liuyao_divination', true, { method: payload.method })
+      trackLiuyaoSubmitSuccess({
+        method: payload.method,
+        useAi: payload.use_ai,
+        hasAiAnalysis: !!response.data.ai_analysis
+      })
       clearSubmitErrors()
       result.value = normalizeResult(response.data, false)
       await loadHistory()
       await loadPricing()
+      trackLiuyaoResultView(!!response.data.ai_analysis)
     } else {
       trackSubmit('liuyao_divination', false, { method: payload.method, error: response.message })
+      trackLiuyaoSubmitFail({
+        method: payload.method,
+        useAi: payload.use_ai,
+        error: response.message
+      })
       ElMessage.error(response.message || '占卜失败，请重试')
     }
   } catch (error) {
     trackSubmit('liuyao_divination', false, { error: error.message })
     trackError('liuyao_divination_error', error.message)
+    trackLiuyaoSubmitFail({
+      method: payload.method,
+      useAi: payload.use_ai,
+      error: error.message
+    })
     reportUiError('提交六爻占卜失败', error, '占卜失败，请重试')
   } finally {
     isLoading.value = false
+    isSubmitting.value = false
   }
 }
 
@@ -1537,6 +1578,51 @@ onUnmounted(() => {
 
 .full-width {
   width: 100%;
+}
+
+/* 起卦方式推荐标签 */
+.method-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.method-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.method-tag--recommend {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+}
+
+.method-tag--highlight {
+  background: var(--success-light);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+}
+
+.method-audience {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.method-audience .el-icon {
+  font-size: 12px;
+  color: var(--primary-color);
+}
+
+:deep(.el-radio-button.is-recommend .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--primary-light-05) 0%, var(--white) 100%);
+  border-color: var(--primary-color);
 }
 
 .method-group {
