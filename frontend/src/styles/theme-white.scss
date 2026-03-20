@@ -11,12 +11,12 @@
 
 :root {
   /* ========== 主色调 ========== */
-  --primary-color: #B8860B;           /* 暗金色 - 主品牌色 */
-  --primary-light: #D4AF37;           /* 亮金色 */
-  --primary-dark: #8B6914;            /* 深金色 */
-  --primary-rgb: 184, 134, 11;
-  --primary-light-rgb: 212, 175, 55;
-  --primary-gradient: linear-gradient(135deg, #D4AF37 0%, #B8860B 50%, #8B6914 100%);
+  --primary-color: #D4AF37;           /* 金色 - 主品牌色 */
+  --primary-light: #E8C56E;           /* 浅金色 */
+  --primary-dark: #A8862E;            /* 深金色 */
+  --primary-rgb: 212, 175, 55;
+  --primary-light-rgb: 232, 197, 110;
+  --primary-gradient: linear-gradient(135deg, #E8C56E 0%, #D4AF37 50%, #A8862E 100%);
   
   /* ========== 背景色 ========== */
   --bg-primary: #FFFFFF;              /* 主背景 - 纯白 */
