@@ -228,6 +228,7 @@ class BaziInterpretationService
     /**
      * 生成完整八字解读 - 增强版
      * 支持分级分析和智能质量评估
+     * 新增格局分析和命理定语功能
      */
     public function generateFullInterpretation(array $bazi, string $gender, array $config = []): array
     {
@@ -236,6 +237,7 @@ class BaziInterpretationService
             'include_hehun' => false, // 是否包含合婚分析
             'quality_threshold' => 0.8, // 质量阈值
             'max_length' => 2000, // 最大分析长度
+            'include_pattern' => true, // 是否包含格局分析
         ];
         $config = array_merge($defaultConfig, $config);
         
@@ -264,15 +266,23 @@ class BaziInterpretationService
         // 分析纳音
         $nayinAnalysis = $this->analyzeNayin($bazi);
         
-        // 生成各方面解读
-        $personality = $this->generatePersonalityAnalysis($dayMaster, $dayMasterWuxing, $shishenAnalysis, $wuxingAnalysis);
-        $career = $this->generateCareerAnalysis($dayMaster, $dayMasterWuxing, $yongshen, $shishenAnalysis);
-        $wealth = $this->generateWealthAnalysis($bazi, $shishenAnalysis, $yongshen);
-        $relationship = $this->generateRelationshipAnalysis($bazi, $gender, $shishenAnalysis);
-        $health = $this->generateHealthAnalysis($wuxingStats, $yongshen);
-        $advice = $this->generateComprehensiveAdvice($yongshen, $wuxingStats, $dayMasterWuxing);
+        // 格局分析（新增）
+        $patternAnalysis = null;
+        $mingliDingyu = [];
+        if ($config['include_pattern'] && isset($bazi['pattern']) && is_array($bazi['pattern'])) {
+            $patternAnalysis = $bazi['pattern'];
+            $mingliDingyu = $patternAnalysis['mingli_dingyu'] ?? [];
+        }
         
-        return [
+        // 生成各方面解读
+        $personality = $this->generatePersonalityAnalysis($dayMaster, $dayMasterWuxing, $shishenAnalysis, $wuxingAnalysis, $mingliDingyu);
+        $career = $this->generateCareerAnalysis($dayMaster, $dayMasterWuxing, $yongshen, $shishenAnalysis, $patternAnalysis);
+        $wealth = $this->generateWealthAnalysis($bazi, $shishenAnalysis, $yongshen, $patternAnalysis);
+        $relationship = $this->generateRelationshipAnalysis($bazi, $gender, $shishenAnalysis, $patternAnalysis);
+        $health = $this->generateHealthAnalysis($wuxingStats, $yongshen);
+        $advice = $this->generateComprehensiveAdvice($yongshen, $wuxingStats, $dayMasterWuxing, $patternAnalysis);
+        
+        $result = [
             'basic' => [
                 'day_master' => $dayMaster,
                 'day_master_nature' => $this->ganCharacteristics[$dayMaster]['nature'],
@@ -290,6 +300,13 @@ class BaziInterpretationService
             'health' => $health,
             'advice' => $advice,
         ];
+        
+        // 添加格局分析到结果中
+        if ($config['include_pattern'] && $patternAnalysis !== null) {
+            $result['pattern'] = $patternAnalysis;
+        }
+        
+        return $result;
     }
 
     /**
@@ -869,8 +886,9 @@ class BaziInterpretationService
 
     /**
      * 生成性格分析
+     * 新增命理定语集成
      */
-    protected function generatePersonalityAnalysis(string $dayMaster, string $wuxing, array $shishenAnalysis, array $wuxingAnalysis): string
+    protected function generatePersonalityAnalysis(string $dayMaster, string $wuxing, array $shishenAnalysis, array $wuxingAnalysis, array $mingliDingyu = []): string
     {
         $chars = $this->ganCharacteristics[$dayMaster];
         
@@ -894,14 +912,20 @@ class BaziInterpretationService
             $analysis .= "你的{$dominant}之气偏旺，会增强你" . $this->getWuxingTrait($dominant) . '的一面。';
         }
         
+        // 添加命理定语（新增）
+        if (!empty($mingliDingyu)) {
+            $analysis .= ' ' . implode(' ', $mingliDingyu);
+        }
+        
         return $analysis;
     }
 
 
     /**
      * 生成事业分析
+     * 新增格局分析集成
      */
-    protected function generateCareerAnalysis(string $dayMaster, string $wuxing, array $yongshen, array $shishenAnalysis): string
+    protected function generateCareerAnalysis(string $dayMaster, string $wuxing, array $yongshen, array $shishenAnalysis, ?array $patternAnalysis = null): string
     {
         $chars = $this->ganCharacteristics[$dayMaster];
         
@@ -932,14 +956,23 @@ class BaziInterpretationService
             }
         }
         
+        // 添加格局分析（新增）
+        if ($patternAnalysis !== null && !empty($patternAnalysis['eight_patterns'])) {
+            $mainPattern = $patternAnalysis['eight_patterns'][0] ?? null;
+            if ($mainPattern && isset($mainPattern['name'])) {
+                $analysis .= " 你的八字格局为【{$mainPattern['name']}】，{$mainPattern['description']}";
+            }
+        }
+        
         return $analysis;
     }
 
 
     /**
      * 生成财运分析
+     * 新增格局分析集成
      */
-    protected function generateWealthAnalysis(array $bazi, array $shishenAnalysis, array $yongshen): string
+    protected function generateWealthAnalysis(array $bazi, array $shishenAnalysis, array $yongshen, ?array $patternAnalysis = null): string
     {
         $hasCai = false;
         $caiType = '';

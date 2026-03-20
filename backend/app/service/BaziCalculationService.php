@@ -445,6 +445,12 @@ class BaziCalculationService
                 $bazi['strength']['details'] = $bazi['strength']['details'] ?? [];
                 $bazi['strength']['details']['wuxing_stats'] = $bazi['strength']['details']['wuxing_stats'] ?? $bazi['wuxing_stats'];
             }
+
+            // 格局分析（新增命理定语功能）
+            if (!isset($bazi['pattern']) || !is_array($bazi['pattern'])) {
+                $patternService = new BaziPatternService();
+                $bazi['pattern'] = $patternService->analyzePattern($bazi, $gender);
+            }
         }
 
         return $bazi;
