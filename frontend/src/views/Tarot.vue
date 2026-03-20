@@ -11,8 +11,21 @@
       <!-- 积分提示 -->
       <div class="points-hint card card-hover">
         <el-icon class="hint-icon"><Coin /></el-icon>
-        <span>本次占卜将消耗 <strong>5 积分</strong></span>
-        <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
+        <div class="points-hint-content">
+          <div class="points-hint-main">
+            <span>本次占卜将消耗 <strong>5 积分</strong></span>
+            <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
+          </div>
+          <div class="points-hint-details">
+            <p class="points-hint-title">本次占卜您将获得：</p>
+            <ul class="points-hint-list">
+              <li><el-icon><Check /></el-icon> 专属的塔罗牌阵抽取与牌面展示</li>
+              <li><el-icon><Check /></el-icon> 结合您问题的深度牌面解读与建议</li>
+              <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+            </ul>
+            <p class="points-hint-guarantee"><el-icon><Shield /></el-icon> 失败保障：若抽牌失败或未生成解读，将自动退还积分。</p>
+          </div>
+        </div>
         <div v-if="pointsError" class="points-warning" role="status" aria-live="polite">
           <span>积分同步失败，请先重新获取后再继续占卜</span>
           <el-button link type="warning" class="points-retry" @click="loadPoints" :loading="pointsLoading">重新获取积分</el-button>
@@ -1238,10 +1251,61 @@ const downloadAsImage = async () => {
   max-width: 900px;
   margin: 0 auto 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 15px 20px;
   color: var(--text-primary);
+}
+
+.points-hint-content {
+  flex: 1;
+}
+
+.points-hint-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.points-hint-details {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.points-hint-title {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.points-hint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.points-hint-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.points-hint-list li .el-icon {
+  color: var(--success-color);
+}
+
+.points-hint-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning-color);
+  font-size: 12px;
+  margin: 0;
 }
 
 .hint-icon {

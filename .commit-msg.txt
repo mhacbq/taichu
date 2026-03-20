@@ -1,8 +1,0 @@
-fix-backend-multiple-issues-20260316-1545
-
-修复以下5个后端问题：
-1. Content.php SQL注入风险 - 使用ThinkPHP参数绑定语法
-2. AdminAuthService无效adminId校验缺失 - 添加adminId有效性检查
-3. Admin.php权限检查返回格式不统一 - 统一使用error()方法
-4. Admin.php统计逻辑错误 - 塔罗统计使用TarotRecord替代DailyFortune
-5. Admin.php adjustPoints验证逻辑问题 - 修复validate使用方式

@@ -51,7 +51,7 @@ class Auth extends BaseController
             Log::error('后台登录失败：管理员账号表不存在', [
                 'username' => $username,
             ]);
-            return $this->error('管理员账号表不存在，请先执行 database/20260317_create_admin_users_table.sql', 500);
+            return $this->error('管理员账号表不存在', 500);
         }
 
         $admin = Db::table($adminTable)

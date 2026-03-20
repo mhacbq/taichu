@@ -464,13 +464,27 @@
           
           <!-- 定价信息 -->
           <div class="pricing-info" v-if="pricingLoading || normalizedPricing || pricingError">
-            <div class="pricing-row">
-              <span>本次消耗：</span>
-              <span class="points">{{ pricingDisplayText }}</span>
-              <span v-if="normalizedPricing?.discount > 0" class="discount">-{{ normalizedPricing.discount }}%</span>
+            <div class="pricing-info-content">
+              <div class="pricing-info-main">
+                <div class="pricing-row">
+                  <span>本次消耗：</span>
+                  <span class="points">{{ pricingDisplayText }}</span>
+                  <span v-if="normalizedPricing?.discount > 0" class="discount">-{{ normalizedPricing.discount }}%</span>
+                </div>
+                <p v-if="pricingStatusText" class="pricing-reason">{{ pricingStatusText }}</p>
+                <p v-else-if="normalizedPricing?.reason" class="pricing-reason">{{ normalizedPricing.reason }}</p>
+              </div>
+              <div class="pricing-info-details">
+                <p class="pricing-info-title">解锁完整版您将获得：</p>
+                <ul class="pricing-info-list">
+                  <li><el-icon><Check /></el-icon> 双方八字命盘的详细对比与匹配度打分</li>
+                  <li><el-icon><Check /></el-icon> 五大维度（性格、家庭、事业等）深度解析</li>
+                  <li v-if="form.useAi"><el-icon><Check /></el-icon> AI 综合评估与专属化解建议</li>
+                  <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+                </ul>
+                <p class="pricing-info-guarantee"><el-icon><Shield /></el-icon> 失败保障：若解锁失败或未生成完整报告，将自动退还积分。</p>
+              </div>
             </div>
-            <p v-if="pricingStatusText" class="pricing-reason">{{ pricingStatusText }}</p>
-            <p v-else-if="normalizedPricing?.reason" class="pricing-reason">{{ normalizedPricing.reason }}</p>
           </div>
 
           <div v-if="hasReducedPrecision" class="precision-summary-card">
@@ -3066,12 +3080,67 @@ onMounted(() => {
 
 
 .pricing-info {
-  text-align: center;
+  text-align: left;
   padding: 16px;
   background: var(--primary-light-10);
   border-radius: var(--radius-md);
   margin: 20px 0;
   border: 1px solid var(--primary-light-20);
+}
+
+.pricing-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pricing-info-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.pricing-info-details {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.pricing-info-title {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.pricing-info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.pricing-info-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.pricing-info-list li .el-icon {
+  color: var(--success-color);
+}
+
+.pricing-info-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning-color);
+  font-size: 12px;
+  margin: 0;
 }
 
 .pricing-row {

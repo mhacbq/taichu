@@ -25,12 +25,22 @@
           <span v-else-if="accountStatus === 'guest'">登录后可查看当前积分与排盘说明；填写完信息后，提交前会再次确认。</span>
           <span v-else-if="accountStatus === 'error'">当前账户信息还没同步成功，先重新获取一下即可继续。</span>
           <template v-else>
-
-            <span>
-              <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
-              <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
-            </span>
-            <span class="current-points">当前积分: {{ currentPoints }}</span>
+            <div class="points-hint-content">
+              <div class="points-hint-main">
+                <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
+                <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
+                <span class="current-points">当前积分: {{ currentPoints }}</span>
+              </div>
+              <div class="points-hint-details">
+                <p class="points-hint-title">本次排盘您将获得：</p>
+                <ul class="points-hint-list">
+                  <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
+                  <li><el-icon><Check /></el-icon> 专属的性格内观与事业财运分析</li>
+                  <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+                </ul>
+                <p class="points-hint-guarantee"><el-icon><Shield /></el-icon> 失败保障：若排盘失败或未生成结果，将自动退还积分。</p>
+              </div>
+            </div>
           </template>
           <el-button v-if="accountStatus === 'error'" link type="primary" class="points-retry" @click="loadPoints()">重新获取</el-button>
         </div>
@@ -3164,10 +3174,61 @@ const formatAiContent = (content) => {
   padding: 15px 20px;
   margin-bottom: 25px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   flex-wrap: wrap;
   color: var(--text-primary);
+}
+
+.points-hint-content {
+  flex: 1;
+}
+
+.points-hint-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.points-hint-details {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.points-hint-title {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.points-hint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.points-hint-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.points-hint-list li .el-icon {
+  color: var(--success-color);
+}
+
+.points-hint-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning-color);
+  font-size: 12px;
+  margin: 0;
 }
 
 .points-hint--loading {

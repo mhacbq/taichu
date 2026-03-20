@@ -278,16 +278,30 @@
               <span>正在同步当前占卜价格...</span>
             </div>
             <template v-else-if="pricing">
-              <div v-if="pricing.is_first_free" class="pricing-free">
-                <span><el-icon><Present /></el-icon> 首次占卜免费</span>
+              <div class="pricing-info-content">
+                <div class="pricing-info-main">
+                  <div v-if="pricing.is_first_free" class="pricing-free">
+                    <span><el-icon><Present /></el-icon> 首次占卜免费</span>
+                  </div>
+                  <div v-else-if="pricing.is_vip_free" class="pricing-vip">
+                    <span><el-icon><Trophy /></el-icon> VIP免费</span>
+                  </div>
+                  <div v-else class="pricing-normal">
+                    <span>本次消耗 {{ pricing.cost }} 积分</span>
+                  </div>
+                  <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
+                </div>
+                <div class="pricing-info-details">
+                  <p class="pricing-info-title">本次占卜您将获得：</p>
+                  <ul class="pricing-info-list">
+                    <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘（本卦、变卦、互卦等）</li>
+                    <li><el-icon><Check /></el-icon> 详细的卦辞解析与针对性解读</li>
+                    <li v-if="form.useAi"><el-icon><Check /></el-icon> AI 深度综合分析报告</li>
+                    <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+                  </ul>
+                  <p class="pricing-info-guarantee"><el-icon><Shield /></el-icon> 失败保障：若占卜失败或未生成结果，将自动退还积分。</p>
+                </div>
               </div>
-              <div v-else-if="pricing.is_vip_free" class="pricing-vip">
-                <span><el-icon><Trophy /></el-icon> VIP免费</span>
-              </div>
-              <div v-else class="pricing-normal">
-                <span>本次消耗 {{ pricing.cost }} 积分</span>
-              </div>
-              <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
             </template>
             <div v-else class="pricing-error">
               <p class="pricing-reason pricing-reason--error">{{ pricingError }}</p>
@@ -1456,12 +1470,66 @@ onUnmounted(() => {
 }
 
 .pricing-info {
-  text-align: center;
+  text-align: left;
   padding: 16px;
   background: var(--bg-secondary);
   border-radius: 16px;
   margin: 20px 0;
   border: 1px solid var(--border-light);
+}
+
+.pricing-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pricing-info-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pricing-info-details {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.pricing-info-title {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.pricing-info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.pricing-info-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.pricing-info-list li .el-icon {
+  color: var(--success-color);
+}
+
+.pricing-info-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning-color);
+  font-size: 12px;
+  margin: 0;
 }
 
 .pricing-reason {
