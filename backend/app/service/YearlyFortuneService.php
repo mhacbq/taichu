@@ -31,10 +31,11 @@ class YearlyFortuneService
      * @param string $gender 性别
      * @param int $year 目标年份
      * @param int $userId 用户ID
+     * @param int $baziId 八字记录ID
      * @return array 运势分析结果
      * @throws \Exception
      */
-    public function getYearlyFortune(array $bazi, string $gender, int $year, int $userId): array
+    public function getYearlyFortune(array $bazi, string $gender, int $year, int $userId, int $baziId = 0): array
     {
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
@@ -53,6 +54,46 @@ class YearlyFortuneService
                 $cached['remaining_points'] = $currentBalance;
                 return $cached;
             }
+        }
+
+        // 检查数据库中是否已有记录
+        $existingRecord = Db::name('yearly_fortune')
+            ->where('user_id', $userId)
+            ->where('year', $year)
+            ->find();
+
+        if ($existingRecord && $existingRecord['is_paid']) {
+            $result = [
+                'year' => $year,
+                'ganzhi' => $this->getYearGanZhi($year),
+                'nayin' => $this->getYearNayin($year),
+                'score' => $existingRecord['overall_score'],
+                'rating' => $this->getScoreRating($existingRecord['overall_score']),
+                'overall' => $existingRecord['overall_analysis'],
+                'career' => '', // 兼容旧结构，如果需要可以从 monthly_fortune 中解析
+                'wealth' => '',
+                'relationship' => '',
+                'health' => '',
+                'advice' => '',
+                'lucky_months' => [],
+                'unlucky_months' => [],
+                'lucky_colors' => [],
+                'lucky_numbers' => [],
+                'lucky_directions' => [],
+                'points_cost' => 0,
+                'remaining_points' => $currentBalance,
+                'from_cache' => true,
+            ];
+            
+            // 尝试从 monthly_fortune 恢复详细数据
+            if (!empty($existingRecord['monthly_fortune'])) {
+                $details = json_decode($existingRecord['monthly_fortune'], true);
+                if (is_array($details)) {
+                    $result = array_merge($result, $details);
+                }
+            }
+            
+            return $result;
         }
 
         if ($currentBalance < self::YEARLY_FORTUNE_POINTS_COST) {
@@ -100,6 +141,40 @@ class YearlyFortuneService
             'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
+
+        // 保存到数据库
+        $recordData = [
+            'user_id' => $userId,
+            'year' => $year,
+            'bazi_id' => $baziId,
+            'overall_score' => $score,
+            'career_score' => 0, // 暂无具体评分
+            'wealth_score' => 0,
+            'love_score' => 0,
+            'health_score' => 0,
+            'overall_analysis' => $analysis['overall'] ?? '',
+            'monthly_fortune' => json_encode([
+                'career' => $analysis['career'] ?? '',
+                'wealth' => $analysis['wealth'] ?? '',
+                'relationship' => $analysis['relationship'] ?? '',
+                'health' => $analysis['health'] ?? '',
+                'advice' => $analysis['advice'] ?? '',
+                'lucky_months' => $analysis['lucky_months'] ?? [],
+                'unlucky_months' => $analysis['unlucky_months'] ?? [],
+                'lucky_colors' => $analysis['lucky_colors'] ?? [],
+                'lucky_numbers' => $analysis['lucky_numbers'] ?? [],
+                'lucky_directions' => $analysis['lucky_directions'] ?? [],
+            ], JSON_UNESCAPED_UNICODE),
+            'is_paid' => 1,
+            'points_used' => self::YEARLY_FORTUNE_POINTS_COST,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if ($existingRecord) {
+            Db::name('yearly_fortune')->where('id', $existingRecord['id'])->update($recordData);
+        } else {
+            Db::name('yearly_fortune')->insert($recordData);
+        }
 
         if (self::ENABLE_CACHE) {
             CacheService::set($cacheKey, $result, self::CACHE_TTL, CacheService::TAG_AI);

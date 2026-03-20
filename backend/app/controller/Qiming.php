@@ -77,16 +77,15 @@ class Qiming extends BaseController
 
             // 保存历史
             $recordId = Db::name('tc_qiming_record')->insertGetId([
-                'user_id'    => $userId,
-                'surname'    => $surname,
-                'gender'     => $gender,
-                'birth_date' => $birthDate,
-                'birth_hour' => $birthHour,
-                'style'      => $style,
-                'taboos'     => $taboos,
-                'result'     => $result,
-                'cost'       => $cost,
-                'created_at' => date('Y-m-d H:i:s'),
+                'user_id'          => $userId,
+                'surname'          => mb_substr($surname, 0, 10),
+                'gender'           => $gender === 'female' ? 2 : 1,
+                'birth_date'       => $birthDate,
+                'birth_time'       => empty($birthHour) ? '00:00:00' : $birthHour,
+                'wuxing_lack'      => '', // 可以通过八字排盘获取，这里暂留空
+                'name_suggestions' => $result,
+                'points_used'      => $cost,
+                'created_at'       => date('Y-m-d H:i:s'),
             ]);
 
             Db::commit();
@@ -120,7 +119,7 @@ class Qiming extends BaseController
             ->where('user_id', $userId)
             ->order('created_at', 'desc')
             ->page($page, $limit)
-            ->field('id,surname,gender,birth_date,style,result,cost,created_at')
+            ->field('id,surname,gender,birth_date,birth_time,name_suggestions,points_used,created_at')
             ->select()
             ->toArray();
 

@@ -69,7 +69,8 @@ class Fortune extends BaseController
                 $bazi,
                 $gender,
                 $year,
-                $user['sub']
+                $user['sub'],
+                (int) $baziId
             );
             
             return $this->success($result);

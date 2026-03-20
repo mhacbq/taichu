@@ -1183,7 +1183,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
@@ -1208,6 +1208,7 @@ import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tra
 import { CHINA_CITIES } from '../utils/constants'
 
 const router = useRouter()
+const route = useRoute()
 const activeTab = ref('chart')
 
 const BAZI_BASE_COST = 10
@@ -1441,6 +1442,7 @@ const resetDerivedAnalysisState = () => {
 const resetCurrentResult = () => {
   resetDerivedAnalysisState()
   result.value = null
+  activeTab.value = 'chart'
 }
 
 // 版本提示
@@ -2281,6 +2283,10 @@ onMounted(() => {
   updateViewportState()
   window.addEventListener('resize', updateViewportState)
   loadPoints({ silent: true })
+  
+  if (route.query.tab && ['chart', 'personality', 'career', 'fortune'].includes(route.query.tab)) {
+    activeTab.value = route.query.tab
+  }
 })
 
 // 组件卸载时清理定时器

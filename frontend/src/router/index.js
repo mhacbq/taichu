@@ -20,6 +20,7 @@ const Recharge = () => import('../views/Recharge.vue')
 const Vip = () => import('../views/Vip.vue')
 const Hehun = () => import('../views/Hehun.vue')
 const Liuyao = () => import('../views/Liuyao.vue')
+const Qiming = () => import('../views/Qiming.vue')
 
 // 法律页面
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
@@ -290,6 +291,20 @@ const routes = [
         keywords: '六爻占卜,周易,算卦,问事,预测'
       },
       breadcrumb: [{ name: '首页', url: '/' }, { name: '六爻占卜', url: '/liuyao' }]
+    }
+  },
+  {
+    path: '/qiming',
+    name: 'Qiming',
+    component: Qiming,
+    meta: { 
+      public: true,
+      seo: {
+        title: '取名建议 - 太初命理',
+        description: '结合生辰八字与五行，由AI为新生儿推荐寓意美好的名字',
+        keywords: '取名,起名,八字取名,五行取名,宝宝取名'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '取名建议', url: '/qiming' }]
     }
   },
   {

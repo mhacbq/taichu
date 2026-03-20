@@ -129,6 +129,22 @@
       <div class="container">
         <h2 class="section-title">选择你想探索的方向</h2>
         <p class="section-subtitle">核心功能消耗积分，注册即送，每日签到可持续领取</p>
+
+        <!-- 时效性引流位：年度运程 -->
+        <div class="yearly-banner card-hover" @click="$router.push('/bazi?tab=fortune')">
+          <div class="yearly-banner-content">
+            <div class="yearly-banner-badge">2026 丙午年</div>
+            <h3 class="yearly-banner-title">2026 流年运势深度解析</h3>
+            <p class="yearly-banner-desc">提前布局，把握先机。结合个人八字，AI深度解析事业、财富、感情、健康四大运势，提供专属开运建议与每月吉凶提醒。</p>
+            <div class="yearly-banner-action">
+              <span class="yearly-banner-btn">立即测算 <el-icon><ArrowRight /></el-icon></span>
+            </div>
+          </div>
+          <div class="yearly-banner-bg">
+            <el-icon class="yearly-banner-icon"><Calendar /></el-icon>
+          </div>
+        </div>
+
         <div class="features-grid">
           <!-- 主功能 3个 -->
           <div class="feature-card feature-card--primary card-hover" data-type="bazi">
@@ -214,20 +230,19 @@
             </router-link>
           </div>
 
-          <!-- 取名建议（即将推出） -->
-          <div class="feature-card feature-card--coming card-hover" data-type="qiming">
+          <!-- 取名建议 -->
+          <div class="feature-card feature-card--secondary card-hover" data-type="qiming">
             <div class="feature-icon-wrap feature-icon-wrap--sm">
               <span class="feature-symbol">✍️</span>
             </div>
-            <div class="coming-badge">即将推出</div>
             <h3>取名建议</h3>
             <p>结合生辰八字与五行，由AI为新生儿推荐寓意美好的名字</p>
             <div class="feature-meta">
-              <span class="feature-cost">✨ 五行取名</span>
+              <span class="feature-cost">⚡ 100积分/次</span>
             </div>
-            <el-button type="primary" plain size="small" class="feature-link feature-link--sm" @click="handleReserve('qiming')">
-              感兴趣？点击预约
-            </el-button>
+            <router-link to="/qiming" class="feature-link feature-link--sm">
+              体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
 
           <!-- 吉日查询（即将推出） -->
@@ -2332,6 +2347,107 @@ onUnmounted(() => {
   margin-bottom: 16px;
 }
 
+/* 年度运程 Banner */
+.yearly-banner {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #df3b3b 0%, #e75b5b 100%);
+  border-radius: var(--radius-xl);
+  padding: 36px 40px;
+  margin-bottom: 32px;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(223, 59, 59, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  align-items: center;
+}
+
+.yearly-banner:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(223, 59, 59, 0.3);
+}
+
+.yearly-banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+  color: #fff;
+}
+
+.yearly-banner-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.yearly-banner-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.yearly-banner-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin-bottom: 24px;
+}
+
+.yearly-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #fff;
+  color: #df3b3b;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.yearly-banner:hover .yearly-banner-btn {
+  gap: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.yearly-banner-bg {
+  position: absolute;
+  right: -20px;
+  top: -40px;
+  z-index: 1;
+  opacity: 0.15;
+  transform: rotate(15deg);
+}
+
+.yearly-banner-icon {
+  font-size: 280px;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .yearly-banner {
+    padding: 28px 24px;
+  }
+  
+  .yearly-banner-title {
+    font-size: 24px;
+  }
+  
+  .yearly-banner-icon {
+    font-size: 200px;
+    right: -40px;
+  }
+}
+
 .feature-card {
   height: 100%;
   border: 1px solid rgba(227, 184, 104, 0.28);
@@ -2403,4 +2519,3 @@ onUnmounted(() => {
   }
 }
 </style>
-
