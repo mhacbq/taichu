@@ -499,6 +499,14 @@ class BaziPatternService
             'hour' => $bazi['hour']['shishen'] ?? '',
         ];
         
+        // 获取所有地支
+        $allZhi = [
+            'year' => $bazi['year']['zhi'],
+            'month' => $bazi['month']['zhi'],
+            'day' => $bazi['day']['zhi'],
+            'hour' => $bazi['hour']['zhi'],
+        ];
+        
         $shishenCount = array_count_values($allShishen);
         
         // 正官格（月令为正官且无冲克）
