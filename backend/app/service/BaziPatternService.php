@@ -828,6 +828,9 @@ class BaziPatternService
             }
         }
         
+        // 按照level降序排序，优先显示高层次的格局
+        usort($patterns, fn($a, $b) => ($b['level'] ?? 0) <=> ($a['level'] ?? 0));
+        
         return $patterns;
     }
     
@@ -839,6 +842,8 @@ class BaziPatternService
         $patterns = [];
         $wuxingStats = $bazi['wuxing_stats'] ?? [];
         $strength = $bazi['strength'] ?? [];
+        $dayMaster = $bazi['day']['gan'] ?? '';
+        $dayMasterWuxing = $bazi['day']['gan_wuxing'] ?? '';
         
         // 检查是否三会或三合成局
         $branchValues = [
@@ -850,7 +855,7 @@ class BaziPatternService
         
         $branchArray = array_values($branchValues);
         
-        // 三合局
+        // 三合局（优化版：增加半合识别）
         $sanhe = [
             '申子辰' => ['element' => '水', 'branches' => ['申', '子', '辰']],
             '亥卯未' => ['element' => '木', 'branches' => ['亥', '卯', '未']],
@@ -859,18 +864,32 @@ class BaziPatternService
         ];
         
         foreach ($sanhe as $patternName => $info) {
-            if (count(array_intersect($info['branches'], $branchArray)) === 3) {
+            $count = count(array_intersect($info['branches'], $branchArray));
+            
+            if ($count === 3) {
+                // 完整三合局
                 $patterns[] = [
                     'name' => $patternName . '三合局',
                     'description' => "地支{$info['element']}三合成局，气势强旺，{$info['element']}之力倍增。格局层次较高，有贵人相助，事业有成。",
                     'quality' => '上格',
                     'element' => $info['element'],
-                    'level' => 8,
+                    'level' => 9,
+                ];
+            } elseif ($count === 2) {
+                // 半合局
+                $missing = array_diff($info['branches'], $branchArray);
+                $missingBranch = array_pop($missing);
+                $patterns[] = [
+                    'name' => $patternName . '半合局',
+                    'description' => "地支{$info['element']}半合，{$info['element']}之气较强。若遇{$missingBranch}则成完整三合局。格局中等偏上，有贵人相助。",
+                    'quality' => '中上格',
+                    'element' => $info['element'],
+                    'level' => 6,
                 ];
             }
         }
         
-        // 三会方
+        // 三会方（优化版：增加方局变化识别）
         $sanhui = [
             '寅卯辰' => ['element' => '木', 'branches' => ['寅', '卯', '辰']],
             '巳午未' => ['element' => '火', 'branches' => ['巳', '午', '未']],
@@ -879,83 +898,188 @@ class BaziPatternService
         ];
         
         foreach ($sanhui as $patternName => $info) {
-            if (count(array_intersect($info['branches'], $branchArray)) === 3) {
+            $count = count(array_intersect($info['branches'], $branchArray));
+            
+            if ($count === 3) {
+                // 完整三会方
                 $patterns[] = [
                     'name' => $patternName . '三会方',
                     'description' => "地支{$info['element']}三会成方，气势磅礴，{$info['element']}之力极强。格局层次很高，有贵人相助，事业大成。",
                     'quality' => '上上格',
                     'element' => $info['element'],
-                    'level' => 9,
+                    'level' => 10,
                 ];
-            }
-        }
-        
-        // 从格判断
-        $dayMasterWuxing = $bazi['day']['gan_wuxing'];
-        $dayMasterStrength = $wuxingStats[$dayMasterWuxing] ?? 0;
-        $totalStrength = array_sum($wuxingStats);
-        
-        // 假从格（日主极弱，其他五行极强）
-        if ($dayMasterStrength < 0.5 && $totalStrength > 5) {
-            // 找出最强的五行
-            $maxWuxing = '';
-            $maxStrength = 0;
-            foreach ($wuxingStats as $wx => $value) {
-                if ($wx !== $dayMasterWuxing && $value > $maxStrength) {
-                    $maxStrength = $value;
-                    $maxWuxing = $wx;
-                }
-            }
-            
-            if ($maxWuxing !== '') {
+            } elseif ($count === 2) {
+                // 半方局
+                $missing = array_diff($info['branches'], $branchArray);
+                $missingBranch = array_pop($missing);
                 $patterns[] = [
-                    'name' => '假从格',
-                    'description' => "日主极弱，{$maxWuxing}极强，不得不从。性格随和，善于适应，能够借助外力成就事业。需要顺应环境，顺势而为。",
+                    'name' => $patternName . '半方局',
+                    'description' => "地支{$info['element']}半方，{$info['element']}之气旺盛。若遇{$missingBranch}则成完整三会方。格局较高，有贵人相助。",
                     'quality' => '上格',
-                    'favorable' => [$maxWuxing],
-                    'unfavorable' => [$dayMasterWuxing],
+                    'element' => $info['element'],
                     'level' => 7,
                 ];
             }
         }
         
-        // 真从格（日主无根，其他五行极强）
-        $hasRoot = false;
-        foreach ($branchValues as $pos => $zhi) {
+        // 从格判断（优化版：增强从格条件）
+        $dayMasterStrength = $wuxingStats[$dayMasterWuxing] ?? 0;
+        $totalStrength = array_sum($wuxingStats);
+        
+        // 检查日主是否有根（优化版：更精确的根气判断）
+        $hasRoot = $this->checkDayMasterRoot($dayMasterWuxing, $branchValues);
+        $hasQiangGen = $this->checkDayMasterQiangGen($dayMasterWuxing, $branchValues);
+        
+        // 检查其他五行是否强旺
+        $otherWuxingStrong = $this->checkOtherWuxingStrong($wuxingStats, $dayMasterWuxing);
+        
+        // 真从格（日主无根，其他五行极强，有绝对主导五行）
+        if (!$hasRoot && !$hasQiangGen && $dayMasterStrength < 0.3 && $otherWuxingStrong['dominant'] !== '' && $otherWuxingStrong['ratio'] > 0.6) {
+            $dominantWuxing = $otherWuxingStrong['dominant'];
+            $patterns[] = [
+                'name' => '真从格',
+                'description' => "日主无根无气，{$dominantWuxing}极强且有绝对优势，真从无疑。性格极端，要么极好要么极差，需要顺势而为，能够成就大事业。",
+                'quality' => '上上格',
+                'favorable' => [$dominantWuxing],
+                'unfavorable' => [$dayMasterWuxing],
+                'level' => 10,
+            ];
+        }
+        
+        // 假从格（日主极弱，其他五行极强，但没有绝对主导）
+        if (($hasRoot || $hasQiangGen) && $dayMasterStrength < 0.5 && $otherWuxingStrong['dominant'] !== '') {
+            $dominantWuxing = $otherWuxingStrong['dominant'];
+            $patterns[] = [
+                'name' => '假从格',
+                'description' => "日主极弱，{$dominantWuxing}极强，不得不从。性格随和，善于适应，能够借助外力成就事业。需要顺应环境，顺势而为。",
+                'quality' => '上格',
+                'favorable' => [$dominantWuxing],
+                'unfavorable' => [$dayMasterWuxing],
+                'level' => 8,
+            ];
+        }
+        
+        // 从气格（日主弱，从最旺之气）
+        if (!$hasRoot && $dayMasterStrength < 1.0 && $otherWuxingStrong['dominant'] !== '') {
+            $dominantWuxing = $otherWuxingStrong['dominant'];
+            $patterns[] = [
+                'name' => '从气格',
+                'description' => "日主弱，从{$dominantWuxing}之气。性格温和，善于适应，能够借助环境成就事业。",
+                'quality' => '中上格',
+                'favorable' => [$dominantWuxing],
+                'unfavorable' => [$dayMasterWuxing],
+                'level' => 6,
+            ];
+        }
+        
+        // 从势格（日主弱，从大势）
+        if (!$hasRoot && $dayMasterStrength < 1.0 && $this->checkCongShiPattern($bazi)) {
+            $patterns[] = [
+                'name' => '从势格',
+                'description' => "日主弱，从大势。善于把握趋势，能够顺应时势成就事业。",
+                'quality' => '中格',
+                'favorable' => ['顺应大势'],
+                'unfavorable' => ['逆势而行'],
+                'level' => 5,
+            ];
+        }
+        
+        // 按照level降序排序，优先显示高层次的格局
+        usort($patterns, fn($a, $b) => ($b['level'] ?? 0) <=> ($a['level'] ?? 0));
+        
+        return $patterns;
+    }
+    
+    /**
+     * 检查日主是否有根
+     */
+    protected function checkDayMasterRoot(string $dayMasterWuxing, array $branchValues): bool
+    {
+        foreach ($branchValues as $zhi) {
             $canggan = $this->zhiCangGan[$zhi] ?? [];
             foreach ($canggan as $gan) {
                 if ($this->ganWuXing[$gan] === $dayMasterWuxing) {
-                    $hasRoot = true;
-                    break;
+                    return true;
                 }
             }
-            if ($hasRoot) break;
         }
+        return false;
+    }
+    
+    /**
+     * 检查日主是否有强根
+     */
+    protected function checkDayMasterQiangGen(string $dayMasterWuxing, array $branchValues): bool
+    {
+        $qiangGenMap = [
+            '金' => ['申', '酉'],
+            '木' => ['寅', '卯'],
+            '水' => ['亥', '子'],
+            '火' => ['巳', '午'],
+            '土' => ['辰', '戌', '丑', '未'],
+        ];
         
-        if (!$hasRoot && $dayMasterStrength < 0.3 && $totalStrength > 6) {
-            // 找出最强的五行
-            $maxWuxing = '';
-            $maxStrength = 0;
-            foreach ($wuxingStats as $wx => $value) {
-                if ($wx !== $dayMasterWuxing && $value > $maxStrength) {
+        $qiangGenZhi = $qiangGenMap[$dayMasterWuxing] ?? [];
+        foreach ($branchValues as $zhi) {
+            if (in_array($zhi, $qiangGenZhi, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * 检查其他五行是否强旺
+     */
+    protected function checkOtherWuxingStrong(array $wuxingStats, string $dayMasterWuxing): array
+    {
+        $result = ['dominant' => '', 'ratio' => 0];
+        
+        $maxWuxing = '';
+        $maxStrength = 0;
+        $totalStrength = 0;
+        
+        foreach ($wuxingStats as $wx => $value) {
+            if ($wx !== $dayMasterWuxing) {
+                if ($value > $maxStrength) {
                     $maxStrength = $value;
                     $maxWuxing = $wx;
                 }
-            }
-            
-            if ($maxWuxing !== '') {
-                $patterns[] = [
-                    'name' => '真从格',
-                    'description' => "日主无根，{$maxWuxing}极强，真从无疑。性格极端，要么极好要么极差，需要顺势而为，能够成就大事业。",
-                    'quality' => '上上格',
-                    'favorable' => [$maxWuxing],
-                    'unfavorable' => [$dayMasterWuxing],
-                    'level' => 9,
-                ];
+                $totalStrength += $value;
             }
         }
         
-        return $patterns;
+        if ($maxWuxing !== '' && $totalStrength > 0) {
+            $result['dominant'] = $maxWuxing;
+            $result['ratio'] = $maxStrength / $totalStrength;
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 检查是否为从势格
+     */
+    protected function checkCongShiPattern(array $bazi): bool
+    {
+        $allShishen = [
+            'year' => $bazi['year']['shishen'] ?? '',
+            'month' => $bazi['month']['shishen'] ?? '',
+            'day' => $bazi['day']['shishen'] ?? '',
+            'hour' => $bazi['hour']['shishen'] ?? '',
+        ];
+        
+        // 检查是否有同一类十神占主导
+        $shishenCount = array_count_values(array_filter($allShishen));
+        
+        foreach ($shishenCount as $count) {
+            if ($count >= 2) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -1195,63 +1319,269 @@ class BaziPatternService
             }
         }
         
+        // 按照level降序排序，优先显示高层次的吉神
+        usort($shenShaList, fn($a, $b) => ($b['level'] ?? 0) <=> ($a['level'] ?? 0));
+        
+        // 神煞组合效应分析
+        $shenShaList = $this->analyzeShenShaCombination($shenShaList);
+        
         return $shenShaList;
     }
     
     /**
-     * 生成命理定语
+     * 神煞组合效应分析
+     */
+    protected function analyzeShenShaCombination(array $shenShaList): array
+    {
+        $jiCount = 0;
+        $xiongCount = 0;
+        $zhongCount = 0;
+        
+        foreach ($shenShaList as $shenSha) {
+            $quality = $shenSha['quality'] ?? '';
+            if ($quality === '吉') {
+                $jiCount++;
+            } elseif ($quality === '凶') {
+                $xiongCount++;
+            } else {
+                $zhongCount++;
+            }
+        }
+        
+        // 添加组合效应说明
+        if ($jiCount >= 3 && $xiongCount === 0) {
+            $shenShaList[] = [
+                'name' => '吉神汇聚',
+                'position' => '组合',
+                'description' => "命局吉神汇聚（{$jiCount}个），一生有贵人相助，逢凶化吉，遇难呈祥。事业财运双丰收。",
+                'quality' => '吉',
+                'level' => 10,
+            ];
+        } elseif ($jiCount >= 2 && $xiongCount === 0) {
+            $shenShaList[] = [
+                'name' => '吉神双临',
+                'position' => '组合',
+                'description' => "命局吉神双临（{$jiCount}个），一生顺遂，有贵人扶持。事业有成，家庭幸福。",
+                'quality' => '吉',
+                'level' => 9,
+            ];
+        } elseif ($xiongCount >= 3 && $jiCount === 0) {
+            $shenShaList[] = [
+                'name' => '凶煞齐聚',
+                'position' => '组合',
+                'description' => "命局凶煞齐聚（{$xiongCount}个），一生多波折，需要特别谨慎。建议修身养性，积德行善，化解凶煞。",
+                'quality' => '凶',
+                'level' => 2,
+            ];
+        } elseif ($xiongCount >= 2 && $jiCount === 0) {
+            $shenShaList[] = [
+                'name' => '凶煞双至',
+                'position' => '组合',
+                'description' => "命局凶煞双至（{$xiongCount}个），需要注意。建议谨慎行事，避免冲动，修身养性。",
+                'quality' => '凶',
+                'level' => 3,
+            ];
+        } elseif ($jiCount >= 2 && $xiongCount >= 2) {
+            $shenShaList[] = [
+                'name' => '吉凶参半',
+                'position' => '组合',
+                "description" => "命局吉凶参半（吉{$jiCount}个，凶{$xiongCount}个），人生有起有伏。吉神助人逢凶化吉，凶煞需要谨慎应对。建议多积德行善，提升正能量。",
+                'quality' => '中',
+                'level' => 5,
+            ];
+        } elseif ($jiCount >= $xiongCount && $jiCount > 0) {
+            $shenShaList[] = [
+                'name' => '吉胜于凶',
+                'position' => '组合',
+                'description' => "命局吉神多于凶煞（吉{$jiCount}个，凶{$xiongCount}个），总体运势不错。吉神能够化解凶煞，逢凶化吉。",
+                'quality' => '吉',
+                'level' => 7,
+            ];
+        } elseif ($xiongCount > $jiCount && $xiongCount > 0) {
+            $shenShaList[] = [
+                'name' => '凶多于吉',
+                'position' => '组合',
+                'description' => "命局凶煞多于吉神（吉{$jiCount}个，凶{$xiongCount}个），需要特别谨慎。建议修身养性，积德行善，化解凶煞。",
+                'quality' => '凶',
+                'level' => 4,
+            ];
+        }
+        
+        // 再次按照level降序排序
+        usort($shenShaList, fn($a, $b) => ($b['level'] ?? 0) <=> ($a['level'] ?? 0));
+        
+        return $shenShaList;
+    }
+    
+    /**
+     * 生成命理定语（优化版）
      */
     protected function generateMingliDingyu(array $bazi, array $eightPatterns, array $specialPatterns, array $shenSha): array
     {
         $dingyu = [];
         $strength = $bazi['strength'] ?? [];
         $status = $strength['status'] ?? '';
+        $score = $strength['score'] ?? 50;
         
-        // 日主强弱定语
+        // 日主强弱定语（优化版 - 增加更细致的分析）
         if ($status === '身旺') {
-            $dingyu[] = '日主身旺，精力充沛，有魄力，做事果断。但要注意控制脾气，避免过于强势。';
+            if ($score >= 70) {
+                $dingyu[] = '日主身旺且很强，精力旺盛，意志坚定，领导力强。但要注意控制脾气，避免过于强势和急躁。建议学会谦虚，多听取他人意见。';
+            } else {
+                $dingyu[] = '日主身旺，精力充沛，有魄力，做事果断。但要注意控制脾气，避免过于强势。建议保持平衡，劳逸结合。';
+            }
         } elseif ($status === '中和偏旺') {
-            $dingyu[] = '日主偏旺，精力较充沛，做事有主见。需要保持平衡，避免过度消耗。';
+            $dingyu[] = '日主偏旺，精力较充沛，做事有主见。需要保持平衡，避免过度消耗。建议把握机会，积极进取。';
         } elseif ($status === '中和偏弱') {
-            $dingyu[] = '日主偏弱，需要扶助，建议多借助外力，培养自信心。做事要量力而行。';
+            $dingyu[] = '日主偏弱，需要扶助，建议多借助外力，培养自信心。做事要量力而行，循序渐进。建议结交贵人，寻求支持。';
         } elseif ($status === '身弱') {
-            $dingyu[] = '日主身弱，需要大力扶助，建议多结交贵人，借助外力。要注意保重身体，避免过度劳累。';
-        }
-        
-        // 格局定语
-        $mainPattern = $this->getMainPattern($eightPatterns, $specialPatterns);
-        if ($mainPattern) {
-            $dingyu[] = $mainPattern['description'];
-        }
-        
-        // 神煞定语
-        $goodShenSha = array_filter($shenSha, fn($item) => $item['quality'] === '吉' || $item['quality'] === '中');
-        if (!empty($goodShenSha)) {
-            $topShenSha = array_values($goodShenSha)[0];
-            $dingyu[] = $topShenSha['description'];
-        }
-        
-        // 五行定语
-        $wuxingStats = $bazi['wuxing_stats'] ?? [];
-        $maxWuxing = '';
-        $maxValue = 0;
-        foreach ($wuxingStats as $wx => $value) {
-            if ($value > $maxValue) {
-                $maxValue = $value;
-                $maxWuxing = $wx;
+            if ($score <= 30) {
+                $dingyu[] = '日主身弱且很弱，需要大力扶助，建议多结交贵人，借助外力。要注意保重身体，避免过度劳累。建议保持平和心态，不要过度追求。';
+            } else {
+                $dingyu[] = '日主身弱，需要扶助，建议多结交贵人，借助外力。要注意保重身体，避免过度劳累。建议培养自信心，循序渐进。';
             }
         }
         
-        if ($maxWuxing !== '') {
+        // 格局定语（优化版 - 增加更多格局类型）
+        $mainPattern = $this->getMainPattern($eightPatterns, $specialPatterns);
+        if ($mainPattern) {
+            $dingyu[] = $mainPattern['description'];
+            
+            // 根据格局类型补充定语
+            $patternName = $mainPattern['name'] ?? '';
+            if (in_array($patternName, ['正官格', '正印格', '食神格'], true)) {
+                $dingyu[] = '格局纯正，为人正直，品行端正。适合走正统发展道路，能够得到贵人相助。';
+            } elseif (in_array($patternName, ['七杀格', '伤官格'], true)) {
+                $dingyu[] = '格局特殊，有魄力，善于突破。适合走创新和挑战性道路，能够成就非凡事业。';
+            } elseif (strpos($patternName, '三合局') !== false || strpos($patternName, '三会方') !== false) {
+                $dingyu[] = '格局气势磅礴，有强大的气场和影响力。能够团结众人，成就大业。';
+            } elseif (in_array($patternName, ['羊刃格', '建禄格'], true)) {
+                $dingyu[] = '格局刚强，有强大的意志力和执行力。但要学会控制，避免过于激烈。';
+            } elseif (in_array($patternName, ['真从格', '假从格'], true)) {
+                $dingyu[] = '格局特殊，需要顺应环境，善于变通。能够把握机会，顺势而为。';
+            }
+        }
+        
+        // 神煞定语（优化版 - 增加神煞组合分析）
+        $goodShenSha = array_filter($shenSha, fn($item) => $item['quality'] === '吉');
+        $badShenSha = array_filter($shenSha, fn($item) => $item['quality'] === '凶');
+        
+        if (!empty($goodShenSha)) {
+            // 取最强的吉神
+            usort($goodShenSha, fn($a, $b) => ($b['level'] ?? 0) <=> ($a['level'] ?? 0));
+            $topShenSha = $goodShenSha[0];
+            $dingyu[] = $topShenSha['description'];
+            
+            // 如果有多个吉神，补充说明
+            if (count($goodShenSha) >= 3) {
+                $dingyu[] = '命中有多个吉神，贵人运极好，一生顺遂，容易得到帮助。';
+            } elseif (count($goodShenSha) === 2) {
+                $dingyu[] = '命中有两个吉神，贵人运较好，关键时刻能够得到帮助。';
+            }
+        }
+        
+        if (!empty($badShenSha)) {
+            // 取最弱的凶煞（危险程度最低）
+            usort($badShenSha, fn($a, $b) => ($a['level'] ?? 0) <=> ($b['level'] ?? 0));
+            $topBadSha = $badShenSha[0];
+            $dingyu[] = $topBadSha['description'];
+            
+            // 如果有多个凶煞，补充提醒
+            if (count($badShenSha) >= 3) {
+                $dingyu[] = '命中有多个凶煞，需要特别注意防范，谨慎行事，避免冒险。';
+            }
+        }
+        
+        // 五行定语（优化版 - 增加五行组合分析）
+        $wuxingStats = $bazi['wuxing_stats'] ?? [];
+        $sortedWuxing = $wuxingStats;
+        arsort($sortedWuxing);
+        $topWuxing = array_slice($sortedWuxing, 0, 2, true);
+        
+        // 检查五行平衡度
+        $wuxingValues = array_values($wuxingStats);
+        $avgWuxing = array_sum($wuxingValues) / count($wuxingValues);
+        $wuxingVariance = 0;
+        foreach ($wuxingValues as $value) {
+            $wuxingVariance += pow($value - $avgWuxing, 2);
+        }
+        $wuxingVariance /= count($wuxingValues);
+        $isWuxingBalanced = $wuxingVariance < 2.0; // 平衡的阈值
+        
+        if ($isWuxingBalanced) {
+            $dingyu[] = '五行相对平衡，性格全面，适应能力强。各方面发展都比较均衡，能够把握多方面机会。';
+        } else {
+            // 旺衰分析
+            $maxWuxing = array_key_first($sortedWuxing);
+            $minWuxing = array_key_last($sortedWuxing);
+            
             $wuxingDingyu = [
-                '金' => '命局金旺，性格刚毅果断，有正义感。但要注意控制脾气，避免过于刚硬。',
-                '木' => '命局木旺，性格仁慈正直，有上进心。但要注意保持耐心，避免过于急躁。',
-                '水' => '命局水旺，性格聪明灵活，有智慧。但要注意保持专注，避免过于善变。',
-                '火' => '命局火旺，性格热情开朗，有感染力。但要注意控制情绪，避免过于冲动。',
-                '土' => '命局土旺，性格稳重可靠，有责任感。但要注意保持灵活性，避免过于固执。',
+                '金' => '命局金旺，性格刚毅果断，有正义感。但要注意控制脾气，避免过于刚硬。建议培养包容心，多听取他人意见。',
+                '木' => '命局木旺，性格仁慈正直，有上进心。但要注意保持耐心，避免过于急躁。建议培养韧性，循序渐进。',
+                '水' => '命局水旺，性格聪明灵活，有智慧。但要注意保持专注，避免过于善变。建议培养定力，深耕细作。',
+                '火' => '命局火旺，性格热情开朗，有感染力。但要注意控制情绪，避免过于冲动。建议培养冷静，三思而后行。',
+                '土' => '命局土旺，性格稳重可靠，有责任感。但要注意保持灵活性，避免过于固执。建议培养创新精神，与时俱进。',
             ];
             if (isset($wuxingDingyu[$maxWuxing])) {
                 $dingyu[] = $wuxingDingyu[$maxWuxing];
+            }
+            
+            // 缺陷分析
+            if ($wuxingStats[$minWuxing] < 0.5) {
+                $wuxingAdvice = [
+                    '金' => '命局缺金，缺乏决断力和执行力。建议培养决断力，多锻炼领导能力。',
+                    '木' => '命局缺木，缺乏进取心和创造力。建议培养上进心，多学习新知识。',
+                    '水' => '命局缺水，缺乏灵活性和应变能力。建议培养智慧，多思考总结。',
+                    '火' => '命局缺火，缺乏热情和感染力。建议培养热情，多参与社交活动。',
+                    '土' => '命局缺土，缺乏稳定性和责任感。建议培养稳重，做好规划管理。',
+                ];
+                if (isset($wuxingAdvice[$minWuxing])) {
+                    $dingyu[] = $wuxingAdvice[$minWuxing];
+                }
+            }
+        }
+        
+        // 十神定语（新增 - 基于十神组合分析）
+        $shishenAnalysis = $bazi['shishen_analysis'] ?? [];
+        $dominantShishen = $shishenAnalysis['dominant'] ?? '';
+        
+        if ($dominantShishen !== '') {
+            $shishenDingyu = [
+                '正官' => '命局正官旺，有管理能力和责任感。适合走仕途或管理路线，能够得到重用。',
+                '七杀' => '命局七杀旺，有魄力和决断力。适合从事竞争性强的职业，能够成就一番事业。',
+                '正财' => '命局正财旺，财运稳定，有理财能力。适合稳健理财，积累财富。',
+                '偏财' => '命局偏财旺，有商业头脑，善于把握机会。适合投资理财，但需要谨慎。',
+                '正印' => '命局正印旺，学识渊博，有包容心。适合从事教育、文化等事业，能够有所成就。',
+                '偏印' => '命局偏印旺，有特殊才能，善于创新。适合从事研究、技术等工作，能够独树一帜。',
+                '食神' => '命局食神旺，有才华和创造力。适合从事艺术、设计等工作，能够发挥天赋。',
+                '伤官' => '命局伤官旺，有创新精神和表达能力。适合从事创作、演艺等工作，能够脱颖而出。',
+                '比肩' => '命局比肩旺，有团队精神，善于合作。适合从事需要团队协作的工作，能够团结众人。',
+                '劫财' => '命局劫财旺，有冒险精神，善于拼搏。适合创业或高风险行业，但需要谨慎。',
+            ];
+            if (isset($shishenDingyu[$dominantShishen])) {
+                $dingyu[] = $shishenDingyu[$dominantShishen];
+            }
+        }
+        
+        // 大运流年定语（新增 - 基于运势变化）
+        $dayunPattern = $bazi['dayun_pattern'] ?? [];
+        $liunianPattern = $bazi['liunian_pattern'] ?? [];
+        
+        if (!empty($dayunPattern)) {
+            $isFavorableDayun = $dayunPattern['is_favorable'] ?? false;
+            if ($isFavorableDayun) {
+                $dingyu[] = '目前大运运势较好，是把握机会、积极进取的好时机。建议大胆行动，把握机遇。';
+            } else {
+                $dingyu[] = '目前大运运势一般，需要谨慎行事，稳扎稳打。建议保持低调，积蓄力量。';
+            }
+        }
+        
+        if (!empty($liunianPattern)) {
+            $isFavorableLiunian = $liunianPattern['is_favorable'] ?? false;
+            if ($isFavorableLiunian) {
+                $dingyu[] = '今年流年运势较好，是提升自己、实现目标的好时机。建议积极行动，把握机会。';
+            } else {
+                $dingyu[] = '今年流年运势一般，需要特别注意，谨慎行事。建议保守经营，避免冒险。';
             }
         }
         
