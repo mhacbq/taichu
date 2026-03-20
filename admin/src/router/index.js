@@ -63,6 +63,38 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/result',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/result/bazi',
+    meta: { title: '测算管理', icon: 'DataAnalysis', roles: ['admin', 'operator'] },
+    children: [
+      {
+        path: '/bazi',
+        name: 'BaziManage',
+        component: () => import('@/views/result/BaziManage.vue'),
+        meta: { title: '八字测算', roles: ['admin', 'operator'] }
+      },
+      {
+        path: '/tarot',
+        name: 'TarotManage',
+        component: () => import('@/views/result/TarotManage.vue'),
+        meta: { title: '塔罗测算', roles: ['admin', 'operator'] }
+      },
+      {
+        path: '/liuyao',
+        name: 'LiuyaoManage',
+        component: () => import('@/views/result/LiuyaoManage.vue'),
+        meta: { title: '六爻测算', roles: ['admin', 'operator'] }
+      },
+      {
+        path: '/hehun',
+        name: 'HehunManage',
+        component: () => import('@/views/result/HehunManage.vue'),
+        meta: { title: '合婚测算', roles: ['admin', 'operator'] }
+      }
+    ]
+  },
+  {
     path: '/content',
     component: () => import('@/layout/index.vue'),
     redirect: '/content/pages',
