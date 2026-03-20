@@ -18,82 +18,70 @@
       </div>
       
       <div class="bazi-form card" v-if="!result">
-        <!-- 积分消耗提示 -->
-        <div class="points-hint" :class="{ 'points-hint--loading': accountStatus === 'loading', 'points-hint--error': accountStatus === 'error' }">
-          <el-icon class="hint-icon"><Coin /></el-icon>
-          <span v-if="accountStatus === 'loading'">正在查询账户与价格信息...</span>
-          <span v-else-if="accountStatus === 'guest'">登录后可查看当前积分与排盘说明；填写完信息后，提交前会再次确认。</span>
-          <span v-else-if="accountStatus === 'error'">当前账户信息还没同步成功，先重新获取一下即可继续。</span>
-          <template v-else>
-            <div class="points-hint-content">
-              <div class="points-hint-main">
-                <span v-if="isFirstBazi"><el-icon><Present /></el-icon> 首次排盘免费</span>
-                <span v-else>本次排盘将消耗 <strong>10 积分</strong></span>
-                <span class="current-points">当前积分: {{ currentPoints }}</span>
-              </div>
-              <div class="points-hint-details">
-                <p class="points-hint-title">本次排盘您将获得：</p>
-                <ul class="points-hint-list">
-                  <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
-                  <li><el-icon><Check /></el-icon> 专属的性格内观与事业财运分析</li>
-                  <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
-                </ul>
-                <p class="points-hint-guarantee"><el-icon><Shield /></el-icon> 失败保障：若排盘失败或未生成结果，将自动退还积分。</p>
-              </div>
-            </div>
-          </template>
-          <el-button v-if="accountStatus === 'error'" link type="primary" class="points-retry" @click="loadPoints()">重新获取</el-button>
+
+        <!-- 智能填写策略 -->
+        <div class="strategy-tip-card">
+          <div class="strategy-tip-card__icon">
+            <el-icon><Promotion /></el-icon>
+          </div>
+          <div class="strategy-tip-card__body">
+            <p class="strategy-tip-card__title">智能填写策略</p>
+            <p class="strategy-tip-card__desc">先用简化版 + 精确时刻完成一次排盘，再根据结果决定是否进行深挖</p>
+          </div>
+          <el-button link type="primary" class="strategy-tip-card__link" @click="baziStrategyExpanded = !baziStrategyExpanded">
+            <el-icon><EditPen /></el-icon> Details
+          </el-button>
+        </div>
+        <div v-if="baziStrategyExpanded" class="strategy-summary-card__details">
+          <article v-for="item in baziStrategyDetails" :key="item.key" class="strategy-detail-item">
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.description }}</p>
+          </article>
         </div>
 
-        <div class="strategy-summary-card">
-          <div class="strategy-summary-card__header">
-            <div class="strategy-summary-card__copy">
-              <span class="strategy-summary-card__eyebrow">填写策略</span>
-              <strong>{{ baziStrategySummary }}</strong>
-              <p>先按当前记忆精度完成一次排盘，细节说明需要时再展开看，不把首屏挤成说明书。</p>
+        <!-- 版本选择 -->
+        <div class="version-select-section">
+          <h3 class="version-select-section__title">版本选择</h3>
+          <div class="version-cards">
+            <!-- 简化版 -->
+            <div
+              class="version-card"
+              :class="{ 'version-card--active': versionMode === 'simple' }"
+              @click="versionMode = 'simple'"
+            >
+              <div class="version-card__header">
+                <div class="version-card__icon">
+                  <el-icon><MagicStick /></el-icon>
+                </div>
+                <span class="version-card__name">简化版{{ versionMode === 'simple' ? '（当前选择）' : '' }}</span>
+                <span class="version-card__pts">10 pts</span>
+              </div>
+              <ul class="version-card__features">
+                <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
+                <li><el-icon><Check /></el-icon> 专属的性格内观与事业财运分析</li>
+                <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+              </ul>
             </div>
-            <el-button link type="primary" class="strategy-summary-card__toggle" @click="baziStrategyExpanded = !baziStrategyExpanded">
-              {{ baziStrategyExpanded ? '收起详情' : '查看详情' }}
-            </el-button>
-          </div>
-          <div v-if="baziStrategyExpanded" class="strategy-summary-card__details">
-            <article v-for="item in baziStrategyDetails" :key="item.key" class="strategy-detail-item">
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.description }}</p>
-            </article>
-          </div>
-        </div>
-
-        <!-- 简版/专业版切换 -->
-        <div class="version-toggle">
-          <div class="version-toggle__header">
-            <div class="version-toggle__copy">
-              <span class="version-toggle__eyebrow">排盘模式</span>
-              <h3 class="version-toggle__title">选择这次想看的解读深度</h3>
+            <!-- 专业版 -->
+            <div
+              class="version-card"
+              :class="{ 'version-card--active': versionMode === 'pro' }"
+              @click="versionMode = 'pro'"
+            >
+              <div class="version-card__header">
+                <div class="version-card__icon">
+                  <el-icon><Coin /></el-icon>
+                </div>
+                <span class="version-card__name">专业版{{ versionMode === 'pro' ? '（当前选择）' : '' }}</span>
+                <span class="version-card__pts">50 pts</span>
+              </div>
+              <ul class="version-card__features">
+                <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
+                <li><el-icon><Check /></el-icon> 专属的性格内观与事业财运分析</li>
+                <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+              </ul>
             </div>
-            <span class="version-toggle__status">{{ versionMode === 'pro' ? '当前：专业版' : '当前：简化版' }}</span>
           </div>
-          <el-radio-group v-model="versionMode" size="small" class="version-toggle__group premium-segment premium-segment--card">
-            <el-radio-button label="simple">
-              <span class="mode-option mode-option--stacked">
-                <span class="mode-option__title">
-                  <el-icon class="mode-icon"><MagicStick /></el-icon>
-                  简化版
-                </span>
-                <small class="mode-option__desc">快速查看命局轮廓与核心提示</small>
-              </span>
-            </el-radio-button>
-            <el-radio-button label="pro">
-              <span class="mode-option mode-option--stacked">
-                <span class="mode-option__title">
-                  <el-icon class="mode-icon"><Coin /></el-icon>
-                  专业版
-                </span>
-                <small class="mode-option__desc">补充更多结构信息与进阶分析</small>
-              </span>
-            </el-radio-button>
-          </el-radio-group>
-          <p class="version-hint">{{ versionHint }}</p>
         </div>
 
         <div class="form-group form-group--time" data-bazi-field="birth-time">
@@ -192,6 +180,7 @@
           <p class="form-hint"><el-icon><MagicStick /></el-icon> 出生地可先留空，系统会默认按北京时间排盘。</p>
         </div>
 
+        <!-- 提交前校验提示 -->
         <section v-if="baziSubmitIssues.length" class="submit-summary-card" role="alert" aria-live="assertive">
           <div class="submit-summary-card__header">
             <div>
@@ -213,22 +202,45 @@
             </button>
           </div>
         </section>
-        
-        <el-button 
-          type="primary" 
-          size="large" 
-          @click="showConfirm" 
-          :loading="loading"
-          :disabled="loading"
-        >
-          <el-icon v-if="isAccountReady && isFirstBazi"><Present /></el-icon>
-          {{ startBaziButtonText }}
-        </el-button>
 
-        <!-- 积分不足提示 -->
-        <div v-if="accountStatus === 'ready' && !isFirstBazi && currentPoints < BAZI_BASE_COST" class="insufficient-points">
-
-          <p><el-icon><StarFilled /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+        <!-- 费用与权益确认 -->
+        <div class="cost-confirm-section">
+          <div class="cost-confirm-section__header">
+            <h3 class="cost-confirm-section__title">费用与权益确认</h3>
+            <div class="cost-confirm-section__points">
+              <span>当前积分：<strong>{{ currentPoints }}</strong></span>
+              <router-link to="/profile" class="cost-confirm-section__add">+</router-link>
+            </div>
+          </div>
+          <p class="cost-confirm-section__cost">
+            本次排盘将消耗：<strong>{{ versionMode === 'pro' ? '50' : '10' }} 积分</strong>
+          </p>
+          <div class="cost-confirm-section__benefits">
+            <div class="cost-confirm-benefit">
+              <el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）
+            </div>
+            <div class="cost-confirm-benefit">
+              <el-icon><Check /></el-icon> 专属的性格内观与事业财运分析
+            </div>
+            <div class="cost-confirm-benefit">
+              <el-icon><Check /></el-icon> 失败保护：若排盘失败或未完成，将自动退还积分
+            </div>
+          </div>
+          <el-button
+            type="primary"
+            size="large"
+            class="cost-confirm-section__btn"
+            @click="showConfirm"
+            :loading="loading"
+            :disabled="loading"
+          >
+            <el-icon v-if="isAccountReady && isFirstBazi"><Present /></el-icon>
+            {{ startBaziButtonText }}
+          </el-button>
+          <!-- 积分不足提示 -->
+          <div v-if="accountStatus === 'ready' && !isFirstBazi && currentPoints < BAZI_BASE_COST" class="insufficient-points">
+            <p><el-icon><StarFilled /></el-icon> 积分不足，请先 <router-link to="/profile">签到领取积分</router-link></p>
+          </div>
         </div>
       </div>
 
@@ -1220,7 +1232,7 @@ import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight } from '@element-plus/icons-vue'
+import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight, Promotion, EditPen } from '@element-plus/icons-vue'
 
 import WisdomText from '../components/WisdomText.vue'
 
@@ -3801,17 +3813,20 @@ const formatAiContent = (content) => {
 /* 暖心提示 */
 .warm-tip {
   max-width: 600px;
-  margin: 0 auto 25px;
+  margin: 0 auto 20px;
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 20px 25px;
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 175, 55, 0.1));
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  gap: 14px;
+  padding: 16px 20px;
+  background: rgba(184, 134, 11, 0.06);
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  border-radius: 14px;
 }
 
 .tip-icon {
-  font-size: 36px;
+  font-size: 28px;
+  color: var(--primary-color);
+  flex-shrink: 0;
 }
 
 .tip-content {
@@ -3820,14 +3835,257 @@ const formatAiContent = (content) => {
 
 .tip-title {
   color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 5px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .tip-desc {
   color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* 智能填写策略卡片 */
+.strategy-tip-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: rgba(184, 134, 11, 0.06);
+  border: 1px solid rgba(184, 134, 11, 0.15);
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+.strategy-tip-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(184, 134, 11, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--primary-color);
+}
+
+.strategy-tip-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.strategy-tip-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.strategy-tip-card__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.strategy-tip-card__link {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-color) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 版本选择卡片 */
+.version-select-section {
+  margin-bottom: 28px;
+}
+
+.version-select-section__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.version-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.version-card {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.version-card:hover {
+  border-color: rgba(184, 134, 11, 0.35);
+}
+
+.version-card--active {
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.06));
+  box-shadow: 0 4px 16px rgba(184, 134, 11, 0.12);
+}
+
+.version-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.version-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: rgba(184, 134, 11, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.version-card--active .version-card__icon {
+  background: rgba(184, 134, 11, 0.18);
+}
+
+.version-card__name {
+  flex: 1;
   font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.version-card__pts {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.version-card__features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version-card__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.version-card__features li .el-icon {
+  color: var(--success-color, #67c23a);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* 费用与权益确认 */
+.cost-confirm-section {
+  margin-top: 28px;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.cost-confirm-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cost-confirm-section__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cost-confirm-section__points {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(184, 134, 11, 0.08);
+  border: 1px solid rgba(184, 134, 11, 0.18);
+  font-size: 13px;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.cost-confirm-section__add {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.cost-confirm-section__cost {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+.cost-confirm-section__benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  margin-bottom: 20px;
+}
+
+.cost-confirm-benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cost-confirm-benefit .el-icon {
+  color: var(--success-color, #67c23a);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cost-confirm-section__btn {
+  width: 100%;
+  height: 52px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #c8960c, #d4af37) !important;
+  border: none !important;
+  color: #fff !important;
+  letter-spacing: 0.05em;
 }
 
 /* 版本切换 */

@@ -267,21 +267,13 @@
     <!-- 用户评价 Section -->
     <section class="testimonials">
       <div class="container">
-        <div class="section-heading">
-          <div>
-            <p class="section-eyebrow">体验故事</p>
-            <h2 class="section-title">体验案例</h2>
-            <p class="section-description">以下内容为整理后的体验案例，用来展示不同服务更适合帮助梳理哪类困惑，并不代表对个人结果的直接承诺。</p>
-          </div>
-          <div class="testimonials-summary card">
-            <span class="testimonials-summary-label">说明</span>
-            <p>示例内容按服务场景整理展示，不使用实时评分、具体昵称或头像式背书，重点只放在“这类问题更适合怎么用”。</p>
-          </div>
+        <div class="section-heading section-heading--center">
+          <h2 class="section-title">体验案例</h2>
+          <p class="section-description">真实场景整理，看看哪类困惑更适合哪种服务</p>
         </div>
         <div class="testimonials-grid">
           <article class="testimonial-card card-hover" v-for="(item, index) in testimonials" :key="index">
             <div class="testimonial-topline">
-              <span class="testimonial-badge">{{ item.storyTag }}</span>
               <span class="service-tag">{{ item.service }}</span>
             </div>
             <div class="testimonial-header">
@@ -352,7 +344,7 @@ import {
   Check,
   UserFilled,
   DataLine,
-  ChatLineRound, MagicStick, Present
+  ChatLineRound, MagicStick, Present, ArrowRight
 } from '@element-plus/icons-vue'
 
 const statIconMap = {
@@ -1221,6 +1213,7 @@ onUnmounted(() => {
 .hero-side {
   display: flex;
   justify-content: flex-end;
+  align-self: flex-start;
 }
 
 
@@ -1234,6 +1227,7 @@ onUnmounted(() => {
   backdrop-filter: blur(16px);
   display: grid;
   gap: 18px;
+  align-items: start;
 }
 
 
@@ -1875,6 +1869,24 @@ onUnmounted(() => {
   margin-bottom: 40px;
 }
 
+.section-heading--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  grid-template-columns: unset;
+  margin-bottom: 40px;
+}
+
+.section-heading--center .section-title {
+  margin-bottom: 10px;
+}
+
+.section-heading--center .section-description {
+  max-width: 480px;
+  margin-top: 0;
+}
+
 .section-eyebrow {
   margin: 0 0 10px;
   color: #a56f1f;
@@ -1949,7 +1961,7 @@ onUnmounted(() => {
 
 .testimonial-topline {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
@@ -2145,13 +2157,12 @@ onUnmounted(() => {
   }
 
   .hero-highlights,
-  .hero-access-list,
-  .hero-trust-list {
+  .hero-access-list {
     grid-template-columns: 1fr;
   }
 
   .hero-trust-list {
-    display: grid;
+    justify-content: center;
   }
 
   .hero-highlight,
@@ -2168,7 +2179,6 @@ onUnmounted(() => {
   }
 
   .hero-trust-pill {
-    width: 100%;
     justify-content: flex-start;
   }
 
