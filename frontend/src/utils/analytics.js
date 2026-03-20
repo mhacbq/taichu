@@ -237,10 +237,6 @@ class Analytics {
     }
 
     if (import.meta.env.DEV) {
-      console.debug('[Analytics]', {
-        eventName,
-        eventType,
-        propertyKeys: Object.keys(event.properties)
       })
     }
   }
