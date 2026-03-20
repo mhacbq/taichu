@@ -1,11 +1,13 @@
 <template>
   <div class="page-hero">
     <div class="page-hero__panel">
-      <BackButton :fallback="fallback" class="page-hero__back" />
       <span class="page-hero__halo page-hero__halo--primary" aria-hidden="true"></span>
       <span class="page-hero__halo page-hero__halo--secondary" aria-hidden="true"></span>
       <div class="page-hero__content">
-        <span class="page-hero__eyebrow">太初命理 · 工具页</span>
+        <div class="page-hero__nav">
+          <BackButton :fallback="fallback" class="page-hero__back" />
+          <span class="page-hero__eyebrow">太初命理 · 工具页</span>
+        </div>
         <h1 class="page-hero__title">
           <span v-if="icon" class="page-hero__icon-shell">
             <el-icon class="page-hero__icon" :size="iconSize">
@@ -55,19 +57,23 @@ defineProps({
 .page-hero__panel {
   position: relative;
   overflow: hidden;
-  min-height: 172px;
-  padding: 28px 32px;
+  min-height: 160px;
+  padding: 24px 32px 28px;
   border-radius: var(--radius-card);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 238, 0.96));
   border: 1px solid rgba(var(--primary-rgb), 0.14);
   box-shadow: var(--shadow-card);
 }
 
+.page-hero__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 .page-hero__back {
-  position: absolute;
-  top: 20px;
-  left: 24px;
-  z-index: 2;
+  flex-shrink: 0;
 }
 
 .page-hero__halo {
@@ -97,7 +103,6 @@ defineProps({
   position: relative;
   z-index: 1;
   max-width: 760px;
-  padding-top: 52px;
 }
 
 .page-hero__eyebrow {
@@ -105,7 +110,6 @@ defineProps({
   align-items: center;
   min-height: 30px;
   padding: 0 12px;
-  margin-bottom: 14px;
   border-radius: 999px;
   background: rgba(var(--primary-rgb), 0.09);
   border: 1px solid rgba(var(--primary-rgb), 0.14);
@@ -159,17 +163,13 @@ defineProps({
 
   .page-hero__panel {
     min-height: 0;
-    padding: 22px 20px;
+    padding: 18px 20px 22px;
     border-radius: 22px;
   }
 
-  .page-hero__back {
-    top: 16px;
-    left: 16px;
-  }
-
-  .page-hero__content {
-    padding-top: 48px;
+  .page-hero__nav {
+    margin-bottom: 14px;
+    gap: 10px;
   }
 
   .page-hero__title {

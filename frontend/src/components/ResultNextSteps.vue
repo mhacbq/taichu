@@ -187,19 +187,20 @@ const handleAction = (action = {}) => {
 }
 
 .result-next-steps__actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 18px;
 }
 
 .result-next-steps__action-link {
-  display: block;
+  display: inline-block;
 }
 
 .result-next-steps__action-btn {
-  width: 100%;
-  min-height: 44px;
+  min-height: 36px;
+  font-size: 13px;
+  padding: 0 16px;
 }
 
 .result-next-steps__recommendations {
