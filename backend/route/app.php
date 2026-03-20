@@ -87,17 +87,6 @@ Route::group('api', function () {
         Route::post('recharge', 'Points/recharge');
     });
     
-    // 积分商城
-    Route::group('shop', function () {
-        Route::get('home', 'PointsShop/home');
-        Route::get('products', 'PointsShop/products');
-        Route::get('product-detail', 'PointsShop/productDetail');
-        Route::post('exchange', 'PointsShop/exchange');
-        Route::get('my-exchanges', 'PointsShop/myExchanges');
-        Route::get('exchange-detail', 'PointsShop/exchangeDetail');
-        Route::post('fill-address', 'PointsShop/fillAddress');
-    });
-    
     // 用户反馈
     Route::group('feedback', function () {
         Route::post('submit', 'Feedback/submit');

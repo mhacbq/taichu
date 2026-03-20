@@ -46,7 +46,31 @@ Route::group('api/admin', function () {
         Route::put('users/:id', 'admin.User/updateProfile');
         Route::get('users/:id', 'admin.User/detail');
         Route::get('users', 'admin.User/index');
-
+        
+        // 测算结果管理
+        Route::get('bazi-manage', 'admin.BaziManage/index');
+        Route::get('bazi-manage/:id', 'admin.BaziManage/detail');
+        Route::delete('bazi-manage/:id', 'admin.BaziManage/delete');
+        Route::post('bazi-manage/batch-delete', 'admin.BaziManage/batchDelete');
+        Route::get('bazi-manage/stats', 'admin.BaziManage/stats');
+        
+        Route::get('tarot-manage', 'admin.TarotManage/index');
+        Route::get('tarot-manage/:id', 'admin.TarotManage/detail');
+        Route::delete('tarot-manage/:id', 'admin.TarotManage/delete');
+        Route::post('tarot-manage/batch-delete', 'admin.TarotManage/batchDelete');
+        Route::get('tarot-manage/stats', 'admin.TarotManage/stats');
+        
+        Route::get('liuyao-manage', 'admin.LiuyaoManage/index');
+        Route::get('liuyao-manage/:id', 'admin.LiuyaoManage/detail');
+        Route::delete('liuyao-manage/:id', 'admin.LiuyaoManage/delete');
+        Route::post('liuyao-manage/batch-delete', 'admin.LiuyaoManage/batchDelete');
+        Route::get('liuyao-manage/stats', 'admin.LiuyaoManage/stats');
+        
+        Route::get('hehun-manage', 'admin.HehunManage/index');
+        Route::get('hehun-manage/:id', 'admin.HehunManage/detail');
+        Route::delete('hehun-manage/:id', 'admin.HehunManage/delete');
+        Route::post('hehun-manage/batch-delete', 'admin.HehunManage/batchDelete');
+        Route::get('hehun-manage/stats', 'admin.HehunManage/stats');
 
         
         // 内容管理
