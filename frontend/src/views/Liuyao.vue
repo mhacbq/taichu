@@ -17,10 +17,27 @@
             <span v-if="result.is_first" class="first-free-badge">首次免费</span>
           </div>
 
+          <!-- 核心结论摘要 -->
+          <div v-if="summaryHighlights.length" class="summary-section">
+            <div class="summary-card">
+              <h4 class="summary-title">核心结论</h4>
+              <div class="summary-list">
+                <div v-for="(item, index) in summaryHighlights" :key="index" class="summary-item">
+                  <span class="summary-icon">{{ item.icon }}</span>
+                  <div class="summary-content">
+                    <span class="summary-label">{{ item.label }}</span>
+                    <span class="summary-value">{{ item.value }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div v-if="resultContextItems.length" class="result-context" aria-label="起卦上下文信息">
-            <span v-for="item in resultContextItems" :key="item.label" class="context-chip">
+            <span v-for="item in resultContextItems" :key="item.label" class="context-chip" @click="showTermExplanation(item.label)">
               <span class="context-chip__label">{{ item.label }}</span>
               <span class="context-chip__value">{{ item.value }}</span>
+              <el-icon class="context-chip__help"><QuestionFilled /></el-icon>
             </span>
           </div>
 
@@ -308,13 +325,46 @@
                   <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
                 </div>
                 <div class="pricing-info-details">
-                  <p class="pricing-info-title">本次占卜您将获得：</p>
-                  <ul class="pricing-info-list">
+                  <!-- 基础占卜 vs AI深度分析对比 -->
+                  <div v-if="form.useAi" class="ai-value-compare">
+                    <div class="compare-card basic-card">
+                      <div class="compare-header">
+                        <span class="compare-badge">基础占卜</span>
+                      </div>
+                      <ul class="compare-features">
+                        <li><el-icon><Close /></el-icon> 完整的六爻卦象排盘</li>
+                        <li><el-icon><Close /></el-icon> 基础的卦辞解析</li>
+                        <li><el-icon><Close /></el-icon> 保存占卜历史记录</li>
+                      </ul>
+                    </div>
+
+                    <div class="compare-card ai-card">
+                      <div class="compare-header">
+                        <span class="compare-badge premium">AI深度分析</span>
+                        <span class="compare-tag">推荐</span>
+                      </div>
+                      <ul class="compare-features">
+                        <li><el-icon><Check /></el-icon> <strong>完整的六爻卦象排盘</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>详细的卦辞解析与针对性解读</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>保存占卜历史记录</strong></li>
+                      </ul>
+                      <div class="ai-highlight">
+                        <el-icon><MagicStick /></el-icon>
+                        <span>AI基于六爻专业知识库，为您提供更深入、更专业的占卜解读</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p v-else class="pricing-info-title">本次占卜您将获得：</p>
+                  <ul v-else class="pricing-info-list">
                     <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘（本卦、变卦、互卦等）</li>
                     <li><el-icon><Check /></el-icon> 详细的卦辞解析与针对性解读</li>
-                    <li v-if="form.useAi"><el-icon><Check /></el-icon> AI 深度综合分析报告</li>
                     <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
                   </ul>
+
                   <p class="pricing-info-guarantee"><el-icon><Shield /></el-icon> 失败保障：若占卜失败或未生成结果，将自动退还积分。</p>
                 </div>
               </div>
@@ -426,7 +476,7 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share } from '@element-plus/icons-vue'
+import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Shield } from '@element-plus/icons-vue'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
@@ -477,6 +527,7 @@ const form = reactive(createDefaultForm())
 
 // 状态
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const result = ref(null)
 const pricing = ref(null)
 const pricingLoading = ref(true)
@@ -650,6 +701,37 @@ const shouldShowRemainingPoints = computed(() => {
   return result.value.remaining_points !== null && result.value.remaining_points !== undefined
 })
 
+// 术语解释数据
+const terminologyMap = {
+  '日辰': '起卦当天的干支，如"甲子日"，代表时间基准',
+  '月建': '起卦当月的地支，如"寅月"，代表月份影响',
+  '旬空': '空亡地支，表示该位置力量空虚，可能影响判断',
+  '本卦': '原始卦象，反映事物的初始状态',
+  '变卦': '动爻变化后的卦象，反映事物的发展结果',
+  '互卦': '由本卦中间四爻组成，反映事物的内在过程',
+  '所属宫位': '卦象所属的八宫，决定整体性质',
+  '世应': '世爻代表"我"，应爻代表"他人"或"对方"',
+  '动爻': '发生变化的爻，代表事物变动的因素',
+  '用神': '根据所问之事选定的关键爻，如问事看官鬼，问财看妻财',
+  '六亲': '父母、兄弟、子孙、妻财、官鬼，代表不同事物的关系',
+  '六神': '青龙、白虎、朱雀、玄武、勾陈、螣蛇，代表吉凶趋向',
+  '纳甲': '将地支配入卦中六爻，如"甲子"，用于精确判断',
+  '阳爻': '实线，代表刚强、积极、男性性质',
+  '阴爻': '虚线，代表柔弱、消极、女性性质'
+}
+
+// 显示术语解释
+const showTermExplanation = (term) => {
+  const explanation = terminologyMap[term]
+  if (explanation) {
+    ElMessage.info({
+      message: `${term}：${explanation}`,
+      duration: 5000,
+      showClose: true
+    })
+  }
+}
+
 const savedStatusText = computed(() => (result.value?.is_history ? '来自历史记录' : '已自动保存到历史记录'))
 const historyTriggerText = computed(() => (
   history.value.length > 0 ? `查看历史记录 (${history.value.length}条)` : '查看历史记录'
@@ -764,6 +846,60 @@ const structuredResultItems = computed(() => {
     { label: '动爻', value: dongYao },
     { label: '用神', value: yongShenText },
   ].filter((item) => item.value)
+})
+
+// 核心结论摘要
+const summaryHighlights = computed(() => {
+  if (!result.value) {
+    return []
+  }
+
+  const highlights = []
+
+  // 本卦与变卦
+  const gua = result.value.gua?.name || ''
+  const bianGua = result.value.bian_gua?.name || ''
+  if (gua && bianGua) {
+    highlights.push({
+      icon: '🎯',
+      label: '卦象变化',
+      value: `${gua} → ${bianGua}`
+    })
+  }
+
+  // 动爻信息
+  const dongYao = Array.isArray(result.value.bian_gua?.dong_yao)
+    ? result.value.bian_gua.dong_yao.filter(Boolean)
+    : []
+  if (dongYao.length > 0) {
+    highlights.push({
+      icon: '⚡',
+      label: '动爻',
+      value: dongYao.length > 3 ? `共${dongYao.length}爻变动` : dongYao.join('、')
+    })
+  }
+
+  // 用神信息
+  const yongShen = result.value.yong_shen || {}
+  if (yongShen.liuqin || yongShen.description) {
+    highlights.push({
+      icon: '🎭',
+      label: '用神',
+      value: yongShen.description || yongShen.liuqin || ''
+    })
+  }
+
+  // 世应关系
+  const shiYing = result.value.shi_ying || {}
+  if (shiYing.shi && shiYing.ying) {
+    highlights.push({
+      icon: '👤',
+      label: '世应',
+      value: `世爻第${shiYing.shi} · 应爻第${shiYing.ying}`
+    })
+  }
+
+  return highlights
 })
 
 const reportUiError = (action, error, userMessage = '') => {
@@ -1574,6 +1710,133 @@ onUnmounted(() => {
   margin: 0;
 }
 
+/* 基础占卜 vs AI深度分析对比 */
+.ai-value-compare {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .ai-value-compare {
+    flex-direction: row;
+  }
+}
+
+.compare-card {
+  flex: 1;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-base);
+  transition: all 0.3s;
+}
+
+.basic-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-light);
+}
+
+.ai-card {
+  background: linear-gradient(135deg, var(--primary-light-05) 0%, var(--bg-secondary) 100%);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.15);
+}
+
+.ai-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
+}
+
+.compare-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.compare-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.basic-card .compare-badge {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.ai-card .compare-badge.premium {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+}
+
+.compare-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--error);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.compare-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compare-features li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.basic-card .compare-features .el-icon {
+  color: var(--error);
+}
+
+.ai-card .compare-features .el-icon {
+  color: var(--success-color);
+  font-size: 16px;
+}
+
+.ai-card .compare-features strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ai-highlight {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--white);
+  border-radius: 8px;
+  border: 1px solid var(--primary-light-20);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ai-highlight .el-icon {
+  color: var(--primary-color);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
 .pricing-reason {
   margin: 10px 0 0;
   color: var(--text-secondary);
@@ -1710,6 +1973,76 @@ onUnmounted(() => {
   margin-bottom: 18px;
 }
 
+/* 核心结论摘要 */
+.summary-section {
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, var(--primary-light-05) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--primary-light-20);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.summary-title {
+  color: var(--primary-color);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--white-03);
+  border-radius: 12px;
+  border: 1px solid var(--white-08);
+  transition: all 0.3s;
+}
+
+.summary-item:hover {
+  background: var(--white-05);
+  border-color: var(--primary-light-20);
+  transform: translateX(4px);
+}
+
+.summary-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.summary-value {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 600;
+  word-break: break-word;
+}
+
 .context-chip {
   display: inline-flex;
   align-items: center;
@@ -1719,6 +2052,16 @@ onUnmounted(() => {
   border-radius: 999px;
   border: 1px solid var(--border-light);
   background: linear-gradient(180deg, var(--bg-secondary), var(--bg-card));
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.context-chip:hover {
+  border-color: var(--primary-color);
+  background: linear-gradient(180deg, var(--primary-light-05), var(--bg-secondary));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .context-chip__label {
@@ -1730,6 +2073,17 @@ onUnmounted(() => {
   font-size: 13px;
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.context-chip__help {
+  font-size: 14px;
+  color: var(--primary-color);
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.context-chip:hover .context-chip__help {
+  opacity: 1;
 }
 
 .question-box {
@@ -2540,6 +2894,14 @@ onUnmounted(() => {
 /* 响应式 */
 
 @media (max-width: 768px) {
+  /* 新增移动端安全区适配 */
+  .liuyao-page {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
   .page-header {
     align-items: stretch;
   }

@@ -60,9 +60,8 @@ class Liuyao extends BaseController
             $pricing = $this->resolvePricing($userModel);
             $pointsCost = ($pricing['is_first_free'] || $pricing['is_vip_free']) ? 0 : (int) $pricing['cost'];
 
-            if ($pointsCost > 0 && (int) ($userModel->points ?? 0) < $pointsCost) {
-                return $this->error('积分不足，请先充值', 403);
-            }
+            // 积分检查移至 persistDivinationOutcome 方法中的事务内部执行
+            // 避免在事务外检查积分导致竞态条件
 
             $data['user_id'] = (int) $userModel->id;
             $coreResult = $this->buildDivinationCore($data);
@@ -974,6 +973,101 @@ PROMPT;
         return implode(PHP_EOL . PHP_EOL, array_filter($segments));
     }
 
+
+    /**
+     * 构建增强的AI提示词
+     */
+    private function buildEnhancedAiPayload(array $coreResult, array $data): array
+    {
+        return [
+            'question' => $coreResult['question'] ?? '',
+            'main_gua' => $coreResult['main_gua'] ?? '',
+            'bian_gua' => $coreResult['bian_gua']['bian_name'] ?? '',
+            'hu_gua' => $coreResult['hu_gua']['hu_name'] ?? '',
+            'yao_code' => $coreResult['yao_code'] ?? '',
+            'dong_yao' => $coreResult['bian_gua']['dong_yao'] ?? [],
+            'liuqin' => $coreResult['liuqin'] ?? [],
+            'liushen' => $coreResult['liu_shen'] ?? [],
+            'yong_shen' => $coreResult['yong_shen'] ?? [],
+            'ri_chen' => $coreResult['time_info']['ri_chen'] ?? '',
+            'yue_jian' => $coreResult['time_info']['yue_jian'] ?? '',
+            'xunkong' => $coreResult['time_info']['xunkong'] ?? [],
+            'shi_ying' => $coreResult['shi_ying'] ?? [],
+            'question_type' => $data['question_type'] ?? '其他',
+            'gender' => $data['gender'] ?? '男',
+        ];
+    }
+
+    /**
+     * 记录AI分析使用情况
+     */
+    private function logAiAnalysisUsage(int $userId, ?string $aiContent): void
+    {
+        try {
+            Log::info('六爻AI分析使用', [
+                'user_id' => $userId,
+                'ai_content_length' => $aiContent ? mb_strlen($aiContent) : 0,
+                'has_content' => !empty($aiContent),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('记录AI分析使用失败', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 生成降级AI分析
+     */
+    private function generateFallbackAiAnalysis(array $coreResult, array $data): string
+    {
+        $segments = [];
+        
+        $segments[] = "【卦象概要】";
+        $segments[] = sprintf(
+            "本卦为《%s》，变卦为《%s》，互卦为《%s》。",
+            $coreResult['main_gua'] ?? '未知',
+            $coreResult['bian_gua']['bian_name'] ?? '未知',
+            $coreResult['hu_gua']['hu_name'] ?? '未知'
+        );
+        
+        if (!empty($coreResult['bian_gua']['dong_yao'])) {
+            $segments[] = sprintf(
+                "动爻位置：%s。",
+                implode('、', array_map(fn($v) => "第{$v}爻", $coreResult['bian_gua']['dong_yao']))
+            );
+        }
+        
+        $segments[] = "";
+        $segments[] = "【用神分析】";
+        $yongShen = $coreResult['yong_shen'] ?? [];
+        if (!empty($yongShen['liuqin'])) {
+            $segments[] = sprintf("用神为：%s", $yongShen['liuqin']);
+            if (!empty($yongShen['description'])) {
+                $segments[] .= $yongShen['description'];
+            }
+        }
+        
+        $segments[] = "";
+        $segments[] = "【时间信息】";
+        $segments[] = sprintf(
+            "日辰：%s，月建：%s。",
+            $coreResult['time_info']['ri_chen'] ?? '未知',
+            $coreResult['time_info']['yue_jian'] ?? '未知'
+        );
+        
+        if (!empty($coreResult['time_info']['xunkong'])) {
+            $segments[] .= sprintf("旬空：%s。", implode('、', $coreResult['time_info']['xunkong']));
+        }
+        
+        $segments[] = "";
+        $segments[] = "【建议】";
+        $segments[] .= "当前AI服务暂时繁忙，以上为基础卦象分析。";
+        $segments[] .= "建议稍后重试获取更详细的AI深度解读。";
+        
+        return implode("\n", $segments);
+    }
 
     /**
      * AI 提示数据
