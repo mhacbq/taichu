@@ -155,18 +155,27 @@ class Payment extends BaseController
         $limit = $pagination['pageSize'];
         $status = trim((string) $request->get('status', ''));
         $keyword = trim((string) $request->get('keyword', ''));
+        $userId = trim((string) $request->get('user_id', ''));
         $startDate = trim((string) $request->get('start_date', ''));
         $endDate = trim((string) $request->get('end_date', ''));
         $rechargeOrderColumns = $this->getRechargeOrderColumns();
         
         $query = RechargeOrder::with('user');
-
+        
         
         if ($status !== '') {
             if (!in_array($status, self::ORDER_STATUSES, true)) {
                 return $this->error('订单状态参数无效');
             }
             $this->applyRechargeOrderStatusFilter($query, $status);
+        }
+
+        
+        if ($userId !== '') {
+            if (!ctype_digit($userId)) {
+                return $this->error('用户ID参数无效');
+            }
+            $query->where('user_id', (int) $userId);
         }
 
 
@@ -177,11 +186,13 @@ class Payment extends BaseController
             $query->where(function ($q) use ($keyword, $matchedUserIds, $rechargeOrderColumns) {
                 $q->whereLike('order_no', '%' . $keyword . '%');
 
-                if (isset($rechargeOrderColumns['pay_order_no'])) {
-                    $q->whereOrLike('pay_order_no', '%' . $keyword . '%');
-                }
-                if (isset($rechargeOrderColumns['transaction_id'])) {
-                    $q->whereOrLike('transaction_id', '%' . $keyword . '%');
+                if (!empty($rechargeOrderColumns)) {
+                    if (isset($rechargeOrderColumns['pay_order_no'])) {
+                        $q->whereOrLike('pay_order_no', '%' . $keyword . '%');
+                    }
+                    if (isset($rechargeOrderColumns['transaction_id'])) {
+                        $q->whereOrLike('transaction_id', '%' . $keyword . '%');
+                    }
                 }
 
                 if (ctype_digit($keyword)) {

@@ -155,7 +155,7 @@ class AdminStatsService
     private static function getOrderStats(string $today, string $thisMonth): array
     {
         $todayStats = self::getDailyStatsSnapshot($today);
-        $monthStats = self::getMonthlyOrderStats($thisMonth);
+        $monthStats = self::getMonthlyStatsSnapshot($thisMonth);
 
         $statusDistribution = [];
         $vipOrderTable = self::resolveVipOrderTable();
@@ -593,6 +593,28 @@ class AdminStatsService
             'refund_count' => $refundCount,
             'refund_amount' => round($refundAmount, 2),
         ];
+    }
+
+    /**
+     * 获取月度统计快照
+     */
+    private static function getMonthlyStatsSnapshot(string $month): array
+    {
+        if (self::tableExists('site_daily_stats')) {
+            $monthStats = Db::table('site_daily_stats')
+                ->whereLike('stat_date', $month . '%')
+                ->field('SUM(order_count) as total_orders, SUM(paid_count) as paid_orders, SUM(paid_amount) as total_amount')
+                ->find() ?: [];
+            
+            return [
+                'total_orders' => (int) ($monthStats['total_orders'] ?? 0),
+                'paid_orders' => (int) ($monthStats['paid_orders'] ?? 0),
+                'total_amount' => (float) ($monthStats['total_amount'] ?? 0),
+            ];
+        }
+
+        // 如果快照表不存在，使用实时数据作为兜底
+        return self::getMonthlyOrderStats($month);
     }
 
     /**

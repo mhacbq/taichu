@@ -2124,7 +2124,7 @@ const getCardAdvice = (card) => {
 
 /* 2026-03 UI polish: tarot refresh */
 .tarot-page {
-  padding: 10px 0 78px;
+  padding: 10px 0 40px;
   background:
     radial-gradient(circle at top left, rgba(var(--primary-rgb), 0.14), transparent 32%),
     radial-gradient(circle at 88% 14%, rgba(245, 196, 103, 0.18), transparent 26%),
@@ -2424,16 +2424,16 @@ const getCardAdvice = (card) => {
 
 .draw-btn {
   width: 100%;
-  min-height: 56px;
+  min-height: 48px;
   margin-top: 20px;
   border: none;
-  border-radius: 20px;
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: 0.5px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.3px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  box-shadow: 0 20px 40px rgba(var(--primary-rgb), 0.25), 
-              0 8px 24px rgba(var(--primary-rgb), 0.15),
+  box-shadow: 0 16px 32px rgba(var(--primary-rgb), 0.2), 
+              0 6px 20px rgba(var(--primary-rgb), 0.12),
               inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -2644,12 +2644,12 @@ const getCardAdvice = (card) => {
 }
 
 .result-actions .el-button {
-  min-width: 160px;
-  min-height: 48px;
-  border-radius: 16px;
+  min-width: 140px;
+  min-height: 42px;
+  border-radius: 14px;
   font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.3px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;

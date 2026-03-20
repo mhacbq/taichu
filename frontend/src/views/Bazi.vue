@@ -325,6 +325,9 @@
           <div class="tab-item" :class="{ active: activeTab === 'career' }" @click="activeTab = 'career'">
              <el-icon><Briefcase /></el-icon> 事业财运
           </div>
+          <div class="tab-item" :class="{ active: activeTab === 'fortune' }" @click="activeTab = 'fortune'">
+             <el-icon><Calendar /></el-icon> 流年大运
+          </div>
         </div>
 
         <div class="tab-content" v-show="activeTab === 'chart'">
@@ -481,7 +484,7 @@
           </div>
         </div>
 
-        <div class="tab-content" v-show="activeTab === 'personality' || activeTab === 'career'">
+        <div class="tab-content" v-show="activeTab === 'personality' || activeTab === 'career' || activeTab === 'fortune'">
           <div class="tab-pane-content">
             <div class="pane-title" v-if="activeTab === 'personality'">
                 <el-icon class="title-icon"><UserFilled /></el-icon>
@@ -490,6 +493,11 @@
             <div class="pane-title" v-if="activeTab === 'career'">
                 <el-icon class="title-icon"><Briefcase /></el-icon>
                 <span class="title-text">事业财运</span>
+            </div>
+            <div class="pane-title" v-if="activeTab === 'fortune'">
+                <el-icon class="title-icon"><Calendar /></el-icon>
+                <span class="title-text">流年大运</span>
+                <span class="title-desc">10年大运周期 + 当前流年重点分析</span>
             </div>
 
           <!-- 性格与解读部分 (Shared Content with v-show logic inside) -->
@@ -584,6 +592,39 @@
                     <h4>开运建议</h4>
                   </div>
                   <p class="rc-content">{{ result.fullInterpretation.advice }}</p>
+                </div>
+                
+                <!-- 流年大运内容 -->
+                <div class="reading-card card-hover fortune-card" v-if="result.fullInterpretation.fortune" v-show="activeTab === 'fortune'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><Calendar /></el-icon>
+                    <h4>10年大运周期</h4>
+                  </div>
+                  <div class="fortune-timeline">
+                    <div v-for="(period, index) in result.fullInterpretation.fortune.periods" :key="index" class="fortune-period">
+                      <div class="period-header">
+                        <span class="period-years">{{ period.years }}</span>
+                        <span class="period-status" :class="period.status">{{ period.statusText }}</span>
+                      </div>
+                      <p class="period-desc">{{ period.description }}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="reading-card card-hover fortune-card" v-if="result.fullInterpretation.fortune" v-show="activeTab === 'fortune'">
+                  <div class="rc-header">
+                    <el-icon class="rc-icon"><TrendCharts /></el-icon>
+                    <h4>当前流年重点</h4>
+                  </div>
+                  <div class="current-fortune">
+                    <div class="fortune-year">{{ result.fullInterpretation.fortune.currentYear }}年运势</div>
+                    <div class="fortune-highlights">
+                      <div v-for="(highlight, index) in result.fullInterpretation.fortune.highlights" :key="index" class="highlight-item">
+                        <span class="highlight-type">{{ highlight.type }}</span>
+                        <span class="highlight-desc">{{ highlight.description }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

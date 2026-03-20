@@ -15,6 +15,7 @@
           size="large"
           clearable
           class="search-input"
+          @input="handleSearchInput"
         >
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
@@ -24,10 +25,22 @@
             v-for="tag in hotTags" 
             :key="tag"
             class="hot-tag"
-            @click="searchQuery = tag"
+            @click="searchQuery = tag; handleSearchInput()"
           >
             {{ tag }}
           </el-tag>
+        </div>
+        <!-- 搜索建议 -->
+        <div v-if="searchSuggestions.length > 0" class="search-suggestions">
+          <div 
+            v-for="suggestion in searchSuggestions" 
+            :key="suggestion.id"
+            class="suggestion-item"
+            @click="selectSuggestion(suggestion)"
+          >
+            <el-icon><Search /></el-icon>
+            <span class="suggestion-text">{{ suggestion.question }}</span>
+          </div>
         </div>
       </div>
 
@@ -119,124 +132,112 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import BackButton from '../components/BackButton.vue'
 import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, Coin, Lock } from '@element-plus/icons-vue'
-
+import { getFaqs } from '../api/siteContent'
 
 const router = useRouter()
 const searchQuery = ref('')
 const activeNames = ref([0, 1, 2])
+const faqData = ref([])
+const searchSuggestions = ref([])
+const isLoading = ref(false)
 
+// 热门搜索标签
 const hotTags = ['积分', '八字', '登录', '塔罗', '充值']
 
-const categories = ref([
-  {
-    title: '新手指南',
-    items: [
-      {
-        question: '太初命理是什么？',
-        answer: '太初命理是一款结合传统命理学与人工智能技术的智能分析平台，为您提供专业的八字排盘、塔罗占卜、每日运势等服务。',
-        expanded: false
-      },
-      {
-        question: '如何注册账号？',
-        answer: '点击页面右上角的"登录"按钮，选择微信登录或手机号登录即可完成注册。新用户注册即送100积分新手礼包！',
-        expanded: false
-      },
-      {
-        question: '积分有什么用？',
-        answer: '积分可用于使用平台服务：八字排盘（10积分/次）、塔罗占卜（5积分/次）。积分可通过每日签到、邀请好友等方式获得。',
-        expanded: false
-      }
-    ]
-  },
-  {
-    title: '积分相关',
-    items: [
-      {
-        question: '如何获得积分？',
-        answer: '1. 每日签到：基础5积分，连续签到有额外奖励\n2. 新用户注册：送100积分\n3. 邀请好友：每邀请一位好友获得20积分\n4. 分享结果：分享排盘或占卜结果获得5积分',
-        expanded: false
-      },
-      {
-        question: '积分可以充值吗？',
-        answer: '目前积分主要通过平台活动获得，暂不支持直接充值。我们会不定期推出积分赠送活动，请持续关注！',
-        expanded: false
-      },
-      {
-        question: '积分会过期吗？',
-        answer: '积分永久有效，不会过期，请放心使用。',
-        expanded: false
-      }
-    ]
-  },
-  {
-    title: '八字排盘',
-    items: [
-      {
-        question: '什么是真太阳时？',
-        answer: '真太阳时是根据出生地点的经度计算出的真实太阳时间。中国幅员辽阔，东西跨度大，不同地区的北京时间与实际太阳时存在差异。八字排盘需要使用真太阳时才能准确计算。',
-        expanded: false
-      },
-      {
-        question: '八字排盘准确吗？',
-        answer: '我们的八字排盘基于传统命理学算法，结合精确的节气计算和天文数据。但命理分析仅供参考，人生道路还需自己把握。',
-        expanded: false
-      },
-      {
-        question: '可以多次排盘吗？',
-        answer: '可以，每次排盘消耗10积分。同一人的八字是固定的，重复排盘结果相同。建议将结果保存或分享，方便日后查看。',
-        expanded: false
-      }
+// 分类映射
+const categoryMap = {
+  'general': '新手指南',
+  'bazi': '八字分析', 
+  'tarot': '塔罗测试',
+  'account': '账号相关',
+  'points': '积分问题'
+}
 
-    ]
-  },
-  {
-    title: '塔罗占卜',
-    items: [
-      {
-        question: '塔罗占卜有什么用？',
-        answer: '塔罗牌是一种趣味心理测试工具，可以帮助您：了解当前心境、探索内心可能、获得思考角度。塔罗测试仅供娱乐参考，帮助您从另一个角度认识自己。',
-        expanded: false
-      },
-      {
-        question: '不同牌阵有什么区别？',
-        answer: '单张牌：简单直接，适合快速解答；三张牌：过去-现在-未来，了解时间线；凯尔特十字：深度分析，全面解读问题。',
-        expanded: false
-      },
-      {
-        question: '塔罗牌正逆位有什么区别？',
-        answer: '正位通常表示能量的正常流动，逆位可能表示能量受阻、延迟或需要反向思考。逆位不一定是坏事，有时是提醒需要注意的方面。',
-        expanded: false
-      }
-    ]
-  },
-  {
-    title: '账号安全',
-    icon: Lock,
-    items: [
+// 分类图标映射
+const categoryIcons = {
+  'general': 'StarFilled',
+  'bazi': 'Coin',
+  'tarot': 'MagicStick',
+  'account': 'UserFilled',
+  'points': 'Lock'
+}
 
-      {
-        question: '如何修改个人信息？',
-        answer: '进入"个人中心"页面，可以查看和修改您的个人信息，包括昵称、头像等。',
+// 加载FAQ数据
+const loadFaqs = async () => {
+  try {
+    isLoading.value = true
+    const response = await getFaqs()
+    if (response.code === 200) {
+      faqData.value = response.data.map(item => ({
+        ...item,
         expanded: false
-      },
-      {
-        question: '忘记登录怎么办？',
-        answer: '您可以重新使用微信或手机号登录，系统会自动识别您的账号信息。',
-        expanded: false
-      },
-      {
-        question: '如何退出登录？',
-        answer: '点击页面右上角的用户头像，选择"退出登录"即可。',
-        expanded: false
-      }
-    ]
+      }))
+    }
+  } catch (error) {
+    console.error('加载FAQ数据失败:', error)
+    ElMessage.error('加载帮助内容失败，请稍后重试')
+  } finally {
+    isLoading.value = false
   }
-])
+}
 
+// 处理搜索输入
+const handleSearchInput = () => {
+  if (searchQuery.value.length > 1) {
+    // 显示搜索建议
+    const suggestions = faqData.value.filter(item => 
+      item.question.toLowerCase().includes(searchQuery.value.toLowerCase())
+    ).slice(0, 5)
+    searchSuggestions.value = suggestions
+  } else {
+    searchSuggestions.value = []
+  }
+}
+
+// 选择搜索建议
+const selectSuggestion = (suggestion) => {
+  searchQuery.value = suggestion.question
+  searchSuggestions.value = []
+  // 自动展开对应问题
+  const item = faqData.value.find(item => item.id === suggestion.id)
+  if (item) {
+    item.expanded = true
+  }
+}
+
+// 按分类分组FAQ数据
+const groupedFaqs = computed(() => {
+  const groups = {}
+  faqData.value.forEach(item => {
+    if (!groups[item.category]) {
+      groups[item.category] = []
+    }
+    groups[item.category].push(item)
+  })
+  
+  // 按浏览量排序（热门问题优先）
+  Object.keys(groups).forEach(category => {
+    groups[category].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+  })
+  
+  return groups
+})
+
+// 处理后的分类数据
+const categories = computed(() => {
+  return Object.keys(groupedFaqs.value).map((category, index) => ({
+    title: categoryMap[category] || category,
+    icon: categoryIcons[category],
+    items: groupedFaqs.value[category]
+  }))
+})
+
+// 根据搜索条件过滤分类
 const filteredCategories = computed(() => {
   if (!searchQuery.value) return categories.value
   
@@ -252,11 +253,20 @@ const filteredCategories = computed(() => {
 
 const toggleQuestion = (item) => {
   item.expanded = !item.expanded
+  // 增加浏览量
+  if (item.expanded && item.id) {
+    // 这里可以调用API增加浏览量
+  }
 }
 
 const goToFeedback = () => {
   router.push('/profile')
 }
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadFaqs()
+})
 </script>
 
 <style scoped>
@@ -281,6 +291,7 @@ const goToFeedback = () => {
   margin: 0 auto 40px;
   text-align: center;
   padding: 40px;
+  position: relative;
 }
 
 .search-section h2 {
@@ -337,6 +348,49 @@ const goToFeedback = () => {
 
 .hot-tag:hover {
   background: var(--primary-light-40);
+}
+
+/* 搜索建议 */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  max-width: 90%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 5px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color 0.2s;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: var(--bg-hover);
+}
+
+.suggestion-item .el-icon {
+  color: var(--text-tertiary);
+}
+
+.suggestion-text {
+  color: var(--text-primary);
+  font-size: 14px;
 }
 
 /* FAQ区域 */
