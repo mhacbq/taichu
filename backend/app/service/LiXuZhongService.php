@@ -100,7 +100,7 @@ class LiXuZhongService
         if ($kongWang) {
             $result = [
                 'category' => '空亡',
-                'description' => '事倍而功半',
+                'description' => '你付出的努力，并不总是能立刻看到回报,今天尤其如此。这不是你的失败，而是某种积累在悄悄发生。有时候，什么都不做，也是一种选择。',
                 'level' => '凶',
                 'score_adjustment' => -10
             ];
@@ -192,84 +192,84 @@ class LiXuZhongService
     {
         // 19. 伏吟
         if ($ganA === $ganB && $zhiA === $zhiB) {
-            return ['category' => '伏吟', 'description' => '多此一举，事多重复', 'level' => '平', 'score_adjustment' => 0];
+            return ['category' => '伏吟', 'description' => '你是那种不轻易放弃的人，但今天的努力可能会让你感到一种说不清的疲惫,不是因为你不够努力，而是方向需要重新校准。停下来，往往比继续走更需要勇气。', 'level' => '平', 'score_adjustment' => 0];
         }
 
         // 1. 天合地合
         if ($ganRel === '合' && $zhiRel === '合') {
-            return ['category' => '天合地合', 'description' => '新际遇有成，内外和谐', 'level' => '大吉', 'score_adjustment' => 20];
+            return ['category' => '天合地合', 'description' => '你内心深处一直在等待某个时机，而今天，那种感觉终于对了。你不需要解释太多，事情会自然而然地朝你期待的方向走——这不是运气，而是你一直以来的积累在今天开花。', 'level' => '大吉', 'score_adjustment' => 20];
         }
         // 2. 天合地会
         if ($ganRel === '合' && $zhiRel === '会') {
-            return ['category' => '天合地会', 'description' => '守成之事，近亲相助', 'level' => '吉', 'score_adjustment' => 15];
+            return ['category' => '天合地会', 'description' => '你有一种让人感到安心的气质，今天这种特质会为你带来意想不到的助力。那些你以为不会开口的人，今天可能会主动向你靠近。', 'level' => '吉', 'score_adjustment' => 15];
         }
         // 3. 天合地刑
         if ($ganRel === '合' && $zhiRel === '刑') {
-            return ['category' => '天合地刑', 'description' => '外合心不合，表面顺遂内心纠结', 'level' => '平', 'score_adjustment' => -5];
+            return ['category' => '天合地刑', 'description' => '你善于在别人面前保持体面，但今天你的内心可能比外表更复杂。那种说不清道不明的别扭感，其实是你在提醒自己：有些情绪需要被看见，而不是被压下去。', 'level' => '平', 'score_adjustment' => -5];
         }
         // 4. 天比地合
         if ($ganRel === '比' && $zhiRel === '合') {
-            return ['category' => '天比地合', 'description' => '以智取之，下得人合作', 'level' => '吉', 'score_adjustment' => 10];
+            return ['category' => '天比地合', 'description' => '你有一种别人不容易察觉的洞察力，今天这种能力会在关键时刻发挥作用。你不需要强迫任何人，只需要做你自己，合适的人自然会被你吸引过来。', 'level' => '吉', 'score_adjustment' => 10];
         }
         // 5. 天比地冲
         if ($ganRel === '比' && $zhiRel === '冲') {
-            return ['category' => '天比地冲', 'description' => '外象平安，内实空虚', 'level' => '凶', 'score_adjustment' => -10];
+            return ['category' => '天比地冲', 'description' => '你有时会用忙碌来掩盖内心的空洞感，今天这种感觉可能会更明显。表面的平静背后，你其实比任何人都清楚，有些事情还没有真正落地。', 'level' => '凶', 'score_adjustment' => -10];
         }
         // 6. 天比地刑
         if ($ganRel === '比' && $zhiRel === '刑') {
-            return ['category' => '天比地刑', 'description' => '处于长期内争，矛盾重重', 'level' => '凶', 'score_adjustment' => -10];
+            return ['category' => '天比地刑', 'description' => '你对自己的要求很高，有时甚至有些苛刻。今天这种内在的张力可能会向外投射，让你觉得周围的人都不太对劲——但也许，需要和解的对象只是你自己。', 'level' => '凶', 'score_adjustment' => -10];
         }
         // 7. 天克地冲 (A克B)
         if ($ganRel === '克' && $zhiRel === '冲') {
-            return ['category' => '天克地冲', 'description' => '创业性的碰钉子，压力巨大', 'level' => '大凶', 'score_adjustment' => -20];
+            return ['category' => '天克地冲', 'description' => '你不是那种轻易认输的人，但今天你可能会遇到一种特殊的阻力——它不来自外部，而是来自某种时机上的错位。越是用力，越是感到吃力，这不是你的问题，只是今天不是那个适合强攻的时机。', 'level' => '大凶', 'score_adjustment' => -20];
         }
         // 8. 克天地冲 (B克A)
         if ($ganRel === '被克' && $zhiRel === '冲') {
-            return ['category' => '克天地冲', 'description' => '偿债式的说好话，被动受制', 'level' => '凶', 'score_adjustment' => -15];
+            return ['category' => '克天地冲', 'description' => '你其实比外表看起来更在意别人的看法，尽管你不常承认这一点。今天你可能会发现自己处于一种被动的位置，但这并不意味着你失去了主动权——只是换了一种方式在运作。', 'level' => '凶', 'score_adjustment' => -15];
         }
         // 9. 天生地冲 (A生B)
         if ($ganRel === '生' && $zhiRel === '冲') {
-            return ['category' => '天生地冲', 'description' => '小有成就，冲动中得利', 'level' => '小吉', 'score_adjustment' => 5];
+            return ['category' => '天生地冲', 'description' => '你有一种在混乱中找到秩序的天赋，今天这种能力会在不经意间为你带来收获。那些看似偶然的小事，背后往往有你自己都没意识到的努力在支撑。', 'level' => '小吉', 'score_adjustment' => 5];
         }
         // 10. 生天地冲 (B生A)
         if ($ganRel === '被生' && $zhiRel === '冲') {
-            return ['category' => '生天地冲', 'description' => '因小祸而得福，先难后易', 'level' => '小吉', 'score_adjustment' => 5];
+            return ['category' => '生天地冲', 'description' => '你有一种别人羡慕的韧性，总能在跌倒后重新站起来。今天可能会有一个小小的挫折，但你内心深处其实已经知道，这不过是更好的事情到来之前的一个小插曲。', 'level' => '小吉', 'score_adjustment' => 5];
         }
         // 11. 天生地合 (A生B)
         if ($ganRel === '生' && $zhiRel === '合') {
-            return ['category' => '天生地合', 'description' => '助他人之故而获利，顺水推舟', 'level' => '吉', 'score_adjustment' => 15];
+            return ['category' => '天生地合', 'description' => '你是那种愿意为别人付出的人，而今天，这种善意会以一种你意想不到的方式回到你身上。你不需要刻意去追求什么，只需要做你一直在做的事。', 'level' => '吉', 'score_adjustment' => 15];
         }
         // 12. 生天地合 (B生A)
         if ($ganRel === '被生' && $zhiRel === '合') {
-            return ['category' => '生天地合', 'description' => '借他人之力而有成，贵人相助', 'level' => '吉', 'score_adjustment' => 15];
+            return ['category' => '生天地合', 'description' => '你身边一直有人在默默关注你，只是你可能还没有意识到。今天，某个人会以一种恰到好处的方式出现，而你需要做的，只是允许自己接受这份帮助。', 'level' => '吉', 'score_adjustment' => 15];
         }
         // 13. 天生地刑 (A生B)
         if ($ganRel === '生' && $zhiRel === '刑') {
-            return ['category' => '天生地刑', 'description' => '自找麻烦，好心办坏事', 'level' => '凶', 'score_adjustment' => -5];
+            return ['category' => '天生地刑', 'description' => '你有一颗真诚想帮助别人的心，但今天你的好意可能会被误读，或者带来你没有预料到的复杂局面。有时候，最好的帮助是给对方空间，而不是亲自下场。', 'level' => '凶', 'score_adjustment' => -5];
         }
         // 14. 生天地刑 (B生A)
         if ($ganRel === '被生' && $zhiRel === '刑') {
-            return ['category' => '生天地刑', 'description' => '他人加于自己的麻烦，无妄之灾', 'level' => '凶', 'score_adjustment' => -10];
+            return ['category' => '生天地刑', 'description' => '你有一种容易被别人依赖的气场，这是你的魅力，但今天它可能会把你带入一个你本不需要参与的局面。你的冷静和理性，是今天最重要的保护。', 'level' => '凶', 'score_adjustment' => -10];
         }
         // 15. 地比天克 (A克B)
         if ($zhiRel === '比' && $ganRel === '克') {
-            return ['category' => '地比天克', 'description' => '有信心中应付强对手，挑战中成长', 'level' => '平', 'score_adjustment' => 0];
+            return ['category' => '地比天克', 'description' => '你比自己以为的更有实力，只是有时候你自己不太相信这一点。今天你会遇到某种考验，而你内心深处其实早就准备好了——你只需要相信那个已经准备好的自己。', 'level' => '平', 'score_adjustment' => 0];
         }
         // 16. 地比克天 (B克A)
         if ($zhiRel === '比' && $ganRel === '被克') {
-            return ['category' => '地比克天', 'description' => '渐失信心中坚持努力，需守成', 'level' => '平', 'score_adjustment' => -5];
+            return ['category' => '地比克天', 'description' => '你是一个对自己有要求的人，正因如此，今天那种"怎么努力都差一口气"的感觉会格外刺痛。但这不是你的终点，只是一个让你重新审视方向的信号——守住已有的，比强行突破更明智。', 'level' => '平', 'score_adjustment' => -5];
         }
         // 17. 天克地刑 (A克B)
         if ($ganRel === '克' && $zhiRel === '刑') {
-            return ['category' => '天克地刑', 'description' => '以债养债，恶性循环', 'level' => '大凶', 'score_adjustment' => -15];
+            return ['category' => '天克地刑', 'description' => '你有时会用行动来回避思考，用忙碌来掩盖某种深层的不安。今天这种模式可能会让事情变得更复杂，而不是更简单。真正的解决，往往需要你先停下来，面对那个你一直在绕开的问题。', 'level' => '大凶', 'score_adjustment' => -15];
         }
         // 18. 克天地刑 (B克A)
         if ($ganRel === '被克' && $zhiRel === '刑') {
-            return ['category' => '克天地刑', 'description' => '抵押偿债，压力沉重', 'level' => '凶', 'score_adjustment' => -15];
+            return ['category' => '克天地刑', 'description' => '你习惯独自承担压力，不太愿意让别人看到你吃力的一面。今天这种压力可能会以一种具体的形式出现，提醒你：懂得保留余地，是一种智慧，不是退缩。', 'level' => '凶', 'score_adjustment' => -15];
         }
 
         // 默认
-        return ['category' => '普通', 'description' => '运势平稳，无特殊冲合', 'level' => '平', 'score_adjustment' => 0];
+        return ['category' => '普通', 'description' => '你是一个内心比外表更丰富的人，今天这种平静的表面下，其实有很多细腻的感受在流动。不是每一天都需要大起大落，有时候，平稳本身就是一种珍贵的状态。', 'level' => '平', 'score_adjustment' => 0];
     }
 
     protected function checkKongWang(string $gan, string $zhi, string $targetZhi): bool
