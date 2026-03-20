@@ -438,26 +438,90 @@ const addToCalendar = () => {
 }
 
 const personalizedRelationGuides = {
-  比劫: {
-    title: '同频助力，也有竞争',
-    description: '适合找熟悉的人协作、互通信息，但也要避免被同辈节奏带着跑。',
+  '天合地合': {
+    title: '新际遇有成',
+    description: '今日内外和谐，容易遇到新的好机会，适合推进重要事务。',
   },
-  印绶: {
-    title: '贵人和恢复力更强',
-    description: '今天适合学习、复盘和补充能量，遇到问题时更容易得到支持。',
+  '天合地会': {
+    title: '守成之事，近亲相助',
+    description: '今日适合稳扎稳打，容易得到身边人的帮助和支持。',
   },
-  食伤: {
-    title: '表达力和创意更活跃',
-    description: '适合沟通、提案和输出想法，但说话别太满，节奏稳一点更吃香。',
+  '天合地刑': {
+    title: '外合心不合',
+    description: '今日表面看似顺利，但内心可能有些纠结，注意调节情绪。',
   },
-  官杀: {
-    title: '责任感和压力同步上升',
-    description: '适合先处理关键任务与规则要求，别硬扛，把优先级排清楚会顺很多。',
+  '天比地合': {
+    title: '以智取之',
+    description: '今日适合运用智慧解决问题，容易获得他人的合作。',
   },
-  财星: {
-    title: '资源机会变多，也更考验判断',
-    description: '适合关注合作、预算和收益，但别急着冲动决策，先算清账更稳。',
+  '天比地冲': {
+    title: '外象平安，内实空虚',
+    description: '今日表面平静，但实际可能缺乏实质进展，需脚踏实地。',
   },
+  '天比地刑': {
+    title: '处于长期内争',
+    description: '今日容易陷入内部矛盾或自我纠结，建议放宽心态。',
+  },
+  '天克地冲': {
+    title: '创业性的碰钉子',
+    description: '今日压力较大，容易遇到阻碍，适合保守行事，避免冲动。',
+  },
+  '克天地冲': {
+    title: '偿债式的说好话',
+    description: '今日可能处于被动状态，需要多些耐心和妥协。',
+  },
+  '天生地冲': {
+    title: '小有成就',
+    description: '今日在变动或忙碌中能获得一些小成就，保持积极。',
+  },
+  '生天地冲': {
+    title: '因小祸而得福',
+    description: '今日可能先遇到些小麻烦，但最终能转化为好结果。',
+  },
+  '天生地合': {
+    title: '助他人之故而获利',
+    description: '今日适合帮助他人，顺水推舟中自己也能获益。',
+  },
+  '生天地合': {
+    title: '借他人之力而有成',
+    description: '今日贵人运佳，容易借助他人的力量取得成功。',
+  },
+  '天生地刑': {
+    title: '自找麻烦',
+    description: '今日好心可能办坏事，行事需谨慎，避免多管闲事。',
+  },
+  '生天地刑': {
+    title: '他人加于自己的麻烦',
+    description: '今日容易遇到无妄之灾，注意防范意外状况。',
+  },
+  '地比天克': {
+    title: '有信心中应付强对手',
+    description: '今日面临挑战，但你有能力应对，在竞争中成长。',
+  },
+  '地比克天': {
+    title: '渐失信心中坚持努力',
+    description: '今日可能感到有些疲惫或缺乏信心，需要坚持守成。',
+  },
+  '天克地刑': {
+    title: '以债养债',
+    description: '今日容易陷入恶性循环，需及时止损，理清思路。',
+  },
+  '克天地刑': {
+    title: '抵押偿债',
+    description: '今日压力沉重，可能需要做出一些牺牲或妥协。',
+  },
+  '伏吟': {
+    title: '多此一举',
+    description: '今日事情容易重复或停滞不前，保持耐心，顺其自然。',
+  },
+  '空亡': {
+    title: '事倍而功半',
+    description: '今日付出多收获少，适合休养生息，不宜做重大决定。',
+  },
+  '普通': {
+    title: '运势平稳',
+    description: '今日运势平稳，无特殊冲合，适合按部就班推进计划。',
+  }
 }
 
 const syncLoginState = () => {
@@ -1154,19 +1218,19 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
-.luck-badge.吉 {
-  background: linear-gradient(135deg, var(--success-light), rgba(103, 194, 58, 0.1));
-  border: 1px solid rgba(103, 194, 58, 0.4);
+.luck-badge.大吉,
+.luck-badge.吉,
+.luck-badge.小吉 {
+  background: linear-gradient(180deg, rgba(103, 194, 58, 0.14), rgba(103, 194, 58, 0.16));
 }
 
+.luck-badge.大凶,
 .luck-badge.凶 {
-  background: linear-gradient(135deg, var(--danger-light), rgba(245, 108, 108, 0.1));
-  border: 1px solid rgba(245, 108, 108, 0.4);
+  background: linear-gradient(180deg, rgba(245, 108, 108, 0.14), rgba(245, 108, 108, 0.16));
 }
 
 .luck-badge.平 {
-  background: linear-gradient(135deg, rgba(144, 147, 153, 0.1), rgba(144, 147, 153, 0.05));
-  border: 1px solid rgba(144, 147, 153, 0.2);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.16));
 }
 
 .luck-level {
@@ -1728,7 +1792,18 @@ onUnmounted(() => {
   padding: 20px;
 }
 
-.luck-badge {
+.luck-badge.大吉,
+.luck-badge.吉,
+.luck-badge.小吉 {
+  background: linear-gradient(180deg, rgba(103, 194, 58, 0.14), rgba(103, 194, 58, 0.16));
+}
+
+.luck-badge.大凶,
+.luck-badge.凶 {
+  background: linear-gradient(180deg, rgba(245, 108, 108, 0.14), rgba(245, 108, 108, 0.16));
+}
+
+.luck-badge.平 {
   background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.16));
 }
 
