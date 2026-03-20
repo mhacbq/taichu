@@ -567,7 +567,7 @@ class Tarot extends BaseController
             return $baseMeaning . '；逆位的星币通常落在资源调配、现实执行或安全感议题上，先把基础盘稳住，再谈扩张与收获。';
         }
 
-        return $baseMeaning . '；逆位也意味着这张大牌的课题尚未真正整合，外在阻力往往对应内在盲点，需要回头校正。';
+        return $baseMeaning . '；逆位也意味着这张大牌的课题或许尚未真正整合，外在阻力往往对应内在盲点，可能需要回头校正。';
     }
 
     /**
@@ -657,13 +657,13 @@ class Tarot extends BaseController
         $summary = '';
         if (count($dominantElements) === 1) {
             $element = $dominantElements[0];
-            $summary .= "当前主轴偏向{$element}元素，重点自然落在{$this->getElementAspect($element)}。";
+            $summary .= "当前主轴或许偏向{$element}元素，重点可能落在{$this->getElementAspect($element)}。";
         } else {
-            $summary .= '当前没有单一元素独占上风，' . implode('、', $dominantElements) . '并行发声，意味着这个议题得多线并看。';
+            $summary .= '当前没有单一元素独占上风，' . implode('、', $dominantElements) . '并行发声，或许意味着这个议题得多线并看。';
         }
 
         if ($missingElements !== []) {
-            $summary .= '相对偏弱的是' . implode('、', $missingElements) . '元素，对应视角容易被忽略。';
+            $summary .= '相对而言，' . implode('、', $missingElements) . '元素可能偏弱，对应视角或许容易被忽略。';
         }
 
         return $summary;
@@ -832,11 +832,11 @@ class Tarot extends BaseController
         $weightRange = $maxWeight - $minWeight;
         
         if ($weightRange <= 15) {
-            return '【平衡性分析】元素分布较为均衡，各元素影响力差距不大，整体呈现和谐状态。';
+            return '【平衡性分析】元素分布或许较为均衡，各元素影响力差距或许不大，整体可能呈现某种和谐状态。';
         } elseif ($weightRange <= 30) {
-            return '【平衡性分析】元素分布有一定偏向，主导元素影响力明显，但其他元素仍有表达空间。';
+            return '【平衡性分析】元素分布或许有一定偏向，主导元素影响力或许比较明显，但其他元素可能仍有表达空间。';
         } else {
-            return '【平衡性分析】元素分布显著失衡，主导元素占据绝对优势，需要注意其他元素的补充。';
+            return '【平衡性分析】元素分布或许显著失衡，主导元素可能占据某种优势，或许需要注意其他元素的补充。';
         }
     }
 
@@ -856,7 +856,7 @@ class Tarot extends BaseController
 
         $firstCard = $cards[0];
         $lastCard = $cards[$count - 1];
-        $analysis[] = '首尾主线：从「' . $firstCard['name'] . '」走到「' . $lastCard['name'] . '」，' . $this->getCardRelationship($firstCard, $lastCard);
+        $analysis[] = '首尾主线：从「' . $firstCard['name'] . '」或许走到「' . $lastCard['name'] . '」，' . $this->getCardRelationship($firstCard, $lastCard);
 
         if ($count === 10) {
             $analysis[] = $this->analyzeCelticCrossRelationships($cards, $positions);
@@ -871,12 +871,12 @@ class Tarot extends BaseController
                     . '：'
                     . $this->getTransitionDesc($current, $next);
             }
-            $analysis[] = '牌位流转：' . implode('；', $flows) . '。';
+            $analysis[] = '牌位流转或许显示：' . implode('；', $flows) . '。';
         }
 
         $elementNotes = $this->collectElementRelationNotes($cards);
         if ($elementNotes !== []) {
-            $analysis[] = '元素脉络：' . implode('；', $elementNotes) . '。';
+            $analysis[] = '元素脉络或许呈现：' . implode('；', $elementNotes) . '。';
         }
 
         $upright = count(array_filter($cards, static fn($c) => !$c['reversed']));
