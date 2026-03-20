@@ -76,6 +76,61 @@
       </el-col>
     </el-row>
 
+    <!-- 图表统计区域 -->
+    <el-row :gutter="20" class="mb-4">
+      <el-col :span="16">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="card-title">测算趋势</span>
+              <el-radio-group v-model="chartPeriod" size="small" @change="loadTrendData">
+                <el-radio-button value="7d">近7天</el-radio-button>
+                <el-radio-button value="30d">近30天</el-radio-button>
+                <el-radio-button value="90d">近3个月</el-radio-button>
+                <el-radio-button value="1y">近1年</el-radio-button>
+              </el-radio-group>
+            </div>
+          </template>
+          <div v-loading="chartsLoading.dateTrend" style="height: 300px">
+            <v-chart v-if="dateTrendOption" :option="dateTrendOption" autoresize />
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never">
+          <template #header>
+            <span class="card-title">起卦方式分布</span>
+          </template>
+          <div v-loading="chartsLoading.methodDistribution" style="height: 300px">
+            <v-chart v-if="methodDistributionOption" :option="methodDistributionOption" autoresize />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="mb-4">
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <span class="card-title">AI分析使用情况</span>
+          </template>
+          <div v-loading="chartsLoading.aiUsage" style="height: 300px">
+            <v-chart v-if="aiUsageOption" :option="aiUsageOption" autoresize />
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <span class="card-title">时段分布</span>
+          </template>
+          <div v-loading="chartsLoading.timeDistribution" style="height: 300px">
+            <v-chart v-if="timeDistributionOption" :option="timeDistributionOption" autoresize />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <el-card shadow="never">
       <div v-if="pageError" class="page-state">
         <el-result icon="warning" :title="pageError.title" :sub-title="pageError.description">
@@ -148,9 +203,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Refresh } from '@element-plus/icons-vue'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, PieChart, BarChart } from 'echarts/charts'
+import { TitleComponent, TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+import VChart from 'vue-echarts'
+
+use([CanvasRenderer, LineChart, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
 const loading = ref(false)
 const dataList = ref([])
@@ -330,6 +392,7 @@ const handleBatchDelete = async () => {
 
 const handleRefreshStats = () => {
   loadStats()
+  loadTrendData()
 }
 
 const handleSizeChange = () => {
@@ -340,9 +403,110 @@ const handleCurrentChange = () => {
   loadList()
 }
 
+// 图表相关状态
+const chartPeriod = ref('30d')
+const chartsLoading = reactive({
+  dateTrend: false,
+  methodDistribution: false,
+  aiUsage: false,
+  timeDistribution: false
+})
+
+const dateTrendOption = ref(null)
+const methodDistributionOption = ref(null)
+const aiUsageOption = ref(null)
+const timeDistributionOption = ref(null)
+
+const loadTrendData = async () => {
+  chartsLoading.dateTrend = true
+  chartsLoading.methodDistribution = true
+  chartsLoading.aiUsage = true
+  chartsLoading.timeDistribution = true
+
+  try {
+    const response = await fetch(`${API_BASE}/trend?period=${chartPeriod.value}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    const result = await response.json()
+
+    if (result.code === 200) {
+      const data = result.data
+
+      // 日期趋势图
+      dateTrendOption.value = {
+        tooltip: { trigger: 'axis' },
+        xAxis: {
+          type: 'category',
+          data: data.date_trend.map(item => item.date)
+        },
+        yAxis: { type: 'value' },
+        series: [{
+          name: '测算次数',
+          type: 'line',
+          data: data.date_trend.map(item => item.count),
+          smooth: true,
+          itemStyle: { color: '#D4AF37' },
+          areaStyle: { opacity: 0.1 }
+        }]
+      }
+
+      // 起卦方式分布图
+      methodDistributionOption.value = {
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', right: 10, top: 'center' },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '70%'],
+          data: data.method_distribution,
+          emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+        }]
+      }
+
+      // AI使用情况
+      aiUsageOption.value = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 10 },
+        series: [{
+          type: 'pie',
+          radius: '60%',
+          data: data.ai_usage,
+          itemStyle: {
+            color: (params) => params.name === '基础分析' ? '#909399' : '#D4AF37'
+          }
+        }]
+      }
+
+      // 时段分布
+      const timeSlots = ['凌晨(0-6点)', '上午(6-12点)', '下午(12-18点)', '晚上(18-24点)']
+      const timeData = timeSlots.map(slot => {
+        const found = data.time_distribution.find(item => item.time_slot === slot)
+        return found ? found.count : 0
+      })
+      timeDistributionOption.value = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        xAxis: { type: 'category', data: timeSlots },
+        yAxis: { type: 'value' },
+        series: [{
+          type: 'bar',
+          data: timeData,
+          itemStyle: { color: '#D4AF37' }
+        }]
+      }
+    }
+  } catch (error) {
+    console.error('加载图表数据失败:', error)
+  } finally {
+    chartsLoading.dateTrend = false
+    chartsLoading.methodDistribution = false
+    chartsLoading.aiUsage = false
+    chartsLoading.timeDistribution = false
+  }
+}
+
 onMounted(() => {
   loadList()
   loadStats()
+  loadTrendData()
 })
 </script>
 
@@ -412,5 +576,17 @@ onMounted(() => {
 
 .page-state {
   padding: 40px 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
 }
 </style>

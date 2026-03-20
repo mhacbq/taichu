@@ -65,6 +65,8 @@ Route::group('api/admin', function () {
         Route::delete('liuyao-manage/:id', 'admin.LiuyaoManage/delete');
         Route::post('liuyao-manage/batch-delete', 'admin.LiuyaoManage/batchDelete');
         Route::get('liuyao-manage/stats', 'admin.LiuyaoManage/stats');
+        Route::get('liuyao-manage/trend', 'admin.LiuyaoManage/trend');
+        Route::get('liuyao-manage/hot-questions', 'admin.LiuyaoManage/hotQuestions');
         
         Route::get('hehun-manage', 'admin.HehunManage/index');
         Route::get('hehun-manage/:id', 'admin.HehunManage/detail');

@@ -202,4 +202,184 @@ class LiuyaoManage extends BaseController
             return $this->respondSystemException('admin_liuyao_stats', $e, '获取统计数据失败');
         }
     }
+
+    /**
+     * 获取趋势图表数据
+     */
+    public function trend()
+    {
+        if (!$this->hasAdminPermission('liuyao_view')) {
+            return $this->error('无权限查看统计数据', 403);
+        }
+
+        try {
+            $tableName = SchemaInspector::resolveFirstExistingTable([
+                'tc_liuyao_record',
+                'liuyao_records'
+            ]);
+
+            if (!$tableName) {
+                return $this->error('六爻测算表不存在', 500);
+            }
+
+            $params = $this->request->get();
+            $period = $params['period'] ?? '30d'; // 7d, 30d, 90d, 1y
+
+            // 根据时间范围生成分组条件
+            $dateFormat = match($period) {
+                '7d' => '%Y-%m-%d',
+                '30d' => '%Y-%m-%d',
+                '90d' => '%Y-%m-%d',
+                '1y' => '%Y-%m',
+                default => '%Y-%m-%d'
+            };
+
+            // 计算起始时间
+            $startDate = match($period) {
+                '7d' => date('Y-m-d', strtotime('-7 days')),
+                '30d' => date('Y-m-d', strtotime('-30 days')),
+                '90d' => date('Y-m-d', strtotime('-90 days')),
+                '1y' => date('Y-01-01'),
+                default => date('Y-m-d', strtotime('-30 days'))
+            };
+
+            // 按起卦方式统计
+            $methodStats = Db::table($tableName)
+                ->field("CAST(method AS CHAR) as method, COUNT(*) as count")
+                ->where('created_at', '>=', $startDate)
+                ->group('method')
+                ->select()
+                ->toArray();
+
+            // 按日期统计
+            $dateStats = Db::table($tableName)
+                ->field("DATE_FORMAT(created_at, '{$dateFormat}') as date, COUNT(*) as count")
+                ->where('created_at', '>=', $startDate)
+                ->group('date')
+                ->order('date', 'asc')
+                ->select()
+                ->toArray();
+
+            // AI分析使用统计
+            $aiStats = Db::table($tableName)
+                ->field('is_ai, COUNT(*) as count')
+                ->where('created_at', '>=', $startDate)
+                ->group('is_ai')
+                ->select()
+                ->toArray();
+
+            // 按时段统计（每日0-6点、6-12点、12-18点、18-24点）
+            $hourStats = Db::table($tableName)
+                ->field("CASE 
+                    WHEN HOUR(created_at) BETWEEN 0 AND 5 THEN '凌晨(0-6点)'
+                    WHEN HOUR(created_at) BETWEEN 6 AND 11 THEN '上午(6-12点)'
+                    WHEN HOUR(created_at) BETWEEN 12 AND 17 THEN '下午(12-18点)'
+                    ELSE '晚上(18-24点)'
+                END as time_slot, COUNT(*) as count")
+                ->where('created_at', '>=', $startDate)
+                ->group('time_slot')
+                ->select()
+                ->toArray();
+
+            // 补充数据确保图表完整
+            $methodLabels = ['time' => '时间起卦', 'number' => '数字起卦', 'manual' => '手动摇卦'];
+            $methodData = [];
+            foreach ($methodLabels as $key => $label) {
+                $found = false;
+                foreach ($methodStats as $stat) {
+                    if ($stat['method'] === $key) {
+                        $methodData[] = ['name' => $label, 'value' => $stat['count']];
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $methodData[] = ['name' => $label, 'value' => 0];
+                }
+            }
+
+            return $this->success([
+                'period' => $period,
+                'method_distribution' => $methodData,
+                'date_trend' => $dateStats,
+                'ai_usage' => [
+                    ['name' => '基础分析', 'value' => $aiStats[0]['count'] ?? 0],
+                    ['name' => 'AI分析', 'value' => $aiStats[1]['count'] ?? 0]
+                ],
+                'time_distribution' => $hourStats
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('admin_liuyao_trend', $e, '获取趋势数据失败');
+        }
+    }
+
+    /**
+     * 获取热门问题统计
+     */
+    public function hotQuestions()
+    {
+        if (!$this->hasAdminPermission('liuyao_view')) {
+            return $this->error('无权限查看统计数据', 403);
+        }
+
+        try {
+            $tableName = SchemaInspector::resolveFirstExistingTable([
+                'tc_liuyao_record',
+                'liuyao_records'
+            ]);
+
+            if (!$tableName) {
+                return $this->error('六爻测算表不存在', 500);
+            }
+
+            $limit = min((int) $this->request->get('limit', 20), 50);
+            $days = min((int) $this->request->get('days', 30), 365);
+            $startDate = date('Y-m-d', strtotime("-{$days} days"));
+
+            // 获取热门问题（按出现频率排序）
+            $hotQuestions = Db::table($tableName)
+                ->field('question, COUNT(*) as count')
+                ->where('created_at', '>=', $startDate)
+                ->whereNotNull('question')
+                ->where('question', '<>', '')
+                ->group('question')
+                ->order('count', 'desc')
+                ->limit($limit)
+                ->select()
+                ->toArray();
+
+            // 获取高频关键词
+            $keywords = Db::table($tableName)
+                ->field('result')
+                ->where('created_at', '>=', $startDate)
+                ->whereNotNull('result')
+                ->where('result', '<>', '')
+                ->column('result');
+
+            // 简单关键词提取（提取2-4字的中文词）
+            $keywordMap = [];
+            foreach ($keywords as $text) {
+                preg_match_all('/[\x{4e00}-\x{9fa5}]{2,4}/u', $text, $matches);
+                foreach ($matches[0] as $word) {
+                    $keywordMap[$word] = ($keywordMap[$word] ?? 0) + 1;
+                }
+            }
+
+            arsort($keywordMap);
+            $topKeywords = array_slice($keywordMap, 0, $limit, true);
+            $keywordList = [];
+            foreach ($topKeywords as $word => $count) {
+                $keywordList[] = ['keyword' => $word, 'count' => $count];
+            }
+
+            return $this->success([
+                'hot_questions' => $hotQuestions,
+                'hot_keywords' => $keywordList,
+                'total_questions' => count($hotQuestions),
+                'analysis_period' => $days
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('admin_liuyao_hot_questions', $e, '获取热门问题失败');
+        }
+    }
 }
