@@ -505,35 +505,47 @@ class Tarot extends BaseController
         $element = $card['element'] ?? '';
         $elementAspect = $this->getElementAspect($element);
         $lead = match ($positionName) {
-            '今日指引' => "这张单牌先照向{$focus}，像是在提醒你别把重点放散。",
-            '过去' => "过去位说明，事情之所以走到现在，根子多半落在{$focus}。",
-            '现在' => "现在位最直接，它把眼下真正需要面对的{$focus}摆到了台前。",
-            '未来' => "未来位给出的不是宿命结论，而是当前轨迹继续推进后最可能先出现的{$focus}。",
-            '障碍/挑战' => "障碍位说得很直白：真正卡住你的，不只是一时情绪，而是{$focus}。",
-            '潜意识/基础' => "基础位落在深层，说明许多反应并非偶然，而是被{$focus}持续牵引。",
-            '目标可能' => "目标位照见你心里真正想靠近的方向，关键仍在{$focus}。",
-            '近期发展' => "近期发展位看的是下一步风向，{$focus}会先浮上来。",
-            '你的态度' => "这张牌落在自我位置，提示你当前处理问题的方式正集中在{$focus}。",
-            '外部环境' => "外部环境位提醒你，外界真正施加影响的地方在{$focus}。",
-            '希望/恐惧' => "希望与恐惧位最容易暴露内在拉扯，核心还是{$focus}。",
-            '最终走向' => "结果位看的是收束方式，最后会把问题引回{$focus}。",
-            default => "落在「{$positionName}」时，这张牌主要回应{$focus}。",
+            '今日指引' => "这张牌直接点出了你现在最需要关注的事情：{$focus}。",
+            '过去' => "事情变成现在这样，和之前{$focus}有直接关系。",
+            '现在' => "眼下最要紧的就是{$focus}，别绕开它。",
+            '未来' => "按现在的节奏走下去，接下来会遇到{$focus}。",
+            '障碍/挑战' => "真正卡住你的，不是表面的困难，而是{$focus}。",
+            '潜意识/基础' => "你内心的真实想法或深层需求，其实就藏在{$focus}里。",
+            '目标可能' => "你心里真正想要的方向，和{$focus}紧密相关。",
+            '近期发展' => "接下来短期内的变化，会先体现在{$focus}上。",
+            '你的态度' => "你现在处理这件事的方式，关键就在于{$focus}。",
+            '外部环境' => "外界环境对你的影响，主要来自{$focus}。",
+            '希望/恐惧' => "你既期待又害怕的，其实就是{$focus}。",
+            '最终走向' => "事情最后会怎么收尾，取决于怎么处理{$focus}。",
+            default => "这张牌落在「{$positionName}」，说的是{$focus}。",
         };
-        $orientationFocus = $this->getOrientationFocusText($card, $positionName);
-        $elementText = $element !== ''
-            ? "它属{$element}元素，落点自然更偏向{$elementAspect}这一层。"
-            : '';
+        $orientationFocus = $this->getOrientationRelatableText($card, $positionName);
+        $elementText = $this->getElementRelatableDescription($element);
 
-        return $this->normalizeTarotText("{$lead}{$orientationFocus}{$meaning}。{$elementText}回到你问的“{$question}”，{$advice}。");
+        return $this->normalizeTarotText("{$lead}{$orientationFocus}{$meaning}。{$elementText}回到你问的"{$question}"，{$advice}。");
     }
 
-    protected function getOrientationFocusText(array $card, string $positionName): string
+    protected function getOrientationRelatableText(array $card, string $positionName): string
     {
         if (!empty($card['reversed'])) {
-            return "逆位说明这股力量在「{$positionName}」上更像延迟、别扭或内耗，不能只看表面动作，得先处理没说出口的阻力。";
+            return "逆位意味着这股能量有些阻塞或延迟，你可能有想法但行动跟不上，或者外力在拖后腿。";
         }
 
-        return "正位说明这股力量在「{$positionName}」上仍有顺势展开的空间，关键在于是否愿意正面回应。";
+        return "正位说明这股能量比较顺畅，你有条件去把握它。";
+    }
+
+    /**
+     * 获取元素的生活化描述（替换专业术语）
+     */
+    protected function getElementRelatableDescription(string $element): string
+    {
+        return match ($element) {
+            '风' => '这个领域和你思考方式、沟通表达有关。',
+            '水' => '这个领域和你的情绪感受、人际关系有关。',
+            '火' => '这个领域和你的行动力、热情和干劲有关。',
+            '土' => '这个领域和实际收益、安全感、现实条件有关。',
+            default => '',
+        };
     }
 
 
@@ -567,7 +579,7 @@ class Tarot extends BaseController
             return $baseMeaning . '；逆位的星币通常落在资源调配、现实执行或安全感议题上，先把基础盘稳住，再谈扩张与收获。';
         }
 
-        return $baseMeaning . '；逆位也意味着这张大牌的课题或许尚未真正整合，外在阻力往往对应内在盲点，可能需要回头校正。';
+        return $baseMeaning . '；逆位也意味着这张大牌的课题尚未真正整合，外在阻力往往对应内在盲点，需要回头校正。';
     }
 
     /**
@@ -657,13 +669,13 @@ class Tarot extends BaseController
         $summary = '';
         if (count($dominantElements) === 1) {
             $element = $dominantElements[0];
-            $summary .= "当前主轴或许偏向{$element}元素，重点可能落在{$this->getElementAspect($element)}。";
+            $summary .= "当前主轴偏向{$element}元素，重点落在{$this->getElementAspect($element)}。";
         } else {
-            $summary .= '当前没有单一元素独占上风，' . implode('、', $dominantElements) . '并行发声，或许意味着这个议题得多线并看。';
+            $summary .= '当前没有单一元素独占上风，' . implode('、', $dominantElements) . '并行发声，意味着这个议题需要多线并看。';
         }
 
         if ($missingElements !== []) {
-            $summary .= '相对而言，' . implode('、', $missingElements) . '元素可能偏弱，对应视角或许容易被忽略。';
+            $summary .= '相对而言，' . implode('、', $missingElements) . '元素偏弱，对应视角容易被忽略。';
         }
 
         return $summary;
@@ -782,7 +794,7 @@ class Tarot extends BaseController
 
         $relationNotes = $this->collectElementRelationNotes($cards);
         if ($relationNotes !== []) {
-            $segments[] = '相邻牌的元素尊严显示：' . implode('；', $relationNotes) . '。';
+            $segments[] = '相邻牌的元素互动：' . implode('；', $relationNotes) . '。';
         }
 
         return $this->normalizeTarotText(implode(' ', $segments));
@@ -832,11 +844,11 @@ class Tarot extends BaseController
         $weightRange = $maxWeight - $minWeight;
         
         if ($weightRange <= 15) {
-            return '【平衡性分析】元素分布或许较为均衡，各元素影响力差距或许不大，整体可能呈现某种和谐状态。';
+            return '【平衡性分析】元素分布较为均衡，各元素影响力差距不大，整体呈现出和谐状态。';
         } elseif ($weightRange <= 30) {
-            return '【平衡性分析】元素分布或许有一定偏向，主导元素影响力或许比较明显，但其他元素可能仍有表达空间。';
+            return '【平衡性分析】元素分布有一定偏向，主导元素影响力比较明显，其他元素仍有表达空间。';
         } else {
-            return '【平衡性分析】元素分布或许显著失衡，主导元素可能占据某种优势，或许需要注意其他元素的补充。';
+            return '【平衡性分析】元素分布显著失衡，主导元素占据明显优势，需要注意其他元素的补充。';
         }
     }
 
@@ -856,7 +868,7 @@ class Tarot extends BaseController
 
         $firstCard = $cards[0];
         $lastCard = $cards[$count - 1];
-        $analysis[] = '首尾主线：从「' . $firstCard['name'] . '」或许走到「' . $lastCard['name'] . '」，' . $this->getCardRelationship($firstCard, $lastCard);
+        $analysis[] = '首尾主线：从「' . $firstCard['name'] . '」走到「' . $lastCard['name'] . '」，' . $this->getCardRelationship($firstCard, $lastCard);
 
         if ($count === 10) {
             $analysis[] = $this->analyzeCelticCrossRelationships($cards, $positions);
@@ -871,12 +883,12 @@ class Tarot extends BaseController
                     . '：'
                     . $this->getTransitionDesc($current, $next);
             }
-            $analysis[] = '牌位流转或许显示：' . implode('；', $flows) . '。';
+            $analysis[] = '牌与牌之间的变化趋势：' . implode('；', $flows) . '。';
         }
 
         $elementNotes = $this->collectElementRelationNotes($cards);
         if ($elementNotes !== []) {
-            $analysis[] = '元素脉络或许呈现：' . implode('；', $elementNotes) . '。';
+            $analysis[] = '元素之间的互动：' . implode('；', $elementNotes) . '。';
         }
 
         $upright = count(array_filter($cards, static fn($c) => !$c['reversed']));
@@ -1026,7 +1038,7 @@ class Tarot extends BaseController
 
     
     /**
-     * 获取元素之间的关系 (基于西方传统四元素尊严模型 - Elemental Dignities)
+     * 获取元素之间的关系
      */
     protected function getElementRelation(string $element1, string $element2): string
     {
