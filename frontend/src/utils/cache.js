@@ -135,7 +135,6 @@ export const withCache = (ttl = 60000, keyGenerator = null) => {
       // 尝试从缓存获取
       const cached = cache.get(cacheKey)
       if (cached !== null) {
-        console.log(`[Cache Hit] ${propertyKey}`)
         return cached
       }
 
@@ -144,7 +143,6 @@ export const withCache = (ttl = 60000, keyGenerator = null) => {
       
       // 缓存结果
       cache.set(cacheKey, result, ttl)
-      console.log(`[Cache Set] ${propertyKey}`)
 
       return result
     }
@@ -165,7 +163,6 @@ class RequestDeduper {
   async dedupe(key, requestFn) {
     // 如果有进行中的相同请求，返回其Promise
     if (this.pendingRequests.has(key)) {
-      console.log(`[Dedupe] Reusing request: ${key}`)
       return this.pendingRequests.get(key)
     }
 

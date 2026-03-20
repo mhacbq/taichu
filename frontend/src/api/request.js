@@ -67,8 +67,6 @@ request.interceptors.response.use(
       const delay = RETRY_CONFIG.retryDelay * config.__retryCount
       await new Promise(resolve => setTimeout(resolve, delay))
       
-      console.log(`[API Retry] ${config.url} - Attempt ${config.__retryCount}/${RETRY_CONFIG.maxRetries}`)
-      
       return request(config)
     }
 
