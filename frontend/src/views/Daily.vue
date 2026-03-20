@@ -26,34 +26,38 @@
 
         <div v-if="fortune" class="fortune-content">
           <!-- 运势概览卡片 -->
-          <div class="fortune-overview card card-hover">
-            <div class="overview-header">
-              <div class="date-info">
-                <span class="solar-date">{{ solarDate }}</span>
-                <span class="lunar-date">{{ lunarDate }}</span>
+          <div class="fortune-overview card">
+            <div class="overview-top">
+              <div class="overview-date">
+                <span class="overview-solar">{{ solarDate }}</span>
+                <span class="overview-lunar">{{ lunarDate }}</span>
               </div>
-              <div class="overview-header-right">
-                <el-tooltip content="刷新运势数据" placement="top">
-                  <el-button
-                    class="refresh-fortune-btn"
-                    :icon="RefreshRight"
-                    circle
-                    size="small"
-                    text
-                    :loading="isLoading"
-                    @click="loadDailyFortune({ userInitiated: true })"
-                  />
-                </el-tooltip>
-                <div class="fortune-score">
-                  <div class="score-circle" :class="getScoreClass(fortune.overall)">
-                    <span class="score-value">{{ fortune.overall }}</span>
-                    <span class="score-label">综合评分</span>
+              <el-tooltip content="刷新运势" placement="top">
+                <button class="overview-refresh" :class="{ loading: isLoading }" @click="loadDailyFortune({ userInitiated: true })">
+                  <el-icon><RefreshRight /></el-icon>
+                </button>
+              </el-tooltip>
+            </div>
+            <div class="overview-body">
+              <div class="overview-score-wrap">
+                <div class="overview-score-ring" :class="getScoreClass(fortune.overall)">
+                  <svg viewBox="0 0 100 100" class="ring-svg">
+                    <circle cx="50" cy="50" r="42" class="ring-track" />
+                    <circle cx="50" cy="50" r="42" class="ring-fill" :style="{ strokeDashoffset: 264 - (264 * Math.min(fortune.overall, 100) / 100) }" />
+                  </svg>
+                  <div class="ring-inner">
+                    <span class="ring-num">{{ fortune.overall }}</span>
+                    <span class="ring-unit">分</span>
                   </div>
                 </div>
+                <div class="overview-stars">
+                  <el-icon v-for="n in 5" :key="n" class="ov-star" :class="{ filled: n <= overallStarCount }"><StarFilled /></el-icon>
+                  <span class="ov-star-label">{{ overallStarLabel }}</span>
+                </div>
               </div>
-            </div>
-            <div class="overview-summary">
-              <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
+              <div class="overview-summary">
+                <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
+              </div>
             </div>
           </div>
 
@@ -189,61 +193,50 @@
         </div>
 
 
-        <div class="overall-score card card-hover">
-          <h2>今日综合运势</h2>
-          <div class="score-display">
-            <div class="score-circle">
-              <span class="score-number">{{ fortune.overallScore }}</span>
-              <span class="score-label">分</span>
-            </div>
-            <div class="score-stars" :aria-label="`综合评分 ${fortune.overallScore} 分，对应 ${overallStarCount} 星评价`">
-              <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= overallStarCount }">
-                <StarFilled />
-              </el-icon>
-            </div>
-            <p class="score-rating">{{ overallStarLabel }}</p>
 
-          </div>
-          <p class="fortune-summary">{{ fortune.summary }}</p>
-        </div>
 
         <div v-if="hasAspectCards" class="aspect-grid">
-          <div class="aspect-card card card-hover" v-for="aspect in fortune.aspects" :key="aspect.name">
-            <div class="aspect-icon">
-              <el-icon>
-                <component :is="getAspectIcon(aspect.name)" />
-              </el-icon>
+          <div class="aspect-card card" v-for="aspect in fortune.aspects" :key="aspect.name">
+            <div class="aspect-card__top">
+              <div class="aspect-icon-wrap">
+                <el-icon><component :is="getAspectIcon(aspect.name)" /></el-icon>
+              </div>
+              <div class="aspect-meta">
+                <span class="aspect-name">{{ aspect.name }}</span>
+                <span class="aspect-score-num" :style="{ color: getScoreColor(aspect.score) }">{{ aspect.score }}</span>
+              </div>
             </div>
-            <h3>{{ aspect.name }}</h3>
-            <div class="aspect-score">
-              <el-progress :percentage="aspect.score" :color="getScoreColor(aspect.score)" />
+            <div class="aspect-bar-wrap">
+              <div class="aspect-bar-track">
+                <div class="aspect-bar-fill" :style="{ width: aspect.score + '%', background: getScoreColor(aspect.score) }"></div>
+              </div>
             </div>
             <p class="aspect-desc">{{ aspect.description }}</p>
           </div>
         </div>
-        <div v-else class="section-empty card card-hover">
+        <div v-else class="section-empty card">
           <h3>分项运势整理中</h3>
           <p>今日事业、财运、感情与健康的细分运势还在生成，稍后再来看看。</p>
         </div>
 
-        <div class="lucky-section card card-hover">
+        <div class="lucky-section card">
           <div class="lucky-header">
             <h3>今日宜忌</h3>
-            <el-button v-if="hasLuckySection" type="primary" plain size="small" @click="addToCalendar" class="add-calendar-btn">
+            <button v-if="hasLuckySection" class="calendar-btn" @click="addToCalendar">
               <el-icon><Calendar /></el-icon> 添加到日历
-            </el-button>
+            </button>
           </div>
           <div v-if="hasLuckySection" class="lucky-grid">
-            <div v-if="hasYiItems" class="lucky-item good">
-              <span class="lucky-label">宜</span>
+            <div v-if="hasYiItems" class="lucky-item lucky-item--yi">
+              <div class="lucky-badge lucky-badge--yi">宜</div>
               <div class="lucky-tags">
-                <el-tag v-for="item in fortune.yi" :key="item" type="success">{{ item }}</el-tag>
+                <span v-for="item in fortune.yi" :key="item" class="lucky-chip lucky-chip--yi">{{ item }}</span>
               </div>
             </div>
-            <div v-if="hasJiItems" class="lucky-item bad">
-              <span class="lucky-label">忌</span>
+            <div v-if="hasJiItems" class="lucky-item lucky-item--ji">
+              <div class="lucky-badge lucky-badge--ji">忌</div>
               <div class="lucky-tags">
-                <el-tag v-for="item in fortune.ji" :key="item" type="danger">{{ item }}</el-tag>
+                <span v-for="item in fortune.ji" :key="item" class="lucky-chip lucky-chip--ji">{{ item }}</span>
               </div>
             </div>
           </div>
@@ -1415,105 +1408,166 @@ onUnmounted(() => {
   max-width: 300px;
 }
 
-.overview-header {
+/* ===== 运势概览卡片 ===== */
+.fortune-overview {
+  padding: 24px 26px;
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(255, 245, 225, 0.94));
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  border-radius: 24px;
+}
+
+.overview-top {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.overview-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.refresh-fortune-btn {
-  color: var(--text-tertiary, #aaa);
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.refresh-fortune-btn:hover {
-  opacity: 1;
-  color: var(--primary-color);
-}
-
-.date-info {
+.overview-date {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.solar-date {
-  font-size: 18px;
-  font-weight: var(--weight-semibold);
+.overview-solar {
+  font-size: 20px;
+  font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
-.lunar-date {
-  font-size: 14px;
+.overview-lunar {
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
-.fortune-score {
+.overview-refresh {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
+  background: rgba(var(--primary-rgb), 0.05);
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 15px;
 }
 
-.score-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
+.overview-refresh:hover {
+  color: var(--primary-color);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.08);
+}
+
+.overview-refresh.loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.overview-body {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.overview-score-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.overview-score-ring {
+  position: relative;
+  width: 110px;
+  height: 110px;
+}
+
+.ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring-track {
+  fill: none;
+  stroke: rgba(var(--primary-rgb), 0.1);
+  stroke-width: 8;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 264;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overview-score-ring.excellent .ring-fill { stroke: #10b981; }
+.overview-score-ring.good .ring-fill { stroke: #3b82f6; }
+.overview-score-ring.normal .ring-fill { stroke: #f59e0b; }
+.overview-score-ring.poor .ring-fill { stroke: #ef4444; }
+
+.ring-inner {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-light-10), var(--primary-light-05));
-  border: 2px solid var(--primary-light-20);
+  gap: 1px;
 }
 
-.score-circle.excellent {
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.score-circle.good {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.score-circle.normal {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
-.score-circle.poor {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.score-value {
-  font-size: 24px;
-  font-weight: var(--weight-bold);
-  color: white;
+.ring-num {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
   line-height: 1;
 }
 
-.score-label {
+.ring-unit {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.overview-stars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ov-star {
+  font-size: 14px;
+  color: rgba(var(--primary-rgb), 0.2);
+  transition: color 0.2s;
+}
+
+.ov-star.filled {
+  color: var(--primary-color);
+}
+
+.ov-star-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 4px;
 }
 
 .overview-summary {
-  padding-top: 16px;
-  border-top: 1px solid var(--border-light);
+  flex: 1;
+  min-width: 0;
 }
 
 .summary-text {
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.75;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -1881,29 +1935,23 @@ onUnmounted(() => {
 }
 
 .overall-score {
-  margin-bottom: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 236, 0.95));
+  display: none; /* merged into fortune-overview */
 }
 
 .score-display {
-  gap: 14px;
-  margin-bottom: 24px;
+  display: none;
 }
 
 .score-circle {
-  width: 138px;
-  height: 138px;
-  box-shadow: 0 20px 36px rgba(var(--primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  display: none;
 }
 
 .score-number {
-  font-size: 52px;
+  display: none;
 }
 
 .score-rating,
-.fortune-summary,
-.aspect-desc,
-.details-section p {
+.fortune-summary {
   color: #605545;
   line-height: 1.8;
 }
@@ -1955,41 +2003,205 @@ onUnmounted(() => {
   margin-top: 8px;
 }
 
+/* ===== 分项运势卡片 ===== */
 .aspect-grid {
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   margin-bottom: 0;
 }
 
 .aspect-card {
-  padding: 24px 22px;
-  border-radius: var(--radius-xl);
+  padding: 20px;
+  border-radius: 20px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.94));
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .aspect-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 26px 44px rgba(15, 23, 42, 0.1), 0 12px 28px rgba(var(--primary-rgb), 0.07);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(var(--primary-rgb), 0.1);
 }
 
-.lucky-section,
-.details-section {
-  margin-bottom: 0;
+.aspect-card__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.aspect-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.aspect-meta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.aspect-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.aspect-score-num {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.aspect-bar-wrap {
+  margin-bottom: 12px;
+}
+
+.aspect-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  overflow: hidden;
+}
+
+.aspect-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aspect-desc {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ===== 今日宜忌 ===== */
+.lucky-section {
+  padding: 24px 26px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 241, 0.94));
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  border-radius: 24px;
+}
+
+.lucky-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.lucky-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  background: rgba(var(--primary-rgb), 0.05);
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calendar-btn:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: rgba(var(--primary-rgb), 0.35);
 }
 
 .lucky-grid {
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .lucky-item {
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(var(--primary-rgb), 0.08);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
 }
 
-.lucky-label {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+.lucky-item--yi {
+  background: rgba(103, 194, 58, 0.06);
+  border: 1px solid rgba(103, 194, 58, 0.18);
+}
+
+.lucky-item--ji {
+  background: rgba(245, 108, 108, 0.06);
+  border: 1px solid rgba(245, 108, 108, 0.18);
+}
+
+.lucky-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.lucky-badge--yi {
+  background: rgba(103, 194, 58, 0.15);
+  color: #3d9a1a;
+}
+
+.lucky-badge--ji {
+  background: rgba(245, 108, 108, 0.15);
+  color: #c0392b;
+}
+
+.lucky-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.lucky-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.lucky-chip--yi {
+  background: rgba(103, 194, 58, 0.1);
+  color: #3d9a1a;
+  border: 1px solid rgba(103, 194, 58, 0.2);
+}
+
+.lucky-chip--ji {
+  background: rgba(245, 108, 108, 0.1);
+  color: #c0392b;
+  border: 1px solid rgba(245, 108, 108, 0.2);
 }
 
 :deep(.details-section .el-collapse) {
@@ -1998,21 +2210,30 @@ onUnmounted(() => {
 }
 
 :deep(.details-section .el-collapse-item__header) {
-  min-height: 60px;
-  padding: 0 8px;
+  min-height: 56px;
+  padding: 0 4px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
   background: transparent;
-  border-bottom-color: rgba(var(--primary-rgb), 0.1);
+  border-bottom-color: rgba(var(--primary-rgb), 0.08);
+  letter-spacing: -0.01em;
+}
+
+:deep(.details-section .el-collapse-item__header.is-active) {
+  color: var(--primary-color);
 }
 
 :deep(.details-section .el-collapse-item__wrap) {
   background: transparent;
-  border-bottom-color: rgba(var(--primary-rgb), 0.1);
+  border-bottom-color: rgba(var(--primary-rgb), 0.08);
 }
 
 :deep(.details-section .el-collapse-item__content) {
-  padding: 8px 8px 18px;
+  padding: 4px 4px 20px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #605545;
 }
 
 .daily-action-zone {
@@ -2031,25 +2252,44 @@ onUnmounted(() => {
   }
 
   .fortune-content {
-    gap: 18px;
+    gap: 16px;
   }
 
-  .date-display,
+  .fortune-overview,
   .personalized-fortune,
   .personalized-state-card,
-  .overall-score,
   .lucky-section,
   .details-section,
   .section-empty,
   .loading-state,
   .error-state {
-    padding: 20px 18px;
-    border-radius: var(--radius-xl);
+    padding: 18px 16px;
+    border-radius: 18px;
   }
 
-  .date-display {
+  .overview-body {
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .overview-score-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .overview-score-ring {
+    width: 88px;
+    height: 88px;
+  }
+
+  .ring-num {
+    font-size: 22px;
+  }
+
+  .aspect-grid {
+    grid-template-columns: 1fr;
   }
 
   .master-card,
@@ -2069,17 +2309,6 @@ onUnmounted(() => {
     border-radius: 20px;
   }
 
-  .score-circle {
-    width: 122px;
-    height: 122px;
-  }
-
-  .score-number {
-    font-size: 40px;
-  }
-
-  .aspect-grid,
-  .lucky-grid,
   .personal-lucky-grid {
     grid-template-columns: 1fr;
   }

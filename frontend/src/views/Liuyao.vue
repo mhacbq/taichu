@@ -364,14 +364,14 @@
                     </div>
                   </div>
 
-                  <p v-else class="pricing-info-title">本次占卜您将获得：</p>
-                  <ul v-else class="pricing-info-list">
+                  <p class="pricing-info-title">本次占卜您将获得：</p>
+                  <ul class="pricing-info-list">
                     <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘（本卦、变卦、互卦等）</li>
                     <li><el-icon><Check /></el-icon> 详细的卦辞解析与针对性解读</li>
                     <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
                   </ul>
 
-                  <p class="pricing-info-guarantee"><el-icon><Shield /></el-icon> 失败保障：若占卜失败或未生成结果，将自动退还积分。</p>
+<p class="pricing-info-guarantee"><el-icon><Lock /></el-icon> 失败保障：若占卜失败或未生成结果，将自动退还积分。</p>
                 </div>
               </div>
             </template>
@@ -482,7 +482,7 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Shield, ArrowRight } from '@element-plus/icons-vue'
+import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Lock, ArrowRight } from '@element-plus/icons-vue'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
