@@ -129,6 +129,10 @@ Route::group('api', function () {
     
     // VIP会员
     Route::group('vip', function () {
+        Route::get('packages', 'Vip/packages');      // 获取套餐列表
+        Route::post('purchase', 'Vip/purchase');      // 购买套餐
+        Route::get('status', 'Vip/status');           // 用户VIP状态
+        Route::get('records', 'Vip/records');         // 购买记录
         Route::get('info', 'Vip/info');
         Route::get('benefits', 'Vip/benefits');
         Route::post('subscribe', 'Vip/subscribe');

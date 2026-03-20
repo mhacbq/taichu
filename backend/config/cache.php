@@ -1,38 +1,41 @@
 <?php
 
+// Redis缓存配置
 return [
     // 默认缓存驱动
-    'default' => env('CACHE_DRIVER', 'file'),
-    
-    // 缓存连接配置
+    'default' => env('CACHE_DRIVER', 'redis'),
+
+    // 缓存存储配置
     'stores' => [
-        'file' => [
-            // 驱动方式
-            'type' => 'File',
-            // 缓存保存目录
-            'path' => runtime_path() . 'cache' . DIRECTORY_SEPARATOR,
-            // 缓存前缀
-            'prefix' => '',
-            // 缓存有效期 0表示永久缓存
-            'expire' => 0,
-            // 缓存标签前缀
-            'tag_prefix' => 'tag:',
-            // 序列化机制 例如 ['serialize', 'unserialize']
-            'serialize' => [],
-        ],
+        // Redis缓存
         'redis' => [
-            // 驱动方式
-            'type' => 'Redis',
-            // 服务器地址
+            'type' => 'redis',
             'host' => env('REDIS_HOST', '127.0.0.1'),
-            // 端口
             'port' => env('REDIS_PORT', 6379),
-            // 密码
             'password' => env('REDIS_PASSWORD', ''),
-            // 缓存前缀
+            'select' => env('REDIS_DB', 0),
+            'timeout' => 0,
+            'expire' => 0,
+            'persistent' => false,
             'prefix' => 'taichu:',
-            // 缓存有效期 0表示永久缓存
+            'tag_prefix' => 'tag:',
+            'serialize' => ['think\cache\driver\Serialize', 'serialize'],
+            'options' => [
+                \Redis::OPT_CONNECT_TIMEOUT => 2,
+                \Redis::OPT_READ_TIMEOUT => 2,
+                \Redis::OPT_SERIALIZER => \Redis::SERIALIZER_PHP,
+            ],
+        ],
+
+        // 文件缓存（开发环境）
+        'file' => [
+            'type' => 'file',
+            'path' => runtime_path() . 'cache' . DIRECTORY_SEPARATOR,
+            'prefix' => '',
             'expire' => 0,
         ],
     ],
+
+    // 缓存键前缀
+    'prefix' => 'taichu:',
 ];

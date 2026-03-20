@@ -28,7 +28,6 @@ class CacheManager {
       try {
         localStorage.setItem(`cache_${key}`, JSON.stringify(data))
       } catch (e) {
-        console.warn('localStorage缓存失败:', e)
       }
     }
   }
@@ -62,7 +61,6 @@ class CacheManager {
         localStorage.removeItem(`cache_${key}`)
       }
     } catch (e) {
-      console.warn('localStorage读取失败:', e)
     }
 
     return null
@@ -77,7 +75,6 @@ class CacheManager {
     try {
       localStorage.removeItem(`cache_${key}`)
     } catch (e) {
-      console.warn('localStorage删除失败:', e)
     }
   }
 
@@ -94,7 +91,6 @@ class CacheManager {
         }
       })
     } catch (e) {
-      console.warn('localStorage清空失败:', e)
     }
   }
 

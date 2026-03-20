@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- 首页 -->
+  <url>
+    <loc>https://taichu.chat/</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/"/>
+    <image:image>
+      <image:loc>https://taichu.chat/images/og-home.jpg</image:loc>
+      <image:title>太初命理 - AI智能命理分析平台</image:title>
+      <image:caption>专业的八字排盘、塔罗占卜、六爻占卜、每日运势服务</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 八字排盘（核心功能） -->
+  <url>
+    <loc>https://taichu.chat/bazi</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/bazi"/>
+    <image:image>
+      <image:loc>https://taichu.chat/images/og-bazi.jpg</image:loc>
+      <image:title>免费八字排盘 - 太初命理</image:title>
+      <image:caption>在线八字命盘计算，专业命理解读，首次免费</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 塔罗占卜 -->
+  <url>
+    <loc>https://taichu.chat/tarot</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/tarot"/>
+    <image:image>
+      <image:loc>https://taichu.chat/images/og-tarot.jpg</image:loc>
+      <image:title>在线塔罗占卜 - 太初命理</image:title>
+      <image:caption>专业塔罗牌阵，AI深度解读，多种牌阵可选</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 六爻占卜 -->
+  <url>
+    <loc>https://taichu.chat/liuyao</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/liuyao"/>
+    <image:image>
+      <image:loc>https://taichu.chat/images/og-liuyao.jpg</image:loc>
+      <image:title>传统六爻占卜 - 太初命理</image:title>
+      <image:caption>传统周易六爻，铜钱摇卦，专业断卦解读</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 八字合婚 -->
+  <url>
+    <loc>https://taichu.chat/hehun</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/hehun"/>
+    <image:image>
+      <image:loc>https://taichu.chat/images/og-hehun.jpg</image:loc>
+      <image:title>八字合婚测算 - 太初命理</image:title>
+      <image:caption>双方八字合婚分析，命理合配度专业测算</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 每日运势 -->
+  <url>
+    <loc>https://taichu.chat/daily</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/daily"/>
+    <image:image>
+      <image:loc>https://taichu.chat/images/og-daily.jpg</image:loc>
+      <image:title>今日运势查询 - 太初命理</image:title>
+      <image:caption>每日运势分析，宜忌参考，免费查询</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 帮助中心 -->
+  <url>
+    <loc>https://taichu.chat/help</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/help"/>
+  </url>
+
+  <!-- 积分充值 -->
+  <url>
+    <loc>https://taichu.chat/recharge</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://taichu.chat/recharge"/>
+  </url>
+
+  <!-- 用户协议 -->
+  <url>
+    <loc>https://taichu.chat/legal/agreement</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- 隐私政策 -->
+  <url>
+    <loc>https://taichu.chat/legal/privacy</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>

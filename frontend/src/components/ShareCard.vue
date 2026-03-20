@@ -114,7 +114,6 @@ const generateImage = async () => {
     
     ElMessage.success('图片已保存，快去分享吧！')
   } catch (error) {
-    console.error('生成图片失败:', error)
     ElMessage.error('生成图片失败，请稍后重试')
   } finally {
     generating.value = false

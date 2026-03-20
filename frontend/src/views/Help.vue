@@ -188,7 +188,6 @@ const loadFaqs = async () => {
       faqError.value = response.message || '加载失败'
     }
   } catch (error) {
-    console.error('加载FAQ数据失败:', error)
     faqStatus.value = 'error'
     faqError.value = error.message || '网络错误，请稍后重试'
     ElMessage.error('加载帮助内容失败，请稍后重试')

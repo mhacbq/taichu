@@ -22,6 +22,9 @@ Route::group('api/admin', function () {
         Route::get('dashboard/realtime', 'Admin/realtime');
         Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
         Route::get('dashboard/pending-feedback', 'admin.Feedback/pendingSummary');
+
+        // 平台统计数据
+        Route::get('statistics/index', 'Statistics/index');
         
         // 系统配置管理
         Route::get('config/features', 'admin.Config/features');
@@ -46,6 +49,9 @@ Route::group('api/admin', function () {
         Route::put('users/:id', 'admin.User/updateProfile');
         Route::get('users/:id', 'admin.User/detail');
         Route::get('users', 'admin.User/index');
+        Route::put('users/:id/status', 'UserController/updateStatus');
+        Route::post('users/:id/adjust-points', 'UserController/adjustPoints');
+        Route::get('users/:id/detail', 'UserController/show');
         
         // 测算结果管理
         Route::get('bazi-manage', 'admin.BaziManage/index');
@@ -104,12 +110,13 @@ Route::group('api/admin', function () {
         Route::get('content/block-config/:type', 'Content/getBlockConfig');
         
         // 积分管理
-
         Route::get('points/records', 'Admin/pointsRecords');
         Route::post('points/adjust', 'admin.User/adjustPoints');
         Route::get('points/rules', 'Admin/getPointsRules');
         Route::put('points/rules', 'Admin/savePointsRules');
         Route::get('points/stats', 'Admin/pointsStats');
+        Route::get('points/records', 'PointsController/records');
+        Route::get('points/statistics', 'PointsController/statistics');
         
         // 支付管理
         Route::get('payment/config', 'admin.Payment/getConfig');
@@ -132,6 +139,14 @@ Route::group('api/admin', function () {
         Route::post('order/refund', 'admin.Order/refund');
         Route::get('order/packages', 'admin.Order/packages');
         Route::post('order/save-package', 'admin.Order/savePackage');
+
+        // 八字记录管理
+        Route::get('bazi-records', 'BaziRecordController/index');
+        Route::get('bazi-records/statistics', 'BaziRecordController/statistics');
+
+        // VIP记录管理
+        Route::get('vip-records', 'VipRecordController/index');
+        Route::get('vip-records/statistics', 'VipRecordController/statistics');
 
         // 短信管理
 

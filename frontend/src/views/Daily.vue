@@ -736,7 +736,6 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
     if (userInitiated) {
       ElMessage.error(errorMessage.value)
     }
-    console.error(err)
   } finally {
 
     isLoading.value = false

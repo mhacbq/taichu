@@ -797,7 +797,6 @@ const loadStats = async () => {
       stats.value = createFallbackStats('数据更新中')
     }
   } catch (error) {
-    console.error('加载统计数据失败:', error)
     stats.value = createFallbackStats('数据更新中')
     userCount.value = null
     statsError.value = true
@@ -828,7 +827,6 @@ const loadUserPoints = async () => {
       isFirstBaziEligible.value = null
     }
   } catch (error) {
-    console.error('加载积分失败:', error)
     userPoints.value = null
     isFirstBaziEligible.value = null
   }

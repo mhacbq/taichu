@@ -1002,7 +1002,6 @@ const readLocalFreePreview = () => {
     const record = parsedValue?.record || parsedValue
     return record && typeof record === 'object' ? record : null
   } catch (error) {
-    console.warn('读取合婚暂存结果失败:', error)
     return null
   }
 }
@@ -1016,7 +1015,6 @@ const persistLocalFreePreview = (record) => {
       record,
     }))
   } catch (error) {
-    console.warn('保存合婚暂存结果失败:', error)
   }
 }
 
@@ -1026,7 +1024,6 @@ const clearLocalFreePreview = () => {
   try {
     localStorage.removeItem(HEHUN_LOCAL_FREE_PREVIEW_STORAGE_KEY)
   } catch (error) {
-    console.warn('清除合婚暂存结果失败:', error)
   }
 }
 
@@ -1882,7 +1879,6 @@ const loadPricing = async () => {
   } catch (error) {
     pricing.value = null
     pricingError.value = '完整版价格加载失败，请稍后重试。'
-    console.error('获取定价失败:', error)
   } finally {
     pricingLoading.value = false
   }
@@ -1943,7 +1939,6 @@ const submitForm = async () => {
           applyHistoryDetail(matchedHistoryItem)
         }
       } catch (historyError) {
-        console.warn('合婚结果已生成，但历史记录刷新失败:', historyError)
       }
     } else {
       trackSubmit('hehun_calculate', false, { tier: 'free', error: response.message })
@@ -2015,7 +2010,6 @@ const unlockPremium = async () => {
       try {
         await syncHistorySelection(normalizedPremiumResult.id)
       } catch (historyError) {
-        console.warn('详细报告已解锁，但历史记录刷新失败:', historyError)
       }
 
       ElMessage.success('解锁成功！')
@@ -2123,7 +2117,6 @@ const loadHistory = async () => {
   } catch (error) {
     history.value = mergeLocalFreePreviewIntoHistory([])
     historyError.value = '历史记录加载失败，请稍后重试'
-    console.error('获取历史记录失败:', error)
   } finally {
 
     historyLoading.value = false
@@ -2294,7 +2287,6 @@ const loadHistoryDetail = async (item) => {
       return
     }
 
-    console.error('加载历史记录失败:', error)
     ElMessage.error('历史记录数据格式错误，无法加载')
   }
 }

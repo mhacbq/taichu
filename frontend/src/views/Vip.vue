@@ -128,7 +128,6 @@ const loadUserInfo = () => {
       vipExpireTime.value = userInfo.value.vip_expire_time || ''
     }
   } catch (error) {
-    console.error('解析用户信息失败:', error)
   }
 }
 

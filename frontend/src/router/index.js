@@ -361,7 +361,6 @@ router.beforeEach((to, from, next) => {
 
   // 管理端路由：限制访问频率（防暴力枚举）
   if (isAdminPath && !checkAdminRateLimit()) {
-    console.warn('[Security] 管理端访问频率过高，已限制')
     next({ name: 'Home' })
     return
   }

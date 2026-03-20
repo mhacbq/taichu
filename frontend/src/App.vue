@@ -457,7 +457,6 @@ const checkLoginStatus = () => {
       userPoints.value = user?.points || 0
       refreshPoints()
     } catch (e) {
-      console.error('解析用户信息失败:', e)
       // 清除无效的登录状态
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')

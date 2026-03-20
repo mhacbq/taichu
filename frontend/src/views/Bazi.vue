@@ -95,6 +95,26 @@
             <label>出生日期与时间</label>
             <span class="form-group__status">{{ birthTimeAccuracy === 'exact' ? '精确排盘' : '估算模式' }}</span>
           </div>
+
+          <!-- 历法类型切换 -->
+          <div class="calendar-type-switch">
+            <div class="calendar-type-switch__label">历法类型</div>
+            <el-radio-group v-model="calendarType" size="small">
+              <el-radio label="solar">
+                <el-icon><Calendar /></el-icon>
+                公历
+              </el-radio>
+              <el-radio label="lunar">
+                <el-icon><StarFilled /></el-icon>
+                农历
+              </el-radio>
+            </el-radio-group>
+            <p class="calendar-type-switch__hint" v-if="calendarType === 'lunar'">
+              <el-icon><InfoFilled /></el-icon>
+              农历生日系统会自动转换为公历进行排盘计算
+            </p>
+          </div>
+
           <div class="time-accuracy-switch">
             <div class="time-accuracy-switch__copy">
               <span class="switch-label">时间确认度</span>
@@ -167,9 +187,9 @@
           </el-radio-group>
         </div>
         
-        <div class="form-group" v-if="versionMode === 'pro'" data-bazi-field="location">
+        <div class="form-group" data-bazi-field="location">
           <label>
-            出生地点
+            出生地点 <span class="required-mark">*</span>
             <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
               <el-icon class="help-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
@@ -177,13 +197,13 @@
           <el-select-v2
             v-model="location"
             :options="cityOptions"
-            placeholder="请选择出生城市（可选）"
+            placeholder="请选择出生城市"
             class="full-width"
             filterable
             clearable
             :height="200"
           />
-          <p class="form-hint"><el-icon><MagicStick /></el-icon> 出生地可先留空，系统会默认按北京时间排盘。</p>
+          <p class="form-hint"><el-icon><MagicStick /></el-icon> 请选择出生城市，系统会根据地点计算真太阳时，让排盘更准确。</p>
         </div>
 
         <!-- 提交前校验提示 -->
@@ -1295,6 +1315,8 @@ const resolveEstimatedTimeSlotByClock = (clock = '') => {
   return 'evening'
 }
 
+const calendarType = ref('solar') // 历法类型：solar公历, lunar农历
+
 const birthTimeAccuracy = ref('exact')
 const exactBirthDate = ref('')
 const estimatedBirthDate = ref('')
@@ -1611,7 +1633,7 @@ const confirmDialogConfig = computed(() => {
 })
 
 const canStartBazi = computed(() => {
-  if (!birthDate.value || !isAccountReady.value) {
+  if (!birthDate.value || !isAccountReady.value || !location.value) {
     return false
   }
 
@@ -2024,7 +2046,6 @@ const loadPoints = async ({ silent = false } = {}) => {
   } else {
     currentPoints.value = 0
     accountStatus.value = 'error'
-    console.error('获取账户信息失败:', accountResult.status === 'rejected' ? accountResult.reason : accountResponse)
     if (!silent) {
       ElMessage.error(accountResponse?.message || '获取账户信息失败，请尝试重新获取')
     }
@@ -2049,7 +2070,6 @@ const loadPoints = async ({ silent = false } = {}) => {
       fortunePricingStatus.value = 'guest'
     } else {
       fortunePricingStatus.value = 'error'
-      console.error('获取深度工具说明失败:', pricingResult.status === 'rejected' ? pricingResult.reason : pricingResponse)
       if (!silent) {
         ElMessage.error(pricingResponse?.message || '获取深度工具说明失败，请稍后重试')
       }
@@ -2066,12 +2086,10 @@ const loadPoints = async ({ silent = false } = {}) => {
     } else {
       aiAnalysisCost.value = AI_ANALYSIS_DEFAULT_COST
       aiPricingStatus.value = 'fallback'
-      console.warn('客户端配置缺少 AI 解盘价格，已回退默认价格')
     }
   } else {
     aiAnalysisCost.value = AI_ANALYSIS_DEFAULT_COST
     aiPricingStatus.value = 'fallback'
-    console.warn('获取 AI 解盘价格失败，已回退默认价格', clientConfigResult.status === 'rejected' ? clientConfigResult.reason : clientConfigResponse)
   }
 }
 
@@ -2153,7 +2171,6 @@ const getYearlyFortuneAnalysis = async () => {
       ElMessage.error(response.message || '分析失败')
     }
   } catch (error) {
-    console.error('流年运势分析错误:', error)
     ElMessage.error('分析失败，请稍后重试')
   } finally {
     yearlyFortuneLoading.value = false
@@ -2182,7 +2199,6 @@ const getDayunFortuneAnalysis = async () => {
       ElMessage.error(response.message || '分析失败')
     }
   } catch (error) {
-    console.error('大运运势分析错误:', error)
     ElMessage.error('分析失败，请稍后重试')
   } finally {
     dayunAnalysisLoading.value = false
@@ -2208,7 +2224,6 @@ const getDayunChartData = async () => {
       ElMessage.error(response.message || '生成失败')
     }
   } catch (error) {
-    console.error('大运K线图生成错误:', error)
     ElMessage.error('生成失败，请稍后重试')
   } finally {
     dayunChartLoading.value = false
@@ -2291,6 +2306,7 @@ const calculateBazi = async () => {
       gender: gender.value,
       location: location.value,
       mode: versionMode.value,
+      calendarType: calendarType.value,
     })
     
     clearInterval(stepIntervalRef.value)
@@ -2320,7 +2336,6 @@ const calculateBazi = async () => {
     trackSubmit('bazi_calculate', false, { mode: versionMode.value, error: error.message })
     trackError('bazi_calculate_error', error.message)
     ElMessage.error('网络错误，请稍后重试')
-    console.error(error)
   } finally {
     if (stepIntervalRef.value) {
       clearInterval(stepIntervalRef.value)
@@ -2612,7 +2627,6 @@ const startAiAnalysisCore = async () => {
     if (error.name === 'AbortError') {
       ElMessage.info('已取消AI分析')
     } else {
-      console.error('AI解盘错误:', error)
       ElMessage.error('AI解盘服务暂时不可用，请稍后重试')
     }
   } finally {

@@ -158,7 +158,6 @@ const loadShareRecord = async () => {
 
     errorMessage.value = response.message || '分享内容加载失败'
   } catch (error) {
-    console.error('[TarotShare] 加载分享记录失败', error)
     errorMessage.value = error?.response?.data?.message || '分享内容加载失败，请稍后重试'
     ElMessage.error(errorMessage.value)
   } finally {

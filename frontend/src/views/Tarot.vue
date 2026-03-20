@@ -408,7 +408,6 @@ const submittedSpreadName = computed(() => getSpreadName(displayedSpread.value))
 
 const reportUiError = (action, error, userMessage = '') => {
 
-  console.error(`[Tarot] ${action}`, error)
   if (userMessage) {
     ElMessage.error(userMessage)
   }

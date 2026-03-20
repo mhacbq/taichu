@@ -126,7 +126,6 @@ const handleEnable = async () => {
       ElMessage.warning('您的浏览器不支持推送功能')
     }
   } catch (error) {
-    console.error('开启推送失败:', error)
     ElMessage.error('开启失败，请稍后重试')
   } finally {
     enabling.value = false

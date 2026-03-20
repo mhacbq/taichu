@@ -157,7 +157,6 @@ const submitForm = async () => {
       ElMessage.error(response.message || '取名失败')
     }
   } catch (error) {
-    console.error('取名失败:', error)
     ElMessage.error('网络错误，请稍后重试')
   } finally {
     loading.value = false

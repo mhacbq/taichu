@@ -920,7 +920,6 @@ const summaryHighlights = computed(() => {
 const reportUiError = (action, error, userMessage = '') => {
 
 
-  console.error(`[Liuyao] ${action}`, error)
   if (userMessage) {
     ElMessage.error(userMessage)
   }
