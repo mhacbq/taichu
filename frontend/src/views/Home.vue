@@ -14,10 +14,10 @@
               八字排盘
               <span v-if="!isLoggedIn" class="btn-badge btn-badge--free">首测免费</span>
             </router-link>
-            <router-link to="/daily" class="btn-secondary">
+            <router-link to="/tarot" class="btn-secondary">
               <el-icon class="btn-icon"><Star /></el-icon>
-              免费体验每日运势
-              <span class="btn-badge btn-badge--free">无需登录</span>
+              塔罗占卜
+              <span class="btn-badge btn-badge--free">5积分/次</span>
             </router-link>
           </div>
 
@@ -2403,4 +2403,3 @@ onUnmounted(() => {
   }
 }
 </style>
-

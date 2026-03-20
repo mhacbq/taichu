@@ -183,10 +183,6 @@
         <el-icon class="bottom-icon"><House /></el-icon>
         <span class="bottom-label">首页</span>
       </router-link>
-      <router-link to="/daily" class="bottom-nav-item" :class="{ active: $route.path === '/daily' }">
-        <el-icon class="bottom-icon"><Star /></el-icon>
-        <span class="bottom-label">运势</span>
-      </router-link>
       <router-link to="/bazi" class="bottom-nav-item bottom-nav-item--primary" :class="{ active: $route.path === '/bazi' }">
         <span class="bottom-primary-icon">☯</span>
         <span class="bottom-primary-label">排盘</span>
@@ -1828,4 +1824,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
