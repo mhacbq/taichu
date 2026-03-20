@@ -67,7 +67,7 @@ class BaziPatternService
     ];
     
     /**
-     * 神煞表
+     * 神煞表（扩展版）
      */
     protected $shenSha = [
         'tianyi_guiren' => [
@@ -81,6 +81,16 @@ class BaziPatternService
             '辛' => ['寅', '午'],
             '壬' => ['卯', '巳'],
             '癸' => ['卯', '巳'],
+        ],
+        'tiande' => [
+            '子' => '巳', '丑' => '午', '寅' => '未', '卯' => '申', '辰' => '亥',
+            '巳' => '子', '午' => '丑', '未' => '寅', '申' => '卯', '酉' => '辰',
+            '戌' => '亥', '亥' => '辰',
+        ],
+        'yuande' => [
+            '子' => '巳', '丑' => '午', '寅' => '未', '卯' => '申', '辰' => '亥',
+            '巳' => '子', '午' => '丑', '未' => '寅', '申' => '卯', '酉' => '辰',
+            '戌' => '亥', '亥' => '辰',
         ],
         'wenchang' => [
             '甲' => '巳', '乙' => '午', '丙' => '申', '丁' => '酉', '戊' => '申',
@@ -97,6 +107,64 @@ class BaziPatternService
             '申' => '酉', '子' => '酉', '辰' => '酉',
             '巳' => '午', '酉' => '午', '丑' => '午',
             '亥' => '子', '卯' => '子', '未' => '子',
+        ],
+        'huagai' => [
+            '寅' => '戌', '午' => '戌', '戌' => '戌',
+            '申' => '辰', '子' => '辰', '辰' => '辰',
+            '巳' => '丑', '酉' => '丑', '丑' => '丑',
+            '亥' => '未', '卯' => '未', '未' => '未',
+        ],
+        'guchen' => [
+            '寅' => '亥', '午' => '亥', '戌' => '亥',
+            '申' => '巳', '子' => '巳', '辰' => '巳',
+            '巳' => '辰', '酉' => '辰', '丑' => '辰',
+            '亥' => '戌', '卯' => '戌', '未' => '戌',
+        ],
+        'guashu' => [
+            '寅' => '寅', '午' => '寅', '戌' => '寅',
+            '申' => '申', '子' => '申', '辰' => '申',
+            '巳' => '巳', '酉' => '巳', '丑' => '巳',
+            '亥' => '亥', '卯' => '亥', '未' => '亥',
+        ],
+        'wuming' => [
+            '寅' => '寅', '午' => '寅', '戌' => '寅',
+            '申' => '申', '子' => '申', '辰' => '申',
+            '巳' => '巳', '酉' => '巳', '丑' => '巳',
+            '亥' => '亥', '卯' => '亥', '未' => '亥',
+        ],
+        'liuxia' => [
+            '申' => '午', '子' => '午', '辰' => '午',
+            '寅' => '巳', '午' => '巳', '戌' => '巳',
+            '亥' => '辰', '卯' => '辰', '未' => '辰',
+            '巳' => '亥', '酉' => '亥', '丑' => '亥',
+        ],
+        'hongyan' => [
+            '甲' => '午', '乙' => '午', '丙' => '寅', '丁' => '寅',
+            '戊' => '卯', '己' => '卯', '庚' => '戌', '辛' => '戌',
+            '壬' => '酉', '癸' => '酉',
+        ],
+        'wangshen' => [
+            '寅' => '亥', '午' => '亥', '戌' => '亥',
+            '申' => '巳', '子' => '巳', '辰' => '巳',
+            '巳' => '辰', '酉' => '辰', '丑' => '辰',
+            '亥' => '戌', '卯' => '戌', '未' => '戌',
+        ],
+        'jiesha' => [
+            '寅' => '亥', '午' => '亥', '戌' => '亥',
+            '申' => '巳', '子' => '巳', '辰' => '巳',
+            '巳' => '辰', '酉' => '辰', '丑' => '辰',
+            '亥' => '戌', '卯' => '戌', '未' => '戌',
+        ],
+        'shima' => [
+            '寅' => '巳', '午' => '巳', '戌' => '巳',
+            '申' => '亥', '子' => '亥', '辰' => '亥',
+            '巳' => '申', '酉' => '申', '丑' => '申',
+            '亥' => '寅', '卯' => '寅', '未' => '寅',
+        ],
+        'shidabai' => [
+            '甲辰' => true, '甲戌' => true, '乙巳' => true, '乙丑' => true,
+            '丙申' => true, '丁亥' => true, '戊辰' => true, '己巳' => true,
+            '庚午' => true, '辛巳' => true, '壬寅' => true, '癸未' => true,
         ],
     ];
     
@@ -139,6 +207,276 @@ class BaziPatternService
             'mingli_dingyu' => $mingliDingyu,
             'pattern_level' => $patternLevel,
             'pattern_summary' => $this->generatePatternSummary($eightPatterns, $specialPatterns, $patternLevel),
+        ];
+    }
+    
+    /**
+     * 分析大运格局（新增）
+     * 分析大运期间的格局变化
+     */
+    public function analyzeDayunPattern(array $bazi, array $dayun, int $dayunIndex): array
+    {
+        $baziWithDayun = $bazi;
+        
+        // 将大运天干地支加入月柱位置
+        $baziWithDayun['month']['gan'] = $dayun['gan'] ?? '';
+        $baziWithDayun['month']['zhi'] = $dayun['zhi'] ?? '';
+        
+        // 重新计算五行统计
+        $baziWithDayun['wuxing_stats'] = $this->recalculateWuxingStats($baziWithDayun);
+        
+        // 重新计算十神
+        $baziWithDayun = $this->recalculateShishen($baziWithDayun);
+        
+        // 重新分析格局
+        $pattern = $this->analyzePattern($baziWithDayun, $bazi['gender'] ?? '');
+        
+        // 计算大运评分
+        $dayunScore = $this->calculateDayunScore($bazi, $dayun, $pattern);
+        
+        return [
+            'dayun' => $dayun,
+            'dayun_index' => $dayunIndex,
+            'pattern' => $pattern,
+            'dayun_score' => $dayunScore['score'],
+            'dayun_description' => $dayunScore['description'],
+            'is_favorable' => $dayunScore['is_favorable'],
+            'advice' => $dayunScore['advice'],
+        ];
+    }
+    
+    /**
+     * 分析流年格局（新增）
+     * 分析流年期间的格局变化
+     */
+    public function analyzeLiunianPattern(array $bazi, array $liunian, int $liunianYear): array
+    {
+        $baziWithLiunian = $bazi;
+        
+        // 将流年天干地支加入年柱位置（模拟）
+        $originalYear = $baziWithLiunian['year'];
+        $baziWithLiunian['year']['gan'] = $liunian['gan'] ?? '';
+        $baziWithLiunian['year']['zhi'] = $liunian['zhi'] ?? '';
+        
+        // 重新计算五行统计
+        $baziWithLiunian['wuxing_stats'] = $this->recalculateWuxingStats($baziWithLiunian);
+        
+        // 重新计算十神
+        $baziWithLiunian = $this->recalculateShishen($baziWithLiunian);
+        
+        // 重新分析格局
+        $pattern = $this->analyzePattern($baziWithLiunian, $bazi['gender'] ?? '');
+        
+        // 计算流年评分
+        $liunianScore = $this->calculateLiunianScore($bazi, $originalYear, $liunian, $pattern);
+        
+        return [
+            'liunian' => $liunian,
+            'liunian_year' => $liunianYear,
+            'pattern' => $pattern,
+            'liunian_score' => $liunianScore['score'],
+            'liunian_description' => $liunianScore['description'],
+            'is_favorable' => $liunianScore['is_favorable'],
+            'advice' => $liunianScore['advice'],
+        ];
+    }
+    
+    /**
+     * 重新计算五行统计（辅助方法）
+     */
+    protected function recalculateWuxingStats(array $bazi): array
+    {
+        $wuxingCount = ['金' => 0, '木' => 0, '水' => 0, '火' => 0, '土' => 0];
+        
+        // 天干五行
+        $pillars = ['year', 'month', 'day', 'hour'];
+        foreach ($pillars as $pillar) {
+            if (isset($bazi[$pillar]['gan'])) {
+                $ganWuxing = $this->ganWuXing[$bazi[$pillar]['gan']] ?? '';
+                if ($ganWuxing !== '') {
+                    $wuxingCount[$ganWuxing] += 1;
+                }
+            }
+            if (isset($bazi[$pillar]['zhi'])) {
+                $zhiWuxing = $this->zhiWuXing[$bazi[$pillar]['zhi']] ?? '';
+                if ($zhiWuxing !== '') {
+                    $wuxingCount[$zhiWuxing] += 1.2;
+                }
+            }
+        }
+        
+        // 归一化
+        $total = array_sum($wuxingCount);
+        if ($total > 0) {
+            foreach ($wuxingCount as $key => $value) {
+                $wuxingCount[$key] = round($value / $total * 8, 1);
+            }
+        }
+        
+        return $wuxingCount;
+    }
+    
+    /**
+     * 重新计算十神（辅助方法）
+     */
+    protected function recalculateShishen(array $bazi): array
+    {
+        $dayMaster = $bazi['day']['gan'] ?? '甲';
+        $pillars = ['year', 'month', 'day', 'hour'];
+        
+        foreach ($pillars as $pillar) {
+            if (isset($bazi[$pillar]['gan'])) {
+                $gan = $bazi[$pillar]['gan'];
+                $bazi[$pillar]['shishen'] = $this->shiShenTable[$dayMaster][$gan] ?? '';
+            }
+        }
+        
+        return $bazi;
+    }
+    
+    /**
+     * 计算大运评分（新增）
+     */
+    protected function calculateDayunScore(array $bazi, array $dayun, array $pattern): array
+    {
+        $yongshen = $bazi['yongshen'] ?? [];
+        $yongshenShen = $yongshen['shen'] ?? '';
+        
+        $score = 0;
+        $description = '';
+        
+        // 检查大运五行是否为喜用神
+        $dayunGanWuxing = $this->ganWuXing[$dayun['gan']] ?? '';
+        $dayunZhiWuxing = $this->zhiWuXing[$dayun['zhi']] ?? '';
+        
+        if ($yongshenShen !== '') {
+            if ($dayunGanWuxing === $yongshenShen) {
+                $score += 30;
+                $description .= "大运天干为喜用神（{$yongshenShen}），运势较好。";
+            }
+            if ($dayunZhiWuxing === $yongshenShen) {
+                $score += 25;
+                $description .= "大运地支为喜用神（{$yongshenShen}），运势不错。";
+            }
+        }
+        
+        // 检查格局层次
+        $patternLevel = $pattern['pattern_level']['level'] ?? '';
+        $patternScore = $pattern['pattern_level']['score'] ?? 0;
+        
+        if ($patternLevel === '上上') {
+            $score += 20;
+            $description .= '格局层次很高，事业有成。';
+        } elseif ($patternLevel === '上') {
+            $score += 15;
+            $description .= '格局层次较高，事业顺遂。';
+        } elseif ($patternLevel === '中上') {
+            $score += 10;
+            $description .= '格局层次中上，事业平稳。';
+        } elseif ($patternLevel === '中') {
+            $score += 5;
+            $description .= '格局层次中等，需要努力。';
+        } else {
+            $description .= '格局层次较低，需要谨慎。';
+        }
+        
+        // 检查神煞
+        $goodShenSha = array_filter($pattern['shen_sha'] ?? [], fn($item) => ($item['quality'] ?? '') === '吉');
+        if (count($goodShenSha) > 0) {
+            $score += count($goodShenSha) * 5;
+            $description .= ' 有贵人相助。';
+        }
+        
+        // 判断是否为吉运
+        $isFavorable = $score >= 50;
+        
+        // 生成建议
+        $advice = $isFavorable 
+            ? '大运期间运势较好，可以积极进取，把握机会。但要保持谦虚，避免骄傲自满。'
+            : '大运期间运势一般，需要谨慎行事，稳健发展。建议修身养性，积累实力。';
+        
+        return [
+            'score' => $score,
+            'description' => $description,
+            'is_favorable' => $isFavorable,
+            'advice' => $advice,
+        ];
+    }
+    
+    /**
+     * 计算流年评分（新增）
+     */
+    protected function calculateLiunianScore(array $bazi, array $originalYear, array $liunian, array $pattern): array
+    {
+        $yongshen = $bazi['yongshen'] ?? [];
+        $yongshenShen = $yongshen['shen'] ?? '';
+        
+        $score = 0;
+        $description = '';
+        
+        // 检查流年五行是否为喜用神
+        $liunianGanWuxing = $this->ganWuXing[$liunian['gan']] ?? '';
+        $liunianZhiWuxing = $this->zhiWuXing[$liunian['zhi']] ?? '';
+        
+        if ($yongshenShen !== '') {
+            if ($liunianGanWuxing === $yongshenShen) {
+                $score += 30;
+                $description .= "流年天干为喜用神（{$yongshenShen}），运势较好。";
+            }
+            if ($liunianZhiWuxing === $yongshenShen) {
+                $score += 25;
+                $description .= "流年地支为喜用神（{$yongshenShen}），运势不错。";
+            }
+        }
+        
+        // 检查与原局的关系
+        $dayMaster = $bazi['day']['gan'] ?? '';
+        $dayMasterWuxing = $this->ganWuXing[$dayMaster] ?? '';
+        
+        // 检查是否有冲克
+        $clashRelations = [
+            '子' => '午', '午' => '子',
+            '丑' => '未', '未' => '丑',
+            '寅' => '申', '申' => '寅',
+            '卯' => '酉', '酉' => '卯',
+            '辰' => '戌', '戌' => '辰',
+            '巳' => '亥', '亥' => '巳',
+        ];
+        
+        $liunianZhi = $liunian['zhi'] ?? '';
+        $dayZhi = $bazi['day']['zhi'] ?? '';
+        
+        if (isset($clashRelations[$liunianZhi]) && $clashRelations[$liunianZhi] === $dayZhi) {
+            $score -= 20;
+            $description .= ' 流年地支与日支相冲，感情生活可能有波动。';
+        }
+        
+        // 检查格局层次
+        $patternLevel = $pattern['pattern_level']['level'] ?? '';
+        if ($patternLevel === '上上' || $patternLevel === '上') {
+            $score += 10;
+        }
+        
+        // 检查神煞
+        $goodShenSha = array_filter($pattern['shen_sha'] ?? [], fn($item) => ($item['quality'] ?? '') === '吉');
+        if (count($goodShenSha) > 0) {
+            $score += count($goodShenSha) * 5;
+            $description .= ' 有贵人相助。';
+        }
+        
+        // 判断是否为吉年
+        $isFavorable = $score >= 50;
+        
+        // 生成建议
+        $advice = $isFavorable 
+            ? '流年运势较好，可以积极进取，把握机会。但要保持谦虚，避免骄傲自满。'
+            : '流年运势一般，需要谨慎行事，稳健发展。建议修身养性，积累实力。';
+        
+        return [
+            'score' => $score,
+            'description' => $description,
+            'is_favorable' => $isFavorable,
+            'advice' => $advice,
         ];
     }
     
@@ -354,6 +692,134 @@ class BaziPatternService
             ];
         }
         
+        // 羊刃格（新增）
+        $yangrenZhi = $this->yangren[$dayMaster] ?? '';
+        if ($yangrenZhi !== '') {
+            foreach ($allZhi as $pos => $zhi) {
+                if ($zhi === $yangrenZhi) {
+                    // 检查是否有七杀
+                    $hasQisha = in_array('七杀', $allShishen, true);
+                    if ($hasQisha) {
+                        // 羊刃驾杀
+                        $patterns[] = [
+                            'name' => '羊刃驾杀格',
+                            'description' => '羊刃驾御七杀，有威猛之气，有魄力有担当。适合武职或竞争性行业，但要控制脾气。',
+                            'quality' => '上格',
+                            'favorable' => ['印星', '食神'],
+                            'unfavorable' => ['财星'],
+                            'level' => 8,
+                        ];
+                    } else {
+                        // 羊刃格（无杀）
+                        $patterns[] = [
+                            'name' => '羊刃格',
+                            'description' => '地支见羊刃，性格刚烈，有魄力，但也容易冲动。需要修身养性，控制脾气。',
+                            'quality' => '中格',
+                            'favorable' => ['印星', '七杀'],
+                            'unfavorable' => ['财星', '食伤'],
+                            'level' => 5,
+                        ];
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // 建禄格（新增）
+        $jianluMap = [
+            '甲' => '寅', '乙' => '卯', '丙' => '巳', '丁' => '午',
+            '戊' => '巳', '己' => '午', '庚' => '申', '辛' => '酉',
+            '壬' => '亥', '癸' => '子',
+        ];
+        $jianluZhi = $jianluMap[$dayMaster] ?? '';
+        if ($jianluZhi !== '' && $allZhi['year'] === $jianluZhi) {
+            // 年支为建禄
+            if ($isStrong) {
+                $patterns[] = [
+                    'name' => '建禄格（年）',
+                    'description' => '年支见建禄，祖上有贵气，能够继承家业或得到长辈帮助。有领导才能，适合从政或管理。',
+                    'quality' => '上格',
+                    'favorable' => ['官杀', '财星'],
+                    'unfavorable' => ['比劫'],
+                    'level' => 7,
+                ];
+            } else {
+                $patterns[] = [
+                    'name' => '建禄格（年，身弱）',
+                    'description' => '年支见建禄但身弱，有祖荫但需要努力。建议借助外力，培养领导能力。',
+                    'quality' => '中格',
+                    'favorable' => ['印星', '比劫'],
+                    'unfavorable' => ['财星', '官杀'],
+                    'level' => 4,
+                ];
+            }
+        }
+        
+        // 禄神格（新增）
+        $lushenMap = [
+            '甲' => '寅', '乙' => '卯', '丙' => '巳', '丁' => '午',
+            '戊' => '巳', '己' => '午', '庚' => '申', '辛' => '酉',
+            '壬' => '亥', '癸' => '子',
+        ];
+        $lushenZhi = $lushenMap[$dayMaster] ?? '';
+        $lushenCount = 0;
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $lushenZhi) {
+                $lushenCount++;
+            }
+        }
+        if ($lushenCount >= 2) {
+            $patterns[] = [
+                'name' => '双禄格',
+                'description' => '地支多处见禄神，福气深厚，事业顺利。有贵人相助，生活富足。',
+                'quality' => '上格',
+                'favorable' => ['财星', '官杀'],
+                'unfavorable' => ['比劫'],
+                'level' => 8,
+            ];
+        }
+        
+        // 魁罡格（新增）
+        $kuiGangZhi = ['辰', '戌'];
+        $kuiGangCount = 0;
+        foreach ($allZhi as $pos => $zhi) {
+            if (in_array($zhi, $kuiGangZhi, true)) {
+                $kuiGangCount++;
+            }
+        }
+        if ($kuiGangCount >= 2) {
+            $patterns[] = [
+                'name' => '魁罡格',
+                'description' => '地支多处见魁罡，聪明刚毅，有决断力。性格强势，有领导才能，适合创业或担任要职。',
+                'quality' => '上格',
+                'favorable' => ['财星', '官杀'],
+                'unfavorable' => ['比劫'],
+                'level' => 7,
+            ];
+        }
+        
+        // 金神格（新增）
+        $jinShenGanZhi = [
+            '甲' => '巳', '乙' => '巳', '己' => '巳', '庚' => '丑', '辛' => '丑', '壬' => '丑',
+            '癸' => '丑', '丁' => '丑',
+        ];
+        $jinShenZhi = $jinShenGanZhi[$dayMaster] ?? '';
+        if ($jinShenZhi !== '') {
+            foreach ($allZhi as $pos => $zhi) {
+                if ($zhi === $jinShenZhi) {
+                    $patterns[] = [
+                        'name' => '金神格',
+                        'description' => '地支见金神，性格刚烈果断，有威严之气。适合武职或竞争性行业，但要注意控制脾气。',
+                        'quality' => '中格',
+                        'favorable' => ['火', '土'],
+                        'unfavorable' => ['金', '木'],
+                        'level' => 6,
+                    ];
+                    break;
+                }
+            }
+        }
+        
         return $patterns;
     }
     
@@ -565,6 +1031,158 @@ class BaziPatternService
                     'description' => "{$pos}柱遇羊刃，性格刚烈，有魄力，但也容易冲动。需要控制脾气，遇事冷静思考。有武职之运。",
                     'quality' => '凶',
                     'level' => 5,
+                ];
+            }
+        }
+        
+        // 华盖（新增）
+        $huagaiZhi = $this->shenSha['huagai'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $huagaiZhi) {
+                $shenShaList[] = [
+                    'name' => '华盖',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇华盖，聪明有艺术天赋，有文学才能。但性格孤高，容易孤独。适合从事艺术、文化工作。",
+                    'quality' => '中',
+                    'level' => 6,
+                ];
+            }
+        }
+        
+        // 孤辰（新增）
+        $guchenZhi = $this->shenSha['guchen'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $guchenZhi) {
+                $shenShaList[] = [
+                    'name' => '孤辰',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇孤辰，性格孤僻，不善于社交。需要主动结交朋友，培养社交能力。",
+                    'quality' => '凶',
+                    'level' => 4,
+                ];
+            }
+        }
+        
+        // 寡宿（新增）
+        $guasuZhi = $this->shenSha['guashu'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $guasuZhi) {
+                $shenShaList[] = [
+                    'name' => '寡宿',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇寡宿，感情生活平淡，容易孤独。需要主动经营感情，保持乐观心态。",
+                    'quality' => '凶',
+                    'level' => 4,
+                ];
+            }
+        }
+        
+        // 亡神（新增）
+        $wangshenZhi = $this->shenSha['wangshen'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $wangshenZhi) {
+                $shenShaList[] = [
+                    'name' => '亡神',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇亡神，需要特别注意安全，做事要谨慎。建议修身养性，避免冲动行事。",
+                    'quality' => '凶',
+                    'level' => 3,
+                ];
+            }
+        }
+        
+        // 劫煞（新增）
+        $jieshaZhi = $this->shenSha['jiesha'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $jieshaZhi) {
+                $shenShaList[] = [
+                    'name' => '劫煞',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇劫煞，容易遭遇损失，需要谨慎理财。建议稳健投资，避免高风险操作。",
+                    'quality' => '凶',
+                    'level' => 4,
+                ];
+            }
+        }
+        
+        // 十恶大败（新增）
+        $yearGanZhi = ($bazi['year']['gan'] ?? '') . ($bazi['year']['zhi'] ?? '');
+        $monthGanZhi = ($bazi['month']['gan'] ?? '') . ($bazi['month']['zhi'] ?? '');
+        $dayGanZhi = ($bazi['day']['gan'] ?? '') . ($bazi['day']['zhi'] ?? '');
+        $hourGanZhi = ($bazi['hour']['gan'] ?? '') . ($bazi['hour']['zhi'] ?? '');
+        
+        $allGanZhi = [
+            'year' => $yearGanZhi,
+            'month' => $monthGanZhi,
+            'day' => $dayGanZhi,
+            'hour' => $hourGanZhi,
+        ];
+        
+        $shidabaiList = $this->shenSha['shidabai'] ?? [];
+        foreach ($allGanZhi as $pos => $ganZhi) {
+            if (isset($shidabaiList[$ganZhi]) && $shidabaiList[$ganZhi]) {
+                $shenShaList[] = [
+                    'name' => '十恶大败',
+                    'position' => $pos,
+                    'description' => "{$pos}柱十恶大败，需要特别谨慎，避免决策失误。建议多听取他人意见，三思而后行。",
+                    'quality' => '凶',
+                    'level' => 2,
+                ];
+            }
+        }
+        
+        // 流霞（新增）
+        $liuxiaZhi = $this->shenSha['liuxia'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $liuxiaZhi) {
+                $shenShaList[] = [
+                    'name' => '流霞',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇流霞，需要特别注意交通安全，出行要谨慎。建议避免夜间行车，保持车辆良好状态。",
+                    'quality' => '凶',
+                    'level' => 3,
+                ];
+            }
+        }
+        
+        // 红艳（新增）
+        $hongyanZhi = $this->shenSha['hongyan'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $hongyanZhi) {
+                $shenShaList[] = [
+                    'name' => '红艳',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇红艳，异性缘极佳，魅力四射。感情运势佳，但也容易招惹桃花劫。需要理智对待感情。",
+                    'quality' => '中',
+                    'level' => 6,
+                ];
+            }
+        }
+        
+        // 天德（新增）
+        $tiandeZhi = $this->shenSha['tiande'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $tiandeZhi) {
+                $shenShaList[] = [
+                    'name' => '天德',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇天德，有上天庇佑，能够逢凶化吉。为人善良，有慈悲心，容易得到贵人相助。",
+                    'quality' => '吉',
+                    'level' => 8,
+                ];
+            }
+        }
+        
+        // 月德（新增）
+        $yuandeZhi = $this->shenSha['yuande'][$dayMaster] ?? '';
+        foreach ($allZhi as $pos => $zhi) {
+            if ($zhi === $yuandeZhi) {
+                $shenShaList[] = [
+                    'name' => '月德',
+                    'position' => $pos,
+                    'description' => "{$pos}柱遇月德，有月神庇佑，一生平安顺遂。为人温和，有涵养，生活幸福。",
+                    'quality' => '吉',
+                    'level' => 8,
                 ];
             }
         }
