@@ -1773,26 +1773,45 @@ onBeforeUnmount(() => {
 
 .companion-content {
   width: 300px;
-  background: rgba(12, 12, 28, 0.97);
-  border: 1px solid rgba(184, 134, 11, 0.2);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(184, 134, 11, 0.1);
+  background: linear-gradient(160deg, rgba(255, 252, 244, 0.99), rgba(255, 248, 230, 0.97));
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 12px 40px rgba(184, 134, 11, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.companion-title {
+  color: #5c3d0e;
 }
 
 .companion-message {
-  background: rgba(184, 134, 11, 0.06);
-  border-color: rgba(184, 134, 11, 0.12);
+  background: rgba(212, 175, 55, 0.08);
+  border-color: rgba(212, 175, 55, 0.18);
+}
+
+.companion-message p {
+  color: #6b4c1e;
 }
 
 .companion-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  color: rgba(212, 175, 55, 0.75);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  color: #7a5520;
 }
 
 .companion-btn:hover {
-  background: rgba(212, 175, 55, 0.1);
-  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.35);
+  color: #8c641f;
   transform: translateX(3px);
+}
+
+.close-btn {
+  background: rgba(212, 175, 55, 0.1);
+  color: #8c641f;
+}
+
+.close-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  color: #5c3d0e;
 }
 
 @media (max-width: 768px) {
