@@ -1349,7 +1349,6 @@ const estimatedModeHint = computed(() => {
   return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻，结果页会同步标记为估算模式。`
 })
 
-const baziStrategyExpanded = ref(false)
 const baziSubmitIssues = ref([])
 
 const baziStrategySummary = computed(() => {
