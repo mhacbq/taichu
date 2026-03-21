@@ -57,7 +57,10 @@ class Liuyao extends BaseController
 
             $data['question'] = $question;
             $userModel = $this->getCurrentUserModel();
-            $pricing = $this->resolvePricing($userModel);
+            
+            // 获取版本参数，默认为 basic
+            $version = $data['version'] ?? 'basic';
+            $pricing = $this->resolvePricing($userModel, $version);
             $pointsCost = ($pricing['is_first_free'] || $pricing['is_vip_free']) ? 0 : (int) $pricing['cost'];
 
             // 积分检查移至 persistDivinationOutcome 方法中的事务内部执行
@@ -797,7 +800,7 @@ PROMPT;
     /**
      * 计算六爻前端展示定价
      */
-    private function resolvePricing(User $userModel): array
+    private function resolvePricing(User $userModel, string $version = 'basic'): array
     {
         $recordCount = (int) $this->applyRecordActiveFilter(
             Db::table($this->resolveLiuyaoRecordTable())
@@ -808,7 +811,11 @@ PROMPT;
 
         $isFirstFree = $recordCount === 0;
         $isVipFree = !$isFirstFree && !empty($userModel->is_vip);
-        $basePoints = (int) ConfigService::get('points_cost_liuyao', self::LIUYAO_POINTS_COST);
+        
+        // 根据版本获取基础积分消耗
+        $configKey = $version === 'professional' ? 'points_cost_liuyao_professional' : 'points_cost_liuyao_basic';
+        $basePoints = (int) ConfigService::get($configKey, $version === 'professional' ? 50 : 15);
+        
         $costInfo = ConfigService::calculatePointsCost('liuyao', $basePoints, $isFirstFree);
         $cost = ($isFirstFree || $isVipFree) ? 0 : $costInfo['final'];
 
@@ -820,6 +827,8 @@ PROMPT;
             'is_first_free' => $isFirstFree,
             'is_vip_free' => $isVipFree,
             'remaining_points' => (int) ($userModel->points ?? 0),
+            'basic_cost' => (int) ConfigService::get('points_cost_liuyao_basic', 15),
+            'professional_cost' => (int) ConfigService::get('points_cost_liuyao_professional', 50),
         ];
     }
 

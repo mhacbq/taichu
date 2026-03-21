@@ -50,20 +50,78 @@
 
           <!-- 卦象展示 -->
           <div class="gua-display">
-            <!-- 卦象卡片 -->
-            <div class="gua-card">
-              <div class="gua-symbol-large">{{ getGuaSymbol(result.gua.code) }}</div>
+            <!-- 卦象SVG展示 -->
+            <div class="gua-card gua-card--svg">
+              <div class="gua-symbol-large">
+                <svg v-if="guaSvgPath" viewBox="0 0 200 240" class="gua-svg">
+                  <!-- 六爻展示，从上到下（六爻到初爻） -->
+                  <g v-for="(yao, index) in result.yao_result" :key="index" :transform="`translate(0, ${20 + index * 35})`">
+                    <!-- 阳爻：一条横线 -->
+                    <line v-if="isYangYao(yao)"
+                      x1="40"
+                      y1="0"
+                      x2="160"
+                      y2="0"
+                      :stroke="isMovingYao(yao) ? '#E74C3C' : '#2C3E50'"
+                      stroke-width="8"
+                      stroke-linecap="round"
+                    />
+                    <!-- 阴爻：两条横线 -->
+                    <g v-else>
+                      <line
+                        x1="40"
+                        y1="0"
+                        x2="95"
+                        y2="0"
+                        :stroke="isMovingYao(yao) ? '#E74C3C' : '#2C3E50'"
+                        stroke-width="8"
+                        stroke-linecap="round"
+                      />
+                      <line
+                        x1="105"
+                        y1="0"
+                        x2="160"
+                        y2="0"
+                        :stroke="isMovingYao(yao) ? '#E74C3C' : '#2C3E50'"
+                        stroke-width="8"
+                        stroke-linecap="round"
+                      />
+                    </g>
+                    <!-- 动爻标识 -->
+                    <circle v-if="isMovingYao(yao)" cx="100" cy="17" r="6" fill="#E74C3C" />
+                    <!-- 爻位标签 -->
+                    <text x="20" y="5" font-size="12" fill="#7F8C8D" text-anchor="end">{{ 6 - index }}</text>
+                    <!-- 爻名标签 -->
+                    <text x="180" y="5" font-size="12" fill="#7F8C8D" text-anchor="start">{{ getYaoName(yao) }}</text>
+                  </g>
+                </svg>
+                <div v-else class="gua-symbol-large">{{ getGuaSymbol(result.gua.code) }}</div>
+              </div>
               <div class="gua-details">
                 <div class="gua-name-main">{{ result.gua.name }}</div>
                 <div class="gua-code-tag">第{{ result.gua.code }}卦</div>
+                <div class="gua-legend">
+                  <span class="gua-legend-item">
+                    <span class="gua-legend-symbol gua-legend-symbol--yang"></span>
+                    <span class="gua-legend-text">阳爻</span>
+                  </span>
+                  <span class="gua-legend-item">
+                    <span class="gua-legend-symbol gua-legend-symbol--yin"></span>
+                    <span class="gua-legend-text">阴爻</span>
+                  </span>
+                  <span class="gua-legend-item">
+                    <span class="gua-legend-symbol gua-legend-symbol--moving"></span>
+                    <span class="gua-legend-text">动爻</span>
+                  </span>
+                </div>
               </div>
               <div class="gua-deco-line"></div>
             </div>
 
-            <!-- 六爻展示 -->
+            <!-- 六爻详细信息 -->
             <div class="yao-wrapper">
               <div class="yao-section-title">
-                <span class="yao-section-title__text">六爻排盘</span>
+                <span class="yao-section-title__text">六爻详情</span>
                 <span class="yao-section-title__line"></span>
               </div>
               <div class="yao-grid">
@@ -83,6 +141,43 @@
                     {{ result.fushen[index].name }}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI深度分析 - 产品亮点，放在显眼位置 -->
+          <div v-if="result.ai_analysis" class="ai-section ai-section--highlight">
+            <div class="ai-section__header">
+              <h3 class="ai-section__title">
+                <el-icon class="ai-section__icon"><MagicStick /></el-icon>
+                AI深度分析
+                <span class="ai-section__badge">产品亮点</span>
+              </h3>
+            </div>
+            <div class="ai-content ai-content--highlight">{{ result.ai_analysis.content }}</div>
+          </div>
+
+          <!-- AI解卦按钮（历史记录中没有AI分析时显示） -->
+          <div v-else-if="result.is_history" class="ai-action-zone ai-action-zone--highlight">
+            <div class="ai-action-card">
+              <div class="ai-action-content">
+                <h3 class="ai-action-title">
+                  <el-icon><MagicStick /></el-icon>
+                  AI深度解卦
+                  <span class="ai-action-badge">产品亮点</span>
+                </h3>
+                <p class="ai-action-desc">基于AI专业知识库，为您提供更深入、更专业的占卜解读</p>
+                <el-button
+                  type="primary"
+                  size="large"
+                  :loading="aiAnalyzing"
+                  :disabled="aiAnalyzing"
+                  @click="startAiAnalysis"
+                  class="ai-action-btn"
+                >
+                  <el-icon><MagicStick /></el-icon>
+                  {{ aiAnalyzing ? 'AI正在深度分析...' : '开始AI解卦' }}
+                </el-button>
               </div>
             </div>
           </div>
@@ -135,38 +230,6 @@
           <div class="interpretation-section">
             <h4>卦象解读</h4>
             <pre class="interpretation-text">{{ result.interpretation }}</pre>
-          </div>
-
-          <!-- AI分析 -->
-          <div v-if="result.ai_analysis" class="ai-section">
-            <h4>
-              <el-icon><MagicStick /></el-icon>
-              AI深度分析
-            </h4>
-            <div class="ai-content">{{ result.ai_analysis.content }}</div>
-          </div>
-
-          <!-- AI解卦按钮（历史记录中没有AI分析时显示） -->
-          <div v-else-if="result.is_history" class="ai-action-zone">
-            <div class="ai-action-card">
-              <div class="ai-action-content">
-                <h4>
-                  <el-icon><MagicStick /></el-icon>
-                  AI深度解卦
-                </h4>
-                <p class="ai-action-desc">基于AI专业知识库，为您提供更深入、更专业的占卜解读</p>
-                <el-button
-                  type="primary"
-                  size="large"
-                  :loading="aiAnalyzing"
-                  :disabled="aiAnalyzing"
-                  @click="startAiAnalysis"
-                >
-                  <el-icon><MagicStick /></el-icon>
-                  {{ aiAnalyzing ? 'AI正在深度分析...' : '开始AI解卦' }}
-                </el-button>
-              </div>
-            </div>
           </div>
 
           <!-- 消耗信息 -->
@@ -342,6 +405,42 @@
             <el-checkbox v-model="form.useAi" label="使用AI深度分析（更准确、更详细）" />
           </div>
 
+          <!-- 版本选择 -->
+          <div class="version-selection" data-liuyao-field="version">
+            <div class="version-label">选择占卜版本：</div>
+            <div class="version-options">
+              <div
+                class="version-option"
+                :class="{ 'version-option--active': form.version === 'basic' }"
+                @click="form.version = 'basic'"
+              >
+                <div class="version-option__icon">📊</div>
+                <div class="version-option__info">
+                  <div class="version-option__title">简单版</div>
+                  <div class="version-option__desc">基础排盘功能</div>
+                </div>
+                <div class="version-option__price" v-if="pricing">
+                  <span class="price-value">{{ pricing.basic_cost }}积分</span>
+                </div>
+              </div>
+              <div
+                class="version-option"
+                :class="{ 'version-option--active': form.version === 'professional' }"
+                @click="form.version = 'professional'"
+              >
+                <div class="version-option__icon">✨</div>
+                <div class="version-option__info">
+                  <div class="version-option__title">专业版</div>
+                  <div class="version-option__desc">AI深度解读</div>
+                </div>
+                <div class="version-option__price" v-if="pricing">
+                  <span class="price-value">{{ pricing.professional_cost }}积分</span>
+                </div>
+                <div class="version-option__badge">推荐</div>
+              </div>
+            </div>
+          </div>
+
           <!-- 定价信息 -->
           <div class="pricing-info" v-if="pricingLoading || pricing || pricingError" data-liuyao-field="pricing">
 
@@ -358,32 +457,36 @@
                     <span><el-icon><Trophy /></el-icon> VIP免费</span>
                   </div>
                   <div v-else class="pricing-normal">
-                    <span>本次消耗 {{ pricing.cost }} 积分</span>
+                    <span>本次消耗 {{ form.version === 'professional' ? pricing.professional_cost : pricing.basic_cost }} 积分</span>
                   </div>
                   <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
                 </div>
                 <div class="pricing-info-details">
-                  <!-- 基础占卜 vs AI深度分析对比 -->
-                  <div v-if="form.useAi" class="ai-value-compare">
-                    <div class="compare-card basic-card">
+                  <!-- 版本功能对比 -->
+                  <div class="version-compare">
+                    <div class="compare-card" :class="{ 'compare-card--selected': form.version === 'basic' }">
                       <div class="compare-header">
-                        <span class="compare-badge">基础占卜</span>
+                        <span class="compare-badge compare-badge--basic">简单版</span>
                       </div>
                       <ul class="compare-features">
-                        <li><el-icon><Close /></el-icon> 完整的六爻卦象排盘</li>
-                        <li><el-icon><Close /></el-icon> 基础的卦辞解析</li>
-                        <li><el-icon><Close /></el-icon> 保存占卜历史记录</li>
+                        <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘</li>
+                        <li><el-icon><Check /></el-icon> 基础的卦辞解析</li>
+                        <li><el-icon><Check /></el-icon> 卦象SVG可视化展示</li>
+                        <li><el-icon><Close /></el-icon> <span class="feature-disabled">AI深度综合分析</span></li>
+                        <li><el-icon><Close /></el-icon> <span class="feature-disabled">专业的指导建议</span></li>
+                        <li><el-icon><Check /></el-icon> 保存占卜历史记录</li>
                       </ul>
                     </div>
 
-                    <div class="compare-card ai-card">
+                    <div class="compare-card" :class="{ 'compare-card--selected': form.version === 'professional' }">
                       <div class="compare-header">
-                        <span class="compare-badge premium">AI深度分析</span>
+                        <span class="compare-badge compare-badge--premium">专业版</span>
                         <span class="compare-tag">推荐</span>
                       </div>
                       <ul class="compare-features">
                         <li><el-icon><Check /></el-icon> <strong>完整的六爻卦象排盘</strong></li>
                         <li><el-icon><Check /></el-icon> <strong>详细的卦辞解析与针对性解读</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>卦象SVG可视化展示</strong></li>
                         <li><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
                         <li><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
                         <li><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
@@ -396,10 +499,13 @@
                     </div>
                   </div>
 
-                  <p class="pricing-info-title">本次占卜您将获得：</p>
+                  <p class="pricing-info-title">{{ form.version === 'professional' ? '专业版您将获得：' : '简单版您将获得：' }}</p>
                   <ul class="pricing-info-list">
                     <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘（本卦、变卦、互卦等）</li>
-                    <li><el-icon><Check /></el-icon> 详细的卦辞解析与针对性解读</li>
+                    <li v-if="form.version === 'professional'"><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
+                    <li><el-icon><Check /></el-icon> {{ form.version === 'professional' ? '详细的' : '基础的' }}卦辞解析与针对性解读</li>
+                    <li v-if="form.version === 'professional'"><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
+                    <li v-if="form.version === 'professional'"><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
                     <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
                   </ul>
 
@@ -550,7 +656,6 @@ const yaoNameMap = ['老阴', '少阳', '少阴', '老阳']
 const router = useRouter()
 
 const createDefaultForm = () => ({
-
   question: '',
   useAi: true,
   method: 'time',
@@ -560,6 +665,7 @@ const createDefaultForm = () => ({
   yaoResults: [null, null, null, null, null, null],
   riGan: '',
   riZhi: '',
+  version: 'basic', // 版本选择：basic（简单版）/ professional（专业版）
 })
 
 // 表单数据
@@ -1060,13 +1166,26 @@ const normalizeFushen = (value) => {
   }
 
   const name = String(value.name || '').trim()
-  const ganzhi = String(value.ganzhi || '').trim()
-  if (!name && !ganzhi) {
+  if (!name) {
     return null
   }
 
-  return { name, ganzhi }
+  return {
+    name,
+    element: value.element || '',
+    relation: value.relation || '',
+    status: value.status || ''
+  }
 }
+
+// 计算卦象SVG路径
+const guaSvgPath = computed(() => {
+  if (!result.value || !result.value.yao_result) {
+    return null
+  }
+  // SVG路径已在模板中动态生成，此处返回true表示启用SVG模式
+  return true
+})
 
 const getYinYangLabel = (value) => (isYangYao(value) ? '阳爻' : '阴爻')
 
@@ -1232,6 +1351,7 @@ const buildDivinationPayload = () => {
     method: form.method,
     question_type: form.questionType,
     gender: form.gender,
+    version: form.version, // 添加版本选择：basic（简单版）/ professional（专业版）
   }
 
   if (form.riGan) {
@@ -1865,6 +1985,30 @@ onUnmounted(() => {
   margin-top: 20px;
 }
 
+/* 修复 advanced-grid 中选择器错位问题 */
+.advanced-grid .form-group {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.advanced-grid .form-group label {
+  margin-bottom: 8px;
+}
+
+.advanced-grid :deep(.el-select),
+.advanced-grid :deep(.el-radio-group) {
+  width: 100%;
+}
+
+.advanced-grid :deep(.el-select .el-input__wrapper) {
+  width: 100%;
+}
+
+.advanced-grid :deep(.el-radio-group .el-radio-button) {
+  flex: 1;
+}
+
 .input-grid__item label,
 .manual-grid__item label {
   display: block;
@@ -1874,9 +2018,19 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+/* 修复 manual-grid 布局 */
 .manual-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 20px;
+}
+
+.manual-grid__item {
+  display: flex;
+  flex-direction: column;
+}
+
+.manual-grid__item :deep(.el-select) {
+  width: 100%;
 }
 
 
