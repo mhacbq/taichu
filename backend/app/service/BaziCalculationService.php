@@ -402,10 +402,10 @@ class BaziCalculationService
             'calculation_note' => $hour >= 23 ? '已处理晚子时：日柱进一日，年柱月柱维持原日' : '正常排盘'
         ]);
 
-        return $this->normalizeBaziStructure($result);
+        return $this->normalizeBaziStructure($result, $genderLabel);
     }
 
-    public function normalizeBaziStructure(array $bazi): array
+    public function normalizeBaziStructure(array $bazi, string $gender = '男'): array
     {
         $positions = ['year', 'month', 'day', 'hour'];
         $dayGan = $bazi['day']['gan'] ?? null;

@@ -150,48 +150,13 @@
                 {{ premiumResult.hehun.level_text }}
               </span>
             </div>
-            
-            <!-- 五维度评分 -->
-            <div class="dimension-scores">
-              <div v-for="(score, key) in premiumResult.hehun.dimensions" :key="key" class="dimension-item">
-                <span class="dim-name">{{ dimensionNames[key] }}</span>
-                <div class="dim-bar">
-                  <div class="dim-fill" :style="{ width: score + '%' }"></div>
-                </div>
-                <span class="dim-score">{{ score }}分</span>
-              </div>
-            </div>
-            <div v-if="premiumResult.hehun.traditional_risk?.warning" class="risk-alert" :class="`risk-alert--${premiumResult.hehun.traditional_risk.risk_level || 'medium'}`">
-              <strong>传统合婚提示</strong>
-              <p>{{ premiumResult.hehun.traditional_risk.warning }}</p>
-              <span v-if="premiumResult.hehun.base_score && premiumResult.hehun.base_score !== premiumResult.hehun.score">
-                系统已按三元 / 九宫凶象把总评从 {{ premiumResult.hehun.base_score }} 分校正为 {{ premiumResult.hehun.score }} 分。
-              </span>
-            </div>
           </div>
-          
-          <!-- 详细分析 -->
-          <div class="analysis-section">
-            <h3>详细分析</h3>
-            <div class="analysis-content rich-content" v-html="sanitizeHtml(premiumResult.hehun.detail_analysis)"></div>
-          </div>
-          
+
           <!-- AI分析 -->
           <div class="ai-section" v-if="premiumResult.ai_analysis">
             <h3><el-icon><Cpu /></el-icon> {{ premiumAnalysisPresentation.title }}</h3>
             <p v-if="premiumAnalysisPresentation.note" class="analysis-engine-note">{{ premiumAnalysisPresentation.note }}</p>
             <div class="ai-content rich-content" v-html="premiumAiAnalysisHtml"></div>
-          </div>
-
-          
-          <!-- 化解建议 -->
-          <div class="solution-section" v-if="premiumResult.hehun.solutions">
-            <h3><el-icon><Present /></el-icon> 化解建议</h3>
-            <ul class="solution-list">
-              <li v-for="(solution, idx) in premiumResult.hehun.solutions" :key="idx">
-                {{ solution }}
-              </li>
-            </ul>
           </div>
           
           <!-- 操作按钮 -->
@@ -271,31 +236,6 @@
             </div>
           </div>
 
-          <div class="role-mode-toggle card-hover">
-            <div class="role-mode-toggle__header">
-              <div class="role-mode-toggle__copy">
-                <span class="role-mode-toggle__eyebrow">称呼偏好</span>
-                <strong>结果里如何称呼双方</strong>
-                <p>只影响页面上的展示文案，不会改动后端字段、历史记录或合婚算法。</p>
-              </div>
-              <span class="role-mode-toggle__status">{{ roleDisplayMode === 'gender' ? '当前：男方 / 女方' : '当前：A方 / B方' }}</span>
-            </div>
-            <el-radio-group v-model="roleDisplayMode" size="small" class="role-mode-group premium-segment premium-segment--card">
-              <el-radio-button label="gender">
-                <span class="role-mode-option">
-                  <span class="role-mode-option__title">男方 / 女方</span>
-                  <small class="role-mode-option__desc">更贴近日常习惯，适合传统表达场景</small>
-                </span>
-              </el-radio-button>
-              <el-radio-button label="neutral">
-                <span class="role-mode-option">
-                  <span class="role-mode-option__title">A方 / B方</span>
-                  <small class="role-mode-option__desc">更中性，适合不想预设双方角色时使用</small>
-                </span>
-              </el-radio-button>
-            </el-radio-group>
-          </div>
-          
           <!-- 男方信息 -->
 
           <div class="person-section card-hover">
@@ -703,49 +643,27 @@ const form = reactive({
 const hehunStrategyExpanded = ref(false)
 const hehunSubmitIssues = ref([])
 
-const roleDisplayMode = ref('gender')
 const roleCopyMap = {
-  gender: {
-    male: {
-      short: '男方',
-      panel: '男方信息',
-      bazi: '男方八字',
-      namePlaceholder: '输入男方姓名',
-    },
-    female: {
-      short: '女方',
-      panel: '女方信息',
-      bazi: '女方八字',
-      namePlaceholder: '输入女方姓名',
-    },
+  male: {
+    short: '男方',
+    panel: '男方信息',
+    bazi: '男方八字',
+    namePlaceholder: '输入男方姓名',
   },
-  neutral: {
-    male: {
-      short: 'A方',
-      panel: 'A方信息',
-      bazi: 'A方八字',
-      namePlaceholder: '输入 A 方姓名',
-    },
-    female: {
-      short: 'B方',
-      panel: 'B方信息',
-      bazi: 'B方八字',
-      namePlaceholder: '输入 B 方姓名',
-    },
+  female: {
+    short: '女方',
+    panel: '女方信息',
+    bazi: '女方八字',
+    namePlaceholder: '输入女方姓名',
   },
 }
 
-const currentRoleCopy = computed(() => roleCopyMap[roleDisplayMode.value] || roleCopyMap.gender)
-const getRoleCopy = (role) => currentRoleCopy.value[role] || currentRoleCopy.value.male
+const getRoleCopy = (role) => roleCopyMap[role] || roleCopyMap.male
 const getRoleLabel = (role) => getRoleCopy(role).short
 const getRolePanelTitle = (role) => getRoleCopy(role).panel
 const getRoleBaziTitle = (role) => getRoleCopy(role).bazi
 const getRoleNamePlaceholder = (role) => getRoleCopy(role).namePlaceholder
 const resolveRoleIcon = (role) => {
-  if (roleDisplayMode.value === 'neutral') {
-    return UserFilled
-  }
-
   return role === 'female' ? Female : Male
 }
 
@@ -1096,20 +1014,20 @@ const hehunStrategySummary = computed(() => {
 const hehunStrategyDetails = computed(() => ([
   {
     key: 'precision',
-    title: '输入精度怎么选',
-    description: '能填准确时分就优先填准确时分；只记得早上或晚上也可以先用时段估算，系统会在结果页同步标注可信度。'
+    title: '出生时间怎么填最合适',
+    description: '知道具体出生时间请选择"精确时分"，结果最准确；只记得大概时段（如早晨、晚上）也可以，系统会自动标注可信度供参考。'
   },
   {
     key: 'flow',
-    title: '免费预览与完整版',
-    description: '免费预览先返回基础匹配趋势与简要建议；确认值得继续后，再解锁完整版查看五维分析、传统风险与更细化建议。'
+    title: '如何选择分析方案',
+    description: '免费预览先展示基础匹配趋势和简单建议，确认值得深入了解后，再解锁完整版获取详细的性格、家庭、事业等五维分析。'
   },
   {
     key: 'ai',
-    title: 'AI 深度分析策略',
+    title: 'AI 深度分析说明',
     description: form.useAi
-      ? '当前已勾选 AI；解锁时会优先调用 AI，若服务暂不可用，会自动切回规则解读并在结果页说明。'
-      : '当前未勾选 AI；解锁后会先给出规则版完整版，如需更长的深度分析可再开启 AI。'
+      ? '已开启 AI 深度分析，解锁后将优先调用 AI 提供个性化解读；如 AI 服务暂不可用，系统会自动切换为传统规则解读并明确提示。'
+      : '未开启 AI 深度分析，解锁后将提供传统规则版详细分析；如需更个性化的 AI 解读，可在解锁后重新开启。'
   }
 ]))
 
@@ -2693,20 +2611,16 @@ onMounted(() => {
 
 .person-section {
   margin-bottom: 30px;
-  padding: 24px;
+  padding: 18px;
   background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.04));
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
 }
 
-
 .person-section:hover {
-  transform: translateY(-1px);
   background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
   border-color: var(--primary-light-20);
-  box-shadow: var(--shadow-md);
 }
 
 .person-title {
