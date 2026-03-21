@@ -50,49 +50,39 @@
 
           <!-- 卦象展示 -->
           <div class="gua-display">
-            <div class="gua-decoration">
-              <el-icon><MagicStick /></el-icon>
-            </div>
-            <div class="gua-info">
-              <div class="gua-content-wrapper">
-                <div class="gua-symbol-container">
-                  <span class="gua-symbol">{{ getGuaSymbol(result.gua.code) }}</span>
-                </div>
-                <div class="gua-text">
-                  <h3 class="gua-name">{{ result.gua.name }}</h3>
-                  <p class="gua-code">卦象代码：{{ result.gua.code }}</p>
-                </div>
+            <!-- 卦象卡片 -->
+            <div class="gua-card">
+              <div class="gua-symbol-large">{{ getGuaSymbol(result.gua.code) }}</div>
+              <div class="gua-details">
+                <div class="gua-name-main">{{ result.gua.name }}</div>
+                <div class="gua-code-tag">第{{ result.gua.code }}卦</div>
               </div>
+              <div class="gua-deco-line"></div>
             </div>
 
-            <!-- 六爻图形 -->
-            <div class="yao-container">
-              <div
-                v-for="(yao, index) in result.yao_result"
-                :key="index"
-                class="yao-line"
-                :class="{ moving: isMovingYao(yao), yang: isYangYao(yao), yin: !isYangYao(yao) }"
-              >
-                <!-- 伏神显示 -->
-                <div v-if="result.fushen && result.fushen[index]" class="fushen-box">
-                  <span class="fushen-label">伏神</span>
-                  <span class="fushen-name">{{ result.fushen[index].name }}</span>
-                  <span class="fushen-ganzhi">{{ result.fushen[index].ganzhi }}</span>
+            <!-- 六爻展示 -->
+            <div class="yao-wrapper">
+              <div class="yao-section-title">
+                <span class="yao-section-title__text">六爻排盘</span>
+                <span class="yao-section-title__line"></span>
+              </div>
+              <div class="yao-grid">
+                <div
+                  v-for="(yao, index) in result.yao_result"
+                  :key="index"
+                  class="yao-cell"
+                  :class="{ moving: isMovingYao(yao), yang: isYangYao(yao), yin: !isYangYao(yao) }"
+                >
+                  <div class="yao-cell__position">{{ 6 - index }}爻</div>
+                  <div class="yao-cell__symbol">
+                    <span class="yao-symbol-mark">{{ isYangYao(yao) ? '—' : '— —' }}</span>
+                    <span v-if="isMovingYao(yao)" class="yao-moving-icon">✦</span>
+                  </div>
+                  <div class="yao-cell__name">{{ result.yao_names[index] }}</div>
+                  <div v-if="result.fushen && result.fushen[index]" class="yao-cell__fushen">
+                    {{ result.fushen[index].name }}
+                  </div>
                 </div>
-                <div class="yao-line__meta">
-                  <span class="yao-line__index">{{ yaoResultLineLabels[index] }}</span>
-                  <span class="yao-line__type">{{ getYaoName(yao) }}</span>
-                </div>
-                <div class="yao-line__visual">
-                  <span class="yao-mark" :class="{ 'yao-mark--quiet': !getYaoMark(yao) }">{{ getYaoMark(yao) || '•' }}</span>
-                  <span class="yao-bar" aria-hidden="true"></span>
-                  <span v-if="isMovingYao(yao)" class="moving-badge">动爻</span>
-                </div>
-                <div class="yao-line__info">
-                  <span class="yao-name">{{ result.yao_names[index] }}</span>
-                  <span class="yao-line__state">{{ isYangYao(yao) ? '阳爻' : '阴爻' }} · {{ isMovingYao(yao) ? '动爻' : '静爻' }}</span>
-                </div>
-
               </div>
             </div>
           </div>
@@ -2351,321 +2341,202 @@ onUnmounted(() => {
 
 /* 卦象展示 */
 .gua-display {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 50px 40px;
-  background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-primary));
-  border-radius: var(--radius-xl);
-  margin-bottom: 40px;
-  border: 1px solid var(--primary-light-20);
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  padding: 36px;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+  border-radius: 24px;
+  margin-bottom: 32px;
+  border: 2px solid var(--border-light);
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.6), 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
 }
 
-.gua-display::before {
-  content: '';
-  position: absolute;
-  inset: 15px;
-  border: 1px solid var(--primary-light-10);
+.gua-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
   border-radius: 20px;
-  pointer-events: none;
+  border: 2px solid rgba(var(--primary-rgb), 0.15);
+  position: relative;
 }
 
-.gua-display::after {
-  content: '';
-  position: absolute;
-  inset: 20px;
-  border: 2px solid transparent;
-  border-image: linear-gradient(135deg, var(--primary-color), transparent, var(--primary-color)) 1;
-  opacity: 0.2;
-  pointer-events: none;
-}
-
-/* 装饰角 - 动态太极 */
-.gua-decoration {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 320px;
-  color: var(--primary-light-05);
-  animation: yinYangRotate 30s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-  filter: blur(2px);
-}
-
-@keyframes yinYangRotate {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-.gua-info {
-  text-align: center;
-  z-index: 2;
-  background: var(--white-03);
-  padding: 30px;
-  border-radius: var(--radius-xl);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--white-08);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.gua-name {
-  color: var(--primary-color);
-  font-size: 48px;
-  margin-bottom: 15px;
-  font-weight: 900;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  letter-spacing: 8px;
+.gua-symbol-large {
+  font-size: 72px;
+  line-height: 1;
+  margin-bottom: 20px;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 8px rgba(var(--primary-rgb), 0.2));
 }
 
-.gua-code {
-  color: var(--white-60);
-  font-size: 14px;
-  letter-spacing: 4px;
-  background: var(--white-05);
-  padding: 6px 16px;
-  border-radius: 20px;
-  display: inline-block;
-  font-family: monospace;
+.gua-details {
+  text-align: center;
 }
 
-/* 六爻图形 */
-.yao-container {
-  display: flex;
-  flex-direction: column-reverse; /* 从下往上排 */
-  gap: 18px;
-  z-index: 2;
-  background: linear-gradient(180deg, rgba(13, 11, 7, 0.92), rgba(5, 5, 5, 0.78));
-  padding: 32px 36px;
-  border-radius: 28px;
-  border: 3px solid rgba(var(--primary-rgb), 0.2);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.06), inset 0 0 48px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3);
-  position: relative;
-}
-
-.yao-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.4), transparent);
-}
-
-.yao-container::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
-}
-
-.yao-line {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-  border-radius: 20px;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid rgba(var(--primary-rgb), 0.12);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(var(--primary-rgb), 0.06));
-}
-
-.yao-line:hover {
-  background: rgba(var(--primary-rgb), 0.1);
-  transform: translateX(-6px);
-  border-color: rgba(var(--primary-rgb), 0.3);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
-}
-
-.yao-line.moving {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(255, 255, 255, 0.06));
-  border-color: rgba(var(--primary-rgb), 0.4);
-  animation: moving-glow 2.4s ease-in-out infinite;
-}
-
-@keyframes moving-glow {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1), 0 12px 28px rgba(0, 0, 0, 0.2); }
-  50% { box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2), 0 20px 40px rgba(0, 0, 0, 0.3); }
-}
-
-.yao-line__main {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  flex: 1;
-  min-width: 0;
-}
-
-.yao-line__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.yao-line__index {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.yao-line__type {
-  font-size: 14px;
-  color: var(--primary-color);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.yao-line__visual {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-  min-width: 160px;
-}
-
-.yao-mark {
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  font-size: 22px;
-  color: var(--primary-color);
-  font-weight: 800;
-  background: rgba(var(--primary-rgb), 0.14);
-  border: 2px solid rgba(var(--primary-rgb), 0.28);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
-}
-
-.yao-mark--quiet {
-  color: var(--text-tertiary);
-  font-size: 18px;
-  opacity: 0.5;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.yao-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-}
-
-.yao-bar__segment {
-  height: 14px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(110, 84, 19, 0.96) 0%, rgba(var(--primary-rgb), 0.96) 44%, rgba(255, 243, 209, 0.98) 50%, rgba(var(--primary-rgb), 0.96) 56%, rgba(110, 84, 19, 0.96) 100%);
-  border: 2px solid rgba(255, 235, 180, 0.35);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 10px 20px rgba(0, 0, 0, 0.2);
-  flex: 1;
-}
-
-.yao-line.yin .yao-bar {
-  gap: 24px;
-}
-
-.yao-bar__gap {
-  width: 24px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.18);
-}
-
-.moving-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.9), rgba(var(--primary-rgb), 0.7));
-  border: 2px solid rgba(var(--primary-rgb), 0.4);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  flex-shrink: 0;
-}
-
-.yao-line__info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.yao-name {
+.gua-name-main {
   color: var(--text-primary);
-  font-size: 15px;
-  min-width: 80px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: 1px;
-  text-align: right;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
 }
 
-.yao-line__state {
+.gua-code-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 999px;
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gua-deco-line {
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  width: 2px;
+  height: 60%;
+  background: linear-gradient(180deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
+  transform: translateY(-50%);
+}
+
+.yao-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.yao-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.yao-section-title__text {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.yao-section-title__line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, var(--border-light), transparent);
+}
+
+.yao-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.yao-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 14px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 2px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.yao-cell:hover {
+  border-color: rgba(var(--primary-rgb), 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.yao-cell.moving {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05));
+  border-color: rgba(var(--primary-rgb), 0.4);
+  animation: yao-cell-pulse 2s ease-in-out infinite;
+}
+
+@keyframes yao-cell-pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.15); }
+  50% { box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.25); }
+}
+
+.yao-cell__position {
   font-size: 12px;
   color: var(--text-secondary);
-  text-align: right;
-  font-weight: 500;
-  opacity: 0.85;
-}
-
-/* 伏神样式 */
-.fushen-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: absolute;
-  left: -90px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 2px dashed rgba(var(--primary-rgb), 0.35);
-  min-width: 70px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.fushen-label {
-  font-size: 11px;
-  color: var(--primary-color);
-  font-weight: 700;
-  margin-bottom: 2px;
+  font-weight: 600;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.fushen-name {
-  font-size: 14px;
+.yao-cell__symbol {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  border: 2px solid rgba(var(--primary-rgb), 0.15);
+}
+
+.yao-symbol-mark {
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--primary-color);
+}
+
+.yao-cell.yang .yao-symbol-mark {
+  font-weight: 700;
+}
+
+.yao-cell.yin .yao-symbol-mark {
+  letter-spacing: -2px;
+}
+
+.yao-moving-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.yao-cell__name {
   color: var(--text-primary);
+  font-size: 14px;
   font-weight: 600;
-  margin-bottom: 1px;
+  text-align: center;
+  margin-bottom: 4px;
 }
 
-.fushen-ganzhi {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
+.yao-cell__fushen {
+  font-size: 11px;
+  color: var(--primary-color);
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border-radius: 8px;
 }
-
-
 
 .structured-section {
   padding: 20px;
@@ -3334,87 +3205,71 @@ onUnmounted(() => {
 
 
   .gua-display {
-    flex-direction: column;
-    gap: 20px;
-    padding: 28px 18px;
-    overflow: visible;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 28px 20px;
   }
 
-  .yao-container {
-    width: 100%;
-    padding: 18px 16px;
-    gap: 12px;
+  .gua-card {
+    padding: 24px 18px;
   }
 
-  .yao-line {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 12px 14px;
+  .gua-symbol-large {
+    font-size: 56px;
+    margin-bottom: 16px;
   }
 
-  .yao-line:hover {
-    transform: none;
+  .gua-name-main {
+    font-size: 18px;
+    letter-spacing: 1px;
   }
 
-  .fushen-box {
-    position: static;
-    left: auto;
-    align-self: flex-start;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-    min-width: 0;
-    max-width: 100%;
-    padding: 6px 10px;
-  }
-
-  .fushen-label,
-  .fushen-name,
-  .fushen-ganzhi {
+  .gua-code-tag {
     font-size: 12px;
+    padding: 4px 12px;
   }
 
-  .yao-line__meta,
-  .yao-line__visual,
-  .yao-line__info {
-    display: flex;
-    width: 100%;
+  .gua-deco-line {
+    display: none;
   }
 
-  .yao-line__meta,
-  .yao-line__info {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .yao-line__visual {
-    align-items: center;
-    gap: 10px;
-  }
-
-  .yao-mark {
-    width: 28px;
-    height: 28px;
+  .yao-section-title__text {
     font-size: 16px;
   }
 
-  .yao-name {
-    min-width: 0;
-    text-align: left;
+  .yao-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
-
-  .yao-mark--quiet {
-    font-size: 14px;
+  .yao-cell {
+    padding: 14px 10px;
   }
 
-  .yao-bar {
-    min-width: 0;
+  .yao-cell__symbol {
+    width: 40px;
+    height: 40px;
   }
+
+  .yao-symbol-mark {
+    font-size: 24px;
+  }
+
+  .yao-moving-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  .yao-cell__name {
+    font-size: 13px;
+  }
+
+  .yao-cell__fushen {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
 
   .moving-badge {
     padding: 4px 8px;

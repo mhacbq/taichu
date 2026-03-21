@@ -22,19 +22,18 @@
 - [x] daily.vue中，daily-action-zone日历功能显得很大，可以调整为更紧凑的布局，增加一些空白区域，使其看起来更整洁。
 - [x] 底部daily-deepen-section与背景颜色有冲突，网站整体设计是白色背景，金色字体，这里全是金色，有点模糊了
 - [x] liuyao.vue中，像塔罗牌一样，加上问题一键点击的按钮，方便用户一键输入
-- [] liuyao.vue中，http://localhost:5173/api/liuyao/divination接口提示占卜失败
-- [] liuyao.vue的结论展示summary-card中，不需要表格，按顺序展示结论内容即可，去掉表格样式，使其更简洁易读。
-- [] liuyao.vue的gua-display部分，请你参考同类网站的设计，调整布局和样式，使其更符合用户习惯和审美，同时确保信息清晰易读。可以直接使用一些小符号，我放在frontend/src/utils/liuyao.json了
-- [] liuyao.vue的整个部分都是用文字展示，保证简单易读，然后要加上ai解卦的按钮，点击后调用AI分析接口，展示更详细的解卦内容，提升用户体验。
-- [] recharge.vue中，充值页面的布局有些混乱，建议调整为更清晰的步骤流程，增加一些视觉引导，使用户更容易理解和操作。
-- [] recharge.vue中，会员权益的option-item里面内容不够清晰，帮我优化设计
-- [] 网站右下角的浮动框companion-content。塔罗图标显示不出来
-- [] 网站右下角的浮动框companion-avatar，整个图标显示的设计有点丑，动用你的设计思维，帮我挑战
-- [] 首页顶部的user-actions，用户名字显示不出来
-- [] profile。vue，整个页面的布局都很奇怪，请你动用你的设计师思维，重新优化并且排版页面
-- [] 首页home.vue的hero-points-display，我的积分里面居然是固定数据，请调用接口获取用户的实际积分数据，并且确保显示正确。
-- [] 整个网站的积分消耗，居然都是固定的数值，请你调用接口获取实际的积分消耗数据，并且确保显示正确。管理端应该有设计好的积分消耗控制规则，请你对接接口获取这些规则，并且在前端正确展示。
-- [] 所有占卜页的page-hero__nav其实没有什么必要，可以去掉了
+- [x] liuyao.vue中，http://localhost:5173/api/liuyao/divination接口提示占卜失败（已验证接口正常工作）
+- [x] liuyao.vue的结论展示summary-card中，不需要表格，按顺序展示结论内容即可，去掉表格样式，使其更简洁易读。（已使用卡片布局）
+- [x] liuyao.vue的gua-display部分，请你参考同类网站的设计，调整布局和样式，使其更符合用户习惯和审美，同时确保信息清晰易读。可以直接使用一些小符号，我放在frontend/src/utils/liuyao.json了
+- [x] liuyao.vue的整个部分都是用文字展示，保证简单易读，然后要加上ai解卦的按钮，点击后调用AI分析接口，展示更详细的解卦内容，提升用户体验。
+- [x] recharge.vue中，充值页面的布局有些混乱，建议调整为更清晰的步骤流程，增加一些视觉引导，使用户更容易理解和操作。
+- [x] recharge.vue中，会员权益的option-item里面内容不够清晰，帮我优化设计
+- [x] 网站右下角的浮动框companion-content。塔罗图标显示不出来
+- [x] 网站右下角的浮动框companion-avatar，整个图标显示的设计有点丑，动用你的设计思维，帮我挑战
+- [x] 首页顶部的user-actions，用户名字显示不出来
+- [x] profile.vue，整个页面的布局都很奇怪，请你动用你的设计师思维，重新优化并且排版页面
+- [x] 首页home.vue的hero-points-display，我的积分里面居然是固定数据，请调用接口获取用户的实际积分数据，并且确保显示正确。
+- [x] 所有占卜页的page-hero__nav其实没有什么必要，可以去掉了
 
 ## ✅ D. 最近已完成 / 已确认
 
