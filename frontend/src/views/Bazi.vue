@@ -232,6 +232,18 @@
               <el-icon class="help-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
           </label>
+          <!-- 常用城市快捷选项 -->
+          <div class="quick-city-options">
+            <button
+              v-for="city in QUICK_CITIES"
+              :key="city"
+              class="quick-city-btn"
+              :class="{ 'is-active': location === city }"
+              @click="location = city"
+            >
+              {{ city }}
+            </button>
+          </div>
           <el-select-v2
             v-model="location"
             :options="cityOptions"
@@ -1318,6 +1330,9 @@ import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tra
 
 import { CHINA_CITIES } from '../utils/constants'
 import { Lunar } from 'lunar-javascript'
+
+// 常用城市快捷选项
+const QUICK_CITIES = ['北京市', '上海市', '广州市', '深圳市', '杭州市', '南京市', '成都市', '武汉市', '西安市', '重庆市']
 
 const router = useRouter()
 const route = useRoute()
@@ -3808,6 +3823,37 @@ const formatAiContent = (content) => {
 .lunar-converted-hint .el-icon {
   color: var(--primary-color);
   flex-shrink: 0;
+}
+
+/* 快捷城市选项 */
+.quick-city-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.quick-city-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-city-btn:hover {
+  border-color: var(--primary-color);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.quick-city-btn.is-active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
 }
 
 .estimate-birth-grid {
