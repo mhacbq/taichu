@@ -33,7 +33,8 @@
 - [x] 首页顶部的user-actions，用户名字显示不出来
 - [x] profile.vue，整个页面的布局都很奇怪，请你动用你的设计师思维，重新优化并且排版页面
 - [x] 首页home.vue的hero-points-display，我的积分里面居然是固定数据，请调用接口获取用户的实际积分数据，并且确保显示正确。
-- [x] 所有占卜页的page-hero__nav其实没有什么必要，可以去掉了
+- [x] 所有占卜页的page-hero__nav其实没有什么必要，可以去掉
+- [x] 所有占卜页面的积分消耗改为从接口动态获取：Tarot.vue、Qiming.vue改为使用clientConfig，Liuyao.vue、Hehun.vue已使用动态points_cost字段了
 
 ## ✅ D. 最近已完成 / 已确认
 
