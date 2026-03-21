@@ -4,10 +4,6 @@
       <span class="page-hero__halo page-hero__halo--primary" aria-hidden="true"></span>
       <span class="page-hero__halo page-hero__halo--secondary" aria-hidden="true"></span>
       <div class="page-hero__content">
-        <div class="page-hero__nav">
-          <BackButton :fallback="fallback" class="page-hero__back" />
-          <span class="page-hero__eyebrow">太初命理 · 工具页</span>
-        </div>
         <h1 class="page-hero__title">
           <span v-if="icon" class="page-hero__icon-shell">
             <el-icon class="page-hero__icon" :size="iconSize">
@@ -23,8 +19,6 @@
 </template>
 
 <script setup>
-import BackButton from './BackButton.vue'
-
 defineProps({
   title: {
     type: String,
@@ -67,17 +61,6 @@ defineProps({
   box-shadow: var(--shadow-card);
 }
 
-.page-hero__nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.page-hero__back {
-  flex-shrink: 0;
-}
-
 .page-hero__halo {
   position: absolute;
   border-radius: 999px;
@@ -105,20 +88,6 @@ defineProps({
   position: relative;
   z-index: 1;
   max-width: 760px;
-}
-
-.page-hero__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.09);
-  border: 1px solid rgba(var(--primary-rgb), 0.14);
-  color: #8c641f;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
 }
 
 .page-hero__title {
@@ -167,11 +136,6 @@ defineProps({
     min-height: 0;
     padding: 18px 20px 22px;
     border-radius: 22px;
-  }
-
-  .page-hero__nav {
-    margin-bottom: 14px;
-    gap: 10px;
   }
 
   .page-hero__title {
