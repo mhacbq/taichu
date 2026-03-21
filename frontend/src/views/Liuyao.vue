@@ -1580,6 +1580,43 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
+/* 快捷问题按钮 */
+.quick-questions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.quick-questions-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.quick-question-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03));
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: 18px;
+  color: #D4AF37;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.quick-question-btn:hover {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08));
+  border-color: rgba(212, 175, 55, 0.3);
+  transform: translateY(-1px);
+}
+
+.quick-question-btn:active {
+  transform: translateY(0);
+}
+
 .char-count {
   display: block;
   text-align: right;
