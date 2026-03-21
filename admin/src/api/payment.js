@@ -97,7 +97,15 @@ export function refundVipOrder(data, options = {}) {
 // 获取VIP套餐列表
 export function getVipPackages() {
   return request({
-    url: '/order/packages',
+    url: '/vip-packages/list',
+    method: 'get'
+  })
+}
+
+// 获取VIP套餐详情
+export function getVipPackageDetail(id) {
+  return request({
+    url: `/vip-packages/detail/${id}`,
     method: 'get'
   })
 }
@@ -105,9 +113,43 @@ export function getVipPackages() {
 // 保存VIP套餐
 export function saveVipPackage(data) {
   return request({
-    url: '/order/save-package',
+    url: '/vip-packages/save',
     method: 'post',
     data
+  })
+}
+
+// 删除VIP套餐
+export function deleteVipPackage(id) {
+  return request({
+    url: `/vip-packages/${id}`,
+    method: 'delete'
+  })
+}
+
+// 批量更新VIP套餐状态
+export function batchUpdateVipPackageStatus(data) {
+  return request({
+    url: '/vip-packages/batch-status',
+    method: 'post',
+    data
+  })
+}
+
+// 更新VIP套餐排序
+export function updateVipPackageSort(data) {
+  return request({
+    url: '/vip-packages/update-sort',
+    method: 'post',
+    data
+  })
+}
+
+// 获取VIP套餐统计
+export function getVipPackagesStats() {
+  return request({
+    url: '/vip-packages/stats',
+    method: 'get'
   })
 }
 

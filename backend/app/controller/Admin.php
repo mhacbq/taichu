@@ -1067,10 +1067,7 @@ class Admin extends BaseController
                 ];
             }, $rules);
 
-            return $this->success([
-                'list' => $list,
-                'total' => count($list),
-            ], '获取成功');
+            return $this->success($list, '获取成功');
         } catch (\Exception $e) {
             Log::error('获取积分规则失败: ' . $e->getMessage(), [
                 'admin_id' => $this->adminId,
@@ -2808,69 +2805,7 @@ class Admin extends BaseController
         }
     }
 
-    /**
-     * 获取反馈分类
-     */
-    public function feedbackCategories()
-    {
-        if (!$this->checkPermission('feedback_view')) {
-            return $this->error('无权限查看反馈分类', 403);
-        }
 
-        try {
-            $list = Db::table('system_config')
-                ->where('category', 'feedback_category')
-                ->select();
-            return $this->success($list, '获取成功');
-        } catch (\Exception $e) {
-            return $this->error('获取分类失败', 500);
-        }
-    }
-
-    /**
-     * 保存反馈分类
-     */
-    public function saveFeedbackCategory(Request $request)
-    {
-        if (!$this->checkPermission('content_manage')) {
-            return $this->error('无权限管理反馈分类', 403);
-        }
-
-        try {
-            $data = $request->post();
-            $id = $data['id'] ?? 0;
-            unset($data['id']);
-
-            if ($id > 0) {
-                Db::table('system_config')->where('id', $id)->update($data);
-            } else {
-                $data['category'] = 'feedback_category';
-                $data['config_key'] = 'fb_cat_' . uniqid();
-                $id = Db::table('system_config')->insertGetId($data);
-            }
-
-            return $this->success(['id' => $id], '保存成功');
-        } catch (\Exception $e) {
-            return $this->error('保存失败', 500);
-        }
-    }
-
-    /**
-     * 删除反馈分类
-     */
-    public function deleteFeedbackCategory($id)
-    {
-        if (!$this->checkPermission('content_manage')) {
-            return $this->error('无权限删除反馈分类', 403);
-        }
-
-        try {
-            Db::table('system_config')->where('id', $id)->where('category', 'feedback_category')->delete();
-            return $this->success(null, '删除成功');
-        } catch (\Exception $e) {
-            return $this->error('删除失败', 500);
-        }
-    }
 
 
     /**

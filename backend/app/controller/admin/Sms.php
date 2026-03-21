@@ -55,6 +55,17 @@ class Sms extends BaseController
         
         return false;
     }
+
+    /**
+     * 要求短信管理权限
+     */
+    protected function requireSmsManagePermission(string $message = '无权限')
+    {
+        if (!$this->hasAdminPermission('sms_manage')) {
+            return $this->error($message, 403);
+        }
+        return null;
+    }
     
     /**
      * 获取短信配置
@@ -183,7 +194,8 @@ class Sms extends BaseController
         // 独立手机号数
         $uniquePhones = \app\model\SmsCode::where('created_at', '>=', $startDate . ' 00:00:00')
             ->where('created_at', '<=', $endDate . ' 23:59:59')
-            ->group('phone')
+            ->distinct(false)
+            ->column('phone')
             ->count();
         
         return $this->success([

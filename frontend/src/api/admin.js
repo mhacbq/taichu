@@ -165,9 +165,13 @@ export const importSensitiveWords = (data) => request.post('/maodou/system/sensi
 // 鐭俊绠＄悊
 export const getSmsConfig = () => request.get('/maodou/sms/config')
 export const saveSmsConfig = (data) => request.post('/maodou/sms/config', data)
+export const testSms = (data) => request.post('/api/maodou/sms/test', data)
 export const testSmsSend = (data) => request.post('/maodou/sms/test', data)
 export const getSmsStats = () => request.get('/maodou/sms/stats')
 export const getSmsRecords = (params) => request.get('/maodou/sms/records', { params })
+
+// 鏁版嵁鍒嗘瀽
+export const getAnalysisUser = (params) => request.get('/api/maodou/analysis/user', { params })
 
 // 瑙掕壊绠＄悊
 export const getRoles = () => request.get('/maodou/system/roles')
@@ -190,6 +194,13 @@ export const blockDevice = (id, data) => request.put(`/maodou/anticheat/devices/
 // 鏀粯閰嶇疆
 export const getPaymentConfig = () => request.get('/maodou/payment/config')
 export const savePaymentConfig = (data) => request.post('/maodou/payment/config', data)
+
+// VIP套飩璇＄悊
+export const getVipPackages = (params) => request.get('/maodou/payment/vip-packages', { params })
+export const saveVipPackage = (data) => request.post('/maodou/payment/vip-packages', data)
+export const updateVipPackage = (id, data) => request.put(`/maodou/payment/vip-packages/${id}`, data)
+export const deleteVipPackage = (id) => request.delete(`/maodou/payment/vip-packages/${id}`)
+export const toggleVipPackageStatus = (id, status) => request.put(`/maodou/payment/vip-packages/${id}/status`, { status })
 
 // 鏉冮檺绠＄悊
 export const getPermissions = () => request.get('/maodou/system/permissions')

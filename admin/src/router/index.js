@@ -145,6 +145,40 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/ai',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/ai/config',
+    meta: { title: 'AI管理', icon: 'MagicStick', roles: ['admin'] },
+    children: [
+      {
+        path: 'config',
+        name: 'AiConfig',
+        component: () => import('@/views/ai/config.vue'),
+        meta: { title: 'AI配置', roles: ['admin'] }
+      },
+      {
+        path: 'prompts',
+        name: 'AiPrompts',
+        component: () => import('@/views/ai/prompts.vue'),
+        meta: { title: '提示词管理', roles: ['admin'] }
+      }
+    ]
+  },
+  {
+    path: '/seo',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/seo/index',
+    meta: { title: 'SEO管理', icon: 'Promotion', roles: ['admin'] },
+    children: [
+      {
+        path: 'index',
+        name: 'SeoIndex',
+        component: () => import('@/views/seo/index.vue'),
+        meta: { title: 'SEO配置', roles: ['admin'] }
+      }
+    ]
+  },
+  {
     path: '/site',
     component: () => import('@/layout/index.vue'),
     redirect: '/site/content',
@@ -273,12 +307,6 @@ export const asyncRoutes = [
         name: 'FeedbackList',
         component: () => import('@/views/feedback/list.vue'),
         meta: { title: '反馈列表', roles: ['admin', 'operator'] }
-      },
-      {
-        path: 'category',
-        name: 'FeedbackCategory',
-        component: () => import('@/views/feedback/category.vue'),
-        meta: { title: '分类管理', roles: ['admin'] }
       }
     ]
   },
@@ -367,8 +395,22 @@ export const asyncRoutes = [
       {
         path: 'managers',
         name: 'AdminUsers',
-        component: () => import('@/views/system/admin.vue'),
+        component: () => import('@/views/system/admins.vue'),
         meta: { title: '管理员管理', roles: ['admin'] }
+      }
+    ]
+  },
+  {
+    path: '/profile',
+    component: () => import('@/layout/index.vue'),
+    redirect: '/profile/index',
+    meta: { title: '个人中心', icon: 'User', hidden: true },
+    children: [
+      {
+        path: 'index',
+        name: 'Profile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人中心', hidden: true }
       }
     ]
   },

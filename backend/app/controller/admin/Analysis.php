@@ -11,11 +11,6 @@ use think\facade\Db;
 class Analysis extends BaseController
 {
     /**
-     * 当前管理员ID
-     */
-    protected int $adminId = 0;
-    
-    /**
      * 初始化
      */
     public function initialize()
@@ -59,19 +54,10 @@ class Analysis extends BaseController
             return $this->error('无权限查看充值数据', 403);
         }
 
-        $startDate = $request->get('start_date', date('Y-m-d', strtotime('-30 days')));
+        $startDate = $request->get('start_date', date('Y-m-d', strtotime('-7 days')));
         $endDate = $request->get('end_date', date('Y-m-d'));
 
         try {
-            // 渠道对比分析
-            $channelData = Db::table('tc_payment')
-                ->field('channel, COUNT(*) as count, SUM(amount) as total_amount, AVG(amount) as avg_amount')
-                ->where('status', 'success')
-                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('channel')
-                ->select()
-                ->toArray();
-
             // 充值趋势（按日期）
             $trendData = Db::table('tc_payment')
                 ->field('DATE(created_at) as date, COUNT(*) as count, SUM(amount) as total_amount')
@@ -82,36 +68,33 @@ class Analysis extends BaseController
                 ->select()
                 ->toArray();
 
-            // 复购率分析
-            $totalUsers = Db::table('tc_payment')
+            // 统计数据
+            $stats = Db::table('tc_payment')
+                ->field([
+                    'COUNT(*) as order_count',
+                    'SUM(CASE WHEN type = "vip" THEN 1 ELSE 0 END) as vip_count',
+                    'SUM(CASE WHEN type = "recharge" THEN 1 ELSE 0 END) as recharge_count',
+                    'SUM(amount) as total_amount'
+                ])
                 ->where('status', 'success')
                 ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('user_id')
-                ->count();
+                ->find();
 
-            $repeatUsers = Db::table('tc_payment')
-                ->field('user_id, COUNT(*) as payment_count')
-                ->where('status', 'success')
-                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('user_id')
-                ->having('payment_count > 1')
-                ->count();
-
-            // 充值热力图（按时间段）
-            $hourData = Db::table('tc_payment')
-                ->field('HOUR(created_at) as hour, COUNT(*) as count')
-                ->where('status', 'success')
-                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('HOUR(created_at)')
-                ->order('hour', 'asc')
-                ->select()
-                ->toArray();
+            // 图表数据
+            $chartData = [
+                'dates' => array_column($trendData, 'date'),
+                'amounts' => array_column($trendData, 'total_amount'),
+                'counts' => array_column($trendData, 'count')
+            ];
 
             return $this->success([
-                'channel' => $channelData,
-                'trend' => $trendData,
-                'repeat_rate' => $totalUsers > 0 ? round(($repeatUsers / $totalUsers) * 100, 2) : 0,
-                'heatmap' => $hourData,
+                'stats' => [
+                    'total_amount' => $stats['total_amount'] ?? 0,
+                    'order_count' => $stats['order_count'] ?? 0,
+                    'vip_count' => $stats['vip_count'] ?? 0,
+                    'recharge_count' => $stats['recharge_count'] ?? 0
+                ],
+                'chart_data' => $chartData
             ], '获取成功');
         } catch (\Throwable $e) {
             return $this->respondSystemException('analysis_payment', $e, '获取充值数据失败');

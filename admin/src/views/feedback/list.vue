@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getFeedbackList, getFeedbackDetail, deleteFeedback } from '@/api/feedback'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -16,6 +17,9 @@ const pagination = ref({
   total: 0
 })
 
+const detailDialogVisible = ref(false)
+const currentFeedback = ref(null)
+
 onMounted(() => {
   fetchFeedbackList()
 })
@@ -23,10 +27,16 @@ onMounted(() => {
 async function fetchFeedbackList() {
   loading.value = true
   try {
-    // 这里调用API获取反馈列表
-    // const res = await getFeedbackList({ ...pagination.value })
-    // feedbackList.value = res.data.list
-    // pagination.value.total = res.data.total
+    const res = await getFeedbackList({
+      page: pagination.value.current,
+      page_size: pagination.value.pageSize
+    })
+    if (res.code === 200) {
+      feedbackList.value = res.data.list || []
+      pagination.value.total = res.data.total || 0
+    } else {
+      ElMessage.error(res.message || '获取反馈列表失败')
+    }
   } catch (error) {
     ElMessage.error('获取反馈列表失败')
   } finally {
@@ -37,9 +47,13 @@ async function fetchFeedbackList() {
 async function handleView(row) {
   pageLoading.value = true
   try {
-    // 获取反馈详情
-    // const res = await getFeedbackDetail(row.id)
-    // 显示详情弹窗
+    const res = await getFeedbackDetail(row.id)
+    if (res.code === 200) {
+      currentFeedback.value = res.data
+      detailDialogVisible.value = true
+    } else {
+      ElMessage.error(res.message || '获取反馈详情失败')
+    }
   } catch (error) {
     ElMessage.error('获取反馈详情失败')
   } finally {
@@ -52,10 +66,13 @@ async function handleDelete(row) {
     await ElMessageBox.confirm('确定删除这条反馈吗？', '提示', {
       type: 'warning'
     })
-    // 调用删除API
-    // await deleteFeedback(row.id)
-    ElMessage.success('删除成功')
-    fetchFeedbackList()
+    const res = await deleteFeedback(row.id)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      fetchFeedbackList()
+    } else {
+      ElMessage.error(res.message || '删除失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败')
@@ -67,35 +84,69 @@ function handlePageChange(page) {
   pagination.value.current = page
   fetchFeedbackList()
 }
+
+function handlePageSizeChange(size) {
+  pagination.value.pageSize = size
+  pagination.value.current = 1
+  fetchFeedbackList()
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN')
+}
+
+function getStatusType(status) {
+  const types = {
+    pending: 'warning',
+    processing: 'primary',
+    resolved: 'success',
+    closed: 'info'
+  }
+  return types[status] || 'info'
+}
+
+function getStatusText(status) {
+  const texts = {
+    pending: '待处理',
+    processing: '处理中',
+    resolved: '已解决',
+    closed: '已关闭'
+  }
+  return texts[status] || status
+}
 </script>
 
 <template>
-  <div class="app-container">
-    <el-card v-loading="pageLoading">
+  <div class="feedback-list">
+    <el-card v-loading="loading">
       <template #header>
         <div class="card-header">
-          <span>反馈列表</span>
-          <el-button type="primary" @click="fetchFeedbackList">刷新</el-button>
+          <h3>用户反馈列表</h3>
         </div>
       </template>
 
-      <el-table v-loading="loading" :data="feedbackList" stripe>
+      <el-table :data="feedbackList" border stripe>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="user_name" label="用户名" width="120" />
-        <el-table-column prop="content" label="反馈内容" show-overflow-tooltip />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.type }}</el-tag>
+            {{ row.type || '-' }}
           </template>
         </el-table-column>
+        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'resolved' ? 'success' : 'warning'" size="small">
-              {{ row.status === 'resolved' ? '已处理' : '待处理' }}
+            <el-tag :type="getStatusType(row.status)" size="small">
+              {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="提交时间" width="180" />
+        <el-table-column prop="created_at" label="提交时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.created_at) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">查看</el-button>
@@ -111,10 +162,30 @@ function handlePageChange(page) {
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="handlePageChange"
-        @size-change="fetchFeedbackList"
+        @size-change="handlePageSizeChange"
         style="margin-top: 20px; justify-content: center"
       />
     </el-card>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailDialogVisible" title="反馈详情" width="600px">
+      <div v-if="currentFeedback" v-loading="pageLoading">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="ID">{{ currentFeedback.id }}</el-descriptions-item>
+          <el-descriptions-item label="类型">{{ currentFeedback.type || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="标题">{{ currentFeedback.title || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="内容">{{ currentFeedback.content || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="联系方式">{{ currentFeedback.contact || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="getStatusType(currentFeedback.status)" size="small">
+              {{ getStatusText(currentFeedback.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="提交时间">{{ formatDate(currentFeedback.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="更新时间">{{ formatDate(currentFeedback.updated_at) }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -123,5 +194,8 @@ function handlePageChange(page) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.card-header h3 {
+  margin: 0;
 }
 </style>

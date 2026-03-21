@@ -129,14 +129,20 @@ Route::group('api/maodou', function () {
         Route::get('content/block-config/:type', 'Content/getBlockConfig');
         
         // 积分管理
-        Route::get('points/records', 'Admin/pointsRecords');
-        Route::post('points/adjust', 'admin.User/adjustPoints');
-        Route::get('points/rules', 'Admin/getPointsRules');
-        Route::put('points/rules', 'Admin/savePointsRules');
-        Route::delete('points/rules/:id', 'Admin/deletePointsRule');
-        Route::get('points/stats', 'Admin/pointsStats');
-        Route::get('points/records', 'PointsController/records');
-        Route::get('points/statistics', 'PointsController/statistics');
+        Route::get('points/records', 'admin.Points/getRecords');
+        Route::post('points/adjust', 'admin.Points/adjust');
+        Route::post('points/batch-adjust', 'admin.Points/batchAdjust');
+        Route::get('points/rules', 'admin.Points/getRules');
+        Route::get('points/stats', 'admin.Points/getStats');
+
+        // VIP套餐管理
+        Route::get('vip-packages/list', 'admin.VipPackages/getList');
+        Route::get('vip-packages/detail/:id', 'admin.VipPackages/getDetail');
+        Route::post('vip-packages/save', 'admin.VipPackages/save');
+        Route::delete('vip-packages/:id', 'admin.VipPackages/delete');
+        Route::post('vip-packages/batch-status', 'admin.VipPackages/batchUpdateStatus');
+        Route::post('vip-packages/update-sort', 'admin.VipPackages/updateSort');
+        Route::get('vip-packages/stats', 'admin.VipPackages/getStats');
         
         // 支付管理
         Route::get('payment/config', 'admin.Payment/getConfig');
@@ -198,6 +204,19 @@ Route::group('api/maodou', function () {
         Route::get('analysis/payment', 'admin.Analysis/payment');
         Route::get('analysis/user', 'admin.Analysis/user');
         Route::get('analysis/result', 'admin.Analysis/result');
+        
+        // AI管理
+        Route::get('ai/config', 'admin.Ai/getConfig');
+        Route::post('ai/config', 'admin.Ai/saveConfig');
+        Route::post('ai/test', 'admin.Ai/testConnection');
+        Route::get('ai-prompts/list', 'admin.AiPrompt/getList');
+        Route::get('ai-prompts/detail/:id', 'admin.AiPrompt/getDetail');
+        Route::post('ai-prompts/save', 'admin.AiPrompt/save');
+        Route::delete('ai-prompts/:id', 'admin.AiPrompt/delete');
+        Route::post('ai-prompts/:id/default', 'admin.AiPrompt/setDefault');
+        Route::post('ai-prompts/:id/preview', 'admin.AiPrompt/preview');
+        Route::post('ai-prompts/:id/duplicate', 'admin.AiPrompt/duplicate');
+        Route::get('ai-prompts/types', 'admin.AiPrompt/getTypes');
         
         // 知识库管理
         Route::get('knowledge/articles', 'admin.Knowledge/articleList');
@@ -284,7 +303,14 @@ Route::group('api/maodou', function () {
         Route::delete('system/dict/data/:id', 'admin.System/deleteDictData');
 
 
-        
+        // SEO管理
+        Route::get('seo/list', 'admin.Seo/getList');
+        Route::get('seo/:id', 'admin.Seo/getDetail');
+        Route::post('seo/save', 'admin.Seo/save');
+        Route::delete('seo/:id', 'admin.Seo/delete');
+        Route::post('seo/batch-status', 'admin.Seo/batchUpdateStatus');
+        Route::get('seo/page-types', 'admin.Seo/getPageTypes');
+
         // 日志管理
         Route::get('logs/operation', 'Admin/operationLogs');
         Route::get('logs/login', 'Admin/loginLogs');

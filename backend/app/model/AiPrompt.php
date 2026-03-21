@@ -1,131 +1,61 @@
 <?php
-declare (strict_types = 1);
-
 namespace app\model;
 
 use think\Model;
 
-/**
- * AI提示词模型
- */
 class AiPrompt extends Model
 {
-    // 注意：此表不使用tc_前缀
-    protected $table = 'ai_prompts';
-    
-    // 自动写入时间戳
+    protected $table = 'tc_ai_prompt';
+    protected $pk = 'id';
     protected $autoWriteTimestamp = true;
-    
-    // 字段类型转换
+    protected $createTime = 'created_at';
+    protected $updateTime = 'updated_at';
+
+    protected $json = ['variables'];
+    protected $jsonAssoc = true;
+
     protected $type = [
-        'variables' => 'json',
-        'model_params' => 'json',
-        'sort_order' => 'integer',
-        'is_enabled' => 'integer',
+        'is_deleted' => 'integer',
         'is_default' => 'integer',
-        'usage_count' => 'integer',
+        'variables' => 'json'
     ];
-    
-    // 提示词类型
-    const TYPE_BAZI = 'bazi';
-    const TYPE_TAROT = 'tarot';
-    const TYPE_DAILY = 'daily';
-    const TYPE_GENERAL = 'general';
-    
-    const TYPES = [
-        self::TYPE_BAZI => '八字解盘',
-        self::TYPE_TAROT => '塔罗解读',
-        self::TYPE_DAILY => '每日运势',
-        self::TYPE_GENERAL => '通用对话',
-    ];
-    
+
     /**
-     * 获取类型名称
+     * 搜索器：按类型搜索
      */
-    public function getTypeNameAttr($value, $data): string
+    public function searchTypeAttr($query, $value)
     {
-        return self::TYPES[$data['type']] ?? '其他';
+        return $query->where('type', $value);
     }
-    
+
     /**
-     * 获取启用的提示词列表
+     * 搜索器：按关键词搜索
      */
-    public static function getEnabledList(string $type = null): array
+    public function searchKeywordAttr($query, $value)
     {
-        $query = self::where('is_enabled', 1);
-        
-        if ($type) {
-            $query->where('type', $type);
-        }
-        
-        return $query->order('sort_order', 'asc')
-            ->order('created_at', 'desc')
-            ->select()
-            ->toArray();
+        return $query->whereLike('title|content', "%{$value}%");
     }
-    
+
     /**
      * 获取默认提示词
      */
-    public static function getDefault(string $type): ?self
+    public static function getDefaultPrompt($type)
     {
         return self::where('type', $type)
-            ->where('is_enabled', 1)
             ->where('is_default', 1)
+            ->where('is_deleted', 0)
             ->find();
     }
-    
+
     /**
-     * 根据key获取提示词
+     * 按类型获取提示词列表
      */
-    public static function getByKey(string $key): ?self
+    public static function getPromptsByType($type)
     {
-        return self::where('key', $key)
-            ->where('is_enabled', 1)
-            ->find();
-    }
-    
-    /**
-     * 渲染用户提示词模板
-     */
-    public function renderUserPrompt(array $variables = []): string
-    {
-        $template = $this->user_prompt_template ?: '';
-        
-        // 替换变量
-        foreach ($variables as $key => $value) {
-            if (is_array($value)) {
-                $value = json_encode($value, JSON_UNESCAPED_UNICODE);
-            }
-            $template = str_replace('{{' . $key . '}}', (string) $value, $template);
-            $template = str_replace('{{ ' . $key . ' }}', (string) $value, $template);
-        }
-        
-        return $template;
-    }
-    
-    /**
-     * 增加使用次数
-     */
-    public function incrementUsage(): void
-    {
-        $this->usage_count++;
-        $this->save();
-    }
-    
-    /**
-     * 设置默认提示词
-     */
-    public static function setDefault(int $id, string $type): void
-    {
-        // 先取消该类型的所有默认
-        self::where('type', $type)->update(['is_default' => 0]);
-        
-        // 设置新的默认
-        $prompt = self::find($id);
-        if ($prompt) {
-            $prompt->is_default = 1;
-            $prompt->save();
-        }
+        return self::where('type', $type)
+            ->where('is_deleted', 0)
+            ->order('is_default', 'desc')
+            ->order('id', 'desc')
+            ->select();
     }
 }

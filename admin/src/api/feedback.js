@@ -2,7 +2,7 @@ import request from './request'
 
 export function getFeedbackList(params) {
   return request({
-    url: '/feedback',
+    url: '/feedback-manage/list',
     method: 'get',
     params
   })
@@ -10,14 +10,14 @@ export function getFeedbackList(params) {
 
 export function getFeedbackDetail(id) {
   return request({
-    url: `/feedback/${id}`,
+    url: `/feedback-manage/detail/${id}`,
     method: 'get'
   })
 }
 
 export function replyFeedback(id, data) {
   return request({
-    url: `/feedback/${id}/reply`,
+    url: `/feedback-manage/${id}/reply`,
     method: 'post',
     data
   })
@@ -25,7 +25,7 @@ export function replyFeedback(id, data) {
 
 export function updateFeedbackStatus(id, status) {
   return request({
-    url: `/feedback/${id}/status`,
+    url: `/feedback-manage/${id}/status`,
     method: 'put',
     data: { status }
   })
@@ -33,7 +33,7 @@ export function updateFeedbackStatus(id, status) {
 
 export function deleteFeedback(id) {
   return request({
-    url: `/feedback/${id}`,
+    url: `/feedback-manage/${id}`,
     method: 'delete'
   })
 }

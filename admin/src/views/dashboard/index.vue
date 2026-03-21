@@ -219,9 +219,15 @@ const quickActionDefinitions = [
     roles: ['admin', 'operator']
   },
   {
-    title: '知识库文章',
-    description: '发布命理文章并维护文章分类树。',
-    path: '/site/knowledge',
+    title: '八字记录',
+    description: '查看用户八字测算记录。',
+    path: '/content/bazi',
+    roles: ['admin', 'operator']
+  },
+  {
+    title: '塔罗记录',
+    description: '查看用户塔罗测算记录。',
+    path: '/content/tarot',
     roles: ['admin', 'operator']
   },
   {
@@ -234,12 +240,6 @@ const quickActionDefinitions = [
     title: 'VIP订单',
     description: '集中处理会员订单与退款申请。',
     path: '/payment/vip-orders',
-    roles: ['admin', 'operator']
-  },
-  {
-    title: '系统公告',
-    description: '发布公告、维护草稿与上线状态。',
-    path: '/system/notice',
     roles: ['admin', 'operator']
   },
   {

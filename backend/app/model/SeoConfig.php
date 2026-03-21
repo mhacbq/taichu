@@ -1,0 +1,39 @@
+<?php
+namespace app\model;
+
+use think\Model;
+
+class SeoConfig extends Model
+{
+    protected $table = 'tc_seo_config';
+    protected $pk = 'id';
+    protected $autoWriteTimestamp = true;
+    protected $createTime = 'created_at';
+    protected $updateTime = 'updated_at';
+
+    protected $type = [
+        'status' => 'integer',
+        'is_deleted' => 'integer'
+    ];
+
+    /**
+     * 获取页面SEO配置
+     */
+    public static function getPageSeo($pageType)
+    {
+        return self::where('page_type', $pageType)
+            ->where('status', 1)
+            ->where('is_deleted', 0)
+            ->find();
+    }
+
+    /**
+     * 获取所有生效的SEO配置
+     */
+    public static function getActiveConfigs()
+    {
+        return self::where('status', 1)
+            ->where('is_deleted', 0)
+            ->select();
+    }
+}

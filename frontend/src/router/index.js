@@ -27,6 +27,33 @@ const YearlyFortune = () => import('../views/YearlyFortune.vue')
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
 const PrivacyPolicy = () => import('../views/Legal/PrivacyPolicy.vue')
 
+// 管理后台路由 - 懒加载
+const AdminLayout = () => import('../layouts/AdminLayout.vue')
+const AdminLogin = () => import('../views/admin/Login.vue')
+const AdminDashboard = () => import('../views/admin/Dashboard.vue')
+const AdminUserList = () => import('../views/admin/UserList.vue')
+const AdminUserDetail = () => import('../views/admin/UserDetail.vue')
+const AdminUserBehavior = () => import('../views/admin/UserBehavior.vue')
+const AdminPointsRecords = () => import('../views/admin/PointsRecords.vue')
+const AdminPointsRules = () => import('../views/admin/PointsRules.vue')
+const AdminPaymentOrders = () => import('../views/admin/PaymentOrders.vue')
+const AdminPaymentAnalysis = () => import('../views/admin/PaymentAnalysis.vue')
+const AdminVipPackages = () => import('../views/admin/VipPackages.vue')
+const AdminFeedbackList = () => import('../views/admin/FeedbackList.vue')
+const AdminFeedbackDetail = () => import('../views/admin/FeedbackDetail.vue')
+const AdminSmsConfig = () => import('../views/admin/SmsConfig.vue')
+const AdminBaziManage = () => import('../views/admin/BaziManage.vue')
+const AdminTarotManage = () => import('../views/admin/TarotManage.vue')
+const AdminAlmanacManage = () => import('../views/admin/AlmanacManage.vue')
+const AdminDailyManage = () => import('../views/admin/DailyManage.vue')
+const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
+const AdminSeoManage = () => import('../views/admin/SeoManage.vue')
+const AdminTarotCards = () => import('../views/admin/TarotCards.vue')
+const AdminQuestionTemplates = () => import('../views/admin/QuestionTemplates.vue')
+const AdminOperationLogs = () => import('../views/admin/OperationLogs.vue')
+const AdminLoginLogs = () => import('../views/admin/LoginLogs.vue')
+const AdminApiLogs = () => import('../views/admin/ApiLogs.vue')
+
 const routes = [
   {
     path: '/',
@@ -230,6 +257,209 @@ const routes = [
       breadcrumb: [{ name: '首页', url: '/' }, { name: '页面未找到', url: '/404' }]
     }
   },
+  // ================== 管理后台路由 ==================
+  {
+    path: '/maodou/login',
+    name: 'AdminLogin',
+    component: AdminLogin,
+    meta: {
+      public: true,
+      layout: false
+    }
+  },
+  {
+    path: '/maodou',
+    component: AdminLayout,
+    meta: {
+      requiresAdmin: true
+    },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'AdminDashboard',
+        component: AdminDashboard,
+        meta: {
+          title: '仪表盘'
+        }
+      },
+      {
+        path: 'list',
+        name: 'AdminUserList',
+        component: AdminUserList,
+        meta: {
+          title: '用户管理'
+        }
+      },
+      {
+        path: 'users/:id',
+        name: 'AdminUserDetail',
+        component: AdminUserDetail,
+        meta: {
+          title: '用户详情'
+        }
+      },
+      {
+        path: 'users/:id/behavior',
+        name: 'AdminUserBehavior',
+        component: AdminUserBehavior,
+        meta: {
+          title: '用户行为'
+        }
+      },
+      {
+        path: 'points/records',
+        name: 'AdminPointsRecords',
+        component: AdminPointsRecords,
+        meta: {
+          title: '积分记录'
+        }
+      },
+      {
+        path: 'points/rules',
+        name: 'AdminPointsRules',
+        component: AdminPointsRules,
+        meta: {
+          title: '积分规则'
+        }
+      },
+      {
+        path: 'payment/orders',
+        name: 'AdminPaymentOrders',
+        component: AdminPaymentOrders,
+        meta: {
+          title: '订单管理'
+        }
+      },
+      {
+        path: 'payment/analysis',
+        name: 'AdminPaymentAnalysis',
+        component: AdminPaymentAnalysis,
+        meta: {
+          title: '充值分析'
+        }
+      },
+      {
+        path: 'payment/vip-packages',
+        name: 'AdminVipPackages',
+        component: AdminVipPackages,
+        meta: {
+          title: 'VIP套餐管理'
+        }
+      },
+      {
+        path: 'sms/config',
+        name: 'AdminSmsConfig',
+        component: AdminSmsConfig,
+        meta: {
+          title: '短信配置'
+        }
+      },
+      {
+        path: 'feedback/list',
+        name: 'AdminFeedbackList',
+        component: AdminFeedbackList,
+        meta: {
+          title: '反馈管理'
+        }
+      },
+      {
+        path: 'feedback/:id',
+        name: 'AdminFeedbackDetail',
+        component: AdminFeedbackDetail,
+        meta: {
+          title: '反馈详情'
+        }
+      },
+      {
+        path: 'bazi-manage',
+        name: 'AdminBaziManage',
+        component: AdminBaziManage,
+        meta: {
+          title: '八字管理'
+        }
+      },
+      {
+        path: 'tarot-manage',
+        name: 'AdminTarotManage',
+        component: AdminTarotManage,
+        meta: {
+          title: '塔罗管理'
+        }
+      },
+      {
+        path: 'almanac',
+        name: 'AdminAlmanacManage',
+        component: AdminAlmanacManage,
+        meta: {
+          title: '黄历管理'
+        }
+      },
+      {
+        path: 'daily',
+        name: 'AdminDailyManage',
+        component: AdminDailyManage,
+        meta: {
+          title: '每日运势管理'
+        }
+      },
+      {
+        path: 'shensha',
+        name: 'AdminShenshaManage',
+        component: AdminShenshaManage,
+        meta: {
+          title: '神煞管理'
+        }
+      },
+      {
+        path: 'seo',
+        name: 'AdminSeoManage',
+        component: AdminSeoManage,
+        meta: {
+          title: 'SEO管理'
+        }
+      },
+      {
+        path: 'tarot-cards',
+        name: 'AdminTarotCards',
+        component: AdminTarotCards,
+        meta: {
+          title: '塔罗牌管理'
+        }
+      },
+      {
+        path: 'question-templates',
+        name: 'AdminQuestionTemplates',
+        component: AdminQuestionTemplates,
+        meta: {
+          title: '问题模板管理'
+        }
+      },
+      {
+        path: 'log/operation',
+        name: 'AdminOperationLogs',
+        component: AdminOperationLogs,
+        meta: {
+          title: '操作日志'
+        }
+      },
+      {
+        path: 'log/login',
+        name: 'AdminLoginLogs',
+        component: AdminLoginLogs,
+        meta: {
+          title: '登录日志'
+        }
+      },
+      {
+        path: 'log/api',
+        name: 'AdminApiLogs',
+        component: AdminApiLogs,
+        meta: {
+          title: 'API日志'
+        }
+      }
+    ]
+  }
 ]
 
 const router = createRouter({

@@ -103,6 +103,8 @@
         </div>
         <div class="topbar-right">
           <el-button text :icon="HomeFilled" @click="$router.push('/')">返回前台</el-button>
+          <el-button text :icon="User" @click="$router.push('/profile')">个人中心</el-button>
+          <el-button text :icon="Close" @click="handleCloseAllTabs">关闭所有页面</el-button>
           <el-button text :icon="SwitchButton" @click="handleLogout">退出登录</el-button>
         </div>
       </header>
@@ -120,7 +122,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   DataLine, User, Money, Document, TrendCharts, Setting,
-  Expand, Fold, HomeFilled, SwitchButton
+  Expand, Fold, HomeFilled, SwitchButton, Close
 } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
@@ -159,6 +161,10 @@ const handleLogout = async () => {
     localStorage.removeItem('userInfo')
     router.push('/login')
   } catch {}
+}
+
+const handleCloseAllTabs = () => {
+  router.push('/maodou')
 }
 </script>
 

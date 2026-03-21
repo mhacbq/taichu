@@ -17,10 +17,14 @@ onMounted(() => {
 async function fetchRecordsList() {
   loading.value = true
   try {
-    // 这里调用API获取积分记录
-    // const res = await getPointsRecords({ ...pagination.value })
-    // recordsList.value = res.data.list
-    // pagination.value.total = res.data.total
+    const res = await window.$api.get('/api/maodou/points/records', {
+      params: {
+        page: pagination.value.current,
+        page_size: pagination.value.pageSize
+      }
+    })
+    recordsList.value = res.data.list
+    pagination.value.total = res.data.total
   } catch (error) {
     ElMessage.error('获取积分记录失败')
   } finally {
