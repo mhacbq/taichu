@@ -536,24 +536,36 @@ const getAiAnalysis = async () => {
 .fortune-categories {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
 .category-card {
-  padding: 24px;
+  padding: 28px 24px;
   text-align: center;
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
+  border: 2px solid var(--border-light);
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.category-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(var(--primary-rgb), 0.15);
+  border-color: rgba(var(--primary-rgb), 0.3);
 }
 
 .category-icon {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16px;
+  margin: 0 auto 20px;
   color: white;
+  font-size: 32px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .category-icon--career {
@@ -573,30 +585,32 @@ const getAiAnalysis = async () => {
 }
 
 .category-title {
-  margin: 0 0 12px 0;
-  font-size: 20px;
-  color: #333;
+  margin: 0 0 16px 0;
+  font-size: 22px;
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .category-score {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .score-label {
-  font-size: 14px;
-  color: #999;
+  font-size: 15px;
+  color: var(--text-secondary);
   margin-right: 8px;
+  font-weight: 500;
 }
 
 .score-value {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: bold;
-  color: #d4af37;
+  color: var(--primary-color);
 }
 
 .score-max {
-  font-size: 16px;
-  color: #999;
+  font-size: 18px;
+  color: var(--text-secondary);
 }
 
 .category-desc {
@@ -629,105 +643,125 @@ const getAiAnalysis = async () => {
 }
 
 .monthly-fortune {
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 32px 28px;
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
+  border: 2px solid var(--border-light);
+  border-radius: 20px;
 }
 
 .section-title {
-  margin: 0 0 20px 0;
-  font-size: 20px;
-  color: #d4af37;
+  margin: 0 0 24px 0;
+  font-size: 24px;
+  color: var(--primary-color);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-weight: 700;
 }
 
 .months-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .month-card {
-  padding: 16px;
-  border-radius: 8px;
+  padding: 20px 16px;
+  border-radius: 16px;
   text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.month-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
 }
 
 .month-card--优 {
-  background: #f0f9ff;
-  border: 2px solid #0ea5e9;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  border: 3px solid #0ea5e9;
 }
 
 .month-card--良 {
-  background: #f0fdf4;
-  border: 2px solid #22c55e;
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  border: 3px solid #22c55e;
 }
 
 .month-card--中 {
-  background: #fefce8;
-  border: 2px solid #eab308;
+  background: linear-gradient(135deg, #fef9c3, #fde047);
+  border: 3px solid #eab308;
 }
 
 .month-number {
   display: block;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: bold;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
 }
 
 .month-level {
   display: block;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 8px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .month-desc {
   margin: 0;
-  font-size: 12px;
-  color: #999;
-  line-height: 1.4;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .ai-analysis {
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 32px 28px;
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
+  border: 2px solid var(--border-light);
+  border-radius: 20px;
 }
 
 .analysis-content {
-  line-height: 1.8;
-  color: #333;
+  line-height: 1.9;
+  color: var(--text-primary);
+  font-size: 15px;
 }
 
 .analysis-content p {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .analysis-content strong {
-  color: #d4af37;
+  color: var(--primary-color);
+  font-weight: 700;
 }
 
 .result-actions {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
 }
 
 .ai-action {
   text-align: center;
-  padding: 30px;
-  margin-bottom: 20px;
+  padding: 36px 28px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
+  border: 2px solid var(--border-light);
+  border-radius: 20px;
 }
 
 .ai-action .el-button {
-  padding: 16px 40px;
-  font-size: 16px;
+  padding: 18px 48px;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .ai-tip {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #999;
+  margin-top: 16px;
+  font-size: 15px;
+  color: var(--text-secondary);
 }
 </style>
