@@ -19,23 +19,6 @@
       
       <div class="bazi-form card" v-if="!result">
 
-        <!-- 智能填写策略 -->
-        <div class="strategy-tip-card">
-          <div class="strategy-tip-card__icon">
-            <el-icon><Promotion /></el-icon>
-          </div>
-          <div class="strategy-tip-card__body">
-            <p class="strategy-tip-card__title">智能填写策略</p>
-            <p class="strategy-tip-card__desc">先用简化版 + 精确时刻完成一次排盘，再根据结果决定是否进行深挖</p>
-          </div>
-        </div>
-        <div class="strategy-summary-card__details">
-          <article v-for="item in baziStrategyDetails" :key="item.key" class="strategy-detail-item">
-            <strong>{{ item.title }}</strong>
-            <p>{{ item.description }}</p>
-          </article>
-        </div>
-
         <!-- 版本选择 -->
         <div class="version-select-section">
           <h3 class="version-select-section__title">版本选择</h3>
@@ -1261,10 +1244,10 @@ import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, 
 import WisdomText from '../components/WisdomText.vue'
 
 import {
-  calculateBazi as calculateBaziApi, 
-  getPointsBalance, 
-  getYearlyFortune, 
-  getDayunAnalysis, 
+  calculateBazi as calculateBaziApi,
+  getPointsBalance,
+  getYearlyFortune,
+  getDayunAnalysis,
   getDayunChart as getDayunChartApi,
   getFortunePointsCost,
   getClientConfig
@@ -1276,6 +1259,7 @@ import { sanitizeHtml } from '../utils/sanitize'
 import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
 
 import { CHINA_CITIES } from '../utils/constants'
+import { Lunar } from 'lunar-javascript'
 
 const router = useRouter()
 const route = useRoute()

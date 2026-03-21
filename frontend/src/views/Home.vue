@@ -158,7 +158,7 @@
               <span class="feature-cost">⚡ 5积分/次</span>
             </div>
             <router-link to="/bazi" class="feature-link">
-              立即体验 <el-icon><ArrowRight /></el-icon>
+              立即测算 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
           <div class="feature-card feature-card--primary card-hover" data-type="tarot">
@@ -171,7 +171,7 @@
               <span class="feature-cost">⚡ 5积分/次</span>
             </div>
             <router-link to="/tarot" class="feature-link">
-              立即体验 <el-icon><ArrowRight /></el-icon>
+              立即测算 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
           <div class="feature-card feature-card--primary card-hover" data-type="daily">
