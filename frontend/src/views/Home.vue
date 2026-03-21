@@ -555,20 +555,20 @@ const heroProofItems = computed(() => [
   {
     key: 'users',
     icon: UserFilled,
-    label: hasDisplayValue(userCount.value) ? `${formatDisplayValue(userCount.value)}+ 用户正在体验` : '持续为用户提供参考',
-    description: '把人生阶段、当下困惑和下一步行动拆开来看，先理解自己再做决定。'
+    label: hasDisplayValue(userCount.value) ? `${formatDisplayValue(userCount.value)}+ 用户已体验` : '八字塔罗等传统服务',
+    description: '注册即送积分，每日签到领积分，支持八字排盘、塔罗占卜、六爻问事等多种服务。'
   },
   {
     key: 'services',
     icon: MagicStick,
-    label: '5 类核心服务一站体验',
-    description: '八字、塔罗、六爻、合婚与每日运势统一从首页进入，路径更清楚。'
+    label: '专业命理分析服务',
+    description: '结合传统文化与AI技术，提供八字排盘、塔罗占卜、每日运势、六爻占卜、八字合婚等服务。'
   },
   {
     key: 'clarity',
     icon: ChatLineRound,
-    label: statsError.value ? '体验说明已单独呈现' : '权益与说明更透明',
-    description: '登录门槛、示例反馈和积分权益分开展示，避免把提示误读成结果承诺。'
+    label: '积分体系清晰透明',
+    description: '各类服务消耗积分明确，新用户注册送积分，每日签到可领积分，积分消耗规则一目了然。'
   }
 ])
 
@@ -576,20 +576,20 @@ const heroAccessItems = computed(() => [
   {
     key: 'entry',
     icon: isLoggedIn.value ? Check : Present,
-    title: isLoggedIn.value ? '完整入口已为你解锁' : '登录后开启完整体验',
-    detail: baziAccessDetail.value
+    title: isLoggedIn.value ? '所有功能已开放' : '登录解锁全部功能',
+    detail: isLoggedIn.value ? '登录后可使用八字排盘、塔罗占卜、六爻问事、八字合婚等所有服务。' : '登录后可领取积分，解锁八字排盘、塔罗占卜、六爻问事等所有服务。'
   },
   {
     key: 'daily',
     icon: Star,
-    title: '每日运势可随时浏览',
-    detail: '今日宜忌、节奏提醒和轻量建议无需登录即可查看。'
+    title: '每日运势免费查看',
+    detail: '查看今日宜忌、幸运提示与节奏建议，无需登录即可免费浏览每日运势。'
   },
   {
     key: 'points',
     icon: Coin,
-    title: isLoggedIn.value ? '账户积分状态' : '新用户积分权益',
-    detail: heroPointsDetail.value
+    title: isLoggedIn.value ? '我的积分余额' : '新用户积分福利',
+    detail: isLoggedIn.value ? `当前可用 ${formattedUserPoints.value} 积分，可用于八字排盘、塔罗占卜等服务。` : '注册即送100积分，可用于八字首测、塔罗占卜等服务。'
   }
 ])
 
@@ -597,17 +597,17 @@ const heroTrustItems = computed(() => [
   {
     key: 'clarity',
     icon: Check,
-    text: '先用一句话说清每项服务能帮你解决什么问题'
+    text: '输入出生信息，立即生成八字排盘报告'
   },
   {
     key: 'benefits',
     icon: Present,
-    text: isLoggedIn.value ? '积分、入口与下一步操作收在同一张状态卡里' : '新用户福利、登录门槛和入口路径一次说明白'
+    text: '选择塔罗牌，AI 智能解读牌面含义'
   },
   {
     key: 'rhythm',
     icon: Star,
-    text: '先告诉你能做什么，再决定要不要深入探索'
+    text: '查看每日运势，了解今日宜忌与建议'
   }
 ])
 
@@ -750,7 +750,7 @@ const testimonials = ref([
     ratingLabel: '4.7 / 5 · 示例反馈',
     storyTag: '体验故事',
     persona: '跳槽决策期 · 需要理清取舍',
-    content: '一直纠结要不要换工作，塔罗最大的帮助不是“准不准”，而是把风险、期待和顾虑都摆到了明面上，决策时没那么乱。',
+    content: '一直纠结要不要换工作，塔罗最大的帮助不是"准不准"，而是把风险、期待和顾虑都摆到了明面上，决策时没那么乱。',
     outcome: '更适合辅助做阶段性判断',
     note: '示例反馈',
     service: '塔罗占卜'
