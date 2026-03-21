@@ -500,7 +500,7 @@ function getStatusText(status) {
 
 async function loadAdminList() {
   try {
-    const { data } = await fetch('/api/admin/system/admin-list').then(res => res.json())
+    const { data } = await fetch('/api/maodou/system/admin-list').then(res => res.json())
     adminList.value = data || []
   } catch (error) {
     console.error('加载管理员列表失败:', error)
@@ -523,7 +523,7 @@ async function submitAssign() {
   }
 
   try {
-    await fetch('/api/admin/feedback/assign', {
+    await fetch('/api/maodou/feedback/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -546,7 +546,7 @@ async function handleViewLog(row) {
   logDialog.visible = true
   
   try {
-    const { data } = await fetch(`/api/admin/feedback/logs?feedback_id=${row.id}`)
+    const { data } = await fetch(`/api/maodou/feedback/logs?feedback_id=${row.id}`)
       .then(res => res.json())
     logList.value = data || []
   } catch (error) {

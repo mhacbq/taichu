@@ -1,11 +1,11 @@
-import request from '@/utils/request'
+import request from './request'
 
 /**
  * 获取充值数据分析
  */
 export function getPaymentAnalysis(params) {
   return request({
-    url: '/api/admin/analysis/payment',
+    url: '/analysis/payment',
     method: 'get',
     params
   })
@@ -16,7 +16,7 @@ export function getPaymentAnalysis(params) {
  */
 export function getUserAnalysis(params) {
   return request({
-    url: '/api/admin/analysis/user',
+    url: '/analysis/user',
     method: 'get',
     params
   })
@@ -27,7 +27,7 @@ export function getUserAnalysis(params) {
  */
 export function getResultAnalysis(params) {
   return request({
-    url: '/api/admin/analysis/result',
+    url: '/analysis/result',
     method: 'get',
     params
   })

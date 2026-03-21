@@ -407,7 +407,7 @@ export const asyncRoutes = [
         meta: { title: '通知配置', roles: ['admin', 'operator'] }
       },
       {
-        path: '/admin',
+        path: '/managers',
         name: 'AdminUsers',
         component: () => import('@/views/system/admin.vue'),
         meta: { title: '管理员管理', roles: ['admin'] }
@@ -464,7 +464,7 @@ export const asyncRoutes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [...constantRoutes, ...asyncRoutes],
   scrollBehavior: () => ({ top: 0 })
 })

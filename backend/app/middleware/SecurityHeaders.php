@@ -10,7 +10,7 @@ use think\Response;
  * 安全响应头中间件
  *
  * 添加各种安全相关的HTTP响应头。
- * 管理后台路由（/api/admin/*）使用更严格的策略并注入 X-Robots-Tag: noindex。
+ * 管理后台路由（/api/maodou/*）使用更严格的策略并注入 X-Robots-Tag: noindex。
  */
 class SecurityHeaders
 {
@@ -45,7 +45,7 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        $isAdmin = str_starts_with((string) $request->pathinfo(), 'api/admin');
+        $isAdmin = str_starts_with((string) $request->pathinfo(), 'api/maodou');
 
         $headers = $this->defaultHeaders;
         if ($isAdmin) {

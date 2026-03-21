@@ -14,7 +14,7 @@
         router
         class="sidebar-menu"
       >
-        <el-menu-item index="/admin">
+        <el-menu-item index="/maodou">
           <el-icon><DataLine /></el-icon>
           <template #title>仪表板</template>
         </el-menu-item>
@@ -24,9 +24,9 @@
             <el-icon><User /></el-icon>
             <span>用户运营</span>
           </template>
-          <el-menu-item index="/admin/users">用户管理</el-menu-item>
-          <el-menu-item index="/admin/points">积分记录</el-menu-item>
-          <el-menu-item index="/admin/feedback">用户反馈</el-menu-item>
+          <el-menu-item index="/maodou/users">用户管理</el-menu-item>
+          <el-menu-item index="/maodou/points">积分记录</el-menu-item>
+          <el-menu-item index="/maodou/feedback">用户反馈</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="points">
@@ -34,8 +34,8 @@
             <el-icon><Coin /></el-icon>
             <span>积分管理</span>
           </template>
-          <el-menu-item index="/admin/points">积分记录</el-menu-item>
-          <el-menu-item index="/admin/points-rules">积分规则</el-menu-item>
+          <el-menu-item index="/maodou/points">积分记录</el-menu-item>
+          <el-menu-item index="/maodou/points-rules">积分规则</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="orders">
@@ -43,8 +43,8 @@
             <el-icon><Money /></el-icon>
             <span>支付订单</span>
           </template>
-          <el-menu-item index="/admin/orders">订单列表</el-menu-item>
-          <el-menu-item index="/admin/packages">套餐管理</el-menu-item>
+          <el-menu-item index="/maodou/orders">订单列表</el-menu-item>
+          <el-menu-item index="/maodou/packages">套餐管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="content">
@@ -52,10 +52,10 @@
             <el-icon><Document /></el-icon>
             <span>内容管理</span>
           </template>
-          <el-menu-item index="/admin/almanac">黄历管理</el-menu-item>
-          <el-menu-item index="/admin/knowledge">知识库</el-menu-item>
-          <el-menu-item index="/admin/shensha">神煞管理</el-menu-item>
-          <el-menu-item index="/admin/content">内容记录</el-menu-item>
+          <el-menu-item index="/maodou/almanac">黄历管理</el-menu-item>
+          <el-menu-item index="/maodou/knowledge">知识库</el-menu-item>
+          <el-menu-item index="/maodou/shensha">神煞管理</el-menu-item>
+          <el-menu-item index="/maodou/content">内容记录</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="seo">
@@ -63,8 +63,8 @@
             <el-icon><TrendCharts /></el-icon>
             <span>SEO 优化</span>
           </template>
-          <el-menu-item index="/admin/seo">SEO配置</el-menu-item>
-          <el-menu-item index="/admin/seo/stats">SEO统计</el-menu-item>
+          <el-menu-item index="/maodou/seo">SEO配置</el-menu-item>
+          <el-menu-item index="/maodou/seo/stats">SEO统计</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="system">
@@ -72,11 +72,11 @@
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
           </template>
-          <el-menu-item index="/admin/config">系统配置</el-menu-item>
-          <el-menu-item index="/admin/system-tools">系统工具</el-menu-item>
-          <el-menu-item index="/admin/tasks">定时任务</el-menu-item>
-          <el-menu-item index="/admin/logs">系统日志</el-menu-item>
-          <el-menu-item index="/admin/anticheat">反作弊</el-menu-item>
+          <el-menu-item index="/maodou/config">系统配置</el-menu-item>
+          <el-menu-item index="/maodou/system-tools">系统工具</el-menu-item>
+          <el-menu-item index="/maodou/tasks">定时任务</el-menu-item>
+          <el-menu-item index="/maodou/logs">系统日志</el-menu-item>
+          <el-menu-item index="/maodou/anticheat">反作弊</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -97,7 +97,7 @@
       <header class="admin-topbar">
         <div class="topbar-left">
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/admin' }">管理后台</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/maodou' }">管理后台</el-breadcrumb-item>
             <el-breadcrumb-item v-if="currentPageTitle">{{ currentPageTitle }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
@@ -131,24 +131,24 @@ const collapsed = ref(false)
 const activeMenu = computed(() => route.path)
 
 const pageTitles = {
-  '/admin': '仪表板',
-  '/admin/users': '用户管理',
-  '/admin/points': '积分记录',
-  '/admin/points-rules': '积分规则',
-  '/admin/feedback': '用户反馈',
-  '/admin/orders': '订单列表',
-  '/admin/packages': '套餐管理',
-  '/admin/almanac': '黄历管理',
-  '/admin/knowledge': '知识库管理',
-  '/admin/shensha': '神煞管理',
-  '/admin/content': '内容记录',
-  '/admin/seo': 'SEO配置',
-  '/admin/seo/stats': 'SEO统计',
-  '/admin/config': '系统配置',
-  '/admin/system-tools': '系统工具',
-  '/admin/tasks': '定时任务',
-  '/admin/logs': '系统日志',
-  '/admin/anticheat': '反作弊管理',
+  '/maodou': '仪表板',
+  '/maodou/users': '用户管理',
+  '/maodou/points': '积分记录',
+  '/maodou/points-rules': '积分规则',
+  '/maodou/feedback': '用户反馈',
+  '/maodou/orders': '订单列表',
+  '/maodou/packages': '套餐管理',
+  '/maodou/almanac': '黄历管理',
+  '/maodou/knowledge': '知识库管理',
+  '/maodou/shensha': '神煞管理',
+  '/maodou/content': '内容记录',
+  '/maodou/seo': 'SEO配置',
+  '/maodou/seo/stats': 'SEO统计',
+  '/maodou/config': '系统配置',
+  '/maodou/system-tools': '系统工具',
+  '/maodou/tasks': '定时任务',
+  '/maodou/logs': '系统日志',
+  '/maodou/anticheat': '反作弊管理',
 }
 const currentPageTitle = computed(() => pageTitles[route.path] || '')
 

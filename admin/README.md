@@ -129,4 +129,4 @@ npm run build
 
 ## 后端API对接
 
-管理系统使用独立的后端API前缀 `/api/admin/*`
+管理系统使用独立的后端API前缀 `/api/maodou/*`

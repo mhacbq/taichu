@@ -1,7 +1,7 @@
 import axios from 'axios'
 import request from './request'
 
-const baseURL = import.meta.env.VITE_APP_BASE_API || '/api/admin'
+const baseURL = import.meta.env.VITE_APP_BASE_API || '/api/maodou'
 
 function buildAuthHeaders() {
   const token = localStorage.getItem('admin-token') || ''

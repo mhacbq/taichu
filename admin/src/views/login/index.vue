@@ -438,7 +438,7 @@ function classifyLoginError(error) {
       guidance: [
         '请优先查看 backend 日志，确认是否存在缺表、配置缺失或 bootstrap SQL 冲突。',
         '如果错误信息里包含 SQL 文件名，请先执行对应补丁或检查初始化流程。',
-        '确认 /api/admin/auth/login 返回的业务码与错误信息后再继续重试。'
+        '确认 /api/maodou/auth/login 返回的业务码与错误信息后再继续重试。'
       ],
       backendMessage: rawMessage,
       diagnostics,

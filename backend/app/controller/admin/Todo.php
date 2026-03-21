@@ -84,7 +84,7 @@ class Todo extends BaseController
 
     public function dismiss()
     {
-        $id = $this->request->post('id');
+        $id = $this->request->param('id', $this->request->post('id'));
         
         // 将忽略的待办记录到日志
         Db::name('admin_todo_log')->insert([

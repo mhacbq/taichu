@@ -1,29 +1,29 @@
-import request from '@/utils/request'
+import request from './request'
 
 export function getTodoList() {
   return request({
-    url: '/admin/todo/list',
+    url: '/todo/list',
     method: 'get'
   })
 }
 
 export function getVipExpiringUsers() {
   return request({
-    url: '/admin/todo/vip-expiring',
+    url: '/todo/vip-expiring',
     method: 'get'
   })
 }
 
 export function getInactiveUsers() {
   return request({
-    url: '/admin/todo/inactive-users',
+    url: '/todo/inactive-users',
     method: 'get'
   })
 }
 
 export function dismissTodo(id) {
   return request({
-    url: `/admin/todo/${id}/dismiss`,
+    url: `/todo/${id}/dismiss`,
     method: 'post'
   })
 }

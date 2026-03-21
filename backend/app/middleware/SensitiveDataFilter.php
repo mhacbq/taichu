@@ -36,7 +36,7 @@ class SensitiveDataFilter
     protected function shouldFilterResponse($request): bool
     {
         $path = strtolower((string) (method_exists($request, 'pathinfo') ? $request->pathinfo() : ''));
-        return !str_starts_with($path, 'api/admin');
+        return !str_starts_with($path, 'api/maodou');
     }
 
     protected function filterResponse($response): void

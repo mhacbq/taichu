@@ -219,7 +219,7 @@ const detailDialog = reactive({
   data: null
 })
 
-const API_BASE = '/api/admin/hehun-manage'
+const API_BASE = '/api/maodou/hehun-manage'
 
 const getScoreType = (score) => {
   if (score >= 90) return 'success'

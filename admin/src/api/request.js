@@ -3,7 +3,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
 const service = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_API || '/api/admin',
+  baseURL: import.meta.env.VITE_APP_BASE_API || '/api/maodou',
   timeout: 30000
 })
 

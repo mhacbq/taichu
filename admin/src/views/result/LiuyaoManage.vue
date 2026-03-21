@@ -240,7 +240,7 @@ const detailDialog = reactive({
   data: null
 })
 
-const API_BASE = '/api/admin/liuyao-manage'
+const API_BASE = '/api/maodou/liuyao-manage'
 
 const loadList = async () => {
   loading.value = true

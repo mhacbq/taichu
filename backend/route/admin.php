@@ -3,7 +3,7 @@
 use think\facade\Route;
 
 // 后台管理API路由组
-Route::group('api/admin', function () {
+Route::group('api/maodou', function () {
     // 认证相关（无需登录）
     Route::post('auth/login', 'admin.Auth/login');
     
@@ -22,6 +22,12 @@ Route::group('api/admin', function () {
         Route::get('dashboard/realtime', 'Admin/realtime');
         Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
         Route::get('dashboard/pending-feedback', 'admin.Feedback/pendingSummary');
+
+        // 待办事项
+        Route::get('todo/list', 'admin.Todo/list');
+        Route::get('todo/vip-expiring', 'admin.Todo/vipExpiring');
+        Route::get('todo/inactive-users', 'admin.Todo/inactiveUsers');
+        Route::post('todo/:id/dismiss', 'admin.Todo/dismiss');
 
         // 平台统计数据
         Route::get('statistics/index', 'Statistics/index');

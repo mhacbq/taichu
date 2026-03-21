@@ -204,7 +204,7 @@ const detailDialog = reactive({
   data: null
 })
 
-const API_BASE = '/api/admin/tarot-manage'
+const API_BASE = '/api/maodou/tarot-manage'
 
 const getSpreadTypeName = (type) => {
   const typeMap = {

@@ -5,7 +5,7 @@ import request from './request'
  */
 export function getSystemConfigs(params) {
   return request({
-    url: '/api/admin/system-config',
+    url: '/system-config',
     method: 'get',
     params
   })
@@ -16,7 +16,7 @@ export function getSystemConfigs(params) {
  */
 export function saveSystemConfigs(data) {
   return request({
-    url: '/api/admin/system-config/save',
+    url: '/system-config/save',
     method: 'post',
     data
   })
@@ -27,7 +27,7 @@ export function saveSystemConfigs(data) {
  */
 export function testPaymentConfig(data) {
   return request({
-    url: '/api/admin/system-config/test-payment',
+    url: '/system-config/test-payment',
     method: 'post',
     data
   })
@@ -38,7 +38,7 @@ export function testPaymentConfig(data) {
  */
 export function testAIConfig() {
   return request({
-    url: '/api/admin/system-config/test-ai',
+    url: '/system-config/test-ai',
     method: 'post'
   })
 }
@@ -48,7 +48,7 @@ export function testAIConfig() {
  */
 export function exportSystemConfig(params) {
   return request({
-    url: '/api/admin/system-config/export',
+    url: '/system-config/export',
     method: 'get',
     params,
     responseType: 'blob'

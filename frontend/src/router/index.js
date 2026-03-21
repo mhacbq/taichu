@@ -27,25 +27,6 @@ const YearlyFortune = () => import('../views/YearlyFortune.vue')
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
 const PrivacyPolicy = () => import('../views/Legal/PrivacyPolicy.vue')
 
-// 管理端路由
-const AdminLogin = () => import('../views/admin/Login.vue')
-const AdminDashboard = () => import('../views/admin/Dashboard.vue')
-const AdminUsers = () => import('../views/admin/Users.vue')
-const AdminPoints = () => import('../views/admin/Points.vue')
-const AdminPointsRules = () => import('../views/admin/PointsRules.vue')
-const AdminOrders = () => import('../views/admin/Orders.vue')
-const AdminPackages = () => import('../views/admin/Packages.vue')
-const AdminAlmanac = () => import('../views/admin/Almanac.vue')
-const AdminShensha = () => import('../views/admin/Shensha.vue')
-const AdminSeo = () => import('../views/admin/Seo.vue')
-const AdminKnowledge = () => import('../views/admin/Knowledge.vue')
-const AdminFeedback = () => import('../views/admin/Feedback.vue')
-const AdminSettings = () => import('../views/admin/Settings.vue')
-const AdminLogs = () => import('../views/admin/Logs.vue')
-const AdminTasks = () => import('../views/admin/Tasks.vue')
-const AdminTools = () => import('../views/admin/Tools.vue')
-const AdminAnticheat = () => import('../views/admin/Anticheat.vue')
-
 const routes = [
   {
     path: '/',
@@ -239,109 +220,6 @@ const routes = [
       breadcrumb: [{ name: '首页', url: '/' }, { name: '隐私政策', url: '/legal/privacy' }]
     }
   },
-  // 管理端路由
-  {
-    path: '/admin',
-    name: 'AdminLogin',
-    component: AdminLogin,
-    meta: { public: true }
-  },
-  {
-    path: '/admin/dashboard',
-    name: 'AdminDashboard',
-    component: AdminDashboard,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/users',
-    name: 'AdminUsers',
-    component: AdminUsers,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/points',
-    name: 'AdminPoints',
-    component: AdminPoints,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/points/rules',
-    name: 'AdminPointsRules',
-    component: AdminPointsRules,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/orders',
-    name: 'AdminOrders',
-    component: AdminOrders,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/packages',
-    name: 'AdminPackages',
-    component: AdminPackages,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/almanac',
-    name: 'AdminAlmanac',
-    component: AdminAlmanac,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/shensha',
-    name: 'AdminShensha',
-    component: AdminShensha,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/seo',
-    name: 'AdminSeo',
-    component: AdminSeo,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/knowledge',
-    name: 'AdminKnowledge',
-    component: AdminKnowledge,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/feedback',
-    name: 'AdminFeedback',
-    component: AdminFeedback,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/settings',
-    name: 'AdminSettings',
-    component: AdminSettings,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/logs',
-    name: 'AdminLogs',
-    component: AdminLogs,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/tasks',
-    name: 'AdminTasks',
-    component: AdminTasks,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/tools',
-    name: 'AdminTools',
-    component: AdminTools,
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/admin/anticheat',
-    name: 'AdminAnticheat',
-    component: AdminAnticheat,
-    meta: { requiresAdmin: true }
-  },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -472,7 +350,7 @@ function checkAdminRateLimit() {
 
 router.beforeEach((to, from, next) => {
   let token = localStorage.getItem('token')
-  const isAdminPath = to.path.startsWith('/admin')
+  const isAdminPath = to.path.startsWith('/maodou')
 
   // 检测 Token 格式（防止 localStorage 被注入伪造数据）
   if (token && (typeof token !== 'string' || token.split('.').length !== 3)) {
@@ -529,7 +407,7 @@ router.beforeEach((to, from, next) => {
 
 // 路由后置守卫 - 设置SEO
 router.afterEach((to) => {
-  const isAdminRoute = typeof to?.path === 'string' && to.path.startsWith('/admin')
+  const isAdminRoute = typeof to?.path === 'string' && to.path.startsWith('/maodou')
   if (typeof document !== 'undefined' && document.body) {
     document.body.classList.toggle('route-admin', isAdminRoute)
     document.body.classList.toggle('route-frontend', !isAdminRoute)

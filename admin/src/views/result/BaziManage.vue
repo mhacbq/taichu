@@ -196,7 +196,7 @@ const detailDialog = reactive({
   data: null
 })
 
-const API_BASE = '/api/admin/bazi-manage'
+const API_BASE = '/api/maodou/bazi-manage'
 
 const loadList = async () => {
   loading.value = true

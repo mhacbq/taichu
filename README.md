@@ -10,15 +10,15 @@
 - **线上运行环境**：宝塔面板 + Swoole
 - **代码更新方式**：Git Webhook 触发拉取代码
 - **前台站点根目录**：`/www/wwwroot/taichu.chat/frontend/dist`
-- **管理后台页面入口**：`/admin/`，后台登录页前端路由是 `/login`
-- **后台登录接口**：`POST /api/admin/auth/login`
+- **管理后台页面入口**：`/maodou/`，后台登录页前端路由是 `/maodou/login`
+- **后台登录接口**：`POST /api/maodou/auth/login`
 
 ## 项目结构
 
 ```text
 taichu-unified/
 ├── frontend/             # Vue 3 前端项目（线上主站构建产物来源）
-├── admin/                # Vue 3 独立管理后台（独立构建，线上挂在 /admin/）
+├── admin/                # Vue 3 独立管理后台（独立构建，线上挂在 /maodou/）
 ├── backend/              # ThinkPHP 8 后端项目（本地 phpstudy / 线上 Swoole 提供接口）
 ├── database/             # 增量 SQL、初始化补丁、迁移脚本
 └── deploy/               # 部署相关脚本与配置参考
@@ -74,14 +74,14 @@ npm run dev
 
 ### 3. 构建 / 验证管理后台
 
-`admin/` 是独立 Vite 项目。后台页面登录验证不要再默认猜 `http://localhost:3001/login`、`http://localhost:8080/admin` 或 `/admin/login`。
+`admin/` 是独立 Vite 项目。后台页面登录验证不要再默认猜 `http://localhost:3001/login`、`http://localhost:8080/maodou` 或 `/admin/login`。
 
 正确口径是：
 
-- 登录页前端路由：`/login`
-- 登录接口：`POST /api/admin/auth/login`
+- 登录页前端路由：`/maodou/login`
+- 登录接口：`POST /api/maodou/auth/login`
 - 页面级验证前先确认是否已有构建产物 `admin/dist/index.html`
-- 如果已知后台挂载根地址，应访问“**站点根地址 + `/login`**”
+- 如果已知后台挂载根地址，应访问“**站点根地址 + `/maodou/login`**”
 
 先做构建校验：
 
@@ -119,7 +119,7 @@ npm run dev
 
 - 项目目录：`/www/wwwroot/taichu.chat`
 - 前台构建产物目录：`/www/wwwroot/taichu.chat/frontend/dist`
-- 后台页面目录：`/www/wwwroot/taichu.chat/admin/`
+- 后台页面目录：`/www/wwwroot/taichu.chat/admin/dist/`
 - Swoole 后端监听地址：`127.0.0.1:8080`
 
 推荐在服务器上按需执行：
@@ -135,7 +135,7 @@ cd /www/wwwroot/taichu.chat/admin && npm install && npm run build
 
 - 前台页面走 `frontend/dist`
 - `/api/` 反向代理到 Swoole `127.0.0.1:8080`
-- `/admin/` 单独映射后台页面目录
+- `/maodou/` 单独映射后台页面目录
 
 可按以下配置理解当前线上路由口径：
 
@@ -158,11 +158,11 @@ location ^~ /api/ {
     add_header Cache-Control no-cache;
 }
 
-# --- 2. 管理端页面 (admin路径) ---
-location ^~ /admin/ {
-    alias /www/wwwroot/taichu.chat/admin/;
+# --- 2. 管理端页面 (maodou路径) ---
+location ^~ /maodou/ {
+    alias /www/wwwroot/taichu.chat/admin/dist/;
     index index.html;
-    try_files $uri $uri/ /admin/index.html;
+    try_files $uri $uri/ /maodou/index.html;
 }
 
 # --- 3. 静态资源缓存 (全局匹配) ---
@@ -173,8 +173,8 @@ location ~* \.(gif|png|jpg|jpeg|ico|svg|css|js|woff|woff2|ttf|eot)$ {
     expires 30d;
     add_header Cache-Control "public, no-transform";
     
-    # 如果在 frontend 找不到，尝试在 admin 找（可选补丁）
-    try_files $uri /admin/$uri =404;
+    # 如果在 frontend 找不到，尝试在 maodou 找（可选补丁）
+    try_files $uri /maodou/$uri =404;
 }
 
 # --- 4. 前端页面 (兜底路径) ---
@@ -192,8 +192,8 @@ location / {
 
 - `GET /api/health` 是否返回正常
 - 前台首页是否能正常打开
-- 后台 `站点根地址 + /login` 是否可打开
-- 后台登录接口 `POST /api/admin/auth/login` 是否正常
+- 后台 `站点根地址 + /maodou/login` 是否可打开
+- 后台登录接口 `POST /api/maodou/auth/login` 是否正常
 - 前后台静态资源是否命中最新构建产物
 - Webhook 拉取后是否已实际重建并生效
 

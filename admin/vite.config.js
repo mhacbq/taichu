@@ -5,6 +5,7 @@ import { resolve } from 'path'
 const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://localhost:8080'
 
 export default defineConfig({
+  base: '/maodou/',
   plugins: [vue()],
   resolve: {
     alias: {
