@@ -2032,14 +2032,12 @@ onUnmounted(() => {
 }
 
 .service-tag {
-
   min-height: 30px;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(210, 154, 64, 0.32);
-  background: rgba(245, 196, 103, 0.18);
-  color: #916018;
-  font-size: var(--font-tiny);
+  border: 1px solid rgba(210, 154, 64, 0.4);
+  color: #d4af37;
+  font-size: var(--font-small);
   font-weight: var(--weight-semibold);
   display: inline-flex;
   align-items: center;
