@@ -1155,27 +1155,49 @@ onBeforeUnmount(() => {
 }
 
 .companion-avatar {
-  width: 56px;
-  height: 56px;
-  background: var(--primary-gradient);
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #f0e68c 50%, var(--primary-color) 100%);
+  background-size: 200% 200%;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(184, 134, 11, 0.35);
-  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 20px rgba(184, 134, 11, 0.4),
+    0 0 0 3px rgba(255, 255, 255, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  animation: gradient-shift 4s ease infinite;
 }
 
 .companion-avatar:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 25px rgba(184, 134, 11, 0.45);
+  transform: scale(1.12) translateY(-4px);
+  box-shadow: 
+    0 12px 32px rgba(184, 134, 11, 0.5),
+    0 0 0 4px rgba(255, 255, 255, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.companion-avatar:active {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(184, 134, 11, 0.4),
+    0 0 0 3px rgba(255, 255, 255, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .companion-icon {
-  font-size: 28px;
-  color: var(--text-primary);
+  font-size: 32px;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 2;
 }
 
 .companion-pulse {
@@ -1183,8 +1205,18 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(184, 134, 11, 0.4);
+  border: 2px solid var(--primary-color);
   animation: pulse-ring 2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes pulse-ring {
@@ -1193,33 +1225,35 @@ onBeforeUnmount(() => {
     opacity: 0.8;
   }
   100% {
-    transform: scale(1.5);
+    transform: scale(1.6);
     opacity: 0;
   }
 }
 
 .companion-content {
   position: absolute;
-  bottom: 70px;
+  bottom: 80px;
   right: 0;
-  width: 300px;
-  background: var(--bg-card);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: var(--shadow-xl);
-  animation: slideUp 0.3s ease;
-  border: 1px solid var(--border-color);
+  width: 320px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 8px 32px rgba(184, 134, 11, 0.12);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--border-light);
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1239,41 +1273,48 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border-light);
 }
 
 .companion-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .close-btn {
-  background: var(--bg-tertiary);
-  border: none;
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border: 2px solid var(--border-light);
   color: var(--text-muted);
   cursor: pointer;
   font-size: 14px;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .close-btn:hover {
-  background: var(--border-color);
-  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--border-color), var(--bg-tertiary));
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: scale(1.1);
 }
 
 .companion-message {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(184, 134, 11, 0.05));
-  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.04));
+  border-radius: 18px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid rgba(212, 175, 55, 0.1);
+  border: 2px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .companion-message p {
@@ -1286,27 +1327,30 @@ onBeforeUnmount(() => {
 .companion-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .companion-btn {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+  border: 2px solid var(--border-light);
+  border-radius: 16px;
   text-decoration: none;
   color: var(--text-secondary);
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .companion-btn:hover {
-  background: rgba(212, 175, 55, 0.1);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
+  border-color: rgba(var(--primary-rgb), 0.3);
   color: var(--primary-color);
-  transform: translateX(5px);
+  transform: translateX(6px);
+  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.12);
 }
 
 /* 全局背景：古典云纹纹理 */
@@ -1373,10 +1417,49 @@ body {
     bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px);
     right: 20px;
   }
+
+  .companion-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .companion-icon {
+    font-size: 28px;
+  }
   
   .companion-content {
     width: 280px;
     right: 0;
+    bottom: 75px;
+    padding: 24px;
+  }
+
+  .companion-header {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+  }
+
+  .companion-title {
+    font-size: 15px;
+  }
+
+  .close-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .companion-message {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .companion-actions {
+    gap: 10px;
+  }
+
+  .companion-btn {
+    padding: 12px 14px;
+    font-size: 13px;
   }
   
   .footer {
