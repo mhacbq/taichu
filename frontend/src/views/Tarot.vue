@@ -749,6 +749,18 @@ const loadPoints = async () => {
   await refreshPoints()
 }
 
+// 加载客户端配置
+const loadClientConfig = async () => {
+  try {
+    const response = await getClientConfig()
+    if (response.code === 200) {
+      clientConfig.value = response.data
+    }
+  } catch (error) {
+    console.error('加载客户端配置失败:', error)
+  }
+}
+
 const interpretCurrentCards = async () => {
   const interpretQuestion = getCurrentTarotQuestion()
   const interpretResponse = await interpretTarot({
@@ -907,6 +919,7 @@ const handlePointsUpdated = () => {
 onMounted(() => {
   trackPageView('tarot')
   loadPoints()
+  loadClientConfig()
   window.addEventListener('points-updated', handlePointsUpdated)
 })
 
