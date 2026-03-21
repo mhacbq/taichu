@@ -243,6 +243,36 @@
             </router-link>
           </div>
 
+          <!-- 流年运势 -->
+          <div class="feature-card feature-card--secondary card-hover" data-type="yearly">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">🔮</span>
+            </div>
+            <h3>流年运势</h3>
+            <p>结合个人八字，深度解析全年运势，提供每月吉凶提醒与开运建议</p>
+            <div class="feature-meta">
+              <span class="feature-cost">⚡ 50积分/次</span>
+            </div>
+            <router-link to="/yearly-fortune" class="feature-link feature-link--sm">
+              体验 <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
+
+          <!-- 帮助中心 -->
+          <div class="feature-card feature-card--secondary card-hover" data-type="help">
+            <div class="feature-icon-wrap feature-icon-wrap--sm">
+              <span class="feature-symbol">❓</span>
+            </div>
+            <h3>帮助中心</h3>
+            <p>了解如何使用各项功能，解答常见问题</p>
+            <div class="feature-meta">
+              <span class="feature-cost feature-cost--free">✨ 完全免费</span>
+            </div>
+            <router-link to="/help" class="feature-link feature-link--sm">
+              查看 <el-icon><ArrowRight /></el-icon>
+            </router-link>
+          </div>
+
           <!-- 吉日查询（即将推出） -->
           <div class="feature-card feature-card--coming card-hover" data-type="jiri">
             <div class="feature-icon-wrap feature-icon-wrap--sm">
@@ -1435,6 +1465,20 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+}
+
+/* 平板端：2列布局 */
+@media (max-width: 1024px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 手机端：1列布局 */
+@media (max-width: 640px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 主功能卡片：第一行 3个，更突出 */

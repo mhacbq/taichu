@@ -28,11 +28,8 @@
             <p class="strategy-tip-card__title">智能填写策略</p>
             <p class="strategy-tip-card__desc">先用简化版 + 精确时刻完成一次排盘，再根据结果决定是否进行深挖</p>
           </div>
-          <el-button link type="primary" class="strategy-tip-card__link" @click="baziStrategyExpanded = !baziStrategyExpanded">
-            <el-icon><EditPen /></el-icon> Details
-          </el-button>
         </div>
-        <div v-if="baziStrategyExpanded" class="strategy-summary-card__details">
+        <div class="strategy-summary-card__details">
           <article v-for="item in baziStrategyDetails" :key="item.key" class="strategy-detail-item">
             <strong>{{ item.title }}</strong>
             <p>{{ item.description }}</p>
