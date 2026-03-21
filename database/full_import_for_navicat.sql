@@ -653,6 +653,13 @@ INSERT INTO `tc_system_config` (`key`, `value`, `type`, `group`, `description`, 
 ('marketing.limited_time_offer', 'false', 'bool', 'marketing', '限时优惠', 1, 3),
 ('marketing.limited_time_discount', '20', 'int', 'marketing', '限时优惠折扣(%)', 1, 4)
 ON DUPLICATE KEY UPDATE
+`value` = VALUES(`value`),
+`type` = VALUES(`type`),
+`group` = VALUES(`group`),
+`description` = VALUES(`description`),
+`is_public` = VALUES(`is_public`),
+`sort` = VALUES(`sort`);
+ON DUPLICATE KEY UPDATE
     `value` = VALUES(`value`),
     `type` = VALUES(`type`),
     `group` = VALUES(`group`),

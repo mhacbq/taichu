@@ -86,6 +86,17 @@ SET @sql = IF(
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @sql = IF(
+  EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tc_bazi_record' AND COLUMN_NAME = 'points_used'),
+  'SELECT ''skip points_used''',
+  IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tc_bazi_record' AND COLUMN_NAME = 'is_paid'),
+    'ALTER TABLE `tc_bazi_record` ADD COLUMN `points_used` INT NOT NULL DEFAULT 0 COMMENT ''消耗积分'' AFTER `is_paid`',
+    'ALTER TABLE `tc_bazi_record` ADD COLUMN `points_used` INT NOT NULL DEFAULT 0 COMMENT ''消耗积分'' AFTER `is_first`'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
   EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tc_bazi_record' AND COLUMN_NAME = 'is_public'),
   'SELECT ''skip is_public''',
   IF(

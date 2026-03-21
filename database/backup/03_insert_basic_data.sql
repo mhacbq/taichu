@@ -56,7 +56,14 @@ INSERT INTO `tc_system_config` (`key`, `value`, `type`, `group`, `description`, 
 ('marketing.new_user_discount', 'true', 'bool', 'marketing', '新用户优惠', 1, 1),
 ('marketing.new_user_discount_rate', '50', 'int', 'marketing', '新用户折扣率(%)', 1, 2),
 ('marketing.limited_time_offer', 'false', 'bool', 'marketing', '限时优惠', 1, 3),
-('marketing.limited_time_discount', '20', 'int', 'marketing', '限时优惠折扣(%)', 1, 4);
+('marketing.limited_time_discount', '20', 'int', 'marketing', '限时优惠折扣(%)', 1, 4)
+ON DUPLICATE KEY UPDATE
+`value` = VALUES(`value`),
+`type` = VALUES(`type`),
+`group` = VALUES(`group`),
+`description` = VALUES(`description`),
+`is_public` = VALUES(`is_public`),
+`sort` = VALUES(`sort`);
 
 -- =====================================================
 -- 2. 插入功能开关数据
