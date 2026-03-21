@@ -118,7 +118,7 @@ const frontStyle = computed(() => ({
 }
 
 .tarot-card-component.is-reversed.is-revealed .card-inner {
-  transform: rotateY(180deg) rotate(180deg);
+  transform: rotateY(180deg);
 }
 
 .card-front, .card-back {

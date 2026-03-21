@@ -246,6 +246,58 @@
           <p v-else class="interpretation-placeholder">抽牌完成后，这里会展示与你问题对应的牌面解读。</p>
         </div>
 
+        <!-- AI 深度分析 - 产品亮点功能 -->
+        <div v-if="interpretationState === 'ready'" class="ai-analysis-section card card-hover">
+          <div class="ai-analysis-header">
+            <div class="ai-analysis-title">
+              <el-icon class="ai-icon"><MagicStick /></el-icon>
+              <h3>AI 深度分析</h3>
+            </div>
+            <span class="ai-badge">产品亮点</span>
+          </div>
+          <p class="ai-analysis-desc">基于你的牌阵、问题和个人情况，提供更深入的个性化解读和行动建议。</p>
+          
+          <div v-if="aiAnalysisResult" class="ai-analysis-result">
+            <div class="ai-result-content">{{ aiAnalysisResult }}</div>
+            <el-button @click="performAiAnalysis" :loading="aiAnalysisLoading" type="primary" plain>
+              <el-icon><RefreshRight /></el-icon>
+              重新分析
+            </el-button>
+          </div>
+          
+          <div v-else class="ai-analysis-action">
+            <div class="ai-features">
+              <div class="ai-feature-item">
+                <el-icon><Check /></el-icon>
+                <span>深度解读每张牌的象征意义</span>
+              </div>
+              <div class="ai-feature-item">
+                <el-icon><Check /></el-icon>
+                <span>结合你的问题提供个性化建议</span>
+              </div>
+              <div class="ai-feature-item">
+                <el-icon><Check /></el-icon>
+                <span>分析牌阵的整体能量流动</span>
+              </div>
+              <div class="ai-feature-item">
+                <el-icon><Check /></el-icon>
+                <span>提供具体的行动步骤</span>
+              </div>
+            </div>
+            <el-button 
+              @click="performAiAnalysis" 
+              :loading="aiAnalysisLoading" 
+              type="primary" 
+              size="large"
+              class="ai-analysis-btn"
+            >
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
+              开始 AI 深度分析
+              <span class="ai-cost-badge">{{ aiAnalysisCost }} 积分</span>
+            </el-button>
+          </div>
+        </div>
+
         
         <!-- 操作按钮 -->
         <ResultNextSteps
@@ -308,8 +360,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic, getClientConfig } from '../api'
+import { drawTarot, interpretTarot, aiAnalyzeTarot, getPointsBalance, saveTarotRecord, setTarotPublic, getClientConfig } from '../api'
 import html2canvas from 'html2canvas'
 
 // 客户端配置
@@ -318,6 +371,9 @@ const clientConfig = ref(null)
 // 积分消耗配置（从接口动态获取）
 const tarotCost = computed(() => clientConfig.value?.points?.costs?.tarot || 5)
 
+// 路由实例
+const router = useRouter()
+
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import TarotCard from '../components/TarotCard.vue'
 import ResultNextSteps from '../components/ResultNextSteps.vue'
@@ -325,7 +381,7 @@ import WisdomText from '../components/WisdomText.vue'
 
 import EmptyState from '../components/EmptyState.vue'
 import { trackPageView, trackEvent, trackSubmit, trackError } from '../utils/tracker'
-import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select } from '@element-plus/icons-vue'
+import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select, Check } from '@element-plus/icons-vue'
 
 
 const spreads = [
@@ -400,6 +456,9 @@ const questionGuideExpanded = ref(true)
 const flowError = ref(null)
 const submittedQuestion = ref('')
 const submittedSpread = ref('')
+const aiAnalysisLoading = ref(false)
+const aiAnalysisResult = ref('')
+const aiAnalysisCost = ref(10)
 
 
 const getSpreadName = (spreadType) => {
@@ -782,6 +841,74 @@ const interpretCurrentCards = async () => {
   }
 
   return false
+}
+
+// AI 分析塔罗牌
+const performAiAnalysis = async () => {
+  if (aiAnalysisLoading.value) return
+
+  if (currentPoints.value < aiAnalysisCost.value) {
+    ElMessageBox.confirm(
+      `AI 深度分析需要 ${aiAnalysisCost.value} 积分，当前积分不足，是否前往充值？`,
+      '积分不足',
+      {
+        confirmButtonText: '去充值',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    ).then(() => {
+      router.push('/recharge')
+    }).catch(() => {})
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `AI 深度分析将消耗 ${aiAnalysisCost.value} 积分，为您提供更深入的解读和个性化建议，确认继续吗？`,
+      '确认 AI 分析',
+      {
+        confirmButtonText: '开始分析',
+        cancelButtonText: '取消',
+        type: 'info',
+      }
+    )
+  } catch {
+    return
+  }
+
+  aiAnalysisLoading.value = true
+  try {
+    const response = await aiAnalyzeTarot({
+      cards: cards.value,
+      question: getCurrentTarotQuestion(),
+      spread: getCurrentTarotSpread(),
+      interpretation: interpretation.value,
+    })
+
+    if (response.code === 200) {
+      aiAnalysisResult.value = response.data.analysis
+      ElMessage.success('AI 分析完成')
+      await loadPoints()
+      trackEvent('tarot_ai_analysis_success', {
+        spread: getCurrentTarotSpread(),
+        cards_count: cards.value.length,
+      })
+    } else {
+      ElMessage.error(response.message || 'AI 分析失败')
+      if (response.code === 403) {
+        await loadPoints()
+      }
+      trackError('tarot_ai_analysis_failed', {
+        code: response.code,
+        message: response.message,
+      })
+    }
+  } catch (error) {
+    ElMessage.error('AI 分析请求失败')
+    trackError('tarot_ai_analysis_error', error)
+  } finally {
+    aiAnalysisLoading.value = false
+  }
 }
 
 
@@ -1489,16 +1616,6 @@ const downloadAsImage = async () => {
   mask-composite: exclude;
   pointer-events: none;
   opacity: 1;
-}
-
-.spread-card.active::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 26px;
-  background: transparent;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
-  pointer-events: none;
 }
 
 .spread-card:focus-visible {
@@ -2990,5 +3107,148 @@ const downloadAsImage = async () => {
   .result-actions .el-button {
     width: 100%;
   }
+
+  .ai-analysis-section {
+    padding: 24px 18px;
+  }
+
+  .ai-analysis-btn {
+    width: 100%;
+    flex-direction: column;
+    height: auto;
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .ai-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* AI 深度分析样式 */
+.ai-analysis-section {
+  padding: 28px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 252, 245, 0.95));
+  border: 2px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.ai-analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ai-analysis-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-analysis-title .ai-icon {
+  font-size: 28px;
+  color: var(--primary-color);
+}
+
+.ai-analysis-title h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ai-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.ai-analysis-desc {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.ai-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ai-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(var(--primary-rgb), 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.ai-feature-item .el-icon {
+  color: var(--primary-color);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.ai-feature-item span {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.ai-analysis-btn {
+  width: 100%;
+  height: 52px;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  border: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ai-analysis-btn .btn-icon {
+  font-size: 20px;
+}
+
+.ai-cost-badge {
+  position: absolute;
+  right: 16px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ai-analysis-result {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
+}
+
+.ai-result-content {
+  margin-bottom: 16px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.ai-analysis-result .el-button {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
 }
 </style>

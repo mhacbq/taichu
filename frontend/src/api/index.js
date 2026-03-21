@@ -108,6 +108,7 @@ export const exportHehunReport = (data) => request.post('/hehun/export', data)
 // ====== 塔罗占卜 API ======
 export const drawTarot = (data) => request.post('/tarot/draw', data)
 export const interpretTarot = (data) => request.post('/tarot/interpret', data)
+export const aiAnalyzeTarot = (data) => request.post('/tarot/ai-analysis', data)
 export const saveTarotRecord = (data) => request.post('/tarot/save-record', data)
 export const getTarotHistory = (params) => request.get('/tarot/history', { params })
 export const getTarotDetail = (params) => request.get('/tarot/detail', { params })
