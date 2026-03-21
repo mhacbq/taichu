@@ -368,12 +368,12 @@ const getAiAnalysis = async () => {
 
 <style scoped>
 .yearly-fortune-page {
-  min-height: 100vh;
+  min-height: 100vh;max-width: 960px;margin: auto;
   padding: 20px 0;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 960px;
   margin: 0 auto;
 }
 

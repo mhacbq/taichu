@@ -522,7 +522,7 @@ class Tarot extends BaseController
         $orientationFocus = $this->getOrientationRelatableText($card, $positionName);
         $elementText = $this->getElementRelatableDescription($element);
 
-        return $this->normalizeTarotText("{$lead}{$orientationFocus}{$meaning}。{$elementText}回到你问的"{$question}"，{$advice}。");
+        return $this->normalizeTarotText("{$lead}{$orientationFocus}{$meaning}。{$elementText}回到你问的「{$question}」，{$advice}。");
     }
 
     protected function getOrientationRelatableText(array $card, string $positionName): string

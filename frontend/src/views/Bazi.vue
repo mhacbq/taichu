@@ -71,8 +71,17 @@
         </div>
 
         <div class="form-row">
-          <div class="form-group form-group--time form-group--half" data-bazi-field="birth-time">
-            <label>出生日期与时间</label>
+          <div class="form-group form-group--time form-group--combined" data-bazi-field="birth-time">
+            <div class="form-group__header form-group__header--combined">
+              <label class="form-group__title">出生日期与时间</label>
+              <div class="inline-gender-field" data-bazi-field="gender">
+                <span class="inline-gender-field__label">性别 <span class="required-mark">*</span></span>
+                <el-radio-group v-model="gender" size="small" class="inline-gender-field__group">
+                  <el-radio-button label="male">男</el-radio-button>
+                  <el-radio-button label="female">女</el-radio-button>
+                </el-radio-group>
+              </div>
+            </div>
 
             <!-- 历法类型切换 -->
             <div class="calendar-type-switch">
@@ -194,14 +203,6 @@
 
         </div>
         
-        <div class="form-group form-group--half" data-bazi-field="gender">
-          <label>性别 <span class="required-mark">*</span></label>
-          <el-radio-group v-model="gender">
-            <el-radio label="male">男</el-radio>
-            <el-radio label="female">女</el-radio>
-          </el-radio-group>
-        </div>
-        
         <div class="form-group" data-bazi-field="location">
           <label>
             出生地点 <span class="required-mark">*</span>
@@ -298,6 +299,7 @@
         </div>
       </div>
 
+      </div>
       <!-- 确认对话框 -->
       <el-dialog
         v-model="confirmVisible"
@@ -3596,6 +3598,29 @@ const formatAiContent = (content) => {
     grid-template-columns: 1fr;
     gap: 20px;
   }
+
+  .form-group__header--combined {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inline-gender-field {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  :deep(.inline-gender-field__group) {
+    width: 100%;
+    display: flex;
+  }
+
+  :deep(.inline-gender-field__group .el-radio-button) {
+    flex: 1;
+  }
+
+  :deep(.inline-gender-field__group .el-radio-button__inner) {
+    width: 100%;
+  }
 }
 
 .form-group {
@@ -3614,8 +3639,68 @@ const formatAiContent = (content) => {
   margin-bottom: 34px;
 }
 
+.form-group--combined {
+  grid-column: 1 / -1;
+}
+
 .form-group--half {
   margin-bottom: 30px;
+}
+
+.form-group__header--combined {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.form-group .form-group__title {
+  margin-bottom: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.inline-gender-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.inline-gender-field__label {
+  color: var(--text-secondary);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+:deep(.inline-gender-field__group) {
+  display: inline-flex;
+}
+
+:deep(.inline-gender-field__group .el-radio-button__inner) {
+  min-width: 52px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.14) !important;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-secondary);
+  box-shadow: none !important;
+}
+
+:deep(.inline-gender-field__group .el-radio-button:first-child .el-radio-button__inner),
+:deep(.inline-gender-field__group .el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 999px !important;
+}
+
+:deep(.inline-gender-field__group .el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.18));
+  border-color: rgba(var(--primary-rgb), 0.24) !important;
+  color: var(--text-primary);
+  box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.12) !important;
 }
 
 .form-group__header--time {

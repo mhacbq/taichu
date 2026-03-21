@@ -11,7 +11,7 @@ import request from './request'
  */
 export function getHomeContent() {
   return request({
-    url: '/api/site/home',
+    url: '/site/home',
     method: 'get'
   })
 }
@@ -22,7 +22,7 @@ export function getHomeContent() {
  */
 export function getPageContent(page) {
   return request({
-    url: '/api/site/page',
+    url: '/site/page',
     method: 'get',
     params: { page }
   })
@@ -33,7 +33,7 @@ export function getPageContent(page) {
  */
 export function getTestimonials() {
   return request({
-    url: '/api/site/testimonials',
+    url: '/site/testimonials',
     method: 'get'
   })
 }
@@ -43,7 +43,7 @@ export function getTestimonials() {
  */
 export function getFaqs(category) {
   return request({
-    url: '/api/site/faqs',
+    url: '/site/faqs',
     method: 'get',
     params: { category }
   })
@@ -54,7 +54,7 @@ export function getFaqs(category) {
  */
 export function getSpreads() {
   return request({
-    url: '/api/site/spreads',
+    url: '/site/spreads',
     method: 'get'
   })
 }
@@ -64,7 +64,7 @@ export function getSpreads() {
  */
 export function getQuestions(category) {
   return request({
-    url: '/api/site/questions',
+    url: '/site/questions',
     method: 'get',
     params: { category }
   })
@@ -75,7 +75,7 @@ export function getQuestions(category) {
  */
 export function getEnums() {
   return request({
-    url: '/api/site/enums',
+    url: '/site/enums',
     method: 'get'
   })
 }

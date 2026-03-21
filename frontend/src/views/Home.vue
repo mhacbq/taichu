@@ -12,12 +12,10 @@
             <router-link to="/bazi" class="btn-primary">
               <el-icon class="btn-icon"><Calendar /></el-icon>
               八字排盘
-              <span v-if="!isLoggedIn" class="btn-badge btn-badge--free">首测免费</span>
             </router-link>
             <router-link to="/tarot" class="btn-secondary">
               <el-icon class="btn-icon"><Star /></el-icon>
               塔罗占卜
-              <span class="btn-badge btn-badge--free">5积分/次</span>
             </router-link>
           </div>
 
@@ -132,9 +130,9 @@
         <!-- 时效性引流位：年度运程 -->
         <div class="yearly-banner card-hover" @click="$router.push('/yearly-fortune')">
           <div class="yearly-banner-content">
-            <div class="yearly-banner-badge">2026 丙午年</div>
-            <h3 class="yearly-banner-title">2026 流年运势深度解析</h3>
-            <p class="yearly-banner-desc">提前布局，把握先机。结合个人八字，AI深度解析事业、财富、感情、健康四大运势，提供专属开运建议与每月吉凶提醒。</p>
+            <div class="yearly-banner-badge">{{ yearlyBannerBadge }}</div>
+            <h3 class="yearly-banner-title">{{ yearlyBannerTitle }}</h3>
+            <p class="yearly-banner-desc">提前布局，把握先机。结合个人八字，AI 深度解析 {{ currentYear }} 年的事业、财富、感情、健康四大运势，提供专属开运建议与每月吉凶提醒。</p>
             <div class="yearly-banner-action">
               <router-link to="/yearly-fortune" class="yearly-banner-btn">
                 立即测算 <el-icon><ArrowRight /></el-icon>
@@ -154,9 +152,6 @@
             </div>
             <h3>八字排盘</h3>
             <p>基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考</p>
-            <div class="feature-meta">
-              <span class="feature-cost">⚡ 5积分/次</span>
-            </div>
             <router-link to="/bazi" class="feature-link">
               立即测算 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -167,9 +162,6 @@
             </div>
             <h3>塔罗占卜</h3>
             <p>通过牌阵与问题模板梳理关系、工作与决策困惑，获得更聚焦的思路</p>
-            <div class="feature-meta">
-              <span class="feature-cost">⚡ 5积分/次</span>
-            </div>
             <router-link to="/tarot" class="feature-link">
               立即测算 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -180,9 +172,6 @@
             </div>
             <h3>每日运势</h3>
             <p>查看今日宜忌、幸运提示与节奏建议，作为轻量的日常状态参考</p>
-            <div class="feature-meta">
-              <span class="feature-cost feature-cost--free">✨ 完全免费</span>
-            </div>
             <router-link to="/daily" class="feature-link">
               立即查看 <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -190,14 +179,11 @@
 
           <!-- 次要功能 6个 -->
           <div class="feature-card feature-card--secondary card-hover" data-type="liuyao">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">☰</span>
             </div>
             <h3>六爻占卜</h3>
             <p>传统周易六爻问事，为您解答工作、感情、决策等各类疑惑</p>
-            <div class="feature-meta">
-              <span class="feature-cost">⚡ 3积分/次</span>
-            </div>
             <div style="text-align: center; margin-top: 16px;">
               <router-link to="/liuyao" class="feature-link feature-link--sm">
                 立即测算 <el-icon><ArrowRight /></el-icon>
@@ -205,14 +191,11 @@
             </div>
           </div>
           <div class="feature-card feature-card--secondary card-hover" data-type="hehun">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">◎</span>
             </div>
             <h3>八字合婚</h3>
             <p>通过双方八字分析婚姻匹配度，了解缘分深浅与相处之道</p>
-            <div class="feature-meta">
-              <span class="feature-cost">⚡ 5积分/次</span>
-            </div>
             <div style="text-align: center; margin-top: 16px;">
               <router-link to="/hehun" class="feature-link feature-link--sm">
                 立即测算 <el-icon><ArrowRight /></el-icon>
@@ -220,14 +203,11 @@
             </div>
           </div>
           <div class="feature-card feature-card--secondary card-hover" data-type="profile">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">★</span>
             </div>
             <h3>个人中心</h3>
             <p>查看历史记录、每日签到领积分，管理你的命理体验进度</p>
-            <div class="feature-meta">
-              <span class="feature-cost feature-cost--free">📅 签到领积分</span>
-            </div>
             <div style="text-align: center; margin-top: 16px;">
               <router-link to="/profile" class="feature-link feature-link--sm">
                 进入个人中心 <el-icon><ArrowRight /></el-icon>
@@ -237,14 +217,11 @@
 
           <!-- 取名建议 -->
           <div class="feature-card feature-card--secondary card-hover" data-type="qiming">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">✍️</span>
             </div>
             <h3>取名建议</h3>
             <p>结合生辰八字与五行，由AI为新生儿推荐寓意美好的名字</p>
-            <div class="feature-meta">
-              <span class="feature-cost">⚡ 100积分/次</span>
-            </div>
             <div style="text-align: center; margin-top: 16px;">
               <router-link to="/qiming" class="feature-link feature-link--sm">
                 立即测算 <el-icon><ArrowRight /></el-icon>
@@ -254,14 +231,11 @@
 
           <!-- 流年运势 -->
           <div class="feature-card feature-card--secondary card-hover" data-type="yearly">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">🔮</span>
             </div>
             <h3>流年运势</h3>
             <p>结合个人八字，深度解析全年运势，提供每月吉凶提醒与开运建议</p>
-            <div class="feature-meta">
-              <span class="feature-cost">⚡ 50积分/次</span>
-            </div>
             <div style="text-align: center; margin-top: 16px;">
               <router-link to="/yearly-fortune" class="feature-link feature-link--sm">
                 立即测算 <el-icon><ArrowRight /></el-icon>
@@ -271,14 +245,11 @@
 
           <!-- 帮助中心 -->
           <div class="feature-card feature-card--secondary card-hover" data-type="help">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">❓</span>
             </div>
             <h3>帮助中心</h3>
             <p>了解如何使用各项功能，解答常见问题</p>
-            <div class="feature-meta">
-              <span class="feature-cost feature-cost--free">✨ 完全免费</span>
-            </div>
             <div style="text-align: center; margin-top: 16px;">
               <router-link to="/help" class="feature-link feature-link--sm">
                 立即查看 <el-icon><ArrowRight /></el-icon>
@@ -288,15 +259,12 @@
 
           <!-- 吉日查询（即将推出） -->
           <div class="feature-card feature-card--coming card-hover" data-type="jiri">
-            <div class="feature-icon-wrap feature-icon-wrap--sm">
+            <div class="feature-icon-wrap">
               <span class="feature-symbol">📅</span>
             </div>
             <div class="coming-badge">即将推出</div>
             <h3>吉日查询</h3>
             <p>结婚、开业、搬家……根据黄历与个人八字，挑选最宜之日</p>
-            <div class="feature-meta">
-              <span class="feature-cost">📆 择日黄历</span>
-            </div>
             <el-button type="primary" plain size="small" class="feature-link feature-link--sm" @click="handleReserve('jiri')">
               感兴趣？点击预约
             </el-button>
@@ -322,7 +290,6 @@
                 <span class="testimonial-scene-label">适用场景</span>
                 <h4>{{ item.persona }}</h4>
               </div>
-              <span class="testimonial-note">{{ item.note }}</span>
             </div>
             <p class="testimonial-content">{{ item.content }}</p>
             <div class="testimonial-footer">
@@ -397,6 +364,36 @@ const createFallbackStats = (caption = '数据更新中') => [
 
 const hasDisplayValue = (value) => value !== undefined && value !== null && `${value}`.trim() !== ''
 
+const extractPointsBalance = (payload = {}) => {
+  const source = payload && typeof payload === 'object' ? payload : {}
+  const candidates = [
+    source.balance,
+    source.points,
+    source.remaining_points,
+    source.available_points,
+    source.current_points,
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = Number(candidate)
+    if (Number.isFinite(normalized)) {
+      return normalized
+    }
+  }
+
+  return null
+}
+
+const getStoredPoints = () => {
+  try {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null')
+    const normalized = Number(userInfo?.points)
+    return Number.isFinite(normalized) ? normalized : null
+  } catch {
+    return null
+  }
+}
+
 const formatDisplayValue = (value) => {
   if (!hasDisplayValue(value)) {
     return '--'
@@ -461,116 +458,11 @@ const baziOfferState = computed(() => {
   return isFirstBaziEligible.value ? 'free' : 'priced'
 })
 
-const heroPrimaryBadge = computed(() => {
-  if (baziOfferState.value === 'guest') {
-    return {
-      text: '登录后首测免费',
-      className: 'btn-badge--free'
-    }
-  }
-
-  if (baziOfferState.value === 'free') {
-    return {
-      text: '首测免费',
-      className: 'btn-badge--free'
-    }
-  }
-
-  if (baziOfferState.value === 'priced') {
-    return {
-      text: '查看当前价格',
-      className: 'btn-badge--pricing'
-    }
-  }
-
-  return {
-    text: '权益确认中',
-    className: 'btn-badge--muted'
-  }
-})
-
-const baziFeatureBadge = computed(() => {
-  if (baziOfferState.value === 'guest') {
-    return {
-      text: '登录后首测免费',
-      className: 'feature-note--free'
-    }
-  }
-
-  if (baziOfferState.value === 'free') {
-    return {
-      text: '首测免费',
-      className: 'feature-note--free'
-    }
-  }
-
-  if (baziOfferState.value === 'priced') {
-    return {
-      text: '查看当前价格',
-      className: 'feature-note--price'
-    }
-  }
-
-  return {
-    text: '权益确认中',
-    className: 'feature-note--muted'
-  }
-})
-
-const baziAccessDetail = computed(() => {
-  if (baziOfferState.value === 'guest') {
-    return '登录后可保存体验进度，并确认你是否还保留八字首测免费资格。'
-  }
-
-  if (baziOfferState.value === 'free') {
-    return '八字、塔罗、六爻与合婚现在都能直接进入，你的八字首测资格也还在。'
-  }
-
-  if (baziOfferState.value === 'priced') {
-    return '八字、塔罗、六爻与合婚现在都能直接进入；八字首测资格已使用，可直接查看当前价格。'
-  }
-
-  return '八字、塔罗、六爻与合婚现在都能直接进入，八字权益正在同步。'
-})
-
-const heroHintText = computed(() => {
-  if (statsLoading.value) {
-    return '站内数据正在同步中，请稍候'
-  }
-
-  if (statsError.value) {
-    return '统计数据暂时不可用，先体验核心功能也不耽误'
-  }
-
-  if (hasDisplayValue(userCount.value)) {
-    return `已有 ${formatDisplayValue(userCount.value)} 位用户在这里找到答案`
-  }
-
-  return '站内数据每日更新，欢迎先体验核心功能'
-})
-
 const formattedUserPoints = computed(() => formatDisplayValue(userPoints.value))
 const registerIntentRoute = { path: '/login', query: { intent: 'register' } }
-
-const heroPointsDetail = computed(() => {
-  if (!isLoggedIn.value) {
-    return '登录后可领取 100 积分，用更轻量的方式开始第一次体验。'
-  }
-
-  if (!hasDisplayValue(userPoints.value)) {
-    return '积分正在同步中，也可以先去个人中心确认今日签到状态。'
-  }
-
-  if (baziOfferState.value === 'free') {
-    return `当前可用 ${formattedUserPoints.value} 积分，你的八字首测资格仍在，适合先从一次免费排盘开始。`
-  }
-
-  if (baziOfferState.value === 'priced') {
-    return `当前可用 ${formattedUserPoints.value} 积分，八字首测资格已使用，可先查看当前价格再决定是否继续深入解读。`
-  }
-
-  return `当前可用 ${formattedUserPoints.value} 积分，可继续用于排盘、占卜与后续深入解读。`
-})
+const currentYear = new Date().getFullYear()
+const yearlyBannerBadge = computed(() => `${currentYear} 年度运势`)
+const yearlyBannerTitle = computed(() => `${currentYear} 流年运势深度解析`)
 
 const heroPointsCardNote = computed(() => {
   if (!isLoggedIn.value) {
@@ -856,7 +748,7 @@ const loadUserPoints = async () => {
   try {
     const response = await getPointsBalance()
     if (response.code === 200) {
-      userPoints.value = response.data.balance
+      userPoints.value = extractPointsBalance(response.data) ?? getStoredPoints()
       isFirstBaziEligible.value = resolveFirstBaziFlag(response.data?.first_bazi)
     } else {
       userPoints.value = null
@@ -1058,63 +950,6 @@ onUnmounted(() => {
   font-size: 18px;
 }
 
-.btn-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: var(--weight-semibold);
-  margin-left: 6px;
-  line-height: 1;
-}
-
-.btn-badge--login {
-  background: rgba(0, 0, 0, 0.08);
-  color: currentColor;
-}
-
-.btn-badge--free {
-  background: var(--success-gradient);
-  color: var(--text-inverse);
-}
-
-.btn-badge--pricing {
-  background: rgba(245, 158, 11, 0.16);
-  border: 1px solid rgba(245, 158, 11, 0.22);
-  color: #f59e0b;
-}
-
-.btn-badge--muted {
-  background: rgba(148, 163, 184, 0.18);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: var(--text-secondary);
-}
-
-.btn-badge--outline {
-  background: rgba(var(--primary-rgb), 0.12);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
-  color: var(--primary-color);
-}
-
-
-.hero-hint {
-  color: #6b6254;
-  font-size: var(--font-small);
-  margin-top: 20px;
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  line-height: var(--line-height-base);
-}
-
-.hero-hint--muted {
-  color: #7c7264;
-}
-
 /* 积分说明条 */
 .hero-points-strip {
   display: flex;
@@ -1155,8 +990,9 @@ onUnmounted(() => {
   border: 1px solid rgba(227, 184, 104, 0.34);
   box-shadow: 0 12px 26px rgba(132, 96, 35, 0.08);
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
 }
 
 .hero-highlights--muted .hero-highlight {
@@ -1181,6 +1017,10 @@ onUnmounted(() => {
 .hero-benefit-copy {
   display: grid;
   gap: 4px;
+}
+
+.hero-highlight-copy {
+  text-align: left;
 }
 
 .hero-highlight-copy strong,
@@ -1638,34 +1478,6 @@ onUnmounted(() => {
   margin-bottom: 16px;
 }
 
-/* 积分/权限信息行 */
-.feature-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.feature-cost {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(184, 134, 11, 0.1);
-  border: 1px solid rgba(184, 134, 11, 0.18);
-  color: #9b6a20;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.feature-cost--free {
-  background: rgba(76, 175, 130, 0.12);
-  border-color: rgba(76, 175, 130, 0.2);
-  color: rgba(76, 175, 130, 0.9);
-}
-
 .feature-link {
   display: inline-flex;
   align-items: center;
@@ -1685,24 +1497,6 @@ onUnmounted(() => {
 .feature-link:hover {
   gap: 10px;
   opacity: 0.85;
-}
-
-.feature-note--free {
-  background: rgba(103, 194, 58, 0.14);
-  border-color: rgba(103, 194, 58, 0.18);
-  color: var(--success-color);
-}
-
-.feature-note--price {
-  background: rgba(230, 162, 60, 0.12);
-  border-color: rgba(230, 162, 60, 0.2);
-  color: var(--warning-color);
-}
-
-.feature-note--muted {
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.18);
-  color: var(--text-secondary);
 }
 
 
@@ -1980,7 +1774,7 @@ onUnmounted(() => {
 
 .testimonial-card {
   height: 100%;
-  padding: 28px;
+  padding:10px 28px 28px 28px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1998,7 +1792,7 @@ onUnmounted(() => {
 
 .testimonial-topline {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
@@ -2061,17 +1855,6 @@ onUnmounted(() => {
   color: var(--text-primary);
   font-size: var(--font-caption);
   font-weight: var(--weight-medium);
-}
-
-.testimonial-note {
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(227, 184, 104, 0.3);
-  color: #7a6e5b;
-  font-size: var(--font-tiny);
-  white-space: nowrap;
 }
 
 .testimonial-service-copy {
@@ -2185,9 +1968,6 @@ onUnmounted(() => {
     min-width: 0;
   }
 
-  .hero-hint {
-    justify-content: center;
-  }
 
   .hero-highlights,
   .hero-access-list {
@@ -2416,6 +2196,8 @@ onUnmounted(() => {
   z-index: 2;
   max-width: 600px;
   color: #fff;
+  display: flex;
+  flex-direction: column;
 }
 
 .yearly-banner-badge {
@@ -2454,6 +2236,7 @@ onUnmounted(() => {
   border-radius: 999px;
   font-weight: 600;
   font-size: 15px;
+  text-decoration: none;
   transition: all 0.3s ease;
 }
 

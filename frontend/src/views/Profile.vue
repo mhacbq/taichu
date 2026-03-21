@@ -243,7 +243,7 @@
           </div>
 
           <!-- 反馈建议 -->
-          <div class="main-card feedback-card card-hover">
+          <div id="feedback-card" class="main-card feedback-card card-hover">
             <h3>反馈建议</h3>
             <div v-if="feedbackEnabled" class="feedback-form">
               <el-input
@@ -288,11 +288,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig } from '../api'
 import { useTourGuide } from '../composables/useTourGuide'
-import { formatTime, formatDate, formatDateTime } from '../utils/format'
+import { formatTime, formatDate } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
 import AsyncState from '../components/AsyncState.vue'
-import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, Check, ArrowDown } from '@element-plus/icons-vue'
+import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, ArrowRight } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -853,7 +853,7 @@ onUnmounted(() => {
 
 /* 新布局 */
 .profile-layout {
-  max-width: 1200px;
+  max-width: 960px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 320px 1fr;

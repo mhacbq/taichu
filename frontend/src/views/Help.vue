@@ -3,15 +3,15 @@
     <div class="container">
       <div class="page-header">
         <BackButton />
-        <h1 class="section-title">帮助中心</h1>
+        <h1 class="section-title">{{ helpPageTitle }}</h1>
       </div>
 
       <!-- 搜索区域 -->
       <div class="search-section card">
-        <h2><el-icon><Search /></el-icon> 有问题？我们来帮您</h2>
+        <h2><el-icon><Search /></el-icon> {{ helpSearchTitle }}</h2>
         <el-input
           v-model="searchQuery"
-          placeholder="搜索问题关键词..."
+          :placeholder="helpSearchPlaceholder"
           size="large"
           clearable
           class="search-input"
@@ -83,27 +83,17 @@
 
       <!-- 联系客服 -->
       <div class="contact-section card">
-        <h3><el-icon><Phone /></el-icon> 还有其他问题？</h3>
-        <p>如果以上问题没有解答您的疑问，欢迎联系我们</p>
+        <h3><el-icon><Phone /></el-icon> {{ helpContactTitle }}</h3>
+        <p>{{ helpContactDesc }}</p>
         <div class="contact-methods">
-          <div class="contact-item">
-            <span class="contact-icon"><el-icon><ChatDotRound /></el-icon></span>
-            <span class="contact-label">在线客服</span>
-            <span class="contact-value">工作日 9:00-18:00</span>
-          </div>
-          <div class="contact-item">
-            <span class="contact-icon"><el-icon><Message /></el-icon></span>
-            <span class="contact-label">邮箱</span>
-            <span class="contact-value">support@taichu.com</span>
-          </div>
-          <div class="contact-item">
-            <span class="contact-icon"><el-icon><ChatDotRound /></el-icon></span>
-            <span class="contact-label">微信公众号</span>
-            <span class="contact-value">太初命理</span>
+          <div v-for="item in contactMethods" :key="item.label" class="contact-item">
+            <span class="contact-icon"><el-icon><component :is="item.icon" /></el-icon></span>
+            <span class="contact-label">{{ item.label }}</span>
+            <span class="contact-value">{{ item.value }}</span>
           </div>
         </div>
         <el-button type="primary" size="large" @click="goToFeedback">
-          提交反馈
+          {{ helpFeedbackButtonText }}
         </el-button>
       </div>
 
@@ -140,18 +130,78 @@ import { ElMessage } from 'element-plus'
 import BackButton from '../components/BackButton.vue'
 import AsyncState from '../components/AsyncState.vue'
 import { ArrowDown, Search, Phone, ChatDotRound, Message, MagicStick, StarFilled, UserFilled, Coin, Lock } from '@element-plus/icons-vue'
-import { getFaqs } from '../api/siteContent'
+import { getFaqs, getPageContent } from '../api/siteContent'
 
 const router = useRouter()
 const searchQuery = ref('')
 const activeNames = ref([0, 1, 2])
 const faqData = ref([])
+const pageContent = ref({})
 const searchSuggestions = ref([])
 const faqStatus = ref('loading')
 const faqError = ref(null)
 
-// 热门搜索标签
-const hotTags = ['积分', '八字', '登录', '塔罗', '充值']
+const defaultHelpContent = {
+  pageTitle: '帮助中心',
+  searchTitle: '有问题？我们来帮您',
+  searchPlaceholder: '搜索问题关键词...',
+  hotTags: ['积分', '八字', '登录', '塔罗', '充值'],
+  contactTitle: '还有其他问题？',
+  contactDesc: '如果以上问题没有解答您的疑问，欢迎联系我们',
+  serviceLabel: '在线客服',
+  serviceValue: '工作日 9:00-18:00',
+  emailLabel: '邮箱',
+  emailValue: 'support@taichu.com',
+  wechatLabel: '微信公众号',
+  wechatValue: '太初命理',
+  feedbackButtonText: '提交反馈',
+}
+
+const parseContentArray = (value, fallback = []) => {
+  if (!value) {
+    return fallback
+  }
+
+  if (Array.isArray(value)) {
+    return value.filter(Boolean)
+  }
+
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return fallback
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => `${item}`.trim()).filter(Boolean)
+    }
+  } catch {
+    // noop
+  }
+
+  return trimmed
+    .split(/[\n,，、]/)
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
+const getContentValue = (key, fallback) => {
+  const value = pageContent.value?.[key]
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+const helpPageTitle = computed(() => getContentValue('page_title', defaultHelpContent.pageTitle))
+const helpSearchTitle = computed(() => getContentValue('search_title', defaultHelpContent.searchTitle))
+const helpSearchPlaceholder = computed(() => getContentValue('search_placeholder', defaultHelpContent.searchPlaceholder))
+const hotTags = computed(() => parseContentArray(pageContent.value?.hot_tags, defaultHelpContent.hotTags))
+const helpContactTitle = computed(() => getContentValue('contact_title', defaultHelpContent.contactTitle))
+const helpContactDesc = computed(() => getContentValue('contact_desc', defaultHelpContent.contactDesc))
+const helpFeedbackButtonText = computed(() => getContentValue('feedback_button_text', defaultHelpContent.feedbackButtonText))
 
 // 分类映射
 const categoryMap = {
@@ -164,11 +214,40 @@ const categoryMap = {
 
 // 分类图标映射
 const categoryIcons = {
-  'general': 'StarFilled',
-  'bazi': 'Coin',
-  'tarot': 'MagicStick',
-  'account': 'UserFilled',
-  'points': 'Lock'
+  'general': StarFilled,
+  'bazi': Coin,
+  'tarot': MagicStick,
+  'account': UserFilled,
+  'points': Lock
+}
+
+const contactMethods = computed(() => ([
+  {
+    icon: ChatDotRound,
+    label: getContentValue('contact_service_label', defaultHelpContent.serviceLabel),
+    value: getContentValue('contact_service_value', defaultHelpContent.serviceValue),
+  },
+  {
+    icon: Message,
+    label: getContentValue('contact_email_label', defaultHelpContent.emailLabel),
+    value: getContentValue('contact_email_value', defaultHelpContent.emailValue),
+  },
+  {
+    icon: ChatDotRound,
+    label: getContentValue('contact_wechat_label', defaultHelpContent.wechatLabel),
+    value: getContentValue('contact_wechat_value', defaultHelpContent.wechatValue),
+  }
+]))
+
+const loadHelpContent = async () => {
+  try {
+    const response = await getPageContent('help')
+    if (response.code === 200) {
+      pageContent.value = response.data || {}
+    }
+  } catch (error) {
+    pageContent.value = {}
+  }
 }
 
 // 加载FAQ数据
@@ -197,11 +276,9 @@ const loadFaqs = async () => {
 // 处理搜索输入
 const handleSearchInput = () => {
   if (searchQuery.value.length > 1) {
-    // 显示搜索建议
-    const suggestions = faqData.value.filter(item => 
+    searchSuggestions.value = faqData.value.filter(item =>
       item.question.toLowerCase().includes(searchQuery.value.toLowerCase())
     ).slice(0, 5)
-    searchSuggestions.value = suggestions
   } else {
     searchSuggestions.value = []
   }
@@ -238,7 +315,7 @@ const groupedFaqs = computed(() => {
 
 // 处理后的分类数据
 const categories = computed(() => {
-  return Object.keys(groupedFaqs.value).map((category, index) => ({
+  return Object.keys(groupedFaqs.value).map((category) => ({
     title: categoryMap[category] || category,
     icon: categoryIcons[category],
     items: groupedFaqs.value[category]
@@ -268,11 +345,12 @@ const toggleQuestion = (item) => {
 }
 
 const goToFeedback = () => {
-  router.push('/profile')
+  router.push({ path: '/profile', hash: '#feedback-card' })
 }
 
 // 页面加载时获取数据
 onMounted(() => {
+  loadHelpContent()
   loadFaqs()
 })
 </script>

@@ -73,7 +73,7 @@
 
 .skeleton-content {
   padding: 60px 40px;
-  max-width: 1200px;
+  max-width: 960px;
   margin: 0 auto;
 }
 

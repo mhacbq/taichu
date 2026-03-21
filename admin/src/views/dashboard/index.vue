@@ -49,16 +49,15 @@
           </div>
         </template>
         <div class="quick-actions-grid">
-          <button
+          <div
             v-for="item in quickActions"
             :key="item.title"
-            type="button"
             class="quick-action-item"
             @click="goTo(item.path)"
           >
             <div class="quick-action-title">{{ item.title }}</div>
             <div class="quick-action-desc">{{ item.description }}</div>
-          </button>
+          </div>
         </div>
       </el-card>
 
@@ -598,7 +597,15 @@ function formatTrendText(item) {
 }
 
 function goTo(path) {
-  router.push(path)
+  const target = router.resolve(path)
+
+  if (!target.matched.length) {
+    ElMessage.warning(`未找到页面：${path}`)
+    return
+  }
+
+  const url = new URL(target.href, window.location.origin).toString()
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function handleFeedback(row) {

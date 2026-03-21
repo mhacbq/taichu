@@ -10,12 +10,8 @@
         <!-- 桌面端导航 -->
         <div class="nav-links desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/bazi" class="nav-link">
-            八字排盘<span class="nav-cost">5积分</span>
-          </router-link>
-          <router-link to="/tarot" class="nav-link">
-            塔罗占卜<span class="nav-cost">5积分</span>
-          </router-link>
+          <router-link to="/bazi" class="nav-link">八字排盘</router-link>
+          <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
           <router-link to="/daily" class="nav-link">每日运势<span class="nav-free">免费</span></router-link>
           <!-- 更多服务下拉 -->
           <el-dropdown trigger="hover" placement="bottom-start">
@@ -223,8 +219,7 @@
             <router-link to="/profile">个人中心</router-link>
             <router-link to="/legal/privacy">隐私政策</router-link>
             <router-link to="/legal/agreement">用户协议</router-link>
-            <a href="#" @click.prevent="showFeedback">意见反馈</a>
-            <a href="#" @click.prevent="showAbout">关于我们</a>
+            <router-link :to="feedbackRoute">意见反馈</router-link>
           </div>
           <div class="footer-divider"></div>
           <p class="footer-copyright">© 2025 太初命理 - 愿你在迷茫中找到方向</p>
@@ -558,14 +553,9 @@ const handleLogout = () => {
 }
 
 
-// 显示反馈
-const showFeedback = () => {
-  router.push('/profile')
-}
-
-// 显示关于我们
-const showAbout = () => {
-  ElMessage.info('关于我们页面开发中')
+const feedbackRoute = {
+  path: '/profile',
+  hash: '#feedback-card'
 }
 
 watch(showMobileMenu, (visible) => {
@@ -1551,17 +1541,6 @@ body {
   text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
-/* 导航积分提示标签 */
-.nav-cost {
-  font-size: 10px;
-  background: rgba(184, 134, 11, 0.18);
-  color: rgba(212, 175, 55, 0.7);
-  padding: 1px 5px;
-  border-radius: 4px;
-  border: 1px solid rgba(184, 134, 11, 0.2);
-  white-space: nowrap;
-  margin-left: 2px;
-}
 
 .nav-free {
   font-size: 10px;

@@ -720,7 +720,7 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 960px) {
   .stats-overview {
     grid-template-columns: repeat(2, 1fr);
   }

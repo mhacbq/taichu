@@ -287,6 +287,7 @@ class SiteContent extends BaseController
         $limit = $request->param('limit', 10);
         $category = $request->param('category');
         $isEnabled = $request->param('is_enabled');
+        $enabledColumn = Faq::getEnabledColumn();
         
         $query = Faq::order('sort_order', 'asc');
         
@@ -294,11 +295,11 @@ class SiteContent extends BaseController
             $query->where('category', $category);
         }
         if ($isEnabled !== null && $isEnabled !== '') {
-            $query->where('is_enabled', $isEnabled);
+            $query->where($enabledColumn, $isEnabled);
         }
         
         $total = $query->count();
-        $list = $query->page($page, $limit)->select();
+        $list = Faq::normalizeList($query->page($page, $limit)->select()->toArray());
         
         return $this->success([
             'list' => $list,
@@ -323,10 +324,10 @@ class SiteContent extends BaseController
     public function saveFaq(Request $request)
     {
         $id = $request->param('id/d', 0) ?: null;
-        $data = $request->only([
+        $data = Faq::mapStatusPayload($request->only([
             'category', 'question', 'answer',
             'sort_order', 'is_enabled'
-        ]);
+        ]));
         
         try {
             $response = $this->saveManagedRecord(
