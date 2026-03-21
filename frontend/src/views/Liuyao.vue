@@ -54,8 +54,15 @@
               <el-icon><MagicStick /></el-icon>
             </div>
             <div class="gua-info">
-              <h3 class="gua-name">{{ result.gua.name }}</h3>
-              <p class="gua-code">卦象代码：{{ result.gua.code }}</p>
+              <div class="gua-content-wrapper">
+                <div class="gua-symbol-container">
+                  <span class="gua-symbol">{{ getGuaSymbol(result.gua.code) }}</span>
+                </div>
+                <div class="gua-text">
+                  <h3 class="gua-name">{{ result.gua.name }}</h3>
+                  <p class="gua-code">卦象代码：{{ result.gua.code }}</p>
+                </div>
+              </div>
             </div>
 
             <!-- 六爻图形 -->
@@ -495,6 +502,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
 import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Lock, ArrowRight } from '@element-plus/icons-vue'
+import guaData from '../utils/liuyao.json'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
@@ -952,6 +960,13 @@ const getYaoMark = (yao) => {
   if (value === 0) return '×' // 老阴
   if (value === 3) return '○' // 老阳
   return '' // 少阴少阳
+}
+
+// 获取卦象符号
+const getGuaSymbol = (guaCode) => {
+  if (!guaCode) return ''
+  const gua = guaData.find(item => item.symbol === guaCode || item.name.includes(guaCode))
+  return gua ? gua.symbol : ''
 }
 
 const parseYaoResult = (value, fallback = '') => {
@@ -1521,11 +1536,11 @@ onUnmounted(() => {
 
 /* 表单样式 */
 .form-card {
-  background: var(--bg-card);
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
   backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 40px;
-  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 40px 32px;
+  border: 2px solid var(--border-light);
   box-shadow: var(--shadow-lg);
 }
 
@@ -1533,88 +1548,99 @@ onUnmounted(() => {
   color: var(--text-primary);
   text-align: center;
   margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .form-tip {
   color: var(--text-secondary);
   text-align: center;
-  font-size: 14px;
-  margin-bottom: 30px;
+  font-size: 15px;
+  margin-bottom: 32px;
+  line-height: 1.6;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .form-group label {
   display: block;
   color: var(--text-secondary);
-  margin-bottom: 10px;
-  font-size: 14px;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .form-group label .required {
   color: var(--primary-color);
+  margin-left: 2px;
 }
 
 .form-group textarea {
   width: 100%;
-  padding: 16px;
+  padding: 18px 20px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 2px solid var(--border-light);
+  border-radius: 16px;
   color: var(--text-primary);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.7;
   resize: vertical;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
 }
 
 .form-group textarea:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.08);
 }
 
 .form-group textarea::placeholder {
   color: var(--text-muted);
+  font-size: 14px;
 }
 
 /* 快捷问题按钮 */
 .quick-questions {
-  margin-top: 12px;
+  margin-top: 16px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
 .quick-questions-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
-  margin-right: 4px;
+  margin-right: 6px;
+  font-weight: 500;
 }
 
 .quick-question-btn {
-  padding: 6px 12px;
-  font-size: 13px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03));
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  border-radius: 18px;
-  color: #D4AF37;
+  padding: 8px 16px;
+  font-size: 14px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
+  border: 2px solid rgba(var(--primary-rgb), 0.15);
+  border-radius: 20px;
+  color: var(--primary-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .quick-question-btn:hover {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08));
-  border-color: rgba(212, 175, 55, 0.3);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.08));
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.12);
 }
 
 .quick-question-btn:active {
   transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.1);
 }
 
 .char-count {
@@ -1677,37 +1703,40 @@ onUnmounted(() => {
 .method-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .form-helper {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
 .helper-card,
 .advanced-card {
-  padding: 18px 20px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: 16px;
-  margin-bottom: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+  border: 2px solid var(--border-light);
+  border-radius: 20px;
+  margin-bottom: 24px;
 }
 
 .helper-card__title {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .helper-card__desc,
 .advanced-card__header p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
@@ -1728,12 +1757,12 @@ onUnmounted(() => {
 .advanced-toggle__action {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--primary-color);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .advanced-card__header {
@@ -1741,18 +1770,17 @@ onUnmounted(() => {
 }
 
 .advanced-card__header h3 {
-
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .input-grid,
 .advanced-grid,
 .manual-grid {
-
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
 .input-grid--double,
@@ -1761,21 +1789,21 @@ onUnmounted(() => {
 }
 
 .advanced-grid {
-  margin-top: 18px;
+  margin-top: 20px;
 }
-
 
 .input-grid__item label,
 .manual-grid__item label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .manual-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 
