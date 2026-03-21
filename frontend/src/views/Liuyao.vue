@@ -2357,146 +2357,192 @@ onUnmounted(() => {
 .yao-container {
   display: flex;
   flex-direction: column-reverse; /* 从下往上排 */
-  gap: 16px;
+  gap: 18px;
   z-index: 2;
-  background: linear-gradient(180deg, rgba(13, 11, 7, 0.88), rgba(5, 5, 5, 0.72));
-  padding: 28px 32px;
-  border-radius: var(--radius-xl);
-  border: 1px solid rgba(212, 175, 55, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 36px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(180deg, rgba(13, 11, 7, 0.92), rgba(5, 5, 5, 0.78));
+  padding: 32px 36px;
+  border-radius: 28px;
+  border: 3px solid rgba(var(--primary-rgb), 0.2);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.06), inset 0 0 48px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.yao-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.4), transparent);
+}
+
+.yao-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
 }
 
 .yao-line {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-  border: 1px solid rgba(212, 175, 55, 0.12);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(212, 175, 55, 0.05));
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(var(--primary-rgb), 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(var(--primary-rgb), 0.06));
 }
 
 .yao-line:hover {
-  background: rgba(212, 175, 55, 0.09);
-  transform: translateX(-4px);
-  border-color: rgba(212, 175, 55, 0.28);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+  background: rgba(var(--primary-rgb), 0.1);
+  transform: translateX(-6px);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
 }
 
 .yao-line.moving {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(255, 255, 255, 0.05));
-  border-color: rgba(212, 175, 55, 0.36);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(255, 255, 255, 0.06));
+  border-color: rgba(var(--primary-rgb), 0.4);
   animation: moving-glow 2.4s ease-in-out infinite;
 }
 
 @keyframes moving-glow {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.08), 0 10px 24px rgba(0, 0, 0, 0.18); }
-  50% { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.18), 0 18px 34px rgba(0, 0, 0, 0.26); }
+  0%, 100% { box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1), 0 12px 28px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2), 0 20px 40px rgba(0, 0, 0, 0.3); }
 }
 
 .yao-line__main {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   flex: 1;
   min-width: 0;
 }
 
 .yao-line__meta {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.yao-line__index {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.yao-line__type {
+  font-size: 14px;
+  color: var(--primary-color);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.yao-line__visual {
+  display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 16px;
+  flex: 1;
+  min-width: 160px;
 }
 
 .yao-mark {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  font-size: 20px;
+  border-radius: 14px;
+  font-size: 22px;
   color: var(--primary-color);
   font-weight: 800;
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.24);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(var(--primary-rgb), 0.14);
+  border: 2px solid rgba(var(--primary-rgb), 0.28);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
 }
 
-.yao-mark--placeholder {
+.yao-mark--quiet {
   color: var(--text-tertiary);
-  font-size: 14px;
-  opacity: 0.6;
+  font-size: 18px;
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .yao-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   width: 100%;
-  min-width: 140px;
 }
 
 .yao-bar__segment {
-  height: 12px;
+  height: 14px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(110, 84, 19, 0.96) 0%, rgba(212, 175, 55, 0.96) 44%, rgba(255, 243, 209, 0.98) 50%, rgba(212, 175, 55, 0.96) 56%, rgba(110, 84, 19, 0.96) 100%);
-  border: 1px solid rgba(255, 235, 180, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 16px rgba(0, 0, 0, 0.18);
-}
-
-.yao-bar__segment--full {
-  width: 100%;
-}
-
-.yao-line.yang .yao-bar__segment--full {
+  background: linear-gradient(90deg, rgba(110, 84, 19, 0.96) 0%, rgba(var(--primary-rgb), 0.96) 44%, rgba(255, 243, 209, 0.98) 50%, rgba(var(--primary-rgb), 0.96) 56%, rgba(110, 84, 19, 0.96) 100%);
+  border: 2px solid rgba(255, 235, 180, 0.35);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 10px 20px rgba(0, 0, 0, 0.2);
   flex: 1;
 }
 
-.yao-line.yin .yao-bar__segment {
-  flex: 1;
-  min-width: 0;
+.yao-line.yin .yao-bar {
+  gap: 24px;
 }
 
 .yao-bar__gap {
-  width: 18px;
-  height: 4px;
+  width: 24px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.16);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.18);
+}
+
+.moving-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.9), rgba(var(--primary-rgb), 0.7));
+  border: 2px solid rgba(var(--primary-rgb), 0.4);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.yao-line__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .yao-name {
   color: var(--text-primary);
-  font-size: 14px;
-  min-width: 72px;
-  font-weight: 600;
+  font-size: 15px;
+  min-width: 80px;
+  font-weight: 700;
   letter-spacing: 1px;
   text-align: right;
 }
 
-.yao-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
+.yao-line__state {
   font-size: 12px;
-  font-weight: 600;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.yao-badge--moving {
-  color: var(--primary-color);
-  background: rgba(212, 175, 55, 0.12);
-  border-color: rgba(212, 175, 55, 0.28);
+  text-align: right;
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 /* 伏神样式 */
@@ -2505,28 +2551,35 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   position: absolute;
-  left: -80px;
-  background: rgba(184, 134, 11, 0.1);
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px dashed var(--primary-light-40);
-  min-width: 60px;
+  left: -90px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 2px dashed rgba(var(--primary-rgb), 0.35);
+  min-width: 70px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fushen-label {
-  font-size: 10px;
-  color: var(--primary-light);
-  font-weight: bold;
+  font-size: 11px;
+  color: var(--primary-color);
+  font-weight: 700;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .fushen-name {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 1px;
 }
 
 .fushen-ganzhi {
-  font-size: 11px;
-  color: var(--text-tertiary);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 
@@ -2666,14 +2719,14 @@ onUnmounted(() => {
 
 /* 卦辞 */
 .gua-ci-section {
-  padding: 25px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
-  border-radius: 20px;
-  margin-bottom: 30px;
-  border: 1px solid rgba(184, 134, 11, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
-              0 4px 16px rgba(184, 134, 11, 0.05),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  padding: 32px 36px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(248, 249, 250, 0.99));
+  border-radius: 24px;
+  margin-bottom: 36px;
+  border: 3px solid rgba(var(--primary-rgb), 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1),
+              0 6px 20px rgba(var(--primary-rgb), 0.08),
+              inset 0 2px 0 rgba(255, 255, 255, 0.9);
   position: relative;
   overflow: hidden;
 }
@@ -2684,17 +2737,27 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.5), transparent);
+}
+
+.gua-ci-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.25), transparent);
 }
 
 .gua-ci-section h4 {
   color: var(--primary-color);
-  margin-bottom: 15px;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2705,22 +2768,22 @@ onUnmounted(() => {
 .gua-ci-section h4::after {
   content: '';
   position: absolute;
-  bottom: -5px;
+  bottom: -8px;
   left: 0;
-  width: 40px;
-  height: 2px;
+  width: 50px;
+  height: 3px;
   background: linear-gradient(90deg, var(--primary-color), transparent);
-  border-radius: 1px;
+  border-radius: 2px;
 }
 
 .gua-ci {
   color: var(--text-primary);
-  line-height: 1.8;
-  font-size: 16px;
+  line-height: 1.9;
+  font-size: 17px;
   margin: 0;
   font-weight: 500;
-  letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  letter-spacing: 0.4px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* 解读 */
@@ -2745,14 +2808,14 @@ onUnmounted(() => {
 
 /* AI分析 */
 .ai-section {
-  margin-bottom: 30px;
-  padding: 25px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95));
-  border-radius: 20px;
-  border-left: 5px solid var(--success-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
-              0 4px 16px rgba(40, 167, 69, 0.08),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  margin-bottom: 36px;
+  padding: 32px 36px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(248, 249, 250, 0.97));
+  border-radius: 24px;
+  border-left: 6px solid var(--success-color);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08),
+              0 6px 20px rgba(var(--success-color), 0.12),
+              inset 0 2px 0 rgba(255, 255, 255, 0.9);
   position: relative;
   overflow: hidden;
 }
@@ -2763,36 +2826,36 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--success-color), 0.5), transparent);
 }
 
 .ai-section h4 {
   color: var(--text-primary);
-  margin-bottom: 15px;
-  font-size: 18px;
+  margin-bottom: 20px;
+  font-size: 22px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  gap: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .ai-section h4 .el-icon {
   color: var(--success-color);
-  font-size: 20px;
-  filter: drop-shadow(0 2px 4px rgba(40, 167, 69, 0.3));
+  font-size: 24px;
+  filter: drop-shadow(0 2px 6px rgba(var(--success-color), 0.35));
 }
 
 .ai-content {
   color: var(--text-primary);
-  line-height: 1.8;
-  font-size: 15px;
+  line-height: 1.9;
+  font-size: 16px;
   white-space: pre-wrap;
   font-weight: 500;
-  letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  letter-spacing: 0.4px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* 积分信息 */
