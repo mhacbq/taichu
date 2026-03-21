@@ -1676,6 +1676,63 @@ const downloadAsImage = async () => {
   line-height: var(--line-height-base);
 }
 
+/* 问题输入区域 */
+.question-section {
+  max-width: 900px;
+  margin: 0 auto 30px;
+  padding: 28px 30px;
+}
+
+.question-section h3 {
+  margin: 0 0 18px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.question-section :deep(.el-textarea__inner) {
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-size: 14px;
+  line-height: 1.7;
+  transition: all 0.3s ease;
+}
+
+.question-section :deep(.el-textarea__inner:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.question-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(212, 175, 55, 0.08);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.question-hint .hint-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.question-section .draw-btn {
+  margin-top: 20px;
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.draw-btn .btn-icon {
+  margin-right: 6px;
+}
+
 .question-section--locked {
   border-color: rgba(var(--primary-rgb), 0.22);
   box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1), var(--shadow-md);

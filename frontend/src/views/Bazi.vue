@@ -1309,7 +1309,7 @@ import { CHINA_CITIES } from '../utils/constants'
 import { Lunar } from 'lunar-javascript'
 
 // 常用城市快捷选项
-const QUICK_CITIES = ['北京市', '上海市', '广州市', '深圳市', '杭州市', '南京市', '成都市', '武汉市', '西安市', '重庆市']
+const QUICK_CITIES = ['北京市', '上海市', '广州市', '深圳市', '杭州市', '南京市', '成都市', '武汉市', '西安市', '重庆市', '天津市', '苏州市', '青岛市', '长沙市', '郑州市', '沈阳市', '大连市', '厦门市', '济南市', '哈尔滨市']
 
 const router = useRouter()
 const route = useRoute()
@@ -3584,6 +3584,20 @@ const formatAiContent = (content) => {
   text-decoration: underline;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
 .form-group {
   margin-bottom: 30px;
 }
@@ -3600,30 +3614,16 @@ const formatAiContent = (content) => {
   margin-bottom: 34px;
 }
 
+.form-group--half {
+  margin-bottom: 30px;
+}
+
 .form-group__header--time {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
-}
-
-.form-group__header--time label {
-  margin-bottom: 0;
-}
-
-.form-group__status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.24);
-  color: var(--primary-color);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .help-icon {
@@ -3641,60 +3641,6 @@ const formatAiContent = (content) => {
   align-items: center;
   gap: 5px;
   line-height: 1.6;
-}
-
-.time-accuracy-switch {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 16px;
-  padding: 18px 20px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(250, 244, 228, 0.92));
-  border: 1px solid rgba(212, 175, 55, 0.18);
-  box-shadow: 0 12px 24px rgba(149, 111, 45, 0.08);
-}
-
-.time-accuracy-switch__copy {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 240px;
-}
-
-.switch-label {
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.time-accuracy-switch__hint {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.time-accuracy-group {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.precision-option {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.precision-option__title {
-  font-weight: 700;
-}
-
-.precision-option__desc {
-  font-size: 12px;
-  line-height: 1.45;
 }
 
 .time-entry-panel {

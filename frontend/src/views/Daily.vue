@@ -1047,7 +1047,11 @@ onUnmounted(() => {
 }
 
 .daily-action-zone {
-  margin-top: 30px;
+  margin-top: 20px;
+  padding: 16px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .guest-checkin-card {
@@ -2325,14 +2329,14 @@ onUnmounted(() => {
 .daily-deepen-section {
   margin-top: 24px;
   padding: 24px;
-  background: rgba(184, 134, 11, 0.05);
-  border: 1px solid rgba(184, 134, 11, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 242, 0.96));
+  border: 1px solid rgba(212, 175, 55, 0.15);
   border-radius: var(--radius-xl);
 }
 
 .deepen-title {
-  font-size: 14px;
-  color: rgba(184, 134, 11, 0.6);
+  font-size: 16px;
+  color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-align: center;
@@ -2350,17 +2354,17 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: rgba(184, 134, 11, 0.06);
-  border: 1px solid rgba(184, 134, 11, 0.15);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(212, 175, 55, 0.12);
   border-radius: var(--radius-md);
   text-decoration: none;
-  color: inherit;
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
 .deepen-card:hover {
-  border-color: rgba(212, 175, 55, 0.3);
-  background: rgba(184, 134, 11, 0.08);
+  border-color: rgba(212, 175, 55, 0.25);
+  background: rgba(255, 252, 245, 0.96);
   transform: translateY(-2px);
 }
 
@@ -2382,7 +2386,12 @@ onUnmounted(() => {
 .deepen-info strong {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(240, 208, 96, 0.85);
+  color: var(--text-primary);
+}
+
+.deepen-info span {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .deepen-info span {

@@ -18,7 +18,7 @@
 - [x] home.vue页的testimonials-grid里面的service-tag背景去掉，居中显示文本，调整字体大小和颜色，使其更清晰易读。
 - [x] bazi.vue页的智能填写策略中，右侧的按钮功能可以取消了
 - [x] bazi.vue页中，出生地点补充其他城市，或者引入城市js包，设置默认出生城市，性别添加必填标记
-- [] tarot.vue中，question-section的样式很丑，标题与提示与输入框连在一起，请调整样式，使其更美观，增加一些间距
+- [x] tarot.vue中，question-section的样式很丑，标题与提示与输入框连在一起，请调整样式，使其更美观，增加一些间距
 - [] daily.vue中，daily-action-zone日历功能显得很大，可以调整为更紧凑的布局，增加一些空白区域，使其看起来更整洁。
 - [] 底部daily-deepen-section与背景颜色有冲突，网站整体设计是白色背景，金色字体，这里全是金色，有点模糊了
 - [] liuyao.vue中，像塔罗牌一样，加上问题一键点击的按钮，方便用户一键输入
