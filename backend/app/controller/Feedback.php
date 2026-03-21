@@ -23,32 +23,50 @@ class Feedback extends BaseController
         if (!ConfigService::isFeatureEnabled('feedback')) {
             return $this->error('用户反馈功能暂未开放', 403);
         }
-        
+
         // 验证参数
-        if (empty($data['content'])) {
-            return $this->error('请填写反馈内容');
+        $content = trim((string) ($data['content'] ?? ''));
+        if (empty($content) || mb_strlen($content) < 5) {
+            return $this->error('反馈内容不能少于5个字符');
         }
 
-        
+        if (mb_strlen($content) > 5000) {
+            return $this->error('反馈内容不能超过5000个字符');
+        }
+
+        // 验证联系方式（邮箱或手机号）
+        $contact = trim((string) ($data['contact'] ?? ''));
+        if (!empty($contact)) {
+            if (!$this->isValidContact($contact)) {
+                return $this->error('请填写有效的邮箱地址或手机号码');
+            }
+        }
+
+
         $type = $data['type'] ?? 'suggestion';
         $allowTypes = ['suggestion', 'bug', 'complaint', 'praise', 'other'];
-        
+
         if (!in_array($type, $allowTypes, true)) {
             $type = 'suggestion';
         }
 
         $title = $this->resolveFeedbackTitle($data, $type);
-        
+
+        // 防注入处理
+        $safeContent = $this->sanitizeInput($content);
+        $safeTitle = $this->sanitizeInput($title);
+        $safeContact = $this->sanitizeInput($contact);
+
         try {
             $feedback = FeedbackModel::create([
                 'user_id' => (int) $user['sub'],
                 'type' => $type,
-                'title' => $title,
-                'content' => (string) $data['content'],
-                'contact' => (string) ($data['contact'] ?? ''),
+                'title' => $safeTitle,
+                'content' => $safeContent,
+                'contact' => $safeContact,
                 'status' => FeedbackModel::STATUS_PENDING,
             ]);
-            
+
             return $this->success([
                 'id' => $feedback->id,
             ], '反馈提交成功，感谢您的建议！');
@@ -60,11 +78,53 @@ class Feedback extends BaseController
                 [
                     'user_id' => (int) ($user['sub'] ?? 0),
                     'type' => $type,
-                    'has_contact' => !empty($data['contact']),
-                    'content_length' => mb_strlen((string) $data['content']),
+                    'has_contact' => !empty($contact),
+                    'content_length' => mb_strlen($content),
                 ]
             );
         }
+    }
+
+    /**
+     * 验证联系方式（邮箱或手机号）
+     */
+    private function isValidContact(string $contact): bool
+    {
+        // 邮箱格式验证
+        if (filter_var($contact, FILTER_VALIDATE_EMAIL)) {
+            return true;
+        }
+
+        // 中国大陆手机号验证
+        if (preg_match('/^1[3-9]\d{9}$/', $contact)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 输入内容防注入处理（XSS防护）
+     */
+    private function sanitizeInput(string $input): string
+    {
+        // 移除潜在的脚本标签和事件处理器
+        $patterns = [
+            '/<script\b[^>]*>(.*?)<\/script>/is',
+            '/<iframe\b[^>]*>(.*?)<\/iframe>/is',
+            '/<object\b[^>]*>(.*?)<\/object>/is',
+            '/<embed\b[^>]*>(.*?)<\/embed>/is',
+            '/javascript:/i',
+            '/on\w+\s*=/i',
+            '/<\s*\/?\s*[a-zA-Z][^>]*(?:on\w+\s*=)/i',
+        ];
+
+        $cleaned = preg_replace($patterns, '', $input);
+
+        // 转义HTML特殊字符
+        $cleaned = htmlspecialchars($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return $cleaned;
     }
     
     /**

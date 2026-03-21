@@ -20,10 +20,12 @@
             </p>
           </div>
         </div>
+
+        <!-- 签到卡片 - 放在 hero 内部右侧 -->
+        <div class="profile-hero-checkin">
+          <CheckinCard />
+        </div>
       </div>
-      
-      <!-- 签到卡片 -->
-      <CheckinCard />
 
       <div class="profile-layout">
         <!-- 左侧边栏 -->
@@ -150,19 +152,16 @@
             <el-tabs v-model="activeHistoryTab" class="custom-tabs">
               <el-tab-pane label="八字排盘" name="bazi">
                 <AsyncState :status="baziStatus" loadingText="正在加载排盘记录..." @retry="loadBaziHistory">
-                  <div class="history-grid" v-if="baziHistory.length > 0">
-                    <div v-for="record in baziHistory" :key="record.id" class="history-record">
-                      <div class="record-header">
-                        <span class="record-time">{{ formatTime(record.createdAt) }}</span>
-                        <span class="record-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+                  <div class="history-list" v-if="baziHistory.length > 0">
+                    <div v-for="record in baziHistory" :key="record.id" class="history-list-item" @click="viewDetail(record)">
+                      <div class="item-left">
+                        <span class="item-title">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+                        <span class="item-time">{{ formatTime(record.createdAt) }}</span>
                       </div>
-                      <div class="record-content">
-                        <span class="bazi-p">{{ record.yearGan }}{{ record.yearZhi }}</span>
-                        <span class="bazi-p">{{ record.monthGan }}{{ record.monthZhi }}</span>
-                        <span class="bazi-p highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
-                        <span class="bazi-p">{{ record.hourGan }}{{ record.hourZhi }}</span>
+                      <div class="item-right">
+                        <span class="item-bazi">{{ record.yearGan }}{{ record.yearZhi }} {{ record.dayGan }}{{ record.dayZhi }}</span>
+                        <el-icon class="item-arrow"><ArrowRight /></el-icon>
                       </div>
-                      <el-button type="primary" size="small" @click="viewDetail(record)">查看详情</el-button>
                     </div>
                   </div>
                   <el-empty v-else description="暂无排盘记录" />
@@ -180,21 +179,16 @@
 
               <el-tab-pane label="塔罗占卜" name="tarot">
                 <AsyncState :status="tarotStatus" loadingText="正在加载占卜记录..." @retry="loadTarotHistory">
-                  <div class="history-grid" v-if="tarotHistory.length > 0">
-                    <div v-for="(record, index) in tarotHistory" :key="index" class="history-record">
-                      <div class="record-header">
-                        <span class="record-time">{{ formatTime(record.date) }}</span>
-                        <span class="record-type">{{ record.spreadName }}</span>
+                  <div class="history-list" v-if="tarotHistory.length > 0">
+                    <div v-for="(record, index) in tarotHistory" :key="index" class="history-list-item" @click="viewTarotDetail(record)">
+                      <div class="item-left">
+                        <span class="item-title">{{ record.spreadName }}</span>
+                        <span class="item-time">{{ formatTime(record.date) }}</span>
                       </div>
-                      <div class="record-content">
-                        <div class="tarot-cards-mini">
-                          <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="card-emoji">
-                            {{ card.emoji }}<small v-if="card.reversed">逆</small>
-                          </span>
-                          <span v-if="record.cards.length > 3" class="more">+{{ record.cards.length - 3 }}</span>
-                        </div>
+                      <div class="item-right">
+                        <span class="item-tarot">{{ record.cards[0]?.name }}{{ record.cards[0]?.reversed ? '(逆)' : '' }}</span>
+                        <el-icon class="item-arrow"><ArrowRight /></el-icon>
                       </div>
-                      <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看详情</el-button>
                     </div>
                   </div>
                   <el-empty v-else description="暂无占卜记录" />
@@ -203,16 +197,18 @@
 
               <el-tab-pane label="六爻占卜" name="liuyao">
                 <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
-                  <div class="history-grid" v-if="liuyaoHistory.length > 0">
-                    <div v-for="record in liuyaoHistory" :key="record.id" class="history-record">
-                      <div class="record-header">
-                        <span class="record-time">{{ formatTime(record.created_at) }}</span>
-                        <span class="record-type">{{ record.method_name || '铜钱起卦' }}</span>
+                  <div class="history-list" v-if="liuyaoHistory.length > 0">
+                    <div v-for="record in liuyaoHistory" :key="record.id" class="history-list-item">
+                      <div class="item-left">
+                        <span class="item-title">{{ record.question || '六爻占卜' }}</span>
+                        <span class="item-time">{{ formatTime(record.created_at) }}</span>
                       </div>
-                      <div class="record-content">
-                        <span class="record-question">{{ record.question || '六爻占卜' }}</span>
+                      <div class="item-right">
+                        <span class="item-method">{{ record.method_name || '铜钱起卦' }}</span>
+                        <router-link to="/liuyao" class="item-link">
+                          <el-icon><ArrowRight /></el-icon>
+                        </router-link>
                       </div>
-                      <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
                     </div>
                   </div>
                   <el-empty v-else description="暂无六爻记录" />
@@ -221,16 +217,23 @@
 
               <el-tab-pane label="八字合婚" name="hehun">
                 <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
-                  <div class="history-grid" v-if="hehunHistory.length > 0">
-                    <div v-for="record in hehunHistory" :key="record.id" class="history-record">
-                      <div class="record-header">
-                        <span class="record-time">{{ formatTime(record.created_at) }}</span>
-                        <span v-if="record.total_score" class="record-score">得分：{{ record.total_score }}</span>
+                  <div class="history-list" v-if="hehunHistory.length > 0">
+                    <div v-for="record in hehunHistory" :key="record.id" class="history-list-item">
+                      <div class="item-left">
+                        <span class="item-title">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
+                        <span class="item-time">{{ formatTime(record.created_at) }}</span>
                       </div>
-                      <div class="record-content">
-                        <span class="record-couple">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
+                      <div class="item-right" v-if="record.total_score">
+                        <span class="item-score">{{ record.total_score }}分</span>
+                        <router-link to="/hehun" class="item-link">
+                          <el-icon><ArrowRight /></el-icon>
+                        </router-link>
                       </div>
-                      <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
+                      <div class="item-right" v-else>
+                        <router-link to="/hehun" class="item-link">
+                          <el-icon><ArrowRight /></el-icon>
+                        </router-link>
+                      </div>
                     </div>
                   </div>
                   <el-empty v-else description="暂无合婚记录" />
@@ -669,20 +672,32 @@ const submitFeedbackForm = async () => {
     return
   }
 
-  if (!feedbackContent.value.trim()) {
-    ElMessage.warning('请输入反馈内容')
+  const content = feedbackContent.value.trim()
+  if (!content || content.length < 5) {
+    ElMessage.warning('反馈内容不能少于5个字符')
     return
   }
 
-  
+  if (content.length > 5000) {
+    ElMessage.warning('反馈内容不能超过5000个字符')
+    return
+  }
+
+  const contact = feedbackContact.value.trim()
+  if (contact && !validateContact(contact)) {
+    ElMessage.warning('请填写有效的邮箱地址或手机号码')
+    return
+  }
+
+
   feedbackLoading.value = true
   try {
     const response = await submitFeedback({
-      content: feedbackContent.value,
+      content: content,
       type: 'suggestion',
-      contact: feedbackContact.value,
+      contact: contact,
     })
-    
+
     if (response.code === 200) {
       ElMessage.success('反馈提交成功，感谢您的建议！')
       feedbackContent.value = ''
@@ -696,6 +711,27 @@ const submitFeedbackForm = async () => {
   } finally {
     feedbackLoading.value = false
   }
+}
+
+/**
+ * 验证联系方式（邮箱或手机号）
+ */
+const validateContact = (contact) => {
+  if (!contact) return true
+
+  // 邮箱格式验证
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (emailRegex.test(contact)) {
+    return true
+  }
+
+  // 中国大陆手机号验证
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (phoneRegex.test(contact)) {
+    return true
+  }
+
+  return false
 }
 
 const loadUserBirthDate = () => {
@@ -829,12 +865,12 @@ onUnmounted(() => {
 .profile-hero {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 36px;
-  padding: 28px 32px;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding: 20px 24px;
   background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.04));
   border: 2px solid rgba(212, 175, 55, 0.2);
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
 }
 
@@ -842,12 +878,12 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .profile-hero-avatar {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   overflow: hidden;
   background: linear-gradient(135deg, #B8860B, #D4AF37);
@@ -861,28 +897,61 @@ onUnmounted(() => {
 .profile-hero-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 .profile-hero-avatar-placeholder {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #fff;
 }
 
 .profile-hero-name {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: #333;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 
 .profile-hero-sub {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .profile-hero-id { color: #999; font-weight: 500; }
 .profile-hero-divider { color: #e0e0e0; }
+
+/* 签到卡片在 hero 内部的样式 */
+.profile-hero-checkin {
+  flex-shrink: 0;
+  width: 280px;
+}
+
+.profile-hero-checkin :deep(.checkin-card) {
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.profile-hero-checkin :deep(.checkin-card-header) {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.profile-hero-checkin :deep(.checkin-stats) {
+  gap: 8px;
+}
+
+.profile-hero-checkin :deep(.checkin-stat-value) {
+  font-size: 18px;
+}
+
+.profile-hero-checkin :deep(.checkin-stat-label) {
+  font-size: 11px;
+}
+
+.profile-hero-checkin :deep(.checkin-btn) {
+  padding: 8px 16px;
+  font-size: 13px;
+}
 
 .profile-hero-points-badge {
   display: inline-flex;
@@ -1193,6 +1262,93 @@ onUnmounted(() => {
 :deep(.custom-tabs .el-tabs__active-bar) {
   background: #D4AF37;
   height: 3px;
+}
+
+/* 历史记录列表 */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.history-list-item:hover {
+  background: rgba(212, 175, 55, 0.03);
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+.item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.item-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-bazi,
+.item-tarot,
+.item-method,
+.item-score {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.item-score {
+  color: #D4AF37;
+}
+
+.item-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  color: #D4AF37;
+  transition: all 0.3s ease;
+}
+
+.item-link:hover {
+  background: #D4AF37;
+  color: #fff;
+}
+
+.item-arrow {
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.history-list-item:hover .item-arrow {
+  color: #D4AF37;
+  transform: translateX(3px);
 }
 
 /* 历史记录网格 */

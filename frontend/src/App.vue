@@ -468,7 +468,7 @@ const checkLoginStatus = () => {
     try {
       isLoggedIn.value = true
       const user = JSON.parse(userInfo)
-      userNickname.value = user?.nickname || '用户'
+      userNickname.value = user?.nickname || user?.username || '用户'
       userPoints.value = user?.points || 0
       refreshPoints()
 
@@ -1649,22 +1649,22 @@ body {
 }
 
 .points-dropdown-header {
-  padding: 16px;
+  padding: 12px;
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(184, 134, 11, 0.05));
   border-bottom: 1px solid rgba(184, 134, 11, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .points-dropdown-title {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
 .points-dropdown-value {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: bold;
   color: var(--primary-color);
 }
@@ -1673,10 +1673,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 8px 14px;
   color: var(--text-primary);
   text-decoration: none;
   transition: all 0.2s ease;
+  font-size: 13px;
 }
 
 .points-dropdown-link:hover {
