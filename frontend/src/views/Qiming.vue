@@ -62,7 +62,7 @@
           :disabled="loading"
           class="submit-btn"
         >
-          开始取名 (消耗 100 积分)
+          开始取名 (消耗 {{ qimingCost }} 积分)
         </el-button>
       </div>
 
@@ -79,12 +79,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
-import { suggestNames } from '../api'
+import { suggestNames, getClientConfig } from '../api'
 import { sanitizeHtml } from '../utils/sanitize'
+
+// 客户端配置
+const clientConfig = ref(null)
+
+// 积分消耗配置（从接口动态获取）
+const qimingCost = computed(() => clientConfig.value?.points?.costs?.qiming || 100)
 
 const form = ref({
   surname: '',
@@ -166,6 +172,23 @@ const submitForm = async () => {
 const resetForm = () => {
   result.value = null
 }
+
+// 加载客户端配置
+const loadClientConfig = async () => {
+  try {
+    const response = await getClientConfig()
+    if (response.code === 200) {
+      clientConfig.value = response.data
+    }
+  } catch (error) {
+    console.error('加载客户端配置失败:', error)
+  }
+}
+
+// 组件挂载时加载配置
+onMounted(() => {
+  loadClientConfig()
+})
 </script>
 
 <style scoped>
