@@ -2516,6 +2516,14 @@ const downloadAsImage = async () => {
 .question-section {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 244, 0.94));
   margin: auto;
+  padding: 28px;
+}
+
+.question-section h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
 }
 
 .question-section--locked {
@@ -2529,11 +2537,14 @@ const downloadAsImage = async () => {
   box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1) inset;
   line-height: 1.8;
   padding: 16px 18px;
+  margin-bottom: 16px;
 }
 
 .question-hint,
 .question-lock-note {
   border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
 }
 
 .draw-btn {

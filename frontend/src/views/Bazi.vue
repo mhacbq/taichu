@@ -70,53 +70,30 @@
           </div>
         </div>
 
-        <div class="form-group form-group--time" data-bazi-field="birth-time">
-          <div class="form-group__header form-group__header--time">
+        <div class="form-row">
+          <div class="form-group form-group--time form-group--half" data-bazi-field="birth-time">
             <label>出生日期与时间</label>
-            <span class="form-group__status">{{ birthTimeAccuracy === 'exact' ? '精确排盘' : '估算模式' }}</span>
-          </div>
 
-          <!-- 历法类型切换 -->
-          <div class="calendar-type-switch">
-            <div class="calendar-type-switch__label">历法类型</div>
-            <el-radio-group v-model="calendarType" size="small">
-              <el-radio label="solar">
-                <el-icon><Calendar /></el-icon>
-                公历
-              </el-radio>
-              <el-radio label="lunar">
-                <el-icon><StarFilled /></el-icon>
-                农历
-              </el-radio>
-            </el-radio-group>
-            <p class="calendar-type-switch__hint" v-if="calendarType === 'lunar'">
-              <el-icon><InfoFilled /></el-icon>
-              农历生日系统会自动转换为公历进行排盘计算
-            </p>
-          </div>
-
-          <div class="time-accuracy-switch">
-            <div class="time-accuracy-switch__copy">
-              <span class="switch-label">时间确认度</span>
-              <p class="time-accuracy-switch__hint">先选你记忆的准确程度，再填写对应时间信息。</p>
+            <!-- 历法类型切换 -->
+            <div class="calendar-type-switch">
+              <div class="calendar-type-switch__label">历法类型</div>
+              <el-radio-group v-model="calendarType" size="small">
+                <el-radio label="solar">
+                  <el-icon><Calendar /></el-icon>
+                  公历
+                </el-radio>
+                <el-radio label="lunar">
+                  <el-icon><StarFilled /></el-icon>
+                  农历
+                </el-radio>
+              </el-radio-group>
+              <p class="calendar-type-switch__hint" v-if="calendarType === 'lunar'">
+                <el-icon><InfoFilled /></el-icon>
+                农历生日系统会自动转换为公历进行排盘计算
+              </p>
             </div>
-            <el-radio-group v-model="birthTimeAccuracy" size="small" class="time-accuracy-group premium-segment premium-segment--card">
-              <el-radio-button label="exact">
-                <span class="precision-option">
-                  <span class="precision-option__title">精确到分钟</span>
-                  <small class="precision-option__desc">适合已知完整出生时刻</small>
-                </span>
-              </el-radio-button>
-              <el-radio-button label="estimated">
-                <span class="precision-option">
-                  <span class="precision-option__title">大概时段 / 未知时辰</span>
-                  <small class="precision-option__desc">只记得白天、晚上或完全不记得</small>
-                </span>
-              </el-radio-button>
-            </el-radio-group>
-          </div>
 
-          <div class="time-entry-panel" :class="`time-entry-panel--${birthTimeAccuracy}`">
+            <div class="time-entry-panel" :class="`time-entry-panel--${birthTimeAccuracy}`">
             <div class="time-entry-panel__header">
               <span class="time-entry-panel__badge">{{ birthTimeAccuracy === 'exact' ? '精确填写' : '估算填写' }}</span>
               <p class="time-entry-panel__title">{{ birthTimeAccuracy === 'exact' ? '请选择出生时间' : '请选择出生日期与大概时段' }}</p>
@@ -217,7 +194,7 @@
 
         </div>
         
-        <div class="form-group" data-bazi-field="gender">
+        <div class="form-group form-group--half" data-bazi-field="gender">
           <label>性别 <span class="required-mark">*</span></label>
           <el-radio-group v-model="gender">
             <el-radio label="male">男</el-radio>
