@@ -97,6 +97,7 @@ export const liuyaoDivination = (data) => request.post('/liuyao/divination', dat
 export const getLiuyaoHistory = (params) => request.get('/liuyao/history', { params })
 export const getLiuyaoDetail = (params) => request.get('/liuyao/detail', { params })
 export const deleteLiuyaoRecord = (data) => request.post('/liuyao/delete', data)
+export const analyzeLiuyaoAi = (data) => request.post('/liuyao/ai-analysis', data)
 
 // ====== 八字合婚 API ======
 export const getHehunPricing = (config = {}) => request.get('/hehun/pricing', config)

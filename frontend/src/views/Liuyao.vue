@@ -156,6 +156,29 @@
             <div class="ai-content">{{ result.ai_analysis.content }}</div>
           </div>
 
+          <!-- AI解卦按钮（历史记录中没有AI分析时显示） -->
+          <div v-else-if="result.is_history" class="ai-action-zone">
+            <div class="ai-action-card">
+              <div class="ai-action-content">
+                <h4>
+                  <el-icon><MagicStick /></el-icon>
+                  AI深度解卦
+                </h4>
+                <p class="ai-action-desc">基于AI专业知识库，为您提供更深入、更专业的占卜解读</p>
+                <el-button
+                  type="primary"
+                  size="large"
+                  :loading="aiAnalyzing"
+                  :disabled="aiAnalyzing"
+                  @click="startAiAnalysis"
+                >
+                  <el-icon><MagicStick /></el-icon>
+                  {{ aiAnalyzing ? 'AI正在深度分析...' : '开始AI解卦' }}
+                </el-button>
+              </div>
+            </div>
+          </div>
+
           <!-- 消耗信息 -->
           <div class="points-info">
             <span v-if="result.points_cost > 0">消耗 {{ result.points_cost }} 积分</span>
@@ -500,8 +523,8 @@
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord } from '../api'
-import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Lock, ArrowRight } from '@element-plus/icons-vue'
+import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord, analyzeLiuyaoAi } from '../api'
+import { Delete, MagicStick, Present, Trophy, ArrowDown, ArrowUp, Share, QuestionFilled, Close, Check, Lock, ArrowRight, Edit, Refresh } from '@element-plus/icons-vue'
 import guaData from '../utils/liuyao.json'
 
 import ResultNextSteps from '../components/ResultNextSteps.vue'
@@ -568,6 +591,9 @@ const showHistory = ref(false)
 const showAdvancedSettings = ref(false)
 const historyListRef = ref(null)
 const currentBeijingTimestamp = ref(Date.now())
+
+// AI分析相关状态
+const aiAnalyzing = ref(false)
 
 // 监听起卦方式变化
 watch(() => form.method, (newMethod) => {
@@ -1321,6 +1347,63 @@ const resetForm = () => {
   Object.assign(form, createDefaultForm())
   result.value = null
   loadPricing()
+}
+
+// 开始AI分析
+const startAiAnalysis = async () => {
+  if (!result.value?.id) {
+    ElMessage.error('无效的占卜记录')
+    return
+  }
+
+  // 检查积分
+  if (pricing.value && !pricing.value.is_free && pricing.value.balance < pricing.value.cost) {
+    ElMessageBox.confirm(
+      '当前积分不足，是否前往签到或充值获取积分？',
+      '积分不足',
+      {
+        confirmButtonText: '去获取积分',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    ).then(() => {
+      router.push('/profile')
+    }).catch(() => {})
+    return
+  }
+
+  aiAnalyzing.value = true
+
+  try {
+    const response = await analyzeLiuyaoAi({
+      divination_id: result.value.id
+    })
+
+    if (response.code === 200) {
+      // 更新result中的AI分析结果
+      if (response.data?.ai_analysis) {
+        result.value.ai_analysis = response.data.ai_analysis
+        ElMessage.success('AI解卦成功')
+      }
+      
+      // 更新积分
+      if (response.data?.remaining_points !== undefined) {
+        if (pricing.value) {
+          pricing.value.balance = response.data.remaining_points
+        }
+      }
+      
+      // 重新加载定价信息
+      await loadPricing()
+    } else {
+      ElMessage.error(response.message || 'AI解卦失败，请重试')
+    }
+  } catch (error) {
+    console.error('AI解卦错误:', error)
+    ElMessage.error('AI解卦服务暂时不可用，请稍后重试')
+  } finally {
+    aiAnalyzing.value = false
+  }
 }
 
 
@@ -2856,6 +2939,91 @@ onUnmounted(() => {
   font-weight: 500;
   letter-spacing: 0.4px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* AI解卦按钮区域 */
+.ai-action-zone {
+  margin-bottom: 36px;
+}
+
+.ai-action-card {
+  padding: 32px 36px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(248, 249, 250, 0.97));
+  border-radius: 24px;
+  border: 3px solid rgba(var(--primary-rgb), 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08),
+              0 6px 20px rgba(var(--primary-rgb), 0.1),
+              inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+}
+
+.ai-action-content {
+  position: relative;
+  z-index: 1;
+}
+
+.ai-action-content h4 {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ai-action-content h4 .el-icon {
+  color: var(--primary-color);
+  font-size: 24px;
+}
+
+.ai-action-desc {
+  color: var(--text-secondary);
+  line-height: 1.8;
+  font-size: 15px;
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+.ai-action-content .el-button {
+  padding: 16px 48px;
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 25px;
+  background: linear-gradient(135deg, var(--primary-color), rgba(var(--primary-rgb), 0.85));
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-action-content .el-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(var(--primary-rgb), 0.35);
+}
+
+.ai-action-content .el-button:disabled {
+  background: var(--text-tertiary);
+  border-color: var(--text-tertiary);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-action-content .el-button .el-icon {
+  font-size: 18px;
 }
 
 /* 积分信息 */
