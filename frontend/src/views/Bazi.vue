@@ -123,14 +123,72 @@
             </div>
 
             <template v-if="birthTimeAccuracy === 'exact'">
-              <el-date-picker
-                v-model="exactBirthDate"
-                type="datetime"
-                placeholder="选择出生日期时间（精确到分钟）"
-                format="YYYY-MM-DD HH:mm"
-                value-format="YYYY-MM-DD HH:mm:ss"
-                class="full-width time-entry-panel__control"
-              />
+              <!-- 公历日期选择 -->
+              <template v-if="calendarType === 'solar'">
+                <el-date-picker
+                  v-model="exactBirthDate"
+                  type="datetime"
+                  placeholder="选择出生日期时间（精确到分钟）"
+                  format="YYYY-MM-DD HH:mm"
+                  value-format="YYYY-MM-DD HH:mm:ss"
+                  class="full-width time-entry-panel__control"
+                />
+              </template>
+
+              <!-- 农历日期选择 -->
+              <template v-else>
+                <div class="lunar-date-input">
+                  <div class="lunar-date-row">
+                    <el-input-number
+                      v-model="lunarYear"
+                      :min="1900"
+                      :max="2100"
+                      placeholder="年"
+                      class="lunar-input"
+                      :controls="false"
+                    />
+                    <span class="lunar-label">年</span>
+                    <el-input-number
+                      v-model="lunarMonth"
+                      :min="1"
+                      :max="12"
+                      placeholder="月"
+                      class="lunar-input"
+                      :controls="false"
+                    />
+                    <span class="lunar-label">月</span>
+                    <el-input-number
+                      v-model="lunarDay"
+                      :min="1"
+                      :max="30"
+                      placeholder="日"
+                      class="lunar-input"
+                      :controls="false"
+                    />
+                    <span class="lunar-label">日</span>
+                  </div>
+                  <div class="lunar-time-row">
+                    <el-select v-model="lunarHour" placeholder="选择时辰" class="lunar-time-select">
+                      <el-option label="子时 (23:00-01:00)" :value="0" />
+                      <el-option label="丑时 (01:00-03:00)" :value="1" />
+                      <el-option label="寅时 (03:00-05:00)" :value="3" />
+                      <el-option label="卯时 (05:00-07:00)" :value="5" />
+                      <el-option label="辰时 (07:00-09:00)" :value="7" />
+                      <el-option label="巳时 (09:00-11:00)" :value="9" />
+                      <el-option label="午时 (11:00-13:00)" :value="11" />
+                      <el-option label="未时 (13:00-15:00)" :value="13" />
+                      <el-option label="申时 (15:00-17:00)" :value="15" />
+                      <el-option label="酉时 (17:00-19:00)" :value="17" />
+                      <el-option label="戌时 (19:00-21:00)" :value="19" />
+                      <el-option label="亥时 (21:00-23:00)" :value="21" />
+                    </el-select>
+                  </div>
+                  <div v-if="convertedSolarDate" class="lunar-converted-hint">
+                    <el-icon><InfoFilled /></el-icon>
+                    转换为公历：{{ convertedSolarDate }}
+                  </div>
+                </div>
+              </template>
               <p class="form-hint time-entry-panel__hint">精确到分钟时，命盘细节最完整；若记不清，可先切到估算模式。</p>
             </template>
 
@@ -1298,6 +1356,57 @@ const resolveEstimatedTimeSlotByClock = (clock = '') => {
 
 const calendarType = ref('solar') // 历法类型：solar公历, lunar农历
 
+// 农历日期输入
+const lunarYear = ref('')
+const lunarMonth = ref('')
+const lunarDay = ref('')
+const lunarHour = ref('')
+
+// 农历转公历计算
+const convertedSolarDate = computed(() => {
+  if (calendarType.value === 'solar') {
+    return exactBirthDate.value || ''
+  }
+
+  // 农历转公历
+  try {
+    if (!lunarYear.value || !lunarMonth.value || !lunarDay.value) {
+      return ''
+    }
+
+    const year = Number(lunarYear.value)
+    const month = Number(lunarMonth.value)
+    const day = Number(lunarDay.value)
+    const hour = lunarHour.value ? Number(lunarHour.value) : 12
+
+    // 创建农历对象
+    const lunar = Lunar.fromYmd(year, month, day)
+    // 获取公历日期
+    const solar = lunar.getSolar()
+    const solarYear = solar.getYear()
+    const solarMonth = String(solar.getMonth()).padStart(2, '0')
+    const solarDay = String(solar.getDay()).padStart(2, '0')
+    const solarHour = String(hour).padStart(2, '0')
+    const solarMinute = '00'
+
+    return `${solarYear}-${solarMonth}-${solarDay} ${solarHour}:${solarMinute}:00`
+  } catch (error) {
+    console.error('农历转公历失败:', error)
+    return ''
+  }
+})
+
+// 格式化农历日期显示
+const lunarDateDisplay = computed(() => {
+  if (!lunarYear.value || !lunarMonth.value || !lunarDay.value) {
+    return ''
+  }
+  const monthText = Number(lunarMonth.value) < 10 ? `0${lunarMonth.value}` : lunarMonth.value
+  const dayText = Number(lunarDay.value) < 10 ? `0${lunarDay.value}` : lunarDay.value
+  const hourText = lunarHour.value ? String(lunarHour.value).padStart(2, '0') : '12'
+  return `${lunarYear.value}年${monthText}月${dayText}日 ${hourText}:00`
+})
+
 const birthTimeAccuracy = ref('exact')
 const exactBirthDate = ref('')
 const estimatedBirthDate = ref('')
@@ -1308,7 +1417,7 @@ const selectedEstimatedTimeOption = computed(() => {
 const isEstimatedDateOnly = computed(() => selectedEstimatedTimeOption.value?.mode === 'date-only')
 const birthDate = computed(() => {
   if (birthTimeAccuracy.value === 'exact') {
-    return exactBirthDate.value || ''
+    return calendarType.value === 'lunar' ? convertedSolarDate.value : exactBirthDate.value
   }
 
   if (!estimatedBirthDate.value || !selectedEstimatedTimeOption.value) {

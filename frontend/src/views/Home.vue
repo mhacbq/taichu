@@ -187,7 +187,8 @@
               立即查看 <el-icon><ArrowRight /></el-icon>
             </router-link>
           </div>
-          <!-- 次要功能 3个 -->
+
+          <!-- 次要功能 6个 -->
           <div class="feature-card feature-card--secondary card-hover" data-type="liuyao">
             <div class="feature-icon-wrap feature-icon-wrap--sm">
               <span class="feature-symbol">☰</span>
@@ -197,9 +198,11 @@
             <div class="feature-meta">
               <span class="feature-cost">⚡ 3积分/次</span>
             </div>
-            <router-link to="/liuyao" class="feature-link feature-link--sm">
-              体验 <el-icon><ArrowRight /></el-icon>
-            </router-link>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/liuyao" class="feature-link feature-link--sm">
+                立即测算 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
           </div>
           <div class="feature-card feature-card--secondary card-hover" data-type="hehun">
             <div class="feature-icon-wrap feature-icon-wrap--sm">
@@ -210,9 +213,11 @@
             <div class="feature-meta">
               <span class="feature-cost">⚡ 5积分/次</span>
             </div>
-            <router-link to="/hehun" class="feature-link feature-link--sm">
-              体验 <el-icon><ArrowRight /></el-icon>
-            </router-link>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/hehun" class="feature-link feature-link--sm">
+                立即测算 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
           </div>
           <div class="feature-card feature-card--secondary card-hover" data-type="profile">
             <div class="feature-icon-wrap feature-icon-wrap--sm">
@@ -223,9 +228,11 @@
             <div class="feature-meta">
               <span class="feature-cost feature-cost--free">📅 签到领积分</span>
             </div>
-            <router-link to="/profile" class="feature-link feature-link--sm">
-              进入 <el-icon><ArrowRight /></el-icon>
-            </router-link>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/profile" class="feature-link feature-link--sm">
+                进入个人中心 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
           </div>
 
           <!-- 取名建议 -->
@@ -238,9 +245,11 @@
             <div class="feature-meta">
               <span class="feature-cost">⚡ 100积分/次</span>
             </div>
-            <router-link to="/qiming" class="feature-link feature-link--sm">
-              体验 <el-icon><ArrowRight /></el-icon>
-            </router-link>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/qiming" class="feature-link feature-link--sm">
+                立即测算 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
           </div>
 
           <!-- 流年运势 -->
@@ -253,9 +262,11 @@
             <div class="feature-meta">
               <span class="feature-cost">⚡ 50积分/次</span>
             </div>
-            <router-link to="/yearly-fortune" class="feature-link feature-link--sm">
-              体验 <el-icon><ArrowRight /></el-icon>
-            </router-link>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/yearly-fortune" class="feature-link feature-link--sm">
+                立即测算 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
           </div>
 
           <!-- 帮助中心 -->
@@ -268,9 +279,11 @@
             <div class="feature-meta">
               <span class="feature-cost feature-cost--free">✨ 完全免费</span>
             </div>
-            <router-link to="/help" class="feature-link feature-link--sm">
-              查看 <el-icon><ArrowRight /></el-icon>
-            </router-link>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/help" class="feature-link feature-link--sm">
+                立即查看 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
           </div>
 
           <!-- 吉日查询（即将推出） -->
@@ -1651,15 +1664,6 @@ onUnmounted(() => {
   background: rgba(76, 175, 130, 0.12);
   border-color: rgba(76, 175, 130, 0.2);
   color: rgba(76, 175, 130, 0.9);
-}
-
-.feature-access {
-  font-size: 12px;
-  color: #8a7a68;
-}
-
-.feature-access--free {
-  color: #2d8a5e;
 }
 
 .feature-link {

@@ -16,7 +16,7 @@
 - [x] 点击home.vue的yearly-banner-btn，跳转后，并没有真实的流年测试场景页面，帮我新建页面，并且流年测试调用ai分析接口，记得加上首页菜单内
 - [x] home.vue页的features-grid布局很有问题，第二排，第三排的顶部按钮没有居中，按钮的立即体验文字描述有问题，所有的feature-access去掉
 - [x] home.vue页的testimonials-grid里面的service-tag背景去掉，居中显示文本，调整字体大小和颜色，使其更清晰易读。
-- [] bazi.vue页的智能填写策略中，右侧的按钮功能可以取消了
+- [x] bazi.vue页的智能填写策略中，右侧的按钮功能可以取消了
 - [] bazi.vue页中，出生时间与性别合并为同一列，出生地点补充其他城市，或者引入城市js包，不再需要时间准确度确认
 - [] tarot.vue中，question-section的样式很丑，标题与提示与输入框连在一起，请调整样式，使其更美观，增加一些间距
 - [] daily.vue中，daily-action-zone日历功能显得很大，可以调整为更紧凑的布局，增加一些空白区域，使其看起来更整洁。
