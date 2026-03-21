@@ -218,7 +218,7 @@
         </div>
         
         <div class="form-group" data-bazi-field="gender">
-          <label>性别</label>
+          <label>性别 <span class="required-mark">*</span></label>
           <el-radio-group v-model="gender">
             <el-radio label="male">男</el-radio>
             <el-radio label="female">女</el-radio>
@@ -1498,7 +1498,7 @@ const baziSubmitSummaryText = computed(() => {
 })
 
 const gender = ref('male')
-const location = ref('')
+const location = ref('北京市')
 const loading = ref(false)
 const result = ref(null)
 const currentPoints = ref(0)
