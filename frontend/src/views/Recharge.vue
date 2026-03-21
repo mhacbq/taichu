@@ -5,7 +5,25 @@
         <BackButton />
         <h1 class="section-title">积分充值</h1>
       </div>
-      
+
+      <!-- 步骤指示器 -->
+      <div class="steps-indicator">
+        <div class="step-item" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+          <div class="step-number">1</div>
+          <div class="step-label">选择金额</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+          <div class="step-number">2</div>
+          <div class="step-label">确认支付</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
+          <div class="step-number">3</div>
+          <div class="step-label">完成</div>
+        </div>
+      </div>
+
       <!-- 当前积分 -->
       <div class="current-points card">
         <div class="points-display">
@@ -17,7 +35,10 @@
 
       <!-- 充值选项 -->
       <div class="recharge-options card">
-        <h3>选择充值金额</h3>
+        <div class="section-header">
+          <h3>选择充值金额</h3>
+          <span class="step-badge">步骤 1</span>
+        </div>
         <div class="options-grid">
           <div 
             v-for="option in rechargeOptions" 
@@ -31,25 +52,28 @@
             @click="selectAmount(option.amount)"
           >
             <div v-if="option.type === 'vip'" class="vip-crown-icon">👑</div>
-            <div class="amount">¥{{ option.amount }}</div>
-            <div class="points" :class="{ 'vip-points': option.type === 'vip' }">
-              {{ option.type === 'vip' ? option.label : option.points + '积分' }}
+            <div class="option-content">
+              <div class="amount">¥{{ option.amount }}</div>
+              <div class="points" :class="{ 'vip-points': option.type === 'vip' }">
+                {{ option.type === 'vip' ? option.label : option.points + '积分' }}
+              </div>
+              <div v-if="option.desc" class="desc">{{ option.desc }}</div>
+              <div v-if="option.type !== 'vip'" class="unlock-hint">
+                可解锁 {{ Math.floor((option.points + (option.bonus || 0)) / 5) }}+ 次占卜
+              </div>
+              <div v-if="option.bonus > 0" class="bonus">+{{ option.bonus }}赠送</div>
+              <div v-if="option.bonus > 0" class="hot-tag">HOT</div>
             </div>
-
-            <div v-if="option.desc" class="desc">{{ option.desc }}</div>
-            <div v-if="option.type !== 'vip'" class="unlock-hint">
-              可解锁 {{ Math.floor((option.points + (option.bonus || 0)) / 5) }}+ 次占卜
-            </div>
-
-            <div v-if="option.bonus > 0" class="bonus">+{{ option.bonus }}赠送</div>
-            <div v-if="option.bonus > 0" class="hot-tag">HOT</div>
           </div>
         </div>
       </div>
 
       <!-- 支付信息 -->
       <div class="payment-info card" v-if="selectedAmount">
-        <h3>确认支付</h3>
+        <div class="section-header">
+          <h3>确认支付</h3>
+          <span class="step-badge">步骤 2</span>
+        </div>
         
         <!-- 支付方式选择 -->
         <div class="payment-methods">
@@ -110,7 +134,10 @@
 
       <!-- 充值记录 -->
       <div class="recharge-history card">
-        <h3>充值记录</h3>
+        <div class="section-header">
+          <h3>充值记录</h3>
+          <el-icon class="header-icon"><Clock /></el-icon>
+        </div>
         <div class="history-list" v-if="rechargeHistory.length > 0">
           <div v-for="record in rechargeHistory" :key="record.id" class="history-item">
             <div class="history-info">
@@ -173,7 +200,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { InfoFilled, Picture, ChatDotRound, Loading, Wallet, ArrowRight } from '@element-plus/icons-vue'
+import { InfoFilled, Picture, ChatDotRound, Loading, Wallet, ArrowRight, Clock } from '@element-plus/icons-vue'
 import { getPointsBalance } from '../api'
 import { getRechargeOptions, createRechargeOrder, queryRechargeOrder, getRechargeHistory } from '../api/payment'
 import { createAlipayOrder } from '../api/alipay'
@@ -193,6 +220,7 @@ const isWechatBrowser = ref(false)
 const qrCodeUrl = ref('')
 const generatingQR = ref(false)
 const paymentMethod = ref('wechat') // 'wechat' | 'alipay'
+const currentStep = ref(1) // 当前步骤
 
 // 计算选中的积分数量
 const selectedPoints = computed(() => {
@@ -318,6 +346,7 @@ const loadRechargeHistory = async () => {
 // 选择金额
 const selectAmount = (amount) => {
   selectedAmount.value = amount
+  currentStep.value = 2
 }
 
 // 处理充值
@@ -567,6 +596,79 @@ const getStatusText = (status) => {
 </script>
 
 <style scoped>
+/* 步骤指示器 */
+.steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 32px;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
+  border-radius: 20px;
+  border: 2px solid var(--border-light);
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 1;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 3px solid var(--border-light);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-label {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.step-item.active .step-number {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.step-item.active .step-label {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.step-item.completed .step-number {
+  background: var(--success-color);
+  border-color: var(--success-color);
+  color: white;
+}
+
+.step-item.completed .step-label {
+  color: var(--success-color);
+}
+
+.step-line {
+  flex: 1;
+  height: 3px;
+  background: var(--border-light);
+  min-width: 60px;
+  margin: 0 8px;
+}
+
 .recharge-page {
   padding: 60px 0;
   max-width: 960px;
@@ -645,9 +747,37 @@ const getStatusText = (status) => {
   margin-bottom: 20px;
 }
 
-.recharge-options h3 {
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.section-header h3 {
   color: var(--text-primary);
-  margin-bottom: 20px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
+  border: 2px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 18px;
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.header-icon {
+  font-size: 20px;
+  color: var(--primary-color);
 }
 
 .options-grid {
@@ -672,10 +802,10 @@ const getStatusText = (status) => {
 }
 
 .option-item {
-  background: var(--bg-card);
+  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
   border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 20px 15px;
+  border-radius: 20px;
+  padding: 24px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -703,39 +833,96 @@ const getStatusText = (status) => {
 }
 
 .option-item:hover {
-  background: var(--white-08);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, var(--surface-raised), var(--bg-card));
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border-color: rgba(var(--primary-rgb), 0.2);
 }
 
 .option-item:active {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .option-item.active {
   border-color: var(--primary-color);
-  background: var(--primary-light-10);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.04));
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(var(--primary-rgb), 0.25);
 }
 
 .option-item.active::after {
   content: '✓';
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
   background: var(--primary-color);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
   animation: checkmark 0.3s ease;
+}
+
+.option-content {
+  position: relative;
+  z-index: 1;
+}
+
+.amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.points {
+  font-size: 16px;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.unlock-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.bonus {
+  font-size: 13px;
+  color: var(--warning-color);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.hot-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+  color: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.option-item.hot {
+  border-color: rgba(255, 107, 107, 0.3);
 }
 
 @keyframes checkmark {
@@ -757,20 +944,21 @@ const getStatusText = (status) => {
 .option-item.vip {
   background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
   border: 2px solid #D4AF37;
-  grid-column: span 3; /* Make it full width if possible, or handle grid */
+  grid-column: span 3;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  padding: 25px 40px;
+  justify-content: flex-start;
+  padding: 30px 40px;
+  gap: 24px;
 }
 
 @media (max-width: 768px) {
   .option-item.vip {
     grid-column: span 2;
     flex-direction: column;
-    padding: 20px;
-    gap: 10px;
+    padding: 24px;
+    gap: 16px;
   }
 }
 
@@ -782,32 +970,33 @@ const getStatusText = (status) => {
 
 .option-item.vip.active {
   background: linear-gradient(135deg, #3d3d3d, #252525);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
 }
 
 .vip-crown-icon {
-  font-size: 32px;
-  margin-right: 20px;
+  font-size: 36px;
   animation: float 3s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 .option-item.vip .amount {
   color: #D4AF37;
-  font-size: 36px;
-  margin-bottom: 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  font-size: 40px;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 .option-item.vip .points {
   color: #f0e68c;
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 .option-item.vip .desc {
   color: #bdbdbd;
-  font-size: 14px;
-  margin-top: 5px;
+  font-size: 15px;
+  margin-bottom: 0;
 }
 
 /* Animations */
