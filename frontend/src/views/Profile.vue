@@ -25,283 +25,258 @@
       <!-- 签到卡片 -->
       <CheckinCard />
 
-      <div class="profile-grid">
-        <!-- 用户信息卡片 -->
-        <div class="user-info card card-hover">
-          <div class="user-stats">
-            <div class="stat">
-              <span class="stat-value">{{ pointsBalance }}</span>
-              <span class="stat-label">积分</span>
+      <div class="profile-layout">
+        <!-- 左侧边栏 -->
+        <aside class="profile-sidebar">
+          <!-- 用户信息卡片 -->
+          <div class="sidebar-card user-card card-hover">
+            <div class="user-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ pointsBalance }}</span>
+                <span class="stat-label">积分</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ baziCount }}</span>
+                <span class="stat-label">排盘</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ tarotCount }}</span>
+                <span class="stat-label">占卜</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ liuyaoCount }}</span>
+                <span class="stat-label">六爻</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ hehunCount }}</span>
+                <span class="stat-label">合婚</span>
+              </div>
             </div>
-            <div class="stat">
-              <span class="stat-value">{{ baziCount }}</span>
-              <span class="stat-label">排盘次数</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ tarotCount }}</span>
-              <span class="stat-label">占卜次数</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ liuyaoCount }}</span>
-              <span class="stat-label">六爻次数</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ hehunCount }}</span>
-              <span class="stat-label">合婚次数</span>
+            
+            <!-- 积分等级 -->
+            <div class="level-section">
+              <div class="level-header">
+                <span class="level-title">积分等级</span>
+                <span class="level-name">{{ pointsLevelName }}</span>
+              </div>
+              <el-progress 
+                :percentage="pointsPercentage" 
+                :format="pointsProgressFormat"
+                :color="pointsProgressColor"
+                :stroke-width="10"
+                class="level-progress"
+              />
+              <div class="level-footer">
+                <span>还需 {{ pointsToNextLevel }} 积分升级</span>
+                <router-link to="/recharge" class="recharge-btn">充值</router-link>
+              </div>
             </div>
           </div>
-          
-          <!-- 积分进度条 -->
-          <div class="points-progress-section">
-            <div class="points-progress-header">
-              <span class="points-progress-title">积分等级</span>
-              <span class="points-progress-level">{{ pointsLevelName }}</span>
-            </div>
-            <el-progress 
-              :percentage="pointsPercentage" 
-              :format="pointsProgressFormat"
-              :color="pointsProgressColor"
-              :stroke-width="12"
-              class="points-progress-bar"
-            />
-            <div class="points-progress-footer">
-              <span>距离下一等级还需 {{ pointsToNextLevel }} 积分</span>
-              <router-link to="/recharge" class="points-recharge-link">去充值 ></router-link>
-            </div>
-          </div>
-        </div>
 
-        <!-- 积分明细 -->
-        <div class="points-section card card-hover">
-          <h3>积分明细</h3>
-          <div class="points-list" v-if="pointsHistory.length > 0">
-            <div v-for="record in pointsHistory" :key="record.id" class="points-item">
-              <div class="points-info">
-                <span class="points-action">{{ record.action }}</span>
-                <span class="points-time" :title="formatDate(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
+          <!-- 积分获取攻略 -->
+          <div class="sidebar-card guide-card card-hover">
+            <h4><el-icon><Coin /></el-icon> 积分获取攻略</h4>
+            <div class="guide-list">
+              <div class="guide-item" v-for="method in pointsMethods" :key="method.id">
+                <div class="guide-icon">
+                  <el-icon v-if="method.icon === 'calendar'"><Calendar /></el-icon>
+                  <el-icon v-else-if="method.icon === 'present'"><Present /></el-icon>
+                  <el-icon v-else-if="method.icon === 'user'"><UserFilled /></el-icon>
+                  <el-icon v-else-if="method.icon === 'share'"><Share /></el-icon>
+                  <el-icon v-else-if="method.icon === 'chat'"><ChatDotRound /></el-icon>
+                </div>
+                <div class="guide-content">
+                  <span class="guide-name">{{ method.name }}</span>
+                  <span class="guide-reward">+{{ method.points }}</span>
+                </div>
+                <el-button 
+                  v-if="method.action" 
+                  type="primary" 
+                  size="small"
+                  text
+                  @click="handleMethodAction(method)"
+                >
+                  {{ method.actionText }}
+                </el-button>
               </div>
-              <span class="points-change" :class="{ positive: record.points > 0, negative: record.points < 0 }">
-                {{ record.points > 0 ? '+' : '' }}{{ record.points }}
-              </span>
             </div>
           </div>
-          <el-empty v-else description="暂无积分记录" />
-        </div>
 
-        <!-- 历史记录 Tab 区域 -->
-        <div class="history-tabs-section card card-hover">
-          <el-tabs v-model="activeHistoryTab" class="history-tabs">
-            <el-tab-pane label="八字排盘" name="bazi">
-              <AsyncState :status="baziStatus" loadingText="正在加载排盘记录..." @retry="loadBaziHistory">
-                <div class="history-list" v-if="baziHistory.length > 0">
-                  <div v-for="record in baziHistory" :key="record.id" class="history-item">
-                    <div class="history-info">
-                      <span class="history-date" :title="formatDateTime(record.createdAt)">{{ formatTime(record.createdAt) }}</span>
-                      <span class="history-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
-                    </div>
-                    <div class="history-bazi">
-                      <span class="bazi-pillar">{{ record.yearGan }}{{ record.yearZhi }}</span>
-                      <span class="bazi-pillar">{{ record.monthGan }}{{ record.monthZhi }}</span>
-                      <span class="bazi-pillar highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
-                      <span class="bazi-pillar">{{ record.hourGan }}{{ record.hourZhi }}</span>
-                    </div>
-                    <el-button type="primary" size="small" @click="viewDetail(record)">查看</el-button>
-                  </div>
-                </div>
-                <el-empty v-else description="暂无排盘记录" />
-                <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
-                  <el-pagination
-                    v-model:current-page="baziCurrentPage"
-                    v-model:page-size="baziPageSize"
-                    :total="baziTotal"
-                    layout="prev, pager, next"
-                    @current-change="loadBaziHistory"
-                  />
-                </div>
-              </AsyncState>
-            </el-tab-pane>
-
-            <el-tab-pane label="塔罗占卜" name="tarot">
-              <AsyncState :status="tarotStatus" loadingText="正在加载占卜记录..." @retry="loadTarotHistory">
-                <div class="history-list" v-if="tarotHistory.length > 0">
-                  <div v-for="(record, index) in tarotHistory" :key="index" class="history-item tarot-item">
-                    <div class="history-info">
-                      <span class="history-date" :title="formatDateTime(record.date)">{{ formatTime(record.date) }}</span>
-                      <span class="history-question" :title="record.question">{{ record.question }}</span>
-                      <span class="history-birth">{{ record.spreadName }}</span>
-                    </div>
-
-                    <div class="tarot-cards">
-                      <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="tarot-mini">
-                        {{ card.emoji }}<small v-if="card.reversed">逆</small>
-                      </span>
-                      <span v-if="record.cards.length > 3" class="more-cards">+{{ record.cards.length - 3 }}</span>
-                    </div>
-                    <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看</el-button>
-                  </div>
-                </div>
-                <el-empty v-else description="暂无占卜记录" />
-              </AsyncState>
-            </el-tab-pane>
-
-            <el-tab-pane label="六爻占卜" name="liuyao">
-              <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
-                <div class="history-list" v-if="liuyaoHistory.length > 0">
-                  <div v-for="record in liuyaoHistory" :key="record.id" class="history-item">
-                    <div class="history-info">
-                      <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
-                      <span class="history-question" :title="record.question">{{ record.question || '六爻占卜' }}</span>
-                      <span class="history-birth">{{ record.method_name || '铜钱起卦' }}</span>
-                    </div>
-                    <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
-                  </div>
-                </div>
-                <el-empty v-else description="暂无六爻记录" />
-              </AsyncState>
-            </el-tab-pane>
-
-            <el-tab-pane label="八字合婚" name="hehun">
-              <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
-                <div class="history-list" v-if="hehunHistory.length > 0">
-                  <div v-for="record in hehunHistory" :key="record.id" class="history-item">
-                    <div class="history-info">
-                      <span class="history-date" :title="formatDateTime(record.created_at)">{{ formatTime(record.created_at) }}</span>
-                      <span class="history-birth">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
-                      <span v-if="record.total_score" class="history-score">综合得分：{{ record.total_score }}</span>
-                    </div>
-                    <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
-                  </div>
-                </div>
-                <el-empty v-else description="暂无合婚记录" />
-              </AsyncState>
-            </el-tab-pane>
-          </el-tabs>
-        </div>
-
-        <!-- 积分获取攻略 -->
-        <div class="points-guide-section card card-hover">
-          <h3><el-icon><Coin /></el-icon> 积分获取攻略</h3>
-          <div class="points-methods">
-            <div class="method-item card-hover" v-for="method in pointsMethods" :key="method.id">
-              <div class="method-icon">
-                <el-icon v-if="method.icon === 'calendar'"><Calendar /></el-icon>
-                <el-icon v-else-if="method.icon === 'present'"><Present /></el-icon>
-                <el-icon v-else-if="method.icon === 'user'"><UserFilled /></el-icon>
-                <el-icon v-else-if="method.icon === 'share'"><Share /></el-icon>
-                <el-icon v-else-if="method.icon === 'chat'"><ChatDotRound /></el-icon>
-              </div>
-              <div class="method-info">
-                <h4>{{ method.name }}</h4>
-                <p>{{ method.desc }}</p>
-              </div>
-              <div class="method-reward">+{{ method.points }}</div>
-              <el-button 
-                v-if="method.action" 
-                type="primary" 
-                size="small"
-                @click="handleMethodAction(method)"
-              >
-                {{ method.actionText }}
+          <!-- 邀请好友 -->
+          <div class="sidebar-card invite-card card-hover">
+            <h4><el-icon><Present /></el-icon> 邀请好友</h4>
+            <p class="invite-text">每邀请一位好友，双方各得 <strong>20积分</strong></p>
+            <div class="invite-actions">
+              <el-button type="primary" @click="copyInviteCode" class="invite-btn-main">
+                <el-icon><DocumentCopy /></el-icon> 复制邀请码
               </el-button>
-              <el-icon v-else class="completed-badge"><Check /></el-icon>
+              <el-button @click="copyInviteLink" size="small">
+                <el-icon><Link /></el-icon> 分享链接
+              </el-button>
             </div>
-          </div>
-        </div>
-
-        <!-- 邀请好友 -->
-        <div class="invite-section card card-hover">
-          <h3><el-icon><Present /></el-icon> 邀请好友赚积分</h3>
-          <div class="invite-content">
-            <p class="invite-desc">每邀请一位好友注册，您和好友各获得 <strong>20积分</strong></p>
-            
-            <!-- 邀请码 -->
-            <div class="invite-code-box">
-              <span class="code-label">您的邀请码：</span>
-              <div class="code-display">
-                <span class="code-value">{{ inviteCode || '加载中...' }}</span>
-                <el-button type="primary" size="small" @click="copyInviteCode">
-                  <el-icon><DocumentCopy /></el-icon> 复制
-                </el-button>
-              </div>
-            </div>
-            
-            <!-- 快速分享 -->
-            <div class="share-buttons">
-              <p class="share-label">快速分享：</p>
-              <div class="share-btns">
-                <el-button type="success" size="small" @click="shareToWechat">
-                  <el-icon><ChatDotRound /></el-icon> 微信
-                </el-button>
-                <el-button type="primary" size="small" @click="copyInviteLink">
-                  <el-icon><Link /></el-icon> 复制链接
-                </el-button>
-              </div>
-            </div>
-            
-            <!-- 邀请统计 -->
             <div class="invite-stats">
-              <div class="stat-card card-hover">
-                <span class="stat-value">{{ inviteCount }}</span>
-                <span class="stat-label">已邀请</span>
+              <div class="invite-stat">
+                <span class="stat-num">{{ inviteCount }}</span>
+                <span class="stat-txt">已邀请</span>
               </div>
-              <div class="stat-card card-hover">
-                <span class="stat-value">{{ invitePoints }}</span>
-                <span class="stat-label">获得积分</span>
+              <div class="invite-stat">
+                <span class="stat-num">{{ invitePoints }}</span>
+                <span class="stat-txt">获积分</span>
               </div>
             </div>
-            
-            <!-- 邀请规则 -->
-            <div class="invite-rules card-hover">
-              <h4><el-icon><List /></el-icon> 邀请规则</h4>
-              <ul>
-                <li>好友通过您的邀请码注册，双方各得20积分</li>
-                <li>每位好友仅限奖励一次</li>
-                <li>禁止恶意刷量，违规将取消奖励</li>
-              </ul>
+          </div>
+        </aside>
+
+        <!-- 右侧主区域 -->
+        <main class="profile-main">
+          <!-- 历史记录 -->
+          <div class="main-card history-card card-hover">
+            <el-tabs v-model="activeHistoryTab" class="custom-tabs">
+              <el-tab-pane label="八字排盘" name="bazi">
+                <AsyncState :status="baziStatus" loadingText="正在加载排盘记录..." @retry="loadBaziHistory">
+                  <div class="history-grid" v-if="baziHistory.length > 0">
+                    <div v-for="record in baziHistory" :key="record.id" class="history-record">
+                      <div class="record-header">
+                        <span class="record-time">{{ formatTime(record.createdAt) }}</span>
+                        <span class="record-birth">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
+                      </div>
+                      <div class="record-content">
+                        <span class="bazi-p">{{ record.yearGan }}{{ record.yearZhi }}</span>
+                        <span class="bazi-p">{{ record.monthGan }}{{ record.monthZhi }}</span>
+                        <span class="bazi-p highlight">{{ record.dayGan }}{{ record.dayZhi }}</span>
+                        <span class="bazi-p">{{ record.hourGan }}{{ record.hourZhi }}</span>
+                      </div>
+                      <el-button type="primary" size="small" @click="viewDetail(record)">查看详情</el-button>
+                    </div>
+                  </div>
+                  <el-empty v-else description="暂无排盘记录" />
+                  <div class="pagination-wrapper" v-if="baziTotal > baziPageSize">
+                    <el-pagination
+                      v-model:current-page="baziCurrentPage"
+                      v-model:page-size="baziPageSize"
+                      :total="baziTotal"
+                      layout="prev, pager, next"
+                      @current-change="loadBaziHistory"
+                    />
+                  </div>
+                </AsyncState>
+              </el-tab-pane>
+
+              <el-tab-pane label="塔罗占卜" name="tarot">
+                <AsyncState :status="tarotStatus" loadingText="正在加载占卜记录..." @retry="loadTarotHistory">
+                  <div class="history-grid" v-if="tarotHistory.length > 0">
+                    <div v-for="(record, index) in tarotHistory" :key="index" class="history-record">
+                      <div class="record-header">
+                        <span class="record-time">{{ formatTime(record.date) }}</span>
+                        <span class="record-type">{{ record.spreadName }}</span>
+                      </div>
+                      <div class="record-content">
+                        <div class="tarot-cards-mini">
+                          <span v-for="(card, cidx) in record.cards.slice(0, 3)" :key="cidx" class="card-emoji">
+                            {{ card.emoji }}<small v-if="card.reversed">逆</small>
+                          </span>
+                          <span v-if="record.cards.length > 3" class="more">+{{ record.cards.length - 3 }}</span>
+                        </div>
+                      </div>
+                      <el-button type="primary" size="small" @click="viewTarotDetail(record)">查看详情</el-button>
+                    </div>
+                  </div>
+                  <el-empty v-else description="暂无占卜记录" />
+                </AsyncState>
+              </el-tab-pane>
+
+              <el-tab-pane label="六爻占卜" name="liuyao">
+                <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
+                  <div class="history-grid" v-if="liuyaoHistory.length > 0">
+                    <div v-for="record in liuyaoHistory" :key="record.id" class="history-record">
+                      <div class="record-header">
+                        <span class="record-time">{{ formatTime(record.created_at) }}</span>
+                        <span class="record-type">{{ record.method_name || '铜钱起卦' }}</span>
+                      </div>
+                      <div class="record-content">
+                        <span class="record-question">{{ record.question || '六爻占卜' }}</span>
+                      </div>
+                      <router-link to="/liuyao" class="el-button el-button--primary el-button--small">查看详情</router-link>
+                    </div>
+                  </div>
+                  <el-empty v-else description="暂无六爻记录" />
+                </AsyncState>
+              </el-tab-pane>
+
+              <el-tab-pane label="八字合婚" name="hehun">
+                <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
+                  <div class="history-grid" v-if="hehunHistory.length > 0">
+                    <div v-for="record in hehunHistory" :key="record.id" class="history-record">
+                      <div class="record-header">
+                        <span class="record-time">{{ formatTime(record.created_at) }}</span>
+                        <span v-if="record.total_score" class="record-score">得分：{{ record.total_score }}</span>
+                      </div>
+                      <div class="record-content">
+                        <span class="record-couple">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
+                      </div>
+                      <router-link to="/hehun" class="el-button el-button--primary el-button--small">查看详情</router-link>
+                    </div>
+                  </div>
+                  <el-empty v-else description="暂无合婚记录" />
+                </AsyncState>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
+
+          <!-- 积分明细 -->
+          <div class="main-card points-card card-hover">
+            <div class="card-header">
+              <h3>积分明细</h3>
             </div>
+            <div class="points-list" v-if="pointsHistory.length > 0">
+              <div v-for="record in pointsHistory" :key="record.id" class="points-row">
+                <div class="points-left">
+                  <span class="points-action">{{ record.action }}</span>
+                  <span class="points-time">{{ formatTime(record.createdAt) }}</span>
+                </div>
+                <span class="points-amount" :class="{ positive: record.points > 0, negative: record.points < 0 }">
+                  {{ record.points > 0 ? '+' : '' }}{{ record.points }}
+                </span>
+              </div>
+            </div>
+            <el-empty v-else description="暂无积分记录" />
           </div>
-        </div>
 
-        <!-- 反馈建议 -->
-        <div class="feedback-section card card-hover">
-          <h3>反馈建议</h3>
-          <div v-if="feedbackEnabled" class="feedback-form">
-            <el-input
-              v-model="feedbackContent"
-              type="textarea"
-              :rows="4"
-              placeholder="请输入您的意见或建议，帮助我们改进服务..."
-              class="feedback-input"
-            />
-            <el-input
-              v-model="feedbackContact"
-              placeholder="请输入您的手机号或邮箱（方便我们回复您）"
-              class="contact-input"
-            />
-            <el-button type="primary" @click="submitFeedbackForm" :loading="feedbackLoading">
-              提交反馈
-            </el-button>
+          <!-- 反馈建议 -->
+          <div class="main-card feedback-card card-hover">
+            <h3>反馈建议</h3>
+            <div v-if="feedbackEnabled" class="feedback-form">
+              <el-input
+                v-model="feedbackContent"
+                type="textarea"
+                :rows="4"
+                placeholder="请输入您的意见或建议..."
+                class="feedback-input"
+              />
+              <el-input
+                v-model="feedbackContact"
+                placeholder="手机号或邮箱（选填）"
+                class="feedback-contact"
+              />
+              <el-button type="primary" @click="submitFeedbackForm" :loading="feedbackLoading">
+                提交反馈
+              </el-button>
+            </div>
+            <el-empty v-else description="反馈功能暂时关闭" />
           </div>
-          <el-empty v-else description="反馈功能暂时关闭，后续开放后可在这里直接提交建议" />
-        </div>
 
-        <!-- 帮助与设置 -->
-        <div class="help-section card card-hover">
-          <h3><el-icon><List /></el-icon> 帮助与设置</h3>
-          <div class="help-items">
-            <div class="help-item" @click="restartTourGuide">
-              <div class="help-icon">
+          <!-- 帮助与设置 -->
+          <div class="main-card help-card card-hover">
+            <h3><el-icon><List /></el-icon> 帮助与设置</h3>
+            <div class="help-list">
+              <div class="help-link" @click="restartTourGuide">
                 <el-icon><DocumentCopy /></el-icon>
+                <span>重新查看引导</span>
+                <el-icon><ArrowRight /></el-icon>
               </div>
-              <div class="help-info">
-                <h4>重新查看引导</h4>
-                <p>再次体验新用户引导，了解平台功能</p>
-              </div>
-              <el-icon class="help-arrow"><ArrowDown /></el-icon>
             </div>
           </div>
-        </div>
-
+        </main>
       </div>
     </div>
   </div>
@@ -812,10 +787,10 @@ onUnmounted(() => {
   gap: 20px;
   margin-bottom: 36px;
   padding: 28px 32px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
-  border: 2px solid rgba(var(--primary-rgb), 0.25);
-  border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.15);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.04));
+  border: 2px solid rgba(212, 175, 55, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
 }
 
 .profile-hero-content {
@@ -826,8 +801,8 @@ onUnmounted(() => {
 }
 
 .profile-hero-avatar {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   overflow: hidden;
   background: linear-gradient(135deg, #B8860B, #D4AF37);
@@ -835,432 +810,532 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 3px solid rgba(212, 175, 55, 0.5);
-  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+  border: 2px solid rgba(212, 175, 55, 0.4);
 }
 
 .profile-hero-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 .profile-hero-avatar-placeholder {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #fff;
 }
 
 .profile-hero-name {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 8px;
+  color: #333;
+  margin: 0 0 6px;
 }
 
 .profile-hero-sub {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
   font-size: 14px;
 }
 
-.profile-hero-id { color: var(--text-secondary); font-weight: 500; }
-.profile-hero-divider { color: var(--border-color); font-size: 14px; }
+.profile-hero-id { color: #999; font-weight: 500; }
+.profile-hero-divider { color: #e0e0e0; }
 
 .profile-hero-points-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.08));
-  border: 2px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 999px;
-  color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.06));
+  border-radius: 20px;
+  color: #D4AF37;
   font-weight: 700;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.15);
+  font-size: 13px;
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.page-header .section-title {
-  margin: 0;
-}
-
-.profile-grid {
+/* 新布局 */
+.profile-layout {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 32px;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
 }
 
-.card {
-  background: linear-gradient(135deg, var(--bg-card), var(--surface-raised));
-  border-radius: 24px;
-  padding: 28px;
-  border: 2px solid var(--border-light);
-  box-shadow: var(--shadow-lg);
-}
-
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-  border-color: rgba(var(--primary-rgb), 0.2);
-}
-
-.user-info {
-  text-align: center;
-}
-
-.avatar-section {
-  margin-bottom: 30px;
-}
-
-.avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: var(--primary-gradient);
-  margin: 0 auto 15px;
+/* 侧边栏 */
+.profile-sidebar {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 36px;
-  color: var(--text-primary);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
+  flex-direction: column;
+  gap: 20px;
 }
 
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.sidebar-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
-.avatar-section h3 {
-  color: var(--text-primary);
-  margin-bottom: 5px;
-}
-
-.user-id {
-  color: var(--text-tertiary);
-  font-size: 14px;
-}
-
-.user-stats {
-  display: flex;
-  justify-content: space-around;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-light);
-}
-
-.stat {
-  text-align: center;
-}
-
-.stat-value {
-  display: block;
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
-.points-progress-section {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-light);
-  text-align: left;
-}
-
-.points-progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.points-progress-title {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.points-progress-level {
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.points-progress-bar {
-  margin-bottom: 12px;
-}
-
-.points-progress-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
-.points-recharge-link {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.points-recharge-link:hover {
-  text-decoration: underline;
-}
-
-.points-section,
-.history-tabs-section,
-.feedback-section {
-  grid-column: 2;
-}
-
-.points-section h3,
-.feedback-section h3,
-.points-guide-section h3 {
-  color: var(--text-primary);
-  margin-bottom: 24px;
-  font-size: 20px;
+.sidebar-card h4 {
+  margin: 0 0 18px;
+  font-size: 16px;
   font-weight: 700;
+  color: #333;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.points-guide-section h3 {
-  color: var(--primary-color);
-}
-
-.history-tabs-section {
-  padding: 24px;
-}
-
-:deep(.history-tabs .el-tabs__nav-wrap::after) {
-  height: 2px;
-  background-color: var(--border-light);
-}
-
-:deep(.history-tabs .el-tabs__item) {
-  font-size: 16px;
-  color: var(--text-secondary);
-  padding: 0 24px;
-  font-weight: 600;
-}
-
-:deep(.history-tabs .el-tabs__item.is-active) {
-  color: var(--primary-color);
-  font-weight: 700;
-}
-
-:deep(.history-tabs .el-tabs__active-bar) {
-  background-color: var(--primary-color);
-  height: 3px;
-}
-
-.points-list {
-  max-height: 340px;
-  overflow-y: auto;
-}
-
-.points-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 2px solid var(--border-light);
+.card-hover {
   transition: all 0.3s ease;
 }
 
-.points-item:hover {
-  background: rgba(var(--primary-rgb), 0.03);
-  padding-left: 12px;
-  padding-right: 12px;
-  border-radius: 8px;
-  margin: 0 -12px;
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: rgba(212, 175, 55, 0.3);
 }
 
-.points-item:last-child {
-  border-bottom: none;
+/* 用户统计卡片 */
+.user-card {
+  padding: 20px;
 }
 
-.points-info {
-  display: flex;
-  flex-direction: column;
+.user-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
-.points-action {
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.points-time {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 6px;
-}
-
-.points-change {
-  font-weight: 700;
-  font-size: 18px;
-  padding: 4px 12px;
+.stat-item {
+  text-align: center;
+  padding: 12px 4px;
+  background: linear-gradient(135deg, #fafafa, #f5f5f5);
   border-radius: 12px;
+  border: 1px solid #e8e8e8;
 }
 
-.points-change.positive {
-  color: var(--success-color);
-  background: rgba(var(--success-rgb), 0.1);
+.stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: #D4AF37;
+  margin-bottom: 4px;
 }
 
-.points-change.negative {
-  color: var(--danger-color);
-  background: rgba(var(--danger-rgb), 0.1);
+.stat-label {
+  font-size: 11px;
+  color: #999;
 }
 
-.history-list {
-  max-height: 340px;
-  overflow-y: auto;
+/* 积分等级 */
+.level-section {
+  padding-top: 18px;
+  border-top: 2px dashed #f0f0f0;
 }
 
-.history-item {
+.level-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 0;
-  border-bottom: 2px solid var(--border-light);
-  flex-wrap: wrap;
-  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.level-title {
+  font-size: 13px;
+  color: #666;
+}
+
+.level-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #D4AF37;
+}
+
+.level-progress {
+  margin-bottom: 10px;
+}
+
+.level-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #999;
+}
+
+.recharge-btn {
+  color: #D4AF37;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 4px 12px;
+  background: rgba(212, 175, 55, 0.1);
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
-.history-item:hover {
-  background: rgba(var(--primary-rgb), 0.03);
-  padding-left: 12px;
-  padding-right: 12px;
-  border-radius: 8px;
-  margin: 0 -12px;
+.recharge-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
 }
 
-.history-item:last-child {
-  border-bottom: none;
-}
-
-.history-info {
+/* 积分获取攻略 */
+.guide-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.history-date {
-  color: var(--text-primary);
-  opacity: 0.95;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.history-gender {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 5px;
-}
-
-.history-bazi {
-  display: flex;
   gap: 10px;
-  font-family: monospace;
 }
 
-.bazi-pillar {
-  color: var(--text-secondary);
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
 }
 
-.bazi-pillar.highlight {
-  color: var(--primary-color);
-  font-weight: bold;
+.guide-item:hover {
+  background: rgba(212, 175, 55, 0.05);
 }
 
-.feedback-section .el-button {
-  margin-top: 15px;
+.guide-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #D4AF37;
+  flex-shrink: 0;
 }
 
-.feedback-form {
+.guide-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 2px;
 }
 
-.feedback-input,
-.contact-input {
+.guide-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.guide-reward {
+  font-size: 12px;
+  color: #D4AF37;
+  font-weight: 700;
+}
+
+/* 邀请卡片 */
+.invite-text {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.invite-text strong {
+  color: #D4AF37;
+}
+
+.invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.invite-btn-main {
   width: 100%;
 }
 
-.contact-input {
-  margin-top: 5px;
-}
-
-.history-birth {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 5px;
-}
-
-/* 塔罗历史样式 */
-.tarot-item {
-  align-items: center;
-}
-
-.history-question {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 5px;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tarot-cards {
+.invite-stats {
   display: flex;
-  gap: 5px;
+  justify-content: space-around;
+  padding-top: 16px;
+  border-top: 2px dashed #f0f0f0;
+}
+
+.invite-stat {
+  text-align: center;
+}
+
+.stat-num {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #D4AF37;
+}
+
+.stat-txt {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 主内容区 */
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.main-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.main-card h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+.card-header {
+  margin-bottom: 18px;
+}
+
+/* Tab样式 */
+:deep(.custom-tabs .el-tabs__nav-wrap::after) {
+  height: 2px;
+  background: #f0f0f0;
+}
+
+:deep(.custom-tabs .el-tabs__item) {
+  font-size: 15px;
+  color: #666;
+  padding: 0 20px;
+  font-weight: 600;
+}
+
+:deep(.custom-tabs .el-tabs__item.is-active) {
+  color: #D4AF37;
+}
+
+:deep(.custom-tabs .el-tabs__active-bar) {
+  background: #D4AF37;
+  height: 3px;
+}
+
+/* 历史记录网格 */
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.history-record {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.history-record:hover {
+  background: rgba(212, 175, 55, 0.03);
+  border-color: rgba(212, 175, 55, 0.2);
+  transform: translateY(-2px);
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.record-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.record-birth,
+.record-type,
+.record-score {
+  font-size: 12px;
+  color: #666;
+  background: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.record-score {
+  color: #D4AF37;
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.record-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.bazi-p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  padding: 4px 8px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.bazi-p.highlight {
+  color: #D4AF37;
+  border-color: rgba(212, 175, 55, 0.3);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.tarot-cards-mini {
+  display: flex;
+  gap: 6px;
   align-items: center;
 }
 
-.tarot-mini {
+.card-emoji {
   font-size: 20px;
-  position: relative;
 }
 
-.tarot-mini small {
+.card-emoji small {
   font-size: 8px;
-  color: var(--primary-color);
+  color: #D4AF37;
   position: absolute;
-  bottom: -5px;
-  right: -5px;
+  margin-left: -8px;
+  margin-top: 10px;
 }
 
-.more-cards {
+.more {
   font-size: 12px;
-  color: var(--text-tertiary);
-  margin-left: 5px;
+  color: #999;
+  margin-left: 4px;
 }
 
-/* 分页样式 */
+.record-question {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.record-couple {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 积分明细 */
+.points-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.points-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.points-row:hover {
+  background: rgba(212, 175, 55, 0.02);
+  padding: 14px 12px;
+  margin: 0 -12px;
+  border-radius: 8px;
+}
+
+.points-row:last-child {
+  border-bottom: none;
+}
+
+.points-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.points-action {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.points-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.points-amount {
+  font-weight: 700;
+  font-size: 16px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.points-amount.positive {
+  color: #67c23a;
+  background: rgba(103, 194, 58, 0.1);
+}
+
+.points-amount.negative {
+  color: #f56c6c;
+  background: rgba(245, 108, 108, 0.1);
+}
+
+/* 反馈表单 */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedback-input,
+.feedback-contact {
+  width: 100%;
+}
+
+/* 帮助链接 */
+.help-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.help-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  color: #333;
+}
+
+.help-link:hover {
+  background: rgba(212, 175, 55, 0.05);
+  color: #D4AF37;
+  transform: translateX(4px);
+}
+
+.help-link .el-icon {
+  color: #D4AF37;
+}
+
+/* 分页 */
 .pagination-wrapper {
   margin-top: 20px;
   display: flex;
@@ -1269,295 +1344,27 @@ onUnmounted(() => {
 
 :deep(.el-pagination) {
   --el-pagination-bg-color: transparent;
-  --el-pagination-hover-color: var(--primary-color);
-  --el-pagination-button-color: var(--text-secondary);
 }
 
 :deep(.el-pagination .btn-prev),
 :deep(.el-pagination .btn-next),
 :deep(.el-pagination .number) {
-  background: var(--bg-tertiary);
+  background: #fafafa;
   border-radius: 6px;
+  border: 1px solid #e8e8e8;
 }
 
 :deep(.el-pagination .number.active) {
-  background: var(--primary-color);
-  color: var(--text-primary);
+  background: #D4AF37;
+  color: #fff;
+  border-color: #D4AF37;
 }
 
-/* 积分获取攻略 */
-.points-guide-section {
-  grid-column: 2;
-}
-
-.points-methods {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.method-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
-  border-radius: 18px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid var(--border-light);
-}
-
-.method-item:hover {
-  transform: translateX(4px);
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.06), var(--bg-secondary));
-  border-color: rgba(var(--primary-rgb), 0.2);
-  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.1);
-}
-
-.method-icon {
-  font-size: 28px;
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  flex-shrink: 0;
-  border: 2px solid rgba(var(--primary-rgb), 0.15);
-}
-
-.method-info {
-  flex: 1;
-}
-
-.method-info h4 {
-  color: var(--text-primary);
-  font-size: 16px;
-  margin-bottom: 6px;
-  font-weight: 700;
-}
-
-.method-info p {
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.method-reward {
-  color: var(--primary-color);
-  font-weight: 700;
-  font-size: 18px;
-  padding: 6px 14px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06));
-  border-radius: 12px;
-  border: 2px solid rgba(var(--primary-rgb), 0.2);
-}
-
-.completed-badge {
-  color: var(--success-color);
-  font-size: 18px;
-}
-
-/* 邀请好友 */
-.invite-section h3 {
-  color: var(--text-primary);
-  margin-bottom: 20px;
-}
-
-.invite-content {
-  text-align: center;
-}
-
-.invite-desc {
-  color: var(--text-secondary);
-  margin-bottom: 25px;
-  font-size: 15px;
-}
-
-.invite-code-box {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.05), rgba(212, 175, 55, 0.05));
-  border: 2px dashed rgba(184, 134, 11, 0.3);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.code-label {
-  display: block;
-  color: var(--text-tertiary);
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.code-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.code-value {
-  color: var(--primary-color);
-  font-size: 28px;
-  font-weight: bold;
-  letter-spacing: 3px;
-  font-family: monospace;
-}
-
-.share-buttons {
-  margin-bottom: 25px;
-}
-
-.share-label {
-  color: var(--text-tertiary);
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.share-btns {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-.share-btns .btn-icon {
-  margin-right: 3px;
-}
-
-.invite-stats {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  margin-bottom: 25px;
-}
-
-.stat-card {
-  background: var(--bg-tertiary);
-  border-radius: 12px;
-  padding: 15px 30px;
-  text-align: center;
-  min-width: 100px;
-  border: 1px solid var(--border-light);
-}
-
-.stat-card .stat-value {
-  display: block;
-  font-size: 28px;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.stat-card .stat-label {
-  display: block;
-  font-size: 13px;
-  color: var(--text-tertiary);
-  margin-top: 5px;
-}
-
-.invite-rules {
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  padding: 15px;
-  text-align: left;
-  border: 1px solid var(--border-light);
-}
-
-.invite-rules h4 {
-  color: var(--primary-light);
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.invite-rules ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.invite-rules li {
-  color: var(--text-tertiary);
-  font-size: 13px;
-  margin-bottom: 5px;
-}
-
-.invite-rules li:last-child {
-  margin-bottom: 0;
-}
-
-.help-section {
-  margin-top: 20px;
-}
-
-.help-items {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.help-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 15px;
-  border-radius: 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-light);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.help-item:hover {
-  background: var(--bg-hover);
-  border-color: var(--primary-light-20);
-  transform: translateX(5px);
-}
-
-.help-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--primary-light-10);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: var(--primary-color);
-  flex-shrink: 0;
-}
-
-.help-info {
-  flex: 1;
-}
-
-.help-info h4 {
-  margin: 0 0 4px 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.help-info p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
-.help-arrow {
-  color: var(--text-quaternary);
-  transition: transform 0.3s ease;
-}
-
-.help-item:hover .help-arrow {
-  transform: translateX(5px);
-  color: var(--primary-color);
-}
-
+/* 响应式 */
 @media (max-width: 768px) {
-  .profile-grid {
+  .profile-layout {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
   }
 
   .profile-hero {
@@ -1568,58 +1375,27 @@ onUnmounted(() => {
 
   .profile-hero-content {
     flex-direction: column;
-    gap: 16px;
-  }
-
-  .profile-hero-avatar {
-    width: 64px;
-    height: 64px;
+    gap: 12px;
   }
 
   .profile-hero-sub {
     justify-content: center;
   }
 
-  .points-section,
-  .history-tabs-section,
-  .feedback-section,
-  .points-guide-section {
-    grid-column: 1;
+  .user-stats {
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .history-question {
-    max-width: 120px;
+  .history-grid {
+    grid-template-columns: 1fr;
   }
 
-  .card {
+  .sidebar-card {
     padding: 20px;
   }
 
-  .user-stats {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .stat {
-    min-width: calc(33.333% - 11px);
-  }
-
-  .method-item {
-    padding: 16px 20px;
-  }
-
-  .method-icon {
-    width: 48px;
-    height: 48px;
-    font-size: 24px;
-  }
-
-  .method-info h4 {
-    font-size: 15px;
-  }
-
-  .method-info p {
-    font-size: 13px;
+  .main-card {
+    padding: 20px;
   }
 }
 </style>
