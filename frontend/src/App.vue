@@ -729,6 +729,7 @@ onBeforeUnmount(() => {
   background: var(--bg-tertiary);
   border: 1px solid transparent;
   transition: all 0.3s ease;
+  min-width: 140px;
 }
 
 .user-info:hover {
@@ -748,16 +749,18 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: var(--text-accent-contrast);
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .nickname {
   font-size: var(--font-small);
   color: var(--text-primary);
   font-weight: var(--weight-medium);
-  max-width: 80px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
 }
 
 .dropdown-arrow {
