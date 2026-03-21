@@ -160,7 +160,6 @@
   --color-warning: var(--warning-color);
   --color-danger: var(--danger-color);
   --color-info: var(--info-color);
-
   /* 简化主色调透明度系统 */
   --primary-light-05: rgba(184, 134, 11, 0.05);
   --primary-light-10: rgba(184, 134, 11, 0.1);
@@ -1029,10 +1028,6 @@ body.route-frontend .el-radio__input.is-focus .el-radio__inner {
   box-shadow: 0 0 0 2px rgba(186, 134, 39, 0.22) !important;
 }
 
-body.route-frontend .el-radio-button__inner,
-body.route-frontend .el-checkbox__inner {
-  min-height: 44px;
-}
 
 /* 标签样式 */
 .tag {

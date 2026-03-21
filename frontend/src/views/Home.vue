@@ -1559,9 +1559,7 @@ onUnmounted(() => {
 }
 
 /* 不同功能的图标颜色 */
-[data-type="daily"] .feature-icon-wrap { background: rgba(76, 175, 130, 0.1); border-color: rgba(76, 175, 130, 0.2); }
 [data-type="daily"] .feature-symbol { color: #4CAF82; filter: drop-shadow(0 0 6px rgba(76, 175, 130, 0.4)); }
-[data-type="tarot"] .feature-icon-wrap { background: rgba(155, 127, 212, 0.1); border-color: rgba(155, 127, 212, 0.2); }
 [data-type="tarot"] .feature-symbol { color: #A090E0; filter: drop-shadow(0 0 6px rgba(155, 127, 212, 0.4)); }
 
 .feature-card h3 {

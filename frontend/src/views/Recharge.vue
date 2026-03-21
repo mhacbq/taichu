@@ -569,6 +569,8 @@ const getStatusText = (status) => {
 <style scoped>
 .recharge-page {
   padding: 60px 0;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {

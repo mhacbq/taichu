@@ -57,7 +57,7 @@
                   <span class="version-card__name">简化版</span>
                   <span v-if="versionMode === 'simple'" class="version-card__badge">当前选择</span>
                 </div>
-                <span class="version-card__pts">10 pts</span>
+                <span class="version-card__pts">10 积分</span>
               </div>
               <ul class="version-card__features">
                 <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
@@ -79,7 +79,7 @@
                   <span class="version-card__name">专业版</span>
                   <span v-if="versionMode === 'pro'" class="version-card__badge">当前选择</span>
                 </div>
-                <span class="version-card__pts">50 pts</span>
+                <span class="version-card__pts">50 积分</span>
               </div>
               <ul class="version-card__features">
                 <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>

@@ -2515,6 +2515,7 @@ const downloadAsImage = async () => {
 
 .question-section {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 244, 0.94));
+  margin: auto;
 }
 
 .question-section--locked {

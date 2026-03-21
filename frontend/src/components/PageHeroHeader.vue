@@ -57,6 +57,8 @@ defineProps({
 .page-hero__panel {
   position: relative;
   overflow: hidden;
+  max-width: 920px;
+  margin:auto;
   min-height: 160px;
   padding: 24px 32px 28px;
   border-radius: var(--radius-card);

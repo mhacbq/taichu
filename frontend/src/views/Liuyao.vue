@@ -1728,9 +1728,7 @@ onUnmounted(() => {
   margin-top: 16px;
 }
 
-.options-section {
-  margin: 20px 0;
-}
+
 
 .pricing-info {
   text-align: left;

@@ -20,11 +20,6 @@ return [
             'prefix' => 'taichu:',
             'tag_prefix' => 'tag:',
             'serialize' => ['think\cache\driver\Serialize', 'serialize'],
-            'options' => [
-                \Redis::OPT_CONNECT_TIMEOUT => 2,
-                \Redis::OPT_READ_TIMEOUT => 2,
-                \Redis::OPT_SERIALIZER => \Redis::SERIALIZER_PHP,
-            ],
         ],
 
         // 文件缓存（开发环境）

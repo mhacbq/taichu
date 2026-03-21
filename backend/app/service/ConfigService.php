@@ -87,13 +87,14 @@ class ConfigService
      */
     public static function refreshCache(): void
     {
-        $configs = SystemConfig::select();
         $cacheData = [];
-        
-        foreach ($configs as $config) {
-            $cacheData[$config->config_key] = $config->typed_value;
+
+        foreach (SystemConfig::getAllGrouped() as $groupConfigs) {
+            foreach ($groupConfigs as $key => $value) {
+                $cacheData[$key] = $value;
+            }
         }
-        
+
         Cache::set(self::CACHE_KEY, $cacheData, self::CACHE_TTL);
     }
     

@@ -1802,10 +1802,6 @@ body {
 
 .footer-content {
   padding: 32px;
-  border-radius: 24px;
-  background: var(--bg-primary, #ffffff);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .footer-logo {
