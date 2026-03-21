@@ -3760,6 +3760,56 @@ const formatAiContent = (content) => {
   margin-top: 12px;
 }
 
+/* 农历日期输入框样式 */
+.lunar-date-input {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lunar-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lunar-input {
+  width: 100px !important;
+}
+
+.lunar-label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.lunar-time-row {
+  display: flex;
+  align-items: center;
+}
+
+.lunar-time-select {
+  width: 100%;
+}
+
+.lunar-converted-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.lunar-converted-hint .el-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
 .estimate-birth-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
