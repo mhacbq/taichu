@@ -1048,14 +1048,18 @@ onUnmounted(() => {
 
 .daily-action-zone {
   margin-top: 20px;
-  padding: 16px;
-  max-width: 600px;
+  margin-bottom: 24px;
+  padding: 0;
+  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .guest-checkin-card {
   margin-bottom: 0;
+  padding: 28px 32px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.96));
+  border: 2px solid rgba(var(--primary-rgb), 0.1);
 }
 
 .loading-state {
@@ -2352,51 +2356,52 @@ onUnmounted(() => {
 .deepen-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(212, 175, 55, 0.12);
-  border-radius: var(--radius-md);
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--white-08);
+  border: 2px solid var(--white-10);
+  border-radius: 18px;
   text-decoration: none;
   color: var(--text-primary);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .deepen-card:hover {
-  border-color: rgba(212, 175, 55, 0.25);
+  border-color: var(--primary-color);
   background: rgba(255, 252, 245, 0.96);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.12);
 }
 
 .deepen-symbol {
-  font-size: 22px;
-  color: #D4AF37;
+  font-size: 28px;
+  color: var(--primary-color);
   flex-shrink: 0;
-  width: 36px;
-  text-align: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(var(--primary-rgb), 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .deepen-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .deepen-info strong {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 .deepen-info span {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
-}
-
-.deepen-info span {
-  font-size: 12px;
-  color: rgba(200, 180, 140, 0.55);
 }
 
 @media (max-width: 600px) {
