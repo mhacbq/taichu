@@ -666,31 +666,6 @@ const getScoreClass = (score) => {
   return 'normal'
 }
 
-const getColorCode = (colorName) => {
-  const colorMap = {
-    '红色': '#ff0000',
-    '橙色': '#ff7f00',
-    '黄色': '#ffff00',
-    '绿色': '#00ff00',
-    '青色': '#00ffff',
-    '蓝色': '#0000ff',
-    '紫色': '#800080',
-    '粉色': '#ffb6c1',
-    '棕色': '#964b00',
-    '黑色': '#000000',
-    '白色': '#ffffff',
-    '灰色': '#808080',
-    '金色': '#ffd700',
-    '银色': '#c0c0c0',
-    '米色': '#f5f5dc',
-    '咖啡色': '#6f4e37',
-    '藏青色': '#191970',
-    '酒红色': '#722f37',
-    '天蓝色': '#87ceeb',
-    '薄荷绿': '#98ff98'
-  }
-  return colorMap[colorName] || '#d4af37'
-}
 
 const getAspectIcon = (aspectName = '') => {
   if (aspectName.includes('事业')) return Briefcase
@@ -1834,7 +1809,6 @@ onUnmounted(() => {
   background: rgba(245, 108, 108, 0.1);
   color: #c0392b;
   border: 1px solid rgba(245, 108, 108, 0.2);
-}
   flex: 1;
   min-width: 0;
 }
