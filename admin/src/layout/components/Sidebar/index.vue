@@ -14,6 +14,7 @@
         :active-text-color="variables.menuActiveText"
         :collapse-transition="false"
         mode="vertical"
+        router
       >
         <SidebarItem
           v-for="route in routes"

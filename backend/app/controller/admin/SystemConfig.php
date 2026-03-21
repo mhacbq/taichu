@@ -21,7 +21,7 @@ class SystemConfig extends Base
     public function index(): Response
     {
         $group = $this->request->get('group', 'payment');
-        $validGroups = ['payment', 'ai', 'push', 'sms'];
+        $validGroups = ['payment', 'ai', 'push', 'sms', 'notice'];
 
         if (!in_array($group, $validGroups)) {
             return $this->error('无效的配置分组');
@@ -35,6 +35,7 @@ class SystemConfig extends Base
                 'ai' => 'AI服务配置',
                 'push' => '推送服务配置',
                 'sms' => '短信服务配置',
+                'notice' => '公告通知配置',
             ];
 
             return $this->success([
@@ -58,7 +59,7 @@ class SystemConfig extends Base
         }
 
         $group = $this->request->post('group', 'payment');
-        $validGroups = ['payment', 'ai', 'push', 'sms'];
+        $validGroups = ['payment', 'ai', 'push', 'sms', 'notice'];
 
         if (!in_array($group, $validGroups)) {
             return $this->error('无效的配置分组');
@@ -249,5 +250,28 @@ class SystemConfig extends Base
             Log::error('导出配置失败: ' . $e->getMessage());
             return $this->error('导出失败: ' . $e->getMessage());
         }
+    }
+
+    protected function checkPermission(string $permission, string $action): bool
+    {
+        // 如果是超级管理员，直接返回true
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // 这里的权限检查逻辑取决于你的后台权限设计
+        // 暂时简单实现或调用BaseController的方法
+        if (method_exists($this, 'hasAdminPermission')) {
+            return $this->hasAdminPermission($permission . '_' . $action) || $this->hasAdminPermission($permission);
+        }
+
+        return true; 
+    }
+
+    protected function isAdmin(): bool
+    {
+        // 简单判断角色
+        $roles = $this->request->adminRoles ?? [];
+        return in_array('admin', $roles);
     }
 }
