@@ -254,7 +254,7 @@
             <span>八字排盘</span>
           </router-link>
           <router-link to="/tarot" class="companion-btn" @click="showCompanion = false">
-            <el-icon :size="16"><Magic /></el-icon>
+            <el-icon :size="16"><MagicStick /></el-icon>
             <span>塔罗占卜</span>
           </router-link>
         </div>
