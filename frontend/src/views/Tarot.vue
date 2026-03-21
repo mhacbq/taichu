@@ -1427,8 +1427,8 @@ const downloadAsImage = async () => {
   padding: 32px 24px;
   text-align: center;
   cursor: pointer;
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid rgba(var(--primary-rgb), 0.12);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -1441,19 +1441,19 @@ const downloadAsImage = async () => {
 }
 
 .spread-card:hover {
-  border-color: rgba(var(--primary-rgb), 0.25);
+  border-color: rgba(var(--primary-rgb), 0.35);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 241, 0.96));
-  transform: translateY(-8px);
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12), 0 12px 32px rgba(var(--primary-rgb), 0.08);
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12), 0 12px 32px rgba(var(--primary-rgb), 0.12);
 }
 
 .spread-card.active {
   border-color: var(--primary-color);
   background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 242, 215, 0.96));
-  box-shadow: 0 28px 56px rgba(var(--primary-rgb), 0.2), 
-              0 16px 40px rgba(var(--primary-rgb), 0.15),
+  box-shadow: 0 28px 56px rgba(var(--primary-rgb), 0.25), 
+              0 16px 40px rgba(var(--primary-rgb), 0.18),
               inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transform: translateY(-10px) scale(1.03);
+  transform: translateY(-8px) scale(1.02);
   z-index: 2;
 }
 
@@ -1469,12 +1469,22 @@ const downloadAsImage = async () => {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  opacity: 0.8;
+  opacity: 1;
+}
+
+.spread-card.active::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 26px;
+  background: transparent;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  pointer-events: none;
 }
 
 .spread-card:focus-visible {
-  outline: 2px solid var(--primary-light);
-  outline-offset: 3px;
+  outline: 3px solid var(--primary-light);
+  outline-offset: 4px;
   border-color: var(--primary-color);
 }
 
@@ -1549,10 +1559,9 @@ const downloadAsImage = async () => {
 
 /* 问题引导 */
 .question-guide {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto 40px;
-  background: var(--white-02);
-  border: 1px solid var(--white-05);
+  padding: 28px 32px;
 }
 
 .question-guide__header {
@@ -1560,27 +1569,37 @@ const downloadAsImage = async () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid rgba(var(--primary-rgb), 0.12);
 }
 
 .question-guide__header h3 {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.question-guide__header .guide-icon {
+  font-size: 24px;
+  color: var(--primary-color);
 }
 
 .guide-toggle {
   padding: 0;
   min-height: auto;
+  font-size: 14px;
 }
 
 .topic-tabs {
-
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
-  margin-bottom: 25px;
+  margin-bottom: 28px;
 }
 
 .topic-tab {
@@ -1591,11 +1610,11 @@ const downloadAsImage = async () => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 44px;
-  padding: 15px 10px;
+  min-height: 48px;
+  padding: 16px 12px;
   background: var(--white-05);
-  border: 1px solid var(--white-10);
-  border-radius: var(--radius-md);
+  border: 2px solid var(--white-10);
+  border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: inherit;
@@ -1604,7 +1623,7 @@ const downloadAsImage = async () => {
 
 .topic-tab:hover {
   background: var(--white-10);
-  border-color: var(--primary-light-30);
+  border-color: rgba(var(--primary-rgb), 0.3);
   transform: translateY(-3px);
 }
 
@@ -1612,12 +1631,12 @@ const downloadAsImage = async () => {
   background: var(--primary-gradient);
   border-color: var(--primary-color);
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px var(--primary-light-30);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.25);
 }
 
 .topic-tab:focus-visible {
-  outline: 2px solid var(--primary-light);
-  outline-offset: 3px;
+  outline: 3px solid var(--primary-light);
+  outline-offset: 4px;
   border-color: var(--primary-color);
 }
 

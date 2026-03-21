@@ -205,6 +205,18 @@
               maxlength="100"
               show-word-limit
             />
+            <!-- 快捷问题 -->
+            <div class="quick-questions">
+              <span class="quick-questions-label">常见问题：</span>
+              <button
+                v-for="q in quickQuestions"
+                :key="q"
+                class="quick-question-btn"
+                @click="form.question = q"
+              >
+                {{ q }}
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -501,6 +513,7 @@ const methodOptions = [
 ]
 
 const questionTypeOptions = ['求财', '感情', '事业', '健康', '学业', '出行', '其他']
+const quickQuestions = ['我的事业发展如何？', '近期感情运势怎么样？', '这笔投资能成功吗？', '身体健康有什么需要注意吗？', '学业考试能顺利通过吗？']
 const yaoLineLabels = ['初爻（下）', '二爻', '三爻', '四爻', '五爻', '上爻（上）']
 const yaoResultLineLabels = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻']
 const yaoValueOptions = [

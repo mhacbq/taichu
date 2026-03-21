@@ -19,8 +19,8 @@
 - [x] bazi.vue页的智能填写策略中，右侧的按钮功能可以取消了
 - [x] bazi.vue页中，出生地点补充其他城市，或者引入城市js包，设置默认出生城市，性别添加必填标记
 - [x] tarot.vue中，question-section的样式很丑，标题与提示与输入框连在一起，请调整样式，使其更美观，增加一些间距
-- [] daily.vue中，daily-action-zone日历功能显得很大，可以调整为更紧凑的布局，增加一些空白区域，使其看起来更整洁。
-- [] 底部daily-deepen-section与背景颜色有冲突，网站整体设计是白色背景，金色字体，这里全是金色，有点模糊了
+- [x] daily.vue中，daily-action-zone日历功能显得很大，可以调整为更紧凑的布局，增加一些空白区域，使其看起来更整洁。
+- [x] 底部daily-deepen-section与背景颜色有冲突，网站整体设计是白色背景，金色字体，这里全是金色，有点模糊了
 - [] liuyao.vue中，像塔罗牌一样，加上问题一键点击的按钮，方便用户一键输入
 - [] liuyao.vue中，http://localhost:5173/api/liuyao/divination接口提示占卜失败
 - [] liuyao.vue的结论展示summary-card中，不需要表格，按顺序展示结论内容即可，去掉表格样式，使其更简洁易读。
