@@ -2076,16 +2076,14 @@ onUnmounted(() => {
 }
 
 .service-tag {
-  min-height: 30px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(210, 154, 64, 0.4);
-  color: #d4af37;
-  font-size: var(--font-small);
+  padding: 8px 16px;
+  color: #8B4513;
+  font-size: 15px;
   font-weight: var(--weight-semibold);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 
