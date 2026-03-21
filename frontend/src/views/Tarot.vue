@@ -13,7 +13,7 @@
         <el-icon class="hint-icon"><Coin /></el-icon>
         <div class="points-hint-content">
           <div class="points-hint-main">
-            <span>本次占卜将消耗 <strong>5 积分</strong></span>
+            <span>本次占卜将消耗 <strong>{{ TAROT_COST_POINTS }} 积分</strong></span>
             <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
           </div>
           <div class="points-hint-details">
@@ -32,10 +32,10 @@
         </div>
       </div>
 
-      <div v-if="currentPoints !== null && currentPoints < 5" class="insufficient-points card card-hover">
+      <div v-if="currentPoints !== null && currentPoints < TAROT_COST_POINTS" class="insufficient-points card card-hover">
         <div class="insufficient-header">
           <el-icon :size="28"><Warning /></el-icon>
-          <p>积分不足（当前 {{ currentPoints ?? 0 }} 积分，需要 5 积分）</p>
+          <p>积分不足（当前 {{ currentPoints ?? 0 }} 积分，需要 {{ TAROT_COST_POINTS }} 积分）</p>
         </div>
         <div class="insufficient-actions">
           <router-link to="/profile" class="insufficient-btn insufficient-btn--primary">
@@ -309,8 +309,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic } from '../api'
+import { drawTarot, interpretTarot, getPointsBalance, saveTarotRecord, setTarotPublic, getClientConfig } from '../api'
 import html2canvas from 'html2canvas'
+
+// 积分消耗配置
+const TAROT_COST_POINTS = 5
 
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import TarotCard from '../components/TarotCard.vue'
@@ -804,7 +807,7 @@ const showConfirm = async () => {
 
   try {
     await ElMessageBox.confirm(
-      `本次占卜将消耗 5 积分，确认继续吗？`,
+      `本次占卜将消耗 ${TAROT_COST_POINTS} 积分，确认继续吗？`,
       '确认占卜',
       {
         confirmButtonText: '确认',
