@@ -2,7 +2,7 @@ import request from './request'
 
 export function getFeedbackList(params) {
   return request({
-    url: '/feedback-manage/list',
+    url: '/maodou/feedback',
     method: 'get',
     params
   })
@@ -10,14 +10,14 @@ export function getFeedbackList(params) {
 
 export function getFeedbackDetail(id) {
   return request({
-    url: `/feedback-manage/detail/${id}`,
+    url: `/maodou/feedback/${id}`,
     method: 'get'
   })
 }
 
 export function replyFeedback(id, data) {
   return request({
-    url: `/feedback-manage/${id}/reply`,
+    url: `/maodou/feedback/${id}/reply`,
     method: 'post',
     data
   })
@@ -25,7 +25,7 @@ export function replyFeedback(id, data) {
 
 export function updateFeedbackStatus(id, status) {
   return request({
-    url: `/feedback-manage/${id}/status`,
+    url: `/maodou/feedback/${id}/status`,
     method: 'put',
     data: { status }
   })
@@ -33,21 +33,21 @@ export function updateFeedbackStatus(id, status) {
 
 export function deleteFeedback(id) {
   return request({
-    url: `/feedback-manage/${id}`,
+    url: `/maodou/feedback/${id}`,
     method: 'delete'
   })
 }
 
 export function getFeedbackCategories() {
   return request({
-    url: '/feedback/categories',
+    url: '/maodou/feedback/categories',
     method: 'get'
   })
 }
 
 export function saveFeedbackCategory(data) {
   return request({
-    url: '/feedback/categories',
+    url: '/maodou/feedback/categories',
     method: 'post',
     data
   })
@@ -55,7 +55,7 @@ export function saveFeedbackCategory(data) {
 
 export function deleteFeedbackCategory(id) {
   return request({
-    url: `/feedback/categories/${id}`,
+    url: `/maodou/feedback/categories/${id}`,
     method: 'delete'
   })
 }

@@ -53,6 +53,7 @@ const AdminQuestionTemplates = () => import('../views/admin/QuestionTemplates.vu
 const AdminOperationLogs = () => import('../views/admin/OperationLogs.vue')
 const AdminLoginLogs = () => import('../views/admin/LoginLogs.vue')
 const AdminApiLogs = () => import('../views/admin/ApiLogs.vue')
+const AdminSystemNotice = () => import('../views/admin/SystemNotice.vue')
 
 const routes = [
   {
@@ -456,6 +457,14 @@ const routes = [
         component: AdminApiLogs,
         meta: {
           title: 'API日志'
+        }
+      },
+      {
+        path: 'system/notice',
+        name: 'AdminSystemNotice',
+        component: AdminSystemNotice,
+        meta: {
+          title: '系统公告'
         }
       }
     ]

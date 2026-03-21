@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { getOperationLogs } from '@/api/log'
 
 const loading = ref(false)
 const operationLogs = ref([])
@@ -17,10 +18,14 @@ onMounted(() => {
 async function fetchOperationLogs() {
   loading.value = true
   try {
-    // 这里调用API获取操作日志
-    // const res = await getOperationLogs({ ...pagination.value })
-    // operationLogs.value = res.data.list
-    // pagination.value.total = res.data.total
+    const res = await getOperationLogs({
+      page: pagination.value.current,
+      limit: pagination.value.pageSize
+    })
+    if (res.code === 200) {
+      operationLogs.value = res.data.list || []
+      pagination.value.total = res.data.total || 0
+    }
   } catch (error) {
     ElMessage.error('获取操作日志失败')
   } finally {
@@ -30,6 +35,12 @@ async function fetchOperationLogs() {
 
 function handlePageChange(page) {
   pagination.value.current = page
+  fetchOperationLogs()
+}
+
+function handleSizeChange(size) {
+  pagination.value.pageSize = size
+  pagination.value.current = 1
   fetchOperationLogs()
 }
 </script>
@@ -61,7 +72,7 @@ function handlePageChange(page) {
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="handlePageChange"
-        @size-change="fetchOperationLogs"
+        @size-change="handleSizeChange"
         style="margin-top: 20px; justify-content: center"
       />
     </el-card>

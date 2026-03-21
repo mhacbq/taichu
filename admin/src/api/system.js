@@ -112,7 +112,7 @@ export function sendNotificationTest(data, options = {}) {
 export function getAdminUsers(params) {
 
   return request({
-    url: '/system/admins',
+    url: '/system/admin-list',
     method: 'get',
     params
   })
@@ -120,7 +120,7 @@ export function getAdminUsers(params) {
 
 export function saveAdminUser(data) {
   return request({
-    url: '/system/admins',
+    url: '/system/admin-list',
     method: 'post',
     data
   })
@@ -128,7 +128,7 @@ export function saveAdminUser(data) {
 
 export function deleteAdminUser(id) {
   return request({
-    url: `/system/admins/${id}`,
+    url: `/system/admin-list/${id}`,
     method: 'delete'
   })
 }

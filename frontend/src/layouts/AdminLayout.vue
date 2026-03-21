@@ -73,6 +73,7 @@
             <span>系统设置</span>
           </template>
           <el-menu-item index="/maodou/config">系统配置</el-menu-item>
+          <el-menu-item index="/maodou/system/notice">系统公告</el-menu-item>
           <el-menu-item index="/maodou/system-tools">系统工具</el-menu-item>
           <el-menu-item index="/maodou/tasks">定时任务</el-menu-item>
           <el-menu-item index="/maodou/logs">系统日志</el-menu-item>
@@ -103,7 +104,7 @@
         </div>
         <div class="topbar-right">
           <el-button text :icon="HomeFilled" @click="$router.push('/')">返回前台</el-button>
-          <el-button text :icon="User" @click="$router.push('/profile')">个人中心</el-button>
+          <el-button text :icon="User" @click="handleProfile">个人中心</el-button>
           <el-button text :icon="Close" @click="handleCloseAllTabs">关闭所有页面</el-button>
           <el-button text :icon="SwitchButton" @click="handleLogout">退出登录</el-button>
         </div>
@@ -147,6 +148,7 @@ const pageTitles = {
   '/maodou/seo': 'SEO配置',
   '/maodou/seo/stats': 'SEO统计',
   '/maodou/config': '系统配置',
+  '/maodou/system/notice': '系统公告',
   '/maodou/system-tools': '系统工具',
   '/maodou/tasks': '定时任务',
   '/maodou/logs': '系统日志',
@@ -165,6 +167,10 @@ const handleLogout = async () => {
 
 const handleCloseAllTabs = () => {
   router.push('/maodou')
+}
+
+const handleProfile = () => {
+  ElMessageBox.alert('个人中心功能开发中...', '提示', { type: 'info' })
 }
 </script>
 

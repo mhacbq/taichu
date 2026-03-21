@@ -194,8 +194,7 @@ class Sms extends BaseController
         // 独立手机号数
         $uniquePhones = \app\model\SmsCode::where('created_at', '>=', $startDate . ' 00:00:00')
             ->where('created_at', '<=', $endDate . ' 23:59:59')
-            ->distinct(false)
-            ->column('phone')
+            ->group('phone')
             ->count();
         
         return $this->success([

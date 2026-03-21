@@ -48,7 +48,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getOperationLogs } from '@/api/log'
+import { getUserBehavior } from '@/api/user'
 
 const route = useRoute()
 const loading = ref(false)
@@ -75,7 +75,7 @@ async function loadLogs() {
       page: queryForm.page,
       limit: queryForm.pageSize
     }
-    const res = await getOperationLogs(params)
+    const res = await getUserBehavior(params)
     if (res.code === 200) {
       logList.value = res.data.list || []
       total.value = res.data.total || 0

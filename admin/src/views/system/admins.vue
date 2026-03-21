@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { getAdminsList } from '@/api/system'
 
 const loading = ref(false)
 const adminsList = ref([])
@@ -12,9 +13,10 @@ onMounted(() => {
 async function fetchAdminsList() {
   loading.value = true
   try {
-    // 这里调用API获取管理员列表
-    // const res = await getAdminsList()
-    // adminsList.value = res.data
+    const res = await getAdminsList()
+    if (res.code === 200) {
+      adminsList.value = res.data.list || []
+    }
   } catch (error) {
     ElMessage.error('获取管理员列表失败')
   } finally {

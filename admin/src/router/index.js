@@ -337,26 +337,6 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/ai',
-    component: () => import('@/layout/index.vue'),
-    redirect: '/ai/prompts',
-    meta: { title: 'AI管理', icon: 'Cpu', roles: ['admin'] },
-    children: [
-      {
-        path: 'prompts',
-        name: 'AiPrompts',
-        component: () => import('@/views/ai/prompts.vue'),
-        meta: { title: '提示词管理', roles: ['admin'] }
-      },
-      {
-        path: 'config',
-        name: 'AiConfig',
-        component: () => import('@/views/system/settings.vue'),
-        meta: { title: 'AI配置', roles: ['admin'] }
-      }
-    ]
-  },
-  {
     path: '/system',
     component: () => import('@/layout/index.vue'),
     redirect: '/system/settings',

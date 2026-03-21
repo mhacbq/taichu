@@ -3,36 +3,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
-const rulesList = ref([
-  {
-    id: 1,
-    rule_name: '每日签到',
-    points: 5,
-    description: '每日签到可获得5积分',
-    status: 1
-  },
-  {
-    id: 2,
-    rule_name: '邀请好友',
-    points: 100,
-    description: '邀请好友注册可获得100积分',
-    status: 1
-  },
-  {
-    id: 3,
-    rule_name: '完成八字测算',
-    points: -20,
-    description: '完成八字测算消耗20积分',
-    status: 1
-  },
-  {
-    id: 4,
-    rule_name: '完成塔罗测算',
-    points: -30,
-    description: '完成塔罗测算消耗30积分',
-    status: 1
-  }
-])
+const rulesList = ref([])
 
 onMounted(() => {
   fetchRulesList()
@@ -41,8 +12,10 @@ onMounted(() => {
 async function fetchRulesList() {
   loading.value = true
   try {
-    // 模拟加载，实际应该调用API
-    await new Promise(resolve => setTimeout(resolve, 300))
+    const res = await window.$api.get('/api/maodou/points/rules')
+    if (res.code === 200) {
+      rulesList.value = res.data.list || []
+    }
   } catch (error) {
     ElMessage.error('获取积分规则失败')
   } finally {

@@ -74,12 +74,12 @@ function getTypeTagType(type) {
 
       <el-table :data="recordsList" stripe>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="user_name" label="用户名" width="120" />
-        <el-table-column prop="user_phone" label="手机号" width="130" />
-        <el-table-column prop="points" label="积分数值" width="120">
+        <el-table-column prop="username" label="用户名" width="120" />
+        <el-table-column prop="phone" label="手机号" width="130" />
+        <el-table-column prop="amount" label="积分数值" width="120">
           <template #default="{ row }">
-            <span :style="{ color: row.points > 0 ? '#67C23A' : '#F56C6C' }">
-              {{ row.points > 0 ? '+' : '' }}{{ row.points }}
+            <span :style="{ color: row.amount > 0 ? '#67C23A' : '#F56C6C' }">
+              {{ row.amount > 0 ? '+' : '' }}{{ row.amount }}
             </span>
           </template>
         </el-table-column>
@@ -91,7 +91,7 @@ function getTypeTagType(type) {
           </template>
         </el-table-column>
         <el-table-column prop="balance_after" label="调整后余额" width="130" />
-        <el-table-column prop="reason" label="原因" show-overflow-tooltip />
+        <el-table-column prop="remark" label="原因" show-overflow-tooltip />
         <el-table-column prop="created_at" label="时间" width="180" />
       </el-table>
 

@@ -335,7 +335,8 @@ async function confirmAdjustPoints() {
   try {
     await adjustPoints({
       user_id: pointsDialog.userId,
-      ...pointsDialog.form,
+      type: 'admin_adjust',
+      points: pointsDialog.form.type === 'add' ? pointsDialog.form.amount : -pointsDialog.form.amount,
       reason: pointsDialog.form.reason.trim()
     }, { showErrorMessage: false })
     ElMessage.success('积分调整成功')

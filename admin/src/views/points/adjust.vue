@@ -100,7 +100,7 @@ async function handleSubmit() {
       target_type: form.targetType,
       targets: form.targets.split(/[,\n]/).map(t => t.trim()).filter(t => t),
       type: form.type,
-      amount: form.type === 'add' ? form.amount : -form.amount,
+      amount: form.amount,
       reason: form.reason
     }
 

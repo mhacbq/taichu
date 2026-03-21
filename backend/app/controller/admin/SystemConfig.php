@@ -13,7 +13,7 @@ use think\Response;
  * 系统配置管理控制器
  * 用于管理支付、AI、推送、短信等系统配置
  */
-class SystemConfig extends Base
+class SystemConfigController extends Base
 {
     /**
      * 获取配置列表

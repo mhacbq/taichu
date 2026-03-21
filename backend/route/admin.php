@@ -48,11 +48,11 @@ Route::group('api/maodou', function () {
         Route::post('config/update-batch', 'admin.Config/updateBatch');
 
         // 统一系统配置管理
-        Route::get('system-config', 'admin.SystemConfig/index');
-        Route::post('system-config/save', 'admin.SystemConfig/save');
-        Route::post('system-config/test-payment', 'admin.SystemConfig/testPayment');
-        Route::post('system-config/test-ai', 'admin.SystemConfig/testAI');
-        Route::get('system-config/export', 'admin.SystemConfig/export');
+        Route::get('system-config', 'admin.SystemConfigController/index');
+        Route::post('system-config/save', 'admin.SystemConfigController/save');
+        Route::post('system-config/test-payment', 'admin.SystemConfigController/testPayment');
+        Route::post('system-config/test-ai', 'admin.SystemConfigController/testAI');
+        Route::get('system-config/export', 'admin.SystemConfigController/export');
 
         // 用户管理
         Route::get('users/export', 'Admin/exportUsers');
