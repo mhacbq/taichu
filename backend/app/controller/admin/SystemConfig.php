@@ -241,8 +241,10 @@ class SystemConfig extends Base
             $filename = "system_config_{$group}_" . date('YmdHis') . '.json';
 
             return response(json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
-                ->header('Content-Type', 'application/json')
-                ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+                ->header([
+                    'Content-Type' => 'application/json',
+                    'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                ]);
         } catch (\Exception $e) {
             Log::error('导出配置失败: ' . $e->getMessage());
             return $this->error('导出失败: ' . $e->getMessage());

@@ -93,6 +93,12 @@ Route::group('api/maodou', function () {
         Route::post('hehun-manage/batch-delete', 'admin.HehunManage/batchDelete');
         Route::get('hehun-manage/stats', 'admin.HehunManage/stats');
 
+        Route::get('qiming-manage', 'admin.QimingManage/index');
+        Route::get('qiming-manage/stats', 'admin.QimingManage/stats');
+        Route::get('qiming-manage/:id', 'admin.QimingManage/detail');
+        Route::delete('qiming-manage/:id', 'admin.QimingManage/delete');
+        Route::post('qiming-manage/batch-delete', 'admin.QimingManage/batchDelete');
+
         
         // 内容管理
         Route::get('content/bazi', 'Admin/baziRecords');
@@ -314,3 +320,4 @@ Route::group('api/maodou', function () {
     \app\middleware\SensitiveDataFilter::class,
     \app\middleware\RateLimit::class,
 ]);
+

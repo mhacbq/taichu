@@ -52,9 +52,7 @@ class SecurityHeaders
             $headers = array_merge($headers, $this->adminHeaders);
         }
 
-        foreach ($headers as $name => $value) {
-            $response->header($name, $value);
-        }
+        $response->header($headers);
 
         return $response;
     }

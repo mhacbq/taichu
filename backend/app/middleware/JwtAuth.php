@@ -43,7 +43,7 @@ class JwtAuth
             if ($this->shouldRenewToken($payload)) {
                 $newToken = $this->generateToken($payload['uid']);
                 $response = $next($request);
-                return $response->header('Authorization', 'Bearer ' . $newToken);
+                return $response->header(['Authorization' => 'Bearer ' . $newToken]);
             }
 
             return $next($request);

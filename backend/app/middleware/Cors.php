@@ -32,11 +32,13 @@ class Cors
         // 如果是 OPTIONS 预检请求，直接返回
         if ($request->method() === 'OPTIONS') {
             return response('', 204)
-                ->header('Access-Control-Allow-Origin', $allowedOrigin)
-                ->header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin')
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Max-Age', '86400');
+                ->header([
+                    'Access-Control-Allow-Origin' => $allowedOrigin,
+                    'Access-Control-Allow-Headers' => 'Authorization, Content-Type, X-Requested-With, X-Token, Accept, Origin',
+                    'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                    'Access-Control-Allow-Credentials' => 'true',
+                    'Access-Control-Max-Age' => '86400',
+                ]);
         }
         
         $response = $next($request);
