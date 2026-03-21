@@ -19,26 +19,8 @@
       <!-- 八字表单 -->
       <div class="bazi-form card" v-if="!result">
         <div class="form-group form-group--time" data-bazi-field="birth-time">
-          <div class="form-group__header form-group__header--time">
+          <div class="form-group__header">
             <label>出生日期与时间</label>
-          </div>
-
-          <!-- 历法类型切换 -->
-          <div class="calendar-type-switch">
-            <div
-              class="calendar-type-btn"
-              :class="{ 'calendar-type-btn--active': calendarType === 'solar' }"
-              @click="calendarType = 'solar'"
-            >
-              公历
-            </div>
-            <div
-              class="calendar-type-btn"
-              :class="{ 'calendar-type-btn--active': calendarType === 'lunar' }"
-              @click="calendarType = 'lunar'"
-            >
-              农历
-            </div>
           </div>
 
           <!-- 出生日期时间选择 -->
@@ -49,6 +31,7 @@
             format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DD HH:mm"
             class="form-input--datetime"
+            size="default"
             :disabled-date="disabledDate"
           />
         </div>
@@ -80,7 +63,7 @@
         <div class="form-actions">
           <el-button
             type="primary"
-            size="large"
+            size="default"
             @click="handleCalculate"
             :loading="calculating"
             class="btn-submit"
@@ -88,7 +71,7 @@
             <el-icon v-if="!calculating"><MagicStick /></el-icon>
             {{ calculating ? '正在分析...' : '开始解析流年运势' }}
           </el-button>
-          <p class="points-notice">消耗 50 积分</p>
+          <p class="points-notice">消耗 {{ pointsCost }} 积分</p>
         </div>
       </div>
 
@@ -121,7 +104,7 @@
         </div>
 
         <!-- 每月运势 -->
-        <div class="monthly-fortune card">
+        <div class="monthly-fortune card" v-if="monthlyFortune && monthlyFortune.length > 0">
           <h3 class="section-title">每月运势详情</h3>
           <div class="months-grid">
             <div
@@ -148,7 +131,7 @@
 
         <!-- AI 分析按钮 -->
         <div class="ai-action card" v-if="result && !aiAnalysis">
-          <el-button type="primary" @click="getAiAnalysis" :loading="aiLoading" size="large">
+          <el-button type="primary" @click="getAiAnalysis" :loading="aiLoading" size="default">
             <el-icon><MagicStick /></el-icon>
             获取AI深度解读
           </el-button>
@@ -157,7 +140,7 @@
 
         <!-- 重新计算按钮 -->
         <div class="result-actions">
-          <el-button @click="resetForm" size="large">重新测算</el-button>
+          <el-button @click="resetForm" size="default">重新测算</el-button>
         </div>
       </div>
     </div>
@@ -165,20 +148,21 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Calendar, MagicStick, Male, Female, StarFilled, ChatLineRound } from '@element-plus/icons-vue'
 import { useUserPoints } from '../composables/useUserPoints'
+import { getFortunePointsCost, getYearlyFortune } from '../api'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 
-const { userPoints, isLoggedIn } = useUserPoints()
+const { userPoints, isLoggedIn, loadUserPoints } = useUserPoints()
 
 // 表单数据
 const birthDateTime = ref('')
-const calendarType = ref('solar')
 const gender = ref('male')
 const calculating = ref(false)
 const result = ref(null)
+const monthlyFortune = ref([])
 const aiAnalysis = ref('')
 const aiLoading = ref(false)
 const pointsCost = ref(50)
@@ -212,32 +196,29 @@ const fortuneCategories = [
   }
 ]
 
-// 每月运势
-const monthlyFortune = computed(() => {
-  const months = []
-  const levels = ['优', '良', '中', '良', '优', '中', '良', '优', '中', '良', '优', '良']
-  const levelTexts = {
-    '优': '运势上佳',
-    '良': '运势平稳',
-    '中': '需多注意'
-  }
-  
-  for (let i = 1; i <= 12; i++) {
-    const level = levels[i - 1]
-    months.push({
-      month: i,
-      level: level,
-      levelText: levelTexts[level],
-      description: `${i}月运势${level}，${level === '优' ? '宜积极行动' : level === '良' ? '保持现状' : '谨慎行事'}。`
-    })
-  }
-  return months
-})
-
 // 禁用未来日期
 const disabledDate = (time) => {
   return time.getTime() > Date.now()
 }
+
+// 加载积分配置
+const loadPointsConfig = async () => {
+  try {
+    const response = await getFortunePointsCost()
+    if (response.code === 200) {
+      pointsCost.value = response.data.yearly || 50
+      aiPointsCost.value = response.data.ai_analysis || 30
+    }
+  } catch (error) {
+    console.error('加载积分配置失败:', error)
+  }
+}
+
+// 组件挂载时加载积分和配置
+onMounted(() => {
+  loadUserPoints()
+  loadPointsConfig()
+})
 
 // 计算流年运势
 const handleCalculate = async () => {
@@ -246,65 +227,42 @@ const handleCalculate = async () => {
     return
   }
 
+  // 检查登录状态
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
   // 检查积分
-  if (userPoints.value < 50) {
-    ElMessage.warning('积分不足，请先充值')
+  if (userPoints.value === null) {
+    await loadUserPoints()
+  }
+
+  if (userPoints.value < pointsCost.value) {
+    ElMessage.warning(`积分不足，需要${pointsCost.value}积分`)
     return
   }
 
   calculating.value = true
 
   try {
-    // TODO: 调用后端API
-    // const response = await fetch('/api/yearly-fortune/calculate', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     birthDateTime: birthDateTime.value,
-    //     calendarType: calendarType.value,
-    //     gender: gender.value
-    //   })
-    // })
-    // const data = await response.json()
-    
-    // 模拟结果
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    result.value = {
-      career: {
-        score: 82,
-        summary: '今年事业运势强劲，有升职加薪的机会。建议大胆展现自己的能力，主动争取项目。',
-        tips: ['3-5月是事业发展黄金期', '9月注意人际关系', '年底有望获得晋升机会']
-      },
-      wealth: {
-        score: 78,
-        summary: '正财稳定，偏财运也不错。可以考虑投资理财，但要控制风险。',
-        tips: ['6月和10月财运较旺', '避免高风险投资', '注意开源节流']
-      },
-      love: {
-        score: 75,
-        summary: '感情运势总体平稳，单身者有机会遇到心仪对象。有伴侣者要注意沟通。',
-        tips: ['情人节前后桃花运旺', '多参加社交活动', '维护好现有关系']
-      },
-      health: {
-        score: 70,
-        summary: '要注意休息，避免过度劳累。建议定期体检，关注身体状况。',
-        tips: ['春季注意感冒', '夏季防暑降温', '冬季保暖防寒']
-      }
+    const response = await getYearlyFortune({
+      birthDateTime: birthDateTime.value,
+      gender: gender.value
+    })
+
+    if (response.code === 200) {
+      result.value = response.data.fortune || response.data
+      monthlyFortune.value = response.data.monthly || []
+      aiAnalysis.value = response.data.aiAnalysis || ''
+      
+      ElMessage.success('解析成功！')
+      
+      // 扣除积分（实际应该在API成功后扣除）
+      userPoints.value -= pointsCost.value
+    } else {
+      throw new Error(response.message || '解析失败')
     }
-
-    aiAnalysis.value = `
-      <p>根据您的八字命盘分析，2026丙午年是火旺之年，对您来说是一个充满机遇的年份。</p>
-      <p><strong>整体运势：</strong>火元素旺盛，意味着热情、活力和创造力。这个年份特别适合追求目标、展现才华。</p>
-      <p><strong>注意事项：</strong>火旺可能导致情绪波动，建议多运动、多接触自然，保持情绪平衡。</p>
-      <p><strong>开运建议：</strong>今年宜多穿红色、紫色等暖色调服饰，佩戴红玛瑙等饰品，有助于增强运势。</p>
-    `
-
-    ElMessage.success('解析成功！')
-    
-    // 扣除积分（实际应该在API成功后扣除）
-    userPoints.value -= 50
-    
   } catch (error) {
     ElMessage.error('解析失败，请重试')
     console.error(error)
@@ -316,9 +274,9 @@ const handleCalculate = async () => {
 // 重置表单
 const resetForm = () => {
   birthDateTime.value = ''
-  calendarType.value = 'solar'
   gender.value = 'male'
   result.value = null
+  monthlyFortune.value = []
   aiAnalysis.value = ''
 }
 
@@ -343,17 +301,23 @@ const getAiAnalysis = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'yearly_fortune',
-        data: result.value
+        data: result.value,
+        birthDateTime: birthDateTime.value,
+        gender: gender.value
       })
     })
     const data = await response.json()
 
     if (data.code === 200) {
       aiAnalysis.value = data.data.analysis || data.data.content || ''
+      // 更新每月运势（如果AI返回了更详细的每月分析）
+      if (data.data.monthly) {
+        monthlyFortune.value = data.data.monthly
+      }
       ElMessage.success('AI分析完成')
       
       // 扣除积分
-      userStore.points -= aiPointsCost.value
+      userPoints.value -= aiPointsCost.value
     } else {
       throw new Error(data.message || '分析失败')
     }
@@ -368,7 +332,9 @@ const getAiAnalysis = async () => {
 
 <style scoped>
 .yearly-fortune-page {
-  min-height: 100vh;max-width: 960px;margin: auto;
+  min-height: 100vh;
+  max-width: 960px;
+  margin: auto;
   padding: 20px 0;
 }
 
@@ -431,29 +397,6 @@ const getAiAnalysis = async () => {
   color: #999;
 }
 
-.calendar-type-switch {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.calendar-type-btn {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-size: 14px;
-}
-
-.calendar-type-btn--active {
-  background: #d4af37;
-  color: white;
-  border-color: #d4af37;
-}
-
 .form-input--datetime {
   width: 100%;
 }
@@ -469,12 +412,12 @@ const getAiAnalysis = async () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 16px;
+  padding: 12px;
   border: 2px solid #ddd;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .gender-option--active {
@@ -484,14 +427,14 @@ const getAiAnalysis = async () => {
 
 .form-actions {
   text-align: center;
-  margin-top: 32px;
+  margin-top: 24px;
 }
 
 .btn-submit {
   width: 100%;
-  max-width: 300px;
-  padding: 16px 32px;
-  font-size: 16px;
+  max-width: 240px;
+  padding: 12px 24px;
+  font-size: 15px;
 }
 
 .points-notice {
