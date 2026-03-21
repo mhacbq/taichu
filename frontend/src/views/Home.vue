@@ -130,13 +130,15 @@
         <p class="section-subtitle">核心功能消耗积分，注册即送，每日签到可持续领取</p>
 
         <!-- 时效性引流位：年度运程 -->
-        <div class="yearly-banner card-hover" @click="$router.push('/bazi?tab=fortune')">
+        <div class="yearly-banner card-hover" @click="$router.push('/yearly-fortune')">
           <div class="yearly-banner-content">
             <div class="yearly-banner-badge">2026 丙午年</div>
             <h3 class="yearly-banner-title">2026 流年运势深度解析</h3>
             <p class="yearly-banner-desc">提前布局，把握先机。结合个人八字，AI深度解析事业、财富、感情、健康四大运势，提供专属开运建议与每月吉凶提醒。</p>
             <div class="yearly-banner-action">
-              <span class="yearly-banner-btn">立即测算 <el-icon><ArrowRight /></el-icon></span>
+              <router-link to="/yearly-fortune" class="yearly-banner-btn">
+                立即测算 <el-icon><ArrowRight /></el-icon>
+              </router-link>
             </div>
           </div>
           <div class="yearly-banner-bg">

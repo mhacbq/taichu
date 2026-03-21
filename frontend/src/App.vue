@@ -25,6 +25,15 @@
             <template #dropdown>
               <el-dropdown-menu class="nav-more-dropdown">
                 <el-dropdown-item>
+                  <router-link to="/yearly-fortune" class="nav-more-item">
+                    <span class="more-icon">📅</span>
+                    <span class="more-info">
+                      <strong>流年运势</strong>
+                      <span>全年运势解析</span>
+                    </span>
+                  </router-link>
+                </el-dropdown-item>
+                <el-dropdown-item>
                   <router-link to="/liuyao" class="nav-more-item">
                     <span class="more-icon">☰</span>
                     <span class="more-info">

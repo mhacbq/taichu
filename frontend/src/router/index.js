@@ -21,6 +21,7 @@ const Vip = () => import('../views/Vip.vue')
 const Hehun = () => import('../views/Hehun.vue')
 const Liuyao = () => import('../views/Liuyao.vue')
 const Qiming = () => import('../views/Qiming.vue')
+const YearlyFortune = () => import('../views/YearlyFortune.vue')
 
 // 法律页面
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
@@ -184,6 +185,20 @@ const routes = [
         keywords: '取名,起名,八字取名,五行取名,宝宝取名'
       },
       breadcrumb: [{ name: '首页', url: '/' }, { name: '取名建议', url: '/qiming' }]
+    }
+  },
+  {
+    path: '/yearly-fortune',
+    name: 'YearlyFortune',
+    component: YearlyFortune,
+    meta: {
+      public: true,
+      seo: {
+        title: '流年运势 - 太初命理',
+        description: '结合个人八字，AI深度解析全年运势，提供每月吉凶提醒与开运建议',
+        keywords: '流年运势,全年运势,运势分析,月运,开运建议'
+      },
+      breadcrumb: [{ name: '首页', url: '/' }, { name: '流年运势', url: '/yearly-fortune' }]
     }
   },
   {

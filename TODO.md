@@ -11,8 +11,8 @@
 
 ### 产品体验 / 功能改造（非高频修复输入）
 
-- [] home.vue的hero-highlights与hero-access-list里面的文案都有些问题，帮我替换掉，替换为网站真实的使用提示
-- [] home.vue的hero-trust-list有问题，文案不对，替换为网站真实使用场景
+- [x] home.vue的hero-highlights与hero-access-list里面的文案都有些问题，帮我替换掉，替换为网站真实的使用提示
+- [x] home.vue的hero-trust-list有问题，文案不对，替换为网站真实使用场景
 - [] 点击home.vue的yearly-banner-btn，跳转后，并没有真实的流年测试场景页面，帮我新建页面，并且流年测试调用ai分析接口，记得加上首页菜单内
 - [] home.vue页的features-grid布局很有问题，第二排，第三排的顶部按钮没有居中，按钮的立即体验文字描述有问题，所有的feature-access去掉
 - [] home.vue页的testimonials-grid里面的service-tag背景去掉，居中显示文本，调整字体大小和颜色，使其更清晰易读。
