@@ -146,6 +146,15 @@
           <div class="analysis-content" v-html="aiAnalysis"></div>
         </div>
 
+        <!-- AI 分析按钮 -->
+        <div class="ai-action card" v-if="result && !aiAnalysis">
+          <el-button type="primary" @click="getAiAnalysis" :loading="aiLoading" size="large">
+            <el-icon><MagicStick /></el-icon>
+            获取AI深度解读
+          </el-button>
+          <p class="ai-tip">消耗 {{ aiPointsCost }} 积分</p>
+        </div>
+
         <!-- 重新计算按钮 -->
         <div class="result-actions">
           <el-button @click="resetForm" size="large">重新测算</el-button>
@@ -171,6 +180,9 @@ const gender = ref('male')
 const calculating = ref(false)
 const result = ref(null)
 const aiAnalysis = ref('')
+const aiLoading = ref(false)
+const pointsCost = ref(50)
+const aiPointsCost = ref(30)
 
 // 四大运势分类
 const fortuneCategories = [
@@ -308,6 +320,49 @@ const resetForm = () => {
   gender.value = 'male'
   result.value = null
   aiAnalysis.value = ''
+}
+
+// 获取AI分析
+const getAiAnalysis = async () => {
+  if (!result.value) {
+    ElMessage.warning('请先计算流年运势')
+    return
+  }
+
+  // 检查积分
+  if (userStore.points < aiPointsCost.value) {
+    ElMessage.warning(`积分不足，需要${aiPointsCost.value}积分`)
+    return
+  }
+
+  aiLoading.value = true
+
+  try {
+    const response = await fetch('/api/ai/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'yearly_fortune',
+        data: result.value
+      })
+    })
+    const data = await response.json()
+
+    if (data.code === 200) {
+      aiAnalysis.value = data.data.analysis || data.data.content || ''
+      ElMessage.success('AI分析完成')
+      
+      // 扣除积分
+      userStore.points -= aiPointsCost.value
+    } else {
+      throw new Error(data.message || '分析失败')
+    }
+  } catch (error) {
+    ElMessage.error('AI分析失败，请重试')
+    console.error(error)
+  } finally {
+    aiLoading.value = false
+  }
 }
 </script>
 
@@ -657,5 +712,22 @@ const resetForm = () => {
 .result-actions {
   text-align: center;
   padding: 20px;
+}
+
+.ai-action {
+  text-align: center;
+  padding: 30px;
+  margin-bottom: 20px;
+}
+
+.ai-action .el-button {
+  padding: 16px 40px;
+  font-size: 16px;
+}
+
+.ai-tip {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #999;
 }
 </style>
