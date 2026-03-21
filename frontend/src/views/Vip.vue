@@ -29,6 +29,10 @@
               <span class="amount">{{ plan.price }}</span>
               <span class="duration">/ {{ plan.duration }}</span>
             </div>
+            <div class="plan-points">
+              <el-icon><Coin /></el-icon>
+              <span>消耗 {{ plan.price }} 积分</span>
+            </div>
             <ul class="plan-features">
               <li v-for="(feature, index) in plan.features" :key="index">
                 <el-icon class="feature-icon"><Check /></el-icon>
@@ -61,7 +65,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Trophy, UserFilled, Check, Star, MagicStick, Calendar, Document } from '@element-plus/icons-vue'
+import { Trophy, UserFilled, Check, Star, MagicStick, Calendar, Document, Coin } from '@element-plus/icons-vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 
 const userInfo = ref({})
@@ -247,8 +251,37 @@ onMounted(() => {
 }
 
 .plan-price {
-  margin-bottom: 24px;
+  margin-bottom: 8px;
   color: var(--primary-color);
+}
+
+.plan-points {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 24px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba(245, 196, 103, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+  border: 1.5px solid var(--primary-color);
+  border-radius: 12px;
+  color: var(--primary-color);
+  font-size: 16px;
+  font-weight: 600;
+  animation: points-pulse 2s ease-in-out infinite;
+}
+
+@keyframes points-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(212, 175, 55, 0);
+  }
+}
+
+.plan-points .el-icon {
+  font-size: 20px;
 }
 
 .currency {

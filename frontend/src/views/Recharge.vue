@@ -92,9 +92,14 @@
           size="large" 
           class="pay-btn"
           :loading="creatingOrder"
+          :disabled="creatingOrder || !selectedAmount"
           @click="handleRecharge"
         >
-          立即支付
+          <span v-if="!creatingOrder" class="btn-content">
+            <span class="btn-text">立即支付</span>
+            <el-icon class="btn-icon"><ArrowRight /></el-icon>
+          </span>
+          <span v-else>处理中...</span>
         </el-button>
         
         <p class="pay-tip">
@@ -168,7 +173,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { InfoFilled, Picture, ChatDotRound, Loading, Wallet } from '@element-plus/icons-vue'
+import { InfoFilled, Picture, ChatDotRound, Loading, Wallet, ArrowRight } from '@element-plus/icons-vue'
 import { getPointsBalance } from '../api'
 import { getRechargeOptions, createRechargeOrder, queryRechargeOrder, getRechargeHistory } from '../api/payment'
 import { createAlipayOrder } from '../api/alipay'
@@ -566,6 +571,18 @@ const getStatusText = (status) => {
   padding: 60px 0;
 }
 
+@media (max-width: 768px) {
+  .recharge-page {
+    padding: 40px 0 100px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .recharge-page {
+    padding: 30px 0 80px 0;
+  }
+}
+
 .page-header {
   display: flex;
   align-items: center;
@@ -573,14 +590,29 @@ const getStatusText = (status) => {
   margin-bottom: 30px;
 }
 
+@media (max-width: 768px) {
+  .page-header {
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+}
+
 .page-header .section-title {
   margin: 0;
+  font-size: clamp(24px, 5vw, 32px);
 }
 
 .current-points {
   text-align: center;
   padding: 30px;
   margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .current-points {
+    padding: 20px;
+    margin-bottom: 15px;
+  }
 }
 
 .points-display {
@@ -620,6 +652,21 @@ const getStatusText = (status) => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 992px) {
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .options-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
 
 .option-item {
@@ -629,18 +676,76 @@ const getStatusText = (status) => {
   padding: 20px 15px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  overflow: hidden;
+}
+
+.option-item::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: var(--primary-color);
+  opacity: 0.1;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.option-item:active::before {
+  width: 300px;
+  height: 300px;
 }
 
 .option-item:hover {
   background: var(--white-08);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.option-item:active {
   transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .option-item.active {
   border-color: var(--primary-color);
   background: var(--primary-light-10);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+
+.option-item.active::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  animation: checkmark 0.3s ease;
+}
+
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .option-item.hot {
@@ -766,26 +871,86 @@ const getStatusText = (status) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 15px 20px;
+  padding: 16px 20px;
   background: var(--bg-card);
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-option::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: var(--primary-color);
+  opacity: 0.05;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+
+.payment-option:active::before {
+  width: 200px;
+  height: 200px;
 }
 
 .payment-option:hover {
   background: var(--white-08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.payment-option:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .payment-option.active {
   border-color: var(--primary-color);
   background: var(--primary-light-10);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.25);
+}
+
+.payment-option.active::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  animation: checkmark 0.3s ease;
 }
 
 .payment-option span {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+  .payment-option {
+    padding: 14px 16px;
+  }
+
+  .payment-option span {
+    font-size: 14px;
+  }
 }
 
 .pay-btn {
@@ -793,6 +958,57 @@ const getStatusText = (status) => {
   margin-top: 20px;
   height: 48px;
   font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  border: none;
+}
+
+.pay-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+}
+
+.pay-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+}
+
+.pay-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--bg-tertiary);
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  transition: transform 0.3s ease;
+}
+
+.pay-btn:hover:not(:disabled) .btn-icon {
+  transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+  .pay-btn {
+    height: 52px;
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pay-btn {
+    height: 50px;
+    font-size: 16px;
+  }
 }
 
 .pay-tip {

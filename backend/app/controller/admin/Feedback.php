@@ -107,6 +107,14 @@ class Feedback extends BaseController
             $feedback->replied_at = date('Y-m-d H:i:s');
             $feedback->save();
 
+            // 记录反馈操作日志
+            \app\model\FeedbackLog::create([
+                'feedback_id' => $id,
+                'admin_id' => $request->user['id'],
+                'action' => 'reply',
+                'content' => '回复用户反馈：' . mb_substr($reply, 0, 50) . (mb_strlen($reply) > 50 ? '...' : ''),
+            ]);
+
             $this->logOperation('update', 'feedback', [
                 'target_id' => $id,
                 'target_type' => 'feedback',
@@ -150,8 +158,19 @@ class Feedback extends BaseController
             }
 
             $before = $this->formatFeedbackRow($feedback->toArray());
+            $oldStatus = $feedback->status;
             $feedback->status = $status;
             $feedback->save();
+
+            // 记录状态变更日志
+            \app\model\FeedbackLog::create([
+                'feedback_id' => $id,
+                'admin_id' => $request->user['id'],
+                'action' => 'status',
+                'content' => '更新反馈状态',
+                'old_value' => $oldStatus,
+                'new_value' => $status,
+            ]);
 
             $this->logOperation('update', 'feedback', [
                 'target_id' => $id,
@@ -343,6 +362,36 @@ class Feedback extends BaseController
         } catch (\Throwable $e) {
             return $this->respondSystemException('feedback_delete_category', $e, '删除反馈分类失败，请稍后重试', [
                 'category_id' => $id,
+            ]);
+        }
+    }
+
+    /**
+     * 获取反馈处理日志
+     */
+    public function logs(Request $request)
+    {
+        if (!$this->checkPermission('feedback_view')) {
+            return $this->error('无权限查看反馈日志', 403);
+        }
+
+        $feedbackId = $request->get('feedback_id');
+        
+        if (!$feedbackId) {
+            return $this->error('缺少反馈ID', 400);
+        }
+
+        try {
+            $logs = \app\model\FeedbackLog::with(['feedback', 'admin'])
+                ->where('feedback_id', $feedbackId)
+                ->order('created_at', 'desc')
+                ->select()
+                ->toArray();
+
+            return $this->success($logs, '获取成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('feedback_logs', $e, '获取处理日志失败', [
+                'feedback_id' => $feedbackId,
             ]);
         }
     }

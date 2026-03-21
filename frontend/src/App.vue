@@ -51,7 +51,7 @@
         <div class="user-actions">
           <template v-if="isLoggedIn">
             <el-dropdown trigger="hover" placement="bottom-end">
-              <router-link to="/recharge" class="points-badge" title="点击充值积分">
+              <router-link to="/recharge" class="points-badge" id="tour-recharge" title="点击充值积分">
                 <el-icon class="points-icon" :size="16"><Star /></el-icon>
                 <span class="points-value">{{ userPoints }}</span>
                 <span class="points-unit">积分</span>
@@ -84,7 +84,7 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">
-                    <el-icon class="dropdown-icon" :size="14"><User /></el-icon> 个人中心
+                    <el-icon class="dropdown-icon" :size="14"><User /></el-icon> <span id="tour-profile">个人中心</span>
                   </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <el-icon class="dropdown-icon" :size="14"><SwitchButton /></el-icon> 退出登录
@@ -251,23 +251,28 @@
         </div>
       </div>
     </div>
+
+    <!-- 新用户引导 -->
+    <TourGuide ref="tourGuideRef" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, computed, h } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, h, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPointsBalance } from './api'
 import YinYangIcon from './components/YinYangIcon.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
-import { 
+import TourGuide from './components/TourGuide.vue'
+import { useTourGuide } from './composables/useTourGuide'
+import {
   ArrowDown,
-  Calendar, 
-  MagicStick, 
-  Star, 
-  User, 
-  SwitchButton, 
+  Calendar,
+  MagicStick,
+  Star,
+  User,
+  SwitchButton,
   Close,
   CloseBold,
   Present,
@@ -292,6 +297,10 @@ const YinYang = {
 
 const router = useRouter()
 const route = useRoute()
+
+// 新用户引导
+const tourGuideRef = ref(null)
+const { hasCompletedTour, startTour } = useTourGuide()
 
 const isLoggedIn = ref(false)
 const userNickname = ref('')
@@ -448,7 +457,7 @@ const checkLoginStatus = () => {
 
   const token = localStorage.getItem('token')
   const userInfo = localStorage.getItem('userInfo')
-  
+
   if (token && userInfo) {
     try {
       isLoggedIn.value = true
@@ -456,6 +465,15 @@ const checkLoginStatus = () => {
       userNickname.value = user?.nickname || '用户'
       userPoints.value = user?.points || 0
       refreshPoints()
+
+      // 首次登录触发引导（延迟执行确保DOM渲染完成）
+      if (!hasCompletedTour.value && route.path === '/') {
+        nextTick(() => {
+          setTimeout(() => {
+            startTour()
+          }, 1000)
+        })
+      }
     } catch (e) {
       // 清除无效的登录状态
       localStorage.removeItem('token')
@@ -594,17 +612,17 @@ onBeforeUnmount(() => {
   flex-direction: column;
 }
 
-/* 导航栏 - 深色风格 */
+/* 导航栏 - 白色玻璃态 */
 .navbar {
-  background: var(--bg-primary);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   padding: 0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.08);
 }
 
 .nav-container {
@@ -783,12 +801,39 @@ onBeforeUnmount(() => {
   gap: 6px;
   border-radius: 12px;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-menu-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: var(--primary-color);
+  opacity: 0.1;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+
+.mobile-menu-btn:active::before {
+  width: 100px;
+  height: 100px;
 }
 
 .mobile-menu-btn:hover {
   border-color: var(--primary-light-20);
   box-shadow: 0 12px 22px rgba(var(--primary-rgb), 0.12);
+  transform: translateY(-2px);
+}
+
+.mobile-menu-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
 }
 
 .mobile-menu-btn span {
@@ -1169,6 +1214,18 @@ onBeforeUnmount(() => {
   }
 }
 
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .companion-header {
   display: flex;
   justify-content: space-between;
@@ -1241,6 +1298,24 @@ onBeforeUnmount(() => {
   background: rgba(212, 175, 55, 0.1);
   color: var(--primary-color);
   transform: translateX(5px);
+}
+
+/* 全局背景：古典云纹纹理 */
+body {
+  background-color: #FFFFFF;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(212, 175, 55, 0.02) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.015) 0%, transparent 60%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 35px,
+      rgba(212, 175, 55, 0.01) 35px,
+      rgba(212, 175, 55, 0.01) 36px
+    );
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 /* 页面过渡动画 */
@@ -1709,6 +1784,20 @@ onBeforeUnmount(() => {
   padding: 60px 0 30px;
   background: var(--bg-secondary, #f9f6f0);
   border-top: 1px solid var(--border-color);
+  position: relative;
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background-image: url('/patterns/wave-decor.svg');
+  background-repeat: repeat-x;
+  background-size: contain;
+  background-position: top;
 }
 
 .footer-content {

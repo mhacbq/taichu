@@ -285,22 +285,54 @@
           <el-empty v-else description="反馈功能暂时关闭，后续开放后可在这里直接提交建议" />
         </div>
 
+        <!-- 帮助与设置 -->
+        <div class="help-section card card-hover">
+          <h3><el-icon><List /></el-icon> 帮助与设置</h3>
+          <div class="help-items">
+            <div class="help-item" @click="restartTourGuide">
+              <div class="help-icon">
+                <el-icon><DocumentCopy /></el-icon>
+              </div>
+              <div class="help-info">
+                <h4>重新查看引导</h4>
+                <p>再次体验新用户引导，了解平台功能</p>
+              </div>
+              <el-icon class="help-arrow"><ArrowDown /></el-icon>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig } from '../api'
-
-
+import { useTourGuide } from '../composables/useTourGuide'
 import { formatTime, formatDate, formatDateTime } from '../utils/format'
 import CheckinCard from '../components/CheckinCard.vue'
 import BackButton from '../components/BackButton.vue'
 import AsyncState from '../components/AsyncState.vue'
-import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, Check } from '@element-plus/icons-vue'
+import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, Check, ArrowDown } from '@element-plus/icons-vue'
+
+const router = useRouter()
+
+// 新用户引导
+const { resetTour, startTour } = useTourGuide()
+
+const restartTourGuide = () => {
+  resetTour()
+  nextTick(() => {
+    router.push('/')
+    setTimeout(() => {
+      startTour()
+    }, 500)
+  })
+}
 
 const userInfo = ref({})
 const pointsBalance = ref(0)
@@ -1379,6 +1411,74 @@ onUnmounted(() => {
 
 .invite-rules li:last-child {
   margin-bottom: 0;
+}
+
+.help-section {
+  margin-top: 20px;
+}
+
+.help-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.help-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-light-20);
+  transform: translateX(5px);
+}
+
+.help-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-light-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.help-info {
+  flex: 1;
+}
+
+.help-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.help-info p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.help-arrow {
+  color: var(--text-quaternary);
+  transition: transform 0.3s ease;
+}
+
+.help-item:hover .help-arrow {
+  transform: translateX(5px);
+  color: var(--primary-color);
 }
 
 @media (max-width: 768px) {

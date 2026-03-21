@@ -59,7 +59,14 @@ class Alipay extends BaseController
 
         $config = PaymentConfig::getAlipayConfig();
         if (!$config) {
-            return $this->error('支付宝支付未配置', 503);
+            Log::error('支付宝支付配置不存在', ['user_id' => $userId]);
+            return $this->error('支付通道暂时不可用', 503);
+        }
+
+        // 检查支付宝支付通道健康状态
+        if (!$this->checkAlipayPaymentHealth()) {
+            Log::warning('支付宝支付通道异常', ['user_id' => $userId]);
+            return $this->error('支付通道响应超时，请稍后重试', 504);
         }
 
         $order = RechargeOrder::createOrder(
@@ -72,7 +79,7 @@ class Alipay extends BaseController
         );
 
         if (empty($order)) {
-            return $this->error('订单创建失败');
+            return $this->error('订单创建失败', 500);
         }
 
         try {
@@ -100,19 +107,101 @@ class Alipay extends BaseController
         } catch (\Throwable $e) {
             $this->cancelRechargeOrder((string) ($order['order_no'] ?? ''));
 
-            return $this->respondSystemException(
-                'alipay.create_' . $scene . '_order',
-                $e,
-                '创建支付订单失败，请稍后重试',
-                [
-                    'scene' => $scene,
-                    'channel' => 'alipay',
-                    'user_id' => $userId,
-                    'order_no' => $order['order_no'] ?? '',
-                    'amount' => $amount,
-                    'points' => $points,
-                ]
-            );
+            // 使用细化后的异常处理
+            return $this->handleAlipayPaymentException($e, $scene, [
+                'user_id' => $userId,
+                'order_no' => $order['order_no'] ?? '',
+                'amount' => $amount,
+                'points' => $points,
+            ]);
+        }
+    }
+
+    /**
+     * 处理支付宝支付异常
+     */
+    protected function handleAlipayPaymentException(
+        \Throwable $e,
+        string $scene,
+        array $context = []
+    ): \think\response\Json {
+        $message = $e->getMessage();
+
+        // 网络异常或超时
+        $networkErrors = [
+            'CURL Error',
+            'Connection timed out',
+            'timeout',
+            'network',
+            '连接超时',
+            '网络错误',
+            'SSL',
+        ];
+
+        foreach ($networkErrors as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                Log::warning('支付宝支付网络异常', array_merge($context, ['error' => $message]));
+                return $this->error('网络连接异常，请检查网络后重试', 504);
+            }
+        }
+
+        // 配置错误
+        $configErrors = [
+            '配置不存在',
+            'APPID',
+            '密钥',
+            '私钥',
+            '公钥',
+        ];
+
+        foreach ($configErrors as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                Log::error('支付宝支付配置错误', array_merge($context, ['error' => $message]));
+                return $this->error('支付通道配置错误', 500);
+            }
+        }
+
+        // 签名相关错误
+        $signErrors = [
+            '签名',
+            'sign',
+            '签名验证',
+        ];
+
+        foreach ($signErrors as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                Log::error('支付宝签名错误', array_merge($context, ['error' => $message]));
+                return $this->error('签名验证失败，请重新尝试', 400);
+            }
+        }
+
+        // 默认返回通用错误
+        Log::error('支付宝支付请求失败', array_merge($context, ['error' => $message]));
+        return $this->error('支付请求失败，请稍后重试', 500);
+    }
+
+    /**
+     * 检查支付宝支付通道健康状态
+     */
+    protected function checkAlipayPaymentHealth(): bool
+    {
+        try {
+            // 简单的连接测试：访问支付宝网关
+            $ch = curl_init('https://openapi.alipay.com/gateway.do');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            return $httpCode > 0;
+        } catch (\Exception $e) {
+            Log::error('支付宝支付通道检查失败', ['error' => $e->getMessage()]);
+            return false;
         }
     }
 

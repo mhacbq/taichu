@@ -75,22 +75,38 @@ class Payment extends BaseController
         // 获取微信支付配置
         $config = PaymentConfig::getWechatConfig();
         if (!$config) {
-            return $this->error('微信支付未配置', 503);
+            Log::error('微信支付配置不存在', ['user_id' => (int) $user['sub']]);
+            return $this->error('支付通道暂时不可用', 503);
+        }
+        
+        // 检查支付通道健康状态
+        if (!$this->checkWechatPaymentHealth($config)) {
+            Log::warning('微信支付通道异常', ['user_id' => (int) $user['sub']]);
+            return $this->error('支付通道响应超时，请稍后重试', 504);
         }
         
         $points = $this->rechargeOptions[$amount];
         
         // 创建订单
-        $order = RechargeOrder::createOrder(
-            (int) $user['sub'],
-            $amount,
-            $points,
-            $this->request->ip(),
-            $this->request->header('User-Agent')
-        );
-        
-        if (empty($order)) {
-            return $this->error('订单创建失败');
+        try {
+            $order = RechargeOrder::createOrder(
+                (int) $user['sub'],
+                $amount,
+                $points,
+                $this->request->ip(),
+                $this->request->header('User-Agent')
+            );
+            
+            if (empty($order)) {
+                return $this->error('订单创建失败', 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('创建订单失败', [
+                'user_id' => (int) $user['sub'],
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('订单创建失败，请稍后重试', 500);
         }
         
         // 调用微信支付统一下单
@@ -111,18 +127,103 @@ class Payment extends BaseController
                 $orderModel->cancel();
             }
 
-            Log::error('创建支付订单失败', [
+            $this->logControllerException('wechat_create_order', $e, [
                 'user_id' => (int) $user['sub'],
                 'order_no' => $order['order_no'] ?? '',
                 'amount' => $amount,
-                'error' => $e->getMessage(),
-            ]);
+                'points' => $points,
+            ], 'warning');
 
-            if ($e->getMessage() === '用户未绑定微信') {
-                return $this->error('用户未绑定微信', 400);
+            // 根据异常类型返回不同的错误信息
+            return $this->handlePaymentException($e);
+        }
+    }
+
+    /**
+     * 处理支付异常，返回友好的错误信息
+     */
+    protected function handlePaymentException(\Exception $e): \think\response\Json
+    {
+        $message = $e->getMessage();
+        
+        // 用户未绑定微信
+        if ($message === '用户未绑定微信') {
+            return $this->error('请先绑定微信账号', 400);
+        }
+        
+        // 网络异常或超时
+        $networkErrors = [
+            'CURL Error',
+            'Connection timed out',
+            'timeout',
+            'network',
+            '连接超时',
+            '网络错误',
+        ];
+        
+        foreach ($networkErrors as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                Log::warning('支付网络异常', ['error' => $message]);
+                return $this->error('网络连接异常，请检查网络后重试', 504);
             }
+        }
+        
+        // 配置错误
+        $configErrors = [
+            '配置不存在',
+            '商户号',
+            '密钥',
+            'APPID',
+        ];
+        
+        foreach ($configErrors as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                Log::error('支付配置错误', ['error' => $message]);
+                return $this->error('支付通道配置错误', 500);
+            }
+        }
+        
+        // 金额相关错误
+        $amountErrors = [
+            '金额',
+            'AMOUNT',
+            'total_fee',
+        ];
+        
+        foreach ($amountErrors as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                Log::error('支付金额错误', ['error' => $message]);
+                return $this->error('充值金额异常，请重新选择', 400);
+            }
+        }
+        
+        // 默认返回通用错误
+        return $this->error('支付请求失败，请稍后重试', 500);
+    }
+
+    /**
+     * 检查微信支付通道健康状态
+     */
+    protected function checkWechatPaymentHealth(array $config): bool
+    {
+        try {
+            // 简单的连接测试：访问微信支付网关
+            $ch = curl_init('https://api.mch.weixin.qq.com/pay/orderquery');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5); // 5秒超时
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // 3秒连接超时
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             
-            return $this->error('创建支付订单失败，请稍后重试', 500);
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            // 只要能连接到服务器（返回404或其他状态码也算正常）
+            return $httpCode > 0;
+        } catch (\Exception $e) {
+            Log::error('微信支付通道检查失败', ['error' => $e->getMessage()]);
+            return false;
         }
     }
     

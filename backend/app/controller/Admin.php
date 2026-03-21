@@ -1139,10 +1139,54 @@ class Admin extends BaseController
     }
 
     /**
+     * 删除积分规则
+     */
+    public function deletePointsRule(Request $request, $id)
+    {
+        if (!$this->checkPermission('points_adjust')) {
+            return $this->error('无权限删除积分规则', 403);
+        }
+
+        $id = (int) $id;
+        if ($id <= 0) {
+            return $this->error('规则ID无效', 400);
+        }
+
+        try {
+            $existing = Db::table('system_config')->where('id', $id)->find();
+            if (!$existing) {
+                return $this->error('积分规则不存在', 404);
+            }
+
+            // 检查是否为积分规则配置
+            $category = $existing['category'] ?? '';
+            if (!in_array($category, [self::CATEGORY_POINTS, self::CATEGORY_POINTS_COST], true)) {
+                return $this->error('该记录不是积分规则', 400);
+            }
+
+            Db::table('system_config')->where('id', $id)->delete();
+
+            $this->logOperation('delete_points_rule', 'points', [
+                'target_id' => $id,
+                'target_type' => 'points_rule',
+                'detail' => '删除积分规则: ' . ($existing['config_key'] ?? ''),
+                'before_data' => $existing,
+            ]);
+
+            return $this->success(['id' => $id], '删除成功');
+        } catch (\Exception $e) {
+            Log::error('删除积分规则失败: ' . $e->getMessage(), [
+                'admin_id' => $this->adminId,
+                'id' => $id,
+            ]);
+            return $this->error('删除积分规则失败，请稍后重试', 500);
+        }
+    }
+
+    /**
      * 获取反馈列表
      */
     public function feedbackList(Request $request)
-
     {
         // 检查权限
         if (!$this->checkPermission('feedback_view')) {

@@ -59,6 +59,12 @@ export const asyncRoutes = [
         name: 'UserBehavior',
         component: () => import('@/views/user/behavior.vue'),
         meta: { title: '行为日志', roles: ['admin', 'operator'] }
+      },
+      {
+        path: '/analysis',
+        name: 'UserAnalysis',
+        component: () => import('@/views/user/analysis.vue'),
+        meta: { title: '用户分析', roles: ['admin'] }
       }
     ]
   },
@@ -91,6 +97,12 @@ export const asyncRoutes = [
         name: 'HehunManage',
         component: () => import('@/views/result/HehunManage.vue'),
         meta: { title: '合婚测算', roles: ['admin', 'operator'] }
+      },
+      {
+        path: '/analysis',
+        name: 'ResultAnalysis',
+        component: () => import('@/views/result/analysis.vue'),
+        meta: { title: '测算统计', roles: ['admin'] }
       }
     ]
   },
@@ -262,6 +274,12 @@ export const asyncRoutes = [
         name: 'PaymentConfig',
         component: () => import('@/views/payment/config.vue'),
         meta: { title: '支付配置', roles: ['admin'] }
+      },
+      {
+        path: '/analysis',
+        name: 'PaymentAnalysis',
+        component: () => import('@/views/payment/analysis.vue'),
+        meta: { title: '充值分析', roles: ['admin'] }
       }
     ]
 
@@ -363,6 +381,12 @@ export const asyncRoutes = [
         name: 'SystemSettings',
         component: () => import('@/views/system/settings.vue'),
         meta: { title: '基础配置', roles: ['admin'] }
+      },
+      {
+        path: '/system-config',
+        name: 'SystemConfig',
+        component: () => import('@/views/system/systemConfig.vue'),
+        meta: { title: '系统配置', roles: ['admin'] }
       },
       {
         path: '/sensitive',

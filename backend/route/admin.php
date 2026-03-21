@@ -41,6 +41,13 @@ Route::group('api/admin', function () {
         Route::post('config/update', 'admin.Config/update');
         Route::post('config/update-batch', 'admin.Config/updateBatch');
 
+        // 统一系统配置管理
+        Route::get('system-config', 'admin.SystemConfig/index');
+        Route::post('system-config/save', 'admin.SystemConfig/save');
+        Route::post('system-config/test-payment', 'admin.SystemConfig/testPayment');
+        Route::post('system-config/test-ai', 'admin.SystemConfig/testAI');
+        Route::get('system-config/export', 'admin.SystemConfig/export');
+
         // 用户管理
         Route::get('users/export', 'Admin/exportUsers');
         Route::get('users/behavior', 'Admin/userBehavior');
@@ -114,6 +121,7 @@ Route::group('api/admin', function () {
         Route::post('points/adjust', 'admin.User/adjustPoints');
         Route::get('points/rules', 'Admin/getPointsRules');
         Route::put('points/rules', 'Admin/savePointsRules');
+        Route::delete('points/rules/:id', 'Admin/deletePointsRule');
         Route::get('points/stats', 'Admin/pointsStats');
         Route::get('points/records', 'PointsController/records');
         Route::get('points/statistics', 'PointsController/statistics');
@@ -165,6 +173,19 @@ Route::group('api/admin', function () {
         Route::get('feedback/categories', 'admin.Feedback/categories');
         Route::post('feedback/categories', 'admin.Feedback/saveCategory');
         Route::delete('feedback/categories/:id', 'admin.Feedback/deleteCategory');
+        
+        // 反馈分配和日志
+        Route::get('feedback/assign/list', 'admin.FeedbackAssign/list');
+        Route::post('feedback/assign', 'admin.FeedbackAssign/assign');
+        Route::post('feedback/assign/:id/status', 'admin.FeedbackAssign/updateStatus');
+        Route::get('feedback/assign/my', 'admin.FeedbackAssign/myAssignments');
+        Route::get('feedback/logs', 'admin.Feedback/logs');
+        Route::get('system/admin-list', 'admin.System/adminList');
+        
+        // 数据分析
+        Route::get('analysis/payment', 'admin.Analysis/payment');
+        Route::get('analysis/user', 'admin.Analysis/user');
+        Route::get('analysis/result', 'admin.Analysis/result');
         
         // 知识库管理
         Route::get('knowledge/articles', 'admin.Knowledge/articleList');

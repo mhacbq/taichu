@@ -16,6 +16,7 @@
           </div>
         </div>
         <div class="header-actions">
+          <TodoWidget />
           <el-button :loading="refreshing" @click="handleRefresh">
             <el-icon><Refresh /></el-icon>
             刷新看板
@@ -178,6 +179,7 @@ import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import TodoWidget from '@/components/TodoWidget.vue'
 import {
   exportRealtimeDashboard,
   getChartData,

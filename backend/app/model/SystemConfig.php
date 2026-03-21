@@ -3,266 +3,257 @@ declare(strict_types=1);
 
 namespace app\model;
 
-use app\service\SchemaInspector;
+use app\service\SensitiveConfigCrypt;
 use think\Model;
+use think\facade\Db;
 
 /**
- * 系统配置模型
+ * 系统统一配置模型
+ * 用于管理支付、AI、推送、短信等系统配置
  */
 class SystemConfig extends Model
 {
-    protected $table = 'tc_system_config';
+    protected $table = 'tc_system_configs';
 
-    protected $pk = 'id';
+    protected $autoWriteTimestamp = true;
 
     protected $schema = [
         'id' => 'int',
+        'config_group' => 'string',
         'config_key' => 'string',
-        'config_value' => 'string',
+        'config_value' => 'text',
         'config_type' => 'string',
+        'is_encrypted' => 'boolean',
+        'is_sensitive' => 'boolean',
         'description' => 'string',
-        'category' => 'string',
-        'is_editable' => 'int',
         'sort_order' => 'int',
+        'is_enabled' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    public function __construct(array $data = [])
-    {
-        $this->table = self::resolveTableName();
-        parent::__construct($data);
-    }
-
-
     /**
-     * 获取配置值（自动转换类型）
+     * 获取指定分组的配置
      */
-    public function getTypedValueAttr($value, $data)
+    public static function getGroupConfig(string $group, bool $onlyEnabled = true): array
     {
-        $val = $data['config_value'] ?? '';
-        $type = self::normalizeConfigType((string) ($data['config_type'] ?? 'string'));
+        $query = self::where('config_group', $group);
 
-        switch ($type) {
-            case 'int':
-                return (int) $val;
-            case 'float':
-                return (float) $val;
-            case 'bool':
-                return self::normalizeBoolValue($val);
-            case 'json':
-                if (is_array($val)) {
-                    return $val;
-                }
-
-                $decoded = json_decode((string) $val, true);
-                return json_last_error() === JSON_ERROR_NONE ? $decoded : null;
-            default:
-                return $val;
+        if ($onlyEnabled) {
+            $query->where('is_enabled', 1);
         }
+
+        $configs = $query->order('sort_order', 'asc')->select()->toArray();
+
+        $result = [];
+        foreach ($configs as $config) {
+            $key = $config['config_key'];
+            $value = self::parseConfigValue(
+                $config['config_value'] ?? '',
+                $config['config_type'] ?? 'string',
+                (bool) ($config['is_encrypted'] ?? false)
+            );
+            $result[$key] = $value;
+        }
+
+        return $result;
     }
 
-
-
     /**
-     * 根据键获取配置
+     * 获取单个配置值
      */
-    public static function getByKey(string $key, $default = null)
+    public static function getValue(string $group, string $key, $default = null)
     {
-        $config = (new static())
+        $config = self::where('config_group', $group)
             ->where('config_key', $key)
-            ->order('id', 'desc')
+            ->where('is_enabled', 1)
             ->find();
 
         if (!$config) {
             return $default;
         }
 
-        return $config->typed_value;
+        return self::parseConfigValue(
+            $config->config_value ?? '',
+            $config->config_type ?? 'string',
+            (bool) $config->is_encrypted
+        );
     }
 
     /**
-     * 根据分类获取配置列表
+     * 设置配置值
      */
-    public static function getByCategory(string $category): array
+    public static function setValue(string $group, string $key, $value, bool $encrypt = false): bool
     {
-        $configs = (new static())
-            ->where('category', $category)
-            ->order('sort_order', 'asc')
-            ->order('id', 'asc')
-            ->select();
-
-        $result = [];
-        foreach ($configs as $config) {
-            $result[$config->config_key] = $config->typed_value;
-        }
-
-        return $result;
-    }
-
-    /**
-     * 获取所有配置（按分类组织）
-     */
-    public static function getAllGrouped(): array
-    {
-        $configs = (new static())
-            ->order('category', 'asc')
-            ->order('sort_order', 'asc')
-            ->order('id', 'asc')
-            ->select();
-
-        $result = [];
-        foreach ($configs as $config) {
-            $category = $config->category;
-            if (!isset($result[$category])) {
-                $result[$category] = [];
-            }
-            $result[$category][] = [
-                'key' => $config->config_key,
-                'value' => $config->typed_value,
-                'type' => $config->config_type,
-                'description' => $config->description,
-                'editable' => (bool) $config->is_editable,
-            ];
-
-        }
-
-        return $result;
-    }
-
-    /**
-     * 更新配置值
-     */
-    public static function setValue(string $key, $value): bool
-    {
-        $config = (new static())
+        $config = self::where('config_group', $group)
             ->where('config_key', $key)
-            ->order('id', 'desc')
             ->find();
 
-        if (!$config) {
-            return false;
+        if ($config) {
+            $config->config_value = $encrypt ? SensitiveConfigCrypt::encrypt((string) $value) : (string) $value;
+            $config->is_encrypted = $encrypt ? 1 : 0;
+            return $config->save() !== false;
         }
 
-        $configType = self::normalizeConfigType((string) ($config->config_type ?? 'string'));
-        if ($configType === 'json' && is_array($value)) {
-            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
-        }
-        if ($configType === 'bool') {
-            $value = self::normalizeBoolValue($value) ? '1' : '0';
-        }
-
-        $config->config_type = $configType;
-        $config->config_value = (string) $value;
-        return $config->save();
-    }
-
-
-    /**
-     * 批量更新配置
-     */
-    public static function setValues(array $configs): array
-    {
-        $results = [];
-        foreach ($configs as $key => $value) {
-            $results[$key] = self::setValue($key, $value);
-        }
-        return $results;
+        return self::create([
+            'config_group' => $group,
+            'config_key' => $key,
+            'config_value' => $encrypt ? SensitiveConfigCrypt::encrypt((string) $value) : (string) $value,
+            'config_type' => is_bool($value) ? 'boolean' : (is_int($value) ? 'int' : 'string'),
+            'is_encrypted' => $encrypt ? 1 : 0,
+            'is_enabled' => 1,
+        ]) !== false;
     }
 
     /**
-     * 检查功能是否开启
+     * 获取支付配置(兼容旧代码)
      */
-    public static function isFeatureEnabled(string $featureKey): bool
+    public static function getPaymentConfig(string $type = 'wechat'): ?array
     {
-        $value = self::getByKey("feature_{$featureKey}_enabled", true);
+        $group = 'payment';
 
-        if ($value === null) {
+        if ($type === 'wechat') {
+            return [
+                'mch_id' => self::getValue($group, 'wechat_mch_id'),
+                'app_id' => self::getValue($group, 'wechat_app_id'),
+                'api_key' => self::getValue($group, 'wechat_api_key'),
+                'api_cert' => self::getValue($group, 'wechat_api_cert'),
+                'api_key_pem' => self::getValue($group, 'wechat_api_key_pem'),
+                'notify_url' => self::getValue($group, 'wechat_notify_url'),
+                'is_enabled' => (bool) self::getValue($group, 'wechat_is_enabled', false),
+            ];
+        }
+
+        if ($type === 'alipay') {
+            return [
+                'app_id' => self::getValue($group, 'alipay_app_id'),
+                'private_key' => self::getValue($group, 'alipay_private_key'),
+                'public_key' => self::getValue($group, 'alipay_public_key'),
+                'notify_url' => self::getValue($group, 'alipay_notify_url'),
+                'return_url' => self::getValue($group, 'alipay_return_url'),
+                'is_enabled' => (bool) self::getValue($group, 'alipay_is_enabled', false),
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取AI服务配置
+     */
+    public static function getAIConfig(): array
+    {
+        return self::getGroupConfig('ai');
+    }
+
+    /**
+     * 获取推送服务配置
+     */
+    public static function getPushConfig(): array
+    {
+        return self::getGroupConfig('push');
+    }
+
+    /**
+     * 获取短信服务配置
+     */
+    public static function getSmsConfig(): array
+    {
+        return self::getGroupConfig('sms');
+    }
+
+    /**
+     * 获取管理端展示的配置(隐藏敏感信息)
+     */
+    public static function getSafeConfigs(string $group): array
+    {
+        $configs = self::where('config_group', $group)
+            ->order('sort_order', 'asc')
+            ->select()
+            ->toArray();
+
+        foreach ($configs as &$config) {
+            if ($config['is_sensitive'] && $config['config_value']) {
+                $config['config_value'] = self::maskSensitiveValue($config['config_value']);
+                $config['is_masked'] = true;
+            } else {
+                $config['is_masked'] = false;
+            }
+        }
+
+        return $configs;
+    }
+
+    /**
+     * 保存配置(批量)
+     */
+    public static function saveConfigs(string $group, array $configs): bool
+    {
+        Db::startTrans();
+        try {
+            foreach ($configs as $key => $value) {
+                $config = self::where('config_group', $group)
+                    ->where('config_key', $key)
+                    ->find();
+
+                $isEncrypted = (bool) self::where('config_group', $group)
+                    ->where('config_key', $key)
+                    ->value('is_encrypted');
+
+                if ($config) {
+                    // 如果是敏感信息且值为masked,则不更新
+                    if (isset($value['is_masked']) && $value['is_masked']) {
+                        continue;
+                    }
+
+                    $config->config_value = $isEncrypted
+                        ? SensitiveConfigCrypt::encrypt((string) $value)
+                        : (string) $value;
+                    $config->save();
+                }
+            }
+
+            Db::commit();
             return true;
+        } catch (\Exception $e) {
+            Db::rollback();
+            throw $e;
         }
-
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (is_numeric($value)) {
-            return (int) $value !== 0;
-        }
-
-        if (is_string($value)) {
-            $normalized = strtolower(trim($value));
-            if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
-                return true;
-            }
-            if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
-     * 获取积分消耗配置
+     * 解析配置值
      */
-    public static function getPointsCosts(): array
+    protected static function parseConfigValue(string $value, string $type, bool $encrypted): mixed
     {
-        $configs = (new static())
-            ->where('config_key', 'like', 'points_cost_%')
-            ->order('id', 'asc')
-            ->select();
-
-        $result = [];
-        foreach ($configs as $config) {
-            $key = str_replace('points_cost_', '', $config->config_key);
-            $result[$key] = (int) $config->config_value;
+        if ($encrypted) {
+            $value = SensitiveConfigCrypt::decrypt($value);
         }
 
-        return $result;
-    }
-
-    /**
-     * 获取VIP配置
-     */
-    public static function getVipConfig(): array
-    {
-        return self::getByCategory('vip');
-    }
-
-    protected static function normalizeConfigType(string $type): string
-    {
-        $normalized = strtolower(trim($type));
-
-        return match ($normalized) {
-            'boolean' => 'bool',
-            'integer' => 'int',
-            'double', 'decimal' => 'float',
-            default => $normalized !== '' ? $normalized : 'string',
+        return match ($type) {
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'int' => (int) $value,
+            'json' => json_decode($value, true) ?: [],
+            default => $value,
         };
     }
 
-    protected static function normalizeBoolValue($value): bool
+    /**
+     * 掩码敏感信息
+     */
+    protected static function maskSensitiveValue(string $value, int $showLength = 4): string
     {
-        if (is_bool($value)) {
-            return $value;
+        if (empty($value)) {
+            return '';
         }
 
-        if (is_numeric($value)) {
-            return (int) $value !== 0;
+        $length = strlen($value);
+        if ($length <= $showLength * 2) {
+            return str_repeat('*', $length);
         }
 
-        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'on', 'yes'], true);
-    }
-
-    protected static function resolveTableName(): string
-    {
-        foreach (['system_config', 'tc_system_config'] as $table) {
-            if (SchemaInspector::tableExists($table)) {
-                return $table;
-            }
-        }
-
-        return 'system_config';
+        return substr($value, 0, $showLength)
+            . str_repeat('*', max(4, $length - $showLength * 2))
+            . substr($value, -$showLength);
     }
 }
-
