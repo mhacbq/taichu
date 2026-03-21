@@ -555,20 +555,20 @@ const heroProofItems = computed(() => [
   {
     key: 'users',
     icon: UserFilled,
-    label: hasDisplayValue(userCount.value) ? `${formatDisplayValue(userCount.value)}+ 用户已体验` : '八字塔罗等传统服务',
-    description: '注册即送积分，每日签到领积分，支持八字排盘、塔罗占卜、六爻问事等多种服务。'
+    label: hasDisplayValue(userCount.value) ? `${formatDisplayValue(userCount.value)}+ 用户已体验` : '真实用户使用反馈',
+    description: '通过八字排盘了解自身五行格局，用塔罗探索当下困惑，每日运势提供行动参考。'
   },
   {
     key: 'services',
     icon: MagicStick,
-    label: '专业命理分析服务',
-    description: '结合传统文化与AI技术，提供八字排盘、塔罗占卜、每日运势、六爻占卜、八字合婚等服务。'
+    label: 'AI辅助传统解读',
+    description: 'AI结合专业命理知识，提供八字、塔罗、六爻等服务的深度分析与建议，帮助更好理解信息。'
   },
   {
     key: 'clarity',
     icon: ChatLineRound,
-    label: '积分体系清晰透明',
-    description: '各类服务消耗积分明确，新用户注册送积分，每日签到可领积分，积分消耗规则一目了然。'
+    label: '透明计费体系',
+    description: '每项服务积分消耗明确标注，注册送积分每日签到领积分，清楚知道每笔花费在哪里。'
   }
 ])
 
@@ -576,20 +576,20 @@ const heroAccessItems = computed(() => [
   {
     key: 'entry',
     icon: isLoggedIn.value ? Check : Present,
-    title: isLoggedIn.value ? '所有功能已开放' : '登录解锁全部功能',
-    detail: isLoggedIn.value ? '登录后可使用八字排盘、塔罗占卜、六爻问事、八字合婚等所有服务。' : '登录后可领取积分，解锁八字排盘、塔罗占卜、六爻问事等所有服务。'
+    title: isLoggedIn.value ? '各项服务已解锁' : '登录后即可体验',
+    detail: isLoggedIn.value ? '登录后八字排盘、塔罗占卜、六爻问事等功能均可正常使用。' : '登录即领积分，解锁八字排盘、塔罗占卜、六爻问事等功能。'
   },
   {
     key: 'daily',
     icon: Star,
-    title: '每日运势免费查看',
-    detail: '查看今日宜忌、幸运提示与节奏建议，无需登录即可免费浏览每日运势。'
+    title: '每日运势即时查看',
+    detail: '输入出生信息生成八字，即可查看每日宜忌、幸运提示与节奏建议。'
   },
   {
     key: 'points',
     icon: Coin,
-    title: isLoggedIn.value ? '我的积分余额' : '新用户积分福利',
-    detail: isLoggedIn.value ? `当前可用 ${formattedUserPoints.value} 积分，可用于八字排盘、塔罗占卜等服务。` : '注册即送100积分，可用于八字首测、塔罗占卜等服务。'
+    title: isLoggedIn.value ? '当前积分余额' : '注册即领启动积分',
+    detail: isLoggedIn.value ? `可用 ${formattedUserPoints.value} 积分，用于八字排盘、塔罗占卜、六爻问事等服务。` : '新用户注册送100积分，可体验八字首测、塔罗占卜等服务。'
   }
 ])
 
@@ -597,17 +597,17 @@ const heroTrustItems = computed(() => [
   {
     key: 'clarity',
     icon: Check,
-    text: '输入出生信息，立即生成八字排盘报告'
+    text: '出生信息即输即出，快速查看八字排盘结果'
   },
   {
     key: 'benefits',
     icon: Present,
-    text: '选择塔罗牌，AI 智能解读牌面含义'
+    text: '抽取塔罗牌，AI分析牌面与问题关联'
   },
   {
     key: 'rhythm',
     icon: Star,
-    text: '查看每日运势，了解今日宜忌与建议'
+    text: '结合八字信息，查看个性化每日运势建议'
   }
 ])
 
