@@ -1699,19 +1699,23 @@ const downloadAsImage = async () => {
 .question-section {
   max-width: 900px;
   margin: 0 auto 30px;
-  padding: 28px 30px;
+  padding: 32px 36px;
 }
 
 .question-section h3 {
-  margin: 0 0 18px;
+  margin: 0 0 24px;
   color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
 }
 
+.question-section :deep(.el-textarea) {
+  margin-bottom: 20px;
+}
+
 .question-section :deep(.el-textarea__inner) {
   border-radius: 14px;
-  padding: 16px 18px;
+  padding: 18px 20px;
   font-size: 14px;
   line-height: 1.7;
   transition: all 0.3s ease;
@@ -1725,14 +1729,14 @@ const downloadAsImage = async () => {
 .question-hint {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px 16px;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px 18px;
   background: rgba(212, 175, 55, 0.08);
   border-radius: 12px;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .question-hint .hint-icon {
@@ -1741,7 +1745,7 @@ const downloadAsImage = async () => {
 }
 
 .question-section .draw-btn {
-  margin-top: 20px;
+  margin-top: 26px;
   width: 100%;
   height: 48px;
   font-size: 16px;
@@ -1760,9 +1764,9 @@ const downloadAsImage = async () => {
 .question-lock-note {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px 20px;
   border-radius: 14px;
   border: 1px solid rgba(var(--primary-rgb), 0.16);
   background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.04));

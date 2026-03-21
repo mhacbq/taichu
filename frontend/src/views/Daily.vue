@@ -2328,25 +2328,25 @@ onUnmounted(() => {
 /* 深度引导区 */
 .daily-deepen-section {
   margin-top: 24px;
-  padding: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 242, 0.96));
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  border-radius: var(--radius-xl);
+  padding: 28px;
+  background: var(--bg-card);
+  border: 2px solid rgba(var(--primary-rgb), 0.12);
+  border-radius: 24px;
 }
 
 .deepen-title {
-  font-size: 16px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 18px;
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .deepen-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
 }
 
 .deepen-card {
