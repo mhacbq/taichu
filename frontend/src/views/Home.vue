@@ -156,7 +156,6 @@
             <p>基于传统四柱信息，帮助你梳理性格节奏、发展方向与长期规划参考</p>
             <div class="feature-meta">
               <span class="feature-cost">⚡ 5积分/次</span>
-              <span class="feature-access">{{ isLoggedIn ? '立即使用' : '注册免费首测' }}</span>
             </div>
             <router-link to="/bazi" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
@@ -170,7 +169,6 @@
             <p>通过牌阵与问题模板梳理关系、工作与决策困惑，获得更聚焦的思路</p>
             <div class="feature-meta">
               <span class="feature-cost">⚡ 5积分/次</span>
-              <span class="feature-access">直接体验</span>
             </div>
             <router-link to="/tarot" class="feature-link">
               立即体验 <el-icon><ArrowRight /></el-icon>
@@ -184,7 +182,6 @@
             <p>查看今日宜忌、幸运提示与节奏建议，作为轻量的日常状态参考</p>
             <div class="feature-meta">
               <span class="feature-cost feature-cost--free">✨ 完全免费</span>
-              <span class="feature-access feature-access--free">无需登录</span>
             </div>
             <router-link to="/daily" class="feature-link">
               立即查看 <el-icon><ArrowRight /></el-icon>
