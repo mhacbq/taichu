@@ -221,6 +221,8 @@
           <div class="footer-links">
             <router-link to="/help">帮助中心</router-link>
             <router-link to="/profile">个人中心</router-link>
+            <router-link to="/legal/privacy">隐私政策</router-link>
+            <router-link to="/legal/agreement">用户协议</router-link>
             <a href="#" @click.prevent="showFeedback">意见反馈</a>
             <a href="#" @click.prevent="showAbout">关于我们</a>
           </div>

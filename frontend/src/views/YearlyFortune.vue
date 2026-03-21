@@ -168,10 +168,10 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Calendar, MagicStick, Male, Female, StarFilled, ChatLineRound } from '@element-plus/icons-vue'
-import { useUserStore } from '../composables/useUser'
+import { useUserPoints } from '../composables/useUserPoints'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 
-const userStore = useUserStore()
+const { userPoints, isLoggedIn } = useUserPoints()
 
 // 表单数据
 const birthDateTime = ref('')
@@ -247,7 +247,7 @@ const handleCalculate = async () => {
   }
 
   // 检查积分
-  if (userStore.points < 50) {
+  if (userPoints.value < 50) {
     ElMessage.warning('积分不足，请先充值')
     return
   }
@@ -303,7 +303,7 @@ const handleCalculate = async () => {
     ElMessage.success('解析成功！')
     
     // 扣除积分（实际应该在API成功后扣除）
-    userStore.points -= 50
+    userPoints.value -= 50
     
   } catch (error) {
     ElMessage.error('解析失败，请重试')
@@ -330,7 +330,7 @@ const getAiAnalysis = async () => {
   }
 
   // 检查积分
-  if (userStore.points < aiPointsCost.value) {
+  if (userPoints.value < aiPointsCost.value) {
     ElMessage.warning(`积分不足，需要${aiPointsCost.value}积分`)
     return
   }
