@@ -71,6 +71,22 @@
                 <router-link to="/recharge" class="recharge-btn">充值</router-link>
               </div>
             </div>
+
+            <!-- 生日设置 -->
+            <div class="birthday-section">
+              <h4><el-icon><Calendar /></el-icon> 出生日期</h4>
+              <p class="birthday-desc">设置生日后可使用每日运势功能</p>
+              <el-date-picker
+                v-model="userBirthDate"
+                type="date"
+                placeholder="选择出生日期"
+                format="YYYY年MM月DD日"
+                value-format="YYYY-MM-DD"
+                size="small"
+                @change="saveBirthDate"
+                :disabled-date="(time) => time.getTime() > Date.now()"
+              />
+            </div>
           </div>
 
           <!-- 积分获取攻略 -->
@@ -325,6 +341,9 @@ const feedbackContact = ref('')
 const feedbackLoading = ref(false)
 const feedbackEnabled = ref(true)
 const activeHistoryTab = ref('bazi')
+
+// 生日相关
+const userBirthDate = ref('')
 
 // 状态管理
 const profileStatus = ref('loading')
@@ -675,8 +694,33 @@ const submitFeedbackForm = async () => {
     ElMessage.error('网络错误，请稍后重试')
     reportProfileError('submit_feedback_failed', error)
   } finally {
-
     feedbackLoading.value = false
+  }
+}
+
+const loadUserBirthDate = () => {
+  const savedBirthDate = localStorage.getItem('user_birth_date')
+  if (savedBirthDate) {
+    userBirthDate.value = savedBirthDate
+  }
+}
+
+const saveBirthDate = async (value) => {
+  if (!value) {
+    ElMessage.warning('请选择出生日期')
+    return
+  }
+
+  try {
+    // 保存到本地存储
+    localStorage.setItem('user_birth_date', value)
+    userBirthDate.value = value
+    ElMessage.success('出生日期设置成功')
+    
+    // 这里可以添加调用后端API的代码
+    // await updateUserBirthDate(value)
+  } catch (err) {
+    ElMessage.error('设置失败，请重试')
   }
 }
 
@@ -766,6 +810,7 @@ ${inviteLink.value}`
 
 onMounted(() => {
   loadUserData()
+  loadUserBirthDate()
   window.addEventListener('tarot-history-updated', handleTarotHistoryUpdated)
 })
 
@@ -976,6 +1021,32 @@ onUnmounted(() => {
 
 .recharge-btn:hover {
   background: rgba(212, 175, 55, 0.2);
+}
+
+/* 生日设置区域 */
+.birthday-section {
+  padding-top: 18px;
+  border-top: 2px dashed #f0f0f0;
+}
+
+.birthday-section h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.birthday-desc {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+:deep(.birthday-section .el-date-picker) {
+  width: 100%;
 }
 
 /* 积分获取攻略 */

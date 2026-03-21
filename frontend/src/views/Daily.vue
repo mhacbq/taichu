@@ -39,24 +39,48 @@
               </el-tooltip>
             </div>
             <div class="overview-body">
-              <div class="overview-score-wrap">
-                <div class="overview-score-ring" :class="getScoreClass(fortune.overall)">
-                  <svg viewBox="0 0 100 100" class="ring-svg">
-                    <circle cx="50" cy="50" r="42" class="ring-track" />
-                    <circle cx="50" cy="50" r="42" class="ring-fill" :style="{ strokeDashoffset: 264 - (264 * Math.min(fortune.overall, 100) / 100) }" />
-                  </svg>
-                  <div class="ring-inner">
-                    <span class="ring-num">{{ fortune.overall }}</span>
-                    <span class="ring-unit">分</span>
+              <div class="overview-left">
+                <div class="overview-score-wrap">
+                  <div class="overview-score-ring" :class="getScoreClass(fortune.overall)">
+                    <svg viewBox="0 0 100 100" class="ring-svg">
+                      <circle cx="50" cy="50" r="42" class="ring-track" />
+                      <circle cx="50" cy="50" r="42" class="ring-fill" :style="{ strokeDashoffset: 264 - (264 * Math.min(fortune.overall, 100) / 100) }" />
+                    </svg>
+                    <div class="ring-inner">
+                      <span class="ring-num">{{ fortune.overall }}</span>
+                      <span class="ring-unit">分</span>
+                    </div>
+                  </div>
+                  <div class="overview-stars">
+                    <el-icon v-for="n in 5" :key="n" class="ov-star" :class="{ filled: n <= overallStarCount }"><StarFilled /></el-icon>
+                    <span class="ov-star-label">{{ overallStarLabel }}</span>
                   </div>
                 </div>
-                <div class="overview-stars">
-                  <el-icon v-for="n in 5" :key="n" class="ov-star" :class="{ filled: n <= overallStarCount }"><StarFilled /></el-icon>
-                  <span class="ov-star-label">{{ overallStarLabel }}</span>
+                <div class="overview-lucky-mini">
+                  <div class="lucky-mini-item">
+                    <span class="lucky-mini-label">幸运色</span>
+                    <span class="lucky-mini-value">{{ fortune.luckyColor || '暂无' }}</span>
+                  </div>
+                  <div class="lucky-mini-item">
+                    <span class="lucky-mini-label">幸运方位</span>
+                    <span class="lucky-mini-value">{{ fortune.luckyDirection || '暂无' }}</span>
+                  </div>
                 </div>
               </div>
-              <div class="overview-summary">
-                <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
+              <div class="overview-right">
+                <div class="overview-summary">
+                  <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
+                </div>
+                <div class="overview-tags" v-if="fortune.yi?.length || fortune.ji?.length">
+                  <div class="overview-tag-group" v-if="fortune.yi?.length">
+                    <span class="tag-group-label">宜</span>
+                    <span v-for="item in fortune.yi.slice(0, 3)" :key="item" class="tag-item tag-item--yi">{{ item }}</span>
+                  </div>
+                  <div class="overview-tag-group" v-if="fortune.ji?.length">
+                    <span class="tag-group-label">忌</span>
+                    <span v-for="item in fortune.ji.slice(0, 3)" :key="item" class="tag-item tag-item--ji">{{ item }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -122,6 +146,7 @@
                 </div>
                 <div class="personal-lucky-values">
                   <span v-for="color in personalizedFortune.luckyColors" :key="color" class="lucky-tag color">
+                    <span class="color-preview" :style="{ backgroundColor: getColorCode(color) }"></span>
                     {{ color }}
                   </span>
                 </div>
@@ -322,6 +347,35 @@
         </div>
       </AsyncState>
     </div>
+
+    <!-- 生日选择弹窗 -->
+    <el-dialog
+      v-model="showBirthdayDialog"
+      title="设置出生日期"
+      width="400px"
+      :close-on-click-modal="false"
+    >
+      <div class="birthday-dialog-content">
+        <p class="birthday-tip">请先设置您的出生日期，以便为您推送个性化的每日运势</p>
+        <el-date-picker
+          v-model="userBirthDate"
+          type="date"
+          placeholder="选择您的出生日期"
+          format="YYYY年MM月DD日"
+          value-format="YYYY-MM-DD"
+          style="width: 100%"
+          :disabled-date="(time) => time.getTime() > Date.now()"
+        />
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showBirthdayDialog = false">取消</el-button>
+          <el-button type="primary" @click="saveBirthDate" :loading="birthdayLoading">
+            确定
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -343,6 +397,11 @@ const activeNames = ref([])
 const error = ref(false)
 const errorMessage = ref('')
 const dailyLoginRoute = { path: '/login', query: { redirect: '/daily' } }
+
+// 生日相关
+const showBirthdayDialog = ref(false)
+const userBirthDate = ref('')
+const birthdayLoading = ref(false)
 
 const dailyStatus = computed(() => {
   if (isLoading.value) return 'loading'
@@ -607,6 +666,32 @@ const getScoreClass = (score) => {
   return 'normal'
 }
 
+const getColorCode = (colorName) => {
+  const colorMap = {
+    '红色': '#ff0000',
+    '橙色': '#ff7f00',
+    '黄色': '#ffff00',
+    '绿色': '#00ff00',
+    '青色': '#00ffff',
+    '蓝色': '#0000ff',
+    '紫色': '#800080',
+    '粉色': '#ffb6c1',
+    '棕色': '#964b00',
+    '黑色': '#000000',
+    '白色': '#ffffff',
+    '灰色': '#808080',
+    '金色': '#ffd700',
+    '银色': '#c0c0c0',
+    '米色': '#f5f5dc',
+    '咖啡色': '#6f4e37',
+    '藏青色': '#191970',
+    '酒红色': '#722f37',
+    '天蓝色': '#87ceeb',
+    '薄荷绿': '#98ff98'
+  }
+  return colorMap[colorName] || '#d4af37'
+}
+
 const getAspectIcon = (aspectName = '') => {
   if (aspectName.includes('事业')) return Briefcase
   if (aspectName.includes('财')) return Money
@@ -668,7 +753,73 @@ const writeDailyCache = (data) => {
   }
 }
 
+const getColorCode = (colorName) => {
+  const colorMap = {
+    '红色': '#ff0000',
+    '橙色': '#ff7f00',
+    '黄色': '#ffff00',
+    '绿色': '#00ff00',
+    '青色': '#00ffff',
+    '蓝色': '#0000ff',
+    '紫色': '#800080',
+    '粉色': '#ffb6c1',
+    '棕色': '#964b00',
+    '黑色': '#000000',
+    '白色': '#ffffff',
+    '灰色': '#808080',
+    '金色': '#ffd700',
+    '银色': '#c0c0c0',
+    '米色': '#f5f5dc',
+    '咖啡色': '#6f4e37',
+    '藏青色': '#191970',
+    '酒红色': '#722f37',
+    '天蓝色': '#87ceeb',
+    '薄荷绿': '#98ff98'
+  }
+  return colorMap[colorName] || '#d4af37'
+}
+
+const saveBirthDate = async () => {
+  if (!userBirthDate.value) {
+    ElMessage.warning('请选择出生日期')
+    return
+  }
+
+  birthdayLoading.value = true
+  try {
+    // 这里需要调用API保存生日
+    // 暂时只保存在本地存储，实际项目需要调用后端API
+    localStorage.setItem('user_birth_date', userBirthDate.value)
+    ElMessage.success('出生日期设置成功')
+    showBirthdayDialog.value = false
+    // 设置生日后重新加载运势
+    loadDailyFortune()
+  } catch (err) {
+    ElMessage.error('设置失败，请重试')
+  } finally {
+    birthdayLoading.value = false
+  }
+}
+
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
+  // 检查是否登录
+  if (!isLoggedIn.value) {
+    showBirthdayDialog.value = true
+    isLoading.value = false
+    return
+  }
+
+  // 检查用户是否设置了生日
+  if (!userBirthDate.value) {
+    const savedBirthDate = localStorage.getItem('user_birth_date')
+    if (savedBirthDate) {
+      userBirthDate.value = savedBirthDate
+    } else {
+      showBirthdayDialog.value = true
+      isLoading.value = false
+      return
+    }
+  }
 
   // 非用户主动刷新时，优先读取当天缓存
   if (!userInitiated) {
@@ -1328,20 +1479,22 @@ onUnmounted(() => {
 
 .personal-lucky-meta {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .personal-lucky-label {
   font-size: 15px;
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 .personal-lucky-caption {
-  font-size: var(--font-caption);
+  font-size: 13px;
   color: var(--text-tertiary);
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .personal-lucky-values {
@@ -1359,12 +1512,21 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
 }
 
 .lucky-tag.color {
-  background: rgba(var(--primary-rgb), 0.14);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
-  color: var(--primary-light);
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(var(--primary-rgb), 0.25);
+  color: var(--text-primary);
+}
+
+.color-preview {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .lucky-tag.direction {
@@ -1479,8 +1641,24 @@ onUnmounted(() => {
 
 .overview-body {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 28px;
+}
+
+.overview-left {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.overview-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
 }
 
 .overview-score-wrap {
@@ -1488,7 +1666,34 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
+}
+
+.overview-lucky-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.lucky-mini-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
+}
+
+.lucky-mini-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.lucky-mini-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
 }
 
 .overview-score-ring {
@@ -1568,6 +1773,68 @@ onUnmounted(() => {
 }
 
 .overview-summary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.summary-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #605545;
+  text-align: justify;
+}
+
+.overview-tags {
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 2px dashed rgba(var(--primary-rgb), 0.15);
+}
+
+.overview-tag-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.tag-group-label {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.overview-tag-group:nth-child(1) .tag-group-label {
+  background: rgba(103, 194, 58, 0.15);
+  color: #3d9a1a;
+}
+
+.overview-tag-group:nth-child(2) .tag-group-label {
+  background: rgba(245, 108, 108, 0.15);
+  color: #c0392b;
+}
+
+.tag-item {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tag-item--yi {
+  background: rgba(103, 194, 58, 0.1);
+  color: #3d9a1a;
+  border: 1px solid rgba(103, 194, 58, 0.2);
+}
+
+.tag-item--ji {
+  background: rgba(245, 108, 108, 0.1);
+  color: #c0392b;
+  border: 1px solid rgba(245, 108, 108, 0.2);
+}
   flex: 1;
   min-width: 0;
 }
@@ -2408,6 +2675,25 @@ onUnmounted(() => {
   .deepen-cards {
     grid-template-columns: 1fr;
   }
+}
+
+/* 生日弹窗样式 */
+.birthday-dialog-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.birthday-tip {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>
 
