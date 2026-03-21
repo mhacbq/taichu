@@ -42,26 +42,26 @@ export const asyncRoutes = [
     meta: { title: '用户管理', icon: 'UserFilled', roles: ['admin', 'operator'] },
     children: [
       {
-        path: '/list',
+        path: 'list',
         name: 'UserList',
         component: () => import('@/views/user/list.vue'),
         meta: { title: '用户列表', roles: ['admin', 'operator'] }
       },
       {
-        path: '/detail/:id',
+        path: 'detail/:id',
         name: 'UserDetail',
         component: () => import('@/views/user/detail.vue'),
         meta: { title: '用户详情', roles: ['admin', 'operator'] },
         hidden: true
       },
       {
-        path: '/behavior',
+        path: 'behavior',
         name: 'UserBehavior',
         component: () => import('@/views/user/behavior.vue'),
         meta: { title: '行为日志', roles: ['admin', 'operator'] }
       },
       {
-        path: '/analysis',
+        path: 'analysis',
         name: 'UserAnalysis',
         component: () => import('@/views/user/analysis.vue'),
         meta: { title: '用户分析', roles: ['admin'] }
@@ -109,21 +109,9 @@ export const asyncRoutes = [
   {
     path: '/content',
     component: () => import('@/layout/index.vue'),
-    redirect: '/content/pages',
+    redirect: '/content/almanac',
     meta: { title: '内容管理', icon: 'Document', roles: ['admin', 'operator'] },
     children: [
-      {
-        path: '/pages',
-        name: 'Pages',
-        component: () => import('@/views/content/pages.vue'),
-        meta: { title: '页面管理', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/pages/:id/history',
-        name: 'PageHistory',
-        component: () => import('@/views/content/page-history.vue'),
-        meta: { title: '页面历史', hidden: true, roles: ['admin', 'operator'] }
-      },
       {
         path: '/almanac',
         name: 'AlmanacManager',
@@ -169,40 +157,10 @@ export const asyncRoutes = [
         meta: { title: '内容管理', roles: ['admin', 'operator'] }
       },
       {
-        path: '/knowledge',
-        name: 'KnowledgeManager',
-        component: () => import('@/views/site-content/knowledge.vue'),
-        meta: { title: '知识库文章', roles: ['admin', 'operator'] }
-      },
-      {
         path: '/seo',
         name: 'SeoManager',
         component: () => import('@/views/site-content/seo.vue'),
         meta: { title: 'SEO管理', roles: ['admin'] }
-      },
-      {
-        path: '/testimonials',
-        name: 'TestimonialsManager',
-        component: () => import('@/views/site-content/testimonials.vue'),
-        meta: { title: '用户评价', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/faq',
-        name: 'FaqManager',
-        component: () => import('@/views/site-content/faq.vue'),
-        meta: { title: 'FAQ管理', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/tarot-cards',
-        name: 'TarotCardsManager',
-        component: () => import('@/views/site-content/tarot-cards.vue'),
-        meta: { title: '塔罗牌管理', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/question-templates',
-        name: 'QuestionTemplatesManager',
-        component: () => import('@/views/site-content/question-templates.vue'),
-        meta: { title: '问题模板', roles: ['admin', 'operator'] }
       }
     ]
   },

@@ -11,11 +11,51 @@ use think\facade\Db;
 class Analysis extends BaseController
 {
     /**
+     * 当前管理员ID
+     */
+    protected int $adminId = 0;
+    
+    /**
+     * 初始化
+     */
+    public function initialize()
+    {
+        parent::initialize();
+        
+        // 从JWT token中获取管理员信息
+        $adminUser = $this->request->adminUser ?? [];
+        $this->adminId = $adminUser['id'] ?? 0;
+    }
+    
+    /**
+     * 检查权限
+     */
+    protected function hasAdminPermission(string $permissionCode): bool
+    {
+        if ($this->adminId === 0) {
+            return false;
+        }
+        
+        // 如果是超级管理员，直接返回true
+        $adminUser = $this->request->adminUser ?? [];
+        $roles = $adminUser['roles'] ?? [];
+        if (in_array('admin', $roles)) {
+            return true;
+        }
+        
+        // 操作员只能查看数据
+        if (in_array('operator', $roles)) {
+            return in_array($permissionCode, ['payment_view', 'user_view', 'result_view']);
+        }
+        
+        return false;
+    }
+    /**
      * 充值数据分析
      */
     public function payment(Request $request)
     {
-        if (!$this->checkPermission('payment_view')) {
+        if (!$this->hasAdminPermission('payment_view')) {
             return $this->error('无权限查看充值数据', 403);
         }
 
@@ -83,7 +123,7 @@ class Analysis extends BaseController
      */
     public function user(Request $request)
     {
-        if (!$this->checkPermission('user_view')) {
+        if (!$this->hasAdminPermission('user_view')) {
             return $this->error('无权限查看用户数据', 403);
         }
 
@@ -108,7 +148,7 @@ class Analysis extends BaseController
 
             $retainedUsers = Db::table('tc_user')
                 ->whereIn('id', $newUsersSevenDaysAgo)
-                ->where('last_login_time', '>=', $sevenDayAgo . ' 00:00:00')
+                ->where('last_login_at', '>=', $sevenDayAgo . ' 00:00:00')
                 ->count();
 
             $retentionRate = count($newUsersSevenDaysAgo) > 0 
@@ -139,7 +179,7 @@ class Analysis extends BaseController
      */
     public function result(Request $request)
     {
-        if (!$this->checkPermission('result_view')) {
+        if (!$this->hasAdminPermission('result_view')) {
             return $this->error('无权限查看测算数据', 403);
         }
 

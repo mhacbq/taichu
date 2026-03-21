@@ -70,7 +70,14 @@ export function batchUpdateUserStatus(ids, status, options = {}) {
   })
 }
 
-
+export function adjustPoints(data, options = {}) {
+  return request({
+    url: '/points/adjust',
+    method: 'post',
+    data,
+    ...options
+  })
+}
 
 export function getUserBehavior(params) {
   return request({

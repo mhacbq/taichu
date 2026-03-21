@@ -763,10 +763,48 @@ class Admin extends BaseController
 
             $total = (int) (clone $query)->count();
             $rows = $query->page($page, $pageSize)->select()->toArray();
+            
+            // 获取用户ID列表
+            $userIds = array_unique(array_column($rows, 'user_id'));
+            $userMap = [];
+            
+            if (!empty($userIds) && SchemaInspector::tableExists('tc_user')) {
+                $userRows = Db::table('tc_user')
+                    ->whereIn('id', $userIds)
+                    ->field(['id', 'nickname', 'phone', 'username'])
+                    ->select()
+                    ->toArray();
+                
+                foreach ($userRows as $userRow) {
+                    $userId = (int) $userRow['id'];
+                    // 优先使用昵称，其次是用户名，最后是手机号
+                    $nickname = trim((string) ($userRow['nickname'] ?? ''));
+                    $username = trim((string) ($userRow['username'] ?? ''));
+                    $phone = trim((string) ($userRow['phone'] ?? ''));
+                    
+                    if ($nickname !== '' && $nickname !== $phone) {
+                        $userMap[$userId] = $nickname;
+                    } elseif ($username !== '' && $username !== $phone) {
+                        $userMap[$userId] = $username;
+                    } elseif ($phone !== '') {
+                        $userMap[$userId] = $this->maskPhone($phone);
+                    } else {
+                        $userMap[$userId] = '用户#' . $userId;
+                    }
+                }
+            }
+            
             $list = \app\model\PointsRecord::normalizeRecordList(
                 $rows,
                 \app\model\PointsRecord::getCurrentBalanceMap(array_column($rows, 'user_id'))
             );
+            
+            // 添加用户名到每条记录
+            foreach ($list as &$item) {
+                $userId = (int) ($item['user_id'] ?? 0);
+                $item['username'] = $userMap[$userId] ?? '用户#' . $userId;
+            }
+            unset($item);
 
             return $this->success([
                 'list' => $list,
@@ -2857,9 +2895,27 @@ class Admin extends BaseController
                 ->limit(50)
                 ->select();
                 
+            // 获取用户信息
+            $user = \app\model\User::find($userId);
+            $userName = $user ? ($user->nickname ?: $user->username ?: '用户#' . $userId) : '未知用户';
+            
+            // 格式化返回数据
+            $formattedList = [];
+            foreach ($list as $log) {
+                $formattedList[] = [
+                    'id' => $log->id,
+                    'user_id' => $userId,
+                    'username' => $userName,
+                    'type' => $log->action,
+                    'content' => $log->detail,
+                    'ip' => $log->ip,
+                    'created_at' => $log->created_at
+                ];
+            }
+                
             return $this->success([
-                'list' => $list,
-                'total' => count($list)
+                'list' => $formattedList,
+                'total' => count($formattedList)
             ], '获取成功');
         } catch (\Exception $e) {
             Log::error('获取用户行为记录失败: ' . $e->getMessage());
@@ -4840,6 +4896,18 @@ class Admin extends BaseController
         }
 
         return $query->count() === 0;
+    }
+
+    /**
+     * 手机号脱敏
+     */
+    protected function maskPhone(string $phone): string
+    {
+        $phone = trim($phone);
+        if (strlen($phone) === 11 && preg_match('/^1\d{10}$/', $phone)) {
+            return substr($phone, 0, 3) . '****' . substr($phone, 7);
+        }
+        return $phone;
     }
 }
 

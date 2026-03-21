@@ -15,6 +15,48 @@ class Sms extends BaseController
     protected $middleware = [\app\middleware\AdminAuth::class];
     
     /**
+     * 当前管理员ID
+     */
+    protected int $adminId = 0;
+    
+    /**
+     * 初始化
+     */
+    public function initialize()
+    {
+        parent::initialize();
+        
+        // 从JWT token中获取管理员信息
+        $adminUser = $this->request->adminUser ?? [];
+        $this->adminId = $adminUser['id'] ?? 0;
+    }
+    
+    /**
+     * 检查权限
+     */
+    protected function hasAdminPermission(string $permissionCode): bool
+    {
+        if ($this->adminId === 0) {
+            return false;
+        }
+        
+        // 如果是超级管理员，直接返回true
+        $adminUser = $this->request->adminUser ?? [];
+        $roles = $adminUser['roles'] ?? [];
+        if (in_array('admin', $roles)) {
+            return true;
+        }
+        
+        // 这里可以扩展更复杂的权限检查逻辑
+        // 暂时简化处理：如果有操作员角色，允许查看和操作
+        if (in_array('operator', $roles)) {
+            return in_array($permissionCode, ['sms_view', 'sms_manage']);
+        }
+        
+        return false;
+    }
+    
+    /**
      * 获取短信配置
      */
     public function getConfig()
@@ -89,8 +131,8 @@ class Sms extends BaseController
      */
     public function testSend()
     {
-        if ($response = $this->requireSmsManagePermission('无权限发送测试短信')) {
-            return $response;
+        if (!$this->hasAdminPermission('sms_manage')) {
+            return $this->error('无权限发送测试短信', 403);
         }
 
         $data = $this->request->post();
@@ -141,7 +183,7 @@ class Sms extends BaseController
         // 独立手机号数
         $uniquePhones = \app\model\SmsCode::where('created_at', '>=', $startDate . ' 00:00:00')
             ->where('created_at', '<=', $endDate . ' 23:59:59')
-            ->distinct('phone')
+            ->group('phone')
             ->count();
         
         return $this->success([
@@ -158,8 +200,8 @@ class Sms extends BaseController
      */
     public function getRecords()
     {
-        if ($response = $this->requireSmsManagePermission('无权限查看短信记录')) {
-            return $response;
+        if (!$this->hasAdminPermission('sms_view')) {
+            return $this->error('无权限查看短信记录', 403);
         }
 
         $params = $this->request->get();
