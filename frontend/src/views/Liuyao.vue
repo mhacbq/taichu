@@ -2033,7 +2033,116 @@ onUnmounted(() => {
   width: 100%;
 }
 
+/* 版本选择样式 */
+.version-selection {
+  margin-bottom: 28px;
+}
 
+.version-label {
+  display: block;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.version-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.version-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-light);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.version-option:hover {
+  border-color: rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.04);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.version-option--active {
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.15);
+}
+
+.version-option__icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.version-option__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.version-option__title {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.version-option__desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.version-option__price {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.price-value {
+  display: inline-block;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: var(--white);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.version-option--active .price-value {
+  background: linear-gradient(135deg, var(--primary-color), #F4D03F);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
+}
+
+.version-option__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+  color: var(--white);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.options-section {
+  margin-bottom: 20px;
+}
 
 .pricing-info {
   text-align: left;
