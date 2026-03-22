@@ -462,39 +462,70 @@
                   <p v-if="pricing.reason" class="pricing-reason">{{ pricing.reason }}</p>
                 </div>
                 <div class="pricing-info-details">
-                  <!-- 版本功能对比 -->
-                  <div class="version-compare">
-                    <div class="compare-card" :class="{ 'compare-card--selected': form.version === 'basic' }">
-                      <div class="compare-header">
-                        <span class="compare-badge compare-badge--basic">简单版</span>
+                  <!-- 版本标签页切换 -->
+                  <div class="version-tabs">
+                    <button
+                      type="button"
+                      class="version-tab"
+                      :class="{ 'version-tab--active': form.version === 'basic' }"
+                      @click="form.version = 'basic'"
+                    >
+                      <span class="version-tab__icon">📊</span>
+                      <span class="version-tab__label">简单版</span>
+                      <span v-if="pricing" class="version-tab__price">{{ pricing.basic_cost }}积分</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="version-tab"
+                      :class="{ 'version-tab--active': form.version === 'professional' }"
+                      @click="form.version = 'professional'"
+                    >
+                      <span class="version-tab__icon">✨</span>
+                      <span class="version-tab__label">专业版</span>
+                      <span v-if="pricing" class="version-tab__price">{{ pricing.professional_cost }}积分</span>
+                      <span class="version-tab__badge">推荐</span>
+                    </button>
+                  </div>
+
+                  <!-- 版本详情内容（标签页内容） -->
+                  <div class="version-content">
+                    <!-- 简单版内容 -->
+                    <div v-show="form.version === 'basic'" class="version-detail version-detail--basic">
+                      <div class="compare-card compare-card--selected">
+                        <div class="compare-header">
+                          <span class="compare-badge compare-badge--basic">简单版</span>
+                        </div>
+                        <ul class="compare-features">
+                          <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘</li>
+                          <li><el-icon><Check /></el-icon> 基础的卦辞解析</li>
+                          <li><el-icon><Check /></el-icon> 卦象SVG可视化展示</li>
+                          <li><el-icon><Close /></el-icon> <span class="feature-disabled">AI深度综合分析</span></li>
+                          <li><el-icon><Close /></el-icon> <span class="feature-disabled">专业的指导建议</span></li>
+                          <li><el-icon><Check /></el-icon> 保存占卜历史记录</li>
+                        </ul>
                       </div>
-                      <ul class="compare-features">
-                        <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘</li>
-                        <li><el-icon><Check /></el-icon> 基础的卦辞解析</li>
-                        <li><el-icon><Check /></el-icon> 卦象SVG可视化展示</li>
-                        <li><el-icon><Close /></el-icon> <span class="feature-disabled">AI深度综合分析</span></li>
-                        <li><el-icon><Close /></el-icon> <span class="feature-disabled">专业的指导建议</span></li>
-                        <li><el-icon><Check /></el-icon> 保存占卜历史记录</li>
-                      </ul>
                     </div>
 
-                    <div class="compare-card" :class="{ 'compare-card--selected': form.version === 'professional' }">
-                      <div class="compare-header">
-                        <span class="compare-badge compare-badge--premium">专业版</span>
-                        <span class="compare-tag">推荐</span>
-                      </div>
-                      <ul class="compare-features">
-                        <li><el-icon><Check /></el-icon> <strong>完整的六爻卦象排盘</strong></li>
-                        <li><el-icon><Check /></el-icon> <strong>详细的卦辞解析与针对性解读</strong></li>
-                        <li><el-icon><Check /></el-icon> <strong>卦象SVG可视化展示</strong></li>
-                        <li><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
-                        <li><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
-                        <li><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
-                        <li><el-icon><Check /></el-icon> <strong>保存占卜历史记录</strong></li>
-                      </ul>
-                      <div class="ai-highlight">
-                        <el-icon><MagicStick /></el-icon>
-                        <span>AI基于六爻专业知识库，为您提供更深入、更专业的占卜解读</span>
+                    <!-- 专业版内容 -->
+                    <div v-show="form.version === 'professional'" class="version-detail version-detail--professional">
+                      <div class="compare-card compare-card--selected">
+                        <div class="compare-header">
+                          <span class="compare-badge compare-badge--premium">专业版</span>
+                          <span class="compare-tag">推荐</span>
+                        </div>
+                        <ul class="compare-features">
+                          <li><el-icon><Check /></el-icon> <strong>完整的六爻卦象排盘</strong></li>
+                          <li><el-icon><Check /></el-icon> <strong>详细的卦辞解析与针对性解读</strong></li>
+                          <li><el-icon><Check /></el-icon> <strong>卦象SVG可视化展示</strong></li>
+                          <li><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
+                          <li><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
+                          <li><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
+                          <li><el-icon><Check /></el-icon> <strong>保存占卜历史记录</strong></li>
+                        </ul>
+                        <div class="ai-highlight">
+                          <el-icon><MagicStick /></el-icon>
+                          <span>AI基于六爻专业知识库，为您提供更深入、更专业的占卜解读</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2207,40 +2238,92 @@ onUnmounted(() => {
   margin: 0;
 }
 
-/* 基础占卜 vs AI深度分析对比 */
-.ai-value-compare {
+/* 版本标签页切换 */
+.version-tabs {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border-light);
+  padding-bottom: 2px;
 }
 
-@media (min-width: 768px) {
-  .ai-value-compare {
-    flex-direction: row;
+.version-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-base);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  top: 2px;
+}
+
+.version-tab:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+}
+
+.version-tab--active {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
+  border-color: var(--primary-color);
+  border-bottom-color: var(--bg-card);
+}
+
+.version-tab__icon {
+  font-size: 18px;
+}
+
+.version-tab__label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.version-tab__price {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.version-tab__badge {
+  padding: 3px 8px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.version-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 .compare-card {
-  flex: 1;
   border-radius: 12px;
   padding: 16px;
   border: 2px solid var(--border-base);
+  background: var(--bg-card);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.compare-card:not(.compare-card--selected) {
-  opacity: 0.5;
-  border-style: dashed;
-  border-color: var(--border-light);
-  background: var(--bg-tertiary);
 }
 
 .compare-card--selected {
-  opacity: 1;
-  border-style: solid;
   border-color: var(--primary-color);
   background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
   box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.15);
@@ -2255,11 +2338,6 @@ onUnmounted(() => {
   background: linear-gradient(135deg, var(--primary-light-05) 0%, var(--bg-secondary) 100%);
   border-color: var(--primary-color);
   box-shadow: 0 4px 16px rgba(212, 175, 55, 0.15);
-}
-
-.ai-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 
 .compare-header {
