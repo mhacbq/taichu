@@ -474,7 +474,6 @@ small {
   font-size: var(--font-body-lg);
   color: var(--text-secondary);
   text-align: center;
-  margin-top: -44px;
   margin-bottom: 56px;
   max-width: 650px;
   margin-left: auto;

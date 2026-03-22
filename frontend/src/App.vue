@@ -82,7 +82,7 @@
             </el-dropdown>
             <el-dropdown @command="handleCommand" trigger="click">
               <span class="user-info">
-                <span class="avatar">{{ userNickname?.[0] || '用' }}</span>
+<!--                <span class="avatar">{{ userNickname?.[0] || '用' }}</span>-->
                 <span class="nickname">{{ userNickname || '用户' }}</span>
                 <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
               </span>
@@ -749,7 +749,6 @@ onBeforeUnmount(() => {
   color: var(--text-primary);
   font-weight: var(--weight-medium);
   max-width: 120px;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
@@ -1059,13 +1058,6 @@ onBeforeUnmount(() => {
 
 .route-loading-placeholder {
   min-height: 120px;
-}
-
-/* 页脚 - 深色风格 */
-.footer {
-  background: var(--bg-primary);
-  padding: 60px 0 30px;
-  border-top: 1px solid var(--border-color);
 }
 
 .footer-content {
@@ -1458,7 +1450,6 @@ body {
   }
   
   .footer {
-    padding: 40px 0 20px;
   }
   
   .footer-links {
@@ -1697,9 +1688,6 @@ body {
   box-shadow: none;
 }
 
-.nickname {
-  color: rgba(255, 255, 255, 0.85);
-}
 
 .login-btn {
   border-radius: 20px;
@@ -1754,9 +1742,6 @@ body {
   -webkit-backdrop-filter: blur(4px);
 }
 
-.main-content--companion-safe {
-  padding-bottom: 112px;
-}
 
 /* ── 移动端底部导航栏 ── */
 .mobile-bottom-nav {
@@ -1858,7 +1843,6 @@ body {
 
 /* Footer 主题适配风格 */
 .footer {
-  padding: 60px 0 30px;
   background: var(--bg-secondary, #f9f6f0);
   border-top: 1px solid var(--border-color);
   position: relative;
@@ -1991,7 +1975,6 @@ body {
   }
 
   .footer {
-    padding: 40px 0 24px;
   }
 
   .footer-content {
