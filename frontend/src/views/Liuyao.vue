@@ -2226,7 +2226,25 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 16px;
   border: 1px solid var(--border-base);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.compare-card:not(.compare-card--selected) {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  flex: 0;
+  min-width: 0;
+  padding: 0;
+  border: none;
+}
+
+.compare-card--selected {
+  flex: 1;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .basic-card {
