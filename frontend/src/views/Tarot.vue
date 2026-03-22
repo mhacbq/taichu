@@ -246,14 +246,14 @@
           <p v-else class="interpretation-placeholder">抽牌完成后，这里会展示与你问题对应的牌面解读。</p>
         </div>
 
-        <!-- AI 深度分析 - 产品亮点功能 -->
+        <!-- AI 深度分析 - 深度分析功能 -->
         <div v-if="interpretationState === 'ready'" class="ai-analysis-section card card-hover">
           <div class="ai-analysis-header">
             <div class="ai-analysis-title">
               <el-icon class="ai-icon"><MagicStick /></el-icon>
               <h3>AI 深度分析</h3>
             </div>
-            <span class="ai-badge">产品亮点</span>
+            <span class="ai-badge">深度分析</span>
           </div>
           <p class="ai-analysis-desc">基于你的牌阵、问题和个人情况，提供更深入的个性化解读和行动建议。</p>
           

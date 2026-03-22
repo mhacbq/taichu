@@ -390,6 +390,8 @@ class SystemConfig extends Model
     {
         $defaults = [
             'bazi' => 10,
+            'bazi_simple' => 10,
+            'bazi_pro' => 50,
             'bazi_ai' => 30,
             'tarot' => 5,
             'tarot_ai' => 20,
@@ -402,6 +404,11 @@ class SystemConfig extends Model
         $result = [];
         foreach ($defaults as $key => $default) {
             $result[$key] = (int) self::getByKey('points_cost_' . $key, $default);
+        }
+
+        // Backward compatibility: ensure bazi corresponds to bazi_simple if not set explicitly, or just keep it as base
+        if (!isset($result['bazi_simple'])) {
+            $result['bazi_simple'] = $result['bazi'];
         }
 
         return $result;

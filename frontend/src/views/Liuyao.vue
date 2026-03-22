@@ -145,13 +145,13 @@
             </div>
           </div>
 
-          <!-- AI深度分析 - 产品亮点，放在显眼位置 -->
+          <!-- AI深度分析 - 深度分析，放在显眼位置 -->
           <div v-if="result.ai_analysis" class="ai-section ai-section--highlight">
             <div class="ai-section__header">
               <h3 class="ai-section__title">
                 <el-icon class="ai-section__icon"><MagicStick /></el-icon>
                 AI深度分析
-                <span class="ai-section__badge">产品亮点</span>
+                <span class="ai-section__badge">深度分析</span>
               </h3>
             </div>
             <div class="ai-content ai-content--highlight">{{ result.ai_analysis.content }}</div>
@@ -164,7 +164,7 @@
                 <h3 class="ai-action-title">
                   <el-icon><MagicStick /></el-icon>
                   AI深度解卦
-                  <span class="ai-action-badge">产品亮点</span>
+                  <span class="ai-action-badge">深度分析</span>
                 </h3>
                 <p class="ai-action-desc">基于AI专业知识库，为您提供更深入、更专业的占卜解读</p>
                 <el-button
