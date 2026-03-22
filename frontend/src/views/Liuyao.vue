@@ -405,42 +405,6 @@
             <el-checkbox v-model="form.useAi" label="使用AI深度分析（更准确、更详细）" />
           </div>
 
-          <!-- 版本选择 -->
-          <div class="version-selection" data-liuyao-field="version">
-            <div class="version-label">选择占卜版本：</div>
-            <div class="version-options">
-              <div
-                class="version-option"
-                :class="{ 'version-option--active': form.version === 'basic' }"
-                @click="form.version = 'basic'"
-              >
-                <div class="version-option__icon">📊</div>
-                <div class="version-option__info">
-                  <div class="version-option__title">简单版</div>
-                  <div class="version-option__desc">基础排盘功能</div>
-                </div>
-                <div class="version-option__price" v-if="pricing">
-                  <span class="price-value">{{ pricing.basic_cost }}积分</span>
-                </div>
-              </div>
-              <div
-                class="version-option"
-                :class="{ 'version-option--active': form.version === 'professional' }"
-                @click="form.version = 'professional'"
-              >
-                <div class="version-option__icon">✨</div>
-                <div class="version-option__info">
-                  <div class="version-option__title">专业版</div>
-                  <div class="version-option__desc">AI深度解读</div>
-                </div>
-                <div class="version-option__price" v-if="pricing">
-                  <span class="price-value">{{ pricing.professional_cost }}积分</span>
-                </div>
-                <div class="version-option__badge">推荐</div>
-              </div>
-            </div>
-          </div>
-
           <!-- 定价信息 -->
           <div class="pricing-info" v-if="pricingLoading || pricing || pricingError" data-liuyao-field="pricing">
 
