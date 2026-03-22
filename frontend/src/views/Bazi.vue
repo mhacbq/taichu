@@ -70,168 +70,30 @@
           </div>
         </div>
 
+        <!-- 出生日期与性别 -->
         <div class="form-row">
-          <div class="form-group form-group--time form-group--combined" data-bazi-field="birth-time">
-            <div class="form-group__header form-group__header--combined">
-              <label class="form-group__title">出生日期与时间</label>
-              <div class="inline-gender-field" data-bazi-field="gender">
-                <span class="inline-gender-field__label">性别 <span class="required-mark">*</span></span>
-                <el-radio-group v-model="gender" size="small" class="inline-gender-field__group">
-                  <el-radio-button label="male">男</el-radio-button>
-                  <el-radio-button label="female">女</el-radio-button>
-                </el-radio-group>
-              </div>
-            </div>
-
-            <!-- 历法类型切换 -->
-            <div class="calendar-type-switch">
-              <div class="calendar-type-switch__label">历法类型</div>
-              <el-radio-group v-model="calendarType" size="small">
-                <el-radio label="solar">
-                  <el-icon><Calendar /></el-icon>
-                  公历
-                </el-radio>
-                <el-radio label="lunar">
-                  <el-icon><StarFilled /></el-icon>
-                  农历
-                </el-radio>
-              </el-radio-group>
-              <p class="calendar-type-switch__hint" v-if="calendarType === 'lunar'">
-                <el-icon><InfoFilled /></el-icon>
-                农历生日系统会自动转换为公历进行排盘计算
-              </p>
-            </div>
-
-            <div class="time-entry-panel" :class="`time-entry-panel--${birthTimeAccuracy}`">
-            <div class="time-entry-panel__header">
-              <span class="time-entry-panel__badge">{{ birthTimeAccuracy === 'exact' ? '精确填写' : '估算填写' }}</span>
-              <p class="time-entry-panel__title">{{ birthTimeAccuracy === 'exact' ? '请选择出生时间' : '请选择出生日期与大概时段' }}</p>
-            </div>
-
-            <template v-if="birthTimeAccuracy === 'exact'">
-              <!-- 公历日期选择 -->
-              <template v-if="calendarType === 'solar'">
-                <el-date-picker
-                  v-model="exactBirthDate"
-                  type="datetime"
-                  placeholder="选择出生日期时间（精确到分钟）"
-                  format="YYYY-MM-DD HH:mm"
-                  value-format="YYYY-MM-DD HH:mm:ss"
-                  class="full-width time-entry-panel__control"
-                />
-              </template>
-
-              <!-- 农历日期选择 -->
-              <template v-else>
-                <div class="lunar-date-input">
-                  <div class="lunar-date-row">
-                    <el-input-number
-                      v-model="lunarYear"
-                      :min="1900"
-                      :max="2100"
-                      placeholder="年"
-                      class="lunar-input"
-                      :controls="false"
-                    />
-                    <span class="lunar-label">年</span>
-                    <el-input-number
-                      v-model="lunarMonth"
-                      :min="1"
-                      :max="12"
-                      placeholder="月"
-                      class="lunar-input"
-                      :controls="false"
-                    />
-                    <span class="lunar-label">月</span>
-                    <el-input-number
-                      v-model="lunarDay"
-                      :min="1"
-                      :max="30"
-                      placeholder="日"
-                      class="lunar-input"
-                      :controls="false"
-                    />
-                    <span class="lunar-label">日</span>
-                  </div>
-                  <div class="lunar-time-row">
-                    <el-select v-model="lunarHour" placeholder="选择时辰" class="lunar-time-select">
-                      <el-option label="子时 (23:00-01:00)" :value="0" />
-                      <el-option label="丑时 (01:00-03:00)" :value="1" />
-                      <el-option label="寅时 (03:00-05:00)" :value="3" />
-                      <el-option label="卯时 (05:00-07:00)" :value="5" />
-                      <el-option label="辰时 (07:00-09:00)" :value="7" />
-                      <el-option label="巳时 (09:00-11:00)" :value="9" />
-                      <el-option label="午时 (11:00-13:00)" :value="11" />
-                      <el-option label="未时 (13:00-15:00)" :value="13" />
-                      <el-option label="申时 (15:00-17:00)" :value="15" />
-                      <el-option label="酉时 (17:00-19:00)" :value="17" />
-                      <el-option label="戌时 (19:00-21:00)" :value="19" />
-                      <el-option label="亥时 (21:00-23:00)" :value="21" />
-                    </el-select>
-                  </div>
-                  <div v-if="convertedSolarDate" class="lunar-converted-hint">
-                    <el-icon><InfoFilled /></el-icon>
-                    转换为公历：{{ convertedSolarDate }}
-                  </div>
-                </div>
-              </template>
-              <p class="form-hint time-entry-panel__hint">精确到分钟时，命盘细节最完整；若记不清，可先切到估算模式。</p>
-            </template>
-
-            <template v-else>
-              <div class="estimate-birth-grid time-entry-panel__grid">
-                <el-date-picker
-                  v-model="estimatedBirthDate"
-                  type="date"
-                  placeholder="选择出生日期"
-                  format="YYYY-MM-DD"
-                  value-format="YYYY-MM-DD"
-                  class="full-width time-entry-panel__control"
-                />
-                <el-select v-model="estimatedTimeSlot" placeholder="选择大概时段或未知时辰" class="full-width time-entry-panel__control" clearable>
-                  <el-option
-                    v-for="option in estimatedTimeOptions"
-                    :key="option.value"
-                    :label="option.label"
-                    :value="option.value"
-                  />
-                </el-select>
-              </div>
-              <p class="form-hint form-hint--precision time-entry-panel__hint"><el-icon><Warning /></el-icon> {{ estimatedModeHint }}</p>
-            </template>
+          <!-- 性别选择 -->
+          <div class="form-group form-group--gender" data-bazi-field="gender">
+            <label>性别 <span class="required-mark">*</span></label>
+            <el-radio-group v-model="gender" size="large" class="gender-radio-group">
+              <el-radio-button label="male">男</el-radio-button>
+              <el-radio-button label="female">女</el-radio-button>
+            </el-radio-group>
           </div>
 
-        </div>
-        
-        <div class="form-group" data-bazi-field="location">
-          <label>
-            出生地点 <span class="required-mark">*</span>
-            <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
-              <el-icon class="help-icon"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </label>
-          <!-- 常用城市快捷选项 -->
-          <div class="quick-city-options">
-            <button
-              v-for="city in QUICK_CITIES"
-              :key="city"
-              class="quick-city-btn"
-              :class="{ 'is-active': location === city }"
-              @click="location = city"
-            >
-              {{ city }}
-            </button>
+          <!-- 出生日期时间选择 -->
+          <div class="form-group form-group--time" data-bazi-field="birth-time">
+            <label>选择出生日期时间（精确填写）</label>
+            <el-date-picker
+              v-model="exactBirthDate"
+              type="datetime"
+              placeholder="选择出生日期时间（精确到分钟）"
+              format="YYYY-MM-DD HH:mm"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="full-width"
+            />
+            <p class="form-hint">精确到分钟时，命盘细节最完整；若记不清，可先切到估算模式。</p>
           </div>
-          <el-select-v2
-            v-model="location"
-            :options="cityOptions"
-            placeholder="请选择出生城市"
-            class="full-width"
-            filterable
-            clearable
-            :height="200"
-          />
-          <p class="form-hint"><el-icon><MagicStick /></el-icon> 请选择出生城市，系统会根据地点计算真太阳时，让排盘更准确。</p>
         </div>
 
         <!-- 提交前校验提示 -->
@@ -299,7 +161,6 @@
         </div>
       </div>
 
-      </div>
       <!-- 确认对话框 -->
       <el-dialog
         v-model="confirmVisible"
@@ -3639,68 +3500,36 @@ const formatAiContent = (content) => {
   margin-bottom: 34px;
 }
 
-.form-group--combined {
-  grid-column: 1 / -1;
+.form-group--gender {
+  margin-bottom: 30px;
+}
+
+.gender-radio-group {
+  display: inline-flex;
+}
+
+:deep(.gender-radio-group .el-radio-button__inner) {
+  min-width: 80px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 20px !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: none !important;
+}
+
+:deep(.gender-radio-group .el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #D4AF37, #E8C547);
+  border-color: #D4AF37 !important;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
 }
 
 .form-group--half {
   margin-bottom: 30px;
-}
-
-.form-group__header--combined {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.form-group .form-group__title {
-  margin-bottom: 0;
-  color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.inline-gender-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.inline-gender-field__label {
-  color: var(--text-secondary);
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-:deep(.inline-gender-field__group) {
-  display: inline-flex;
-}
-
-:deep(.inline-gender-field__group .el-radio-button__inner) {
-  min-width: 52px;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 999px !important;
-  border: 1px solid rgba(var(--primary-rgb), 0.14) !important;
-  background: rgba(255, 255, 255, 0.96);
-  color: var(--text-secondary);
-  box-shadow: none !important;
-}
-
-:deep(.inline-gender-field__group .el-radio-button:first-child .el-radio-button__inner),
-:deep(.inline-gender-field__group .el-radio-button:last-child .el-radio-button__inner) {
-  border-radius: 999px !important;
-}
-
-:deep(.inline-gender-field__group .el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.18));
-  border-color: rgba(var(--primary-rgb), 0.24) !important;
-  color: var(--text-primary);
-  box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.12) !important;
 }
 
 .form-group__header--time {
