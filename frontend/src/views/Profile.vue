@@ -2,27 +2,61 @@
   <div class="profile-page">
     <div class="container">
       <div class="profile-hero">
-        <BackButton />
-        <div class="profile-hero-content">
-          <div class="profile-hero-avatar">
-            <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="用户头像" class="profile-hero-avatar-img">
-            <span v-else class="profile-hero-avatar-placeholder">{{ userInfo.nickname?.[0] || '用' }}</span>
+        <div class="profile-hero-left">
+          <!-- 返回按钮 -->
+          <div class="profile-hero-header">
+            <BackButton />
           </div>
-          <div class="profile-hero-info">
-            <h1 class="profile-hero-name">{{ userInfo.nickname || '欢迎回来' }}</h1>
-            <p class="profile-hero-sub">
-              <span class="profile-hero-id">ID: {{ userInfo.id || '--' }}</span>
-              <span class="profile-hero-divider">·</span>
-              <span class="profile-hero-points-badge">
-                <el-icon><Coin /></el-icon>
-                {{ pointsBalance }} 积分
-              </span>
-            </p>
+          
+          <!-- 用户信息区域 -->
+          <div class="profile-hero-user">
+            <div class="profile-hero-avatar">
+              <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="用户头像" class="profile-hero-avatar-img">
+              <span v-else class="profile-hero-avatar-placeholder">{{ userInfo.nickname?.[0] || '用' }}</span>
+            </div>
+            <div class="profile-hero-details">
+              <h1 class="profile-hero-name">{{ userInfo.nickname || '欢迎回来' }}</h1>
+              <div class="profile-hero-meta">
+                <span class="profile-hero-id">ID: {{ userInfo.id || '--' }}</span>
+                <span class="profile-hero-divider">|</span>
+                <span class="profile-hero-points">
+                  <el-icon><Coin /></el-icon>
+                  {{ pointsBalance }} 积分
+                </span>
+              </div>
+              <div class="profile-hero-level">
+                <span class="level-badge">{{ pointsLevelName }}</span>
+                <span class="level-progress-mini">{{ pointsBalance }} / {{ currentPointsLevel.max === Infinity ? '∞' : currentPointsLevel.max }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 快捷统计 -->
+          <div class="profile-hero-stats">
+            <div class="hero-stat-item">
+              <span class="hero-stat-value">{{ baziCount }}</span>
+              <span class="hero-stat-label">排盘</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-value">{{ tarotCount }}</span>
+              <span class="hero-stat-label">占卜</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-value">{{ liuyaoCount }}</span>
+              <span class="hero-stat-label">六爻</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-value">{{ hehunCount }}</span>
+              <span class="hero-stat-label">合婚</span>
+            </div>
           </div>
         </div>
 
-        <!-- 签到卡片 - 放在 hero 内部右侧 -->
-        <div class="profile-hero-checkin">
+        <!-- 签到卡片 - 右侧固定宽度 -->
+        <div class="profile-hero-right">
           <CheckinCard />
         </div>
       </div>
@@ -862,28 +896,43 @@ onUnmounted(() => {
   min-height: 100vh;
 }
 
+/* 优化后的 Hero 布局 */
 .profile-hero {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 28px;
-  padding: 20px 24px;
+  padding: 24px;
   background: linear-gradient(135deg, rgba(184, 134, 11, 0.08), rgba(212, 175, 55, 0.04));
   border: 2px solid rgba(212, 175, 55, 0.2);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
 }
 
-.profile-hero-content {
+/* 左侧区域：自适应宽度 */
+.profile-hero-left {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 顶部：返回按钮 */
+.profile-hero-header {
+  width: fit-content;
+}
+
+/* 用户信息区域 */
+.profile-hero-user {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
 .profile-hero-avatar {
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   overflow: hidden;
   background: linear-gradient(135deg, #B8860B, #D4AF37);
@@ -891,69 +940,42 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid rgba(212, 175, 55, 0.4);
+  border: 3px solid rgba(212, 175, 55, 0.4);
 }
 
 .profile-hero-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 .profile-hero-avatar-placeholder {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: #fff;
 }
 
-.profile-hero-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 4px;
+.profile-hero-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
-.profile-hero-sub {
+.profile-hero-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.profile-hero-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 13px;
+  gap: 12px;
+  font-size: 14px;
 }
 
 .profile-hero-id { color: #999; font-weight: 500; }
 .profile-hero-divider { color: #e0e0e0; }
 
-/* 签到卡片在 hero 内部的样式 */
-.profile-hero-checkin {
-  flex-shrink: 0;
-  width: 280px;
-}
-
-.profile-hero-checkin :deep(.checkin-card) {
-  padding: 16px;
-  border-radius: 12px;
-}
-
-.profile-hero-checkin :deep(.checkin-card-header) {
-  font-size: 14px;
-  margin-bottom: 12px;
-}
-
-.profile-hero-checkin :deep(.checkin-stats) {
-  gap: 8px;
-}
-
-.profile-hero-checkin :deep(.checkin-stat-value) {
-  font-size: 18px;
-}
-
-.profile-hero-checkin :deep(.checkin-stat-label) {
-  font-size: 11px;
-}
-
-.profile-hero-checkin :deep(.checkin-btn) {
-  padding: 8px 16px;
-  font-size: 13px;
-}
-
-.profile-hero-points-badge {
+.profile-hero-points {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -962,6 +984,89 @@ onUnmounted(() => {
   border-radius: 20px;
   color: #D4AF37;
   font-weight: 700;
+}
+
+.profile-hero-level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.level-badge {
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #D4AF37, #F4D03F);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.level-progress-mini {
+  color: #999;
+}
+
+/* 快捷统计 */
+.profile-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.hero-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.hero-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #D4AF37;
+}
+
+.hero-stat-label {
+  font-size: 12px;
+  color: #999;
+}
+
+.hero-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* 右侧区域：签到卡片固定宽度 */
+.profile-hero-right {
+  flex-shrink: 0;
+  width: 300px;
+}
+
+.profile-hero-right :deep(.checkin-card) {
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.profile-hero-right :deep(.checkin-card-header) {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.profile-hero-right :deep(.checkin-stats) {
+  gap: 8px;
+}
+
+.profile-hero-right :deep(.checkin-stat-value) {
+  font-size: 18px;
+}
+
+.profile-hero-right :deep(.checkin-stat-label) {
+  font-size: 11px;
+}
+
+.profile-hero-right :deep(.checkin-btn) {
+  padding: 8px 16px;
   font-size: 13px;
 }
 
@@ -1596,17 +1701,40 @@ onUnmounted(() => {
 
   .profile-hero {
     flex-direction: column;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .profile-hero-left {
+    width: 100%;
     text-align: center;
-    padding: 24px 20px;
   }
 
-  .profile-hero-content {
+  .profile-hero-header {
+    align-self: flex-start;
+  }
+
+  .profile-hero-user {
     flex-direction: column;
-    gap: 12px;
+    text-align: center;
   }
 
-  .profile-hero-sub {
+  .profile-hero-meta {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .profile-hero-level {
+    justify-content: center;
+  }
+
+  .profile-hero-stats {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .profile-hero-right {
+    width: 100%;
   }
 
   .user-stats {
@@ -1623,6 +1751,33 @@ onUnmounted(() => {
 
   .main-card {
     padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-hero-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .profile-hero-avatar-placeholder {
+    font-size: 20px;
+  }
+
+  .profile-hero-name {
+    font-size: 18px;
+  }
+
+  .hero-stat-value {
+    font-size: 16px;
+  }
+
+  .profile-hero-stats {
+    gap: 8px;
+  }
+
+  .hero-stat-divider {
+    height: 24px;
   }
 }
 </style>
