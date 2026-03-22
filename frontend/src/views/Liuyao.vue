@@ -455,41 +455,37 @@
                   <div class="version-content">
                     <!-- 简单版内容 -->
                     <div v-show="form.version === 'basic'" class="version-detail version-detail--basic">
-                      <div class="compare-card compare-card--selected">
-                        <div class="compare-header">
-                          <span class="compare-badge compare-badge--basic">简单版</span>
-                        </div>
-                        <ul class="compare-features">
-                          <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘</li>
-                          <li><el-icon><Check /></el-icon> 基础的卦辞解析</li>
-                          <li><el-icon><Check /></el-icon> 卦象SVG可视化展示</li>
-                          <li><el-icon><Close /></el-icon> <span class="feature-disabled">AI深度综合分析</span></li>
-                          <li><el-icon><Close /></el-icon> <span class="feature-disabled">专业的指导建议</span></li>
-                          <li><el-icon><Check /></el-icon> 保存占卜历史记录</li>
-                        </ul>
+                      <div class="version-detail__header">
+                        <span class="version-badge version-badge--basic">简单版</span>
                       </div>
+                      <ul class="version-features">
+                        <li><el-icon><Check /></el-icon> 完整的六爻卦象排盘</li>
+                        <li><el-icon><Check /></el-icon> 基础的卦辞解析</li>
+                        <li><el-icon><Check /></el-icon> 卦象SVG可视化展示</li>
+                        <li><el-icon><Close /></el-icon> <span class="feature-disabled">AI深度综合分析</span></li>
+                        <li><el-icon><Close /></el-icon> <span class="feature-disabled">专业的指导建议</span></li>
+                        <li><el-icon><Check /></el-icon> 保存占卜历史记录</li>
+                      </ul>
                     </div>
 
                     <!-- 专业版内容 -->
                     <div v-show="form.version === 'professional'" class="version-detail version-detail--professional">
-                      <div class="compare-card compare-card--selected">
-                        <div class="compare-header">
-                          <span class="compare-badge compare-badge--premium">专业版</span>
-                          <span class="compare-tag">推荐</span>
-                        </div>
-                        <ul class="compare-features">
-                          <li><el-icon><Check /></el-icon> <strong>完整的六爻卦象排盘</strong></li>
-                          <li><el-icon><Check /></el-icon> <strong>详细的卦辞解析与针对性解读</strong></li>
-                          <li><el-icon><Check /></el-icon> <strong>卦象SVG可视化展示</strong></li>
-                          <li><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
-                          <li><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
-                          <li><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
-                          <li><el-icon><Check /></el-icon> <strong>保存占卜历史记录</strong></li>
-                        </ul>
-                        <div class="ai-highlight">
-                          <el-icon><MagicStick /></el-icon>
-                          <span>AI基于六爻专业知识库，为您提供更深入、更专业的占卜解读</span>
-                        </div>
+                      <div class="version-detail__header">
+                        <span class="version-badge version-badge--premium">专业版</span>
+                        <span class="version-tag">推荐</span>
+                      </div>
+                      <ul class="version-features">
+                        <li><el-icon><Check /></el-icon> <strong>完整的六爻卦象排盘</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>详细的卦辞解析与针对性解读</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>卦象SVG可视化展示</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>AI深度综合分析报告</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>多维度的运势分析</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>专业的指导建议</strong></li>
+                        <li><el-icon><Check /></el-icon> <strong>保存占卜历史记录</strong></li>
+                      </ul>
+                      <div class="ai-highlight">
+                        <el-icon><MagicStick /></el-icon>
+                        <span>AI基于六爻专业知识库，为您提供更深入、更专业的占卜解读</span>
                       </div>
                     </div>
                   </div>
