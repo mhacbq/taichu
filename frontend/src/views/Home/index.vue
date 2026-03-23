@@ -239,6 +239,20 @@
             </div>
           </div>
 
+          <!-- VIP 会员 -->
+          <div class="feature-card card-hover" data-type="vip">
+            <div class="feature-icon-wrap">
+              <span class="feature-symbol">👑</span>
+            </div>
+            <h3>VIP 会员</h3>
+            <p>开通 VIP 享专属权益，海量积分、深度解读、专属牌阵一步到位</p>
+            <div style="text-align: center; margin-top: 16px;">
+              <router-link to="/vip" class="feature-link feature-link--sm">
+                立即开通 <el-icon><ArrowRight /></el-icon>
+              </router-link>
+            </div>
+          </div>
+
           <!-- 帮助中心 -->
           <div class="feature-card card-hover" data-type="help">
             <div class="feature-icon-wrap">

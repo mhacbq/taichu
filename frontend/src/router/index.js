@@ -17,7 +17,7 @@ const Profile = () => import('../views/Profile/index.vue')
 
 const Help = () => import('../views/Help.vue')
 const Recharge = () => import('../views/Recharge/index.vue')
-const Vip = () => import('../views/Vip.vue')
+const Vip = () => import('../views/Vip/index.vue')
 const Hehun = () => import('../views/Hehun/index.vue')
 const Liuyao = () => import('../views/Liuyao/index.vue')
 const Qiming = () => import('../views/Qiming/index.vue')
