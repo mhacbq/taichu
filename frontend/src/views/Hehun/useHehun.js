@@ -705,8 +705,7 @@ watch([
   () => form.femaleBirthDate,
   () => form.femaleBirthTimeRange,
   () => form.femaleBirthPrecision,
-  () => form.useAi,
-  roleDisplayMode
+  () => form.useAi
 ], () => {
   if (hehunSubmitIssues.value.length) {
     clearHehunSubmitIssues()
@@ -1666,7 +1665,6 @@ onMounted(() => {
 return {
   // 表单与状态
   form,
-  roleDisplayMode,
   hehunStrategyExpanded,
   hehunSubmitIssues,
   isLoading,
@@ -1751,4 +1749,4 @@ return {
   returnToForm,
 }
 } // end useHehun
-
+
