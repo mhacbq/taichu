@@ -16,7 +16,7 @@ const Daily = () => import('../views/Daily/index.vue')
 const Profile = () => import('../views/Profile/index.vue')
 
 const Help = () => import('../views/Help.vue')
-const Recharge = () => import('../views/Recharge.vue')
+const Recharge = () => import('../views/Recharge/index.vue')
 const Vip = () => import('../views/Vip.vue')
 const Hehun = () => import('../views/Hehun/index.vue')
 const Liuyao = () => import('../views/Liuyao/index.vue')
