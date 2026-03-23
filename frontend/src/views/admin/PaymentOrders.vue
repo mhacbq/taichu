@@ -83,6 +83,12 @@ const handlePageChange = (page) => {
   loadOrders()
 }
 
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadOrders()
+}
+
 const getStatusLabel = (status) => {
   const statusMap = {
     'pending': '待支付',

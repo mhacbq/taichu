@@ -53,6 +53,12 @@ const handlePageChange = (page) => {
   loadRecords()
 }
 
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadRecords()
+}
+
 const getTypeLabel = (type) => {
   const typeMap = {
     'earn': '获得',

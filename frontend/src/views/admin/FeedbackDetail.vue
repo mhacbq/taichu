@@ -104,12 +104,6 @@ onMounted(() => {
             <label>提交时间:</label>
             <span>{{ detail.created_at }}</span>
           </div>
-          <div class="info-item">
-            <label>状态:</label>
-            <el-tag :type="detail.status_value === 'pending' ? 'warning' : detail.status_value === 'replied' ? 'primary' : 'success'">
-              {{ detail.status_value === 'pending' ? '待处理' : detail.status_value === 'replied' ? '已回复' : '已解决' }}
-            </el-tag>
-          </div>
         </div>
 
         <div v-if="detail.title" class="content-section">

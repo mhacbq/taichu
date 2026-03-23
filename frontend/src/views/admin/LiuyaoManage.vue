@@ -2,7 +2,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import request from '../../api/request'
+import request from '../../api/adminRequest'
 
 const loading = ref(false)
 const list = ref([])

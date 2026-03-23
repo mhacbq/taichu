@@ -22,7 +22,7 @@ const loadRules = async () => {
   try {
     const response = await getPointsRules()
     if (response.code === 200) {
-      rules.value = response.data || []
+      rules.value = response.data?.list || response.data || []
     } else {
       ElMessage.error(response.message || '加载失败')
     }
@@ -108,15 +108,12 @@ onMounted(() => {
     <!-- 规则列表 -->
     <div class="table-container">
       <el-table v-loading="loading" :data="rules" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="type" label="类型" min-width="150">
+        <el-table-column prop="id" label="规则类型" min-width="150">
           <template #default="{ row }">
-            <el-tag>{{ row.type }}</el-tag>
+            <el-tag>{{ row.rule_name || row.id }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="points" label="积分数值" width="120" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>

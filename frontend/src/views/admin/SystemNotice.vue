@@ -31,7 +31,7 @@ const loadNotices = async () => {
   try {
     const response = await getNotices({
       page: currentPage.value,
-      pageSize: pageSize.value,
+      page_size: pageSize.value,
       status: statusFilter.value
     })
     if (response.code === 200) {
@@ -127,6 +127,12 @@ const handlePageChange = (page) => {
   loadNotices()
 }
 
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadNotices()
+}
+
 const getTypeText = (type) => {
   return type === 'important' ? '重要' : '普通'
 }
@@ -217,7 +223,7 @@ onMounted(() => {
         :total="total"
         :page-sizes="[20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="loadNotices"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
         style="margin-top: 20px; justify-content: flex-end"
       />

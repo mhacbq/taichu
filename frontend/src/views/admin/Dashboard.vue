@@ -119,7 +119,7 @@ onMounted(() => {
       <h3>用户增长趋势（最近7天）</h3>
       <div v-if="trendData.length > 0" class="chart-container">
         <div class="chart-bar" v-for="item in trendData" :key="item.date">
-          <div class="bar" :style="{ height: (item.count / Math.max(...trendData.map(d => d.count)) * 100) + '%' }"></div>
+          <div class="bar" :style="{ height: (item.count / (Math.max(...trendData.map(d => d.count)) || 1) * 100) + '%' }"></div>
           <div class="label">{{ item.date.slice(5) }}</div>
           <div class="value">{{ item.count }}</div>
         </div>

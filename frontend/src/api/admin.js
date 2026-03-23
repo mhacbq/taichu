@@ -140,9 +140,9 @@ export const saveNotificationConfig = (data) => request.put('/maodou/system/noti
 export const sendNotificationTest = (data) => request.post('/maodou/system/notification/test', data)
 
 // 绠＄悊鍛樼鐞?
-export const getAdminUsers = () => request.get('/maodou/system/maodous')
-export const saveAdminUser = (data) => request.post('/maodou/system/maodous', data)
-export const deleteAdminUser = (id) => request.delete(`/maodou/system/maodous/${id}`)
+export const getAdminUsers = () => request.get('/maodou/system/admins')
+export const saveAdminUser = (data) => request.post('/maodou/system/admins', data)
+export const deleteAdminUser = (id) => request.delete(`/maodou/system/admins/${id}`)
 
 
 // 鍐呭璁板綍 - 鍏瓧
@@ -176,13 +176,13 @@ export const importSensitiveWords = (data) => request.post('/maodou/system/sensi
 // 鐭俊绠＄悊
 export const getSmsConfig = () => request.get('/maodou/sms/config')
 export const saveSmsConfig = (data) => request.post('/maodou/sms/config', data)
-export const testSms = (data) => request.post('/api/maodou/sms/test', data)
+export const testSms = (data) => request.post('/maodou/sms/test', data)
 export const testSmsSend = (data) => request.post('/maodou/sms/test', data)
 export const getSmsStats = () => request.get('/maodou/sms/stats')
 export const getSmsRecords = (params) => request.get('/maodou/sms/records', { params })
 
 // 鏁版嵁鍒嗘瀽
-export const getAnalysisUser = (params) => request.get('/api/maodou/analysis/user', { params })
+export const getAnalysisUser = (params) => request.get('/maodou/analysis/user', { params })
 
 // 瑙掕壊绠＄悊
 export const getRoles = () => request.get('/maodou/system/roles')

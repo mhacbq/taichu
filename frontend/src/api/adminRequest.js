@@ -36,7 +36,7 @@ adminRequest.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('adminToken')
       localStorage.removeItem('adminUserInfo')
-      window.location.href = '/admin/login'
+      window.location.href = '/maodou/login'
       return Promise.reject(error)
     }
 

@@ -42,7 +42,7 @@ const loadAnalysisData = async () => {
 
 const maxAmount = computed(() => {
   if (trendData.value.length === 0) return 1
-  return Math.max(...trendData.value.map(d => d.amount))
+  return Math.max(...trendData.value.map(d => d.amount)) || 1
 })
 
 onMounted(() => {
