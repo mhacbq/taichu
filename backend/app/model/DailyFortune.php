@@ -5,6 +5,7 @@ namespace app\model;
 
 use app\service\LunarService;
 use app\service\SchemaInspector;
+use app\service\WuxingHelper;
 use think\facade\Db;
 use think\Model;
 
@@ -71,13 +72,7 @@ class DailyFortune extends Model
         ],
     ];
 
-    private const GAN_WUXING = [
-        '甲' => '木', '乙' => '木',
-        '丙' => '火', '丁' => '火',
-        '戊' => '土', '己' => '土',
-        '庚' => '金', '辛' => '金',
-        '壬' => '水', '癸' => '水',
-    ];
+    // 五行映射统一由 WuxingHelper 提供，此处不再重复定义
 
     private const ASPECT_TONE_MAP = [
         'career' => [
@@ -588,7 +583,7 @@ class DailyFortune extends Model
         $dayGanZhi = trim((string) ($almanac['day_gan_zhi'] ?? ''));
         $zhiri = trim((string) ($almanac['zhiri'] ?? ''));
         $dayGan = $dayGanZhi !== '' ? mb_substr($dayGanZhi, 0, 1) : '';
-        $dayWuxing = self::GAN_WUXING[$dayGan] ?? '';
+        $dayWuxing = WuxingHelper::ganToWuxing($dayGan);
         $elementGuide = self::ASPECT_ELEMENT_GUIDANCE[$aspect][$dayWuxing] ?? '';
         $zhiriGuide = self::ZHIRI_GUIDANCE[$zhiri] ?? '';
 
@@ -702,42 +697,12 @@ class DailyFortune extends Model
 
 
     /**
-     * 公历转农历（使用统一农历服务）
+     * 公历转农历文本（复用 LunarService，不重复实现）
      */
     protected static function solarToLunar(string $date): string
     {
         $lunar = LunarService::solarToLunar($date);
-        if (!empty($lunar['lunar_text'])) {
-            return (string) $lunar['lunar_text'];
-        }
-
-        $month = self::formatLunarMonth((int) ($lunar['lunar_month'] ?? 1), (bool) ($lunar['is_leap'] ?? false));
-        $day = self::formatLunarDay((int) ($lunar['lunar_day'] ?? 1));
-        $yearGanZhi = $lunar['year_gan_zhi'] ?? '';
-
-        return trim("{$yearGanZhi}年 {$month}{$day}");
-    }
-
-    protected static function formatLunarMonth(int $month, bool $isLeap = false): string
-    {
-        $months = [1 => '正月', 2 => '二月', 3 => '三月', 4 => '四月', 5 => '五月', 6 => '六月', 7 => '七月', 8 => '八月', 9 => '九月', 10 => '十月', 11 => '冬月', 12 => '腊月'];
-        $monthText = $months[$month] ?? ($month . '月');
-
-        return $isLeap ? '闰' . $monthText : $monthText;
-    }
-
-    protected static function formatLunarDay(int $day): string
-    {
-        $days = [
-            1 => '初一', 2 => '初二', 3 => '初三', 4 => '初四', 5 => '初五',
-            6 => '初六', 7 => '初七', 8 => '初八', 9 => '初九', 10 => '初十',
-            11 => '十一', 12 => '十二', 13 => '十三', 14 => '十四', 15 => '十五',
-            16 => '十六', 17 => '十七', 18 => '十八', 19 => '十九', 20 => '二十',
-            21 => '廿一', 22 => '廿二', 23 => '廿三', 24 => '廿四', 25 => '廿五',
-            26 => '廿六', 27 => '廿七', 28 => '廿八', 29 => '廿九', 30 => '三十',
-        ];
-
-        return $days[$day] ?? ((string) $day);
+        return (string) ($lunar['lunar_text'] ?? $date);
     }
 
     /**

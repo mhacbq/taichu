@@ -70,7 +70,7 @@ const handleReply = async (row) => {
       return
     }
     
-    const response = await replyFeedback(row.id, { content: value })
+    const response = await replyFeedback(row.id, value)
     if (response.code === 200) {
       ElMessage.success('回复成功')
       loadFeedback()

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getFeedbackDetail,
   replyFeedback
@@ -41,7 +41,7 @@ const handleReply = async () => {
       return
     }
     
-    const response = await replyFeedback(detail.value.id, { content: value })
+    const response = await replyFeedback(detail.value.id, value)
     if (response.code === 200) {
       ElMessage.success('回复成功')
       loadDetail()

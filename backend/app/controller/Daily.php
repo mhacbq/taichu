@@ -10,6 +10,7 @@ use app\model\PointsRecord;
 use app\service\BaziCalculationService;
 use app\service\ConfigService;
 use app\service\LunarService;
+use app\service\WuxingHelper;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use think\facade\Config;
@@ -177,29 +178,13 @@ class Daily extends BaseController
             return null; // 无法获取日主信息，返回null
         }
         
-        // 五行属性
-        $ganWuXing = [
-            '甲' => '木', '乙' => '木',
-            '丙' => '火', '丁' => '火',
-            '戊' => '土', '己' => '土',
-            '庚' => '金', '辛' => '金',
-            '壬' => '水', '癸' => '水'
-        ];
-        $zhiWuXing = [
-            '子' => '水', '丑' => '土', '寅' => '木', '卯' => '木',
-            '辰' => '土', '巳' => '火', '午' => '火', '未' => '土',
-            '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'
-        ];
+        $dayMasterWuxing = WuxingHelper::ganToWuxing($dayMaster);
+        $todayGanWuxing = WuxingHelper::ganToWuxing($todayGan);
+        $todayZhiWuxing = WuxingHelper::zhiToWuxing($todayZhi);
         
-        $dayMasterWuxing = $ganWuXing[$dayMaster];
-        $todayGanWuxing = $ganWuXing[$todayGan];
-        $todayZhiWuxing = $zhiWuXing[$todayZhi];
-        
-        // 简易强弱判断：月令生扶为强，克泄耗为弱
+        // 简易强弱判断：月令生扶为强
         $monthZhi = $baziRecord['month_zhi'] ?? '';
-        $monthWx = $zhiWuXing[$monthZhi] ?? '';
-        $shengMei = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金']; // 生我者
-        $isStrong = ($monthWx === $dayMasterWuxing || $monthWx === $shengMei[$dayMasterWuxing]);
+        $isStrong = WuxingHelper::isStrong($dayMasterWuxing, $monthZhi);
         
         // 使用李虚中命书算法分析流日与日柱关系
         $liXuZhongService = new \app\service\LiXuZhongService();
@@ -224,8 +209,8 @@ class Daily extends BaseController
             'luckLevel' => $luckLevel,
             'advice' => $advice,
             'personalScore' => $adjustedScore,
-            'luckyColors' => $this->getLuckyColorsByWuxing($dayMasterWuxing),
-            'luckyDirections' => $this->getLuckyDirectionsByWuxing($dayMasterWuxing),
+            'luckyColors' => WuxingHelper::getLuckyColors($dayMasterWuxing),
+            'luckyDirections' => WuxingHelper::getLuckyDirections($dayMasterWuxing),
         ];
     }
     
@@ -234,29 +219,15 @@ class Daily extends BaseController
      */
     protected function getLuckyColorsByWuxing(string $wuxing): array
     {
-        $colors = [
-            '金' => ['白色', '金色', '银色'],
-            '木' => ['绿色', '青色', '翠色'],
-            '水' => ['黑色', '蓝色', '灰色'],
-            '火' => ['红色', '紫色', '橙色'],
-            '土' => ['黄色', '棕色', '咖啡色']
-        ];
-        return $colors[$wuxing] ?? ['黄色'];
+        return WuxingHelper::getLuckyColors($wuxing);
     }
-    
+
     /**
      * 根据五行获取幸运方位
      */
     protected function getLuckyDirectionsByWuxing(string $wuxing): array
     {
-        $directions = [
-            '金' => ['西方', '西北方'],
-            '木' => ['东方', '东南方'],
-            '水' => ['北方'],
-            '火' => ['南方'],
-            '土' => ['中央', '东北方', '西南方']
-        ];
-        return $directions[$wuxing] ?? ['中央'];
+        return WuxingHelper::getLuckyDirections($wuxing);
     }
     
     /**
@@ -305,9 +276,9 @@ class Daily extends BaseController
             'lunarDate' => $almanac['lunar_text'] ?? $fortune->lunar_date,
             'yi' => !empty($almanac['yi']) ? $almanac['yi'] : array_values(array_filter(explode(',', $fortune->yi))),
             'ji' => !empty($almanac['ji']) ? $almanac['ji'] : array_values(array_filter(explode(',', $fortune->ji))),
-            'luckyNumbers' => $this->generateLuckyNumbers($favoriteWuxing, (int)$user['sub']),
-            'luckyColors' => $this->generateLuckyColors($favoriteWuxing, (int)$user['sub']),
-            'luckyDirections' => $this->generateLuckyDirections($favoriteWuxing, (int)$user['sub']),
+            'luckyNumbers' => WuxingHelper::getLuckyNumbers($favoriteWuxing, (int)$user['sub']),
+            'luckyColors' => WuxingHelper::getLuckyColors($favoriteWuxing, (int)$user['sub']),
+            'luckyDirections' => WuxingHelper::getLuckyDirections($favoriteWuxing, (int)$user['sub']),
             'calculation_method' => '基于八字喜用神推算',
         ]);
     }
@@ -335,11 +306,9 @@ class Daily extends BaseController
                     $bazi['strength']['favorite_wuxing'] ?? [],
                     static fn($item) => is_string($item) && $item !== ''
                 ));
-
                 if (!empty($favoriteWuxing)) {
                     return $favoriteWuxing[0];
                 }
-
 
                 $dayMasterWuxing = (string)($bazi['day_master_wuxing'] ?? ($bazi['day']['gan_wuxing'] ?? ''));
                 if ($dayMasterWuxing !== '') {
@@ -354,104 +323,38 @@ class Daily extends BaseController
             }
         }
 
+        // 回退：用日主干支 + 月令判断强弱
         $dayMaster = (string)($baziRecord['day_gan'] ?? '戊');
-        $ganWuXing = ['甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土', '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'];
-        $dmWx = $ganWuXing[$dayMaster] ?? '土';
-
-        // 回退方案仍保留"身弱取印比、身旺取食财官"的传统原则，但仅在旧记录缺少出生信息时启用。
-        $sheng = ['木' => '水', '火' => '木', '土' => '火', '金' => '土', '水' => '金'];
+        $dmWx = WuxingHelper::ganToWuxing($dayMaster) ?: '土';
         $monthZhi = (string)($baziRecord['month_zhi'] ?? '');
-        $zhiWuXing = ['子' => '水', '丑' => '土', '寅' => '木', '卯' => '木', '辰' => '土', '巳' => '火', '午' => '火', '未' => '土', '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'];
-        $monthWx = $zhiWuXing[$monthZhi] ?? '';
-        $isStrong = ($monthWx === $dmWx || $monthWx === ($sheng[$dmWx] ?? ''));
+        $isStrong = WuxingHelper::isStrong($dmWx, $monthZhi);
 
-        if (!$isStrong) {
-            return $sheng[$dmWx] ?? $dmWx;
-        }
-
-        $options = [
-            '木' => ['金', '火', '土'],
-            '火' => ['水', '土', '金'],
-            '土' => ['木', '金', '水'],
-            '金' => ['火', '水', '木'],
-            '水' => ['土', '木', '火'],
-        ];
-        $choices = $options[$dmWx] ?? ['土'];
-
-        return $choices[0];
-
+        return WuxingHelper::getFavoriteWuxing($dmWx, $isStrong);
     }
 
     
     /**
-     * 生成幸运数字
+     * 生成幸运数字（已迁移到 WuxingHelper，保留兼容入口）
      */
     protected function generateLuckyNumbers(string $wuxing, int $userId): array
     {
-        $map = [
-            '木' => [3, 8, 13, 18, 23, 28],
-            '火' => [2, 7, 12, 17, 22, 27],
-            '土' => [5, 10, 15, 20, 25, 30],
-            '金' => [4, 9, 14, 19, 24, 29],
-            '水' => [1, 6, 11, 16, 21, 26],
-        ];
-        
-        $pool = $map[$wuxing] ?? $map['土'];
-        $seed = crc32($userId . date('Ymd') . 'numbers');
-        $offset = $seed % count($pool);
-        
-        $result = [];
-        for ($i = 0; $i < 3; $i++) {
-            $result[] = $pool[($offset + $i) % count($pool)];
-        }
-        return $result;
+        return WuxingHelper::getLuckyNumbers($wuxing, $userId);
     }
-    
+
     /**
-     * 生成幸运颜色
+     * 生成幸运颜色（已迁移到 WuxingHelper，保留兼容入口）
      */
     protected function generateLuckyColors(string $wuxing, int $userId): array
     {
-        $colors = [
-            '金' => ['白色', '金色', '银色'],
-            '木' => ['绿色', '青色', '翠色'],
-            '水' => ['黑色', '蓝色', '灰色'],
-            '火' => ['红色', '紫色', '橙色'],
-            '土' => ['黄色', '棕色', '咖啡色']
-        ];
-        
-        $pool = $colors[$wuxing] ?? ['黄色', '棕色'];
-        $seed = crc32($userId . date('Ymd') . 'colors');
-        $offset = $seed % count($pool);
-        
-        return [
-            $pool[$offset],
-            $pool[($offset + 1) % count($pool)]
-        ];
+        return WuxingHelper::getLuckyColors($wuxing, $userId);
     }
-    
+
     /**
-     * 生成幸运方位
+     * 生成幸运方位（已迁移到 WuxingHelper，保留兼容入口）
      */
     protected function generateLuckyDirections(string $wuxing, int $userId): array
     {
-        $directions = [
-            '金' => ['西方', '西北方'],
-            '木' => ['东方', '东南方'],
-            '水' => ['北方'],
-            '火' => ['南方'],
-            '土' => ['中央', '东北方', '西南方']
-        ];
-        
-        $pool = $directions[$wuxing] ?? ['中央'];
-        $seed = crc32($userId . date('Ymd') . 'directions');
-        $offset = $seed % count($pool);
-        
-        if (count($pool) == 1) return [$pool[0]];
-        return [
-            $pool[$offset],
-            $pool[($offset + 1) % count($pool)]
-        ];
+        return WuxingHelper::getLuckyDirections($wuxing, $userId);
     }
 
     protected function resolveCheckinStorage(): array

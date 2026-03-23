@@ -5,7 +5,6 @@ import { ElMessage } from 'element-plus'
 import {
   getDashboardStats,
   getDashboardTrend,
-  getDashboardChart,
   getPendingFeedback
 } from '../../api/admin'
 import { User, ShoppingCart, Coin, ChatDotRound } from '@element-plus/icons-vue'

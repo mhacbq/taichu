@@ -77,8 +77,8 @@ const suitLabelMap = {
 const loadStats = async () => {
   try {
     const res = await getTarotCardStats()
-    if (res.data?.code === 0 || res.data?.code === 200) {
-      stats.value = res.data?.data || {}
+    if (res.code === 0 || res.code === 200) {
+      stats.value = res.data || {}
     }
   } catch (e) {
     console.error('加载统计失败:', e)
@@ -97,8 +97,8 @@ const loadList = async () => {
       is_enabled: filters.is_enabled !== '' ? filters.is_enabled : undefined,
     }
     const res = await getTarotCardList(params)
-    if (res.data?.code === 0 || res.data?.code === 200) {
-      const data = res.data?.data || {}
+    if (res.code === 0 || res.code === 200) {
+      const data = res.data || {}
       cardList.value = data.list || []
       total.value = data.total || 0
     } else {
@@ -146,8 +146,8 @@ const handleSelectionChange = (rows) => {
 const handleEdit = async (row) => {
   try {
     const res = await getTarotCardDetail(row.id)
-    if (res.data?.code === 0 || res.data?.code === 200) {
-      const card = res.data?.data || row
+    if (res.code === 0 || res.code === 200) {
+      const card = res.data || row
       currentCard.value = card
       Object.assign(editForm, {
         is_enabled: card.is_enabled ?? 1,
@@ -176,13 +176,13 @@ const handleSave = async () => {
   editLoading.value = true
   try {
     const res = await updateTarotCard(currentCard.value.id, { ...editForm })
-    if (res.data?.code === 0 || res.data?.code === 200) {
+    if (res.code === 0 || res.code === 200) {
       ElMessage.success('保存成功')
       editDialogVisible.value = false
       loadList()
       loadStats()
     } else {
-      ElMessage.error(res.data?.msg || '保存失败')
+      ElMessage.error(res.message || '保存失败')
     }
   } catch (e) {
     ElMessage.error('保存失败，请重试')
@@ -196,12 +196,12 @@ const handleToggleStatus = async (row) => {
   const actionText = row.is_enabled ? '停用' : '启用'
   try {
     const res = await toggleTarotCardStatus(row.id)
-    if (res.data?.code === 0 || res.data?.code === 200) {
+    if (res.code === 0 || res.code === 200) {
       row.is_enabled = row.is_enabled ? 0 : 1
       ElMessage.success(`${actionText}成功`)
       loadStats()
     } else {
-      ElMessage.error(res.data?.msg || `${actionText}失败`)
+      ElMessage.error(res.message || `${actionText}失败`)
     }
   } catch (e) {
     ElMessage.error(`${actionText}失败，请重试`)
@@ -220,12 +220,12 @@ const handleBatchStatus = async (status) => {
       type: 'warning',
     })
     const res = await batchUpdateTarotCardStatus(selectedIds.value, status)
-    if (res.data?.code === 0 || res.data?.code === 200) {
+    if (res.code === 0 || res.code === 200) {
       ElMessage.success(`批量${actionText}成功`)
       loadList()
       loadStats()
     } else {
-      ElMessage.error(res.data?.msg || `批量${actionText}失败`)
+      ElMessage.error(res.message || `批量${actionText}失败`)
     }
   } catch (e) {
     if (e !== 'cancel') ElMessage.error(`批量${actionText}失败`)

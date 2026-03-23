@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { User, Lock } from '@element-plus/icons-vue'
 import request from '../../api/request'
 
 const router = useRouter()
@@ -22,7 +23,7 @@ const handleLogin = async () => {
     const response = await request.post('/maodou/auth/login', form.value)
     
     if (response.code === 200) {
-      localStorage.setItem('adminToken', response.data.token)
+      localStorage.setItem('token', response.data.token)
       localStorage.setItem('adminUserInfo', JSON.stringify(response.data.user))
       ElMessage.success('登录成功')
       

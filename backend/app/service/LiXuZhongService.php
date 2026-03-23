@@ -5,7 +5,7 @@ namespace app\service;
 
 /**
  * 李虚中命书 - 每日运势/流年流月分析服务
- * 
+ *
  * 基于《李虚中命书》的十九种干支关系进行运势判定。
  * 主要用于比较两个柱（如流日柱 vs 日柱，或流月柱 vs 大运柱）之间的关系。
  */
@@ -13,25 +13,6 @@ class LiXuZhongService
 {
     protected $tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
     protected $diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
-
-    protected $ganWuXing = [
-        '甲' => '木', '乙' => '木', '丙' => '火', '丁' => '火', '戊' => '土',
-        '己' => '土', '庚' => '金', '辛' => '金', '壬' => '水', '癸' => '水'
-    ];
-
-    protected $zhiWuXing = [
-        '子' => '水', '丑' => '土', '寅' => '木', '卯' => '木', '辰' => '土', '巳' => '火',
-        '午' => '火', '未' => '土', '申' => '金', '酉' => '金', '戌' => '土', '亥' => '水'
-    ];
-
-    // 五行生克关系
-    protected $wuxingRelation = [
-        '木' => ['生' => '火', '克' => '土'],
-        '火' => ['生' => '土', '克' => '金'],
-        '土' => ['生' => '金', '克' => '水'],
-        '金' => ['生' => '水', '克' => '木'],
-        '水' => ['生' => '木', '克' => '火'],
-    ];
 
     // 天干合
     protected $ganHe = [
@@ -118,19 +99,19 @@ class LiXuZhongService
             return '合'; // 天干五合
         }
         
-        $wxA = $this->ganWuXing[$ganA];
-        $wxB = $this->ganWuXing[$ganB];
+        $wxA = WuxingHelper::ganToWuxing($ganA);
+        $wxB = WuxingHelper::ganToWuxing($ganB);
 
-        if ($this->wuxingRelation[$wxA]['生'] === $wxB) {
+        if (WuxingHelper::WUXING_WO_SHENG[$wxA] === $wxB) {
             return '生'; // A生B (天生)
         }
-        if ($this->wuxingRelation[$wxB]['生'] === $wxA) {
+        if (WuxingHelper::WUXING_WO_SHENG[$wxB] === $wxA) {
             return '被生'; // B生A (生天)
         }
-        if ($this->wuxingRelation[$wxA]['克'] === $wxB) {
+        if (WuxingHelper::WUXING_KE[$wxA] === $wxB) {
             return '克'; // A克B (天克)
         }
-        if ($this->wuxingRelation[$wxB]['克'] === $wxA) {
+        if (WuxingHelper::WUXING_KE[$wxB] === $wxA) {
             return '被克'; // B克A (克天)
         }
 

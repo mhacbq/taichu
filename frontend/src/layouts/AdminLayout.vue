@@ -62,7 +62,7 @@
           <el-menu-item index="/maodou/almanac">黄历管理</el-menu-item>
           <el-menu-item index="/maodou/daily">每日运势</el-menu-item>
           <el-menu-item index="/maodou/shensha">神煞管理</el-menu-item>
-          <el-menu-item index="/maodou/question-templates">问题模板</el-menu-item>
+
         </el-sub-menu>
 
         <el-sub-menu index="ai">
@@ -167,7 +167,7 @@ const pageTitles = {
   '/maodou/almanac': '黄历管理',
   '/maodou/daily': '每日运势管理',
   '/maodou/shensha': '神煞管理',
-  '/maodou/question-templates': '问题模板',
+
   '/maodou/ai/config': 'AI配置',
   '/maodou/ai/prompts': '提示词管理',
   '/maodou/seo': 'SEO配置',

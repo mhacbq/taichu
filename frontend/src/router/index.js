@@ -50,7 +50,7 @@ const AdminDailyManage = () => import('../views/admin/DailyManage.vue')
 const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
 const AdminSeoManage = () => import('../views/admin/SeoManage.vue')
 const AdminTarotCards = () => import('../views/admin/TarotCards.vue')
-const AdminQuestionTemplates = () => import('../views/admin/QuestionTemplates.vue')
+
 const AdminOperationLogs = () => import('../views/admin/OperationLogs.vue')
 const AdminLoginLogs = () => import('../views/admin/LoginLogs.vue')
 const AdminApiLogs = () => import('../views/admin/ApiLogs.vue')
@@ -434,14 +434,6 @@ const routes = [
         component: AdminTarotCards,
         meta: {
           title: '塔罗牌管理'
-        }
-      },
-      {
-        path: 'question-templates',
-        name: 'AdminQuestionTemplates',
-        component: AdminQuestionTemplates,
-        meta: {
-          title: '问题模板管理'
         }
       },
       {
