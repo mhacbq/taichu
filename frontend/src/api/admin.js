@@ -46,6 +46,14 @@ export const saveShensha = (data) => request.post('/maodou/shensha/save', data)
 export const deleteShenshaApi = (id) => request.post(`/maodou/shensha/delete/${id}`)
 export const toggleShenshaStatus = (id, status) => request.post('/maodou/shensha/toggle-status', { id, status })
 
+// 塔罗牌管理
+export const getTarotCardList = (params) => request.get('/maodou/tarot-cards', { params })
+export const getTarotCardDetail = (id) => request.get(`/maodou/tarot-cards/${id}`)
+export const updateTarotCard = (id, data) => request.put(`/maodou/tarot-cards/${id}`, data)
+export const toggleTarotCardStatus = (id) => request.post(`/maodou/tarot-cards/${id}/toggle-status`)
+export const batchUpdateTarotCardStatus = (ids, status) => request.post('/maodou/tarot-cards/batch-status', { ids, status })
+export const getTarotCardStats = () => request.get('/maodou/tarot-cards/stats')
+
 // 鐭ヨ瘑搴撶鐞?- 鏂囩珷
 export const getArticleList = (params) => request.get('/maodou/knowledge/articles', { params })
 export const getArticleDetail = (id) => request.get(`/maodou/knowledge/articles/${id}`)

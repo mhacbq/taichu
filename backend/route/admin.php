@@ -336,6 +336,14 @@ Route::group('api/maodou', function () {
         Route::post('tasks/:id/run', 'Admin/runTask');
         Route::put('tasks/:id/status', 'Admin/toggleTaskStatus');
         
+        // 塔罗牌管理
+        Route::get('tarot-cards/stats', 'admin.TarotCards/stats');
+        Route::get('tarot-cards', 'admin.TarotCards/index');
+        Route::get('tarot-cards/:id', 'admin.TarotCards/detail');
+        Route::put('tarot-cards/:id', 'admin.TarotCards/update');
+        Route::post('tarot-cards/:id/toggle-status', 'admin.TarotCards/toggleStatus');
+        Route::post('tarot-cards/batch-status', 'admin.TarotCards/batchStatus');
+
         // 黄历管理
         Route::get('almanac/list', 'admin.Almanac/almanacList');
         Route::get('almanac/detail', 'admin.Almanac/almanacDetail');
