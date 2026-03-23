@@ -204,6 +204,9 @@ class Shensha extends BaseController
 
             $model->save($data);
 
+            // 清除神煞状态缓存，让前端排盘及时反映变更
+            cache('shensha_disabled_names', null);
+
             return $this->success($this->normalizeShenshaRow($model->fresh()->toArray()), '保存成功');
         } catch (\InvalidArgumentException $e) {
             return $this->respondBusinessException($e, 'shensha_save_validation', '神煞数据格式无效', 400, [
@@ -239,6 +242,9 @@ class Shensha extends BaseController
 
             $model->delete();
 
+            // 清除神煞状态缓存
+            cache('shensha_disabled_names', null);
+
             return $this->success([], '删除成功');
         } catch (\Throwable $e) {
             return $this->respondSystemException('shensha_delete', $e, '删除神煞失败，请稍后重试', [
@@ -271,6 +277,9 @@ class Shensha extends BaseController
 
             $model->status = $status;
             $model->save();
+
+            // 清除神煞状态缓存，让前端排盘及时反映变更
+            cache('shensha_disabled_names', null);
 
             return $this->success([], '状态更新成功');
         } catch (\Throwable $e) {

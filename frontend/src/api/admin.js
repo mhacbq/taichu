@@ -39,8 +39,9 @@ export const generateSitemap = () => request.post('/maodou/seo/sitemap-generate'
 export const getSeoPageTypes = () => request.get('/maodou/seo/page-types')
 export const batchUpdateSeoStatus = (ids, status) => request.post('/maodou/seo/batch-status', { ids, status })
 
-// 绁炵厼绠＄悊
+// 神煞管理
 export const getShenshaList = (params) => request.get('/maodou/shensha/list', { params })
+export const getShenshaOptions = () => request.get('/maodou/system/shensha/options')
 export const saveShensha = (data) => request.post('/maodou/shensha/save', data)
 export const deleteShenshaApi = (id) => request.post(`/maodou/shensha/delete/${id}`)
 export const toggleShenshaStatus = (id, status) => request.post('/maodou/shensha/toggle-status', { id, status })

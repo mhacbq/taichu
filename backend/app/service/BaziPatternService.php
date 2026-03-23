@@ -1326,6 +1326,9 @@ class BaziPatternService
             }
         }
         
+        // 根据数据库中的启用状态过滤神煞（管理后台控制展示开关）
+        $shenShaList = $this->filterShenShaByDbStatus($shenShaList);
+        
         // 按照level降序排序，优先显示高层次的吉神
         usort($shenShaList, fn($a, $b) => ($b['level'] ?? 0) <=> ($a['level'] ?? 0));
         
@@ -1333,6 +1336,66 @@ class BaziPatternService
         $shenShaList = $this->analyzeShenShaCombination($shenShaList);
         
         return $shenShaList;
+    }
+    
+    /**
+     * 根据数据库中的启用状态过滤神煞
+     * 管理后台可以控制哪些神煞在前端排盘中显示
+     * 
+     * @param array $shenShaList 算法计算出的神煞列表
+     * @return array 过滤后的神煞列表
+     */
+    protected function filterShenShaByDbStatus(array $shenShaList): array
+    {
+        try {
+            // 从数据库获取所有被停用的神煞名称（使用缓存减少查询）
+            $disabledNames = $this->getDisabledShenshaNames();
+            
+            if (empty($disabledNames)) {
+                return $shenShaList;
+            }
+            
+            // 过滤掉被停用的神煞
+            return array_values(array_filter($shenShaList, function ($item) use ($disabledNames) {
+                $name = $item['name'] ?? '';
+                return !in_array($name, $disabledNames, true);
+            }));
+        } catch (\Throwable $e) {
+            // 查询失败时不影响主流程，返回原始列表
+            return $shenShaList;
+        }
+    }
+    
+    /**
+     * 获取被停用的神煞名称列表（带缓存）
+     * 
+     * @return array 被停用的神煞名称数组
+     */
+    protected function getDisabledShenshaNames(): array
+    {
+        // 使用类静态缓存，同一请求内只查一次数据库
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        
+        // 尝试使用 ThinkPHP 缓存（缓存5分钟）
+        $cacheKey = 'shensha_disabled_names';
+        $cached = cache($cacheKey);
+        if ($cached !== null && is_array($cached)) {
+            return $cached;
+        }
+        
+        // 查询数据库中 status=0 的神煞名称
+        $disabledNames = \app\model\Shensha::where('status', 0)
+            ->column('name');
+        
+        $cached = $disabledNames ?: [];
+        
+        // 写入缓存，5分钟过期
+        cache($cacheKey, $cached, 300);
+        
+        return $cached;
     }
     
     /**
