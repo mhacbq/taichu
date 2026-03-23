@@ -10,7 +10,7 @@ import NotFound from '../views/NotFound.vue'
 const Bazi = () => import('../views/Bazi/index.vue')
 
 // 非首屏页面 - 懒加载
-const Tarot = () => import('../views/Tarot.vue')
+const Tarot = () => import('../views/Tarot/index.vue')
 const TarotShare = () => import('../views/TarotShare.vue')
 const Daily = () => import('../views/Daily/index.vue')
 const Profile = () => import('../views/Profile/index.vue')
