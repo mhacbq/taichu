@@ -23,7 +23,7 @@ const handleLogin = async () => {
     const response = await request.post('/maodou/auth/login', form.value)
     
     if (response.code === 200) {
-      localStorage.setItem('token', response.data.token)
+      localStorage.setItem('adminToken', response.data.token)
       localStorage.setItem('adminUserInfo', JSON.stringify(response.data.user))
       ElMessage.success('登录成功')
       

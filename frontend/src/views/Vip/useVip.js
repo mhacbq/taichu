@@ -61,7 +61,7 @@ export function useVip() {
           id: pkg.id,
           name: pkg.name,
           price: pkg.price,
-          duration: pkg.duration_text || `${pkg.duration}天`,
+          duration: formatDuration(pkg.duration),
           points: pkg.points || 0,
           features: parseFeatures(pkg.features || pkg.description),
           recommended: pkg.is_recommended === 1 || pkg.recommended === true,
@@ -92,6 +92,12 @@ export function useVip() {
     } catch {
       privileges.value = getDefaultPrivileges()
     }
+  }
+
+  // ===== 格式化有效期（月数 → 可读文本） =====
+  const formatDuration = (months) => {
+    if (months >= 12 && months % 12 === 0) return `${months / 12}年`
+    return `${months}个月`
   }
 
   // ===== 解析特性列表 =====

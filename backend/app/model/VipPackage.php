@@ -15,7 +15,7 @@ class VipPackage extends Model
         'price' => 'float',
         'original_price' => 'float',
         'points' => 'integer',
-        'days' => 'integer',
+        'duration' => 'integer',
         'is_hot' => 'integer',
         'is_recommend' => 'integer',
         'status' => 'integer',
