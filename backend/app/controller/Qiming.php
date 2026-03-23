@@ -142,7 +142,7 @@ class Qiming extends BaseController
     private function buildPrompt(string $surname, string $gender, string $birthDate, string $birthHour, string $style, string $taboos): string
     {
         $genderText = $gender === 'female' ? '女' : '男';
-        $prompt = "请为一位{$genderText}孩取名，姓氏为"{$surname}"，出生日期：{$birthDate}";
+        $prompt = "请为一位{$genderText}孩取名，姓氏为\"{$surname}\"，出生日期：{$birthDate}";
         if (!empty($birthHour)) {
             $prompt .= "，出生时辰：{$birthHour}";
         }
