@@ -46,15 +46,21 @@ class Fortune extends BaseController
     {
         $baziId = $request->param('bazi_id', 0);
         $year = (int)$request->param('year', date('Y'));
+        $user = $request->user;
+        $userId = (int) $user['sub'];
 
+        // 如果未提供 bazi_id，尝试自动查找或基于用户出生信息创建
         if (!$baziId) {
-            return $this->error('请提供八字记录ID');
+            $autoResult = $this->resolveOrCreateBaziRecord($userId);
+            if ($autoResult['error'] ?? false) {
+                return $this->error($autoResult['message'], $autoResult['code'] ?? 400);
+            }
+            $baziId = $autoResult['bazi_id'];
         }
 
         // 获取八字记录
-        $user = $request->user;
         $record = BaziRecord::where('id', $baziId)
-            ->where('user_id', $user['sub'])
+            ->where('user_id', $userId)
             ->find();
 
         if (!$record) {
@@ -69,9 +75,12 @@ class Fortune extends BaseController
                 $bazi,
                 $gender,
                 $year,
-                $user['sub'],
+                $userId,
                 (int) $baziId
             );
+            
+            // 返回时附带 bazi_id，方便前端后续请求复用
+            $result['bazi_id'] = (int) $baziId;
             
             return $this->success($result);
         } catch (\Throwable $e) {
@@ -95,9 +104,16 @@ class Fortune extends BaseController
         $baziId = $request->param('bazi_id', 0);
         $startYear = (int)$request->param('start_year', date('Y') - 5);
         $endYear = (int)$request->param('end_year', date('Y') + 5);
+        $user = $request->user;
+        $userId = (int) $user['sub'];
         
+        // 如果未提供 bazi_id，尝试自动查找或基于用户出生信息创建
         if (!$baziId) {
-            return $this->error('请提供八字记录ID');
+            $autoResult = $this->resolveOrCreateBaziRecord($userId);
+            if ($autoResult['error'] ?? false) {
+                return $this->error($autoResult['message'], $autoResult['code'] ?? 400);
+            }
+            $baziId = $autoResult['bazi_id'];
         }
         
         // 限制查询范围
@@ -106,9 +122,8 @@ class Fortune extends BaseController
         }
         
         // 获取八字记录
-        $user = $request->user;
         $record = BaziRecord::where('id', $baziId)
-            ->where('user_id', $user['sub'])
+            ->where('user_id', $userId)
             ->find();
         
         if (!$record) {
@@ -425,6 +440,127 @@ class Fortune extends BaseController
         return [];
     }
 
+
+    /**
+     * 自动解析或创建八字记录
+     * 
+     * 优先级：
+     * 1. 查找用户已有的最近八字记录
+     * 2. 如果没有八字记录，检查用户表的 birth_date 字段
+     * 3. 如果用户有出生日期，自动排盘并创建八字记录
+     * 4. 如果都没有，提示用户设置出生信息
+     */
+    private function resolveOrCreateBaziRecord(int $userId): array
+    {
+        // 1. 优先查找用户已有的最近八字记录
+        $latestRecord = BaziRecord::where('user_id', $userId)
+            ->order('id', 'desc')
+            ->find();
+
+        if ($latestRecord) {
+            return ['bazi_id' => (int) $latestRecord->id];
+        }
+
+        // 2. 没有八字记录，检查用户表的出生信息
+        $userInfo = \think\facade\Db::name('tc_user')
+            ->where('id', $userId)
+            ->field('birth_date, birth_time, birth_place, gender')
+            ->find();
+
+        if (!$userInfo) {
+            return [
+                'error' => true,
+                'message' => '用户不存在',
+                'code' => 404,
+            ];
+        }
+
+        $birthDate = trim((string) ($userInfo['birth_date'] ?? ''));
+        if ($birthDate === '' || $birthDate === '0000-00-00') {
+            return [
+                'error' => true,
+                'message' => '您尚未设置出生日期，请先在个人中心设置出生日期后再查看流年运势',
+                'code' => 422,
+            ];
+        }
+
+        // 3. 有出生日期，自动排盘创建八字记录
+        $birthTime = trim((string) ($userInfo['birth_time'] ?? ''));
+        $birthPlace = trim((string) ($userInfo['birth_place'] ?? ''));
+        $genderCode = (int) ($userInfo['gender'] ?? 0);
+
+        // 拼接完整的出生时间
+        $fullBirthDate = $birthDate;
+        if ($birthTime !== '' && $birthTime !== '00:00:00') {
+            $fullBirthDate .= ' ' . $birthTime;
+        }
+
+        // 转换性别编码为中文（BaziCalculationService 接受中文性别）
+        $genderText = $genderCode === 2 ? '女' : '男';
+
+        try {
+            return $this->autoCreateBaziRecord($userId, $fullBirthDate, $genderText, $birthPlace);
+        } catch (\Throwable $e) {
+            Log::error('自动创建八字记录失败: ' . $e->getMessage(), [
+                'user_id' => $userId,
+                'birth_date' => $fullBirthDate,
+            ]);
+            return [
+                'error' => true,
+                'message' => '自动排盘失败，请前往八字排盘页面手动排盘后再查看流年运势',
+                'code' => 500,
+            ];
+        }
+    }
+
+    /**
+     * 根据用户出生信息自动排盘并创建八字记录
+     */
+    private function autoCreateBaziRecord(int $userId, string $birthDate, string $gender, string $location): array
+    {
+        $baziService = new \app\service\BaziCalculationService();
+        $interpretationService = new \app\service\BaziInterpretationService();
+
+        // 计算八字（calculateBazi 内部已调用 normalizeBaziStructure）
+        $bazi = $baziService->calculateBazi($birthDate, $gender);
+
+        // 生成简单解读（自动排盘不做完整AI解读以节省资源）
+        $simpleInterpretation = $interpretationService->generateSimpleInterpretation($bazi, $gender);
+
+        // 计算大运
+        $paipanController = new \app\controller\Paipan($this->app);
+        $daYun = $paipanController->calculateDaYun($bazi, $gender, $birthDate);
+
+        // 创建八字记录（自动创建不扣积分）
+        $record = BaziRecord::createRecord([
+            'user_id' => $userId,
+            'birth_date' => $birthDate,
+            'gender' => $gender,
+            'location' => $location,
+            'bazi' => $bazi,
+            'analysis' => '自动排盘记录（基于用户出生信息）',
+            'simple_interpretation' => $simpleInterpretation,
+            'full_interpretation' => null,
+            'dayun' => $daYun,
+            'liunian' => [],
+            'fortune_analysis' => null,
+            'true_solar_time' => null,
+            'points_cost' => 0,
+            'is_first' => 0,
+        ]);
+
+        if (!$record) {
+            throw new \RuntimeException('八字记录保存失败');
+        }
+
+        Log::info('自动创建八字记录成功', [
+            'user_id' => $userId,
+            'record_id' => $record->id,
+            'birth_date' => $birthDate,
+        ]);
+
+        return ['bazi_id' => (int) $record->id];
+    }
 
     /**
      * 统一处理运势分析异常
