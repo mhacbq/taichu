@@ -13,7 +13,7 @@ const Bazi = () => import('../views/Bazi/index.vue')
 const Tarot = () => import('../views/Tarot.vue')
 const TarotShare = () => import('../views/TarotShare.vue')
 const Daily = () => import('../views/Daily/index.vue')
-const Profile = () => import('../views/Profile.vue')
+const Profile = () => import('../views/Profile/index.vue')
 
 const Help = () => import('../views/Help.vue')
 const Recharge = () => import('../views/Recharge.vue')
