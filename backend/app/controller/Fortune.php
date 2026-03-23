@@ -281,9 +281,9 @@ class Fortune extends BaseController
     public function getYearlyFortunePoints()
     {
         return $this->success([
-            'yearly_fortune' => YearlyFortuneService::YEARLY_FORTUNE_POINTS_COST,
-            'dayun_analysis' => DayunFortuneService::DAYUN_ANALYSIS_POINTS_COST,
-            'dayun_chart' => DayunFortuneService::DAYUN_CHART_POINTS_COST,
+            'yearly_fortune' => YearlyFortuneService::getPointsCost(),
+            'dayun_analysis' => DayunFortuneService::getAnalysisPointsCost(),
+            'dayun_chart' => DayunFortuneService::getChartPointsCost(),
         ]);
     }
 

@@ -318,22 +318,6 @@ class Points extends BaseController
     }
 
     /**
-     * 保存积分规则（暂不支持，规则由系统自动生成）
-     */
-    public function saveRule()
-    {
-        return $this->error('积分规则由系统自动管理，不支持手动新增', 400);
-    }
-
-    /**
-     * 删除积分规则（暂不支持）
-     */
-    public function deleteRule()
-    {
-        return $this->error('积分规则由系统自动管理，不支持手动删除', 400);
-    }
-
-    /**
      * 获取积分统计
      */
     public function getStats()

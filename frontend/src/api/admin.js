@@ -86,9 +86,7 @@ export const getUserBehavior = (id) => request.get('/maodou/users/behavior', { p
 export const getPointsRecords = (params) => request.get('/maodou/points/records', { params })
 export const adjustUserPoints = (data) => request.post('/maodou/points/adjust', data)
 export const getPointsRules = () => request.get('/maodou/points/rules')
-export const savePointsRules = (data) => request.put('/maodou/points/rules', data)
-export const savePointsRule = (data) => request.post('/maodou/points/rules', data)
-export const deletePointsRule = (id) => request.delete(`/maodou/points/rules/${id}`)
+export const getPointsStats = (params) => request.get('/maodou/points/stats', { params })
 
 // 瀹氭椂浠诲姟
 export const getTaskList = () => request.get('/maodou/tasks')
@@ -96,7 +94,6 @@ export const saveTaskItem = (data) => request.post('/maodou/tasks', data)
 export const deleteTaskItem = (id) => request.delete(`/maodou/tasks/${id}`)
 export const runTaskNow = (id) => request.post(`/maodou/tasks/${id}/run`)
 export const getTaskLogs = (params) => request.get('/maodou/tasks/logs', { params })
-export const getPointsStats = (params) => request.get('/maodou/points/stats', { params })
 
 // 鏀粯/璁㈠崟绠＄悊
 export const getPaymentOrders = (params) => request.get('/maodou/payment/orders', { params })
