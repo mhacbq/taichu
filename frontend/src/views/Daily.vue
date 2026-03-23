@@ -98,7 +98,10 @@
               <div class="master-card">
                 <span class="label">您的日主</span>
                 <span class="value">{{ personalizedFortune.dayMaster }}</span>
-                <span class="wuxing-badge" :class="personalizedFortune.dayMasterWuxing">{{ personalizedFortune.dayMasterWuxing }}</span>
+                <span class="wuxing-badge" :class="'wuxing-' + personalizedFortune.dayMasterWuxing">
+                  <span class="wuxing-icon">{{ wuxingIconMap[personalizedFortune.dayMasterWuxing] || '☯' }}</span>
+                  {{ personalizedFortune.dayMasterWuxing }}
+                </span>
               </div>
               <div class="relation-arrow">
                 <el-icon><Right /></el-icon>
@@ -106,15 +109,23 @@
               <div class="today-card">
                 <span class="label">今日干支</span>
                 <span class="value">{{ personalizedFortune.todayGanZhi }}</span>
-                <span class="wuxing-text">{{ personalizedFortune.todayWuxing }}</span>
+                <span class="wuxing-badge" :class="'wuxing-' + personalizedFortune.todayWuxing">
+                  <span class="wuxing-icon">{{ wuxingIconMap[personalizedFortune.todayWuxing] || '☯' }}</span>
+                  {{ personalizedFortune.todayWuxing }}
+                </span>
               </div>
             </div>
             
             <div class="luck-indicator">
-              <div class="luck-badge" :class="personalizedFortune.luckLevel">
+              <div class="luck-badge" :class="'luck-' + personalizedFortune.luckLevel">
+                <span class="luck-emoji">{{ luckLevelConfig[personalizedFortune.luckLevel]?.icon || '☯' }}</span>
                 <span class="luck-relation-name">{{ personalizedFortune.relation }}</span>
                 <span class="luck-relation-title">{{ personalizedRelationMeta.title }}</span>
-                <span class="luck-level">今日偏{{ personalizedFortune.luckLevel }}</span>
+                <span class="luck-level">今日偏{{ personalizedFortune.luckLevel }}
+                  <span class="luck-level-stars">
+                    <span v-for="n in (luckLevelConfig[personalizedFortune.luckLevel]?.stars || 3)" :key="n">★</span>
+                  </span>
+                </span>
               </div>
               <div class="luck-summary">
                 <span class="luck-summary-label">这对你意味着什么</span>
@@ -135,15 +146,13 @@
             
             <div class="personal-lucky-grid">
               <div class="personal-lucky-item personal-lucky-item--color card-hover">
-                <div class="personal-lucky-head">
-                  <span class="personal-lucky-icon">
+                <div class="personal-lucky-header-bar">
+                  <span class="personal-lucky-icon personal-lucky-icon--color">
                     <el-icon><MagicStick /></el-icon>
                   </span>
-                  <div class="personal-lucky-meta">
-                    <span class="personal-lucky-label">幸运色</span>
-                    <span class="personal-lucky-caption">优先选择更顺势的穿搭与配色</span>
-                  </div>
+                  <span class="personal-lucky-label">幸运色</span>
                 </div>
+                <p class="personal-lucky-caption">优先选择更顺势的穿搭与配色</p>
                 <div class="personal-lucky-values">
                   <span v-for="color in personalizedFortune.luckyColors" :key="color" class="lucky-tag color">
                     <span class="color-preview" :style="{ backgroundColor: getColorCode(color) }"></span>
@@ -152,15 +161,13 @@
                 </div>
               </div>
               <div class="personal-lucky-item personal-lucky-item--direction card-hover">
-                <div class="personal-lucky-head">
-                  <span class="personal-lucky-icon">
+                <div class="personal-lucky-header-bar">
+                  <span class="personal-lucky-icon personal-lucky-icon--direction">
                     <el-icon><Compass /></el-icon>
                   </span>
-                  <div class="personal-lucky-meta">
-                    <span class="personal-lucky-label">幸运方位</span>
-                    <span class="personal-lucky-caption">安排会面、出行或重要决策时可优先参考</span>
-                  </div>
+                  <span class="personal-lucky-label">幸运方位</span>
                 </div>
+                <p class="personal-lucky-caption">安排会面、出行或重要决策时可优先参考</p>
                 <div class="personal-lucky-values">
                   <span v-for="dir in personalizedFortune.luckyDirections" :key="dir" class="lucky-tag direction">
                     {{ dir }}
@@ -303,24 +310,7 @@
           </div>
         </div>
 
-        <div class="daily-action-zone">
-          <CheckinCard v-if="isLoggedIn" />
-          <div v-else class="personalized-state-card guest-checkin-card card card-hover">
 
-            <div class="state-content">
-              <el-icon class="state-icon" :size="48"><Present /></el-icon>
-              <div class="state-body">
-                <p class="state-title">登录后再签到领积分</p>
-                <p class="state-copy">公共日运已经在上面完整展示。登录后可在这里完成每日签到、累计积分，并解锁与你八字相关的专属提示。</p>
-              </div>
-              <div class="state-actions">
-                <router-link :to="dailyLoginRoute">
-                  <el-button type="primary" size="small">登录后签到</el-button>
-                </router-link>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- 深度引导区：将日运用户引向更多功能 -->
         <div class="daily-deepen-section">
@@ -384,7 +374,6 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled, Right, Compass, Briefcase, Money, Sunny, UserFilled, RefreshRight, Calendar, Present, Sunrise, ArrowRight } from '@element-plus/icons-vue'
 import { getDailyFortune } from '../api'
-import CheckinCard from '../components/CheckinCard.vue'
 import PageHeroHeader from '../components/PageHeroHeader.vue'
 import AsyncState from '../components/AsyncState.vue'
 
@@ -487,6 +476,24 @@ const addToCalendar = () => {
   document.body.removeChild(link)
   
   ElMessage.success('已生成日历文件，请在下载后打开以添加到系统日历')
+}
+
+const wuxingIconMap = {
+  '金': '🪙',
+  '木': '🌿',
+  '水': '💧',
+  '火': '🔥',
+  '土': '🪨',
+}
+
+const luckLevelConfig = {
+  '大吉': { icon: '🌟', stars: 5, color: '#52c41a' },
+  '吉': { icon: '✨', stars: 4, color: '#73d13d' },
+  '小吉': { icon: '🍀', stars: 3, color: '#95de64' },
+  '平': { icon: '☯', stars: 3, color: '#d4af37' },
+  '小凶': { icon: '🌧', stars: 2, color: '#ff9c6e' },
+  '凶': { icon: '⚡', stars: 1, color: '#ff7875' },
+  '大凶': { icon: '🌩', stars: 1, color: '#f5222d' },
 }
 
 const personalizedRelationGuides = {
@@ -1172,21 +1179,7 @@ onUnmounted(() => {
   line-height: 1.8;
 }
 
-.daily-action-zone {
-  margin-top: 20px;
-  margin-bottom: 24px;
-  padding: 0;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-}
 
-.guest-checkin-card {
-  margin-bottom: 0;
-  padding: 28px 32px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.96));
-  border: 2px solid rgba(var(--primary-rgb), 0.1);
-}
 
 .loading-state {
 
@@ -1269,22 +1262,26 @@ onUnmounted(() => {
 }
 
 .wuxing-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
-.wuxing-badge.金 { background: var(--primary-light-15); color: var(--wuxing-jin); }
-.wuxing-badge.木 { background: rgba(34, 139, 34, 0.15); color: var(--wuxing-mu); }
-.wuxing-badge.水 { background: rgba(30, 144, 255, 0.15); color: var(--wuxing-shui); }
-.wuxing-badge.火 { background: rgba(255, 69, 0, 0.15); color: var(--wuxing-huo); }
-.wuxing-badge.土 { background: rgba(139, 69, 19, 0.15); color: var(--wuxing-tu); }
-
-.wuxing-text {
-  font-size: 12px;
-  color: var(--text-tertiary);
+.wuxing-icon {
+  font-size: 14px;
+  line-height: 1;
 }
+
+.wuxing-金 { background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(255, 215, 0, 0.1)); color: #b8860b; border: 1px solid rgba(212, 175, 55, 0.25); }
+.wuxing-木 { background: linear-gradient(135deg, rgba(34, 139, 34, 0.12), rgba(46, 204, 64, 0.08)); color: #228b22; border: 1px solid rgba(34, 139, 34, 0.2); }
+.wuxing-水 { background: linear-gradient(135deg, rgba(30, 144, 255, 0.12), rgba(0, 191, 255, 0.08)); color: #1e90ff; border: 1px solid rgba(30, 144, 255, 0.2); }
+.wuxing-火 { background: linear-gradient(135deg, rgba(255, 69, 0, 0.12), rgba(255, 99, 71, 0.08)); color: #dc3545; border: 1px solid rgba(255, 69, 0, 0.2); }
+.wuxing-土 { background: linear-gradient(135deg, rgba(139, 69, 19, 0.12), rgba(210, 180, 140, 0.1)); color: #8b4513; border: 1px solid rgba(139, 69, 19, 0.2); }
 
 .relation-arrow {
   font-size: 24px;
@@ -1304,14 +1301,22 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 6px;
-  padding: 18px 22px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 20px 24px;
+  border-radius: 20px;
   color: var(--text-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.luck-emoji {
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .luck-relation-name {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -1344,25 +1349,48 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
-.luck-badge.大吉,
-.luck-badge.吉,
-.luck-badge.小吉 {
-  background: linear-gradient(180deg, rgba(103, 194, 58, 0.14), rgba(103, 194, 58, 0.16));
+.luck-badge.luck-大吉 {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.15), rgba(115, 209, 61, 0.1));
+  border: 1px solid rgba(82, 196, 26, 0.2);
 }
-
-.luck-badge.大凶,
-.luck-badge.凶 {
-  background: linear-gradient(180deg, rgba(245, 108, 108, 0.14), rgba(245, 108, 108, 0.16));
+.luck-badge.luck-吉 {
+  background: linear-gradient(135deg, rgba(115, 209, 61, 0.12), rgba(149, 222, 100, 0.08));
+  border: 1px solid rgba(115, 209, 61, 0.18);
 }
-
-.luck-badge.平 {
-  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.16));
+.luck-badge.luck-小吉 {
+  background: linear-gradient(135deg, rgba(149, 222, 100, 0.12), rgba(183, 235, 143, 0.08));
+  border: 1px solid rgba(149, 222, 100, 0.18);
+}
+.luck-badge.luck-平 {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12), rgba(245, 196, 103, 0.1));
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+}
+.luck-badge.luck-小凶 {
+  background: linear-gradient(135deg, rgba(255, 156, 110, 0.12), rgba(255, 169, 64, 0.08));
+  border: 1px solid rgba(255, 156, 110, 0.18);
+}
+.luck-badge.luck-凶 {
+  background: linear-gradient(135deg, rgba(255, 120, 117, 0.12), rgba(245, 108, 108, 0.08));
+  border: 1px solid rgba(255, 120, 117, 0.18);
+}
+.luck-badge.luck-大凶 {
+  background: linear-gradient(135deg, rgba(245, 34, 45, 0.12), rgba(255, 77, 79, 0.08));
+  border: 1px solid rgba(245, 34, 45, 0.18);
 }
 
 .luck-level {
   font-size: 14px;
-  font-weight: normal;
-  opacity: 0.8;
+  font-weight: 500;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.luck-level-stars {
+  color: #faad14;
+  font-size: 12px;
+  letter-spacing: 1px;
 }
 
 .personal-score {
@@ -1432,31 +1460,33 @@ onUnmounted(() => {
   box-shadow: inset 0 1px 0 rgba(var(--primary-light-rgb), 0.08);
 }
 
-.personal-lucky-head {
+.personal-lucky-header-bar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
 .personal-lucky-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--primary-light);
-  background: linear-gradient(135deg, var(--primary-light-20), var(--primary-light-05));
-  border: 1px solid var(--primary-light-20);
-  font-size: 20px;
+  font-size: 18px;
 }
 
-.personal-lucky-meta {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
+.personal-lucky-icon--color {
+  color: #e8584f;
+  background: linear-gradient(135deg, rgba(232, 88, 79, 0.12), rgba(255, 107, 107, 0.06));
+  border: 1px solid rgba(232, 88, 79, 0.15);
+}
+
+.personal-lucky-icon--direction {
+  color: #1e90ff;
+  background: linear-gradient(135deg, rgba(30, 144, 255, 0.12), rgba(0, 191, 255, 0.06));
+  border: 1px solid rgba(30, 144, 255, 0.15);
 }
 
 .personal-lucky-label {
@@ -1469,7 +1499,9 @@ onUnmounted(() => {
 .personal-lucky-caption {
   font-size: 13px;
   color: var(--text-tertiary);
-  line-height: 1.4;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0 2px;
 }
 
 .personal-lucky-values {
@@ -1933,7 +1965,7 @@ onUnmounted(() => {
     padding: 16px;
   }
 
-  .personal-lucky-head {
+  .personal-lucky-header-bar {
     align-items: center;
   }
 
@@ -2102,20 +2134,7 @@ onUnmounted(() => {
   padding: 20px;
 }
 
-.luck-badge.大吉,
-.luck-badge.吉,
-.luck-badge.小吉 {
-  background: linear-gradient(180deg, rgba(103, 194, 58, 0.14), rgba(103, 194, 58, 0.16));
-}
-
-.luck-badge.大凶,
-.luck-badge.凶 {
-  background: linear-gradient(180deg, rgba(245, 108, 108, 0.14), rgba(245, 108, 108, 0.16));
-}
-
-.luck-badge.平 {
-  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.14), rgba(245, 196, 103, 0.16));
-}
+/* luck-badge 等级样式已统一在上方 luck- 前缀规则中 */
 
 .luck-summary-label,
 .score-label,
@@ -2147,14 +2166,9 @@ onUnmounted(() => {
 }
 
 .personal-lucky-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(var(--primary-rgb), 0.08);
-  color: var(--primary-color);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
 }
 
 .personalized-state-card {
@@ -2492,9 +2506,6 @@ onUnmounted(() => {
   color: #605545;
 }
 
-.daily-action-zone {
-  margin-top: 0;
-}
 
 @media (max-width: 900px) {
   .luck-indicator {
