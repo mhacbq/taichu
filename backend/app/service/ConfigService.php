@@ -196,7 +196,7 @@ class ConfigService
         return [
             'features' => self::getFeatureSwitches(),
             'points' => [
-                'costs' => SystemConfig::getPointsCosts(),
+                'costs' => self::getPointsCostsForClient(),
                 'tasks' => self::getPointsTasks(),
             ],
             'vip' => [
@@ -240,6 +240,29 @@ class ConfigService
         ];
     }
     
+    /**
+     * 获取所有功能的积分消耗（供前端展示，走统一的 calculatePointsCost 路径）
+     */
+    public static function getPointsCostsForClient(): array
+    {
+        $features = [
+            'bazi', 'bazi_ai',
+            'hehun', 'liuyao',
+            'tarot', 'tarot_ai',
+            'daily', 'qiming', 'jiri',
+            'save_record', 'share_poster', 'unlock_report',
+            'yearly_fortune', 'dayun_analysis', 'dayun_chart',
+        ];
+
+        $result = [];
+        foreach ($features as $feature) {
+            $info = self::calculatePointsCost($feature);
+            $result[$feature] = $info['final'];
+        }
+
+        return $result;
+    }
+
     /**
      * 获取积分任务配置
      */
