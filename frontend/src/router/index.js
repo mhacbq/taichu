@@ -20,7 +20,7 @@ const Recharge = () => import('../views/Recharge.vue')
 const Vip = () => import('../views/Vip.vue')
 const Hehun = () => import('../views/Hehun/index.vue')
 const Liuyao = () => import('../views/Liuyao/index.vue')
-const Qiming = () => import('../views/Qiming.vue')
+const Qiming = () => import('../views/Qiming/index.vue')
 const YearlyFortune = () => import('../views/YearlyFortune.vue')
 
 // 法律页面
