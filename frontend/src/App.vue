@@ -47,6 +47,24 @@
                     </span>
                   </router-link>
                 </el-dropdown-item>
+                <el-dropdown-item>
+                  <router-link to="/qiming" class="nav-more-item">
+                    <span class="more-icon">✍️</span>
+                    <span class="more-info">
+                      <strong>AI 取名</strong>
+                      <span>八字五行智能取名</span>
+                    </span>
+                  </router-link>
+                </el-dropdown-item>
+                <el-dropdown-item divided>
+                  <router-link to="/vip" class="nav-more-item">
+                    <span class="more-icon">👑</span>
+                    <span class="more-info">
+                      <strong>VIP 会员</strong>
+                      <span>专属权益与深度解读</span>
+                    </span>
+                  </router-link>
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -148,6 +166,14 @@
           <router-link to="/daily" class="mobile-nav-link" @click="closeMobileMenu">
             <el-icon class="nav-icon" :size="18"><Star /></el-icon>
             <span>每日运势</span>
+          </router-link>
+          <router-link to="/qiming" class="mobile-nav-link" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><EditPen /></el-icon>
+            <span>AI 取名</span>
+          </router-link>
+          <router-link to="/vip" class="mobile-nav-link" @click="closeMobileMenu">
+            <el-icon class="nav-icon" :size="18"><Trophy /></el-icon>
+            <span>VIP 会员</span>
           </router-link>
         </div>
         <div class="mobile-nav-footer">
@@ -286,7 +312,9 @@ import {
   Sunrise,
   Link,
   House,
-  Money
+  Money,
+  EditPen,
+  Trophy
 } from '@element-plus/icons-vue'
 
 // 自定义太极图标组件

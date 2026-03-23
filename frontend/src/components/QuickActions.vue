@@ -21,6 +21,7 @@
             <el-icon v-else-if="action.icon === 'heart'"><HeartFilled /></el-icon>
             <el-icon v-else-if="action.icon === 'star'"><Star /></el-icon>
             <el-icon v-else-if="action.icon === 'user'"><UserFilled /></el-icon>
+            <el-icon v-else-if="action.icon === 'editpen'"><EditPen /></el-icon>
           </span>
           <div class="icon-glow"></div>
         </div>
@@ -38,7 +39,7 @@
 </template>
 
 <script setup>
-import { Calendar, MagicStick, Star, UserFilled, ArrowRight, Lightning } from '@element-plus/icons-vue'
+import { Calendar, MagicStick, Star, UserFilled, ArrowRight, Lightning, EditPen } from '@element-plus/icons-vue'
 
 // 自定义太极图标组件
 const YinYangIcon = {
@@ -98,6 +99,13 @@ const quickActions = [
     title: '每日运势',
     description: '掌握今日运程',
     color: '#f6ad55',
+  },
+  {
+    path: '/qiming',
+    icon: 'editpen',
+    title: 'AI 取名',
+    description: '八字五行智能取名',
+    color: '#e57373',
   },
   {
     path: '/profile',

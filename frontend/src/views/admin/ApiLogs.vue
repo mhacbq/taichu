@@ -65,6 +65,12 @@ const handlePageChange = (page) => {
   loadLogs()
 }
 
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadLogs()
+}
+
 const showDetail = (row) => {
   currentLog.value = row
   detailDialogVisible.value = true
@@ -179,7 +185,7 @@ onMounted(() => {
         :total="total"
         :page-sizes="[20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="loadLogs"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
         style="margin-top: 20px; justify-content: flex-end"
       />

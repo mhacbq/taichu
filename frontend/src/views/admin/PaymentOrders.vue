@@ -83,6 +83,12 @@ const handlePageChange = (page) => {
   loadOrders()
 }
 
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadOrders()
+}
+
 const getStatusLabel = (status) => {
   const statusMap = {
     'pending': '待支付',
@@ -173,6 +179,7 @@ onMounted(() => {
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         @current-change="handlePageChange"
+        @size-change="handleSizeChange"
       />
     </div>
   </div>

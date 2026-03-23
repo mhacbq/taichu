@@ -3,17 +3,37 @@ declare(strict_types=1);
 
 namespace app\service;
 
+use app\service\ConfigService;
+
 /**
  * 大运运势评分服务
  * 提供大运的详细评分和分析
  */
 class DayunFortuneService
 {
-    // 大运评分消耗积分
+    // 大运评分消耗积分（默认值，实际以 ConfigService 为准）
     const DAYUN_ANALYSIS_POINTS_COST = 50;
     
-    // 大运K线图消耗积分
+    // 大运K线图消耗积分（默认值，实际以 ConfigService 为准）
     const DAYUN_CHART_POINTS_COST = 30;
+
+    /**
+     * 获取大运分析实际积分消耗
+     */
+    public static function getAnalysisPointsCost(): int
+    {
+        $info = ConfigService::calculatePointsCost('dayun_analysis');
+        return $info['final'];
+    }
+
+    /**
+     * 获取大运K线图实际积分消耗
+     */
+    public static function getChartPointsCost(): int
+    {
+        $info = ConfigService::calculatePointsCost('dayun_chart');
+        return $info['final'];
+    }
     
     // 缓存有效期（3天）
     const CACHE_TTL = 259200;
@@ -43,8 +63,10 @@ class DayunFortuneService
             throw new \Exception('用户不存在');
         }
 
-        if ((int) ($userModel->points ?? 0) < self::DAYUN_ANALYSIS_POINTS_COST) {
-            throw new \Exception('积分不足，需要' . self::DAYUN_ANALYSIS_POINTS_COST . '积分', 403);
+        $analysisCost = self::getAnalysisPointsCost();
+
+        if ((int) ($userModel->points ?? 0) < $analysisCost) {
+            throw new \Exception('积分不足，需要' . $analysisCost . '积分', 403);
         }
 
         // 先完成所有业务计算，计算成功后再扣积分，避免计算异常时误扣费
@@ -57,7 +79,7 @@ class DayunFortuneService
         $pointsService = new PointsService();
         $consumeResult = $pointsService->consume(
             $userId,
-            self::DAYUN_ANALYSIS_POINTS_COST,
+            $analysisCost,
             '大运运势分析',
             'dayun_analysis',
             0,
@@ -79,7 +101,7 @@ class DayunFortuneService
             'lucky_years' => $this->getLuckyYears($dayun),
             'unlucky_years' => $this->getUnluckyYears($dayun),
             'key_suggestions' => $this->getKeySuggestions($scores, $dayun, $bazi),
-            'points_cost' => self::DAYUN_ANALYSIS_POINTS_COST,
+            'points_cost' => $analysisCost,
             'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
@@ -117,8 +139,10 @@ class DayunFortuneService
             return $cached;
         }
 
-        if ($currentBalance < self::DAYUN_CHART_POINTS_COST) {
-            throw new \Exception('积分不足，需要' . self::DAYUN_CHART_POINTS_COST . '积分', 403);
+        $chartCost = self::getChartPointsCost();
+
+        if ($currentBalance < $chartCost) {
+            throw new \Exception('积分不足，需要' . $chartCost . '积分', 403);
         }
 
 
@@ -168,7 +192,7 @@ class DayunFortuneService
         $pointsService = new PointsService();
         $consumeResult = $pointsService->consume(
             $userId,
-            self::DAYUN_CHART_POINTS_COST,
+            $chartCost,
             '大运运势K线图',
             'dayun_chart',
             0,
@@ -185,7 +209,7 @@ class DayunFortuneService
             'chart_data' => $chartData,
             'summary' => $summary,
             'best_period' => $bestPeriod,
-            'points_cost' => self::DAYUN_CHART_POINTS_COST,
+            'points_cost' => $chartCost,
             'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];

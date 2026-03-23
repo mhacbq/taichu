@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   getSmsConfig,
-  updateSmsConfig,
+  saveSmsConfig,
   testSms,
   getSmsStats
 } from '../../api/admin'
@@ -64,7 +64,7 @@ const handleSave = async () => {
 
   loading.value = true
   try {
-    const response = await updateSmsConfig(config.value)
+    const response = await saveSmsConfig(config.value)
     if (response.code === 200) {
       ElMessage.success('保存成功')
     } else {

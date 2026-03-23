@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace app\service;
 
 use app\model\PointsRecord;
-use think\facade\Config;
+use app\service\ConfigService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -15,8 +15,17 @@ use think\facade\Log;
  */
 class YearlyFortuneService
 {
-    // AI分析消耗积分
+    // AI分析消耗积分（默认值，实际以 ConfigService 为准）
     const YEARLY_FORTUNE_POINTS_COST = 30;
+
+    /**
+     * 获取流年运势实际积分消耗
+     */
+    public static function getPointsCost(): int
+    {
+        $info = ConfigService::calculatePointsCost('yearly_fortune');
+        return $info['final'];
+    }
     
     // 缓存有效期（1天）
     const CACHE_TTL = 86400;
@@ -96,18 +105,20 @@ class YearlyFortuneService
             return $result;
         }
 
-        if ($currentBalance < self::YEARLY_FORTUNE_POINTS_COST) {
-            throw new \Exception('积分不足，需要' . self::YEARLY_FORTUNE_POINTS_COST . '积分', 403);
+        $pointsCost = self::getPointsCost();
+
+        if ($currentBalance < $pointsCost) {
+            throw new \Exception('积分不足，需要' . $pointsCost . '积分', 403);
         }
 
-        // 先完成流年评分与分析，再统一扣费，避免“失败仍扣费”。
+        // 先完成流年评分与分析，再统一扣费，避免"失败仍扣费"。
         $analysis = $this->callAiForYearlyFortune($bazi, $gender, $year);
         $score = $this->calculateYearlyScore($bazi, $year);
 
         $pointsService = new PointsService();
         $consumeResult = $pointsService->consume(
             $userId,
-            self::YEARLY_FORTUNE_POINTS_COST,
+            $pointsCost,
             '流年运势AI分析',
             'yearly_fortune',
             0,
@@ -137,7 +148,7 @@ class YearlyFortuneService
             'lucky_colors' => $analysis['lucky_colors'] ?? [],
             'lucky_numbers' => $analysis['lucky_numbers'] ?? [],
             'lucky_directions' => $analysis['lucky_directions'] ?? [],
-            'points_cost' => self::YEARLY_FORTUNE_POINTS_COST,
+            'points_cost' => $pointsCost,
             'remaining_points' => (int) ($consumeResult['balance'] ?? 0),
             'from_cache' => false,
         ];
@@ -166,7 +177,7 @@ class YearlyFortuneService
                 'lucky_directions' => $analysis['lucky_directions'] ?? [],
             ], JSON_UNESCAPED_UNICODE),
             'is_paid' => 1,
-            'points_used' => self::YEARLY_FORTUNE_POINTS_COST,
+            'points_used' => $pointsCost,
             'created_at' => date('Y-m-d H:i:s'),
         ];
 

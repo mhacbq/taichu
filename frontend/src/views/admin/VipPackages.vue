@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getPackages,
-  savePackage
+  getVipPackages,
+  saveVipPackage,
+  deleteVipPackage,
+  batchUpdateVipPackageStatus
 } from '../../api/admin'
 
 const loading = ref(false)
@@ -14,7 +16,7 @@ const currentPackage = ref({
   name: '',
   price: 0,
   points: 0,
-  duration: 30,
+  duration: 1,
   description: '',
   status: 1,
   sort_order: 0
@@ -23,9 +25,9 @@ const currentPackage = ref({
 const loadPackages = async () => {
   loading.value = true
   try {
-    const response = await getPackages()
+    const response = await getVipPackages()
     if (response.code === 200) {
-      packages.value = response.data || []
+      packages.value = response.data?.list || response.data || []
     } else {
       ElMessage.error(response.message || '加载失败')
     }
@@ -43,7 +45,7 @@ const handleAdd = () => {
     name: '',
     price: 0,
     points: 0,
-    duration: 30,
+    duration: 1,
     description: '',
     status: 1,
     sort_order: 0
@@ -64,7 +66,7 @@ const handleSave = async () => {
 
   loading.value = true
   try {
-    const response = await savePackage(currentPackage.value)
+    const response = await saveVipPackage(currentPackage.value)
     if (response.code === 200) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
@@ -82,17 +84,41 @@ const handleSave = async () => {
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除这个套餐吗？', '确认删除', {
+    await ElMessageBox.confirm(`确定要删除套餐「${row.name}」吗？`, '确认删除', {
       type: 'warning'
     })
-    // 这里需要添加删除API
-    ElMessage.success('删除成功')
-    loadPackages()
+    loading.value = true
+    const response = await deleteVipPackage(row.id)
+    if (response.code === 200) {
+      ElMessage.success('删除成功')
+      loadPackages()
+    } else {
+      ElMessage.error(response.message || '删除失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除失败:', error)
       ElMessage.error('删除失败')
     }
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleToggleStatus = async (row) => {
+  const newStatus = row.status === 1 ? 0 : 1
+  const actionText = newStatus === 1 ? '上架' : '下架'
+  try {
+    const response = await batchUpdateVipPackageStatus([row.id], newStatus)
+    if (response.code === 200) {
+      row.status = newStatus
+      ElMessage.success(`${actionText}成功`)
+    } else {
+      ElMessage.error(response.message || `${actionText}失败`)
+    }
+  } catch (error) {
+    console.error(`${actionText}失败:`, error)
+    ElMessage.error(`${actionText}失败`)
   }
 }
 
@@ -120,11 +146,16 @@ onMounted(() => {
         <div class="package-body">
           <div class="price">¥{{ pkg.price }}</div>
           <div class="points">{{ pkg.points }} 积分</div>
-          <div class="duration">{{ pkg.duration }} 天</div>
+          <div class="duration">{{ pkg.duration }} 个月</div>
           <p class="description">{{ pkg.description }}</p>
         </div>
         <div class="package-footer">
           <el-button size="small" @click="handleEdit(pkg)">编辑</el-button>
+          <el-button
+            size="small"
+            :type="pkg.status === 1 ? 'warning' : 'success'"
+            @click="handleToggleStatus(pkg)"
+          >{{ pkg.status === 1 ? '下架' : '上架' }}</el-button>
           <el-button size="small" type="danger" @click="handleDelete(pkg)">删除</el-button>
         </div>
       </el-card>
@@ -142,7 +173,7 @@ onMounted(() => {
         <el-form-item label="积分数量">
           <el-input-number v-model="currentPackage.points" :min="0" />
         </el-form-item>
-        <el-form-item label="有效期(天)">
+        <el-form-item label="有效期(月)">
           <el-input-number v-model="currentPackage.duration" :min="1" />
         </el-form-item>
         <el-form-item label="描述">

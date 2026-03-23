@@ -58,48 +58,52 @@ Route::group('api/maodou', function () {
         Route::get('users/export', 'Admin/exportUsers');
         Route::get('users/behavior', 'Admin/userBehavior');
         Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
+        Route::get('users', 'admin.User/index');
         Route::put('users/:id/status', 'admin.User/toggleStatus');
         Route::put('users/:id', 'admin.User/updateProfile');
         Route::get('users/:id', 'admin.User/detail');
-        Route::get('users', 'admin.User/index');
-        Route::put('users/:id/status', 'UserController/updateStatus');
         Route::post('users/:id/adjust-points', 'UserController/adjustPoints');
         Route::get('users/:id/detail', 'UserController/show');
         
         // 测算结果管理
         Route::get('bazi-manage', 'admin.BaziManage/index');
+        Route::get('bazi-manage/stats', 'admin.BaziManage/stats');
+        Route::post('bazi-manage/batch-delete', 'admin.BaziManage/batchDelete');
         Route::get('bazi-manage/:id', 'admin.BaziManage/detail');
         Route::delete('bazi-manage/:id', 'admin.BaziManage/delete');
-        Route::post('bazi-manage/batch-delete', 'admin.BaziManage/batchDelete');
-        Route::get('bazi-manage/stats', 'admin.BaziManage/stats');
         
         Route::get('tarot-manage', 'admin.TarotManage/index');
+        Route::get('tarot-manage/stats', 'admin.TarotManage/stats');
+        Route::post('tarot-manage/batch-delete', 'admin.TarotManage/batchDelete');
         Route::get('tarot-manage/:id', 'admin.TarotManage/detail');
         Route::delete('tarot-manage/:id', 'admin.TarotManage/delete');
-        Route::post('tarot-manage/batch-delete', 'admin.TarotManage/batchDelete');
-        Route::get('tarot-manage/stats', 'admin.TarotManage/stats');
         
         Route::get('liuyao-manage', 'admin.LiuyaoManage/index');
-        Route::get('liuyao-manage/:id', 'admin.LiuyaoManage/detail');
-        Route::delete('liuyao-manage/:id', 'admin.LiuyaoManage/delete');
-        Route::post('liuyao-manage/batch-delete', 'admin.LiuyaoManage/batchDelete');
         Route::get('liuyao-manage/stats', 'admin.LiuyaoManage/stats');
         Route::get('liuyao-manage/trend', 'admin.LiuyaoManage/trend');
         Route::get('liuyao-manage/hot-questions', 'admin.LiuyaoManage/hotQuestions');
+        Route::post('liuyao-manage/batch-delete', 'admin.LiuyaoManage/batchDelete');
+        Route::get('liuyao-manage/:id', 'admin.LiuyaoManage/detail');
+        Route::delete('liuyao-manage/:id', 'admin.LiuyaoManage/delete');
         
         Route::get('hehun-manage', 'admin.HehunManage/index');
+        Route::get('hehun-manage/stats', 'admin.HehunManage/stats');
+        Route::post('hehun-manage/batch-delete', 'admin.HehunManage/batchDelete');
         Route::get('hehun-manage/:id', 'admin.HehunManage/detail');
         Route::delete('hehun-manage/:id', 'admin.HehunManage/delete');
-        Route::post('hehun-manage/batch-delete', 'admin.HehunManage/batchDelete');
-        Route::get('hehun-manage/stats', 'admin.HehunManage/stats');
 
         Route::get('qiming-manage', 'admin.QimingManage/index');
         Route::get('qiming-manage/stats', 'admin.QimingManage/stats');
+        Route::post('qiming-manage/batch-delete', 'admin.QimingManage/batchDelete');
         Route::get('qiming-manage/:id', 'admin.QimingManage/detail');
         Route::delete('qiming-manage/:id', 'admin.QimingManage/delete');
-        Route::post('qiming-manage/batch-delete', 'admin.QimingManage/batchDelete');
 
-        
+        Route::get('yearly-fortune-manage', 'admin.YearlyFortuneManage/index');
+        Route::get('yearly-fortune-manage/stats', 'admin.YearlyFortuneManage/stats');
+        Route::post('yearly-fortune-manage/batch-delete', 'admin.YearlyFortuneManage/batchDelete');
+        Route::get('yearly-fortune-manage/:id', 'admin.YearlyFortuneManage/detail');
+        Route::delete('yearly-fortune-manage/:id', 'admin.YearlyFortuneManage/delete');
+
         // 内容管理
         Route::get('content/bazi', 'Admin/baziRecords');
         Route::get('content/bazi/:id', 'Admin/baziDetail');
@@ -116,10 +120,10 @@ Route::group('api/maodou', function () {
         Route::put('content/almanac/:id', 'admin.Almanac/updateAlmanac');
         Route::delete('content/almanac/:id', 'admin.Almanac/deleteAlmanac');
         Route::get('content/pages', 'Content/getPages');
+        Route::post('content/page/import', 'Content/importPage');
         Route::get('content/page/:pageId', 'Content/getPage');
         Route::post('content/page/:pageId', 'Content/savePage');
         Route::delete('content/page/:pageId', 'Content/deletePage');
-        Route::post('content/page/import', 'Content/importPage');
         Route::get('content/page/:pageId/export', 'Content/exportPage');
         Route::post('content/page/:pageId/autosave', 'Content/autoSave');
         Route::get('content/page/:pageId/draft', 'Content/getDraft');
@@ -137,21 +141,21 @@ Route::group('api/maodou', function () {
 
         // VIP套餐管理
         Route::get('vip-packages/list', 'admin.VipPackages/getList');
-        Route::get('vip-packages/detail/:id', 'admin.VipPackages/getDetail');
+        Route::get('vip-packages/stats', 'admin.VipPackages/getStats');
         Route::post('vip-packages/save', 'admin.VipPackages/save');
-        Route::delete('vip-packages/:id', 'admin.VipPackages/delete');
         Route::post('vip-packages/batch-status', 'admin.VipPackages/batchUpdateStatus');
         Route::post('vip-packages/update-sort', 'admin.VipPackages/updateSort');
-        Route::get('vip-packages/stats', 'admin.VipPackages/getStats');
+        Route::get('vip-packages/detail/:id', 'admin.VipPackages/getDetail');
+        Route::delete('vip-packages/:id', 'admin.VipPackages/delete');
         
         // 支付管理
         Route::get('payment/config', 'admin.Payment/getConfig');
         Route::post('payment/config', 'admin.Payment/saveConfig');
         Route::get('payment/orders/export', 'admin.Payment/exportOrders');
-        Route::get('payment/orders/:id', 'admin.Payment/getOrderDetail');
-        Route::get('payment/orders', 'admin.Payment/getOrders');
-
         Route::put('payment/orders/batch-status', 'admin.Payment/batchUpdateStatus');
+        Route::get('payment/orders', 'admin.Payment/getOrders');
+        Route::get('payment/orders/:id', 'admin.Payment/getOrderDetail');
+
         Route::put('payment/orders/:id/status', 'admin.Payment/updateOrderStatus');
         Route::post('payment/orders/:id/refund', 'admin.Payment/refundOrder');
         Route::post('payment/orders/:id/complete', 'admin.Payment/manualComplete');
@@ -184,20 +188,21 @@ Route::group('api/maodou', function () {
         
         // 反馈管理
         Route::get('feedback', 'admin.Feedback/index');
-        Route::get('feedback/:id', 'admin.Feedback/detail');
-        Route::post('feedback/:id/reply', 'admin.Feedback/reply');
-        Route::put('feedback/:id/status', 'admin.Feedback/updateStatus');
-        Route::delete('feedback/:id', 'admin.Feedback/delete');
         Route::get('feedback/categories', 'admin.Feedback/categories');
         Route::post('feedback/categories', 'admin.Feedback/saveCategory');
         Route::delete('feedback/categories/:id', 'admin.Feedback/deleteCategory');
+        Route::get('feedback/logs', 'admin.Feedback/logs');
         
         // 反馈分配和日志
         Route::get('feedback/assign/list', 'admin.FeedbackAssign/list');
         Route::post('feedback/assign', 'admin.FeedbackAssign/assign');
-        Route::post('feedback/assign/:id/status', 'admin.FeedbackAssign/updateStatus');
         Route::get('feedback/assign/my', 'admin.FeedbackAssign/myAssignments');
-        Route::get('feedback/logs', 'admin.Feedback/logs');
+        Route::post('feedback/assign/:id/status', 'admin.FeedbackAssign/updateStatus');
+        
+        Route::get('feedback/:id', 'admin.Feedback/detail');
+        Route::post('feedback/:id/reply', 'admin.Feedback/reply');
+        Route::put('feedback/:id/status', 'admin.Feedback/updateStatus');
+        Route::delete('feedback/:id', 'admin.Feedback/delete');
         Route::get('system/admin-list', 'admin.System/adminList');
         
         // 数据分析
@@ -320,17 +325,25 @@ Route::group('api/maodou', function () {
         
         // 任务调度
         Route::get('tasks', 'Admin/taskList');
-        Route::get('tasks/:id', 'Admin/taskDetail');
-        Route::post('tasks', 'Admin/createTask');
-        Route::put('tasks/:id', 'Admin/updateTask');
-        Route::delete('tasks/:id', 'Admin/deleteTask');
-        Route::post('tasks/:id/run', 'Admin/runTask');
-        Route::put('tasks/:id/status', 'Admin/toggleTaskStatus');
         Route::get('tasks/logs', 'Admin/taskLogs');
         Route::get('tasks/scripts', 'Admin/getTaskScripts');
         Route::post('tasks/scripts', 'Admin/saveTaskScript');
         Route::delete('tasks/scripts/:id', 'Admin/deleteTaskScript');
+        Route::post('tasks', 'Admin/createTask');
+        Route::get('tasks/:id', 'Admin/taskDetail');
+        Route::put('tasks/:id', 'Admin/updateTask');
+        Route::delete('tasks/:id', 'Admin/deleteTask');
+        Route::post('tasks/:id/run', 'Admin/runTask');
+        Route::put('tasks/:id/status', 'Admin/toggleTaskStatus');
         
+        // 塔罗牌管理
+        Route::get('tarot-cards/stats', 'admin.TarotCards/stats');
+        Route::get('tarot-cards', 'admin.TarotCards/index');
+        Route::get('tarot-cards/:id', 'admin.TarotCards/detail');
+        Route::put('tarot-cards/:id', 'admin.TarotCards/update');
+        Route::post('tarot-cards/:id/toggle-status', 'admin.TarotCards/toggleStatus');
+        Route::post('tarot-cards/batch-status', 'admin.TarotCards/batchStatus');
+
         // 黄历管理
         Route::get('almanac/list', 'admin.Almanac/almanacList');
         Route::get('almanac/detail', 'admin.Almanac/almanacDetail');

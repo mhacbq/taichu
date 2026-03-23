@@ -56,6 +56,9 @@ export const getPeriodChart = (data) => request.post('/decision/period-chart', d
 export const getClientConfig = () => request.get('/config/client')
 export const getFeatureSwitches = () => request.get('/config/features')
 
+// SEO配置（公共接口，供前端路由守卫使用）
+export const getActiveSeoConfigs = () => request.get('/seo/active-configs')
+
 // VIP会员
 export const getVipInfo = () => request.get('/vip/info')
 export const getVipBenefits = () => request.get('/vip/benefits')

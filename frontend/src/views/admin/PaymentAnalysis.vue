@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Money, Coin, TrendCharts, Clock } from '@element-plus/icons-vue'
 import {
   getPaymentStats,
   getPaymentTrend
@@ -41,7 +42,7 @@ const loadAnalysisData = async () => {
 
 const maxAmount = computed(() => {
   if (trendData.value.length === 0) return 1
-  return Math.max(...trendData.value.map(d => d.amount))
+  return Math.max(...trendData.value.map(d => d.amount)) || 1
 })
 
 onMounted(() => {
@@ -66,7 +67,7 @@ onMounted(() => {
         </div>
         <div class="stat-content">
           <div class="stat-label">总充值金额</div>
-          <div class="stat-value">¥{{ stats.total_amount.toFixed(2) }}</div>
+          <div class="stat-value">¥{{ Number(stats.total_amount).toFixed(2) }}</div>
           <div class="stat-sub">订单数: {{ stats.order_count }}</div>
         </div>
       </div>
@@ -88,7 +89,7 @@ onMounted(() => {
         </div>
         <div class="stat-content">
           <div class="stat-label">客单价</div>
-          <div class="stat-value">¥{{ stats.avg_amount.toFixed(2) }}</div>
+          <div class="stat-value">¥{{ Number(stats.avg_amount).toFixed(2) }}</div>
           <div class="stat-sub">平均每单</div>
         </div>
       </div>
@@ -112,7 +113,7 @@ onMounted(() => {
         <div class="chart-bar" v-for="item in trendData" :key="item.date">
           <div class="bar" :style="{ height: (item.amount / maxAmount * 100) + '%' }"></div>
           <div class="label">{{ item.date.slice(5) }}</div>
-          <div class="value">¥{{ item.amount.toFixed(0) }}</div>
+          <div class="value">¥{{ Number(item.amount).toFixed(0) }}</div>
         </div>
       </div>
       <div v-else class="chart-empty">暂无数据</div>
@@ -125,13 +126,13 @@ onMounted(() => {
         <el-table-column prop="date" label="日期" width="120" />
         <el-table-column prop="amount" label="充值金额（元）" width="150">
           <template #default="{ row }">
-            ¥{{ row.amount.toFixed(2) }}
+            ¥{{ Number(row.amount).toFixed(2) }}
           </template>
         </el-table-column>
         <el-table-column prop="count" label="订单数" width="100" />
         <el-table-column label="客单价" width="120">
           <template #default="{ row }">
-            ¥{{ row.count > 0 ? (row.amount / row.count).toFixed(2) : '0.00' }}
+            ¥{{ row.count > 0 ? (Number(row.amount) / row.count).toFixed(2) : '0.00' }}
           </template>
         </el-table-column>
       </el-table>

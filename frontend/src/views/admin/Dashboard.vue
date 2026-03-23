@@ -5,9 +5,9 @@ import { ElMessage } from 'element-plus'
 import {
   getDashboardStats,
   getDashboardTrend,
-  getDashboardChart,
   getPendingFeedback
 } from '../../api/admin'
+import { User, ShoppingCart, Coin, ChatDotRound } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -119,7 +119,7 @@ onMounted(() => {
       <h3>用户增长趋势（最近7天）</h3>
       <div v-if="trendData.length > 0" class="chart-container">
         <div class="chart-bar" v-for="item in trendData" :key="item.date">
-          <div class="bar" :style="{ height: (item.count / Math.max(...trendData.map(d => d.count)) * 100) + '%' }"></div>
+          <div class="bar" :style="{ height: (item.count / (Math.max(...trendData.map(d => d.count)) || 1) * 100) + '%' }"></div>
           <div class="label">{{ item.date.slice(5) }}</div>
           <div class="value">{{ item.count }}</div>
         </div>
@@ -137,6 +137,11 @@ onMounted(() => {
         <el-button @click="goTo('/maodou/feedback/list')">反馈管理</el-button>
         <el-button @click="goTo('/maodou/bazi-manage')">八字管理</el-button>
         <el-button @click="goTo('/maodou/tarot-manage')">塔罗管理</el-button>
+        <el-button @click="goTo('/maodou/hehun-manage')">合婚管理</el-button>
+        <el-button @click="goTo('/maodou/liuyao-manage')">六爻管理</el-button>
+        <el-button @click="goTo('/maodou/qiming-manage')">取名管理</el-button>
+        <el-button @click="goTo('/maodou/yearly-fortune-manage')">流年运势</el-button>
+        <el-button @click="goTo('/maodou/system/config')">系统配置</el-button>
       </div>
     </div>
   </div>

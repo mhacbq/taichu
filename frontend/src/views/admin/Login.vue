@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { User, Lock } from '@element-plus/icons-vue'
 import request from '../../api/request'
 
 const router = useRouter()
@@ -38,12 +39,6 @@ const handleLogin = async () => {
     loading.value = false
   }
 }
-
-const handleEnter = (e) => {
-  if (e.key === 'Enter') {
-    handleLogin()
-  }
-}
 </script>
 
 <template>
@@ -58,11 +53,7 @@ const handleEnter = (e) => {
             placeholder="请输入管理员账号"
             size="large"
             clearable
-            @keyup="handleEnter"
-          >
-            <template #prefix>
-              <el-icon><User /></el-icon>
-            </template>
+            @keyup.enter="handleLogin"
           </el-input>
         </el-form-item>
         
@@ -73,11 +64,7 @@ const handleEnter = (e) => {
             placeholder="请输入密码"
             size="large"
             show-password
-            @keyup="handleEnter"
-          >
-            <template #prefix>
-              <el-icon><Lock /></el-icon>
-            </template>
+            @keyup.enter="handleLogin"
           </el-input>
         </el-form-item>
         

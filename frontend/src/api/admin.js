@@ -1,4 +1,4 @@
-import request from './request'
+import request from './adminRequest'
 
 // 鍔熻兘寮€鍏?
 export const getFeatureSwitches = () => request.get('/maodou/config/features')
@@ -28,7 +28,7 @@ export const deleteAlmanac = (date) => request.post('/maodou/almanac/delete', { 
 export const generateAlmanacMonth = (year, month) => request.post('/maodou/almanac/generate-month', { year, month })
 export const getAlmanacMonths = () => request.get('/maodou/almanac/months')
 
-// SEO绠＄悊
+// SEO管理
 export const getSeoConfigs = () => request.get('/maodou/seo/configs')
 export const getSeoStats = (params) => request.get('/maodou/seo/stats', { params })
 export const saveSeoConfig = (data) => request.post('/maodou/seo/save', data)
@@ -36,12 +36,23 @@ export const deleteSeoConfig = (route) => request.post('/maodou/seo/delete', { r
 export const getRobotsConfig = () => request.get('/maodou/seo/robots')
 export const saveRobotsConfig = (content) => request.post('/maodou/seo/robots', { content })
 export const generateSitemap = () => request.post('/maodou/seo/sitemap-generate')
+export const getSeoPageTypes = () => request.get('/maodou/seo/page-types')
+export const batchUpdateSeoStatus = (ids, status) => request.post('/maodou/seo/batch-status', { ids, status })
 
-// 绁炵厼绠＄悊
+// 神煞管理
 export const getShenshaList = (params) => request.get('/maodou/shensha/list', { params })
+export const getShenshaOptions = () => request.get('/maodou/system/shensha/options')
 export const saveShensha = (data) => request.post('/maodou/shensha/save', data)
 export const deleteShenshaApi = (id) => request.post(`/maodou/shensha/delete/${id}`)
 export const toggleShenshaStatus = (id, status) => request.post('/maodou/shensha/toggle-status', { id, status })
+
+// 塔罗牌管理
+export const getTarotCardList = (params) => request.get('/maodou/tarot-cards', { params })
+export const getTarotCardDetail = (id) => request.get(`/maodou/tarot-cards/${id}`)
+export const updateTarotCard = (id, data) => request.put(`/maodou/tarot-cards/${id}`, data)
+export const toggleTarotCardStatus = (id) => request.post(`/maodou/tarot-cards/${id}/toggle-status`)
+export const batchUpdateTarotCardStatus = (ids, status) => request.post('/maodou/tarot-cards/batch-status', { ids, status })
+export const getTarotCardStats = () => request.get('/maodou/tarot-cards/stats')
 
 // 鐭ヨ瘑搴撶鐞?- 鏂囩珷
 export const getArticleList = (params) => request.get('/maodou/knowledge/articles', { params })
@@ -75,9 +86,7 @@ export const getUserBehavior = (id) => request.get('/maodou/users/behavior', { p
 export const getPointsRecords = (params) => request.get('/maodou/points/records', { params })
 export const adjustUserPoints = (data) => request.post('/maodou/points/adjust', data)
 export const getPointsRules = () => request.get('/maodou/points/rules')
-export const savePointsRules = (data) => request.put('/maodou/points/rules', data)
-export const savePointsRule = (data) => request.post('/maodou/points/rules', data)
-export const deletePointsRule = (id) => request.delete(`/maodou/points/rules/${id}`)
+export const getPointsStats = (params) => request.get('/maodou/points/stats', { params })
 
 // 瀹氭椂浠诲姟
 export const getTaskList = () => request.get('/maodou/tasks')
@@ -85,7 +94,6 @@ export const saveTaskItem = (data) => request.post('/maodou/tasks', data)
 export const deleteTaskItem = (id) => request.delete(`/maodou/tasks/${id}`)
 export const runTaskNow = (id) => request.post(`/maodou/tasks/${id}/run`)
 export const getTaskLogs = (params) => request.get('/maodou/tasks/logs', { params })
-export const getPointsStats = (params) => request.get('/maodou/points/stats', { params })
 
 // 鏀粯/璁㈠崟绠＄悊
 export const getPaymentOrders = (params) => request.get('/maodou/payment/orders', { params })
@@ -129,9 +137,9 @@ export const saveNotificationConfig = (data) => request.put('/maodou/system/noti
 export const sendNotificationTest = (data) => request.post('/maodou/system/notification/test', data)
 
 // 绠＄悊鍛樼鐞?
-export const getAdminUsers = () => request.get('/maodou/system/maodous')
-export const saveAdminUser = (data) => request.post('/maodou/system/maodous', data)
-export const deleteAdminUser = (id) => request.delete(`/maodou/system/maodous/${id}`)
+export const getAdminUsers = () => request.get('/maodou/system/admins')
+export const saveAdminUser = (data) => request.post('/maodou/system/admins', data)
+export const deleteAdminUser = (id) => request.delete(`/maodou/system/admins/${id}`)
 
 
 // 鍐呭璁板綍 - 鍏瓧
@@ -165,13 +173,13 @@ export const importSensitiveWords = (data) => request.post('/maodou/system/sensi
 // 鐭俊绠＄悊
 export const getSmsConfig = () => request.get('/maodou/sms/config')
 export const saveSmsConfig = (data) => request.post('/maodou/sms/config', data)
-export const testSms = (data) => request.post('/api/maodou/sms/test', data)
+export const testSms = (data) => request.post('/maodou/sms/test', data)
 export const testSmsSend = (data) => request.post('/maodou/sms/test', data)
 export const getSmsStats = () => request.get('/maodou/sms/stats')
 export const getSmsRecords = (params) => request.get('/maodou/sms/records', { params })
 
 // 鏁版嵁鍒嗘瀽
-export const getAnalysisUser = (params) => request.get('/api/maodou/analysis/user', { params })
+export const getAnalysisUser = (params) => request.get('/maodou/analysis/user', { params })
 
 // 瑙掕壊绠＄悊
 export const getRoles = () => request.get('/maodou/system/roles')
@@ -195,12 +203,14 @@ export const blockDevice = (id, data) => request.put(`/maodou/anticheat/devices/
 export const getPaymentConfig = () => request.get('/maodou/payment/config')
 export const savePaymentConfig = (data) => request.post('/maodou/payment/config', data)
 
-// VIP套飩璇＄悊
-export const getVipPackages = (params) => request.get('/maodou/payment/vip-packages', { params })
-export const saveVipPackage = (data) => request.post('/maodou/payment/vip-packages', data)
-export const updateVipPackage = (id, data) => request.put(`/maodou/payment/vip-packages/${id}`, data)
-export const deleteVipPackage = (id) => request.delete(`/maodou/payment/vip-packages/${id}`)
-export const toggleVipPackageStatus = (id, status) => request.put(`/maodou/payment/vip-packages/${id}/status`, { status })
+// VIP套餐管理
+export const getVipPackages = (params) => request.get('/maodou/vip-packages/list', { params })
+export const getVipPackageDetail = (id) => request.get(`/maodou/vip-packages/detail/${id}`)
+export const saveVipPackage = (data) => request.post('/maodou/vip-packages/save', data)
+export const deleteVipPackage = (id) => request.delete(`/maodou/vip-packages/${id}`)
+export const batchUpdateVipPackageStatus = (ids, status) => request.post('/maodou/vip-packages/batch-status', { ids, status })
+export const updateVipPackageSort = (sortData) => request.post('/maodou/vip-packages/update-sort', { sort_data: sortData })
+export const getVipPackageStats = () => request.get('/maodou/vip-packages/stats')
 
 // 鏉冮檺绠＄悊
 export const getPermissions = () => request.get('/maodou/system/permissions')

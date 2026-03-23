@@ -209,24 +209,22 @@ class Config extends BaseController
             }
         }
         
-        // 消耗积分 - 智能分级配置
+        // 消耗积分配置（普通版 / 专家版AI）
         $costMapping = [
-            'save_record' => 'points_cost_save_record',
-            'share_poster' => 'points_cost_share_poster',
-            'unlock_report' => 'points_cost_unlock_report',
+            'bazi'           => 'points_cost_bazi',        // 八字普通版
+            'bazi_ai'        => 'points_cost_bazi_ai',     // 八字专家版（AI）
+            'hehun_ai'       => 'points_cost_hehun_ai',    // 合婚（AI版）
+            'liuyao_ai'      => 'points_cost_liuyao_ai',   // 六爻（AI版）
+            'tarot'          => 'points_cost_tarot',          // 塔罗普通版
+            'tarot_ai'       => 'points_cost_tarot_ai',       // 塔罗AI版
+            'qiming'         => 'points_cost_qiming',
+            'jiri'           => 'points_cost_jiri',
+            'save_record'    => 'points_cost_save_record',
+            'share_poster'   => 'points_cost_share_poster',
+            'unlock_report'  => 'points_cost_unlock_report',
             'yearly_fortune' => 'points_cost_yearly_fortune',
             'dayun_analysis' => 'points_cost_dayun_analysis',
-            'dayun_chart' => 'points_cost_dayun_chart',
-            'hehun_basic' => 'points_cost_hehun_basic', // 基础合婚分析
-            'hehun_standard' => 'points_cost_hehun_standard', // 标准合婚分析
-            'hehun_professional' => 'points_cost_hehun_professional', // 专业合婚分析
-            'hehun_expert' => 'points_cost_hehun_expert', // 专家级合婚分析
-            'qiming' => 'points_cost_qiming',
-            'jiri' => 'points_cost_jiri',
-            'bazi_basic' => 'points_cost_bazi_basic', // 基础八字分析
-            'bazi_standard' => 'points_cost_bazi_standard', // 标准八字分析
-            'bazi_professional' => 'points_cost_bazi_professional', // 专业八字分析
-            'bazi_expert' => 'points_cost_bazi_expert', // 专家级八字分析
+            'dayun_chart'    => 'points_cost_dayun_chart',
         ];
         
         foreach ($costMapping as $key => $configKey) {

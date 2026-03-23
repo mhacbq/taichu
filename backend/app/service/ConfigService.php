@@ -196,7 +196,7 @@ class ConfigService
         return [
             'features' => self::getFeatureSwitches(),
             'points' => [
-                'costs' => SystemConfig::getPointsCosts(),
+                'costs' => self::getPointsCostsForClient(),
                 'tasks' => self::getPointsTasks(),
             ],
             'vip' => [
@@ -240,6 +240,29 @@ class ConfigService
         ];
     }
     
+    /**
+     * 获取所有功能的积分消耗（供前端展示，走统一的 calculatePointsCost 路径）
+     */
+    public static function getPointsCostsForClient(): array
+    {
+        $features = [
+            'bazi', 'bazi_ai',
+            'hehun', 'liuyao',
+            'tarot', 'tarot_ai',
+            'daily', 'qiming', 'jiri',
+            'save_record', 'share_poster', 'unlock_report',
+            'yearly_fortune', 'dayun_analysis', 'dayun_chart',
+        ];
+
+        $result = [];
+        foreach ($features as $feature) {
+            $info = self::calculatePointsCost($feature);
+            $result[$feature] = $info['final'];
+        }
+
+        return $result;
+    }
+
     /**
      * 获取积分任务配置
      */
@@ -334,18 +357,50 @@ class ConfigService
         }
 
         $configKeyMap = [
-            'bazi' => 'points_cost_bazi',
-            'hehun' => 'points_cost_hehun',
-            'tarot' => 'points_cost_tarot',
-            'liuyao' => 'points_cost_liuyao',
-            'daily' => 'points_cost_daily',
+            // 八字：普通版 / 专家版（AI）
+            'bazi'        => 'points_cost_bazi',
+            'bazi_ai'     => 'points_cost_bazi_ai',
+            // 合婚：仅AI版
+            'hehun'       => 'points_cost_hehun_ai',
+            'hehun_ai'    => 'points_cost_hehun_ai',
+            // 六爻：仅AI版
+            'liuyao'      => 'points_cost_liuyao_ai',
+            'liuyao_ai'   => 'points_cost_liuyao_ai',
+            // 塔罗：普通版 / AI版
+            'tarot'          => 'points_cost_tarot',
+            'tarot_ai'       => 'points_cost_tarot_ai',
+            'daily'          => 'points_cost_daily',
+            'qiming'         => 'points_cost_qiming',
+            'jiri'           => 'points_cost_jiri',
+            'save_record'    => 'points_cost_save_record',
+            'share_poster'   => 'points_cost_share_poster',
+            'unlock_report'  => 'points_cost_unlock_report',
+            'yearly_fortune' => 'points_cost_yearly_fortune',
+            'dayun_analysis' => 'points_cost_dayun_analysis',
+            'dayun_chart'    => 'points_cost_dayun_chart',
         ];
         $featureDefaults = [
-            'bazi' => 10,
-            'hehun' => 80,
-            'tarot' => 20,
-            'liuyao' => 20,
-            'daily' => 0,
+            // 八字
+            'bazi'           => 10,
+            'bazi_ai'        => 50,
+            // 合婚（仅AI版）
+            'hehun'          => 80,
+            'hehun_ai'       => 80,
+            // 六爻（仅AI版）
+            'liuyao'         => 50,
+            'liuyao_ai'      => 50,
+            // 塔罗
+            'tarot'          => 10,
+            'tarot_ai'       => 30,
+            'daily'          => 0,
+            'qiming'         => 30,
+            'jiri'           => 10,
+            'save_record'    => 5,
+            'share_poster'   => 5,
+            'unlock_report'  => 50,
+            'yearly_fortune' => 20,
+            'dayun_analysis' => 30,
+            'dayun_chart'    => 20,
         ];
 
         $configKey = $configKeyMap[$feature] ?? null;

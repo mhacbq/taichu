@@ -5,6 +5,7 @@ namespace app\controller;
 
 use app\BaseController;
 use app\model\PointsRecord;
+use app\model\TarotCard;
 use app\model\TarotRecord;
 use app\service\TarotElementService;
 use think\facade\Db;
@@ -255,19 +256,27 @@ class Tarot extends BaseController
 
     
     /**
-     * 高精度抽取指定数量的牌
+     * 高精度抽取指定数量的牌（从数据库读取）
      */
     protected function drawCards(int $num): array
     {
+        // 从数据库获取所有启用的塔罗牌
+        $allCards = TarotCard::getAllEnabled();
+        
+        if (empty($allCards)) {
+            Log::warning('塔罗牌数据库为空，请先执行种子数据导入');
+            throw new \RuntimeException('塔罗牌数据未初始化，请联系管理员');
+        }
+        
         $cards = [];
-        $totalCards = count($this->tarotCards);
+        $totalCards = count($allCards);
         $positions = $this->getSpreadPositions($num);
         
         // 使用更高质量的随机数源
         $randomKeys = $this->generateHighQualityRandomKeys($num, $totalCards);
         
         foreach ($randomKeys as $index => $key) {
-            $card = $this->tarotCards[$key];
+            $card = $allCards[$key];
             
             // 使用更科学的正逆位判断算法
             $reversed = $this->calculateReversedProbability($card, $index, $num);
@@ -275,18 +284,27 @@ class Tarot extends BaseController
             $orientationMeaning = $reversed ? ($card['reversed_meaning'] ?? '') : $card['meaning'];
             
             $cards[] = [
-                'name' => $card['name'],
-                'meaning' => $card['meaning'],
+                'id'               => $card['id'] ?? null,
+                'name'             => $card['name'],
+                'meaning'          => $card['meaning'],
                 'reversed_meaning' => $card['reversed_meaning'] ?? '',
-                'emoji' => $card['emoji'],
-                'color' => $card['color'],
-                'element' => $card['element'],
-                'position' => $positions[$index] ?? ('第' . ($index + 1) . '张'),
-                'keywords' => str_replace('，', '、', $orientationMeaning),
-                'orientation' => $orientation,
+                'love_meaning'     => $card['love_meaning'] ?? '',
+                'love_reversed'    => $card['love_reversed'] ?? '',
+                'career_meaning'   => $card['career_meaning'] ?? '',
+                'career_reversed'  => $card['career_reversed'] ?? '',
+                'health_meaning'   => $card['health_meaning'] ?? '',
+                'health_reversed'  => $card['health_reversed'] ?? '',
+                'wealth_meaning'   => $card['wealth_meaning'] ?? '',
+                'wealth_reversed'  => $card['wealth_reversed'] ?? '',
+                'emoji'            => $card['emoji'],
+                'color'            => $card['color'],
+                'element'          => $card['element'],
+                'position'         => $positions[$index] ?? ('第' . ($index + 1) . '张'),
+                'keywords'         => str_replace('，', '、', $orientationMeaning),
+                'orientation'      => $orientation,
                 'orientation_meaning' => $orientationMeaning,
-                'reversed' => $reversed,
-                'random_seed' => $this->generateRandomSeed($card, $index), // 记录随机种子用于验证
+                'reversed'         => $reversed,
+                'random_seed'      => $this->generateRandomSeed($card, $index),
             ];
         }
 

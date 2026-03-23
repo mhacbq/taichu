@@ -119,6 +119,9 @@ Route::group('api', function () {
         Route::get('client', 'Config/clientConfig');
         Route::get('features', 'Config/featureSwitches');
     });
+
+    // SEO配置（公开接口，供前端路由守卫读取）
+    Route::get('seo/active-configs', 'admin.Seo/getActiveSeoConfigs');
     
     // AI分析
     Route::group('ai', function () {

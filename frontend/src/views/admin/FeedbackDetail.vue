@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getFeedbackDetail,
   replyFeedback
@@ -41,7 +41,7 @@ const handleReply = async () => {
       return
     }
     
-    const response = await replyFeedback(detail.value.id, { content: value })
+    const response = await replyFeedback(detail.value.id, value)
     if (response.code === 200) {
       ElMessage.success('回复成功')
       loadDetail()
@@ -103,12 +103,6 @@ onMounted(() => {
           <div class="info-item">
             <label>提交时间:</label>
             <span>{{ detail.created_at }}</span>
-          </div>
-          <div class="info-item">
-            <label>状态:</label>
-            <el-tag :type="detail.status_value === 'pending' ? 'warning' : detail.status_value === 'replied' ? 'primary' : 'success'">
-              {{ detail.status_value === 'pending' ? '待处理' : detail.status_value === 'replied' ? '已回复' : '已解决' }}
-            </el-tag>
           </div>
         </div>
 

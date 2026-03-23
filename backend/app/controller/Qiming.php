@@ -46,7 +46,8 @@ class Qiming extends BaseController
         }
 
         // 检查积分
-        $cost = (int) ConfigService::get('points_costs.qiming', self::DEFAULT_COST);
+        $costInfo = ConfigService::calculatePointsCost('qiming');
+        $cost = $costInfo['final'];
         $userModel = \app\model\User::find($userId);
         if (!$userModel) {
             return $this->error('用户不存在');

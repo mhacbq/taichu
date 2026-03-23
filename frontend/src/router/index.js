@@ -1,27 +1,28 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO'
+import { getActiveSeoConfigs } from '../api/index'
 
 // 首屏关键页面 - 同步加载
-import Home from '../views/Home.vue'
-import Login from '../views/Login.vue'
-import NotFound from '../views/NotFound.vue'
+import Home from '../views/Home/index.vue'
+import Login from '../views/Login/index.vue'
+import NotFound from '../views/NotFound/index.vue'
 
 // 功能页面 - 懒加载（需登录访问）
-const Bazi = () => import('../views/Bazi.vue')
+const Bazi = () => import('../views/Bazi/index.vue')
 
 // 非首屏页面 - 懒加载
-const Tarot = () => import('../views/Tarot.vue')
-const TarotShare = () => import('../views/TarotShare.vue')
-const Daily = () => import('../views/Daily.vue')
-const Profile = () => import('../views/Profile.vue')
+const Tarot = () => import('../views/Tarot/index.vue')
+const TarotShare = () => import('../views/TarotShare/index.vue')
+const Daily = () => import('../views/Daily/index.vue')
+const Profile = () => import('../views/Profile/index.vue')
 
-const Help = () => import('../views/Help.vue')
-const Recharge = () => import('../views/Recharge.vue')
-const Vip = () => import('../views/Vip.vue')
-const Hehun = () => import('../views/Hehun.vue')
-const Liuyao = () => import('../views/Liuyao.vue')
-const Qiming = () => import('../views/Qiming.vue')
-const YearlyFortune = () => import('../views/YearlyFortune.vue')
+const Help = () => import('../views/Help/index.vue')
+const Recharge = () => import('../views/Recharge/index.vue')
+const Vip = () => import('../views/Vip/index.vue')
+const Hehun = () => import('../views/Hehun/index.vue')
+const Liuyao = () => import('../views/Liuyao/index.vue')
+const Qiming = () => import('../views/Qiming/index.vue')
+const YearlyFortune = () => import('../views/YearlyFortune/index.vue')
 
 // 法律页面
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
@@ -49,11 +50,18 @@ const AdminDailyManage = () => import('../views/admin/DailyManage.vue')
 const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
 const AdminSeoManage = () => import('../views/admin/SeoManage.vue')
 const AdminTarotCards = () => import('../views/admin/TarotCards.vue')
-const AdminQuestionTemplates = () => import('../views/admin/QuestionTemplates.vue')
+
 const AdminOperationLogs = () => import('../views/admin/OperationLogs.vue')
 const AdminLoginLogs = () => import('../views/admin/LoginLogs.vue')
 const AdminApiLogs = () => import('../views/admin/ApiLogs.vue')
 const AdminSystemNotice = () => import('../views/admin/SystemNotice.vue')
+const AdminAiConfig = () => import('../views/admin/AiConfig.vue')
+const AdminAiPrompts = () => import('../views/admin/AiPrompts.vue')
+const AdminHehunManage = () => import('../views/admin/HehunManage.vue')
+const AdminLiuyaoManage = () => import('../views/admin/LiuyaoManage.vue')
+const AdminQimingManage = () => import('../views/admin/QimingManage.vue')
+const AdminYearlyFortuneManage = () => import('../views/admin/YearlyFortuneManage.vue')
+const AdminSystemConfig = () => import('../views/admin/SystemConfig.vue')
 
 const routes = [
   {
@@ -271,6 +279,7 @@ const routes = [
   {
     path: '/maodou',
     component: AdminLayout,
+    redirect: '/maodou/dashboard',
     meta: {
       requiresAdmin: true
     },
@@ -428,14 +437,6 @@ const routes = [
         }
       },
       {
-        path: 'question-templates',
-        name: 'AdminQuestionTemplates',
-        component: AdminQuestionTemplates,
-        meta: {
-          title: '问题模板管理'
-        }
-      },
-      {
         path: 'log/operation',
         name: 'AdminOperationLogs',
         component: AdminOperationLogs,
@@ -465,6 +466,62 @@ const routes = [
         component: AdminSystemNotice,
         meta: {
           title: '系统公告'
+        }
+      },
+      {
+        path: 'ai/config',
+        name: 'AdminAiConfig',
+        component: AdminAiConfig,
+        meta: {
+          title: 'AI配置'
+        }
+      },
+      {
+        path: 'ai/prompts',
+        name: 'AdminAiPrompts',
+        component: AdminAiPrompts,
+        meta: {
+          title: 'AI提示词管理'
+        }
+      },
+      {
+        path: 'hehun-manage',
+        name: 'AdminHehunManage',
+        component: AdminHehunManage,
+        meta: {
+          title: '合婚管理'
+        }
+      },
+      {
+        path: 'liuyao-manage',
+        name: 'AdminLiuyaoManage',
+        component: AdminLiuyaoManage,
+        meta: {
+          title: '六爻管理'
+        }
+      },
+      {
+        path: 'qiming-manage',
+        name: 'AdminQimingManage',
+        component: AdminQimingManage,
+        meta: {
+          title: '取名管理'
+        }
+      },
+      {
+        path: 'yearly-fortune-manage',
+        name: 'AdminYearlyFortuneManage',
+        component: AdminYearlyFortuneManage,
+        meta: {
+          title: '流年运势管理'
+        }
+      },
+      {
+        path: 'system/config',
+        name: 'AdminSystemConfig',
+        component: AdminSystemConfig,
+        meta: {
+          title: '系统配置'
         }
       }
     ]
@@ -652,6 +709,50 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+// ==================== SEO配置缓存 ====================
+// 数据库SEO配置缓存（启动时加载一次，以route_path为key）
+let dbSeoConfigCache = null
+let dbSeoConfigLoading = false
+
+async function loadDbSeoConfigs() {
+  if (dbSeoConfigCache !== null || dbSeoConfigLoading) return
+  dbSeoConfigLoading = true
+  try {
+    const res = await getActiveSeoConfigs()
+    if (res.data?.code === 200) {
+      dbSeoConfigCache = res.data.data || {}
+    }
+  } catch (e) {
+    // 加载失败不影响正常使用，回退到静态配置
+    dbSeoConfigCache = {}
+  } finally {
+    dbSeoConfigLoading = false
+  }
+}
+
+/**
+ * 根据路由路径从数据库缓存中获取SEO配置
+ * 返回null则表示无数据库配置，使用静态兜底
+ */
+function getDbSeoConfig(routePath) {
+  if (!dbSeoConfigCache) return null
+  // 精确匹配路由路径
+  const config = dbSeoConfigCache[routePath]
+  if (!config) return null
+  
+  // 转换为useSEO需要的格式
+  return {
+    title: config.title,
+    description: config.description,
+    keywords: config.keywords ? config.keywords.split(',') : [],
+    image: config.og_image || '/images/og-default.jpg',
+    robots: config.robots || 'index,follow',
+  }
+}
+
+// 路由创建后立即开始加载数据库SEO配置
+loadDbSeoConfigs()
+
 // 路由后置守卫 - 设置SEO
 router.afterEach((to) => {
   const isAdminRoute = typeof to?.path === 'string' && to.path.startsWith('/maodou')
@@ -672,8 +773,9 @@ router.afterEach((to) => {
     return
   }
 
-  // 获取页面SEO配置
-  const seoConfig = to.meta.seo || seoConfigs.home
+  // 获取页面SEO配置：数据库优先 → 路由meta静态配置 → 默认首页配置
+  const dbConfig = getDbSeoConfig(to.path)
+  const seoConfig = dbConfig || to.meta.seo || seoConfigs.home
   
   // 添加当前URL
   const seoOptions = {

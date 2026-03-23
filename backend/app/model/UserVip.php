@@ -72,8 +72,9 @@ class UserVip extends Model
     
     /**
      * 激活或续费VIP
+     * @param int $durationMonths 时长（月）
      */
-    public static function activateVip(int $userId, string $vipType, int $durationDays = 30): self
+    public static function activateVip(int $userId, string $vipType, int $durationMonths = 1): self
     {
         $existingVip = self::where('user_id', $userId)
             ->where('status', self::STATUS_ACTIVE)
@@ -81,8 +82,8 @@ class UserVip extends Model
             ->find();
         
         if ($existingVip) {
-            // 续费：延长到期时间
-            $existingVip->end_time = date('Y-m-d H:i:s', strtotime($existingVip->end_time . " +{$durationDays} days"));
+            // 续费：延长到期时间（按月）
+            $existingVip->end_time = date('Y-m-d H:i:s', strtotime($existingVip->end_time . " +{$durationMonths} months"));
             $existingVip->vip_type = $vipType;
             $existingVip->save();
             return $existingVip;
@@ -94,7 +95,7 @@ class UserVip extends Model
         $vip->vip_type = $vipType;
         $vip->status = self::STATUS_ACTIVE;
         $vip->start_time = date('Y-m-d H:i:s');
-        $vip->end_time = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+        $vip->end_time = date('Y-m-d H:i:s', strtotime("+{$durationMonths} months"));
         $vip->save();
         
         return $vip;

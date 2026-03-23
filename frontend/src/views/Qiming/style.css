@@ -1,0 +1,298 @@
+.qiming-page {
+  padding: 40px 0;
+  min-height: 80vh;
+}
+
+/* ── 表单卡片 ── */
+.qiming-form {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 36px 32px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.required {
+  color: var(--danger-color);
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* 风格标签选择 */
+.style-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.style-tag {
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.style-tag:hover {
+  border-color: var(--primary-light-20);
+  color: var(--primary-color);
+}
+
+.style-tag.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(184, 134, 11, 0.1));
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.submit-btn {
+  width: 100%;
+  margin-top: 8px;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: var(--radius-btn);
+  letter-spacing: 0.04em;
+}
+
+.cost-hint {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── 结果卡片 ── */
+.qiming-result {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.result-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.result-meta .meta-item {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── 取名结果卡片（v-html 注入内容，用 :deep） ── */
+:deep(.name-suggestions) {
+  display: grid;
+  gap: 20px;
+}
+
+:deep(.name-card) {
+  position: relative;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: 24px 24px 20px;
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+:deep(.name-card:hover) {
+  border-color: var(--primary-light-20);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
+  transform: translateY(-2px);
+}
+
+:deep(.name-card-index) {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: var(--bg-primary);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.name-title) {
+  margin: 0 0 20px 0;
+  color: var(--primary-color);
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.12em;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--border-color);
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+:deep(.name-detail) {
+  display: grid;
+  gap: 14px;
+}
+
+:deep(.detail-item) {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+:deep(.detail-label) {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(184, 134, 11, 0.06));
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+
+:deep(.detail-item p) {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--text-regular);
+  font-size: 14px;
+}
+
+/* ── 信息提示区 ── */
+.qiming-tips {
+  max-width: 640px;
+  margin: 24px auto 0;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(184, 134, 11, 0.02));
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.tips-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  padding-left: 16px;
+  position: relative;
+}
+
+.tips-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+}
+
+/* ── 响应式 ── */
+@media (max-width: 640px) {
+  .qiming-page {
+    padding: 20px 0;
+  }
+
+  .qiming-form {
+    padding: 24px 20px;
+    margin: 0 12px;
+  }
+
+  .qiming-result {
+    padding: 24px 18px;
+    margin: 0 12px;
+  }
+
+  :deep(.name-title) {
+    font-size: 22px;
+  }
+
+  :deep(.name-card) {
+    padding: 18px 16px;
+  }
+
+  :deep(.detail-item) {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .result-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .style-tags {
+    gap: 6px;
+  }
+
+  .style-tag {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .qiming-tips {
+    margin: 16px 12px 0;
+  }
+}
