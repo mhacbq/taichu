@@ -1,12 +1,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Search, View, Refresh } from '@element-plus/icons-vue'
 import {
   getShenshaList,
   getShenshaOptions,
-  saveShensha,
-  deleteShenshaApi,
   toggleShenshaStatus
 } from '@/api/admin'
 
@@ -30,32 +28,9 @@ const filters = reactive({
   pageSize: 20
 })
 
-// 编辑对话框
+// 查看详情对话框
 const dialogVisible = ref(false)
-const dialogTitle = ref('新增神煞')
-const formRef = ref(null)
-const saving = ref(false)
-const form = reactive({
-  id: 0,
-  name: '',
-  type: '',
-  category: '',
-  description: '',
-  effect: '',
-  check_rule: '',
-  check_code: '',
-  gan_rules: '',
-  zhi_rules: '',
-  sort: 0,
-  status: 1
-})
-
-// 表单校验规则
-const formRules = {
-  name: [{ required: true, message: '请输入神煞名称', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择吉凶类型', trigger: 'change' }],
-  category: [{ required: true, message: '请选择分类', trigger: 'change' }]
-}
+const currentRow = ref(null)
 
 // ========== 类型/分类映射 ==========
 const typeOptions = [
@@ -174,107 +149,10 @@ const handleSizeChange = (size) => {
   loadList()
 }
 
-// 新增
-const handleAdd = () => {
-  dialogTitle.value = '新增神煞'
-  Object.assign(form, {
-    id: 0,
-    name: '',
-    type: '',
-    category: '',
-    description: '',
-    effect: '',
-    check_rule: '',
-    check_code: '',
-    gan_rules: '',
-    zhi_rules: '',
-    sort: 0,
-    status: 1
-  })
+// 查看详情
+const handleView = (row) => {
+  currentRow.value = row
   dialogVisible.value = true
-}
-
-// 编辑
-const handleEdit = (row) => {
-  dialogTitle.value = '编辑神煞'
-  Object.assign(form, {
-    id: row.id,
-    name: row.name || '',
-    type: row.type || '',
-    category: row.category || '',
-    description: row.description || '',
-    effect: row.effect || '',
-    check_rule: row.check_rule || '',
-    check_code: row.check_code || '',
-    gan_rules: row.gan_rules ? (typeof row.gan_rules === 'string' ? row.gan_rules : JSON.stringify(row.gan_rules, null, 2)) : '',
-    zhi_rules: row.zhi_rules ? (typeof row.zhi_rules === 'string' ? row.zhi_rules : JSON.stringify(row.zhi_rules, null, 2)) : '',
-    sort: row.sort || 0,
-    status: row.status ?? 1
-  })
-  dialogVisible.value = true
-}
-
-// 保存
-const handleSave = async () => {
-  if (!formRef.value) return
-  await formRef.value.validate()
-
-  saving.value = true
-  try {
-    const submitData = { ...form }
-    // 解析 JSON 字段
-    if (submitData.gan_rules && typeof submitData.gan_rules === 'string') {
-      try {
-        submitData.gan_rules = JSON.parse(submitData.gan_rules)
-      } catch {
-        ElMessage.warning('天干规则JSON格式不正确，将作为文本保存')
-        submitData.gan_rules = null
-      }
-    }
-    if (submitData.zhi_rules && typeof submitData.zhi_rules === 'string') {
-      try {
-        submitData.zhi_rules = JSON.parse(submitData.zhi_rules)
-      } catch {
-        ElMessage.warning('地支规则JSON格式不正确，将作为文本保存')
-        submitData.zhi_rules = null
-      }
-    }
-
-    const res = await saveShensha(submitData)
-    if (res.data?.code === 0 || res.data?.code === 200) {
-      ElMessage.success(form.id ? '更新成功' : '新增成功')
-      dialogVisible.value = false
-      loadList()
-    } else {
-      ElMessage.error(res.data?.msg || '保存失败')
-    }
-  } catch (e) {
-    console.error('保存失败:', e)
-    ElMessage.error('保存失败，请重试')
-  } finally {
-    saving.value = false
-  }
-}
-
-// 删除
-const handleDelete = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除「${row.name}」吗？删除后不可恢复。`, '确认删除', {
-      type: 'warning',
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消'
-    })
-
-    const res = await deleteShenshaApi(row.id)
-    if (res.data?.code === 0 || res.data?.code === 200) {
-      ElMessage.success('删除成功')
-      loadList()
-    } else {
-      ElMessage.error(res.data?.msg || '删除失败')
-    }
-  } catch {
-    // 用户取消
-  }
 }
 
 // 切换状态
@@ -327,8 +205,24 @@ onMounted(() => {
         <h2>神煞管理</h2>
         <span class="header-tip">管理八字算法中的神煞数据，启用/停用将直接影响前端排盘结果中对应神煞的显示</span>
       </div>
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增神煞</el-button>
     </div>
+
+    <!-- 运营说明 -->
+    <el-alert
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px"
+    >
+      <template #title>
+        <span style="font-weight: 600">运营提示</span>
+      </template>
+      <div style="line-height: 1.8">
+        神煞数据由算法程序维护，此页面<strong>仅支持控制「启用/停用」状态</strong>。<br />
+        <strong>启用</strong>：该神煞会在前端排盘结果中正常显示；<strong>停用</strong>：前端排盘将隐藏该神煞。<br />
+        其他信息（名称、类型、分类、含义、规则等）如需修改，请联系开发人员调整算法代码。
+      </div>
+    </el-alert>
 
     <!-- 统计卡片 -->
     <div class="stats-row">
@@ -414,10 +308,9 @@ onMounted(() => {
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" align="center" fixed="right">
+        <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" link :icon="View" @click="handleView(row)">查看</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -436,71 +329,63 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="720px" destroy-on-close>
-      <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px" label-position="right">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="名称" prop="name">
-              <el-input v-model="form.name" placeholder="如：天乙贵人" maxlength="20" show-word-limit />
-            </el-form-item>
+    <!-- 查看详情对话框 -->
+    <el-dialog v-model="dialogVisible" title="神煞详情" width="680px" destroy-on-close>
+      <template v-if="currentRow">
+        <!-- 基本信息（只读展示） -->
+        <el-descriptions :column="2" border style="margin-bottom: 20px">
+          <el-descriptions-item label="名称">{{ currentRow.name }}</el-descriptions-item>
+          <el-descriptions-item label="排序">{{ currentRow.sort }}</el-descriptions-item>
+          <el-descriptions-item label="吉凶类型">
+            <el-tag :type="getTypeTagType(currentRow.type)" size="small">{{ getTypeLabel(currentRow.type) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="分类">
+            <el-tag type="info" size="small" effect="plain">{{ getCategoryLabel(currentRow.category) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="含义" :span="2">{{ currentRow.description || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="影响" :span="2">{{ currentRow.effect || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="查法口诀" :span="2">{{ currentRow.check_rule || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="算法代码" :span="2">{{ currentRow.check_code || '-' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 规则数据（只读展示） -->
+        <el-row :gutter="16" v-if="currentRow.gan_rules || currentRow.zhi_rules" style="margin-bottom: 20px">
+          <el-col :span="12" v-if="currentRow.gan_rules">
+            <div class="rule-block">
+              <div class="rule-title">天干规则</div>
+              <pre class="rule-content">{{ typeof currentRow.gan_rules === 'string' ? currentRow.gan_rules : JSON.stringify(currentRow.gan_rules, null, 2) }}</pre>
+            </div>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="排序" prop="sort">
-              <el-input-number v-model="form.sort" :min="0" :max="999" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="吉凶类型" prop="type">
-              <el-select v-model="form.type" placeholder="请选择" style="width: 100%">
-                <el-option v-for="t in typeOptions" :key="t.value" :label="t.label" :value="t.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="分类" prop="category">
-              <el-select v-model="form.category" placeholder="请选择" style="width: 100%">
-                <el-option v-for="c in categoryOptions" :key="c.value" :label="c.label" :value="c.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="含义" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="神煞的含义说明" maxlength="200" show-word-limit />
-        </el-form-item>
-        <el-form-item label="影响" prop="effect">
-          <el-input v-model="form.effect" type="textarea" :rows="2" placeholder="对命主的具体影响" maxlength="200" show-word-limit />
-        </el-form-item>
-        <el-form-item label="查法口诀" prop="check_rule">
-          <el-input v-model="form.check_rule" type="textarea" :rows="2" placeholder="传统查法口诀" maxlength="300" show-word-limit />
-        </el-form-item>
-        <el-form-item label="算法代码" prop="check_code">
-          <el-input v-model="form.check_code" type="textarea" :rows="2" placeholder="算法中对应的 key（如 tianyi_guiren），仅供参考" maxlength="100" />
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="天干规则">
-              <el-input v-model="form.gan_rules" type="textarea" :rows="4" placeholder='JSON格式，如：{"甲":["丑","未"],...}' />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="地支规则">
-              <el-input v-model="form.zhi_rules" type="textarea" :rows="4" placeholder='JSON格式，如：{"寅":"申",...}' />
-            </el-form-item>
+          <el-col :span="12" v-if="currentRow.zhi_rules">
+            <div class="rule-block">
+              <div class="rule-title">地支规则</div>
+              <pre class="rule-content">{{ typeof currentRow.zhi_rules === 'string' ? currentRow.zhi_rules : JSON.stringify(currentRow.zhi_rules, null, 2) }}</pre>
+            </div>
           </el-col>
         </el-row>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="form.status">
-            <el-radio :value="1">启用（前端排盘显示此神煞）</el-radio>
-            <el-radio :value="0">停用（前端排盘隐藏此神煞）</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
+
+        <!-- 状态控制（唯一可编辑项） -->
+        <el-divider content-position="left">展示控制（可修改）</el-divider>
+        <div class="status-control">
+          <div class="status-desc">
+            <el-icon style="color: #e6a23c; margin-right: 4px"><View /></el-icon>
+            <span>控制此神煞是否在前端排盘结果中显示：</span>
+          </div>
+          <el-switch
+            :model-value="currentRow.status === 1"
+            active-text="启用（前端显示）"
+            inactive-text="停用（前端隐藏）"
+            inline-prompt
+            style="--el-switch-on-color: #67c23a; --el-switch-off-color: #f56c6c"
+            @change="handleToggleStatus(currentRow)"
+          />
+        </div>
+        <div class="status-hint">
+          以上信息（名称、类型、分类、含义、规则等）由算法程序维护，如需修改请联系开发人员。
+        </div>
+      </template>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button @click="dialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -593,6 +478,57 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+/* 规则展示 */
+.rule-block {
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.rule-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.rule-content {
+  font-size: 12px;
+  color: #909399;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 160px;
+  overflow-y: auto;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* 状态控制区 */
+.status-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.status-desc {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #606266;
+}
+
+.status-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 12px;
+  text-align: center;
+  font-style: italic;
 }
 
 /* 响应式 */
