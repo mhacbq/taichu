@@ -54,6 +54,13 @@ const AdminOperationLogs = () => import('../views/admin/OperationLogs.vue')
 const AdminLoginLogs = () => import('../views/admin/LoginLogs.vue')
 const AdminApiLogs = () => import('../views/admin/ApiLogs.vue')
 const AdminSystemNotice = () => import('../views/admin/SystemNotice.vue')
+const AdminAiConfig = () => import('../views/admin/AiConfig.vue')
+const AdminAiPrompts = () => import('../views/admin/AiPrompts.vue')
+const AdminHehunManage = () => import('../views/admin/HehunManage.vue')
+const AdminLiuyaoManage = () => import('../views/admin/LiuyaoManage.vue')
+const AdminQimingManage = () => import('../views/admin/QimingManage.vue')
+const AdminYearlyFortuneManage = () => import('../views/admin/YearlyFortuneManage.vue')
+const AdminSystemConfig = () => import('../views/admin/SystemConfig.vue')
 
 const routes = [
   {
@@ -271,6 +278,7 @@ const routes = [
   {
     path: '/maodou',
     component: AdminLayout,
+    redirect: '/maodou/dashboard',
     meta: {
       requiresAdmin: true
     },
@@ -465,6 +473,62 @@ const routes = [
         component: AdminSystemNotice,
         meta: {
           title: '系统公告'
+        }
+      },
+      {
+        path: 'ai/config',
+        name: 'AdminAiConfig',
+        component: AdminAiConfig,
+        meta: {
+          title: 'AI配置'
+        }
+      },
+      {
+        path: 'ai/prompts',
+        name: 'AdminAiPrompts',
+        component: AdminAiPrompts,
+        meta: {
+          title: 'AI提示词管理'
+        }
+      },
+      {
+        path: 'hehun-manage',
+        name: 'AdminHehunManage',
+        component: AdminHehunManage,
+        meta: {
+          title: '合婚管理'
+        }
+      },
+      {
+        path: 'liuyao-manage',
+        name: 'AdminLiuyaoManage',
+        component: AdminLiuyaoManage,
+        meta: {
+          title: '六爻管理'
+        }
+      },
+      {
+        path: 'qiming-manage',
+        name: 'AdminQimingManage',
+        component: AdminQimingManage,
+        meta: {
+          title: '取名管理'
+        }
+      },
+      {
+        path: 'yearly-fortune-manage',
+        name: 'AdminYearlyFortuneManage',
+        component: AdminYearlyFortuneManage,
+        meta: {
+          title: '流年运势管理'
+        }
+      },
+      {
+        path: 'system/config',
+        name: 'AdminSystemConfig',
+        component: AdminSystemConfig,
+        meta: {
+          title: '系统配置'
         }
       }
     ]

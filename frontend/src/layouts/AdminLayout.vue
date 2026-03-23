@@ -14,7 +14,7 @@
         router
         class="sidebar-menu"
       >
-        <el-menu-item index="/maodou">
+        <el-menu-item index="/maodou/dashboard">
           <el-icon><DataLine /></el-icon>
           <template #title>仪表板</template>
         </el-menu-item>
@@ -22,11 +22,10 @@
         <el-sub-menu index="users">
           <template #title>
             <el-icon><User /></el-icon>
-            <span>用户运营</span>
+            <span>用户管理</span>
           </template>
-          <el-menu-item index="/maodou/users">用户管理</el-menu-item>
-          <el-menu-item index="/maodou/points">积分记录</el-menu-item>
-          <el-menu-item index="/maodou/feedback">用户反馈</el-menu-item>
+          <el-menu-item index="/maodou/list">用户列表</el-menu-item>
+          <el-menu-item index="/maodou/feedback/list">用户反馈</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="points">
@@ -34,17 +33,18 @@
             <el-icon><Coin /></el-icon>
             <span>积分管理</span>
           </template>
-          <el-menu-item index="/maodou/points">积分记录</el-menu-item>
-          <el-menu-item index="/maodou/points-rules">积分规则</el-menu-item>
+          <el-menu-item index="/maodou/points/records">积分记录</el-menu-item>
+          <el-menu-item index="/maodou/points/rules">积分规则</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="orders">
+        <el-sub-menu index="payment">
           <template #title>
             <el-icon><Money /></el-icon>
-            <span>支付订单</span>
+            <span>支付管理</span>
           </template>
-          <el-menu-item index="/maodou/orders">订单列表</el-menu-item>
-          <el-menu-item index="/maodou/packages">套餐管理</el-menu-item>
+          <el-menu-item index="/maodou/payment/orders">订单列表</el-menu-item>
+          <el-menu-item index="/maodou/payment/analysis">充值分析</el-menu-item>
+          <el-menu-item index="/maodou/payment/vip-packages">VIP套餐</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="content">
@@ -52,19 +52,34 @@
             <el-icon><Document /></el-icon>
             <span>内容管理</span>
           </template>
+          <el-menu-item index="/maodou/bazi-manage">八字管理</el-menu-item>
+          <el-menu-item index="/maodou/tarot-manage">塔罗管理</el-menu-item>
+          <el-menu-item index="/maodou/hehun-manage">合婚管理</el-menu-item>
+          <el-menu-item index="/maodou/liuyao-manage">六爻管理</el-menu-item>
+          <el-menu-item index="/maodou/qiming-manage">取名管理</el-menu-item>
+          <el-menu-item index="/maodou/yearly-fortune-manage">流年运势</el-menu-item>
+          <el-menu-item index="/maodou/tarot-cards">塔罗牌库</el-menu-item>
           <el-menu-item index="/maodou/almanac">黄历管理</el-menu-item>
-          <el-menu-item index="/maodou/knowledge">知识库</el-menu-item>
+          <el-menu-item index="/maodou/daily">每日运势</el-menu-item>
           <el-menu-item index="/maodou/shensha">神煞管理</el-menu-item>
-          <el-menu-item index="/maodou/content">内容记录</el-menu-item>
+          <el-menu-item index="/maodou/question-templates">问题模板</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="ai">
+          <template #title>
+            <el-icon><MagicStick /></el-icon>
+            <span>AI管理</span>
+          </template>
+          <el-menu-item index="/maodou/ai/config">AI配置</el-menu-item>
+          <el-menu-item index="/maodou/ai/prompts">提示词管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="seo">
           <template #title>
             <el-icon><TrendCharts /></el-icon>
-            <span>SEO 优化</span>
+            <span>SEO管理</span>
           </template>
           <el-menu-item index="/maodou/seo">SEO配置</el-menu-item>
-          <el-menu-item index="/maodou/seo/stats">SEO统计</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="system">
@@ -72,12 +87,12 @@
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
           </template>
-          <el-menu-item index="/maodou/config">系统配置</el-menu-item>
+          <el-menu-item index="/maodou/system/config">系统配置</el-menu-item>
           <el-menu-item index="/maodou/system/notice">系统公告</el-menu-item>
-          <el-menu-item index="/maodou/system-tools">系统工具</el-menu-item>
-          <el-menu-item index="/maodou/tasks">定时任务</el-menu-item>
-          <el-menu-item index="/maodou/logs">系统日志</el-menu-item>
-          <el-menu-item index="/maodou/anticheat">反作弊</el-menu-item>
+          <el-menu-item index="/maodou/sms/config">短信配置</el-menu-item>
+          <el-menu-item index="/maodou/log/operation">操作日志</el-menu-item>
+          <el-menu-item index="/maodou/log/login">登录日志</el-menu-item>
+          <el-menu-item index="/maodou/log/api">API日志</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -123,7 +138,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   DataLine, User, Money, Document, TrendCharts, Setting,
-  Expand, Fold, HomeFilled, SwitchButton, Close
+  Expand, Fold, HomeFilled, SwitchButton, Close, Coin, MagicStick
 } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
@@ -134,25 +149,34 @@ const collapsed = ref(false)
 const activeMenu = computed(() => route.path)
 
 const pageTitles = {
-  '/maodou': '仪表板',
-  '/maodou/users': '用户管理',
-  '/maodou/points': '积分记录',
-  '/maodou/points-rules': '积分规则',
-  '/maodou/feedback': '用户反馈',
-  '/maodou/orders': '订单列表',
-  '/maodou/packages': '套餐管理',
+  '/maodou/dashboard': '仪表板',
+  '/maodou/list': '用户列表',
+  '/maodou/feedback/list': '用户反馈',
+  '/maodou/points/records': '积分记录',
+  '/maodou/points/rules': '积分规则',
+  '/maodou/payment/orders': '订单列表',
+  '/maodou/payment/analysis': '充值分析',
+  '/maodou/payment/vip-packages': 'VIP套餐管理',
+  '/maodou/bazi-manage': '八字管理',
+  '/maodou/tarot-manage': '塔罗管理',
+  '/maodou/hehun-manage': '合婚管理',
+  '/maodou/liuyao-manage': '六爻管理',
+  '/maodou/qiming-manage': '取名管理',
+  '/maodou/yearly-fortune-manage': '流年运势管理',
+  '/maodou/tarot-cards': '塔罗牌库',
   '/maodou/almanac': '黄历管理',
-  '/maodou/knowledge': '知识库管理',
+  '/maodou/daily': '每日运势管理',
   '/maodou/shensha': '神煞管理',
-  '/maodou/content': '内容记录',
+  '/maodou/question-templates': '问题模板',
+  '/maodou/ai/config': 'AI配置',
+  '/maodou/ai/prompts': '提示词管理',
   '/maodou/seo': 'SEO配置',
-  '/maodou/seo/stats': 'SEO统计',
-  '/maodou/config': '系统配置',
+  '/maodou/system/config': '系统配置',
   '/maodou/system/notice': '系统公告',
-  '/maodou/system-tools': '系统工具',
-  '/maodou/tasks': '定时任务',
-  '/maodou/logs': '系统日志',
-  '/maodou/anticheat': '反作弊管理',
+  '/maodou/sms/config': '短信配置',
+  '/maodou/log/operation': '操作日志',
+  '/maodou/log/login': '登录日志',
+  '/maodou/log/api': 'API日志',
 }
 const currentPageTitle = computed(() => pageTitles[route.path] || '')
 

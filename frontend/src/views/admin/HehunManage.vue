@@ -1,3 +1,4 @@
+
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -30,8 +31,9 @@ const loadList = async () => {
       page_size: pageSize.value,
       ...searchForm.value
     }
+    // 清除空参数
     Object.keys(params).forEach(k => { if (!params[k]) delete params[k] })
-    const res = await request.get('/maodou/tarot-manage', { params })
+    const res = await request.get('/maodou/hehun-manage', { params })
     if (res.code === 200) {
       list.value = res.data.list || []
       total.value = res.data.total || 0
@@ -39,7 +41,7 @@ const loadList = async () => {
       ElMessage.error(res.message || '加载失败')
     }
   } catch (e) {
-    console.error('加载塔罗记录失败:', e)
+    console.error('加载合婚记录失败:', e)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
@@ -49,7 +51,7 @@ const loadList = async () => {
 // 加载统计
 const loadStats = async () => {
   try {
-    const res = await request.get('/maodou/tarot-manage/stats')
+    const res = await request.get('/maodou/hehun-manage/stats')
     if (res.code === 200) {
       stats.value = res.data
     }
@@ -63,7 +65,7 @@ const handleView = async (row) => {
   detailVisible.value = true
   detailLoading.value = true
   try {
-    const res = await request.get(`/maodou/tarot-manage/${row.id}`)
+    const res = await request.get(`/maodou/hehun-manage/${row.id}`)
     if (res.code === 200) {
       detailData.value = res.data
     } else {
@@ -79,8 +81,8 @@ const handleView = async (row) => {
 // 删除
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除这条塔罗记录吗？', '确认删除', { type: 'warning' })
-    const res = await request.delete(`/maodou/tarot-manage/${row.id}`)
+    await ElMessageBox.confirm('确定要删除这条合婚记录吗？', '确认删除', { type: 'warning' })
+    const res = await request.delete(`/maodou/hehun-manage/${row.id}`)
     if (res.code === 200) {
       ElMessage.success('删除成功')
       loadList()
@@ -101,7 +103,7 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条记录吗？`, '批量删除', { type: 'warning' })
-    const res = await request.post('/maodou/tarot-manage/batch-delete', { ids: selectedIds.value })
+    const res = await request.post('/maodou/hehun-manage/batch-delete', { ids: selectedIds.value })
     if (res.code === 200) {
       ElMessage.success('批量删除成功')
       selectedIds.value = []
@@ -141,18 +143,6 @@ const handleSizeChange = (size) => {
   loadList()
 }
 
-// 牌阵类型映射
-const getSpreadLabel = (spread) => {
-  const map = {
-    'single': '单牌',
-    'three': '三牌阵',
-    'celtic_cross': '凯尔特十字',
-    'horseshoe': '马蹄铁阵',
-    'time_flow': '时间之流'
-  }
-  return map[spread] || spread || '未知'
-}
-
 onMounted(() => {
   loadList()
   loadStats()
@@ -162,7 +152,7 @@ onMounted(() => {
 <template>
   <div class="admin-manage-page">
     <div class="page-header">
-      <h2>塔罗记录管理</h2>
+      <h2>合婚记录管理</h2>
     </div>
 
     <!-- 统计卡片 -->
@@ -189,7 +179,7 @@ onMounted(() => {
     <div class="search-form">
       <el-form :inline="true" :model="searchForm">
         <el-form-item label="关键词">
-          <el-input v-model="searchForm.keyword" placeholder="搜索问题/牌名" clearable />
+          <el-input v-model="searchForm.keyword" placeholder="搜索姓名" clearable />
         </el-form-item>
         <el-form-item label="用户ID">
           <el-input v-model="searchForm.user_id" placeholder="用户ID" clearable />
@@ -220,14 +210,11 @@ onMounted(() => {
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="user_id" label="用户ID" width="90" />
-        <el-table-column prop="question" label="问题" min-width="180" show-overflow-tooltip />
-        <el-table-column label="牌阵" width="110">
-          <template #default="{ row }">
-            <el-tag size="small">{{ getSpreadLabel(row.spread_type || row.spread) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="card_count" label="抽牌数" width="80" />
-        <el-table-column prop="created_at" label="占卜时间" width="180" />
+        <el-table-column prop="male_name" label="男方姓名" min-width="100" />
+        <el-table-column prop="female_name" label="女方姓名" min-width="100" />
+        <el-table-column prop="male_birthday" label="男方生辰" min-width="130" />
+        <el-table-column prop="female_birthday" label="女方生辰" min-width="130" />
+        <el-table-column prop="created_at" label="测算时间" width="180" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleView(row)">详情</el-button>
@@ -248,23 +235,21 @@ onMounted(() => {
     </div>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="塔罗记录详情" width="700px">
+    <el-dialog v-model="detailVisible" title="合婚记录详情" width="700px">
       <div v-loading="detailLoading">
         <template v-if="detailData">
           <el-descriptions :column="2" border>
             <el-descriptions-item label="记录ID">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="用户ID">{{ detailData.user_id }}</el-descriptions-item>
-            <el-descriptions-item label="问题" :span="2">{{ detailData.question }}</el-descriptions-item>
-            <el-descriptions-item label="牌阵类型">{{ getSpreadLabel(detailData.spread_type || detailData.spread) }}</el-descriptions-item>
-            <el-descriptions-item label="占卜时间">{{ detailData.created_at }}</el-descriptions-item>
+            <el-descriptions-item label="男方姓名">{{ detailData.male_name }}</el-descriptions-item>
+            <el-descriptions-item label="女方姓名">{{ detailData.female_name }}</el-descriptions-item>
+            <el-descriptions-item label="男方生辰">{{ detailData.male_birthday }}</el-descriptions-item>
+            <el-descriptions-item label="女方生辰">{{ detailData.female_birthday }}</el-descriptions-item>
+            <el-descriptions-item label="测算时间" :span="2">{{ detailData.created_at }}</el-descriptions-item>
           </el-descriptions>
-          <div v-if="detailData.cards" class="detail-result">
-            <h4>抽取的牌</h4>
-            <div class="result-content">{{ typeof detailData.cards === 'string' ? detailData.cards : JSON.stringify(detailData.cards, null, 2) }}</div>
-          </div>
-          <div v-if="detailData.result || detailData.interpretation" class="detail-result">
-            <h4>解读结果</h4>
-            <div class="result-content" v-html="detailData.result || detailData.interpretation"></div>
+          <div v-if="detailData.result" class="detail-result">
+            <h4>测算结果</h4>
+            <div class="result-content" v-html="detailData.result"></div>
           </div>
         </template>
       </div>

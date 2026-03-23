@@ -1,3 +1,4 @@
+
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -15,7 +16,7 @@ const detailData = ref(null)
 const detailLoading = ref(false)
 
 const searchForm = ref({
-  keyword: '',
+  surname: '',
   user_id: '',
   start_date: '',
   end_date: ''
@@ -31,7 +32,7 @@ const loadList = async () => {
       ...searchForm.value
     }
     Object.keys(params).forEach(k => { if (!params[k]) delete params[k] })
-    const res = await request.get('/maodou/tarot-manage', { params })
+    const res = await request.get('/maodou/qiming-manage', { params })
     if (res.code === 200) {
       list.value = res.data.list || []
       total.value = res.data.total || 0
@@ -39,7 +40,7 @@ const loadList = async () => {
       ElMessage.error(res.message || '加载失败')
     }
   } catch (e) {
-    console.error('加载塔罗记录失败:', e)
+    console.error('加载取名记录失败:', e)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
@@ -49,7 +50,7 @@ const loadList = async () => {
 // 加载统计
 const loadStats = async () => {
   try {
-    const res = await request.get('/maodou/tarot-manage/stats')
+    const res = await request.get('/maodou/qiming-manage/stats')
     if (res.code === 200) {
       stats.value = res.data
     }
@@ -63,7 +64,7 @@ const handleView = async (row) => {
   detailVisible.value = true
   detailLoading.value = true
   try {
-    const res = await request.get(`/maodou/tarot-manage/${row.id}`)
+    const res = await request.get(`/maodou/qiming-manage/${row.id}`)
     if (res.code === 200) {
       detailData.value = res.data
     } else {
@@ -79,8 +80,8 @@ const handleView = async (row) => {
 // 删除
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除这条塔罗记录吗？', '确认删除', { type: 'warning' })
-    const res = await request.delete(`/maodou/tarot-manage/${row.id}`)
+    await ElMessageBox.confirm('确定要删除这条取名记录吗？', '确认删除', { type: 'warning' })
+    const res = await request.delete(`/maodou/qiming-manage/${row.id}`)
     if (res.code === 200) {
       ElMessage.success('删除成功')
       loadList()
@@ -101,7 +102,7 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条记录吗？`, '批量删除', { type: 'warning' })
-    const res = await request.post('/maodou/tarot-manage/batch-delete', { ids: selectedIds.value })
+    const res = await request.post('/maodou/qiming-manage/batch-delete', { ids: selectedIds.value })
     if (res.code === 200) {
       ElMessage.success('批量删除成功')
       selectedIds.value = []
@@ -125,7 +126,7 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  searchForm.value = { keyword: '', user_id: '', start_date: '', end_date: '' }
+  searchForm.value = { surname: '', user_id: '', start_date: '', end_date: '' }
   currentPage.value = 1
   loadList()
 }
@@ -141,16 +142,10 @@ const handleSizeChange = (size) => {
   loadList()
 }
 
-// 牌阵类型映射
-const getSpreadLabel = (spread) => {
-  const map = {
-    'single': '单牌',
-    'three': '三牌阵',
-    'celtic_cross': '凯尔特十字',
-    'horseshoe': '马蹄铁阵',
-    'time_flow': '时间之流'
-  }
-  return map[spread] || spread || '未知'
+// 性别映射
+const getGenderLabel = (gender) => {
+  const map = { male: '男', female: '女', 1: '男', 2: '女' }
+  return map[gender] || gender || '未知'
 }
 
 onMounted(() => {
@@ -162,7 +157,7 @@ onMounted(() => {
 <template>
   <div class="admin-manage-page">
     <div class="page-header">
-      <h2>塔罗记录管理</h2>
+      <h2>取名记录管理</h2>
     </div>
 
     <!-- 统计卡片 -->
@@ -188,8 +183,8 @@ onMounted(() => {
     <!-- 搜索表单 -->
     <div class="search-form">
       <el-form :inline="true" :model="searchForm">
-        <el-form-item label="关键词">
-          <el-input v-model="searchForm.keyword" placeholder="搜索问题/牌名" clearable />
+        <el-form-item label="姓氏">
+          <el-input v-model="searchForm.surname" placeholder="搜索姓氏" clearable />
         </el-form-item>
         <el-form-item label="用户ID">
           <el-input v-model="searchForm.user_id" placeholder="用户ID" clearable />
@@ -220,14 +215,13 @@ onMounted(() => {
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="user_id" label="用户ID" width="90" />
-        <el-table-column prop="question" label="问题" min-width="180" show-overflow-tooltip />
-        <el-table-column label="牌阵" width="110">
-          <template #default="{ row }">
-            <el-tag size="small">{{ getSpreadLabel(row.spread_type || row.spread) }}</el-tag>
-          </template>
+        <el-table-column prop="surname" label="姓氏" width="80" />
+        <el-table-column label="性别" width="70">
+          <template #default="{ row }">{{ getGenderLabel(row.gender) }}</template>
         </el-table-column>
-        <el-table-column prop="card_count" label="抽牌数" width="80" />
-        <el-table-column prop="created_at" label="占卜时间" width="180" />
+        <el-table-column prop="birthday" label="生辰" min-width="130" />
+        <el-table-column prop="name_count" label="推荐数" width="80" />
+        <el-table-column prop="created_at" label="测算时间" width="180" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleView(row)">详情</el-button>
@@ -248,23 +242,28 @@ onMounted(() => {
     </div>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="塔罗记录详情" width="700px">
+    <el-dialog v-model="detailVisible" title="取名记录详情" width="700px">
       <div v-loading="detailLoading">
         <template v-if="detailData">
           <el-descriptions :column="2" border>
             <el-descriptions-item label="记录ID">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="用户ID">{{ detailData.user_id }}</el-descriptions-item>
-            <el-descriptions-item label="问题" :span="2">{{ detailData.question }}</el-descriptions-item>
-            <el-descriptions-item label="牌阵类型">{{ getSpreadLabel(detailData.spread_type || detailData.spread) }}</el-descriptions-item>
-            <el-descriptions-item label="占卜时间">{{ detailData.created_at }}</el-descriptions-item>
+            <el-descriptions-item label="姓氏">{{ detailData.surname }}</el-descriptions-item>
+            <el-descriptions-item label="性别">{{ getGenderLabel(detailData.gender) }}</el-descriptions-item>
+            <el-descriptions-item label="生辰">{{ detailData.birthday }}</el-descriptions-item>
+            <el-descriptions-item label="测算时间">{{ detailData.created_at }}</el-descriptions-item>
           </el-descriptions>
-          <div v-if="detailData.cards" class="detail-result">
-            <h4>抽取的牌</h4>
-            <div class="result-content">{{ typeof detailData.cards === 'string' ? detailData.cards : JSON.stringify(detailData.cards, null, 2) }}</div>
+          <div v-if="detailData.result" class="detail-result">
+            <h4>推荐名字</h4>
+            <div class="result-content" v-html="detailData.result"></div>
           </div>
-          <div v-if="detailData.result || detailData.interpretation" class="detail-result">
-            <h4>解读结果</h4>
-            <div class="result-content" v-html="detailData.result || detailData.interpretation"></div>
+          <div v-if="detailData.names && detailData.names.length" class="detail-result">
+            <h4>推荐名字列表</h4>
+            <div class="names-grid">
+              <el-tag v-for="(name, idx) in detailData.names" :key="idx" class="name-tag" size="large">
+                {{ detailData.surname }}{{ name.name || name }}
+              </el-tag>
+            </div>
           </div>
         </template>
       </div>
@@ -293,4 +292,6 @@ onMounted(() => {
 .detail-result { margin-top: 20px; }
 .detail-result h4 { margin-bottom: 12px; color: #333; }
 .result-content { padding: 16px; background: #f5f7fa; border-radius: 8px; line-height: 1.8; white-space: pre-wrap; }
+.names-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.name-tag { font-size: 15px; }
 </style>

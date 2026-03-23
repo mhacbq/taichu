@@ -99,7 +99,12 @@ Route::group('api/maodou', function () {
         Route::delete('qiming-manage/:id', 'admin.QimingManage/delete');
         Route::post('qiming-manage/batch-delete', 'admin.QimingManage/batchDelete');
 
-        
+        Route::get('yearly-fortune-manage', 'admin.YearlyFortuneManage/index');
+        Route::get('yearly-fortune-manage/stats', 'admin.YearlyFortuneManage/stats');
+        Route::get('yearly-fortune-manage/:id', 'admin.YearlyFortuneManage/detail');
+        Route::delete('yearly-fortune-manage/:id', 'admin.YearlyFortuneManage/delete');
+        Route::post('yearly-fortune-manage/batch-delete', 'admin.YearlyFortuneManage/batchDelete');
+
         // 内容管理
         Route::get('content/bazi', 'Admin/baziRecords');
         Route::get('content/bazi/:id', 'Admin/baziDetail');
