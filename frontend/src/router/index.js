@@ -2,12 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO'
 
 // 首屏关键页面 - 同步加载
-import Home from '../views/Home.vue'
+import Home from '../views/Home/index.vue'
 import Login from '../views/Login.vue'
 import NotFound from '../views/NotFound.vue'
 
 // 功能页面 - 懒加载（需登录访问）
-const Bazi = () => import('../views/Bazi.vue')
+const Bazi = () => import('../views/Bazi/index.vue')
 
 // 非首屏页面 - 懒加载
 const Tarot = () => import('../views/Tarot.vue')
