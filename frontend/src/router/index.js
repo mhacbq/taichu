@@ -3,19 +3,19 @@ import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO
 
 // 首屏关键页面 - 同步加载
 import Home from '../views/Home/index.vue'
-import Login from '../views/Login.vue'
-import NotFound from '../views/NotFound.vue'
+import Login from '../views/Login/index.vue'
+import NotFound from '../views/NotFound/index.vue'
 
 // 功能页面 - 懒加载（需登录访问）
 const Bazi = () => import('../views/Bazi/index.vue')
 
 // 非首屏页面 - 懒加载
 const Tarot = () => import('../views/Tarot/index.vue')
-const TarotShare = () => import('../views/TarotShare.vue')
+const TarotShare = () => import('../views/TarotShare/index.vue')
 const Daily = () => import('../views/Daily/index.vue')
 const Profile = () => import('../views/Profile/index.vue')
 
-const Help = () => import('../views/Help.vue')
+const Help = () => import('../views/Help/index.vue')
 const Recharge = () => import('../views/Recharge/index.vue')
 const Vip = () => import('../views/Vip/index.vue')
 const Hehun = () => import('../views/Hehun/index.vue')
