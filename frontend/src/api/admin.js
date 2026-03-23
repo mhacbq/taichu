@@ -28,7 +28,7 @@ export const deleteAlmanac = (date) => request.post('/maodou/almanac/delete', { 
 export const generateAlmanacMonth = (year, month) => request.post('/maodou/almanac/generate-month', { year, month })
 export const getAlmanacMonths = () => request.get('/maodou/almanac/months')
 
-// SEO绠＄悊
+// SEO管理
 export const getSeoConfigs = () => request.get('/maodou/seo/configs')
 export const getSeoStats = (params) => request.get('/maodou/seo/stats', { params })
 export const saveSeoConfig = (data) => request.post('/maodou/seo/save', data)
@@ -36,6 +36,8 @@ export const deleteSeoConfig = (route) => request.post('/maodou/seo/delete', { r
 export const getRobotsConfig = () => request.get('/maodou/seo/robots')
 export const saveRobotsConfig = (content) => request.post('/maodou/seo/robots', { content })
 export const generateSitemap = () => request.post('/maodou/seo/sitemap-generate')
+export const getSeoPageTypes = () => request.get('/maodou/seo/page-types')
+export const batchUpdateSeoStatus = (ids, status) => request.post('/maodou/seo/batch-status', { ids, status })
 
 // 绁炵厼绠＄悊
 export const getShenshaList = (params) => request.get('/maodou/shensha/list', { params })

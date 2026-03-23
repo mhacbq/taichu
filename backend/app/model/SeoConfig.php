@@ -13,7 +13,14 @@ class SeoConfig extends Model
 
     protected $type = [
         'status' => 'integer',
-        'is_deleted' => 'integer'
+        'is_deleted' => 'integer',
+        'sort_order' => 'integer'
+    ];
+
+    // 允许批量赋值的字段
+    protected $field = [
+        'page_type', 'route_path', 'title', 'keywords', 'description',
+        'og_image', 'robots', 'structured_data', 'status', 'is_deleted', 'sort_order'
     ];
 
     /**

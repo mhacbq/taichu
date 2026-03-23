@@ -319,6 +319,55 @@ const hasYiItems = computed(() => Array.isArray(fortune.value?.yi) && fortune.va
 const hasJiItems = computed(() => Array.isArray(fortune.value?.ji) && fortune.value.ji.length > 0)
 const hasLuckySection = computed(() => hasYiItems.value || hasJiItems.value)
 
+// ====== 黄历数据 ======
+const almanac = computed(() => fortune.value?.almanac || null)
+const hasAlmanac = computed(() => {
+  if (!almanac.value) return false
+  return !!(almanac.value.dayGanzhi || almanac.value.zhiri || almanac.value.sha)
+})
+const ganzhiText = computed(() => fortune.value?.ganzhi || '')
+
+// 建除十二神标签颜色
+const zhiriTagType = (zhiri) => {
+  const jiMap = { '建': 'primary', '除': 'success', '满': 'warning', '成': 'success', '开': 'success', '定': 'primary', '收': 'primary' }
+  const xiongMap = { '破': 'danger', '危': 'danger', '闭': 'info', '执': 'info', '平': '' }
+  return jiMap[zhiri] || xiongMap[zhiri] || ''
+}
+
+// 建除十二神简要描述
+const zhiriDesc = (zhiri) => {
+  const desc = {
+    '建': '建日万事生发，适合启新动工',
+    '除': '除日清旧布新，宜解除扫舍',
+    '满': '满日圆满丰盈，利祈福纳财',
+    '平': '平日平稳无波，宜修饰会友',
+    '定': '定日安定有序，利订盟立券',
+    '执': '执日有执有为，宜捕捉纳采',
+    '破': '破日宜破旧立新，忌嫁娶开市',
+    '危': '危日须谨慎行事，宜祭祀祈福',
+    '成': '成日诸事可成，大利嫁娶签约',
+    '收': '收日收获入库，宜纳财收账',
+    '开': '开日万象更新，利开市求财',
+    '闭': '闭日宜静不宜动，利祭祀修筑',
+  }
+  return desc[zhiri] || ''
+}
+
+// 时辰数据
+const shichenList = computed(() => {
+  if (!almanac.value?.shichen) return []
+  return almanac.value.shichen
+})
+const hasShichen = computed(() => shichenList.value.length > 0)
+
+// 当前时辰高亮
+const currentShichenIndex = computed(() => {
+  const hour = new Date().getHours()
+  // 子时 23:00-00:59 对应 index 0
+  if (hour === 23 || hour === 0) return 0
+  return Math.floor((hour + 1) / 2)
+})
+
 const detailSections = computed(() => {
   const details = fortune.value?.details || {}
   return [
@@ -440,7 +489,9 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
         ji: cached.ji || [],
         aspects: cached.aspects || [],
         details: cached.details || {},
-        personalized: cached.personalized || null
+        personalized: cached.personalized || null,
+        almanac: cached.almanac || null,
+        ganzhi: cached.ganzhi || '',
       }
       solarDate.value = cached.date || ''
       lunarDate.value = cached.lunarDate || ''
@@ -467,7 +518,9 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
         ji: data.ji || [],
         aspects: data.aspects || [],
         details: data.details || {},
-        personalized: data.personalized || null
+        personalized: data.personalized || null,
+        almanac: data.almanac || null,
+        ganzhi: data.ganzhi || '',
       }
       solarDate.value = data.date || ''
       lunarDate.value = data.lunarDate || ''
@@ -530,8 +583,10 @@ return {
   dailyStatus, personalizedFortune, personalizedRelationMeta,
   dailyPersonalizedState, overallStarCount, overallStarLabel,
   hasAspectCards, hasYiItems, hasJiItems, hasLuckySection, detailSections,
+  almanac, hasAlmanac, ganzhiText, shichenList, hasShichen, currentShichenIndex,
   wuxingIconMap, luckLevelConfig,
   getScoreColor, getScoreClass, getAspectIcon, getColorCode,
+  zhiriTagType, zhiriDesc,
   loadDailyFortune, loadTomorrowFortune, addToCalendar, saveBirthDate,
 }
 } // end useDaily

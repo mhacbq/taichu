@@ -1777,4 +1777,263 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-}
+}
+
+/* ====== 今日黄历卡片 ====== */
+.almanac-section {
+  padding: 24px;
+}
+
+.almanac-section h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+}
+
+.almanac-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.almanac-ganzhi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(212, 175, 55, 0.06));
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  min-width: 200px;
+}
+
+.ganzhi-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.5px;
+}
+
+.ganzhi-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-color, #B8860B);
+  letter-spacing: 1px;
+}
+
+.almanac-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.almanac-zhiri {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zhiri-tag {
+  font-size: 15px !important;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.zhiri-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.almanac-sha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sha-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.sha-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(245, 108, 108, 0.08);
+  padding: 2px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 108, 108, 0.15);
+}
+
+/* 吉神凶煞 */
+.almanac-gods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(250, 248, 244, 0.6);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.gods-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.gods-label {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 36px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.gods-group--ji .gods-label {
+  color: #67c23a;
+}
+
+.gods-group--xiong .gods-label {
+  color: #f56c6c;
+}
+
+.gods-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.god-tag {
+  border-radius: 6px !important;
+}
+
+/* 时辰宜忌 */
+.almanac-shichen {
+  margin-top: 4px;
+}
+
+.shichen-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 14px 0;
+}
+
+.shichen-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.shichen-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.shichen-item--ji {
+  border-color: rgba(103, 194, 58, 0.2);
+  background: rgba(103, 194, 58, 0.04);
+}
+
+.shichen-item--xiong {
+  border-color: rgba(245, 108, 108, 0.2);
+  background: rgba(245, 108, 108, 0.04);
+}
+
+.shichen-item--current {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.06);
+  box-shadow: 0 2px 12px rgba(var(--primary-rgb), 0.15);
+  transform: scale(1.02);
+}
+
+.shichen-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shichen-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.shichen-now {
+  font-size: 10px;
+  color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.12);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.shichen-time {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.shichen-god-tag {
+  font-size: 11px !important;
+}
+
+.shichen-type {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.type-ji {
+  color: #67c23a;
+}
+
+.type-xiong {
+  color: #f56c6c;
+}
+
+.shichen-yiji {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* 黄历响应式 */
+@media (max-width: 768px) {
+  .almanac-header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .almanac-ganzhi {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .shichen-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .shichen-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .almanac-zhiri {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

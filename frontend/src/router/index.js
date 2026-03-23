@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSEO, seoConfigs, generateWebsiteSchema } from '../composables/useSEO'
+import { getActiveSeoConfigs } from '../api/index'
 
 // 首屏关键页面 - 同步加载
 import Home from '../views/Home/index.vue'
@@ -716,6 +717,50 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+// ==================== SEO配置缓存 ====================
+// 数据库SEO配置缓存（启动时加载一次，以route_path为key）
+let dbSeoConfigCache = null
+let dbSeoConfigLoading = false
+
+async function loadDbSeoConfigs() {
+  if (dbSeoConfigCache !== null || dbSeoConfigLoading) return
+  dbSeoConfigLoading = true
+  try {
+    const res = await getActiveSeoConfigs()
+    if (res.data?.code === 200) {
+      dbSeoConfigCache = res.data.data || {}
+    }
+  } catch (e) {
+    // 加载失败不影响正常使用，回退到静态配置
+    dbSeoConfigCache = {}
+  } finally {
+    dbSeoConfigLoading = false
+  }
+}
+
+/**
+ * 根据路由路径从数据库缓存中获取SEO配置
+ * 返回null则表示无数据库配置，使用静态兜底
+ */
+function getDbSeoConfig(routePath) {
+  if (!dbSeoConfigCache) return null
+  // 精确匹配路由路径
+  const config = dbSeoConfigCache[routePath]
+  if (!config) return null
+  
+  // 转换为useSEO需要的格式
+  return {
+    title: config.title,
+    description: config.description,
+    keywords: config.keywords ? config.keywords.split(',') : [],
+    image: config.og_image || '/images/og-default.jpg',
+    robots: config.robots || 'index,follow',
+  }
+}
+
+// 路由创建后立即开始加载数据库SEO配置
+loadDbSeoConfigs()
+
 // 路由后置守卫 - 设置SEO
 router.afterEach((to) => {
   const isAdminRoute = typeof to?.path === 'string' && to.path.startsWith('/maodou')
@@ -736,8 +781,9 @@ router.afterEach((to) => {
     return
   }
 
-  // 获取页面SEO配置
-  const seoConfig = to.meta.seo || seoConfigs.home
+  // 获取页面SEO配置：数据库优先 → 路由meta静态配置 → 默认首页配置
+  const dbConfig = getDbSeoConfig(to.path)
+  const seoConfig = dbConfig || to.meta.seo || seoConfigs.home
   
   // 添加当前URL
   const seoOptions = {

@@ -277,6 +277,64 @@
           </div>
         </div>
 
+        <!-- 今日黄历 -->
+        <div v-if="hasAlmanac" class="almanac-section card card-hover">
+          <h3>📅 今日黄历</h3>
+          <div class="almanac-header">
+            <div class="almanac-ganzhi">
+              <span class="ganzhi-label">干支纪日</span>
+              <span class="ganzhi-value">{{ ganzhiText }}</span>
+            </div>
+            <div class="almanac-meta">
+              <div v-if="almanac.zhiri" class="almanac-zhiri">
+                <el-tag :type="zhiriTagType(almanac.zhiri)" size="large" effect="dark" class="zhiri-tag">{{ almanac.zhiri }}日</el-tag>
+                <span class="zhiri-desc">{{ zhiriDesc(almanac.zhiri) }}</span>
+              </div>
+              <div v-if="almanac.sha" class="almanac-sha">
+                <span class="sha-label">煞方</span>
+                <span class="sha-value">煞{{ almanac.sha }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 吉神凶煞 -->
+          <div class="almanac-gods" v-if="(almanac.jishen?.length) || (almanac.xiongsha?.length)">
+            <div v-if="almanac.jishen?.length" class="gods-group gods-group--ji">
+              <span class="gods-label">吉神</span>
+              <div class="gods-tags">
+                <el-tag v-for="g in almanac.jishen" :key="g" type="success" size="small" class="god-tag">{{ g }}</el-tag>
+              </div>
+            </div>
+            <div v-if="almanac.xiongsha?.length" class="gods-group gods-group--xiong">
+              <span class="gods-label">凶煞</span>
+              <div class="gods-tags">
+                <el-tag v-for="g in almanac.xiongsha" :key="g" type="danger" size="small" class="god-tag">{{ g }}</el-tag>
+              </div>
+            </div>
+          </div>
+
+          <!-- 时辰宜忌 -->
+          <div v-if="hasShichen" class="almanac-shichen">
+            <h4 class="shichen-title">🕐 十二时辰宜忌</h4>
+            <div class="shichen-grid">
+              <div
+                v-for="(sc, idx) in shichenList" :key="sc.name"
+                class="shichen-item"
+                :class="{ 'shichen-item--ji': sc.type === 'ji', 'shichen-item--xiong': sc.type === 'xiong', 'shichen-item--current': idx === currentShichenIndex }"
+              >
+                <div class="shichen-top">
+                  <span class="shichen-name">{{ sc.name }}时</span>
+                  <span v-if="idx === currentShichenIndex" class="shichen-now">当前</span>
+                </div>
+                <span class="shichen-time">{{ sc.time }}</span>
+                <el-tag :type="sc.type === 'ji' ? 'success' : 'danger'" size="small" class="shichen-god-tag">{{ sc.god }}</el-tag>
+                <span class="shichen-type" :class="sc.type === 'ji' ? 'type-ji' : 'type-xiong'">{{ sc.type === 'ji' ? '吉' : '凶' }}</span>
+                <p class="shichen-yiji">{{ sc.yiji }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="details-section card card-hover">
           <h3>详细运势</h3>
           <el-collapse v-if="detailSections.length" v-model="activeNames">
@@ -411,6 +469,14 @@ const {
   hasLuckySection,
   detailSections,
 
+  // 黄历数据
+  almanac,
+  hasAlmanac,
+  ganzhiText,
+  shichenList,
+  hasShichen,
+  currentShichenIndex,
+
   // 常量
   wuxingIconMap,
   luckLevelConfig,
@@ -420,6 +486,8 @@ const {
   getScoreClass,
   getAspectIcon,
   getColorCode,
+  zhiriTagType,
+  zhiriDesc,
   loadDailyFortune,
   loadTomorrowFortune,
   addToCalendar,

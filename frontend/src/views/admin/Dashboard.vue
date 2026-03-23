@@ -8,6 +8,7 @@ import {
   getDashboardChart,
   getPendingFeedback
 } from '../../api/admin'
+import { User, ShoppingCart, Coin, ChatDotRound } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -137,6 +138,11 @@ onMounted(() => {
         <el-button @click="goTo('/maodou/feedback/list')">反馈管理</el-button>
         <el-button @click="goTo('/maodou/bazi-manage')">八字管理</el-button>
         <el-button @click="goTo('/maodou/tarot-manage')">塔罗管理</el-button>
+        <el-button @click="goTo('/maodou/hehun-manage')">合婚管理</el-button>
+        <el-button @click="goTo('/maodou/liuyao-manage')">六爻管理</el-button>
+        <el-button @click="goTo('/maodou/qiming-manage')">取名管理</el-button>
+        <el-button @click="goTo('/maodou/yearly-fortune-manage')">流年运势</el-button>
+        <el-button @click="goTo('/maodou/system/config')">系统配置</el-button>
       </div>
     </div>
   </div>
