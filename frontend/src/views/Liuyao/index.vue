@@ -232,10 +232,10 @@
               aria-controls="liuyao-advanced-grid"
               @click="showAdvancedSettings = !showAdvancedSettings"
             >
-              <div class="advanced-card__header">
+              <span class="advanced-card__header">
                 <h3>进阶设置</h3>
                 <p>问事类型、性别与日辰信息可按需补充；第一次起卦也可以先跳过。</p>
-              </div>
+              </span>
               <span class="advanced-toggle__action">
                 {{ showAdvancedSettings ? '收起' : '展开' }}
                 <el-icon>
@@ -399,10 +399,10 @@
                 :title="item.question"
                 @click="loadHistoryDetail(item)"
               >
-                <div class="history-main">
-                  <p class="history-question">{{ item.question }}</p>
-                  <p class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</p>
-                </div>
+                <span class="history-main">
+                  <span class="history-question">{{ item.question }}</span>
+                  <span class="history-gua">{{ item.gua?.name || '卦象待定' }} · {{ formatDate(item.created_at) }}</span>
+                </span>
               </button>
               <button class="delete-btn" type="button" @click.stop="deleteRecord(item.id)">
                 <el-icon><Delete /></el-icon>
@@ -435,13 +435,13 @@ const {
   // 状态
   form, isLoading, result, pricing, pricingLoading, pricingError,
   history, historyLoading, historyLoaded, historyError, submitErrors,
-  showHistory, showAdvancedSettings, historyListRef, currentBeijingTimestamp,
+  showHistory, showAdvancedSettings, historyListRef,
   aiAnalyzing, loadingStep,
 
   // 计算属性
   currentBeijingTime, currentMethodDescription, currentMethodAudience,
   submitSummaryText, submitButtonText, shouldShowRemainingPoints,
-  historyTriggerText, shouldShowLiuyaoRechargeAction,
+  historyTriggerText,
   liuyaoResultHighlights, liuyaoResultActions, liuyaoRelatedRecommendations,
   liuyaoShareSummary, liuyaoShareTags,
 
@@ -450,7 +450,7 @@ const {
   restoreHistoryTriggerFocus,
   isMovingYao, isYangYao,
   loadPricing, loadHistory,
-  submitDivination, resetForm, startAiAnalysis,
+  submitDivination, startAiAnalysis,
   loadHistoryDetail, deleteRecord, formatDate,
 } = useLiuyao()
 </script>

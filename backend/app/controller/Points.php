@@ -27,8 +27,9 @@ class Points extends BaseController
         parent::initialize();
         $this->pointsService = new PointsService();
         /**
-     * 获取积分规则（公开接口，前端用户端展示用）
-     */
+         * 获取积分规则（公开接口，前端用户端展示用）
+         */
+    }
     public function rules()
     {
         try {
@@ -81,7 +82,7 @@ class Points extends BaseController
             return $this->respondSystemException('points_rules', $e, '获取积分规则失败');
         }
     }
-}
+
     
     /**
      * 获取积分余额

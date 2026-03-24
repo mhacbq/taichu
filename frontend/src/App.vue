@@ -741,7 +741,6 @@ onBeforeUnmount(() => {
   background: var(--bg-tertiary);
   border: 1px solid transparent;
   transition: all 0.3s ease;
-  min-width: 140px;
 }
 
 .user-info:hover {

@@ -9,7 +9,7 @@ import guaData from '../../utils/liuyao.json'
 
 
 
-import { trackPageView, trackEvent, trackSubmit, trackError, trackLiuyaoMethodChange, trackLiuyaoSubmitStart, trackLiuyaoSubmitSuccess, trackLiuyaoSubmitFail, trackLiuyaoAiToggle, trackLiuyaoHistoryView, trackLiuyaoHistoryDelete, trackLiuyaoShare, trackLiuyaoResultView, trackLiuyaoPricingView, trackLiuyaoPricingError } from '../../utils/tracker'
+import { trackPageView, trackSubmit, trackError, trackLiuyaoMethodChange, trackLiuyaoSubmitStart, trackLiuyaoSubmitSuccess, trackLiuyaoSubmitFail, trackLiuyaoResultView } from '../../utils/tracker'
 
 
 
@@ -483,8 +483,8 @@ const normalizeLineDetail = (line = {}, index = 0, fallbackValue = 1, liuqinMap 
   return normalized
 }
 
-const normalizeResult = (data = {}, isHistory = false) => {
-
+const normalizeResult = (rawData = {}, isHistory = false) => {
+  const data = rawData || {}
   const gua = data.gua || {}
   const bianGua = data.bian_gua || {}
   const huGua = data.hu_gua || {}
@@ -969,7 +969,7 @@ onUnmounted(() => {
 return {
   // 常量
   methodOptions, questionTypeOptions, quickQuestions, yaoLineLabels, yaoResultLineLabels,
-  yaoValueOptions, tianGanOptions, diZhiOptions, yaoNameMap, terminologyMap,
+  yaoValueOptions, tianGanOptions, diZhiOptions, yaoNameMap,
 
   // 状态
   form, isLoading, isSubmitting, loadingStep, result, pricing, pricingLoading, pricingError,
