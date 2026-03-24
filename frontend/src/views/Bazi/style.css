@@ -1544,6 +1544,90 @@ color: #5f5548;
   margin-top: 2px;
 }
 
+/* AI 专业版徽章（统一版本后替代版本选择卡片） */
+.version-badge-pro {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(26, 26, 46, 0.95));
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15), 0 4px 12px rgba(212, 175, 55, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.version-badge-pro::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.12), transparent 60%);
+  pointer-events: none;
+}
+
+.version-badge-pro__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(245, 196, 103, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #d4af37;
+  flex-shrink: 0;
+}
+
+.version-badge-pro__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.version-badge-pro__name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f5f0e6;
+  letter-spacing: 0.02em;
+}
+
+.version-badge-pro__desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+.version-badge-pro__pts {
+  font-size: 18px;
+  font-weight: 800;
+  color: #d4af37;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-radius: 12px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+@media (max-width: 768px) {
+  .version-badge-pro {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+
+  .version-badge-pro__pts {
+    font-size: 15px;
+  }
+}
+
 /* 费用与权益确认 */
 .cost-confirm-section {
   margin-top: 28px;
@@ -2751,6 +2835,26 @@ color: #5f5548;
   box-shadow: 0 8px 24px rgba(149, 111, 45, 0.04);
 }
 
+/* AI 大运评分 loading 提示条 */
+.dayun-scoring-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.04));
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 10px;
+  color: #b8860b;
+  font-size: 13px;
+}
+
+.dayun-scoring-tip .el-icon {
+  font-size: 16px;
+  color: #D4AF37;
+}
+
+
 .dayun-section h3 {
   color: var(--text-primary);
   margin-bottom: 25px;
@@ -2832,6 +2936,51 @@ color: #5a4a38;
   font-weight: 600;
 }
 
+/* 大运评分图标 */
+.dayun-score-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.dayun-score-icon .score-star {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.dayun-score-icon .score-num {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+.dayun-score-icon.score-positive .score-star,
+.dayun-score-icon.score-positive .score-num {
+  color: #52c41a;
+}
+
+.dayun-score-icon.score-neutral .score-star,
+.dayun-score-icon.score-neutral .score-num {
+  color: #d4af37;
+}
+
+.dayun-score-icon.score-cautious .score-star,
+.dayun-score-icon.score-cautious .score-num {
+  color: #fa8c16;
+}
+
+/* 大运 level 边框色 */
+.dayun-item.level-positive {
+  border-color: rgba(82, 196, 26, 0.2);
+}
+
+.dayun-item.level-cautious {
+  border-color: rgba(250, 140, 22, 0.2);
+}
+
 .dayun-luck {
   display: inline-block;
   padding: 4px 14px;
@@ -2843,19 +2992,22 @@ color: #5a4a38;
   letter-spacing: 1px;
 }
 
-.dayun-luck.吉 {
+.dayun-luck.吉,
+.dayun-luck.positive {
   background: var(--success-gradient);
   color: #fff;
   box-shadow: 0 2px 8px rgba(103, 194, 58, 0.4);
 }
 
-.dayun-luck.凶 {
+.dayun-luck.凶,
+.dayun-luck.cautious {
   background: var(--danger-gradient);
   color: #fff;
   box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
 }
 
-.dayun-luck.平 {
+.dayun-luck.平,
+.dayun-luck.neutral {
   background: var(--white-20);
 color: #3a2a10;
 }
@@ -4417,5 +4569,381 @@ color: #5a4a38;
 
   .result-meta {
     justify-content: center;
+  }
+}
+
+/* =============================================
+   新增样式：十神强化 + 简化版单页流 + 升级引导
+   ============================================= */
+
+/* 十神行强化样式 */
+.shishen-row {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(245, 196, 103, 0.04)) !important;
+  border-radius: 14px !important;
+  margin: 8px 0 !important;
+  border: 1px solid rgba(212, 175, 55, 0.08) !important;
+}
+
+.shishen-cell {
+  font-size: 14px !important;
+  color: #6b4a12 !important;
+  padding: 12px 8px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.shishen-label {
+  font-size: 10px;
+  color: #8a7a62;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shishen-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 48px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.shishen-value--self {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(245, 196, 103, 0.12));
+  color: #9a6612;
+  border-color: rgba(212, 175, 55, 0.25);
+}
+
+/* 十神色彩系统 */
+.shishen--bijian { background: rgba(64, 158, 255, 0.12); color: #2d6fc8; border-color: rgba(64, 158, 255, 0.2); }
+.shishen--jiecai { background: rgba(144, 78, 255, 0.1); color: #6b3dc8; border-color: rgba(144, 78, 255, 0.18); }
+.shishen--shishen { background: rgba(103, 194, 58, 0.12); color: #3d8c1c; border-color: rgba(103, 194, 58, 0.2); }
+.shishen--shangguan { background: rgba(255, 153, 0, 0.12); color: #b36b00; border-color: rgba(255, 153, 0, 0.2); }
+.shishen--piancai { background: rgba(255, 215, 0, 0.15); color: #9a6612; border-color: rgba(255, 215, 0, 0.25); }
+.shishen--zhengcai { background: rgba(218, 165, 32, 0.12); color: #8b6914; border-color: rgba(218, 165, 32, 0.2); }
+.shishen--qisha { background: rgba(220, 20, 60, 0.1); color: #b01030; border-color: rgba(220, 20, 60, 0.18); }
+.shishen--zhengguan { background: rgba(178, 34, 34, 0.1); color: #8b1a1a; border-color: rgba(178, 34, 34, 0.18); }
+.shishen--pianyin { background: rgba(30, 144, 255, 0.1); color: #0d6ebd; border-color: rgba(30, 144, 255, 0.18); }
+.shishen--zhengyin { background: rgba(34, 139, 34, 0.12); color: #1a6b1a; border-color: rgba(34, 139, 34, 0.2); }
+
+/* ========== 简化版单页流样式 ========== */
+
+/* 当前流年速览卡片 */
+.current-fortune-brief {
+  margin: 0 0 28px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255, 248, 228, 0.95), rgba(255, 243, 214, 0.85));
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 8px 24px rgba(149, 111, 45, 0.06);
+}
+
+.fortune-brief__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: #6b4a12;
+}
+
+.fortune-brief__header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.fortune-brief__header .el-icon {
+  font-size: 20px;
+  color: #d4af37;
+}
+
+.fortune-brief__content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.fortune-brief__pillar {
+  display: flex;
+  gap: 6px;
+}
+
+.fortune-brief__pillar .gan,
+.fortune-brief__pillar .zhi {
+  font-size: 32px;
+  font-weight: 800;
+  color: #3a2a10;
+}
+
+.fortune-brief__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fortune-brief__nayin {
+  font-size: 14px;
+  color: #9a6612;
+  font-weight: 600;
+}
+
+.fortune-brief__wuxing {
+  display: flex;
+  gap: 6px;
+}
+
+.fortune-brief__wuxing .badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* 简化版区块 */
+.simple-single-page {
+  margin-top: 8px;
+}
+
+.simple-section {
+  margin-bottom: 32px;
+}
+
+.simple-section__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.05)) 1;
+}
+
+.simple-section__title .el-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(245, 196, 103, 0.08));
+  color: #9a6612;
+  font-size: 18px;
+}
+
+.simple-section__title h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.simple-section__cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.simple-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.simple-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(149, 111, 45, 0.08);
+  border-color: rgba(212, 175, 55, 0.16);
+}
+
+.simple-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.simple-card__header .el-icon {
+  font-size: 20px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(245, 196, 103, 0.06));
+  color: #9a6612;
+}
+
+.simple-card__header h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #3a2a10;
+  margin: 0;
+}
+
+.simple-card p {
+  color: #5f5548;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* ========== 专业版升级引导卡片 ========== */
+.upgrade-cta-card {
+  position: relative;
+  margin: 40px 0 8px;
+  padding: 36px 32px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #1a1a2e, #16213e, #0f3460);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25), 0 12px 28px rgba(212, 175, 55, 0.08);
+  overflow: hidden;
+}
+
+.upgrade-cta__glow {
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.15), transparent 60%);
+  pointer-events: none;
+}
+
+.upgrade-cta__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.upgrade-cta__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(245, 196, 103, 0.15));
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #d4af37;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.upgrade-cta__title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #f5f0e6;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+
+.upgrade-cta__desc {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 22px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.upgrade-cta__features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 24px;
+  max-width: 480px;
+  margin: 0 auto 26px;
+  text-align: left;
+}
+
+.upgrade-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.upgrade-feature .el-icon {
+  color: #d4af37;
+  flex-shrink: 0;
+}
+
+.upgrade-cta__btn {
+  min-width: 260px;
+  height: 52px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #d4af37, #c8960c) !important;
+  border: none !important;
+  color: #fff !important;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.35);
+  transition: all 0.3s ease;
+}
+
+.upgrade-cta__btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.45) !important;
+}
+
+/* ========== 响应式：简化版单页 ========== */
+@media (max-width: 768px) {
+  .simple-section__cards {
+    grid-template-columns: 1fr;
+  }
+
+  .upgrade-cta-card {
+    padding: 28px 20px;
+    margin: 32px 0 8px;
+  }
+
+  .upgrade-cta__title {
+    font-size: 20px;
+  }
+
+  .upgrade-cta__features {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .upgrade-cta__btn {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .fortune-brief__content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .shishen-cell {
+    font-size: 12px !important;
+    padding: 8px 4px !important;
+  }
+
+  .shishen-value {
+    font-size: 11px;
+    padding: 2px 8px;
+    min-width: 40px;
+  }
+
+  .shishen-label {
+    font-size: 9px;
   }
 }

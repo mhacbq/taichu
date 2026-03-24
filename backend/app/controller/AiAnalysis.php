@@ -6,8 +6,10 @@ namespace app\controller;
 use app\BaseController;
 use app\model\SystemConfig;
 use app\model\AiPrompt;
+use app\model\BaziRecord;
 use think\Request;
 use think\facade\Config;
+use think\facade\Log;
 
 
 
@@ -97,6 +99,155 @@ class AiAnalysis extends BaseController
     }
 
     /**
+     * 获取排盘记录的 AI 分析缓存
+     * 前端排盘后可直接读取已缓存的 AI 结果，无需重复调用 AI
+     */
+    public function getRecord(Request $request)
+    {
+        $recordId = (int) $request->param('id', 0);
+        $user = $request->user;
+
+        if ($recordId <= 0) {
+            return $this->error('记录ID不能为空', 400);
+        }
+
+        $record = BaziRecord::getByIdWithAuth($recordId, (int) $user['sub']);
+        if (!$record) {
+            return $this->error('记录不存在或无权访问', 404);
+        }
+
+        return $this->success([
+            'id' => $recordId,
+            'ai_analysis' => $record->getAttr('ai_analysis') ?: null,
+            'dayun_scores' => $record->getDayunScoresValue(),
+        ], '获取成功');
+    }
+
+    /**
+     * AI大运评分（排盘时同步调用）
+     * 根据八字喜忌，让AI对每步大运评分，返回JSON格式评分
+     */
+    public function scoreDayun(Request $request)
+    {
+        $baziData = $request->param('bazi');
+        $dayunData = $request->param('dayun', []);
+        $recordId = (int) $request->param('record_id', 0);
+
+        if (empty($baziData) || !is_array($baziData)) {
+            return $this->error('八字数据不能为空', 400);
+        }
+
+        if (empty($dayunData) || !is_array($dayunData)) {
+            return $this->error('大运数据不能为空', 400);
+        }
+
+        $config = $this->getAiConfig();
+        if (empty($config['api_key']) || empty($config['api_url'])) {
+            return $this->error('AI服务未配置', 500);
+        }
+
+        $systemPrompt = $this->buildDayunScoringPrompt($baziData, $dayunData);
+        $userPrompt = '请根据命主的喜忌用神，对以上每步大运进行评分，严格按照要求的JSON格式输出。';
+
+        try {
+            $response = $this->callAiApi($systemPrompt, $userPrompt, $config);
+            // 从AI回复中提取JSON评分
+            $scores = $this->extractDayunScores($response, $dayunData);
+
+            // 回写评分到数据库记录
+            if ($recordId > 0 && !empty($scores)) {
+                $user = $request->user;
+                BaziRecord::saveDayunScores($recordId, (int) $user['sub'], $scores);
+            }
+
+            return $this->success(['scores' => $scores], 'AI大运评分成功');
+        } catch (\Exception $e) {
+            return $this->respondSystemException('ai_score_dayun', $e, 'AI大运评分失败，请稍后重试');
+        }
+    }
+
+    /**
+     * 构建大运评分专用 Prompt
+     */
+    private function buildDayunScoringPrompt(array $baziData, array $dayunData): string
+    {
+        $year = $baziData['year'] ?? [];
+        $month = $baziData['month'] ?? [];
+        $day = $baziData['day'] ?? [];
+        $hour = $baziData['hour'] ?? [];
+        $dayMaster = $baziData['day_master'] ?? '';
+        $dayMasterWuxing = $baziData['day_master_wuxing'] ?? '';
+        $wuxingStats = $baziData['wuxing_stats'] ?? [];
+        $yongshen = $baziData['yongshen'] ?? '';
+        $xishen = $baziData['xishen'] ?? '';
+
+        $prompt = "你是一位专业的八字命理师。请根据命主的八字信息，对每步大运进行综合评分（0-100分）。\n\n";
+        $prompt .= "【命主八字】\n";
+        $prompt .= "年柱：{$year['gan']}{$year['zhi']}（{$year['nayin']}）\n";
+        $prompt .= "月柱：{$month['gan']}{$month['zhi']}（{$month['nayin']}）\n";
+        $prompt .= "日柱：{$day['gan']}{$day['zhi']}（{$day['nayin']}）- 日主：{$dayMaster}（{$dayMasterWuxing}）\n";
+        $prompt .= "时柱：{$hour['gan']}{$hour['zhi']}（{$hour['nayin']}）\n\n";
+
+        $prompt .= "【五行分布】\n";
+        foreach ($wuxingStats as $wx => $count) {
+            $prompt .= "{$wx}：{$count}个  ";
+        }
+        $prompt .= "\n";
+
+        if ($yongshen) {
+            $prompt .= "喜用神：{$yongshen}";
+            if ($xishen) $prompt .= "、{$xishen}";
+            $prompt .= "\n";
+        }
+
+        $prompt .= "\n【大运列表】\n";
+        foreach ($dayunData as $i => $yun) {
+            $gan = $yun['gan'] ?? '';
+            $zhi = $yun['zhi'] ?? '';
+            $ageStart = $yun['age_start'] ?? $yun['start_age'] ?? '';
+            $ageEnd = $yun['age_end'] ?? $yun['end_age'] ?? '';
+            $shishen = $yun['shishen'] ?? '';
+            $nayin = $yun['nayin'] ?? '';
+            $prompt .= "第" . ($i + 1) . "步（{$ageStart}-{$ageEnd}岁）：{$gan}{$zhi}（{$nayin}），十神：{$shishen}\n";
+        }
+
+        $prompt .= "\n【评分要求】\n";
+        $prompt .= "请根据每步大运的天干地支与命主喜忌的关系，给出综合评分（0-100分）。\n";
+        $prompt .= "评分标准：喜用神旺盛→高分（75-95），中性→中分（50-74），忌神旺盛→低分（20-49）。\n";
+        $prompt .= "必须严格按以下JSON格式输出，不要有任何其他文字：\n";
+        $prompt .= '{"scores":[{"index":0,"score":85},{"index":1,"score":62},{"index":2,"score":45}]}' . "\n";
+        $prompt .= "index从0开始，与大运列表顺序对应，共" . count($dayunData) . "步。";
+
+        return $prompt;
+    }
+
+    /**
+     * 从AI回复中提取大运评分JSON
+     */
+    private function extractDayunScores(string $aiResponse, array $dayunData): array
+    {
+        // 尝试从回复中提取JSON
+        if (preg_match('/\{[\s\S]*"scores"[\s\S]*\}/m', $aiResponse, $matches)) {
+            $json = json_decode($matches[0], true);
+            if (json_last_error() === JSON_ERROR_NONE && isset($json['scores'])) {
+                $result = [];
+                foreach ($json['scores'] as $item) {
+                    $idx = (int)($item['index'] ?? -1);
+                    $score = (int)($item['score'] ?? 50);
+                    $score = max(20, min(95, $score));
+                    if ($idx >= 0 && $idx < count($dayunData)) {
+                        $result[$idx] = $score;
+                    }
+                }
+                return $result;
+            }
+        }
+
+        // 解析失败，返回空数组（前端保留本地评分）
+        return [];
+    }
+
+    /**
      * 获取AI分析历史（兼容旧版接口）
      */
     public function history()
@@ -116,8 +267,10 @@ class AiAnalysis extends BaseController
     public function analyzeBazi(Request $request)
     {
         $baziData = $request->param('bazi');
+        $dayunData = $request->param('dayun', []);
         $promptKey = $request->param('prompt_key', '');
         $customPrompt = $request->param('prompt', '');
+        $recordId = (int) $request->param('record_id', 0);
         
         if (empty($baziData)) {
             return $this->error('八字数据不能为空', 400);
@@ -148,8 +301,8 @@ class AiAnalysis extends BaseController
         $prompt = $this->getPrompt('bazi', $promptKey);
         
         if (!$prompt) {
-            // 使用默认构建的提示词
-            $systemPrompt = $this->buildBaziSystemPrompt($baziData);
+            // 使用默认构建的提示词（含大运数据）
+            $systemPrompt = $this->buildBaziSystemPrompt($baziData, is_array($dayunData) ? $dayunData : []);
             $userPrompt = $customPrompt ?: '请为我详细解读这个八字命盘';
         } else {
             // 使用配置的提示词
@@ -168,7 +321,13 @@ class AiAnalysis extends BaseController
         try {
             // 调用AI API
             $response = $this->callAiApi($systemPrompt, $userPrompt, $config);
-            
+
+            // 回写 AI 解盘结果到数据库
+            if ($recordId > 0) {
+                $user = $request->user;
+                BaziRecord::saveAiAnalysis($recordId, (int) $user['sub'], $response);
+            }
+
             return $this->success([
                 'analysis' => $response,
                 'model' => $config['model'] ?? 'DeepSeek-V3.2',
@@ -196,8 +355,10 @@ class AiAnalysis extends BaseController
     public function analyzeBaziStream(Request $request)
     {
         $baziData = $request->param('bazi');
+        $dayunData = $request->param('dayun', []);
         $promptKey = $request->param('prompt_key', '');
         $customPrompt = $request->param('prompt', '');
+        $recordId = (int) $request->param('record_id', 0);
         
         if (empty($baziData)) {
             return $this->error('八字数据不能为空', 400);
@@ -227,7 +388,7 @@ class AiAnalysis extends BaseController
         $prompt = $this->getPrompt('bazi', $promptKey);
         
         if (!$prompt) {
-            $systemPrompt = $this->buildBaziSystemPrompt($baziData);
+            $systemPrompt = $this->buildBaziSystemPrompt($baziData, is_array($dayunData) ? $dayunData : []);
             $userPrompt = $customPrompt ?: '请为我详细解读这个八字命盘';
         } else {
             $systemPrompt = $prompt->system_prompt;
@@ -243,9 +404,20 @@ class AiAnalysis extends BaseController
 
         $this->prepareSseResponse();
 
+        $fullContent = '';
         try {
-            $this->callAiApiStream($systemPrompt, $userPrompt, $config);
+            $fullContent = $this->callAiApiStreamCapture($systemPrompt, $userPrompt, $config);
             $this->emitSseDone();
+
+            // 流式完成后回写 AI 分析结果到数据库
+            if ($recordId > 0 && $fullContent !== '') {
+                try {
+                    $user = $request->user;
+                    BaziRecord::saveAiAnalysis($recordId, (int) $user['sub'], $fullContent);
+                } catch (\Throwable $saveEx) {
+                    Log::warning('AI分析结果回写失败', ['record_id' => $recordId, 'error' => $saveEx->getMessage()]);
+                }
+            }
         } catch (\Exception $e) {
             $this->logControllerException(
                 'ai_bazi_stream',
@@ -298,7 +470,7 @@ class AiAnalysis extends BaseController
     /**
      * 构建八字系统提示（默认提示词）
      */
-    private function buildBaziSystemPrompt(array $baziData): string
+    private function buildBaziSystemPrompt(array $baziData, array $dayunData = []): string
     {
         $year = $baziData['year'] ?? [];
         $month = $baziData['month'] ?? [];
@@ -323,13 +495,31 @@ class AiAnalysis extends BaseController
         $prompt .= "【十神配置】\n";
         $prompt .= "年干十神：{$year['shishen']}，月干十神：{$month['shishen']}，时干十神：{$hour['shishen']}\n\n";
         
+        // 加入大运数据（本地算法排出，稳定可靠）
+        if (!empty($dayunData)) {
+            $prompt .= "【大运排盘（本地算法计算，共" . count($dayunData) . "步大运）】\n";
+            foreach ($dayunData as $yun) {
+                $gan = $yun['gan'] ?? '';
+                $zhi = $yun['zhi'] ?? '';
+                $ageStart = $yun['age_start'] ?? $yun['start_age'] ?? '';
+                $ageEnd = $yun['age_end'] ?? $yun['end_age'] ?? '';
+                $shishen = $yun['shishen'] ?? '';
+                $score = $yun['score'] ?? '';
+                $trend = $yun['trend'] ?? '';
+                $nayin = $yun['nayin'] ?? '';
+                $scoreStr = $score !== '' ? "，运势评分{$score}分" : '';
+                $prompt .= "{$ageStart}-{$ageEnd}岁：{$gan}{$zhi}（{$nayin}），十神{$shishen}，{$trend}运{$scoreStr}\n";
+            }
+            $prompt .= "\n请在解读中结合以上大运数据，对每步大运给出具体的人生阶段建议。\n\n";
+        }
+        
         $prompt .= "请从以下几个方面进行详细解读：\n";
         $prompt .= "1. 日主特性和性格分析\n";
         $prompt .= "2. 五行旺衰与喜用神分析\n";
         $prompt .= "3. 事业财运分析\n";
         $prompt .= "4. 感情婚姻分析\n";
         $prompt .= "5. 健康状况分析\n";
-        $prompt .= "6. 近期运势建议\n\n";
+        $prompt .= "6. 大运走势与人生阶段建议\n\n";
         $prompt .= "请以专业、易懂、温暖的方式进行分析，给出具体可行的建议。";
         
         return $prompt;
@@ -516,6 +706,117 @@ class AiAnalysis extends BaseController
         if ($httpCode !== 200) {
             throw new \Exception('流式API返回错误：HTTP ' . $httpCode);
         }
+    }
+
+    /**
+     * 调用AI API（流式输出 + 捕获完整内容）
+     * 在向客户端流式输出的同时，捕获完整内容用于数据库缓存
+     */
+    private function callAiApiStreamCapture(string $systemPrompt, string $userPrompt, array $config): string
+    {
+        $apiKey = $config['api_key'];
+        $apiUrl = $config['api_url'];
+        $model = $config['model'] ?? 'DeepSeek-V3.2';
+
+        $payload = [
+            'model' => $model,
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt],
+            ],
+            'stream' => true,
+        ];
+
+        if (!empty($config['enable_thinking'])) {
+            $payload['extra_body'] = [
+                'enable_thinking' => true,
+                'provider' => ['only' => [], 'order' => [], 'sort' => null, 'input_price_range' => [], 'output_price_range' => [], 'input_length_range' => [], 'output_length_range' => [], 'throughput_range' => [], 'latency_range' => []],
+            ];
+        }
+
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        if ($payloadJson === false) {
+            throw new \Exception('流式请求参数编码失败');
+        }
+
+        ignore_user_abort(false);
+        @set_time_limit(0);
+
+        $capturedContent = '';
+        $buffer = '';
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $apiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use (&$capturedContent, &$buffer) {
+            if (connection_aborted()) {
+                return 0;
+            }
+
+            // 向客户端输出
+            echo $data;
+            if (function_exists('ob_flush')) {
+                @ob_flush();
+            }
+            flush();
+
+            // 同时解析 SSE 内容，捕获文本
+            $buffer .= $data;
+            $lines = explode("\n", $buffer);
+            // 保留最后一行（可能不完整）
+            $buffer = array_pop($lines);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (!str_starts_with($line, 'data: ')) {
+                    continue;
+                }
+                $jsonStr = substr($line, 6);
+                if ($jsonStr === '[DONE]') {
+                    continue;
+                }
+                $parsed = json_decode($jsonStr, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $content = $parsed['choices'][0]['delta']['content'] ?? '';
+                    if ($content !== '') {
+                        $capturedContent .= $content;
+                    }
+                }
+            }
+
+            return strlen($data);
+        });
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (connection_aborted()) {
+            curl_close($ch);
+            return $capturedContent;
+        }
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new \Exception('请求失败：' . $error);
+        }
+
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            throw new \Exception('流式API返回错误：HTTP ' . $httpCode);
+        }
+
+        return $capturedContent;
     }
 
 

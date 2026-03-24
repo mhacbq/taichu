@@ -229,44 +229,38 @@
                 </AsyncState>
               </el-tab-pane>
 
-              <el-tab-pane label="六爻占卜" name="liuyao">
-                <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
+              <el-tab-pane label="六简占卜" name="liuyao">
+                <AsyncState :status="liuyaoStatus" loadingText="正在加载六简记录..." @retry="loadLiuyaoHistory">
                   <div class="history-list" v-if="liuyaoHistory.length > 0">
-                    <div v-for="record in liuyaoHistory" :key="record.id" class="history-list-item">
+                    <div v-for="record in liuyaoHistory" :key="record.id" class="history-list-item" @click="viewLiuyaoDetail(record)">
                       <div class="item-left">
-                        <span class="item-title">{{ record.question || '六爻占卜' }}</span>
+                        <span class="item-title">{{ record.question || '六简占卜' }}</span>
                         <span class="item-time">{{ formatTime(record.created_at) }}</span>
                       </div>
                       <div class="item-right">
-                        <span class="item-method">{{ record.method_name || '铜钱起卦' }}</span>
-                        <router-link to="/liuyao" class="item-link">
-                          <el-icon><ArrowRight /></el-icon>
-                        </router-link>
+                        <span class="item-method">{{ record.method_name || '铜錢起卦' }}</span>
+                        <el-icon class="item-arrow"><ArrowRight /></el-icon>
                       </div>
                     </div>
                   </div>
-                  <el-empty v-else description="暂无六爻记录" />
+                  <el-empty v-else description="暂无六简记录" />
                 </AsyncState>
               </el-tab-pane>
 
               <el-tab-pane label="八字合婚" name="hehun">
                 <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
                   <div class="history-list" v-if="hehunHistory.length > 0">
-                    <div v-for="record in hehunHistory" :key="record.id" class="history-list-item">
+                    <div v-for="record in hehunHistory" :key="record.id" class="history-list-item" @click="viewHehunDetail(record)">
                       <div class="item-left">
                         <span class="item-title">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
                         <span class="item-time">{{ formatTime(record.created_at) }}</span>
                       </div>
                       <div class="item-right" v-if="record.total_score">
                         <span class="item-score">{{ record.total_score }}分</span>
-                        <router-link to="/hehun" class="item-link">
-                          <el-icon><ArrowRight /></el-icon>
-                        </router-link>
+                        <el-icon class="item-arrow"><ArrowRight /></el-icon>
                       </div>
                       <div class="item-right" v-else>
-                        <router-link to="/hehun" class="item-link">
-                          <el-icon><ArrowRight /></el-icon>
-                        </router-link>
+                        <el-icon class="item-arrow"><ArrowRight /></el-icon>
                       </div>
                     </div>
                   </div>
@@ -333,7 +327,8 @@
       </div>
     </div>
   </div>
-</template>
+</template>
+
 
 <script setup>
 import CheckinCard from '../../components/CheckinCard.vue'
@@ -366,7 +361,7 @@ const {
   restartTourGuide,
   loadBaziHistory, loadTarotHistory, loadLiuyaoHistory, loadHehunHistory,
   submitFeedbackForm, saveBirthDate,
-  viewDetail, viewTarotDetail,
+  viewDetail, viewTarotDetail, viewLiuyaoDetail, viewHehunDetail,
   handleMethodAction, copyInviteCode, copyInviteLink, shareToWechat,
 } = useProfile()
 </script>

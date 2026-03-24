@@ -1,7 +1,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, deleteLiuyaoRecord, analyzeLiuyaoAi } from '../../api'
+import { getLiuyaoPricing, liuyaoDivination, getLiuyaoHistory, getLiuyaoDetail, deleteLiuyaoRecord, analyzeLiuyaoAi } from '../../api'
 
 import guaData from '../../utils/liuyao.json'
 
@@ -37,6 +37,7 @@ const tianGanOptions = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', 
 const diZhiOptions = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 const yaoNameMap = ['老阴', '少阳', '少阴', '老阳']
 const router = useRouter()
+const route = useRoute()
 
 const createDefaultForm = () => ({
   question: '',
@@ -1050,6 +1051,23 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString('zh-CN')
 }
 
+// 从历史记录跳转加载详情
+async function loadRecordById(recordId) {
+  isLoading.value = true
+  try {
+    const res = await getLiuyaoDetail({ id: recordId })
+    if (res.code === 200 && res.data) {
+      result.value = normalizeResult(res.data, true)
+    } else {
+      ElMessage.warning('历史记录加载失败，请重新占卜')
+    }
+  } catch (e) {
+    ElMessage.warning('历史记录加载失败，请重新占卜')
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // 初始化
 onMounted(() => {
   trackPageView('liuyao')
@@ -1058,6 +1076,12 @@ onMounted(() => {
   }, 1000)
   loadPricing()
   loadHistory()
+
+  // 从历史记录跳转时，自动加载对应记录
+  const recordId = parseInt(route.query.record_id, 10)
+  if (recordId > 0) {
+    loadRecordById(recordId)
+  }
 })
 
 onUnmounted(() => {
@@ -1099,4 +1123,4 @@ return {
   submitDivination, resetForm, startAiAnalysis,
   loadHistoryDetail, deleteRecord, formatDate,
 }
-} // end useLiuyao
+} // end useLiuyao

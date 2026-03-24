@@ -1858,14 +1858,37 @@ PROMPT;
     /**
      * 获取合婚历史
      */
+    /**
+     * 获取合婚记录详情
+     */
+    public function detail()
+    {
+        $user = $this->request->user;
+        $id = (int) $this->request->get('id', 0);
+
+        if ($id <= 0) {
+            return $this->error('记录ID不能为空', 400);
+        }
+
+        $record = HehunRecord::findUserRecord($id, (int) $user['sub']);
+        if (!$record) {
+            return $this->error('记录不存在或无权访问', 404);
+        }
+
+        return $this->success($record);
+    }
+
     public function history()
     {
         $user = $this->request->user;
         $limit = $this->request->get('limit', 20);
         
-        $history = HehunRecord::getUserHistory((int)$user['sub'], (int)$limit);
+        $list = HehunRecord::getUserHistory((int)$user['sub'], (int)$limit);
         
-        return $this->success($history);
+        return $this->success([
+            'list' => $list,
+            'total' => count($list),
+        ]);
     }
     
     /**

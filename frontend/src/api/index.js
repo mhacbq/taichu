@@ -106,6 +106,7 @@ export const analyzeLiuyaoAi = (data) => request.post('/liuyao/ai-analysis', dat
 export const getHehunPricing = (config = {}) => request.get('/hehun/pricing', config)
 export const calculateHehun = (data) => request.post('/hehun/calculate', data)
 export const getHehunHistory = (params) => request.get('/hehun/history', { params })
+export const getHehunDetail = (id) => request.get('/hehun/detail', { params: { id } })
 export const exportHehunReport = (data) => request.post('/hehun/export', data)
 
 // ====== 塔罗占卜 API ======
@@ -122,6 +123,7 @@ export const getTarotShare = (params) => request.get('/tarot/share', { params })
 // ====== 八字排盘 API ======
 export const calculateBazi = (data) => request.post('/paipan/bazi', data)
 export const getBaziHistory = (params) => request.get('/paipan/history', { params })
+export const getBaziRecord = (id) => request.get('/paipan/record', { params: { id } })
 export const deleteBaziRecord = (data) => request.post('/paipan/delete-record', data)
 export const setBaziSharePublic = (data) => request.post('/paipan/set-share-public', data)
 export const getBaziShare = (params) => request.get('/bazi/share', { params })

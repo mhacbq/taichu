@@ -39,55 +39,15 @@
           </article>
         </div>
 
-        <!-- 版本选择 -->
+        <!-- 版本标识（固定为 AI 专业版） -->
         <div class="version-select-section">
-          <h3 class="version-select-section__title">版本选择</h3>
-          <div class="version-cards">
-            <!-- 简化版 -->
-            <div
-              class="version-card"
-              :class="{ 'version-card--active': versionMode === 'simple' }"
-              @click="versionMode = 'simple'"
-            >
-              <div class="version-card__header">
-                <div class="version-card__icon">
-                  <el-icon><MagicStick /></el-icon>
-                </div>
-                <div class="version-card__info">
-                  <span class="version-card__name">简化版</span>
-                  <span v-if="versionMode === 'simple'" class="version-card__badge">当前选择</span>
-                </div>
-                <span class="version-card__pts">10 pts</span>
-              </div>
-              <ul class="version-card__features">
-                <li><el-icon><Check /></el-icon> 基础八字命盘（天干地支、五行分布）</li>
-                <li><el-icon><Check /></el-icon> 性格概要与运势方向速览</li>
-                <li><el-icon><Check /></el-icon> 适合快速了解自己的命理概况</li>
-              </ul>
+          <div class="version-badge-pro">
+            <div class="version-badge-pro__icon"><el-icon><Cpu /></el-icon></div>
+            <div class="version-badge-pro__info">
+              <span class="version-badge-pro__name">AI 专业分析版</span>
+              <span class="version-badge-pro__desc">完整八字命盘 + AI 深度解读 + 流年大运走势</span>
             </div>
-            <!-- 专业版 -->
-            <div
-              class="version-card"
-              :class="{ 'version-card--active': versionMode === 'pro' }"
-              @click="versionMode = 'pro'"
-            >
-              <div class="version-card__header">
-                <div class="version-card__icon">
-                  <el-icon><Coin /></el-icon>
-                </div>
-                <div class="version-card__info">
-                  <span class="version-card__name">专业版</span>
-                  <span v-if="versionMode === 'pro'" class="version-card__badge">当前选择</span>
-                </div>
-                <span class="version-card__pts">50 pts</span>
-              </div>
-              <ul class="version-card__features">
-                <li><el-icon><Check /></el-icon> 完整八字命盘 + 十神关系 + 神煞详解</li>
-                <li><el-icon><Check /></el-icon> AI 深度解读：性格、事业、财运、感情全维度分析</li>
-                <li><el-icon><Check /></el-icon> 流年大运走势 + 每月运势提醒</li>
-                <li><el-icon><Check /></el-icon> 永久保存完整报告，随时回看</li>
-              </ul>
-            </div>
+            <span class="version-badge-pro__pts">{{ BAZI_BASE_COST }} pts</span>
           </div>
         </div>
 
@@ -202,7 +162,7 @@
             </div>
           </div>
           <p class="cost-confirm-section__cost">
-            本次排盘将消耗：<strong>{{ versionMode === 'pro' ? '50' : '10' }} 积分</strong>
+            本次排盘将消耗：<strong>{{ isFirstBazi ? '免费' : `${BAZI_BASE_COST} 积分` }}</strong>
           </p>
           <div class="cost-confirm-section__benefits">
             <div class="cost-confirm-benefit">
@@ -248,11 +208,11 @@
               本次为您的首次排盘，不会扣除积分
             </template>
             <template v-else>
-              本次排盘将消耗 <strong>10 积分</strong>
+              本次排盘将消耗 <strong>{{ BAZI_BASE_COST }} 积分</strong>
             </template>
           </p>
           <p>排盘后可在个人中心查看历史记录</p>
-          <p class="confirm-note">规则说明：首次排盘免费，后续每次排盘消耗 10 积分。</p>
+          <p class="confirm-note">规则说明：首次排盘免费，后续每次排盘消耗 {{ BAZI_BASE_COST }} 积分。</p>
         </div>
         <template #footer>
           <el-button @click="confirmVisible = false">取消</el-button>
@@ -331,6 +291,7 @@
         </div>
         <p v-if="resultContextNote" class="result-context-note">{{ resultContextNote }}</p>
 
+        <!-- 结果页始终显示 Tabs 导航 -->
         <div class="result-tabs">
           <div class="tab-item" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">
              <span class="tab-item__icon"><el-icon><Grid /></el-icon></span>
@@ -347,6 +308,27 @@
           <div class="tab-item" :class="{ active: activeTab === 'fortune' }" @click="activeTab = 'fortune'">
              <span class="tab-item__icon"><el-icon><Calendar /></el-icon></span>
              <span class="tab-item__text">流年大运</span>
+          </div>
+        </div>
+
+        <!-- 当前流年速览卡片 -->
+        <div class="current-fortune-brief" v-if="result.liunian && currentYearLiunian">
+          <div class="fortune-brief__header">
+            <el-icon><Calendar /></el-icon>
+            <h3>{{ new Date().getFullYear() }}年流年速览</h3>
+          </div>
+          <div class="fortune-brief__content" v-if="currentYearLiunian">
+            <div class="fortune-brief__pillar">
+              <span class="gan">{{ currentYearLiunian.gan }}</span>
+              <span class="zhi">{{ currentYearLiunian.zhi }}</span>
+            </div>
+            <div class="fortune-brief__info">
+              <span class="fortune-brief__nayin">{{ currentYearLiunian.nayin }}</span>
+              <div class="fortune-brief__wuxing">
+                <span class="badge" :class="currentYearLiunian.gan_wuxing">{{ currentYearLiunian.gan_wuxing }}</span>
+                <span class="badge" :class="currentYearLiunian.zhi_wuxing">{{ currentYearLiunian.zhi_wuxing }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -403,10 +385,22 @@
               </div>
               <!-- 十神行 -->
               <div class="paipan-row shishen-row">
-                <div class="paipan-cell shishen-cell">{{ result.bazi?.year?.shishen }}</div>
-                <div class="paipan-cell shishen-cell">{{ result.bazi?.month?.shishen }}</div>
-                <div class="paipan-cell shishen-cell highlight">日主</div>
-                <div class="paipan-cell shishen-cell">{{ result.bazi?.hour?.shishen }}</div>
+                <div class="paipan-cell shishen-cell">
+                  <span class="shishen-label">十神</span>
+                  <span class="shishen-value" :class="getShishenClass(result.bazi?.year?.shishen)">{{ result.bazi?.year?.shishen || '-' }}</span>
+                </div>
+                <div class="paipan-cell shishen-cell">
+                  <span class="shishen-label">十神</span>
+                  <span class="shishen-value" :class="getShishenClass(result.bazi?.month?.shishen)">{{ result.bazi?.month?.shishen || '-' }}</span>
+                </div>
+                <div class="paipan-cell shishen-cell highlight">
+                  <span class="shishen-label">十神</span>
+                  <span class="shishen-value shishen-value--self">日主</span>
+                </div>
+                <div class="paipan-cell shishen-cell">
+                  <span class="shishen-label">十神</span>
+                  <span class="shishen-value" :class="getShishenClass(result.bazi?.hour?.shishen)">{{ result.bazi?.hour?.shishen || '-' }}</span>
+                </div>
               </div>
               <!-- 地支行 -->
               <div class="paipan-row">
@@ -514,6 +508,7 @@
           </div>
         </div>
 
+        <!-- ========== Tabs 内容：性格/事业/流年 ========== -->
         <div class="tab-content" v-show="activeTab === 'personality' || activeTab === 'career' || activeTab === 'fortune'">
           <div class="tab-pane-content">
             <div class="pane-title" v-if="activeTab === 'personality'">
@@ -693,49 +688,12 @@
               </div>
             </div>
 
-            <!-- 通俗解读：这对我意味着什么 -->
-            <div class="simple-interpretation" v-if="result.simpleInterpretation && !result.fullInterpretation">
-              <div class="section-subtitle-wrapper">
-                <span class="section-subtitle">通俗解读</span>
-              </div>
-              <div class="interpretation-cards">
-                <div class="interp-card personality card-hover" v-show="activeTab === 'personality'">
-                  <div class="interp-header">
-                    <el-icon class="interp-icon"><UserFilled /></el-icon>
-                    <h4>我的性格特点</h4>
-                  </div>
-                  <p class="interp-content">{{ result.simpleInterpretation.personality }}</p>
-                </div>
-                <div class="interp-card career card-hover" v-show="activeTab === 'career'">
-                  <div class="interp-header">
-                    <el-icon class="interp-icon"><Briefcase /></el-icon>
-                    <h4>适合的发展方向</h4>
-                  </div>
-                  <p class="interp-content">{{ result.simpleInterpretation.career }}</p>
-                </div>
-                <div class="interp-card relationship card-hover" v-show="activeTab === 'personality'">
-                  <div class="interp-header">
-                    <el-icon class="interp-icon"><UserFilled /></el-icon>
-                    <h4>人际关系建议</h4>
-                  </div>
-                  <p class="interp-content">{{ result.simpleInterpretation.relationship }}</p>
-                </div>
-                <div class="interp-card advice card-hover" v-show="activeTab === 'personality'">
-                  <div class="interp-header">
-                    <el-icon class="interp-icon"><StarFilled /></el-icon>
-                    <h4>给你的建议</h4>
-                  </div>
-                  <p class="interp-content">{{ result.simpleInterpretation.advice }}</p>
-                </div>
-              </div>
-            </div>
-
             <div class="bazi-analysis" v-show="activeTab === 'personality'">
               <h3>详细命理分析</h3>
               <div class="analysis-content">{{ result.analysis }}</div>
             </div>
           <!-- 运势趋势部分 (For Career Tab) -->
-          <div class="fortune-section-wrapper" v-if="showAdvancedResultSections" v-show="activeTab === 'career'">
+          <div class="fortune-section-wrapper" v-show="activeTab === 'career'">
             <div class="section-divider"></div>
             <div class="pane-title">
                 <el-icon class="title-icon"><TrendCharts /></el-icon>
@@ -747,24 +705,41 @@
             <div class="dayun-section" v-if="result.dayun && result.dayun.length > 0">
               <div class="section-title-with-tip">
                 <h3>大运走势</h3>
-                <el-tooltip content="大运是十年一个周期的人生阶段分析，反映不同时期的性格特点" placement="top">
+                <el-tooltip content="大运是每10年一个阶段的人生运势，就像人生的“季节”，每个阶段都有不同的机遇和挑战" placement="top">
                   <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
                 </el-tooltip>
+              </div>
+              <!-- AI 评分 loading 提示 -->
+              <div v-if="dayunScoring" class="dayun-scoring-tip">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                <span>AI 正在根据你的八字分析大运评分中…</span>
               </div>
               <div class="dayun-timeline">
                 <div 
                   v-for="(yun, index) in result.dayun" 
                   :key="index"
                   class="dayun-item"
-                  :class="{ 'current': isCurrentDaYun(yun) }"
+                  :class="{ 'current': isCurrentDaYun(yun), [`level-${yun.trend_level || 'neutral'}`]: true }"
                 >
+                  <!-- 评分图标：AI 评分中显示转圈，完成后显示星星 -->
+                  <div class="dayun-score-icon" :class="`score-${yun.trend_level || 'neutral'}`">
+                    <template v-if="dayunScoring">
+                      <el-icon class="is-loading score-star"><Loading /></el-icon>
+                    </template>
+                    <template v-else>
+                      <el-icon class="score-star"><StarFilled /></el-icon>
+                      <el-icon class="score-star" v-if="yun.score >= 60"><StarFilled /></el-icon>
+                      <el-icon class="score-star" v-if="yun.score >= 75"><StarFilled /></el-icon>
+                      <span class="score-num" v-if="yun.score">{{ yun.score }}</span>
+                    </template>
+                  </div>
                   <div class="dayun-age">{{ yun.age_start }}-{{ yun.age_end }}岁</div>
                   <div class="dayun-pillar">
                     <span class="gan">{{ yun.gan }}</span>
                     <span class="zhi">{{ yun.zhi }}</span>
                   </div>
                   <div class="dayun-shishen">{{ yun.shishen }}</div>
-                  <div class="dayun-luck" :class="yun.luck">{{ yun.luck }}</div>
+                  <div class="dayun-luck" :class="yun.trend_level || yun.luck">{{ yun.luck }}</div>
                   <div class="dayun-desc">{{ yun.luck_desc }}</div>
                   <div class="dayun-nayin">{{ yun.nayin }}</div>
                 </div>
@@ -801,7 +776,7 @@
             </div>
           <!-- 深度预测部分 (For Career Tab) -->
           </div>
-          <div class="tools-section-wrapper" v-if="showAdvancedResultSections" v-show="activeTab === 'career'">
+          <div class="tools-section-wrapper" v-show="activeTab === 'career'">
             <div class="section-divider"></div>
             <div class="pane-title">
                 <el-icon class="title-icon"><Aim /></el-icon>
@@ -1125,15 +1100,15 @@
             </div>
           <!-- AI 解盘部分 (For Personality Tab) -->
           </div>
+          <!-- 专业版：AI 智能解盘（去掉用户输入，直接展示结果） -->
           <div class="ai-section-wrapper" v-show="activeTab === 'personality'">
             <div class="section-divider"></div>
             <div class="pane-title">
                 <el-icon class="title-icon"><Cpu /></el-icon>
                 <span class="title-text">AI 智能解盘</span>
-                <span class="title-desc">基于 AI 的深度命理对话与分析</span>
+                <span class="title-desc">AI 基于你的八字进行全维度深度分析</span>
             </div>
 
-            <!-- AI智能解盘 -->
             <div class="ai-analysis-section" v-if="result.bazi">
               <div class="section-title-with-tag">
                 <h3>AI智能解盘</h3>
@@ -1151,16 +1126,9 @@
                 <div class="ai-content" v-html="formatAiContent(aiAnalysisResult.analysis)"></div>
               </div>
               
-              <!-- AI解盘输入 -->
+              <!-- AI 一键解盘（不再需要用户输入） -->
               <div v-else-if="!aiAnalyzing" class="ai-input">
-                <p class="ai-desc">基于你的八字信息，让AI为你提供深度分析</p>
-                <el-input
-                  v-model="aiPrompt"
-                  type="textarea"
-                  :rows="2"
-                  placeholder="输入你想问的问题（可选），例如：我的事业运势如何？"
-                  class="mb-3"
-                />
+                <p class="ai-desc">AI 将基于你的完整八字命盘数据，自动进行全维度深度分析</p>
                 <el-button 
                   type="warning" 
                   size="large"
@@ -1237,7 +1205,7 @@
 </template>
 
 <script setup>
-import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight, Promotion, EditPen } from '@element-plus/icons-vue'
+import { Coin, MagicStick, QuestionFilled, Present, Lightning, StarFilled, Aim, Money, Briefcase, UserFilled, Warning, Check, Calendar, TrendCharts, Document, InfoFilled, Grid, Cpu, CircleClose, Download, Share, RefreshRight, Promotion, EditPen, Loading } from '@element-plus/icons-vue'
 import WisdomText from '../../components/WisdomText.vue'
 import PageHeroHeader from '../../components/PageHeroHeader.vue'
 import ShareCard from '../../components/ShareCard.vue'
@@ -1263,7 +1231,6 @@ const {
   baziStrategyDetails,
   baziSubmitSummaryText,
   gender,
-  location,
   loading,
   result,
   currentPoints,
@@ -1296,6 +1263,7 @@ const {
   lastAnalyzedDayunIndex,
   dayunChartData,
   dayunChartLoading,
+  dayunScoring,
   pointsConfirmVisible,
   pointsConfirmType,
   pointsConfirmData,
@@ -1356,7 +1324,12 @@ const {
   clearAiResult,
   formatAiContent,
   formatWuxingScore,
+  upgradeToProVersion,
+  getShishenClass,
+  currentYearLiunian,
 } = useBazi()
+
+// 大运评分图标已改用 Element Plus StarFilled，无需 emoji 函数
 </script>
 
 <style scoped>

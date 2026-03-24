@@ -48,6 +48,8 @@ class BaziRecord extends Model
         'is_first' => 'int',
         'is_paid' => 'int',
         'points_used' => 'int',
+        'ai_analysis' => 'string',
+        'dayun_scores' => 'string',
         'is_public' => 'int',
         'share_code' => 'string',
         'view_count' => 'int',
@@ -251,6 +253,40 @@ class BaziRecord extends Model
     }
 
     /**
+     * 更新 AI 解盘结果缓存。
+     */
+    public static function saveAiAnalysis(int $recordId, int $userId, string $aiAnalysis): bool
+    {
+        if ($recordId <= 0 || !self::hasTableColumn('ai_analysis')) {
+            return false;
+        }
+
+        $result = Db::name(self::TABLE_NAME)
+            ->where('id', $recordId)
+            ->where('user_id', $userId)
+            ->update(['ai_analysis' => $aiAnalysis]);
+
+        return $result !== false;
+    }
+
+    /**
+     * 更新 AI 大运评分缓存。
+     */
+    public static function saveDayunScores(int $recordId, int $userId, array $scores): bool
+    {
+        if ($recordId <= 0 || !self::hasTableColumn('dayun_scores')) {
+            return false;
+        }
+
+        $result = Db::name(self::TABLE_NAME)
+            ->where('id', $recordId)
+            ->where('user_id', $userId)
+            ->update(['dayun_scores' => json_encode($scores, JSON_UNESCAPED_UNICODE)]);
+
+        return $result !== false;
+    }
+
+    /**
      * 获取记录的 API 输出。
      */
     public function toApiArray(bool $truncateAnalysis = false): array
@@ -268,6 +304,8 @@ class BaziRecord extends Model
             'location' => $this->getLocationValue(),
             'bazi' => $this->getBaziValue(),
             'analysis' => $analysis,
+            'ai_analysis' => $truncateAnalysis ? null : $this->getAiAnalysisValue(),
+            'dayun_scores' => $this->getDayunScoresValue(),
             'is_public' => $this->isPublicRecord() ? 1 : 0,
             'share_code' => $this->getShareCodeValue(),
             'view_count' => $this->getViewCountValue(),
@@ -628,6 +666,22 @@ class BaziRecord extends Model
 
         $pillarValue = trim((string) ($this->getAttr($pillar . '_pillar') ?? ''));
         return mb_substr($pillarValue, 1, 1);
+    }
+
+    protected function getAiAnalysisValue(): ?string
+    {
+        $value = trim((string) ($this->getAttr('ai_analysis') ?? ''));
+        return $value !== '' ? $value : null;
+    }
+
+    protected function getDayunScoresValue(): array
+    {
+        $raw = trim((string) ($this->getAttr('dayun_scores') ?? ''));
+        if ($raw === '') {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
     }
 
     protected function getAnalysisValue(): string

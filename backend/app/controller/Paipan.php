@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\BaziRecord;
 use app\model\PointsRecord;
 use app\service\CacheService;
+use app\service\ConfigService;
 use app\service\BaziCalculationService;
 use app\service\BaziInterpretationService;
 use app\service\FortuneAnalysisService;
@@ -15,8 +16,6 @@ use think\facade\Log;
 
 class Paipan extends BaseController
 {
-    // 排盘所需积分
-    const BAZI_POINTS_COST = 10;
     
     // 是否启用排盘结果缓存
     const ENABLE_CACHE = true;
@@ -75,7 +74,7 @@ class Paipan extends BaseController
         $gender = $data['gender'];
         $location = $data['location'] ?? '';
         $longitude = $data['longitude'] ?? null; // 经度，用于真太阳时计算
-        $mode = $data['mode'] ?? 'pro'; // 'simple' or 'pro'
+        $mode = 'pro'; // 固定使用专业版，始终计算大运/流年
         
         // 如果有经度数据，计算真太阳时
         $trueSolarTimeInfo = null;
@@ -99,22 +98,17 @@ class Paipan extends BaseController
         // 生成详细分析报告
         $analysis = $this->generateDetailedAnalysis($fullInterpretation);
         
-        // 计算大运（专业版）
-        $daYun = [];
-        $liuNian = [];
-        $fortuneAnalysis = null;
-        if ($mode === 'pro') {
-            // 注意：calculateDaYun 暂时保留在控制器中，后续可进一步迁移至服务类
-            $daYun = $this->calculateDaYun($bazi, $gender, $birthDate);
-            $daYun = $this->analyzeDaYunTrend($daYun, $bazi);
-            
-            // 计算流年（最近5年）
-            $currentYear = (int)date('Y');
-            $liuNian = $this->calculateLiuNian($currentYear, 5);
-            
-            // 大运流年综合分析
-            $fortuneAnalysis = $this->fortuneAnalysisService->analyzeDaYunLiuNian($bazi, $daYun, $liuNian);
-        }
+        // 计算大运/流年（始终计算完整数据）
+        // 注意：calculateDaYun 暂时保留在控制器中，后续可进一步迁移至服务类
+        $daYun = $this->calculateDaYun($bazi, $gender, $birthDate);
+        $daYun = $this->analyzeDaYunTrend($daYun, $bazi);
+        
+        // 计算流年（最近5年）
+        $currentYear = (int)date('Y');
+        $liuNian = $this->calculateLiuNian($currentYear, 5);
+        
+        // 大运流年综合分析
+        $fortuneAnalysis = $this->fortuneAnalysisService->analyzeDaYunLiuNian($bazi, $daYun, $liuNian);
 
         
         // ===== 使用数据库行锁防止并发问题 =====
@@ -139,19 +133,23 @@ class Paipan extends BaseController
                 ->count() > 0;
             $isFirstBazi = (!$hasBaziRecord && !$hasPointsRecord);
             
-            // 3. 非首次排盘需要检查积分
-            if (!$isFirstBazi && $userData['points'] < self::BAZI_POINTS_COST) {
+            // 3. 动态获取排盘费用
+            $costInfo = ConfigService::calculatePointsCost('bazi');
+            $baziCost = $costInfo['final'];
+            
+            // 4. 非首次排盘需要检查积分
+            if (!$isFirstBazi && $userData['points'] < $baziCost) {
                 Db::rollback();
                 return $this->error('积分不足，请先充值', 403);
             }
             
-            $pointsCost = $isFirstBazi ? 0 : self::BAZI_POINTS_COST;
+            $pointsCost = $isFirstBazi ? 0 : $baziCost;
             
-            // 4. 非首次排盘扣除积分（使用原子操作）
+            // 5. 非首次排盘扣除积分（使用原子操作）
             if (!$isFirstBazi) {
                 $updateResult = Db::name('tc_user')
                     ->where('id', $user['sub'])
-                    ->dec('points', self::BAZI_POINTS_COST)
+                    ->dec('points', $baziCost)
                     ->update();
                 
                 if ($updateResult === 0) {
@@ -166,7 +164,7 @@ class Paipan extends BaseController
                 $pointsPayload = PointsRecord::buildRecordPayload(
                     (int) $user['sub'],
                     '八字排盘消耗',
-                    -self::BAZI_POINTS_COST,
+                    -$baziCost,
                     'bazi',
                     0,
                     "排盘日期: {$birthDate}",
@@ -180,9 +178,9 @@ class Paipan extends BaseController
                         $fallbackPayload = array_merge([
                             'user_id' => (int) $user['sub'],
                             'action' => '八字排盘消耗',
-                            'points' => -self::BAZI_POINTS_COST,
+                            'points' => -$baziCost,
                             'type' => 'reduce',
-                            'amount' => self::BAZI_POINTS_COST,
+                            'amount' => $baziCost,
                             'balance' => $currentBalance,
                             'related_id' => 0,
                             'source_id' => 0,
@@ -243,12 +241,10 @@ class Paipan extends BaseController
                 'true_solar_time' => $trueSolarTimeInfo,
             ];
             
-            // 专业版额外数据
-            if ($mode === 'pro') {
-                $result['dayun'] = $daYun;
-                $result['liunian'] = $liuNian;
-                $result['fortune_analysis'] = $fortuneAnalysis;
-            }
+            // 大运/流年数据（始终返回）
+            $result['dayun'] = $daYun;
+            $result['liunian'] = $liuNian;
+            $result['fortune_analysis'] = $fortuneAnalysis;
             
             // 缓存排盘结果（用于复用）
             if (self::ENABLE_CACHE) {
@@ -354,12 +350,10 @@ class Paipan extends BaseController
                 'from_cache' => true,
             ];
             
-            // 专业版额外数据
-            if ($mode === 'pro') {
-                $result['dayun'] = $cachedResult['dayun'] ?? [];
-                $result['liunian'] = $cachedResult['liunian'] ?? [];
-                $result['fortune_analysis'] = $cachedResult['fortune_analysis'] ?? null;
-            }
+            // 大运/流年数据（始终返回）
+            $result['dayun'] = $cachedResult['dayun'] ?? [];
+            $result['liunian'] = $cachedResult['liunian'] ?? [];
+            $result['fortune_analysis'] = $cachedResult['fortune_analysis'] ?? null;
             
             return $this->success($result);
         } catch (\Exception $e) {
@@ -389,6 +383,49 @@ class Paipan extends BaseController
         $history = BaziRecord::getUserHistoryPaged($user['sub'], $page, $pageSize);
         
         return $this->success($history);
+    }
+
+    /**
+     * 获取单条排盘记录的完整数据（用于历史记录详情页恢复）
+     */
+    public function getRecord()
+    {
+        $user = $this->request->user;
+        $id = (int)$this->request->get('id', 0);
+
+        if ($id <= 0) {
+            return $this->error('记录ID不能为空', 400);
+        }
+
+        $record = BaziRecord::getByIdWithAuth($id, (int)$user['sub']);
+        if (!$record) {
+            return $this->error('记录不存在或无权访问', 404);
+        }
+
+        // 从 report_data 中还原完整排盘结果
+        $reportData = $record->getAttr('report_data');
+        if (is_string($reportData) && trim($reportData) !== '') {
+            $reportData = json_decode($reportData, true);
+        }
+        if (!is_array($reportData)) {
+            $reportData = [];
+        }
+
+        // 合并记录基础字段 + report_data 完整数据 + AI 缓存
+        $dayunScoresRaw = trim((string)($record->getAttr('dayun_scores') ?? ''));
+        $dayunScores = [];
+        if ($dayunScoresRaw !== '') {
+            $decoded = json_decode($dayunScoresRaw, true);
+            $dayunScores = is_array($decoded) ? $decoded : [];
+        }
+
+        $result = array_merge($reportData, [
+            'id' => $record->getAttr('id'),
+            'ai_analysis' => $record->getAttr('ai_analysis') ?: null,
+            'dayun_scores' => $dayunScores,
+        ]);
+
+        return $this->success($result);
     }
 
     /**
@@ -1093,9 +1130,12 @@ class Paipan extends BaseController
     
     /**
      * 分析大运趋势（替代原吉凶分析）
+     * score 基于十神关系算法计算（50基础分 + 天干十神加减分 + 地支关系加减分），范围 20-95
      */
     protected function analyzeDaYunTrend(array $daYun, array $bazi): array
     {
+        $dayGan = $bazi['day']['gan'] ?? '';
+        $dayZhi = $bazi['day']['zhi'] ?? '';
         $dayMasterWuxing = $bazi['day_master_wuxing'];
         $wuxingShengKe = [
             '金' => ['生' => '水', '克' => '木', '被生' => '土', '被克' => '火'],
@@ -1104,34 +1144,81 @@ class Paipan extends BaseController
             '火' => ['生' => '土', '克' => '金', '被生' => '木', '被克' => '水'],
             '土' => ['生' => '金', '克' => '水', '被生' => '火', '被克' => '木']
         ];
+
+        // 十神评分表（与 FortuneAnalysisService 保持一致）
+        $shiShenScores = [
+            '正官' => 15, '七杀' => 5,  '正印' => 12, '偏印' => 8,
+            '比肩' => 5,  '劫财' => -5, '食神' => 18, '伤官' => 8,
+            '正财' => 15, '偏财' => 10,
+        ];
+
+        // 地支关系评分
+        $zhiRelationScores = ['相合' => 10, '相冲' => -15, '相刑' => -10, '相害' => -8, '无特殊' => 0];
+
+        // 六冲表
+        $chongMap = [
+            '子' => '午', '午' => '子', '丑' => '未', '未' => '丑',
+            '寅' => '申', '申' => '寅', '卯' => '酉', '酉' => '卯',
+            '辰' => '戌', '戌' => '辰', '巳' => '亥', '亥' => '巳',
+        ];
+        // 六合表
+        $liuheMap = [
+            '子' => '丑', '丑' => '子', '寅' => '亥', '亥' => '寅',
+            '卯' => '戌', '戌' => '卯', '辰' => '酉', '酉' => '辰',
+            '巳' => '申', '申' => '巳', '午' => '未', '未' => '午',
+        ];
         
         foreach ($daYun as &$yun) {
             $yunWuxing = $yun['gan_wuxing'];
-            
-            // 合规分析：使用中性词汇替代吉凶
+            $yunZhi = $yun['zhi'] ?? '';
+            $shiShen = $yun['shishen'] ?? '';
+
+            // 算法评分：50基础分 + 十神加减 + 地支关系加减
+            $score = 50;
+            $score += $shiShenScores[$shiShen] ?? 0;
+
+            // 地支关系
+            if ($yunZhi === $dayZhi) {
+                $zhiRelation = '相合';
+            } elseif (isset($chongMap[$dayZhi]) && $chongMap[$dayZhi] === $yunZhi) {
+                $zhiRelation = '相冲';
+            } elseif (isset($liuheMap[$dayZhi]) && $liuheMap[$dayZhi] === $yunZhi) {
+                $zhiRelation = '相合';
+            } else {
+                $zhiRelation = '无特殊';
+            }
+            $score += $zhiRelationScores[$zhiRelation] ?? 0;
+            $score = max(20, min(95, $score));
+
+            // 根据分数确定 trend_level
+            if ($score >= 70) {
+                $yun['trend_level'] = 'positive';
+            } elseif ($score >= 50) {
+                $yun['trend_level'] = 'neutral';
+            } else {
+                $yun['trend_level'] = 'cautious';
+            }
+            $yun['score'] = $score;
+
+            // 根据五行关系确定 trend 标签和描述
             if ($yunWuxing === $dayMasterWuxing) {
                 $yun['trend'] = '平稳';
-                $yun['trend_desc'] = '比肩运，适合合作共事，注意人际关系平衡';
-                $yun['trend_level'] = 'neutral';
+                $yun['trend_desc'] = '这段时期整体比较平稳，适合多结交朋友、拓展人脉，团队合作会有不错的收获';
             } elseif ($wuxingShengKe[$dayMasterWuxing]['被生'] === $yunWuxing) {
                 $yun['trend'] = '上升';
-                $yun['trend_desc'] = '印绶运，学习进修的好时机，易得他人帮助';
-                $yun['trend_level'] = 'positive';
+                $yun['trend_desc'] = '这是一段贵人运旺盛的时期，容易得到长辈或上司的提携，学习新技能、考证进修都很顺利';
             } elseif ($wuxingShengKe[$dayMasterWuxing]['生'] === $yunWuxing) {
                 $yun['trend'] = '活跃';
-                $yun['trend_desc'] = '食伤运，创意灵感丰富，适合表达展现';
-                $yun['trend_level'] = 'neutral';
+                $yun['trend_desc'] = '这段时期思维活跃、创意十足，适合做自媒体、创业或展示自己的才华，表达欲望强烈';
             } elseif ($wuxingShengKe[$dayMasterWuxing]['被克'] === $yunWuxing) {
                 $yun['trend'] = '稳健';
-                $yun['trend_desc'] = '官杀运，适合沉淀积累，注意劳逸结合';
-                $yun['trend_level'] = 'cautious';
+                $yun['trend_desc'] = '这段时期压力相对较大，工作上容易遇到挑战，但也是磨练意志、积累经验的好时机，注意劳逸结合';
             } else {
                 $yun['trend'] = '进取';
-                $yun['trend_desc'] = '财运，适合理财规划，把握发展机会';
-                $yun['trend_level'] = 'positive';
+                $yun['trend_desc'] = '这是财运较旺的时期，适合投资理财、开拓事业，把握机会主动出击会有不错的回报';
             }
             
-            // 为了向后兼容，保留旧的字段但使用新值
+            // 向后兼容
             $yun['luck'] = $yun['trend'];
             $yun['luck_desc'] = $yun['trend_desc'];
         }

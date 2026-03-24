@@ -9,9 +9,10 @@ import {
   getDayunAnalysis,
   getDayunChart as getDayunChartApi,
   getFortunePointsCost,
-  getClientConfig
+  getClientConfig,
+  getBaziRecord
 } from '../../api'
-import { analyzeBaziAi, analyzeBaziAiStream } from '../../api/ai'
+import { analyzeBaziAi, analyzeBaziAiStream, scoreDayunAi, getAiRecord } from '../../api/ai'
 import { sanitizeHtml } from '../../utils/sanitize'
 import { trackPageView, trackEvent, trackSubmit, trackError } from '../../utils/tracker'
 
@@ -20,7 +21,7 @@ const router = useRouter()
 const route = useRoute()
 const activeTab = ref('chart')
 
-const BAZI_BASE_COST = 10
+const BAZI_BASE_COST = ref(10) // 动态费用，从后端获取
 const AI_ANALYSIS_DEFAULT_COST = 30
 const WUXING_WEIGHT_MAX = 9.5
 
@@ -140,7 +141,7 @@ const aiAnalysisCost = ref(AI_ANALYSIS_DEFAULT_COST)
 const confirmVisible = ref(false)
 
 const saving = ref(false)
-const versionMode = ref('simple') // 'simple' or 'pro'
+const versionMode = ref('pro') // 统一使用专业版（AI分析版）
 const isFirstBazi = ref(true) // 是否首次排盘
 
 const loadingStep = ref(1) // 加载步骤
@@ -213,6 +214,7 @@ const dayunAnalysisLoading = ref(false)
 const lastAnalyzedDayunIndex = ref(null)
 const dayunChartData = ref(null)
 const dayunChartLoading = ref(false)
+const dayunScoring = ref(false) // AI 大运评分 loading 状态
 
 
 // 积分消耗确认对话框
@@ -256,13 +258,9 @@ const resetCurrentResult = () => {
 }
 
 // 版本提示
-const versionHint = computed(() => {
-  return versionMode.value === 'simple' 
-    ? '简化版：适合新手，只看核心信息，不用填出生地'
-    : '专业版：适合进阶，包含真太阳时、大运流年等详细分析'
-})
-const resultModeLabel = computed(() => (versionMode.value === 'pro' ? '专业版结果' : '简化版结果'))
-const showAdvancedResultSections = computed(() => versionMode.value === 'pro')
+const versionHint = computed(() => 'AI 专业分析版：包含完整排盘、大运流年、AI 深度解读')
+const resultModeLabel = computed(() => 'AI 专业版结果')
+const showAdvancedResultSections = computed(() => true)
 const birthTimeAccuracyLabel = computed(() => {
   if (birthTimeAccuracy.value === 'exact') {
     return '精确到分钟'
@@ -293,7 +291,7 @@ const resultContextNote = computed(() => {
 
   if (!showAdvancedResultSections.value) {
 
-    return '当前为简化版结果，已自动收起大运、流年与深度预测工具；想继续深入，可切换到专业版。'
+    return ''
   }
 
   return ''
@@ -361,7 +359,7 @@ const canStartBazi = computed(() => {
     return false
   }
 
-  return isFirstBazi.value || currentPoints.value >= BAZI_BASE_COST
+  return isFirstBazi.value || currentPoints.value >= BAZI_BASE_COST.value
 })
 
 const startBaziButtonText = computed(() => {
@@ -477,11 +475,11 @@ const buildBaziSubmitIssues = () => {
     })
   }
 
-  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
+  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST.value) {
     issues.push({
       key: 'points',
       actionLabel: '去充值或补积分',
-      message: `当前积分不足，本次排盘还需要 ${BAZI_BASE_COST} 积分。`,
+      message: `当前积分不足，本次排盘还需要 ${BAZI_BASE_COST.value} 积分。`,
       route: '/recharge'
     })
   }
@@ -758,6 +756,15 @@ const loadPoints = async ({ silent = false } = {}) => {
     getClientConfig({ silent: true, skipGlobalError: true }),
   ])
 
+  // 从 clientConfig 中提取八字排盘动态费用
+  const clientConfigData = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value?.data : null
+  if (clientConfigData?.points?.costs?.bazi != null) {
+    const dynamicBaziCost = Number(clientConfigData.points.costs.bazi)
+    if (Number.isFinite(dynamicBaziCost) && dynamicBaziCost >= 0) {
+      BAZI_BASE_COST.value = dynamicBaziCost
+    }
+  }
+
 
   const accountResponse = accountResult.status === 'fulfilled' ? accountResult.value : null
   if (accountResponse?.code === 200) {
@@ -803,7 +810,7 @@ const loadPoints = async ({ silent = false } = {}) => {
   const clientConfigResponse = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
 
   if (clientConfigResponse?.code === 200) {
-    const resolvedAiCost = resolveAiAnalysisCost(clientConfigResponse.data)
+    const resolvedAiCost = resolveAiAnalysisCost(clientConfigResponse.data || clientConfigData)
     if (Number.isFinite(resolvedAiCost)) {
       aiAnalysisCost.value = resolvedAiCost
       aiPricingStatus.value = 'ready'
@@ -902,6 +909,38 @@ const getYearlyFortuneAnalysis = async () => {
 }
 
 // 获取大运运势分析
+/**
+ * 排盘后自动触发 AI 大运评分，更新 result.dayun 中的 score
+ */
+const triggerDayunAiScoring = async () => {
+  if (!result.value?.dayun?.length || !result.value?.bazi) return
+  dayunScoring.value = true
+  try {
+    const recordId = result.value?.id || 0
+    const res = await scoreDayunAi(result.value.bazi, result.value.dayun, null, recordId)
+    if (res.code === 200 && res.data?.scores) {
+      const scores = res.data.scores
+      // 将 AI 评分写入 result.dayun
+      result.value.dayun = result.value.dayun.map((yun, idx) => {
+        const aiScore = scores[idx]
+        if (aiScore !== undefined) {
+          const score = Math.max(20, Math.min(95, aiScore))
+          return {
+            ...yun,
+            score,
+            trend_level: score >= 75 ? 'positive' : score >= 50 ? 'neutral' : 'cautious'
+          }
+        }
+        return yun
+      })
+    }
+  } catch (e) {
+    // AI 评分失败，静默处理，保留本地评分
+  } finally {
+    dayunScoring.value = false
+  }
+}
+
 const getDayunFortuneAnalysis = async () => {
   if (!result.value?.id) return
   
@@ -983,7 +1022,7 @@ const showConfirm = () => {
   }
   
   // 积分不足前置拦截
-  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST) {
+  if (!isFirstBazi.value && currentPoints.value < BAZI_BASE_COST.value) {
     ElMessageBox.confirm(
       '当前积分不足，是否前往签到或充值获取积分？',
       '积分不足',
@@ -1047,6 +1086,8 @@ const calculateBazi = async () => {
       syncCurrentPoints(response.data.remaining_points)
       isFirstBazi.value = false
       ElMessage.success('排盘成功！为你生成详细的命理解读')
+      // 排盘成功后，异步触发 AI 大运评分
+      triggerDayunAiScoring()
 
     } else {
       trackSubmit('bazi_calculate', false, { mode: versionMode.value, error: response.message })
@@ -1075,11 +1116,48 @@ onMounted(() => {
   updateViewportState()
   window.addEventListener('resize', updateViewportState)
   loadPoints({ silent: true })
-  
+
   if (route.query.tab && ['chart', 'personality', 'career', 'fortune'].includes(route.query.tab)) {
     activeTab.value = route.query.tab
   }
+
+  // 从历史记录恢复排盘结果
+  const recordId = parseInt(route.query.record_id, 10)
+  if (recordId > 0) {
+    loadHistoryRecord(recordId)
+  }
 })
+
+// 从历史记录恢复排盘结果
+async function loadHistoryRecord(recordId) {
+  loading.value = true
+  try {
+    const res = await getBaziRecord(recordId)
+    if (res.code === 200 && res.data) {
+      result.value = res.data
+      activeNames.value = getDefaultActiveNames()
+      isFirstBazi.value = false
+      // 如果有缓存的 AI 大运评分，合并到 dayun 中
+      const scores = res.data.dayun_scores || {}
+      if (res.data.dayun && Object.keys(scores).length > 0) {
+        result.value.dayun = res.data.dayun.map((yun, idx) => {
+          const aiScore = scores[idx]
+          if (aiScore !== undefined) {
+            const score = Math.max(20, Math.min(95, aiScore))
+            return { ...yun, score, trend_level: score >= 75 ? 'positive' : score >= 50 ? 'neutral' : 'cautious' }
+          }
+          return yun
+        })
+      }
+    } else {
+      ElMessage.warning('历史记录加载失败，请重新排盘')
+    }
+  } catch (e) {
+    ElMessage.warning('历史记录加载失败，请重新排盘')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 组件卸载时清理定时器
 onUnmounted(() => {
@@ -1189,6 +1267,37 @@ const baziShareTags = computed(() => {
   return tags
 })
 
+// 重新排盘（原升级到专业版入口，现统一为重新排盘）
+const upgradeToProVersion = () => {
+  resetCurrentResult()
+  ElMessage.info('请重新填写信息并提交排盘')
+}
+
+// 十神样式分类
+const getShishenClass = (shishen) => {
+  if (!shishen) return ''
+  const classMap = {
+    '比肩': 'shishen--bijian',
+    '劫财': 'shishen--jiecai',
+    '食神': 'shishen--shishen',
+    '伤官': 'shishen--shangguan',
+    '偏财': 'shishen--piancai',
+    '正财': 'shishen--zhengcai',
+    '七杀': 'shishen--qisha',
+    '正官': 'shishen--zhengguan',
+    '偏印': 'shishen--pianyin',
+    '正印': 'shishen--zhengyin',
+  }
+  return classMap[shishen] || ''
+}
+
+// 当前年份流年数据
+const currentYearLiunian = computed(() => {
+  if (!result.value?.liunian) return null
+  const currentYear = new Date().getFullYear()
+  return result.value.liunian.find(y => y.year === currentYear) || result.value.liunian[0] || null
+})
+
 const shareResult = async () => {
   if (!result.value?.bazi) {
     ElMessage.warning('暂无排盘结果可分享')
@@ -1278,7 +1387,7 @@ const startAiAnalysisCore = async () => {
   
   try {
     // 尝试使用流式API
-    const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
+      const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal, result.value.dayun || [], result.value.id || 0)
     let streamRemainingPoints = null
 
     if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
@@ -1337,7 +1446,7 @@ const startAiAnalysisCore = async () => {
       }
     } else {
       // 非流式响应
-      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal)
+      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal, result.value.dayun || [], result.value.id || 0)
       if (res.code === 200) {
         aiAnalysisResult.value = res.data
         syncCurrentPoints(res.data?.remaining_points, aiAnalysisCost.value)
@@ -1442,6 +1551,7 @@ return {
   lastAnalyzedDayunIndex,
   dayunChartData,
   dayunChartLoading,
+  dayunScoring,
   pointsConfirmVisible,
   pointsConfirmType,
   pointsConfirmData,
@@ -1501,5 +1611,8 @@ return {
   clearAiResult,
   formatAiContent,
   formatWuxingScore,
+  upgradeToProVersion,
+  getShishenClass,
+  currentYearLiunian,
 }
 } // end useBazi

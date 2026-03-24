@@ -1,10 +1,10 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DOMPurify from 'dompurify'
 import { Male, Female, UserFilled } from '@element-plus/icons-vue'
 
-import { getHehunPricing, calculateHehun, getHehunHistory, exportHehunReport } from '../../api'
+import { getHehunPricing, calculateHehun, getHehunHistory, getHehunDetail, exportHehunReport } from '../../api'
 
 
 
@@ -18,6 +18,7 @@ export function useHehun() {
  * 使用DOMPurify库进行专业清理
  */
 const router = useRouter()
+const route = useRoute()
 const HEHUN_LOCAL_FREE_PREVIEW_STORAGE_KEY = 'hehun_local_free_preview_v1'
 
 const sanitizeHtml = (html) => {
@@ -1654,12 +1655,35 @@ const formatDate = (dateStr) => {
   }).format(date)
 }
 
+// 从历史记录跳转加载详情
+async function loadRecordById(recordId) {
+  isLoading.value = true
+  try {
+    const res = await getHehunDetail(recordId)
+    if (res.code === 200 && res.data) {
+      loadHistoryDetail(res.data)
+    } else {
+      ElMessage.warning('历史记录加载失败，请重新合婚')
+    }
+  } catch (e) {
+    ElMessage.warning('历史记录加载失败，请重新合婚')
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // 初始化
 onMounted(() => {
   trackPageView('hehun')
   localFreePreview.value = readLocalFreePreview()
   loadPricing()
   loadHistory()
+
+  // 从历史记录跳转时，自动加载对应记录
+  const recordId = parseInt(route.query.record_id, 10)
+  if (recordId > 0) {
+    loadRecordById(recordId)
+  }
 })
 
 return {

@@ -458,11 +458,27 @@ const saveBirthDate = async (value) => {
 }
 
 const viewDetail = (record) => {
-  // 显示排盘详情弹窗
-  ElMessage.info('八字详情：' + record.yearGan + record.yearZhi + ' ' + 
-    record.monthGan + record.monthZhi + ' ' + 
-    record.dayGan + record.dayZhi + ' ' + 
-    record.hourGan + record.hourZhi)
+  if (!record?.id) {
+    ElMessage.warning('记录数据异常，无法查看详情')
+    return
+  }
+  router.push(`/bazi?record_id=${record.id}`)
+}
+
+const viewLiuyaoDetail = (record) => {
+  if (!record?.id) {
+    ElMessage.warning('记录数据异常，无法查看详情')
+    return
+  }
+  router.push(`/liuyao?record_id=${record.id}`)
+}
+
+const viewHehunDetail = (record) => {
+  if (!record?.id) {
+    ElMessage.warning('记录数据异常，无法查看详情')
+    return
+  }
+  router.push(`/hehun?record_id=${record.id}`)
 }
 
 const viewTarotDetail = (record) => {
@@ -574,7 +590,7 @@ return {
   restartTourGuide,
   loadBaziHistory, loadTarotHistory, loadLiuyaoHistory, loadHehunHistory,
   submitFeedbackForm, saveBirthDate,
-  viewDetail, viewTarotDetail,
+  viewDetail, viewTarotDetail, viewLiuyaoDetail, viewHehunDetail,
   handleMethodAction, copyInviteCode, copyInviteLink, shareToWechat,
 }
-} // end useProfile
+} // end useProfile

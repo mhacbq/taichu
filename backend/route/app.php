@@ -45,6 +45,7 @@ Route::group('api', function () {
     Route::group('paipan', function () {
         Route::post('bazi', 'Paipan/bazi');
         Route::get('history', 'Paipan/history');
+        Route::get('record', 'Paipan/getRecord');
         Route::post('set-share-public', 'Paipan/setSharePublic');
         Route::post('delete-record', 'Paipan/deleteRecord');
     });
@@ -127,7 +128,9 @@ Route::group('api', function () {
     Route::group('ai', function () {
         Route::post('analyze', 'AiAnalysis/analyze');
         Route::post('analyze-stream', 'AiAnalysis/analyzeStream');
+        Route::post('score-dayun', 'AiAnalysis/scoreDayun');
         Route::get('history', 'AiAnalysis/history');
+        Route::get('record', 'AiAnalysis/getRecord');
     });
     
     // VIP会员
@@ -163,6 +166,7 @@ Route::group('api', function () {
         Route::get('pricing', 'Hehun/getPricing');      // 获取定价配置
         Route::post('calculate', 'Hehun/calculate');     // 合婚计算
         Route::get('history', 'Hehun/history');          // 合婚历史
+        Route::get('detail', 'Hehun/detail');            // 合婚详情
         Route::post('export', 'Hehun/export');           // 导出报告
     });
 
