@@ -108,79 +108,22 @@
       </el-form>
     </el-card>
 
-    <el-card class="mt-4" v-loading="loadingAi">
+    <el-card class="mt-4">
       <template #header>
         <div class="card-header">
-          <span>AI 解盘配置</span>
-          <div class="action-group">
-            <el-button type="primary" :loading="savingAi" :disabled="aiReadonly" @click="handleSaveAiConfig">保存 AI 配置</el-button>
-            <el-button :loading="testingAi" :disabled="aiReadonly" @click="handleTestAiConnection">测试连接</el-button>
-          </div>
+          <span>AI 配置</span>
         </div>
       </template>
-
-      <div v-if="aiError" class="page-state">
-        <el-result icon="warning" :title="aiError.title" :sub-title="aiError.description">
-          <template #extra>
-            <el-button @click="loadAiConfigData" :loading="loadingAi">重新加载</el-button>
-          </template>
-        </el-result>
-      </div>
-
-      <el-form v-else :model="aiForm" :disabled="aiReadonly" label-width="150px">
-        <el-alert
-          title="AI 解盘功能需要配置兼容 OpenAI 的外部模型服务"
-          description="保存后后台会立即刷新缓存，前台新请求会直接读取最新配置。"
-          type="info"
-          show-icon
-          class="mb-4"
-        />
-
-        <el-form-item label="启用 AI 解盘">
-          <el-switch v-model="aiForm.enable_bazi_analysis" />
-        </el-form-item>
-
-        <el-form-item label="API 地址">
-          <el-input
-            v-model="aiForm.api_url"
-            placeholder="例如：https://aiping.cn/api/v1/chat/completions"
-            style="width: 420px"
-          />
-        </el-form-item>
-
-        <el-form-item label="API 密钥">
-          <el-input
-            v-model="aiForm.api_key"
-            type="password"
-            show-password
-            :placeholder="apiKeyPlaceholder"
-            style="width: 420px"
-          />
-          <el-text type="info" size="small" class="ml-2">
-            {{ isApiKeyMasked ? '密钥已配置，留空则保持原值' : '密钥将由后端脱敏存储' }}
-          </el-text>
-        </el-form-item>
-
-        <el-form-item label="模型名称">
-          <el-input
-            v-model="aiForm.model"
-            placeholder="例如：DeepSeek-V3.2"
-            style="width: 320px"
-          />
-        </el-form-item>
-
-        <el-form-item label="启用流式输出">
-          <el-switch v-model="aiForm.enable_streaming" />
-        </el-form-item>
-
-        <el-form-item label="启用思考过程">
-          <el-switch v-model="aiForm.enable_thinking" />
-        </el-form-item>
-
-        <el-form-item label="积分消耗">
-          <el-input-number v-model="aiForm.cost_points" :min="0" :max="100" />
-        </el-form-item>
-      </el-form>
+      <el-result
+        icon="info"
+        title="AI 配置已迁移至独立模块"
+        sub-title="为避免配置分散，AI 相关配置（模型、API 密钥、提示词等）已统一至 AI 管理模块"
+      >
+        <template #extra>
+          <el-button type="primary" @click="$router.push('/ai/config')">前往 AI 配置</el-button>
+          <el-button @click="$router.push('/ai/prompts')">前往提示词管理</el-button>
+        </template>
+      </el-result>
     </el-card>
   </div>
 </template>
@@ -190,24 +133,16 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getSettings, saveSettings } from '@/api/system'
-import { getAiConfig, saveAiConfig, testAiConnection } from '@/api/ai'
 import { useUserStore } from '@/stores/user'
 import { createReadonlyErrorState } from '@/utils/page-error'
 
 const userStore = useUserStore()
 const loadingSettings = ref(false)
-const loadingAi = ref(false)
 const savingSettings = ref(false)
-const savingAi = ref(false)
-const testingAi = ref(false)
 const settingsError = ref(null)
-const aiError = ref(null)
 const settingsSaveFeedback = ref(null)
-const isApiKeyMasked = ref(false)
-const apiKeyPlaceholder = ref('请输入 API 密钥')
 
 const settingsReadonly = computed(() => Boolean(settingsError.value))
-const aiReadonly = computed(() => Boolean(aiError.value))
 
 function createDefaultSettings() {
   return {
@@ -307,22 +242,8 @@ function createSettingsFeedback(type, title, description, mismatches = []) {
 }
 
 
-function createDefaultAiSettings() {
-  return {
-    enable_bazi_analysis: false,
-    api_url: '',
-    api_key: '',
-    model: '',
-    enable_streaming: false,
-    enable_thinking: false,
-    cost_points: 0
-  }
-}
-
 const form = ref(createDefaultSettings())
 const originalForm = ref(createDefaultSettings())
-const aiForm = ref(createDefaultAiSettings())
-const originalAiForm = ref(createDefaultAiSettings())
 
 const uploadAction = '/api/upload/image'
 const uploadHeaders = computed(() => ({
@@ -331,7 +252,6 @@ const uploadHeaders = computed(() => ({
 
 onMounted(() => {
   loadSettingsData()
-  loadAiConfigData()
 })
 
 async function fetchSettingsSnapshot() {
@@ -353,37 +273,6 @@ async function loadSettingsData() {
 }
 
 
-async function loadAiConfigData() {
-  loadingAi.value = true
-  try {
-    const res = await getAiConfig({ showErrorMessage: false })
-    const nextForm = {
-      ...createDefaultAiSettings(),
-      ...(res.data || {})
-    }
-
-    if (nextForm.api_key && String(nextForm.api_key).includes('****')) {
-      isApiKeyMasked.value = true
-      apiKeyPlaceholder.value = nextForm.api_key
-      nextForm.api_key = ''
-    } else {
-      isApiKeyMasked.value = false
-      apiKeyPlaceholder.value = '请输入 API 密钥'
-    }
-
-    aiForm.value = nextForm
-    originalAiForm.value = { ...nextForm }
-    aiError.value = null
-  } catch (error) {
-    aiForm.value = createDefaultAiSettings()
-    originalAiForm.value = createDefaultAiSettings()
-    isApiKeyMasked.value = false
-    apiKeyPlaceholder.value = '请输入 API 密钥'
-    aiError.value = createReadonlyErrorState(error, 'AI 解盘配置', 'admin / config_manage')
-  } finally {
-    loadingAi.value = false
-  }
-}
 
 function handleLogoSuccess(response) {
   if (response?.code === 200 && response?.data?.url) {
@@ -469,50 +358,7 @@ function handleReset() {
 }
 
 
-async function handleSaveAiConfig() {
-  if (aiReadonly.value) {
-    ElMessage.warning('AI 配置尚未成功加载，当前为只读保护状态')
-    return
-  }
 
-  savingAi.value = true
-  try {
-    const payload = { ...aiForm.value }
-    if (!payload.api_key && isApiKeyMasked.value) {
-      delete payload.api_key
-    }
-
-    await saveAiConfig(payload, { showErrorMessage: false })
-    ElMessage.success('AI 配置已保存')
-    await loadAiConfigData()
-  } catch (error) {
-    ElMessage.error(error.message || '保存 AI 配置失败')
-  } finally {
-    savingAi.value = false
-  }
-}
-
-async function handleTestAiConnection() {
-  if (aiReadonly.value) {
-    ElMessage.warning('AI 配置尚未成功加载，暂时无法测试连接')
-    return
-  }
-
-  testingAi.value = true
-  try {
-    const payload = { ...aiForm.value }
-    if (!payload.api_key && isApiKeyMasked.value) {
-      delete payload.api_key
-    }
-
-    const res = await testAiConnection(payload, { showErrorMessage: false })
-    ElMessage.success(`连接成功：${res.data?.model || '模型可用'}`)
-  } catch (error) {
-    ElMessage.error(error.message || '测试连接失败')
-  } finally {
-    testingAi.value = false
-  }
-}
 </script>
 
 <style lang="scss" scoped>

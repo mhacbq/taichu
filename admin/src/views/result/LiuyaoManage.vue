@@ -206,6 +206,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Refresh } from '@element-plus/icons-vue'
+import request from '@/api/request'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, PieChart, BarChart } from 'echarts/charts'
@@ -240,7 +241,7 @@ const detailDialog = reactive({
   data: null
 })
 
-const API_BASE = '/api/maodou/liuyao-manage'
+const API_BASE = '/liuyao-manage'
 
 const loadList = async () => {
   loading.value = true
@@ -254,27 +255,13 @@ const loadList = async () => {
     }
     delete params.dateRange
 
-    const response = await fetch(`${API_BASE}?${new URLSearchParams(params)}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    const result = await response.json()
-
-    if (result.code === 200) {
-      dataList.value = result.data.list
-      total.value = result.data.total
-    } else {
-      pageError.value = {
-        title: '加载失败',
-        description: result.message || '获取数据失败'
-      }
-    }
+    const res = await request.get(API_BASE, { params })
+    dataList.value = res.data.list
+    total.value = res.data.total
   } catch (error) {
     pageError.value = {
-      title: '网络错误',
-      description: error.message
+      title: '加载失败',
+      description: error.message || '获取数据失败'
     }
   } finally {
     loading.value = false
@@ -283,17 +270,8 @@ const loadList = async () => {
 
 const loadStats = async () => {
   try {
-    const response = await fetch(`${API_BASE}/stats`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    const result = await response.json()
-
-    if (result.code === 200) {
-      Object.assign(stats, result.data)
-    }
+    const res = await request.get(`${API_BASE}/stats`)
+    Object.assign(stats, res.data)
   } catch (error) {
     console.error('加载统计数据失败:', error)
   }
@@ -332,22 +310,10 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
 
-    const response = await fetch(`${API_BASE}/${row.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    const result = await response.json()
-
-    if (result.code === 200) {
-      ElMessage.success('删除成功')
-      loadList()
-      loadStats()
-    } else {
-      ElMessage.error(result.message || '删除失败')
-    }
+    await request.delete(`${API_BASE}/${row.id}`)
+    ElMessage.success('删除成功')
+    loadList()
+    loadStats()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败')
@@ -364,25 +330,10 @@ const handleBatchDelete = async () => {
     })
 
     const ids = selectedItems.value.map(item => item.id)
-
-    const response = await fetch(`${API_BASE}/batch-delete`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ids })
-    })
-
-    const result = await response.json()
-
-    if (result.code === 200) {
-      ElMessage.success('批量删除成功')
-      loadList()
-      loadStats()
-    } else {
-      ElMessage.error(result.message || '批量删除失败')
-    }
+    await request.post(`${API_BASE}/batch-delete`, { ids })
+    ElMessage.success('批量删除成功')
+    loadList()
+    loadStats()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('批量删除失败')
@@ -424,13 +375,9 @@ const loadTrendData = async () => {
   chartsLoading.timeDistribution = true
 
   try {
-    const response = await fetch(`${API_BASE}/trend?period=${chartPeriod.value}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-    const result = await response.json()
-
-    if (result.code === 200) {
-      const data = result.data
+    const res = await request.get(`${API_BASE}/trend`, { params: { period: chartPeriod.value } })
+    const data = res.data
+    if (data) {
 
       // 日期趋势图
       dateTrendOption.value = {

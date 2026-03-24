@@ -116,21 +116,19 @@ async function loadData() {
       end_date: dateRange.value?.[1]
     }
 
-    const { data } = await getUserAnalysis(params)
-    
-    // 计算统计数据
-    const newUsers = data.growth?.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0
+    const res = await getUserAnalysis(params)
+    const data = res.data || {}
     
     userStats.value = [
-      { label: '总用户数', value: newUsers, trend: 0 },
-      { label: '新增用户', value: newUsers, trend: 0 },
-      { label: '活跃用户', value: newUsers, trend: 0 },
-      { label: '7日留存率', value: `${data.retention_rate}%`, trend: 0 }
+      { label: '总用户数', value: data.total_users ?? 0, trend: data.total_users_trend ?? 0 },
+      { label: '新增用户', value: data.new_users ?? 0, trend: data.new_users_trend ?? 0 },
+      { label: '活跃用户', value: data.active_users ?? 0, trend: data.active_users_trend ?? 0 },
+      { label: '7日留存率', value: `${data.retention_rate ?? 0}%`, trend: 0 }
     ]
     
-    renderGrowthChart(data.growth)
-    renderSourceChart(data.source)
-    renderRetentionChart(data.retention_rate)
+    renderGrowthChart(data.growth || [])
+    renderSourceChart(data.source || [])
+    renderRetentionChart(data.retention || {})
   } catch (error) {
     console.error('加载用户数据失败:', error)
   } finally {
@@ -139,47 +137,21 @@ async function loadData() {
 }
 
 function renderGrowthChart(data) {
-  const dates = data?.map(item => item.date) || []
-  const counts = data?.map(item => item.count) || []
-  
+  // data 为数组，每项包含 date / new_users / active_users / total_users
+  const dates = data.map(item => item.date)
+  const newUsers = data.map(item => item.new_users ?? item.count ?? 0)
+  const activeUsers = data.map(item => item.active_users ?? 0)
+  const totalUsers = data.map(item => item.total_users ?? 0)
+
   const option = {
-    tooltip: {
-      trigger: 'axis'
-    },
-    xAxis: {
-      type: 'category',
-      data: dates
-    },
-    yAxis: {
-      type: 'value'
-    },
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['新增用户', '活跃用户', '累计用户'] },
+    xAxis: { type: 'category', data: dates },
+    yAxis: { type: 'value' },
     series: [
-      {
-        name: '新增用户',
-        type: 'bar',
-        data: data?.newUsers || [],
-        itemStyle: {
-          color: '#409eff'
-        }
-      },
-      {
-        name: '活跃用户',
-        type: 'line',
-        data: data?.activeUsers || [],
-        smooth: true,
-        itemStyle: {
-          color: '#67c23a'
-        }
-      },
-      {
-        name: '累计用户',
-        type: 'line',
-        data: data?.totalUsers || [],
-        smooth: true,
-        itemStyle: {
-          color: '#e6a23c'
-        }
-      }
+      { name: '新增用户', type: 'bar', data: newUsers, itemStyle: { color: '#409eff' } },
+      { name: '活跃用户', type: 'line', data: activeUsers, smooth: true, itemStyle: { color: '#67c23a' } },
+      { name: '累计用户', type: 'line', data: totalUsers, smooth: true, itemStyle: { color: '#e6a23c' } }
     ]
   }
   growthChart.setOption(option)
@@ -225,52 +197,16 @@ function renderSourceChart(data) {
 }
 
 function renderRetentionChart(data) {
+  // data 为对象，包含 dates / day1 / day7 / day30 数组
   const option = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow'
-      }
-    },
-    legend: {
-      data: ['次日留存', '7日留存', '30日留存']
-    },
-    xAxis: {
-      type: 'category',
-      data: data?.dates || []
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: '{value}%'
-      },
-      max: 100
-    },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { data: ['次日留存', '7日留存', '30日留存'] },
+    xAxis: { type: 'category', data: data?.dates || [] },
+    yAxis: { type: 'value', axisLabel: { formatter: '{value}%' }, max: 100 },
     series: [
-      {
-        name: '次日留存',
-        type: 'bar',
-        data: data?.day1 || [],
-        itemStyle: {
-          color: '#409eff'
-        }
-      },
-      {
-        name: '7日留存',
-        type: 'bar',
-        data: data?.day7 || [],
-        itemStyle: {
-          color: '#67c23a'
-        }
-      },
-      {
-        name: '30日留存',
-        type: 'bar',
-        data: data?.day30 || [],
-        itemStyle: {
-          color: '#e6a23c'
-        }
-      }
+      { name: '次日留存', type: 'bar', data: data?.day1 || [], itemStyle: { color: '#409eff' } },
+      { name: '7日留存', type: 'bar', data: data?.day7 || [], itemStyle: { color: '#67c23a' } },
+      { name: '30日留存', type: 'bar', data: data?.day30 || [], itemStyle: { color: '#e6a23c' } }
     ]
   }
   retentionChart.setOption(option)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import request from '@/api/request'
 
 const loading = ref(false)
 const testing = ref(false)
@@ -43,8 +44,8 @@ onMounted(() => {
 async function fetchConfig() {
   loading.value = true
   try {
-    const res = await window.$api.get('/api/maodou/ai/config')
-    form.value = res.data
+    const res = await request({ url: '/ai/config', method: 'get' })
+    form.value = { ...form.value, ...res.data }
   } catch (error) {
     ElMessage.error('获取AI配置失败')
   } finally {
@@ -100,7 +101,7 @@ function removeCustomModel(model: string) {
 
 async function handleSave() {
   try {
-    await window.$api.post('/api/maodou/ai/config', form.value)
+    await request({ url: '/ai/config', method: 'post', data: form.value })
     ElMessage.success('保存成功')
   } catch (error) {
     ElMessage.error('保存失败')
@@ -110,14 +111,14 @@ async function handleSave() {
 async function handleTest() {
   testing.value = true
   try {
-    const res = await window.$api.post('/api/maodou/ai/test', {})
-    if (res.data.status === 'success') {
+    const res = await request({ url: '/ai/test', method: 'post', data: {} })
+    if (res.data?.status === 'success') {
       ElMessage.success('测试成功: ' + res.data.message)
     } else {
-      ElMessage.error('测试失败: ' + res.data.message)
+      ElMessage.error('测试失败: ' + (res.data?.message || '未知错误'))
     }
-  } catch (error) {
-    ElMessage.error('测试失败: ' + error.message)
+  } catch (error: any) {
+    ElMessage.error('测试失败: ' + (error?.message || '未知错误'))
   } finally {
     testing.value = false
   }
@@ -127,7 +128,7 @@ async function handleTest() {
 <template>
   <div class="app-container">
     <!-- 模型快速切换 -->
-    <el-card class="model-card" v-loading="loading">
+    <el-card class="model-section-card" v-loading="loading">
       <template #header>
         <span>🤖 AI模型切换</span>
       </template>
@@ -139,7 +140,7 @@ async function handleTest() {
           <div
             v-for="preset in modelPresets"
             :key="preset.model"
-            :class="['model-card', { active: form.ai_model === preset.model }]"
+            :class="['model-item', { active: form.ai_model === preset.model }]"
             @click="switchModel(preset.model)"
           >
             <div class="model-icon">{{ preset.icon }}</div>
@@ -158,7 +159,7 @@ async function handleTest() {
           <div
             v-for="model in customModels"
             :key="model"
-            :class="['model-card', 'custom', { active: form.ai_model === model }]"
+            :class="['model-item', 'custom', { active: form.ai_model === model }]"
           >
             <span @click="switchModel(model)">{{ model }}</span>
             <el-button
@@ -248,7 +249,7 @@ async function handleTest() {
   align-items: center;
 }
 
-.model-card {
+.model-section-card {
   margin-bottom: 20px;
 }
 
@@ -273,7 +274,7 @@ async function handleTest() {
   gap: 12px;
 }
 
-.model-card {
+.model-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -285,18 +286,18 @@ async function handleTest() {
   background: white;
 }
 
-.model-card:hover {
+.model-item:hover {
   border-color: #409eff;
   background: #f0f7ff;
 }
 
-.model-card.active {
+.model-item.active {
   border-color: #67c23a;
   background: #f0f9ff;
   box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
 }
 
-.model-card.custom {
+.model-item.custom {
   justify-content: space-between;
 }
 

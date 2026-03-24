@@ -76,10 +76,8 @@ async function loadLogs() {
       limit: queryForm.pageSize
     }
     const res = await getUserBehavior(params)
-    if (res.code === 200) {
-      logList.value = res.data.list || []
-      total.value = res.data.total || 0
-    }
+    logList.value = res.data?.list || []
+    total.value = res.data?.total || 0
   } catch (error) {
     ElMessage.error('加载日志失败')
   } finally {

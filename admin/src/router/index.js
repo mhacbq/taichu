@@ -75,31 +75,37 @@ export const asyncRoutes = [
     meta: { title: '测算管理', icon: 'DataAnalysis', roles: ['admin', 'operator'] },
     children: [
       {
-        path: '/bazi',
+        path: 'bazi',
         name: 'BaziManage',
         component: () => import('@/views/result/BaziManage.vue'),
         meta: { title: '八字测算', roles: ['admin', 'operator'] }
       },
       {
-        path: '/tarot',
+        path: 'tarot',
         name: 'TarotManage',
         component: () => import('@/views/result/TarotManage.vue'),
         meta: { title: '塔罗测算', roles: ['admin', 'operator'] }
       },
       {
-        path: '/liuyao',
+        path: 'liuyao',
         name: 'LiuyaoManage',
         component: () => import('@/views/result/LiuyaoManage.vue'),
         meta: { title: '六爻测算', roles: ['admin', 'operator'] }
       },
       {
-        path: '/hehun',
+        path: 'hehun',
         name: 'HehunManage',
         component: () => import('@/views/result/HehunManage.vue'),
         meta: { title: '合婚测算', roles: ['admin', 'operator'] }
       },
       {
-        path: '/analysis',
+        path: 'qiming',
+        name: 'QimingManage',
+        component: () => import('@/views/result/QimingManage.vue'),
+        meta: { title: '取名测算', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'analysis',
         name: 'ResultAnalysis',
         component: () => import('@/views/result/analysis.vue'),
         meta: { title: '测算统计', roles: ['admin'] }
@@ -113,31 +119,13 @@ export const asyncRoutes = [
     meta: { title: '内容管理', icon: 'Document', roles: ['admin', 'operator'] },
     children: [
       {
-        path: '/almanac',
+        path: 'almanac',
         name: 'AlmanacManager',
         component: () => import('@/views/content/almanac.vue'),
         meta: { title: '黄历管理', roles: ['admin', 'operator'] }
       },
       {
-        path: '/bazi',
-        name: 'BaziRecords',
-        component: () => import('@/views/content/bazi.vue'),
-        meta: { title: '八字记录', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/tarot',
-        name: 'TarotRecords',
-        component: () => import('@/views/content/tarot.vue'),
-        meta: { title: '塔罗记录', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/daily',
-        name: 'DailyFortune',
-        component: () => import('@/views/content/daily.vue'),
-        meta: { title: '每日运势', roles: ['admin', 'operator'] }
-      },
-      {
-        path: '/shensha',
+        path: 'shensha',
         name: 'ShenshaManager',
         component: () => import('@/views/content/shensha.vue'),
         meta: { title: '神煞管理', roles: ['admin', 'operator'] }
@@ -175,6 +163,12 @@ export const asyncRoutes = [
         name: 'SeoIndex',
         component: () => import('@/views/seo/index.vue'),
         meta: { title: 'SEO配置', roles: ['admin'] }
+      },
+      {
+        path: 'stats',
+        name: 'SeoStats',
+        component: () => import('@/views/site-content/seo-stats.vue'),
+        meta: { title: 'SEO统计', roles: ['admin'] }
       }
     ]
   },
@@ -185,16 +179,40 @@ export const asyncRoutes = [
     meta: { title: '网站内容', icon: 'Monitor', roles: ['admin', 'operator'] },
     children: [
       {
-        path: '/content',
+        path: 'content',
         name: 'ContentManager',
         component: () => import('@/views/site-content/content-manager.vue'),
-        meta: { title: '内容管理', roles: ['admin', 'operator'] }
+        meta: { title: '页面管理', roles: ['admin', 'operator'] }
       },
       {
-        path: '/seo',
-        name: 'SeoManager',
-        component: () => import('@/views/site-content/seo.vue'),
-        meta: { title: 'SEO管理', roles: ['admin'] }
+        path: 'tarot-cards',
+        name: 'TarotCards',
+        component: () => import('@/views/site-content/tarot-cards.vue'),
+        meta: { title: '塔罗牌库', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'faq',
+        name: 'FaqManager',
+        component: () => import('@/views/site-content/faq.vue'),
+        meta: { title: 'FAQ管理', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'knowledge',
+        name: 'KnowledgeBase',
+        component: () => import('@/views/site-content/knowledge.vue'),
+        meta: { title: '知识库', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'question-templates',
+        name: 'QuestionTemplates',
+        component: () => import('@/views/site-content/question-templates.vue'),
+        meta: { title: '问题模板', roles: ['admin', 'operator'] }
+      },
+      {
+        path: 'testimonials',
+        name: 'Testimonials',
+        component: () => import('@/views/site-content/testimonials.vue'),
+        meta: { title: '用户评价', roles: ['admin', 'operator'] }
       }
     ]
   },

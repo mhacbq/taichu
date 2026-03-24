@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import request from '@/api/request'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -34,7 +35,7 @@ onMounted(() => {
 async function fetchList() {
   loading.value = true
   try {
-    const res = await window.$api.get('/api/maodou/seo/list', {
+    const res = await request.get('/seo/list', {
       params: {
         ...queryParams.value,
         page: currentPage.value,
@@ -52,7 +53,7 @@ async function fetchList() {
 
 async function fetchPageTypes() {
   try {
-    const res = await window.$api.get('/api/maodou/seo/page-types')
+    const res = await request.get('/seo/page-types')
     pageTypes.value = Object.entries(res.data).map(([key, value]: [string, any]) => ({
       key,
       ...value
@@ -100,7 +101,7 @@ async function handleDelete(row: any) {
       type: 'warning'
     })
     
-    await window.$api.delete(`/api/maodou/seo/${row.id}`)
+    await request.delete(`/seo/${row.id}`)
     ElMessage.success('删除成功')
     fetchList()
   } catch (error) {
@@ -116,13 +117,8 @@ async function handleSubmit() {
   try {
     await formRef.value.validate()
     
-    if (formData.value.id) {
-      await window.$api.post('/api/maodou/seo/save', formData.value)
-      ElMessage.success('更新成功')
-    } else {
-      await window.$api.post('/api/maodou/seo/save', formData.value)
-      ElMessage.success('创建成功')
-    }
+    await request.post('/seo/save', formData.value)
+    ElMessage.success(formData.value.id ? '更新成功' : '创建成功')
     
     dialogVisible.value = false
     fetchList()

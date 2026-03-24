@@ -14,7 +14,6 @@
       <!-- 配置分组标签页 -->
       <el-tabs v-model="currentGroup" @tab-change="handleTabChange" class="config-tabs">
         <el-tab-pane label="支付配置" name="payment" />
-        <el-tab-pane label="AI服务配置" name="ai" />
         <el-tab-pane label="推送服务配置" name="push" />
         <el-tab-pane label="短信服务配置" name="sms" />
       </el-tabs>
@@ -96,56 +95,6 @@
             </el-form-item>
           </el-form>
           <el-button type="info" @click="handleTestPayment('alipay')" :loading="testing">测试支付宝配置</el-button>
-        </template>
-
-        <!-- AI服务配置 -->
-        <template v-else-if="currentGroup === 'ai'">
-          <el-divider content-position="left">AI服务</el-divider>
-          <el-form :model="formData" label-width="180px" class="config-form">
-            <el-form-item label="API密钥" required>
-              <el-input
-                v-model="formData.ai_api_key"
-                type="password"
-                placeholder="请输入AI服务API密钥"
-                show-password
-              />
-            </el-form-item>
-            <el-form-item label="API地址" required>
-              <el-input v-model="formData.ai_api_url" placeholder="https://aiping.cn/api/v1/chat/completions" />
-            </el-form-item>
-            <el-form-item label="模型名称" required>
-              <el-input v-model="formData.ai_model" placeholder="DeepSeek-V3.2" />
-            </el-form-item>
-            <el-form-item label="最大Token数">
-              <el-input-number v-model="formData.ai_max_tokens" :min="1" :max="8192" :step="256" />
-              <span class="form-tip">AI最大输出字符数</span>
-            </el-form-item>
-            <el-form-item label="请求超时(秒)">
-              <el-input-number v-model="formData.ai_timeout" :min="10" :max="300" :step="10" />
-            </el-form-item>
-            <el-form-item label="流式输出">
-              <el-switch v-model="formData.ai_enable_streaming" />
-              <span class="form-tip">启用后AI回复会实时显示</span>
-            </el-form-item>
-            <el-form-item label="思维链">
-              <el-switch v-model="formData.ai_enable_thinking" />
-              <span class="form-tip">启用后会展示AI思考过程</span>
-            </el-form-item>
-            <el-form-item label="消耗积分">
-              <el-input-number v-model="formData.ai_cost_points" :min="0" />
-              <span class="form-tip">每次AI解盘消耗的积分数</span>
-            </el-form-item>
-            <el-form-item label="八字分析">
-              <el-switch v-model="formData.ai_enable_bazi" />
-            </el-form-item>
-            <el-form-item label="塔罗分析">
-              <el-switch v-model="formData.ai_enable_tarot" />
-            </el-form-item>
-            <el-form-item label="启用AI服务">
-              <el-switch v-model="formData.ai_is_enabled" />
-            </el-form-item>
-          </el-form>
-          <el-button type="info" @click="handleTestAI" :loading="testing">测试AI服务配置</el-button>
         </template>
 
         <!-- 推送服务配置 -->
@@ -265,7 +214,6 @@ import {
   getSystemConfigs,
   saveSystemConfigs,
   testPaymentConfig,
-  testAIConfig,
   exportSystemConfig
 } from '@/api/systemConfig'
 
@@ -346,26 +294,7 @@ const handleTestPayment = async (type) => {
   }
 }
 
-// 测试AI配置
-const handleTestAI = async () => {
-  testing.value = true
-  try {
-    const { data } = await testAIConfig()
-
-    if (data.success) {
-      ElMessage.success(data.data.message || '配置验证通过')
-    } else {
-      ElMessage.error(data.message || '配置验证失败')
-    }
-  } catch (error) {
-    console.error('测试AI配置失败:', error)
-    ElMessage.error('测试失败')
-  } finally {
-    testing.value = false
-  }
-}
-
-// 导出配置
+// 测试支付配置
 const handleExport = async () => {
   if (!currentGroup.value) {
     ElMessage.warning('请先选择配置分组')

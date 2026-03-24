@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import request from '@/api/request'
 
 const loading = ref(false)
 const prompts = ref([])
@@ -46,7 +47,7 @@ async function fetchPrompts() {
       page_size: pagination.value.pageSize,
       ...searchForm.value
     }
-    const res = await window.$api.get('/api/maodou/ai-prompts/list', { params })
+    const res = await request.get('/ai-prompts/list', { params })
     prompts.value = res.data.list
     pagination.value.total = res.data.total
   } catch (error) {
@@ -83,7 +84,7 @@ async function handleDelete(row) {
       type: 'warning'
     })
 
-    await window.$api.delete(`/api/maodou/ai-prompts/${row.id}`)
+    await request.delete(`/ai-prompts/${row.id}`)
     ElMessage.success('删除成功')
     fetchPrompts()
   } catch (error) {
@@ -95,7 +96,7 @@ async function handleDelete(row) {
 
 async function handleSetDefault(row) {
   try {
-    await window.$api.post(`/api/maodou/ai-prompts/${row.id}/default`)
+    await request.post(`/ai-prompts/${row.id}/default`)
     ElMessage.success('设置成功')
     fetchPrompts()
   } catch (error) {
@@ -105,7 +106,7 @@ async function handleSetDefault(row) {
 
 async function handleDuplicate(row) {
   try {
-    await window.$api.post(`/api/maodou/ai-prompts/${row.id}/duplicate`)
+    await request.post(`/ai-prompts/${row.id}/duplicate`)
     ElMessage.success('复制成功')
     fetchPrompts()
   } catch (error) {
@@ -115,7 +116,7 @@ async function handleDuplicate(row) {
 
 async function handlePreview(row) {
   try {
-    const res = await window.$api.post(`/api/maodou/ai-prompts/${row.id}/preview`)
+    const res = await request.post(`/ai-prompts/${row.id}/preview`)
     ElMessageBox.alert(res.data.content, '提示词预览', {
       confirmButtonText: '关闭'
     })
@@ -126,11 +127,7 @@ async function handlePreview(row) {
 
 async function handleSave() {
   try {
-    if (currentPrompt.value.id) {
-      await window.$api.post('/api/maodou/ai-prompts/save', currentPrompt.value)
-    } else {
-      await window.$api.post('/api/maodou/ai-prompts/save', currentPrompt.value)
-    }
+    await request.post('/ai-prompts/save', currentPrompt.value)
     ElMessage.success('保存成功')
     dialogVisible.value = false
     fetchPrompts()
