@@ -72,14 +72,16 @@ class YearlyFortuneService
             ->find();
 
         if ($existingRecord && $existingRecord['is_paid']) {
+            $overallScore = (int) $existingRecord['overall_score'];
+
             $result = [
                 'year' => $year,
                 'ganzhi' => $this->getYearGanZhi($year),
                 'nayin' => $this->getYearNayin($year),
-                'score' => $existingRecord['overall_score'],
-                'rating' => $this->getScoreRating($existingRecord['overall_score']),
+                'score' => $overallScore,
+                'rating' => $this->getScoreRating($overallScore),
                 'overall' => $existingRecord['overall_analysis'],
-                'career' => '', // 兼容旧结构，如果需要可以从 monthly_fortune 中解析
+                'career' => '',
                 'wealth' => '',
                 'relationship' => '',
                 'health' => '',
@@ -99,6 +101,31 @@ class YearlyFortuneService
                 $details = json_decode($existingRecord['monthly_fortune'], true);
                 if (is_array($details)) {
                     $result = array_merge($result, $details);
+                }
+            }
+
+            // 懒迁移：旧记录分项评分为 0，用总分偏移填充并回写数据库
+            if (empty($existingRecord['career_score'])) {
+                $careerScore = max(1, min(100, $overallScore + 0));
+                $wealthScore = max(1, min(100, $overallScore - 3));
+                $loveScore   = max(1, min(100, $overallScore + 2));
+                $healthScore = max(1, min(100, $overallScore - 1));
+
+                $result['career_score'] = $careerScore;
+                $result['wealth_score'] = $wealthScore;
+                $result['love_score']   = $loveScore;
+                $result['health_score'] = $healthScore;
+
+                // 回写数据库，下次访问直接读取，不再重复迁移
+                try {
+                    Db::name('yearly_fortune')->where('id', $existingRecord['id'])->update([
+                        'career_score' => $careerScore,
+                        'wealth_score' => $wealthScore,
+                        'love_score'   => $loveScore,
+                        'health_score' => $healthScore,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('懒迁移分项评分回写失败', ['id' => $existingRecord['id'], 'error' => $e->getMessage()]);
                 }
             }
             
@@ -131,6 +158,12 @@ class YearlyFortuneService
             throw new \Exception($message, $code);
         }
 
+        // 从AI返回中提取分项评分，回退到算法估算值
+        $careerScore = (int) ($analysis['career_score'] ?? max(1, min(100, $score + 0)));
+        $wealthScore = (int) ($analysis['wealth_score'] ?? max(1, min(100, $score - 3)));
+        $loveScore   = (int) ($analysis['love_score']   ?? max(1, min(100, $score + 2)));
+        $healthScore = (int) ($analysis['health_score'] ?? max(1, min(100, $score - 1)));
+
         $result = [
             'year' => $year,
             'ganzhi' => $this->getYearGanZhi($year),
@@ -139,10 +172,15 @@ class YearlyFortuneService
             'rating' => $this->getScoreRating($score),
             'overall' => $analysis['overall'] ?? '',
             'career' => $analysis['career'] ?? '',
+            'career_score' => $careerScore,
             'wealth' => $analysis['wealth'] ?? '',
+            'wealth_score' => $wealthScore,
             'relationship' => $analysis['relationship'] ?? '',
+            'love_score' => $loveScore,
             'health' => $analysis['health'] ?? '',
+            'health_score' => $healthScore,
             'advice' => $analysis['advice'] ?? '',
+            'monthly' => $analysis['monthly'] ?? [],
             'lucky_months' => $analysis['lucky_months'] ?? [],
             'unlucky_months' => $analysis['unlucky_months'] ?? [],
             'lucky_colors' => $analysis['lucky_colors'] ?? [],
@@ -159,17 +197,22 @@ class YearlyFortuneService
             'year' => $year,
             'bazi_id' => $baziId,
             'overall_score' => $score,
-            'career_score' => 0, // 暂无具体评分
-            'wealth_score' => 0,
-            'love_score' => 0,
-            'health_score' => 0,
+            'career_score' => $careerScore,
+            'wealth_score' => $wealthScore,
+            'love_score' => $loveScore,
+            'health_score' => $healthScore,
             'overall_analysis' => $analysis['overall'] ?? '',
             'monthly_fortune' => json_encode([
                 'career' => $analysis['career'] ?? '',
+                'career_score' => $careerScore,
                 'wealth' => $analysis['wealth'] ?? '',
+                'wealth_score' => $wealthScore,
                 'relationship' => $analysis['relationship'] ?? '',
+                'love_score' => $loveScore,
                 'health' => $analysis['health'] ?? '',
+                'health_score' => $healthScore,
                 'advice' => $analysis['advice'] ?? '',
+                'monthly' => $analysis['monthly'] ?? [],
                 'lucky_months' => $analysis['lucky_months'] ?? [],
                 'unlucky_months' => $analysis['unlucky_months'] ?? [],
                 'lucky_colors' => $analysis['lucky_colors'] ?? [],
@@ -237,20 +280,31 @@ class YearlyFortuneService
         
         $yearGanZhi = $this->getYearGanZhi($year);
         
-        $systemPrompt = "你是一位资深的八字命理大师，精通流年运势分析。请基于用户的八字信息，详细分析{$year}年（{$yearGanZhi}年）的运势。\n\n";
-        $systemPrompt .= "分析要求：\n";
-        $systemPrompt .= "1. 整体运势概述（100字左右）\n";
-        $systemPrompt .= "2. 事业运势分析（80字左右）\n";
-        $systemPrompt .= "3. 财富运势分析（80字左右）\n";
-        $systemPrompt .= "4. 感情运势分析（80字左右）\n";
-        $systemPrompt .= "5. 健康提醒（60字左右）\n";
-        $systemPrompt .= "6. 开运建议（100字左右）\n";
-        $systemPrompt .= "7. 幸运月份列表\n";
-        $systemPrompt .= "8. 需要注意的月份列表\n";
-        $systemPrompt .= "9. 幸运颜色\n";
-        $systemPrompt .= "10. 幸运数字\n";
-        $systemPrompt .= "11. 幸运方位\n\n";
-        $systemPrompt .= "请以JSON格式返回，字段名：overall, career, wealth, relationship, health, advice, lucky_months(数组), unlucky_months(数组), lucky_colors(数组), lucky_numbers(数组), lucky_directions(数组)";
+        $systemPrompt = "你是一位温暖亲切的命理顾问，擅长用通俗易懂的语言解读八字流年运势。请像朋友聊天一样，帮用户分析{$year}年（{$yearGanZhi}年）的运势，让他们感受到被关心和指引。\n\n";
+        $systemPrompt .= "分析要求（请严格按JSON格式返回，不要输出任何JSON以外的内容）：\n\n";
+        $systemPrompt .= "1. overall（整体运势，150字左右）：用温暖的口吻概述今年整体走向，点出最重要的机遇和挑战，让用户有清晰的全年预期。\n";
+        $systemPrompt .= "2. career（事业运势，100字左右）：具体说明今年事业发展的方向，有哪些好时机，需要注意什么，给出实用建议。\n";
+        $systemPrompt .= "3. career_score（事业运势评分，1-100的整数）：根据八字与流年的关系，客观评估今年事业运势强弱。\n";
+        $systemPrompt .= "4. wealth（财富运势，100字左右）：分析正财和偏财的走势，哪些月份适合投资或理财，哪些时候要谨慎，给出接地气的财务建议。\n";
+        $systemPrompt .= "5. wealth_score（财富运势评分，1-100的整数）：根据八字与流年的关系，客观评估今年财运强弱。\n";
+        $systemPrompt .= "6. relationship（感情运势，100字左右）：针对感情状态给出贴心分析，单身者何时桃花旺，有伴侣者如何经营感情，已婚者注意什么。\n";
+        $systemPrompt .= "7. love_score（感情运势评分，1-100的整数）：根据八字与流年的关系，客观评估今年感情运势强弱。\n";
+        $systemPrompt .= "8. health（健康提醒，80字左右）：指出今年需要重点关注的身体部位或健康问题，给出具体的养生建议，语气要关心而不是吓人。\n";
+        $systemPrompt .= "9. health_score（健康运势评分，1-100的整数）：根据八字与流年的关系，客观评估今年健康运势强弱。\n";
+        $systemPrompt .= "10. advice（开运建议，120字左右）：给出3-4条具体可操作的开运建议，包括适合的颜色、方位、行为习惯等，要实用接地气。\n";
+        $systemPrompt .= "11. monthly（每月运势数组，必须包含1-12月共12条）：每条包含：\n";
+        $systemPrompt .= "   - month（数字，1-12）\n";
+        $systemPrompt .= "   - level（等级：优/良/中/差）\n";
+        $systemPrompt .= "   - levelText（等级文字：大吉/吉/平/需谨慎）\n";
+        $systemPrompt .= "   - description（50字左右，说明这个月的主要运势特点和机遇）\n";
+        $systemPrompt .= "   - tip（30字左右，这个月最重要的一条行动建议或注意事项）\n";
+        $systemPrompt .= "12. lucky_months（数字数组，吉利月份，2-4个）\n";
+        $systemPrompt .= "13. unlucky_months（数字数组，需注意月份，1-3个）\n";
+        $systemPrompt .= "14. lucky_colors（字符串数组，幸运颜色，2-3个）\n";
+        $systemPrompt .= "15. lucky_numbers（数字数组，幸运数字，2-3个）\n";
+        $systemPrompt .= "16. lucky_directions（字符串数组，幸运方位，1-2个）\n\n";
+        $systemPrompt .= "语气要求：亲切温暖，像朋友聊天，避免过于专业的术语，多用\"今年\"\"这段时间\"\"建议你\"等日常表达。\n";
+        $systemPrompt .= "请以JSON格式返回，字段名：overall, career, career_score, wealth, wealth_score, relationship, love_score, health, health_score, advice, monthly(数组), lucky_months(数组), unlucky_months(数组), lucky_colors(数组), lucky_numbers(数组), lucky_directions(数组)";
         
         $userPrompt = "八字信息：\n";
         $userPrompt .= "性别：" . ($gender === 'male' ? '男' : '女') . "\n";

@@ -25,60 +25,83 @@
         </template>
 
         <div v-if="fortune" class="fortune-content">
-          <!-- 运势概览卡片 -->
+          <!-- 重新设计的运势概览卡片 -->
           <div class="fortune-overview card">
-            <div class="overview-top">
-              <div class="overview-date">
-                <span class="overview-solar">{{ solarDate }}</span>
-                <span class="overview-lunar">{{ lunarDate }}</span>
+            <!-- 顶部日期和刷新 -->
+            <div class="overview-header">
+              <div class="date-display">
+                <div class="date-main">
+                  <span class="solar-date">{{ solarDate }}</span>
+                  <span class="lunar-date">{{ lunarDate }}</span>
+                </div>
+                <div class="date-badge">
+                  <span class="day-badge">今日</span>
+                </div>
               </div>
               <el-tooltip content="刷新运势" placement="top">
-                <button class="overview-refresh" :class="{ loading: isLoading }" @click="loadDailyFortune({ userInitiated: true })">
+                <button class="refresh-btn" :class="{ loading: isLoading }" @click="loadDailyFortune({ userInitiated: true })">
                   <el-icon><RefreshRight /></el-icon>
                 </button>
               </el-tooltip>
             </div>
+
+            <!-- 主体内容 -->
             <div class="overview-body">
-              <div class="overview-left">
-                <div class="overview-score-wrap">
-                  <div class="overview-score-ring" :class="getScoreClass(fortune.overall)">
-                    <svg viewBox="0 0 100 100" class="ring-svg">
-                      <circle cx="50" cy="50" r="42" class="ring-track" />
-                      <circle cx="50" cy="50" r="42" class="ring-fill" :style="{ strokeDashoffset: 264 - (264 * Math.min(fortune.overall, 100) / 100) }" />
-                    </svg>
-                    <div class="ring-inner">
-                      <span class="ring-num">{{ fortune.overall }}</span>
-                      <span class="ring-unit">分</span>
-                    </div>
-                  </div>
-                  <div class="overview-stars">
-                    <el-icon v-for="n in 5" :key="n" class="ov-star" :class="{ filled: n <= overallStarCount }"><StarFilled /></el-icon>
-                    <span class="ov-star-label">{{ overallStarLabel }}</span>
+              <!-- 左侧运势评分 -->
+              <div class="score-section">
+                <div class="score-ring" :class="getScoreClass(fortune.overallScore)">
+                  <div class="ring-background"></div>
+                  <div class="ring-progress" :style="{ transform: `rotate(${fortune.overallScore * 3.6}deg)` }"></div>
+                  <div class="score-content">
+                    <span class="score-number">{{ fortune.overallScore }}</span>
+                    <span class="score-label">分</span>
                   </div>
                 </div>
-                <div class="overview-lucky-mini">
-                  <div class="lucky-mini-item">
-                    <span class="lucky-mini-label">幸运色</span>
-                    <span class="lucky-mini-value">{{ fortune.luckyColor || '暂无' }}</span>
+                <div class="score-rating">
+                  <div class="stars">
+                    <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= overallStarCount }"><StarFilled /></el-icon>
                   </div>
-                  <div class="lucky-mini-item">
-                    <span class="lucky-mini-label">幸运方位</span>
-                    <span class="lucky-mini-value">{{ fortune.luckyDirection || '暂无' }}</span>
+                  <span class="rating-label">{{ overallStarLabel }}</span>
+                </div>
+              </div>
+
+              <!-- 中间运势摘要 -->
+              <div class="summary-section">
+                <div class="summary-content">
+                  <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
+                </div>
+                <div class="lucky-info">
+                  <div class="lucky-item" v-if="fortune.luckyColor">
+                    <el-icon><MagicStick /></el-icon>
+                    <span class="lucky-label">幸运色</span>
+                    <span class="lucky-value">{{ fortune.luckyColor || '暂无' }}</span>
+                  </div>
+                  <div class="lucky-item" v-if="fortune.luckyDirection">
+                    <el-icon><Compass /></el-icon>
+                    <span class="lucky-label">幸运方位</span>
+                    <span class="lucky-value">{{ fortune.luckyDirection || '暂无' }}</span>
                   </div>
                 </div>
               </div>
-              <div class="overview-right">
-                <div class="overview-summary">
-                  <p class="summary-text">{{ fortune.summary || '今日运势平稳，适合按部就班推进计划' }}</p>
-                </div>
-                <div class="overview-tags" v-if="fortune.yi?.length || fortune.ji?.length">
-                  <div class="overview-tag-group" v-if="fortune.yi?.length">
-                    <span class="tag-group-label">宜</span>
-                    <span v-for="item in fortune.yi.slice(0, 3)" :key="item" class="tag-item tag-item--yi">{{ item }}</span>
+
+              <!-- 右侧宜忌标签 -->
+              <div class="tags-section" v-if="fortune.yi?.length || fortune.ji?.length">
+                <div class="tags-group" v-if="fortune.yi?.length">
+                  <div class="group-header">
+                    <span class="group-icon">✓</span>
+                    <span class="group-title">宜</span>
                   </div>
-                  <div class="overview-tag-group" v-if="fortune.ji?.length">
-                    <span class="tag-group-label">忌</span>
-                    <span v-for="item in fortune.ji.slice(0, 3)" :key="item" class="tag-item tag-item--ji">{{ item }}</span>
+                  <div class="tags-list">
+                    <span v-for="item in fortune.yi.slice(0, 3)" :key="item" class="tag tag--yi">{{ item }}</span>
+                  </div>
+                </div>
+                <div class="tags-group" v-if="fortune.ji?.length">
+                  <div class="group-header">
+                    <span class="group-icon">✗</span>
+                    <span class="group-title">忌</span>
+                  </div>
+                  <div class="tags-list">
+                    <span v-for="item in fortune.ji.slice(0, 3)" :key="item" class="tag tag--ji">{{ item }}</span>
                   </div>
                 </div>
               </div>

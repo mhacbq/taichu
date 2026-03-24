@@ -12,6 +12,7 @@
           <router-link to="/" class="nav-link">首页</router-link>
           <router-link to="/bazi" class="nav-link">八字排盘</router-link>
           <router-link to="/tarot" class="nav-link">塔罗占卜</router-link>
+          <router-link to="/liuyao" class="nav-link">六爻占卜</router-link>
           <router-link to="/daily" class="nav-link">每日运势<span class="nav-free">免费</span></router-link>
           <!-- 更多服务下拉 -->
           <el-dropdown trigger="hover" placement="bottom-start">
@@ -26,15 +27,6 @@
                     <span class="more-info">
                       <strong>流年运势</strong>
                       <span>全年运势解析</span>
-                    </span>
-                  </router-link>
-                </el-dropdown-item>
-                <el-dropdown-item>
-                  <router-link to="/liuyao" class="nav-more-item">
-                    <span class="more-icon">☰</span>
-                    <span class="more-info">
-                      <strong>六爻占卜</strong>
-                      <span>传统周易问事</span>
                     </span>
                   </router-link>
                 </el-dropdown-item>

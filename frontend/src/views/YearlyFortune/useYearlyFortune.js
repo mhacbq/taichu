@@ -107,6 +107,7 @@ const handleCalculate = async () => {
 
     if (response.code === 200) {
       result.value = response.data
+      // 新提示词返回 monthly 数组，直接使用；兼容旧格式
       monthlyFortune.value = response.data.monthly || []
       // 后端返回字段为 overall，包含 AI 深度解读内容
       aiAnalysis.value = response.data.overall || ''
@@ -151,6 +152,37 @@ const resetForm = () => {
   aiAnalysis.value = ''
 }
 
+// 获取分类运势文本（后端返回字符串，key映射）
+const categoryKeyMap = {
+  career: 'career',
+  wealth: 'wealth',
+  love: 'relationship',
+  health: 'health',
+}
+
+const getCategoryText = (key) => {
+  const backendKey = categoryKeyMap[key] || key
+  return result.value?.[backendKey] || ''
+}
+
+// 获取分类评分（优先使用后端返回的真实分项评分）
+const getCategoryScore = (key) => {
+  const scoreKeyMap = {
+    career: 'career_score',
+    wealth: 'wealth_score',
+    love: 'love_score',
+    health: 'health_score',
+  }
+  const scoreKey = scoreKeyMap[key]
+  if (scoreKey && result.value?.[scoreKey]) {
+    return result.value[scoreKey]
+  }
+  // 兜底：用总分估算（旧缓存数据兼容）
+  const base = result.value?.score || 75
+  const offsets = { career: 0, wealth: -3, love: 2, health: -1 }
+  return Math.min(100, Math.max(1, base + (offsets[key] || 0)))
+}
+
 
 
 return {
@@ -162,5 +194,6 @@ return {
 
   // 方法
   disabledDate, handleCalculate, resetForm,
+  getCategoryText, getCategoryScore,
 }
 } // end useYearlyFortune

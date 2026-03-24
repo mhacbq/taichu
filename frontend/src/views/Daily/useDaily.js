@@ -492,6 +492,9 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
         personalized: cached.personalized || null,
         almanac: cached.almanac || null,
         ganzhi: cached.ganzhi || '',
+        luckyColor: cached.luckyColor || null,
+        luckyDirection: cached.luckyDirection || null,
+        summary: cached.summary || null,
       }
       solarDate.value = cached.date || ''
       lunarDate.value = cached.lunarDate || ''
@@ -521,6 +524,9 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
         personalized: data.personalized || null,
         almanac: data.almanac || null,
         ganzhi: data.ganzhi || '',
+        luckyColor: data.luckyColor || null,
+        luckyDirection: data.luckyDirection || null,
+        summary: data.summary || null,
       }
       solarDate.value = data.date || ''
       lunarDate.value = data.lunarDate || ''
