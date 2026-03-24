@@ -8,41 +8,42 @@
       />
 
 
-      <!-- 积分提示 -->
-      <div class="points-hint card card-hover">
-        <el-icon class="hint-icon"><Coin /></el-icon>
-        <div class="points-hint-content">
-          <div class="points-hint-main">
-            <span>本次占卜将消耗 <strong>{{ tarotCost }} 积分</strong></span>
-            <span class="current-points">当前积分: {{ pointsDisplayText }}</span>
+      <!-- 积分信息栏 -->
+      <div class="points-bar">
+        <div class="points-bar__main">
+          <div class="points-bar__cost">
+            <el-icon class="points-bar__icon"><Coin /></el-icon>
+            <span>本次占卜消耗 <strong>{{ tarotCost }}</strong> 积分</span>
           </div>
-          <div class="points-hint-details">
-            <p class="points-hint-title">本次占卜您将获得：</p>
-            <ul class="points-hint-list">
-              <li><el-icon><Check /></el-icon> 专属的塔罗牌阵抽取与牌面展示</li>
-              <li><el-icon><Check /></el-icon> 结合您问题的深度牌面解读与建议</li>
-              <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
-            </ul>
-            <p class="points-hint-guarantee"><el-icon><Shield /></el-icon> 失败保障：若抽牌失败或未生成解读，将自动退还积分。</p>
+          <div class="points-bar__balance">
+            <span class="points-bar__label">余额</span>
+            <span class="points-bar__value">{{ pointsDisplayText }}</span>
           </div>
         </div>
-        <div v-if="pointsError" class="points-warning" role="status" aria-live="polite">
-          <span>积分同步失败，请先重新获取后再继续占卜</span>
-          <el-button link type="warning" class="points-retry" @click="loadPoints" :loading="pointsLoading">重新获取积分</el-button>
+        <div class="points-bar__features">
+          <span class="points-bar__tag"><el-icon><Check /></el-icon> 牌阵抽取</span>
+          <span class="points-bar__tag"><el-icon><Check /></el-icon> 深度解读</span>
+          <span class="points-bar__tag"><el-icon><Check /></el-icon> 永久存档</span>
+<span class="points-bar__tag points-bar__tag--guarantee"><el-icon><CircleCheckFilled /></el-icon> 失败退积分</span>
+        </div>
+        <div v-if="pointsError" class="points-bar__error" role="status" aria-live="polite">
+          <span>积分同步失败</span>
+          <el-button link type="warning" @click="loadPoints" :loading="pointsLoading">重新获取</el-button>
         </div>
       </div>
 
-      <div v-if="currentPoints !== null && currentPoints < tarotCost" class="insufficient-points card card-hover">
-        <div class="insufficient-header">
-          <el-icon :size="28"><Warning /></el-icon>
-          <p>积分不足（当前 {{ currentPoints ?? 0 }} 积分，需要 {{ tarotCost }} 积分）</p>
+      <!-- 积分不足提示 -->
+      <div v-if="currentPoints !== null && currentPoints < tarotCost" class="points-insufficient">
+        <div class="points-insufficient__info">
+          <el-icon :size="20"><Warning /></el-icon>
+          <span>积分不足（需要 {{ tarotCost }}，当前 {{ currentPoints ?? 0 }}）</span>
         </div>
-        <div class="insufficient-actions">
-          <router-link to="/profile" class="insufficient-btn insufficient-btn--primary">
-            📅 每日签到 +积分
+        <div class="points-insufficient__actions">
+          <router-link to="/profile" class="points-insufficient__btn points-insufficient__btn--primary">
+            📅 签到领积分
           </router-link>
-          <router-link to="/recharge" class="insufficient-btn insufficient-btn--secondary">
-            💰 充值积分
+          <router-link to="/recharge" class="points-insufficient__btn points-insufficient__btn--secondary">
+            💰 充值
           </router-link>
         </div>
       </div>
@@ -365,7 +366,7 @@ import TarotCard from '../../components/TarotCard.vue'
 import ResultNextSteps from '../../components/ResultNextSteps.vue'
 import WisdomText from '../../components/WisdomText.vue'
 import EmptyState from '../../components/EmptyState.vue'
-import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select, Check } from '@element-plus/icons-vue'
+import { Coin, MagicStick, ChatDotRound, Briefcase, StarFilled, UserFilled, QuestionFilled, Document, Download, RefreshRight, Select, Check, Warning, CircleCheckFilled } from '@element-plus/icons-vue'
 
 import { useTarot } from './useTarot'
 
@@ -394,7 +395,7 @@ const {
   getPositionLabel, selectTopic, selectQuestion,
   getCardDetailAriaLabel,
   loadPoints, performAiAnalysis, retryLastAction,
-  resetTarot, showCardDetail,
+  resetTarot, showCardDetail, showConfirm,
   getCardDetailedMeaning, getCardAdvice,
 } = useTarot()
 </script>

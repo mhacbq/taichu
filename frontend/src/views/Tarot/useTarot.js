@@ -1049,7 +1049,7 @@ return {
   getPositionLabel, selectTopic, selectQuestion,
   getCardDetailAriaLabel,
   loadPoints, performAiAnalysis, retryLastAction,
-  resetTarot, showCardDetail,
+  resetTarot, showCardDetail, showConfirm,
   getCardDetailedMeaning, getCardAdvice,
 }
-} // end useTarot
+} // end useTarot
