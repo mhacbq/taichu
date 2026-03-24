@@ -247,7 +247,7 @@ class ConfigService
     {
         $features = [
             'bazi', 'bazi_ai',
-            'hehun', 'liuyao',
+            'hehun', 'liuyao_ai',
             'tarot', 'tarot_ai',
             'daily', 'qiming', 'jiri',
             'save_record', 'share_poster', 'unlock_report',
@@ -273,7 +273,8 @@ class ConfigService
             'sign_continuous_7' => ['name' => '连续7天签到', 'points' => 'points_sign_continuous_7'],
             'sign_continuous_30' => ['name' => '连续30天签到', 'points' => 'points_sign_continuous_30'],
             'share_app' => ['name' => '分享小程序', 'points' => 'points_share_app'],
-            'invite_friend' => ['name' => '邀请好友', 'points' => 'points_invite_friend'],
+            'invite_friend' => ['name' => '邀请好友（好友首次充值奖励）', 'points' => 'points_invite_friend'],
+            'invite_register' => ['name' => '邀请好友（注册即时奖励）', 'points' => 'points_invite_register'],
             'complete_profile' => ['name' => '完善资料', 'points' => 'points_complete_profile'],
             'first_paipan' => ['name' => '首次排盘', 'points' => 'points_first_paipan'],
             'bind_wechat' => ['name' => '绑定微信', 'points' => 'points_bind_wechat'],

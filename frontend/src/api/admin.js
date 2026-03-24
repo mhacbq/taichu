@@ -234,7 +234,11 @@ export const getTaskScripts = () => request.get('/maodou/tasks/scripts')
 export const saveTaskScript = (data) => request.post('/maodou/tasks/scripts', data)
 export const deleteTaskScript = (id) => request.delete(`/maodou/tasks/scripts/${id}`)
 
-// 浠〃鏉胯ˉ鍏?
+// 仪表板补充
 export const refreshDashboardStats = () => request.post('/maodou/dashboard/refresh-stats')
 export const exportDashboardRealtime = (params) => request.get('/maodou/dashboard/export-realtime', { params, responseType: 'blob' })
+
+// 邀请管理
+export const getInviteList = (params) => request.get('/maodou/invites', { params })
+export const getInviteStats = () => request.get('/maodou/invites/stats')
 

@@ -316,53 +316,67 @@ class Auth extends BaseController
         // 验证成功，清除尝试记录
         Cache::delete($attemptKey);
         
-        // 检查是否已经被邀请过
-        $exists = InviteRecord::where('invited_id', $newUserId)->find();
+        // 检查是否已经被邀请过（用 invitee_id 字段）
+        $exists = InviteRecord::where('invitee_id', $newUserId)->find();
         if ($exists) {
             return;
         }
-        
-        $rewardPoints = 20;
-        
+
+        // 从系统配置读取注册邀请积分
+        $registerRewardPoints = (int) \think\facade\Db::name('tc_system_config')
+            ->where('config_key', 'points_invite_register')
+            ->value('config_value');
+        if ($registerRewardPoints <= 0) {
+            $registerRewardPoints = 10; // 默认10积分（注册奖励，少于充值奖励）
+        }
+
+        // 防刷：邀请人最多对10个人获得注册积分奖励
+        $inviterRewardCount = InviteRecord::where('inviter_id', $inviterId)
+            ->where('status', 1)
+            ->count();
+        $canGetRegisterReward = $inviterRewardCount < 10;
+
         Db::startTrans();
         try {
-            // 记录邀请关系
+            // 记录邀请关系（points_reward 专用于充值奖励，注册时写0）
             InviteRecord::create([
-                'inviter_id' => $inviterId,
-                'invited_id' => $newUserId,
-                'invite_code' => $inviteCode,
-                'points_reward' => $rewardPoints,
+                'inviter_id'   => $inviterId,
+                'invitee_id'   => $newUserId,
+                'invite_code'  => $inviteCode,
+                'points_reward' => 0,  // 充值后才更新此字段
+                'status'       => 1,
             ]);
 
-            
-            // 给邀请人增加积分
-            $inviter = User::find($inviterId);
-            if ($inviter) {
-                $inviter->addPoints($rewardPoints);
-                PointsRecord::record(
-                    $inviterId, 
-                    '邀请好友奖励', 
-                    $rewardPoints, 
-                    'invite',
-                    $newUserId,
-                    '邀请用户ID: ' . $newUserId
-                );
+            // 给邀请人增加注册积分（最多10人限制）
+            if ($canGetRegisterReward) {
+                $inviter = User::find($inviterId);
+                if ($inviter) {
+                    $inviter->addPoints($registerRewardPoints);
+                    PointsRecord::record(
+                        $inviterId,
+                        '邀请好友注册奖励',
+                        $registerRewardPoints,
+                        'invite_register',
+                        $newUserId,
+                        '邀请用户ID: ' . $newUserId
+                    );
+                }
             }
-            
-            // 给被邀请人也增加积分
+
+            // 给被邀请人增加积分（无限制）
             $invitee = User::find($newUserId);
             if ($invitee) {
-                $invitee->addPoints($rewardPoints);
+                $invitee->addPoints($registerRewardPoints);
                 PointsRecord::record(
-                    $newUserId, 
-                    '被邀请奖励', 
-                    $rewardPoints, 
-                    'invited',
+                    $newUserId,
+                    '填写邀请码奖励',
+                    $registerRewardPoints,
+                    'invited_register',
                     $inviterId,
-                    '填写邀请码奖励'
+                    '填写邀请码注册奖励'
                 );
             }
-            
+
             Db::commit();
         } catch (\Exception $e) {
             Db::rollback();
@@ -544,8 +558,10 @@ class Auth extends BaseController
             ->select();
 
         $inviteList = $invites->toArray();
+
+        // 兼容 invited_id / invitee_id 两种字段名
         $inviteeIds = array_values(array_unique(array_filter(array_map(
-            static fn (array $invite): int => (int) ($invite['invited_id'] ?? 0),
+            static fn (array $invite): int => (int) ($invite['invitee_id'] ?? $invite['invited_id'] ?? 0),
             $inviteList
         ))));
         $inviteeInfos = [];
@@ -554,17 +570,30 @@ class Auth extends BaseController
             $inviteeInfos = User::whereIn('id', $inviteeIds)
                 ->column('nickname,avatar,created_at', 'id');
         }
+
+        // 查询哪些被邀请用户有过消费（有充值订单或积分消耗记录）
+        $consumedUserIds = [];
+        if (!empty($inviteeIds)) {
+            // 有充值订单视为消费成功
+            $consumedUserIds = \think\facade\Db::name('tc_recharge_order')
+                ->whereIn('user_id', $inviteeIds)
+                ->where('status', 'paid')
+                ->column('user_id');
+            $consumedUserIds = array_unique(array_map('intval', $consumedUserIds));
+        }
         
         $result = [];
         foreach ($inviteList as $invite) {
-            $invitedUserId = (int) ($invite['invited_id'] ?? 0);
+            $invitedUserId = (int) ($invite['invitee_id'] ?? $invite['invited_id'] ?? 0);
             $inviteeInfo = $inviteeInfos[$invitedUserId] ?? [];
+            $hasConsumed = in_array($invitedUserId, $consumedUserIds, true);
             $result[] = [
-                'invitee_id' => $invitedUserId,
-                'nickname' => $inviteeInfo['nickname'] ?? '神秘用户',
-                'avatar' => $inviteeInfo['avatar'] ?? '',
-                'points_reward' => $invite['points_reward'],
-                'created_at' => $invite['created_at'],
+                'invitee_id'    => $invitedUserId,
+                'nickname'      => $inviteeInfo['nickname'] ?? '神秘用户',
+                'avatar'        => $inviteeInfo['avatar'] ?? '',
+                'points_reward' => (int) ($invite['points_reward'] ?? 0),
+                'has_consumed'  => $hasConsumed,  // 好友是否已消费
+                'created_at'    => $invite['created_at'],
             ];
         }
 
@@ -573,13 +602,17 @@ class Auth extends BaseController
         $total = InviteRecord::where('inviter_id', $user['sub'])
             ->where('status', 1)
             ->count();
+
+        // 统计消费成功数量
+        $successCount = count(array_filter($result, fn($r) => $r['has_consumed']));
         
         return $this->success([
-            'list' => $result,
-            'total' => (int) $total,
-            'page' => $page,
-            'limit' => $limit,
-            'total_pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
+            'list'         => $result,
+            'total'        => (int) $total,
+            'success_count'=> $successCount,
+            'page'         => $page,
+            'limit'        => $limit,
+            'total_pages'  => $limit > 0 ? (int) ceil($total / $limit) : 0,
         ]);
     }
 }

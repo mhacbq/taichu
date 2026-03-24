@@ -136,8 +136,9 @@ export const getRechargeHistory = (params) => request.get('/payment/history', { 
 
 // ====== 个人信息更新 ======
 export const updateProfile = (data) => request.put('/auth/profile', data)
-export const getMyInvites = () => request.get('/auth/my-invites')
+export const getMyInvites = (params) => request.get('/auth/my-invites', { params })
 export const getInviteLeaderboard = () => request.get('/auth/invite-leaderboard')
+export const getPointsRules = () => request.get('/points/rules')
 
 // ====== 运势分析（八字流年大运）API ======
 export const getFortunePointsCost = (config = {}) => request.get('/fortune/points-cost', config)

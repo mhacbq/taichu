@@ -82,6 +82,7 @@ Route::group('api', function () {
     
     // 积分系统
     Route::group('points', function () {
+        Route::get('rules', 'Points/rules');   // 公开：积分规则
         Route::get('balance', 'Points/balance');
         Route::get('history', 'Points/history');
         Route::post('consume', 'Points/consume');

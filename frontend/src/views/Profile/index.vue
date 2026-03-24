@@ -157,7 +157,7 @@
           <!-- 邀请好友 -->
           <div class="sidebar-card invite-card card-hover">
             <h4><el-icon><Present /></el-icon> 邀请好友</h4>
-            <p class="invite-text">每邀请一位好友，双方各得 <strong>20积分</strong></p>
+            <p class="invite-text">每邀请一位好友消费，双方各得 <strong>{{ invitePoints || 20 }}积分</strong></p>
             <div class="invite-actions">
               <el-button type="primary" @click="copyInviteCode" class="invite-btn-main">
                 <el-icon><DocumentCopy /></el-icon> 复制邀请码
@@ -170,6 +170,10 @@
               <div class="invite-stat">
                 <span class="stat-num">{{ inviteCount }}</span>
                 <span class="stat-txt">已邀请</span>
+              </div>
+              <div class="invite-stat">
+                <span class="stat-num">{{ inviteSuccessCount }}</span>
+                <span class="stat-txt">消费成功</span>
               </div>
               <div class="invite-stat">
                 <span class="stat-num">{{ invitePoints }}</span>
@@ -247,7 +251,33 @@
                 </AsyncState>
               </el-tab-pane>
 
-              <el-tab-pane label="八字合婚" name="hehun">
+              <el-tab-pane label="邀请记录" name="invite">
+                <div v-loading="inviteRecordsLoading">
+                  <div v-if="inviteRecords.length > 0" class="history-list">
+                    <div v-for="record in inviteRecords" :key="record.invitee_id + record.created_at" class="history-list-item invite-record-item">
+                      <div class="item-left">
+                        <span class="item-title">{{ record.nickname }}</span>
+                        <span class="item-time">{{ formatTime(record.created_at) }}</span>
+                      </div>
+                      <div class="item-right">
+                        <el-tag v-if="record.has_consumed" type="success" size="small">已消费</el-tag>
+                        <el-tag v-else type="info" size="small">未消费</el-tag>
+                        <span v-if="record.points_reward > 0" class="invite-reward">+{{ record.points_reward }}分</span>
+                      </div>
+                    </div>
+                  </div>
+                  <el-empty v-else description="暂无邀请记录" />
+                  <div class="pagination-wrapper" v-if="inviteRecordsTotal > 10">
+                    <el-pagination
+                      v-model:current-page="inviteRecordsPage"
+                      :total="inviteRecordsTotal"
+                      :page-size="10"
+                      layout="prev, pager, next"
+                      @current-change="loadInviteRecords"
+                    />
+                  </div>
+                </div>
+              </el-tab-pane>
                 <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
                   <div class="history-list" v-if="hehunHistory.length > 0">
                     <div v-for="record in hehunHistory" :key="record.id" class="history-list-item" @click="viewHehunDetail(record)">
@@ -348,6 +378,8 @@ const {
   baziStatus, tarotStatus, liuyaoStatus, hehunStatus,
   baziCurrentPage, baziPageSize, baziTotal,
   inviteCode, inviteCount, invitePoints, inviteLink,
+  inviteRecords, inviteRecordsTotal, inviteSuccessCount,
+  inviteRecordsPage, inviteRecordsLoading,
 
   // 计算属性
   currentPointsLevel, pointsLevelName, pointsPercentage,
@@ -360,6 +392,7 @@ const {
   pointsProgressFormat, formatTime, formatDate,
   restartTourGuide,
   loadBaziHistory, loadTarotHistory, loadLiuyaoHistory, loadHehunHistory,
+  loadInviteRecords,
   submitFeedbackForm, saveBirthDate,
   viewDetail, viewTarotDetail, viewLiuyaoDetail, viewHehunDetail,
   handleMethodAction, copyInviteCode, copyInviteLink, shareToWechat,

@@ -886,4 +886,44 @@
   .hero-stat-divider {
     height: 24px;
   }
-}
+}
+
+/* 邀请记录样式 */
+.invite-record-item .item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invite-reward {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d4a03e;
+}
+
+/* 邀请好友卡片 - 三列统计 */
+.invite-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(212, 156, 62, 0.15);
+}
+
+.invite-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.invite-stat .stat-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: #5e4318;
+}
+
+.invite-stat .stat-txt {
+  font-size: 12px;
+  color: #999;
+}

@@ -132,6 +132,10 @@ Route::group('api/maodou', function () {
         Route::get('content/version/:versionId/preview', 'Content/previewVersion');
         Route::get('content/block-config/:type', 'Content/getBlockConfig');
         
+        // 邀请管理
+        Route::get('invites', 'admin.InviteManage/index');
+        Route::get('invites/stats', 'admin.InviteManage/stats');
+
         // 积分管理
         Route::get('points/records', 'admin.Points/getRecords');
         Route::post('points/adjust', 'admin.Points/adjust');

@@ -54,10 +54,12 @@ const birthTimeRangeMap = birthTimeRangeOptions.reduce((acc, option) => {
 // 表单数据
 const form = reactive({
   maleName: '',
+  maleGender: 'male',
   maleBirthDate: '',
   maleBirthPrecision: 'exact',
   maleBirthTimeRange: '',
   femaleName: '',
+  femaleGender: 'female',
   femaleBirthDate: '',
   femaleBirthPrecision: 'exact',
   femaleBirthTimeRange: '',
@@ -312,10 +314,12 @@ const hasReducedPrecision = computed(() => {
 
 const buildHehunPayload = ({ tier, useAi }) => ({
   maleName: form.maleName || getRoleLabel('male'),
+  maleGender: form.maleGender || 'male',
   maleBirthDate: resolveBirthDatePayload(form.maleBirthDate, form.maleBirthPrecision, form.maleBirthTimeRange),
   maleBirthPrecision: form.maleBirthPrecision,
   maleBirthTimeRange: form.maleBirthTimeRange,
   femaleName: form.femaleName || getRoleLabel('female'),
+  femaleGender: form.femaleGender || 'female',
   femaleBirthDate: resolveBirthDatePayload(form.femaleBirthDate, form.femaleBirthPrecision, form.femaleBirthTimeRange),
   femaleBirthPrecision: form.femaleBirthPrecision,
   femaleBirthTimeRange: form.femaleBirthTimeRange,
@@ -424,9 +428,10 @@ const isBirthInputComplete = (role) => {
   return true
 }
 
-// 表单验证
+// 表单验证：姓名 + 出生时间
 const isFormValid = computed(() => {
-  return isBirthInputComplete('male') && isBirthInputComplete('female')
+  return Boolean(form.maleName?.trim()) && Boolean(form.femaleName?.trim())
+    && isBirthInputComplete('male') && isBirthInputComplete('female')
 })
 
 const hehunStrategySummary = computed(() => {
@@ -1242,12 +1247,14 @@ const syncHistorySelection = async (preferredId = null) => {
 // 提交表单（免费预览）
 const submitForm = async () => {
   clearHehunSubmitIssues()
-  const issues = buildHehunSubmitIssues()
 
-  if (issues.length) {
-    hehunSubmitIssues.value = issues
-    handleHehunIssue(issues[0])
-    ElMessage.warning('提交前还有信息未完成，已帮你定位到第一个问题')
+  // 验证：姓名 + 出生时间
+  if (!form.maleName?.trim() || !form.femaleName?.trim()) {
+    ElMessage.warning('请填写双方姓名后再开始分析')
+    return
+  }
+  if (!form.maleBirthDate || !form.femaleBirthDate) {
+    ElMessage.warning('请填写双方出生时间后再开始分析')
     return
   }
 
@@ -1392,10 +1399,12 @@ const resetForm = () => {
   clearUnlockFeedback()
 
   form.maleName = ''
+  form.maleGender = 'male'
   form.maleBirthDate = ''
   form.maleBirthPrecision = 'exact'
   form.maleBirthTimeRange = ''
   form.femaleName = ''
+  form.femaleGender = 'female'
   form.femaleBirthDate = ''
   form.femaleBirthPrecision = 'exact'
   form.femaleBirthTimeRange = ''

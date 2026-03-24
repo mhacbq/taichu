@@ -62,6 +62,7 @@ const AdminLiuyaoManage = () => import('../views/admin/LiuyaoManage.vue')
 const AdminQimingManage = () => import('../views/admin/QimingManage.vue')
 const AdminYearlyFortuneManage = () => import('../views/admin/YearlyFortuneManage.vue')
 const AdminSystemConfig = () => import('../views/admin/SystemConfig.vue')
+const AdminInviteManage = () => import('../views/admin/InviteManage.vue')
 
 const routes = [
   {
@@ -522,6 +523,14 @@ const routes = [
         component: AdminSystemConfig,
         meta: {
           title: '系统配置'
+        }
+      },
+      {
+        path: 'invites',
+        name: 'AdminInviteManage',
+        component: AdminInviteManage,
+        meta: {
+          title: '邀请管理'
         }
       }
     ]

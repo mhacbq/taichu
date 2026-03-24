@@ -49,7 +49,7 @@ const createDefaultForm = () => ({
   yaoResults: [null, null, null, null, null, null],
   riGan: '',
   riZhi: '',
-  version: 'basic', // 版本选择：basic（简单版）/ professional（专业版）
+  version: 'professional', // 固定使用AI分析专业版
 })
 
 // 表单数据
@@ -58,6 +58,7 @@ const form = reactive(createDefaultForm())
 // 状态
 const isLoading = ref(false)
 const isSubmitting = ref(false)
+const loadingStep = ref(0) // 0=idle 1=起卦中 2=卦象成形 3=AI解读中
 const result = ref(null)
 const pricing = ref(null)
 const pricingLoading = ref(true)
@@ -243,36 +244,8 @@ const shouldShowRemainingPoints = computed(() => {
   return result.value.remaining_points !== null && result.value.remaining_points !== undefined
 })
 
-// 术语解释数据
-const terminologyMap = {
-  '日辰': '起卦当天的干支，如"甲子日"，代表时间基准',
-  '月建': '起卦当月的地支，如"寅月"，代表月份影响',
-  '旬空': '空亡地支，表示该位置力量空虚，可能影响判断',
-  '本卦': '原始卦象，反映事物的初始状态',
-  '变卦': '动爻变化后的卦象，反映事物的发展结果',
-  '互卦': '由本卦中间四爻组成，反映事物的内在过程',
-  '所属宫位': '卦象所属的八宫，决定整体性质',
-  '世应': '世爻代表"我"，应爻代表"他人"或"对方"',
-  '动爻': '发生变化的爻，代表事物变动的因素',
-  '用神': '根据所问之事选定的关键爻，如问事看官鬼，问财看妻财',
-  '六亲': '父母、兄弟、子孙、妻财、官鬼，代表不同事物的关系',
-  '六神': '青龙、白虎、朱雀、玄武、勾陈、螣蛇，代表吉凶趋向',
-  '纳甲': '将地支配入卦中六爻，如"甲子"，用于精确判断',
-  '阳爻': '实线，代表刚强、积极、男性性质',
-  '阴爻': '虚线，代表柔弱、消极、女性性质'
-}
 
-// 显示术语解释
-const showTermExplanation = (term) => {
-  const explanation = terminologyMap[term]
-  if (explanation) {
-    ElMessage.info({
-      message: `${term}：${explanation}`,
-      duration: 5000,
-      showClose: true
-    })
-  }
-}
+
 
 const savedStatusText = computed(() => (result.value?.is_history ? '来自历史记录' : '已自动保存到历史记录'))
 const historyTriggerText = computed(() => (
@@ -342,107 +315,8 @@ const formatDateTime = (dateStr) => {
   }).format(date)
 }
 
-const resultContextItems = computed(() => {
-  if (!result.value) {
-    return []
-  }
 
-  const timeInfo = result.value.time_info || {}
-  const xunkong = Array.isArray(timeInfo.xunkong)
-    ? timeInfo.xunkong.filter(Boolean).join('、')
-    : String(timeInfo.xunkong || '').trim()
 
-  return [
-    { label: '起卦方式', value: result.value.method_label || '' },
-    { label: '起卦时间', value: formatDateTime(timeInfo.divination_at || result.value.created_at || '') },
-    { label: '日辰', value: String(timeInfo.ri_chen || '').trim() },
-    { label: '月建', value: String(timeInfo.yue_jian || '').trim() },
-    { label: '旬空', value: xunkong },
-  ].filter((item) => item.value)
-})
-
-const structuredResultItems = computed(() => {
-  if (!result.value) {
-    return []
-  }
-
-  const shiYing = result.value.shi_ying || {}
-  const yongShen = result.value.yong_shen || {}
-  const yongShenText = [yongShen.liuqin, yongShen.description]
-    .filter((item) => item && String(item).trim())
-    .join('｜')
-  const dongYao = Array.isArray(result.value.bian_gua?.dong_yao)
-    ? result.value.bian_gua.dong_yao.filter(Boolean).join('、')
-    : ''
-  const shiYingText = [
-    shiYing.shi ? `世爻：第${shiYing.shi}爻` : '',
-    shiYing.ying ? `应爻：第${shiYing.ying}爻` : '',
-  ].filter(Boolean).join('｜')
-
-  return [
-    { label: '本卦', value: result.value.gua?.name || '' },
-    { label: '变卦', value: result.value.bian_gua?.name || '' },
-    { label: '互卦', value: result.value.hu_gua?.name || '' },
-    { label: '所属宫位', value: result.value.gong || '' },
-    { label: '世应', value: shiYingText },
-    { label: '动爻', value: dongYao },
-    { label: '用神', value: yongShenText },
-  ].filter((item) => item.value)
-})
-
-// 核心结论摘要
-const summaryHighlights = computed(() => {
-  if (!result.value) {
-    return []
-  }
-
-  const highlights = []
-
-  // 本卦与变卦
-  const gua = result.value.gua?.name || ''
-  const bianGua = result.value.bian_gua?.name || ''
-  if (gua && bianGua) {
-    highlights.push({
-      icon: '🎯',
-      label: '卦象变化',
-      value: `${gua} → ${bianGua}`
-    })
-  }
-
-  // 动爻信息
-  const dongYao = Array.isArray(result.value.bian_gua?.dong_yao)
-    ? result.value.bian_gua.dong_yao.filter(Boolean)
-    : []
-  if (dongYao.length > 0) {
-    highlights.push({
-      icon: '⚡',
-      label: '动爻',
-      value: dongYao.length > 3 ? `共${dongYao.length}爻变动` : dongYao.join('、')
-    })
-  }
-
-  // 用神信息
-  const yongShen = result.value.yong_shen || {}
-  if (yongShen.liuqin || yongShen.description) {
-    highlights.push({
-      icon: '🎭',
-      label: '用神',
-      value: yongShen.description || yongShen.liuqin || ''
-    })
-  }
-
-  // 世应关系
-  const shiYing = result.value.shi_ying || {}
-  if (shiYing.shi && shiYing.ying) {
-    highlights.push({
-      icon: '👤',
-      label: '世应',
-      value: `世爻第${shiYing.shi} · 应爻第${shiYing.ying}`
-    })
-  }
-
-  return highlights
-})
 
 const reportUiError = (action, error, userMessage = '') => {
 
@@ -562,14 +436,8 @@ const normalizeFushen = (value) => {
   }
 }
 
-// 计算卦象SVG路径
-const guaSvgPath = computed(() => {
-  if (!result.value || !result.value.yao_result) {
-    return null
-  }
-  // SVG路径已在模板中动态生成，此处返回true表示启用SVG模式
-  return true
-})
+
+
 
 const getYinYangLabel = (value) => (isYangYao(value) ? '阳爻' : '阴爻')
 
@@ -786,7 +654,11 @@ const submitDivination = async () => {
 
   isLoading.value = true
   isSubmitting.value = true
-  
+  loadingStep.value = 1
+
+  // 分步文案：1.5s 后切到第二步
+  const stepTimer = setTimeout(() => { loadingStep.value = 2 }, 1500)
+
   // 埋点：提交开始
   const payload = buildDivinationPayload()
   trackLiuyaoSubmitStart({
@@ -799,6 +671,7 @@ const submitDivination = async () => {
     const response = await liuyaoDivination(payload)
 
     if (response.code === 200) {
+      loadingStep.value = 3
       trackSubmit('liuyao_divination', true, { method: payload.method })
       trackLiuyaoSubmitSuccess({
         method: payload.method,
@@ -829,8 +702,10 @@ const submitDivination = async () => {
     })
     reportUiError('提交六爻占卜失败', error, '占卜失败，请重试')
   } finally {
+    clearTimeout(stepTimer)
     isLoading.value = false
     isSubmitting.value = false
+    loadingStep.value = 0
   }
 }
 
@@ -1097,7 +972,7 @@ return {
   yaoValueOptions, tianGanOptions, diZhiOptions, yaoNameMap, terminologyMap,
 
   // 状态
-  form, isLoading, isSubmitting, result, pricing, pricingLoading, pricingError,
+  form, isLoading, isSubmitting, loadingStep, result, pricing, pricingLoading, pricingError,
   history, historyLoading, historyLoaded, historyError, submitErrors,
   showHistory, showAdvancedSettings, historyListRef, currentBeijingTimestamp,
   aiAnalyzing,
@@ -1105,14 +980,13 @@ return {
   // 计算属性
   currentBeijingTime, currentMethodDescription, currentMethodAudience,
   submitSummaryText, submitButtonText, shouldShowRemainingPoints,
-  savedStatusText, historyTriggerText, resultContextItems, structuredResultItems,
-  summaryHighlights, guaSvgPath, shouldShowLiuyaoRechargeAction,
+  savedStatusText, historyTriggerText, shouldShowLiuyaoRechargeAction,
   liuyaoResultHighlights, liuyaoResultActions, liuyaoRelatedRecommendations,
   liuyaoShareSummary, liuyaoShareTags,
 
   // 方法
   createDefaultForm, clearSubmitErrors, focusLiuyaoField, handleSubmitIssue,
-  buildSubmitIssues, showTermExplanation, openHistoryDialog,
+  buildSubmitIssues, openHistoryDialog,
   restoreHistoryTriggerFocus, focusHistoryDialogPrimaryAction,
   formatDateTime, reportUiError,
   isMovingYao, isYangYao, getYaoName, getYaoMark, getGuaSymbol,

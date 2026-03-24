@@ -207,7 +207,10 @@ class RechargeOrder extends Model
                 return ['success' => false, 'message' => '积分记录失败', 'is_duplicate' => false];
             }
             
-            // 3.5 更新订单状态为已支付
+            // 3.5 检查该用户是否是被邀请来的，且是首次充值，则给邀请人发放积分
+            $this->rewardInviterIfFirstRecharge($this->user_id);
+
+            // 3.6 更新订单状态为已支付
             $orderUpdate = [
                 'status' => self::STATUS_PAID,
                 'pay_order_no' => $payOrderNo,
@@ -222,7 +225,7 @@ class RechargeOrder extends Model
                 ->where('id', $this->id)
                 ->update($orderUpdate);
             
-            // 3.6 提交事务
+            // 3.7 提交事务
             Db::commit();
             
             // 刷新模型数据
@@ -265,6 +268,81 @@ class RechargeOrder extends Model
         }
     }
     
+    /**
+     * 首次充值时给邀请人发放积分（在事务内调用）
+     * 幂等保证：通过 invite_record.points_reward > 0 判断是否已发放
+     */
+    protected function rewardInviterIfFirstRecharge(int $inviteeId): void
+    {
+        // 查找该用户是否是被邀请来的（invitee_id = 当前用户，且 points_reward = 0 表示还未发放）
+        $inviteRecord = Db::name('tc_invite_record')
+            ->where('invitee_id', $inviteeId)
+            ->where('status', 1)
+            ->where('points_reward', 0)
+            ->lock(true)
+            ->find();
+
+        if (!$inviteRecord) {
+            // 没有邀请记录，或已经发放过积分，跳过
+            return;
+        }
+
+        // 检查是否是首次充值（当前这笔是第一笔 paid 订单）
+        $paidCount = Db::name('tc_recharge_order')
+            ->where('user_id', $inviteeId)
+            ->where('status', self::STATUS_PAID)
+            ->count();
+
+        // paidCount 此时还是 0（当前订单还未标记为 paid），说明这是第一笔
+        if ($paidCount > 0) {
+            return;
+        }
+
+        // 从系统配置读取邀请积分奖励数量
+        $invitePoints = (int) Db::name('tc_system_config')
+            ->where('config_key', 'points_invite_friend')
+            ->value('config_value');
+
+        if ($invitePoints <= 0) {
+            $invitePoints = 20; // 默认20积分
+        }
+
+        $inviterId = (int) $inviteRecord['inviter_id'];
+        $now = date('Y-m-d H:i:s');
+
+        // 给邀请人加积分
+        Db::name('tc_user')
+            ->where('id', $inviterId)
+            ->inc('points', $invitePoints)
+            ->update();
+
+        // 记录积分变动
+        Db::name('tc_points_record')->insert([
+            'user_id'    => $inviterId,
+            'action'     => '邀请好友充值',
+            'points'     => $invitePoints,
+            'type'       => 'invite_friend',
+            'related_id' => $inviteRecord['id'],
+            'remark'     => "好友(ID:{$inviteeId})首次充值，邀请奖励",
+            'created_at' => $now,
+        ]);
+
+        // 更新邀请记录，标记已发放积分
+        Db::name('tc_invite_record')
+            ->where('id', $inviteRecord['id'])
+            ->update([
+                'points_reward' => $invitePoints,
+                'reward_time'   => $now,
+            ]);
+
+        Log::info('邀请积分发放成功', [
+            'inviter_id'  => $inviterId,
+            'invitee_id'  => $inviteeId,
+            'points'      => $invitePoints,
+            'invite_id'   => $inviteRecord['id'],
+        ]);
+    }
+
     /**
      * 记录处理日志
      */

@@ -35,6 +35,7 @@
           </template>
           <el-menu-item index="/maodou/points/records">积分记录</el-menu-item>
           <el-menu-item index="/maodou/points/rules">积分规则</el-menu-item>
+          <el-menu-item index="/maodou/invites">邀请管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="payment">
@@ -154,6 +155,7 @@ const pageTitles = {
   '/maodou/feedback/list': '用户反馈',
   '/maodou/points/records': '积分记录',
   '/maodou/points/rules': '积分规则',
+  '/maodou/invites': '邀请管理',
   '/maodou/payment/orders': '订单列表',
   '/maodou/payment/analysis': '充值分析',
   '/maodou/payment/vip-packages': 'VIP套餐管理',

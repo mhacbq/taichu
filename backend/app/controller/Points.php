@@ -8,10 +8,11 @@ use app\model\PointsRecord;
 use app\model\BaziRecord;
 use app\service\PointsService;
 use app\service\SchemaInspector;
+use app\service\ConfigService;
 
 class Points extends BaseController
 {
-    protected $middleware = [\app\middleware\Auth::class];
+    protected $middleware = [\app\middleware\Auth::class => ['except' => ['rules']]];
     
     /**
      * @var PointsService
@@ -25,7 +26,62 @@ class Points extends BaseController
     {
         parent::initialize();
         $this->pointsService = new PointsService();
+        /**
+     * 获取积分规则（公开接口，前端用户端展示用）
+     */
+    public function rules()
+    {
+        try {
+            $tasks = ConfigService::getPointsTasks();
+            $costs = ConfigService::getCategory('points_cost');
+
+            // 整理任务规则，过滤掉积分为0的项
+            $taskList = [];
+            $iconMap = [
+                'sign_daily'         => 'calendar',
+                'sign_continuous_7'  => 'calendar',
+                'sign_continuous_30' => 'calendar',
+                'share_app'          => 'share',
+                'invite_friend'      => 'user',
+                'complete_profile'   => 'user',
+                'first_paipan'       => 'star',
+                'bind_wechat'        => 'link',
+                'follow_mp'          => 'bell',
+                'browse_article'     => 'book',
+            ];
+            $actionMap = [
+                'sign_daily'     => 'checkin',
+                'invite_friend'  => 'invite',
+            ];
+            $actionTextMap = [
+                'sign_daily'    => '去签到',
+                'invite_friend' => '去邀请',
+            ];
+
+            foreach ($tasks as $key => $task) {
+                $points = (int)($task['points'] ?? 0);
+                if ($points <= 0) {
+                    continue;
+                }
+                $taskList[] = [
+                    'key'        => $key,
+                    'name'       => $task['name'],
+                    'points'     => $points,
+                    'icon'       => $iconMap[$key] ?? 'gift',
+                    'action'     => $actionMap[$key] ?? null,
+                    'actionText' => $actionTextMap[$key] ?? '',
+                ];
+            }
+
+            return $this->success([
+                'tasks' => $taskList,
+                'costs' => $costs,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('points_rules', $e, '获取积分规则失败');
+        }
     }
+}
     
     /**
      * 获取积分余额

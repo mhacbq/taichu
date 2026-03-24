@@ -58,9 +58,8 @@ class Liuyao extends BaseController
             $data['question'] = $question;
             $userModel = $this->getCurrentUserModel();
             
-            // 获取版本参数，默认为 basic
-            $version = $data['version'] ?? 'basic';
-            $pricing = $this->resolvePricing($userModel, $version);
+            // 六爻统一为 AI 分析版，直接获取定价
+            $pricing = $this->resolvePricing($userModel);
             $pointsCost = ($pricing['is_first_free'] || $pricing['is_vip_free']) ? 0 : (int) $pricing['cost'];
 
             // 积分检查移至 persistDivinationOutcome 方法中的事务内部执行
@@ -800,7 +799,7 @@ PROMPT;
     /**
      * 计算六爻前端展示定价
      */
-    private function resolvePricing(User $userModel, string $version = 'basic'): array
+    private function resolvePricing(User $userModel): array
     {
         $recordCount = (int) $this->applyRecordActiveFilter(
             Db::table($this->resolveLiuyaoRecordTable())
@@ -812,11 +811,8 @@ PROMPT;
         $isFirstFree = $recordCount === 0;
         $isVipFree = !$isFirstFree && !empty($userModel->is_vip);
         
-        // 根据版本获取基础积分消耗
-        $configKey = $version === 'professional' ? 'points_cost_liuyao_professional' : 'points_cost_liuyao_basic';
-        $basePoints = (int) ConfigService::get($configKey, $version === 'professional' ? 50 : 15);
-        
-        $costInfo = ConfigService::calculatePointsCost('liuyao', $basePoints, $isFirstFree);
+        // 统一走 ConfigService 的 liuyao_ai 配置路径（points_cost_liuyao_ai）
+        $costInfo = ConfigService::calculatePointsCost('liuyao_ai');
         $cost = ($isFirstFree || $isVipFree) ? 0 : $costInfo['final'];
 
         return [
@@ -827,8 +823,7 @@ PROMPT;
             'is_first_free' => $isFirstFree,
             'is_vip_free' => $isVipFree,
             'remaining_points' => (int) ($userModel->points ?? 0),
-            'basic_cost' => (int) ConfigService::get('points_cost_liuyao_basic', 15),
-            'professional_cost' => (int) ConfigService::get('points_cost_liuyao_professional', 50),
+            'professional_cost' => $costInfo['final'],
         ];
     }
 

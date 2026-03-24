@@ -1,7 +1,7 @@
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig } from '../../api'
+import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig, getMyInvites, getPointsRules } from '../../api'
 import { useTourGuide } from '../../composables/useTourGuide'
 import { formatTime, formatDate } from '../../utils/format'
 
@@ -93,19 +93,23 @@ const pointsProgressFormat = (percentage) => {
   return `${pointsBalance.value} / ${currentPointsLevel.value.max === Infinity ? '∞' : currentPointsLevel.value.max}`
 }
 
-// 积分获取方式
-const pointMethodDefinitions = [
-  { id: 1, icon: 'calendar', name: '每日签到', desc: '每天签到领积分', points: 5, action: 'checkin', actionText: '去签到' },
-  { id: 2, icon: 'present', name: '新手礼包', desc: '新用户注册奖励', points: 100, action: null, actionText: '' },
-  { id: 3, icon: 'user', name: '邀请好友', desc: '每邀请一位好友', points: 20, action: 'invite', actionText: '去邀请' },
-  { id: 4, icon: 'share', name: '分享结果', desc: '分享排盘或占卜结果', points: 5, action: null, actionText: '' },
-  { id: 5, icon: 'chat', name: '提交反馈', desc: '提交有价值的建议', points: 10, action: 'feedback', actionText: '去反馈' }
-]
-const pointsMethods = computed(() => (
-  feedbackEnabled.value
-    ? pointMethodDefinitions
-    : pointMethodDefinitions.filter(method => method.action !== 'feedback')
-))
+// 积分获取方式（从后端动态加载）
+const pointsMethodsRaw = ref([])
+const pointsMethods = computed(() => {
+  const list = pointsMethodsRaw.value.length > 0
+    ? pointsMethodsRaw.value
+    : [] // 加载中时为空
+  return feedbackEnabled.value
+    ? list
+    : list.filter(m => m.action !== 'feedback')
+})
+
+// 邀请记录相关
+const inviteRecords = ref([])
+const inviteRecordsTotal = ref(0)
+const inviteSuccessCount = ref(0)
+const inviteRecordsPage = ref(1)
+const inviteRecordsLoading = ref(false)
 
 
 // 邀请相关
@@ -225,6 +229,42 @@ const getTarotCards = (record) => {
   return Array.isArray(record?.cards) ? record.cards : []
 }
 
+const loadPointsRules = async () => {
+  try {
+    const res = await getPointsRules()
+    if (res.code === 200 && Array.isArray(res.data?.tasks)) {
+      pointsMethodsRaw.value = res.data.tasks.map((item, idx) => ({
+        id: idx + 1,
+        icon: item.icon || 'gift',
+        name: item.name,
+        desc: '',
+        points: item.points,
+        action: item.action || null,
+        actionText: item.actionText || '',
+      }))
+    }
+  } catch (e) {
+    // 加载失败时静默处理，不影响页面
+  }
+}
+
+const loadInviteRecords = async (page = 1) => {
+  inviteRecordsLoading.value = true
+  try {
+    const res = await getMyInvites({ page, limit: 10 })
+    if (res.code === 200) {
+      inviteRecords.value = res.data?.list || []
+      inviteRecordsTotal.value = res.data?.total || 0
+      inviteSuccessCount.value = res.data?.success_count || 0
+      inviteRecordsPage.value = page
+    }
+  } catch (e) {
+    // 静默处理
+  } finally {
+    inviteRecordsLoading.value = false
+  }
+}
+
 const loadUserData = async () => {
 
   try {
@@ -255,6 +295,10 @@ const loadUserData = async () => {
     }
 
     await syncClientFeatureConfig()
+
+    // 并行加载积分规则和邀请记录
+    loadPointsRules()
+    loadInviteRecords()
     
     // 加载排盘历史
     await loadBaziHistory()
@@ -563,6 +607,7 @@ onMounted(() => {
   window.addEventListener('tarot-history-updated', handleTarotHistoryUpdated)
 })
 
+
 onUnmounted(() => {
   window.removeEventListener('tarot-history-updated', handleTarotHistoryUpdated)
 })
@@ -577,6 +622,8 @@ return {
   baziStatus, tarotStatus, liuyaoStatus, hehunStatus,
   baziCurrentPage, baziPageSize, baziTotal,
   inviteCode, inviteCount, invitePoints, inviteLink,
+  inviteRecords, inviteRecordsTotal, inviteSuccessCount,
+  inviteRecordsPage, inviteRecordsLoading,
 
   // 计算属性
   currentPointsLevel, pointsLevelName, pointsPercentage,
@@ -589,6 +636,7 @@ return {
   pointsProgressFormat, formatTime, formatDate,
   restartTourGuide,
   loadBaziHistory, loadTarotHistory, loadLiuyaoHistory, loadHehunHistory,
+  loadInviteRecords,
   submitFeedbackForm, saveBirthDate,
   viewDetail, viewTarotDetail, viewLiuyaoDetail, viewHehunDetail,
   handleMethodAction, copyInviteCode, copyInviteLink, shareToWechat,

@@ -40,6 +40,11 @@ export function useHelp() {
     tarot: '塔罗测试',
     account: '账号相关',
     points: '积分问题',
+    '新手指南': '新手指南',
+    '八字分析': '八字分析',
+    '塔罗测试': '塔罗测试',
+    '账号相关': '账号相关',
+    '积分问题': '积分问题'
   }
 
   // 分类图标映射
@@ -49,6 +54,30 @@ export function useHelp() {
     tarot: MagicStick,
     account: UserFilled,
     points: Lock,
+  }
+
+  // 分类符号映射（用于新设计）
+  const categorySymbols = {
+    '新手指南': '📖',
+    '八字分析': '🧮',
+    '塔罗测试': '🔮',
+    '账号相关': '🔐',
+    '积分问题': '💰',
+    'general': '📖',
+    'bazi': '🧮',
+    'tarot': '🔮',
+    'account': '🔐',
+    'points': '💰'
+  }
+
+  // 联系方式符号映射
+  const contactSymbols = {
+    '在线客服': '💬',
+    '邮箱': '📧',
+    '微信公众号': '📱',
+    'serviceLabel': '💬',
+    'emailLabel': '📧',
+    'wechatLabel': '📱'
   }
 
   // ===== 工具方法 =====
@@ -72,6 +101,15 @@ export function useHelp() {
     return typeof value === 'string' && value.trim() ? value.trim() : fallback
   }
 
+  // ===== 新增辅助函数 =====
+  const getCategoryIcon = (title) => {
+    return categorySymbols[title] || '❓'
+  }
+
+  const getContactSymbol = (label) => {
+    return contactSymbols[label] || '📞'
+  }
+
   // ===== 计算属性 =====
   const helpPageTitle = computed(() => getContentValue('page_title', defaultHelpContent.pageTitle))
   const helpSearchTitle = computed(() => getContentValue('search_title', defaultHelpContent.searchTitle))
@@ -81,21 +119,25 @@ export function useHelp() {
   const helpContactDesc = computed(() => getContentValue('contact_desc', defaultHelpContent.contactDesc))
   const helpFeedbackButtonText = computed(() => getContentValue('feedback_button_text', defaultHelpContent.feedbackButtonText))
 
+  // 更新联系方式数据
   const contactMethods = computed(() => [
     {
       icon: 'ChatDotRound',
       label: getContentValue('contact_service_label', defaultHelpContent.serviceLabel),
       value: getContentValue('contact_service_value', defaultHelpContent.serviceValue),
+      symbol: '💬'
     },
     {
       icon: 'Message',
       label: getContentValue('contact_email_label', defaultHelpContent.emailLabel),
       value: getContentValue('contact_email_value', defaultHelpContent.emailValue),
+      symbol: '📧'
     },
     {
       icon: 'ChatDotRound',
       label: getContentValue('contact_wechat_label', defaultHelpContent.wechatLabel),
       value: getContentValue('contact_wechat_value', defaultHelpContent.wechatValue),
+      symbol: '📱'
     },
   ])
 
@@ -113,20 +155,22 @@ export function useHelp() {
     return groups
   })
 
-  // 处理后的分类数据
-  const categories = computed(() =>
-    Object.keys(groupedFaqs.value).map((category) => ({
+  // 处理后的分类数据（更新版）
+  const filteredCategories = computed(() => {
+    const categories = Object.keys(groupedFaqs.value).map((category) => ({
       title: categoryMap[category] || category,
       icon: categoryIcons[category],
-      items: groupedFaqs.value[category],
+      symbol: categorySymbols[category] || '❓',
+      items: groupedFaqs.value[category].map(item => ({
+        ...item,
+        expanded: item.expanded || false
+      }))
     }))
-  )
 
-  // 根据搜索条件过滤分类
-  const filteredCategories = computed(() => {
-    if (!searchQuery.value) return categories.value
+    if (!searchQuery.value) return categories
+    
     const query = searchQuery.value.toLowerCase()
-    return categories.value
+    return categories
       .map((category) => ({
         ...category,
         items: category.items.filter(
@@ -216,6 +260,8 @@ export function useHelp() {
     helpFeedbackButtonText,
     contactMethods,
     filteredCategories,
+    getCategoryIcon,
+    getContactSymbol,
     loadFaqs,
     handleSearchInput,
     selectSuggestion,

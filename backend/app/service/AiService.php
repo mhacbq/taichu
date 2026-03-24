@@ -147,7 +147,7 @@ class AiService
     }
 
     /**
-     * 构建合婚分析提示词
+     * 构建合婚分析提示词（亲切版，适合大众用户）
      */
     protected function buildHehunPrompt(
         array $hehunResult,
@@ -159,10 +159,8 @@ class AiService
         $score = $hehunResult['score'];
         $level = $hehunResult['level_text'];
         $scores = $hehunResult['scores'] ?? [];
-        $traditionalMethods = $hehunResult['traditional_methods'] ?? [];
         $traditionalRisk = $hehunResult['traditional_risk'] ?? [];
-        $sanyuan = is_array($traditionalMethods['sanyuan'] ?? null) ? $traditionalMethods['sanyuan'] : [];
-        $jiugong = is_array($traditionalMethods['jiugong'] ?? null) ? $traditionalMethods['jiugong'] : [];
+        $traditionalWarning = (string)($traditionalRisk['warning'] ?? '');
 
         $maleBaziStr = sprintf(
             "%s%s %s%s %s%s %s%s",
@@ -180,77 +178,72 @@ class AiService
             $femaleBazi['hour']['gan'], $femaleBazi['hour']['zhi']
         );
 
-        $traditionalWarning = (string)($traditionalRisk['warning'] ?? '无明显传统凶象，可结合常规分项综合判断。');
-        $jiugongRelation = (string)($jiugong['relation']['type'] ?? ($jiugong['grade'] ?? '未提供'));
+        $warningNote = $traditionalWarning ? "\n特别提示：{$traditionalWarning}" : '';
 
         return <<<PROMPT
-你是一位资深的八字命理大师，拥有30年的命理研究经验。请对以下八字合婚进行专业分析。
+你是一位温暖、专业的命理顾问，擅长用通俗易懂、贴近生活的语言为普通人解读八字合婚。请对以下两位的缘分进行全面分析。
 
-【基本信息】
-男方：{$maleName}
-八字：{$maleBaziStr}
-日主：{$maleBazi['day']['gan']}（{$maleBazi['day_master_wuxing']}）
+【双方信息】
+{$maleName}：八字 {$maleBaziStr}，日主 {$maleBazi['day']['gan']}（{$maleBazi['day_master_wuxing']}）
+{$femaleName}：八字 {$femaleBaziStr}，日主 {$femaleBazi['day']['gan']}（{$femaleBazi['day_master_wuxing']}）
 
-女方：{$femaleName}
-八字：{$femaleBaziStr}
-日主：{$femaleBazi['day']['gan']}（{$femaleBazi['day_master_wuxing']}）
+【合婚评分】
+综合匹配分：{$score}/100（{$level}）{$warningNote}
 
-【系统评分】
-合婚总分：{$score}/100
-合婚等级：{$level}
+请从以下六个维度进行深入分析，语言要亲切自然，像朋友聊天一样，避免过于晦涩的专业术语：
 
-核心评分：
-- 生肖配对：{$scores['year']}/15
-- 日主配合：{$scores['day']}/25
-- 五行互补：{$scores['wuxing']}/20
-- 干支合冲：{$scores['hechong']}/15
-- 纳音五行：{$scores['nayin']}/15
-- 神煞互补：{$scores['shensha']}/10
-- 传统合婚：{$scores['traditional']}/10
+1. 【性格与相处模式】
+   - {$maleName}和{$femaleName}各自的性格特点是什么？
+   - 两人在一起会是什么样的相处模式？有哪些天然的默契？
+   - 可能会在哪些方面产生摩擦，怎么化解？
 
-【传统合婚校正】
-三元：{$sanyuan['grade']}，{$sanyuan['description']} {$sanyuan['suggestion']}
-九宫：{$jiugongRelation}，{$jiugong['description']} {$jiugong['suggestion']}
-传统风险提示：{$traditionalWarning}
+2. 【感情与婚姻前景】
+   - 这段感情的基础稳不稳？长期来看婚姻质量如何？
+   - 两人在感情上的互动模式，谁更主动，谁更需要安全感？
+   - 婚后生活会是什么样的节奏和氛围？
 
-请注意：若三元/九宫出现五鬼、绝命、祸害、六煞等凶象，结论必须明确说明风险，不可只顺着总分给出过度乐观的判断。
+3. 【事业与财运配合】
+   - 两人在事业上能否互相助力？有没有互补的地方？
+   - 财运方面，两人在一起会更好还是需要注意什么？
+   - 适合一起创业还是各自发展？
 
-请从以下方面进行详细分析，用专业但通俗的语言：
+4. 【家庭与子女缘】
+   - 两人组建家庭后，家庭氛围会是什么样的？
+   - 子女缘如何？对孩子的教育理念是否契合？
+   - 双方与对方家庭的相处会顺利吗？
 
-1. 【性格契合度分析】
-分析双方性格特点、相处模式、潜在冲突点
+5. 【未来运势与关键时期】
+   - 两人关系在哪些年份会特别顺？哪些年份需要多用心经营？
+   - 有没有特别适合结婚或重要决定的时间段？
+   - 需要共同注意哪些方面来维护感情？
 
-2. 【婚姻前景预测】
-根据八字配合情况，预测婚姻稳定性、可能面临的挑战；若传统凶象明显，要说明为何系统做了降权。
-
-3. 【事业财运配合】
-分析双方事业发展的互补性、财运配合度
-
-4. 【子女缘分析】
-根据八字推测子女缘分、建议的生育时机
-
-5. 【专业建议】
-针对八字中的冲克，给出具体的化解建议（风水、择日、相处之道等）
-
-6. 【总结】
-用200字左右总结这段姻缘的整体评价
+6. 【贴心建议】
+   - 针对两人的命理特点，给出3-5条具体实用的相处建议
+   - 如果有冲克，用简单易懂的方式说明如何化解
+   - 给这段感情一个温暖的总结和祝福
 
 请用JSON格式返回，字段如下：
 {
-  "summary": "整体评价（200字）",
+  "summary": "对这段缘分的整体评价和温暖总结（150-200字，语气亲切，像朋友的祝福）",
   "personality_match": {
-    "male_personality": "男方性格特点",
-    "female_personality": "女方性格特点",
-    "match_analysis": "性格匹配分析"
+    "male_personality": "{$maleName}的性格特点（2-3句话，通俗易懂）",
+    "female_personality": "{$femaleName}的性格特点（2-3句话，通俗易懂）",
+    "match_analysis": "两人性格的契合度分析，包括默契点和需要磨合的地方（3-4句话）"
   },
-  "marriage_prospect": "婚姻前景分析",
-  "career_wealth": "事业财运配合分析",
-  "children_fate": "子女缘分析",
-  "suggestions": ["建议1", "建议2", "建议3"],
+  "marriage_prospect": "感情与婚姻前景分析（4-5句话，包括感情基础、婚后生活预测）",
+  "career_wealth": "事业财运配合分析（3-4句话，包括互助潜力和注意事项）",
+  "children_fate": "家庭与子女缘分析（3-4句话，包括家庭氛围和子女缘）",
+  "suggestions": [
+    "具体建议1（针对两人特点的实用建议）",
+    "具体建议2",
+    "具体建议3",
+    "具体建议4（如有冲克，给出化解方法）",
+    "具体建议5（关于重要时间节点的提醒）"
+  ],
   "auspicious_info": {
-    "best_years": ["适合结婚的年份"],
-    "auspicious_months": ["适合结婚的月份"],
-    "notes": "择日注意事项"
+    "best_years": ["适合推进关系的年份，如2025年、2026年"],
+    "auspicious_months": ["适合重要决定的月份，如农历三月、九月"],
+    "notes": "关于时机选择的温馨提示（1-2句话）"
   }
 }
 PROMPT;
