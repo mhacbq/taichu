@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import request from '@/api/request'
 
 const loading = ref(false)
 const rulesList = ref([])
@@ -12,10 +13,8 @@ onMounted(() => {
 async function fetchRulesList() {
   loading.value = true
   try {
-    const res = await window.$api.get('/api/maodou/points/rules')
-    if (res.code === 200) {
-      rulesList.value = res.data.list || []
-    }
+    const res = await request.get('/points/rules')
+    rulesList.value = res.data.list || []
   } catch (error) {
     ElMessage.error('获取积分规则失败')
   } finally {

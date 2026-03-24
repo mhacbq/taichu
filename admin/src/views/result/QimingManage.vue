@@ -182,7 +182,7 @@ const loadList = async () => {
     }
     delete params.dateRange
 
-    const res = await request.get('/api/maodou/qiming-manage', { params })
+const res = await request.get('/qiming-manage', { params })
     if (res.code === 200) {
       dataList.value = res.data.list
       total.value = res.data.total
@@ -196,7 +196,7 @@ const loadList = async () => {
 
 const loadStats = async () => {
   try {
-    const res = await request.get('/api/maodou/qiming-manage/stats')
+const res = await request.get('/qiming-manage/stats')
     if (res.code === 200) {
       Object.assign(stats, res.data)
     }
@@ -241,7 +241,7 @@ const handleDelete = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await request.delete(`/api/maodou/qiming-manage/${row.id}`)
+const res = await request.delete(`/qiming-manage/${row.id}`)
       if (res.code === 200) {
         ElMessage.success('删除成功')
         loadList()
@@ -259,7 +259,7 @@ const handleBatchDelete = () => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await request.post('/api/maodou/qiming-manage/batch-delete', { ids })
+const res = await request.post('/qiming-manage/batch-delete', { ids })
       if (res.code === 200) {
         ElMessage.success('批量删除成功')
         loadList()

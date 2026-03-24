@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import request from '@/api/request'
 
 const loading = ref(false)
 const recordsList = ref([])
@@ -17,7 +18,7 @@ onMounted(() => {
 async function fetchRecordsList() {
   loading.value = true
   try {
-    const res = await window.$api.get('/api/maodou/points/records', {
+    const res = await request.get('/points/records', {
       params: {
         page: pagination.value.current,
         page_size: pagination.value.pageSize

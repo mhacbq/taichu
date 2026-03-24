@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import request from '@/api/request'
 
 const loading = ref(false)
 const chartRef = ref(null)
@@ -21,7 +22,7 @@ onMounted(() => {
 async function fetchAnalysisData() {
   loading.value = true
   try {
-    const res = await window.$api.get('/api/maodou/analysis/payment')
+    const res = await request.get('/analysis/payment')
     stats.value = res.data.stats
     initChart(res.data.chart_data)
   } catch (error) {
