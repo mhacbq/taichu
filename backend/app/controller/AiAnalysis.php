@@ -477,51 +477,74 @@ class AiAnalysis extends BaseController
         $day = $baziData['day'] ?? [];
         $hour = $baziData['hour'] ?? [];
         $dayMaster = $baziData['day_master'] ?? '';
+        $dayMasterWuxing = $baziData['day_master_wuxing'] ?? '';
         $wuxingStats = $baziData['wuxing_stats'] ?? [];
-        
-        $prompt = "你是一位资深的八字命理大师，拥有20年以上的命理研究经验。请基于以下八字信息进行专业解读：\n\n";
-        $prompt .= "【八字排盘】\n";
-        $prompt .= "年柱：{$year['gan']}{$year['zhi']}（{$year['nayin']}）\n";
-        $prompt .= "月柱：{$month['gan']}{$month['zhi']}（{$month['nayin']}）\n";
-        $prompt .= "日柱：{$day['gan']}{$day['zhi']}（{$day['nayin']}）- 日主：{$dayMaster}\n";
-        $prompt .= "时柱：{$hour['gan']}{$hour['zhi']}（{$hour['nayin']}）\n\n";
-        
-        $prompt .= "【五行分布】\n";
-        foreach ($wuxingStats as $wx => $count) {
-            $prompt .= "{$wx}：{$count}个\n";
+        $yongshen = $baziData['yongshen'] ?? '';
+        $xishen = $baziData['xishen'] ?? '';
+
+        $prompt = "你是一位擅长用通俗语言解读命理的老师。你的读者是完全不懂命理知识的普通人，他们看不懂"日主"、"十神"、"纳音"、"喜用神"等专业术语。\n\n";
+        $prompt .= "【重要写作要求】\n";
+        $prompt .= "1. 禁止直接使用命理专业术语（如日主、十神、纳音、喜用神、忌神、食神、伤官、七杀、正官、偏财等），如必须提及，请立即用括号加上通俗解释。\n";
+        $prompt .= "2. 用讲故事、聊天的口吻写作，像朋友之间的对话，温暖而真诚。\n";
+        $prompt .= "3. 每个结论都要落地到具体的生活场景，比如"适合做销售、教师、创业"而不是"事业宫旺"。\n";
+        $prompt .= "4. 建议要实用可操作，比如"建议多接触水边环境、多喝水、从事与水相关的行业"而不是"五行补水"。\n";
+        $prompt .= "5. 语气积极正向，即使有不利因素也要给出应对方法，不要让人感到恐惧或绝望。\n\n";
+
+        $prompt .= "【命主八字信息】\n";
+        $prompt .= "出生年：{$year['gan']}{$year['zhi']}年\n";
+        $prompt .= "出生月：{$month['gan']}{$month['zhi']}月\n";
+        $prompt .= "出生日：{$day['gan']}{$day['zhi']}日";
+        if ($dayMaster) {
+            $wuxingDesc = $dayMasterWuxing ? "（属{$dayMasterWuxing}）" : '';
+            $prompt .= " — 命主天干为{$dayMaster}{$wuxingDesc}";
         }
         $prompt .= "\n";
-        
-        $prompt .= "【十神配置】\n";
-        $prompt .= "年干十神：{$year['shishen']}，月干十神：{$month['shishen']}，时干十神：{$hour['shishen']}\n\n";
-        
+        $prompt .= "出生时：{$hour['gan']}{$hour['zhi']}时\n\n";
+
+        if (!empty($wuxingStats)) {
+            $prompt .= "【五行能量分布】\n";
+            foreach ($wuxingStats as $wx => $count) {
+                $prompt .= "{$wx}：{$count}个  ";
+            }
+            $prompt .= "\n";
+        }
+
+        if ($yongshen) {
+            $prompt .= "对命主最有利的能量：{$yongshen}";
+            if ($xishen) $prompt .= "、{$xishen}";
+            $prompt .= "\n";
+        }
+        $prompt .= "\n";
+
         // 加入大运数据（本地算法排出，稳定可靠）
         if (!empty($dayunData)) {
-            $prompt .= "【大运排盘（本地算法计算，共" . count($dayunData) . "步大运）】\n";
+            $prompt .= "【人生各阶段运势（大运）】\n";
             foreach ($dayunData as $yun) {
                 $gan = $yun['gan'] ?? '';
                 $zhi = $yun['zhi'] ?? '';
                 $ageStart = $yun['age_start'] ?? $yun['start_age'] ?? '';
                 $ageEnd = $yun['age_end'] ?? $yun['end_age'] ?? '';
-                $shishen = $yun['shishen'] ?? '';
                 $score = $yun['score'] ?? '';
                 $trend = $yun['trend'] ?? '';
-                $nayin = $yun['nayin'] ?? '';
                 $scoreStr = $score !== '' ? "，运势评分{$score}分" : '';
-                $prompt .= "{$ageStart}-{$ageEnd}岁：{$gan}{$zhi}（{$nayin}），十神{$shishen}，{$trend}运{$scoreStr}\n";
+                $trendDesc = '';
+                if ($trend === '上升') $trendDesc = '（整体向好）';
+                elseif ($trend === '下降') $trendDesc = '（需要谨慎）';
+                $prompt .= "{$ageStart}-{$ageEnd}岁：{$gan}{$zhi}大运{$trendDesc}{$scoreStr}\n";
             }
-            $prompt .= "\n请在解读中结合以上大运数据，对每步大运给出具体的人生阶段建议。\n\n";
+            $prompt .= "\n";
         }
-        
-        $prompt .= "请从以下几个方面进行详细解读：\n";
-        $prompt .= "1. 日主特性和性格分析\n";
-        $prompt .= "2. 五行旺衰与喜用神分析\n";
-        $prompt .= "3. 事业财运分析\n";
-        $prompt .= "4. 感情婚姻分析\n";
-        $prompt .= "5. 健康状况分析\n";
-        $prompt .= "6. 大运走势与人生阶段建议\n\n";
-        $prompt .= "请以专业、易懂、温暖的方式进行分析，给出具体可行的建议。";
-        
+
+        $prompt .= "【解读要求】\n";
+        $prompt .= "请按以下结构进行解读，每个部分都要用普通人能理解的语言：\n\n";
+        $prompt .= "1. **你是什么样的人** — 从性格、思维方式、行事风格来描述，结合具体的生活例子\n";
+        $prompt .= "2. **你的天赋与优势** — 哪些领域最容易出成绩，适合什么类型的工作\n";
+        $prompt .= "3. **事业与财富** — 适合的行业方向、赚钱方式、职场中的注意事项\n";
+        $prompt .= "4. **感情与婚姻** — 感情模式、理想伴侣特质、婚姻中需要注意的地方\n";
+        $prompt .= "5. **健康与生活** — 需要关注的身体部位、适合的生活方式和习惯\n";
+        $prompt .= "6. **人生各阶段** — 结合大运数据，用"20多岁时..."、"30-40岁..."这样的方式描述每个人生阶段的特点和建议\n\n";
+        $prompt .= "最后用一段温暖的话总结，给命主一些鼓励和人生方向上的建议。";
+
         return $prompt;
     }
 
@@ -1009,13 +1032,13 @@ class AiAnalysis extends BaseController
             return $this->error('连接失败，请检查配置', 500);
         } catch (\InvalidArgumentException $e) {
             return $this->respondBusinessException($e, 'ai_test_connection_validate', '测试配置无效', 400, [
-                'api_host' => $apiHost,
-                'model' => $modelInput,
+                'api_host' => (string) ($config['api_url'] ?? ''),
+                'model' => (string) ($config['model'] ?? ''),
             ]);
         } catch (\Throwable $e) {
             return $this->respondSystemException('ai_test_connection', $e, '连接失败，请检查配置后重试', [
-                'api_host' => $apiHost,
-                'model' => $modelInput,
+                'api_host' => (string) ($config['api_url'] ?? ''),
+                'model' => (string) ($config['model'] ?? ''),
             ]);
         }
 
