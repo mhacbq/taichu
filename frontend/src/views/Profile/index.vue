@@ -278,6 +278,7 @@
                   </div>
                 </div>
               </el-tab-pane>
+              <el-tab-pane label="合婚记录" name="hehun">
                 <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
                   <div class="history-list" v-if="hehunHistory.length > 0">
                     <div v-for="record in hehunHistory" :key="record.id" class="history-list-item" @click="viewHehunDetail(record)">
