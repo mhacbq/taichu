@@ -60,9 +60,9 @@
                 <span class="version-card__pts">10 pts</span>
               </div>
               <ul class="version-card__features">
-                <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
-                <li><el-icon><Check /></el-icon> 专属的性格内观与事业财运分析</li>
-                <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+                <li><el-icon><Check /></el-icon> 基础八字命盘（天干地支、五行分布）</li>
+                <li><el-icon><Check /></el-icon> 性格概要与运势方向速览</li>
+                <li><el-icon><Check /></el-icon> 适合快速了解自己的命理概况</li>
               </ul>
             </div>
             <!-- 专业版 -->
@@ -82,9 +82,10 @@
                 <span class="version-card__pts">50 pts</span>
               </div>
               <ul class="version-card__features">
-                <li><el-icon><Check /></el-icon> 完整的八字命盘数据（天干地支、五行、十神等）</li>
-                <li><el-icon><Check /></el-icon> 专属的性格内观与事业财运分析</li>
-                <li><el-icon><Check /></el-icon> 永久保存在您的历史记录中，随时查看</li>
+                <li><el-icon><Check /></el-icon> 完整八字命盘 + 十神关系 + 神煞详解</li>
+                <li><el-icon><Check /></el-icon> AI 深度解读：性格、事业、财运、感情全维度分析</li>
+                <li><el-icon><Check /></el-icon> 流年大运走势 + 每月运势提醒</li>
+                <li><el-icon><Check /></el-icon> 永久保存完整报告，随时回看</li>
               </ul>
             </div>
           </div>
@@ -94,25 +95,6 @@
           <div class="form-group__header form-group__header--time">
             <label>出生日期与时间</label>
             <span class="form-group__status">{{ birthTimeAccuracy === 'exact' ? '精确排盘' : '估算模式' }}</span>
-          </div>
-
-          <!-- 历法类型切换 -->
-          <div class="calendar-type-switch">
-            <div class="calendar-type-switch__label">历法类型</div>
-            <el-radio-group v-model="calendarType" size="small">
-              <el-radio label="solar">
-                <el-icon><Calendar /></el-icon>
-                公历
-              </el-radio>
-              <el-radio label="lunar">
-                <el-icon><StarFilled /></el-icon>
-                农历
-              </el-radio>
-            </el-radio-group>
-            <p class="calendar-type-switch__hint" v-if="calendarType === 'lunar'">
-              <el-icon><InfoFilled /></el-icon>
-              农历生日系统会自动转换为公历进行排盘计算
-            </p>
           </div>
 
           <div class="time-accuracy-switch">
@@ -177,33 +159,14 @@
             </template>
           </div>
 
-        </div>
-        
-        <div class="form-group" data-bazi-field="gender">
-          <label>性别</label>
-          <el-radio-group v-model="gender">
-            <el-radio label="male">男</el-radio>
-            <el-radio label="female">女</el-radio>
-          </el-radio-group>
-        </div>
-        
-        <div class="form-group" data-bazi-field="location">
-          <label>
-            出生地点 <span class="required-mark">*</span>
-            <el-tooltip content="用于计算真太阳时，让排盘更准确" placement="top">
-              <el-icon class="help-icon"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </label>
-          <el-select-v2
-            v-model="location"
-            :options="cityOptions"
-            placeholder="请选择出生城市"
-            class="full-width"
-            filterable
-            clearable
-            :height="200"
-          />
-          <p class="form-hint"><el-icon><MagicStick /></el-icon> 请选择出生城市，系统会根据地点计算真太阳时，让排盘更准确。</p>
+          <!-- 性别选择（内联在出生时间区域底部） -->
+          <div class="gender-inline" data-bazi-field="gender">
+            <span class="gender-inline__label">性别</span>
+            <el-radio-group v-model="gender" size="small">
+              <el-radio-button label="male">男</el-radio-button>
+              <el-radio-button label="female">女</el-radio-button>
+            </el-radio-group>
+          </div>
         </div>
 
         <!-- 提交前校验提示 -->

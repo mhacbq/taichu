@@ -14,7 +14,6 @@ import {
 import { analyzeBaziAi, analyzeBaziAiStream } from '../../api/ai'
 import { sanitizeHtml } from '../../utils/sanitize'
 import { trackPageView, trackEvent, trackSubmit, trackError } from '../../utils/tracker'
-import { CHINA_CITIES } from '../../utils/constants'
 
 export function useBazi() {
 const router = useRouter()
@@ -131,7 +130,6 @@ const baziSubmitSummaryText = computed(() => {
 })
 
 const gender = ref('male')
-const location = ref('')
 const loading = ref(false)
 const result = ref(null)
 const currentPoints = ref(0)
@@ -280,11 +278,7 @@ const birthTimeAccuracyLabel = computed(() => {
 })
 
 const locationContextLabel = computed(() => {
-  if (versionMode.value !== 'pro') {
-    return '未填写出生地 · 默认北京时间'
-  }
-
-  return location.value ? `${location.value} · 真太阳时校准` : '未填写出生地 · 默认北京时间'
+  return '默认北京时间'
 })
 const resultContextNote = computed(() => {
   if (birthTimeAccuracy.value === 'estimated') {
@@ -305,13 +299,6 @@ const resultContextNote = computed(() => {
   return ''
 })
 const getDefaultActiveNames = () => (showAdvancedResultSections.value ? ['basic', 'interpretation', 'fortune'] : ['basic', 'interpretation'])
-
-const cityOptions = computed(() => {
-  return CHINA_CITIES.map(city => ({
-    value: city,
-    label: city
-  }))
-})
 
 const formatWuxingScore = (value) => {
   const numericValue = Number(value)
@@ -370,7 +357,7 @@ const confirmDialogConfig = computed(() => {
 })
 
 const canStartBazi = computed(() => {
-  if (!birthDate.value || !isAccountReady.value || !location.value) {
+  if (!birthDate.value || !isAccountReady.value) {
     return false
   }
 
@@ -1041,7 +1028,7 @@ const calculateBazi = async () => {
     const response = await calculateBaziApi({
       birthDate: birthDate.value,
       gender: gender.value,
-      location: location.value,
+      location: '',
       mode: versionMode.value,
       calendarType: calendarType.value,
     })
@@ -1423,7 +1410,6 @@ return {
   baziStrategyDetails,
   baziSubmitSummaryText,
   gender,
-  location,
   loading,
   result,
   currentPoints,
@@ -1467,7 +1453,6 @@ return {
   birthTimeAccuracyLabel,
   locationContextLabel,
   resultContextNote,
-  cityOptions,
   wuxingDistributionItems,
   isAccountReady,
   isGuestAccount,

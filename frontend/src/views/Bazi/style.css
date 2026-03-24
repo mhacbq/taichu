@@ -1167,6 +1167,25 @@ color: #5f5548;
   width: 100%;
 }
 
+/* 性别选择 - 内联在出生时间区域底部 */
+.gender-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(250, 244, 228, 0.85));
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.gender-inline__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 .bazi-result {
   max-width: 920px;
   margin: 0 auto;
@@ -4399,4 +4418,4 @@ color: #5a4a38;
   .result-meta {
     justify-content: center;
   }
-}
+}

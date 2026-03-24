@@ -2,7 +2,7 @@
   <div class="yearly-fortune-page">
     <div class="container">
       <PageHeroHeader
-        title="2026 流年运势深度解析"
+        :title="`${currentYear} 流年运势深度解析`"
         subtitle="结合个人八字，AI深度解析事业、财富、感情、健康四大运势，提供专属开运建议与每月吉凶提醒。"
         :icon="Calendar"
       />
@@ -78,7 +78,7 @@
       <!-- 结果展示 -->
       <div class="result-section" v-if="result">
         <div class="result-header card">
-          <h2 class="result-title">2026 丙午年流年运势解析</h2>
+          <h2 class="result-title">{{ currentYear }} {{ chineseYearName }}流年运势解析</h2>
           <p class="result-subtitle">基于您的八字命盘，AI 深度分析全年运势</p>
         </div>
 
@@ -129,15 +129,6 @@
           <div class="analysis-content" v-html="aiAnalysis"></div>
         </div>
 
-        <!-- AI 分析按钮 -->
-        <div class="ai-action card" v-if="result && !aiAnalysis">
-          <el-button type="primary" @click="getAiAnalysis" :loading="aiLoading" size="default">
-            <el-icon><MagicStick /></el-icon>
-            获取AI深度解读
-          </el-button>
-          <p class="ai-tip">消耗 {{ aiPointsCost }} 积分</p>
-        </div>
-
         <!-- 重新计算按钮 -->
         <div class="result-actions">
           <el-button @click="resetForm" size="default">重新测算</el-button>
@@ -156,11 +147,12 @@ import { useYearlyFortune } from './useYearlyFortune'
 const {
   // 状态数据
   birthDateTime, gender, calculating, result,
-  monthlyFortune, aiAnalysis, aiLoading,
-  pointsCost, aiPointsCost, fortuneCategories,
+  monthlyFortune, aiAnalysis,
+  pointsCost, fortuneCategories,
+  currentYear, chineseYearName,
 
   // 方法
-  disabledDate, handleCalculate, resetForm, getAiAnalysis,
+  disabledDate, handleCalculate, resetForm,
 } = useYearlyFortune()
 </script>
 

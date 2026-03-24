@@ -375,6 +375,9 @@ const {
   currentHour,
 
   // 计算属性
+  currentYear,
+  yearlyBannerBadge,
+  yearlyBannerTitle,
   baziOfferState,
   heroPrimaryBadge,
   baziFeatureBadge,

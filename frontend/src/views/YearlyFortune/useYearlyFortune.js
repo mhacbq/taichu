@@ -13,9 +13,7 @@ const calculating = ref(false)
 const result = ref(null)
 const monthlyFortune = ref([])
 const aiAnalysis = ref('')
-const aiLoading = ref(false)
 const pointsCost = ref(50)
-const aiPointsCost = ref(30)
 
 // 四大运势分类
 const fortuneCategories = [
@@ -45,6 +43,14 @@ const fortuneCategories = [
   }
 ]
 
+// 当前年份及天干地支
+const currentYear = new Date().getFullYear()
+const chineseYearName = computed(() => {
+  const tianGan = ['庚', '辛', '壬', '癸', '甲', '乙', '丙', '丁', '戊', '己']
+  const diZhi = ['申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰', '巳', '午', '未']
+  return tianGan[(currentYear - 4) % 10] + diZhi[(currentYear - 4) % 12] + '年'
+})
+
 // 禁用未来日期
 const disabledDate = (time) => {
   return time.getTime() > Date.now()
@@ -55,8 +61,7 @@ const loadPointsConfig = async () => {
   try {
     const response = await getFortunePointsCost()
     if (response.code === 200) {
-      pointsCost.value = response.data.yearly || 50
-      aiPointsCost.value = response.data.ai_analysis || 30
+      pointsCost.value = response.data.yearly_fortune || response.data.yearly || 50
     }
   } catch (error) {
     console.error('加载积分配置失败:', error)
@@ -101,19 +106,36 @@ const handleCalculate = async () => {
     })
 
     if (response.code === 200) {
-      result.value = response.data.fortune || response.data
+      result.value = response.data
       monthlyFortune.value = response.data.monthly || []
-      aiAnalysis.value = response.data.aiAnalysis || ''
+      // 后端返回字段为 overall，包含 AI 深度解读内容
+      aiAnalysis.value = response.data.overall || ''
       
       ElMessage.success('解析成功！')
       
-      // 扣除积分（实际应该在API成功后扣除）
-      userPoints.value -= pointsCost.value
+      // 直接用后端返回的扣后余额，彻底消除价格缓存不一致问题
+      if (response.data.remaining_points !== undefined) {
+        userPoints.value = response.data.remaining_points
+      } else if (response.data.points_cost !== undefined) {
+        userPoints.value -= response.data.points_cost
+      } else {
+        await loadUserPoints()
+      }
+      // 同步最新价格到本地缓存
+      if (response.data.points_cost !== undefined) {
+        pointsCost.value = response.data.points_cost
+      }
     } else {
       throw new Error(response.message || '解析失败')
     }
   } catch (error) {
-    ElMessage.error('解析失败，请重试')
+    // 积分不足时刷新配置和余额，确保提示的积分数与最新价格一致
+    if (error.response?.status === 402 || error.message?.includes('积分不足')) {
+      await Promise.all([loadPointsConfig(), loadUserPoints()])
+      ElMessage.warning(`积分不足，需要${pointsCost.value}积分`)
+    } else {
+      ElMessage.error('解析失败，请重试')
+    }
     console.error(error)
   } finally {
     calculating.value = false
@@ -129,62 +151,16 @@ const resetForm = () => {
   aiAnalysis.value = ''
 }
 
-// 获取AI分析
-const getAiAnalysis = async () => {
-  if (!result.value) {
-    ElMessage.warning('请先计算流年运势')
-    return
-  }
 
-  // 检查积分
-  if (userPoints.value < aiPointsCost.value) {
-    ElMessage.warning(`积分不足，需要${aiPointsCost.value}积分`)
-    return
-  }
-
-  aiLoading.value = true
-
-  try {
-    const response = await fetch('/api/ai/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'yearly_fortune',
-        data: result.value,
-        birthDateTime: birthDateTime.value,
-        gender: gender.value
-      })
-    })
-    const data = await response.json()
-
-    if (data.code === 200) {
-      aiAnalysis.value = data.data.analysis || data.data.content || ''
-      // 更新每月运势（如果AI返回了更详细的每月分析）
-      if (data.data.monthly) {
-        monthlyFortune.value = data.data.monthly
-      }
-      ElMessage.success('AI分析完成')
-      
-      // 扣除积分
-      userPoints.value -= aiPointsCost.value
-    } else {
-      throw new Error(data.message || '分析失败')
-    }
-  } catch (error) {
-    ElMessage.error('AI分析失败，请重试')
-    console.error(error)
-  } finally {
-    aiLoading.value = false
-  }
-}
 
 return {
   // 状态数据
   birthDateTime, gender, calculating, result,
-  monthlyFortune, aiAnalysis, aiLoading,
-  pointsCost, aiPointsCost, fortuneCategories,
+  monthlyFortune, aiAnalysis,
+  pointsCost, fortuneCategories,
+  currentYear, chineseYearName,
 
   // 方法
-  disabledDate, handleCalculate, resetForm, getAiAnalysis,
+  disabledDate, handleCalculate, resetForm,
 }
 } // end useYearlyFortune

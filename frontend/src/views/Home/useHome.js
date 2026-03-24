@@ -477,6 +477,9 @@ return {
   currentHour,
 
   // 计算属性
+  currentYear,
+  yearlyBannerBadge,
+  yearlyBannerTitle,
   baziOfferState,
   formattedUserPoints,
   registerIntentRoute,
