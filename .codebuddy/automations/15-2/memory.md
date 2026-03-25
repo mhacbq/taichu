@@ -1,5 +1,13 @@
 # 前端修复专家 - 执行记录
 
+## 2026-03-25 自动执行摘要（用户详情页失败承接与积分回读）
+
+- 本轮先复核了 `TODO.md` 当前内容以及 `.codebuddy/automations/15-2`、`30-3`、`30` 的最近证据；`[15-2]` 自身仍无单列条目，因此直接接手 `30-3` 已证实的“用户详情与积分调整前后端契约不一致、接口异常时前端仍假装可操作”问题。
+- 已在 `admin/src/views/user/detail.vue` 补齐只读错误态、重试入口、权限感知禁用、积分数值校验，并把后端已返回的 `points_records / points_summary.total_adjust_records` 真正接回页面，让积分调整成功后可以立即回读最近记录，不再只弹提示后停在不可验证状态。
+- 同步更新 `TODO.md`，将该前端闭环问题移入最近完成区；验证结果为 `admin/src/views/user/detail.vue` 文件级诊断 0、`git diff --check -- admin/src/views/user/detail.vue TODO.md` 通过。`npm run build --prefix admin` 仍被本机旧 Node 运行时的 `SyntaxError: Unexpected token '??='` 卡住，属于环境问题，非本轮改动引入。
+
+
+
 ## 2026-03-19 自动执行摘要（充值订单筛选失败承接）
 
 - 本轮先复核了 `TODO.md` 的 `[15-2]` 提示，以及 `.codebuddy/automations/15-2`、`30-4`、`30-3`、`30` 的最近记录；最终接手 `30-3` / `TODO.md` 已证实的“充值订单页用户ID筛选不生效、关键词搜索失败时整页退化”前端问题。

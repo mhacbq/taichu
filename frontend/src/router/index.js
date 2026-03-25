@@ -28,42 +28,6 @@ const YearlyFortune = () => import('../views/YearlyFortune/index.vue')
 const UserAgreement = () => import('../views/Legal/UserAgreement.vue')
 const PrivacyPolicy = () => import('../views/Legal/PrivacyPolicy.vue')
 
-// 管理后台路由 - 懒加载
-const AdminLayout = () => import('../layouts/AdminLayout.vue')
-const AdminLogin = () => import('../views/admin/Login.vue')
-const AdminDashboard = () => import('../views/admin/Dashboard.vue')
-const AdminUserList = () => import('../views/admin/UserList.vue')
-const AdminUserDetail = () => import('../views/admin/UserDetail.vue')
-const AdminUserBehavior = () => import('../views/admin/UserBehavior.vue')
-const AdminPointsRecords = () => import('../views/admin/PointsRecords.vue')
-const AdminPointsRules = () => import('../views/admin/PointsRules.vue')
-const AdminPaymentOrders = () => import('../views/admin/PaymentOrders.vue')
-const AdminPaymentAnalysis = () => import('../views/admin/PaymentAnalysis.vue')
-const AdminVipPackages = () => import('../views/admin/VipPackages.vue')
-const AdminFeedbackList = () => import('../views/admin/FeedbackList.vue')
-const AdminFeedbackDetail = () => import('../views/admin/FeedbackDetail.vue')
-const AdminSmsConfig = () => import('../views/admin/SmsConfig.vue')
-const AdminBaziManage = () => import('../views/admin/BaziManage.vue')
-const AdminTarotManage = () => import('../views/admin/TarotManage.vue')
-const AdminAlmanacManage = () => import('../views/admin/AlmanacManage.vue')
-const AdminDailyManage = () => import('../views/admin/DailyManage.vue')
-const AdminShenshaManage = () => import('../views/admin/ShenshaManage.vue')
-const AdminSeoManage = () => import('../views/admin/SeoManage.vue')
-const AdminTarotCards = () => import('../views/admin/TarotCards.vue')
-
-const AdminOperationLogs = () => import('../views/admin/OperationLogs.vue')
-const AdminLoginLogs = () => import('../views/admin/LoginLogs.vue')
-const AdminApiLogs = () => import('../views/admin/ApiLogs.vue')
-const AdminSystemNotice = () => import('../views/admin/SystemNotice.vue')
-const AdminAiConfig = () => import('../views/admin/AiConfig.vue')
-const AdminAiPrompts = () => import('../views/admin/AiPrompts.vue')
-const AdminHehunManage = () => import('../views/admin/HehunManage.vue')
-const AdminLiuyaoManage = () => import('../views/admin/LiuyaoManage.vue')
-const AdminQimingManage = () => import('../views/admin/QimingManage.vue')
-const AdminYearlyFortuneManage = () => import('../views/admin/YearlyFortuneManage.vue')
-const AdminSystemConfig = () => import('../views/admin/SystemConfig.vue')
-const AdminInviteManage = () => import('../views/admin/InviteManage.vue')
-
 const routes = [
   {
     path: '/',
@@ -267,274 +231,6 @@ const routes = [
       breadcrumb: [{ name: '首页', url: '/' }, { name: '页面未找到', url: '/404' }]
     }
   },
-  // ================== 管理后台路由 ==================
-  {
-    path: '/maodou/login',
-    name: 'AdminLogin',
-    component: AdminLogin,
-    meta: {
-      public: true,
-      layout: false
-    }
-  },
-  {
-    path: '/maodou',
-    component: AdminLayout,
-    redirect: '/maodou/dashboard',
-    meta: {
-      requiresAdmin: true
-    },
-    children: [
-      {
-        path: 'dashboard',
-        name: 'AdminDashboard',
-        component: AdminDashboard,
-        meta: {
-          title: '仪表盘'
-        }
-      },
-      {
-        path: 'list',
-        name: 'AdminUserList',
-        component: AdminUserList,
-        meta: {
-          title: '用户管理'
-        }
-      },
-      {
-        path: 'users/:id',
-        name: 'AdminUserDetail',
-        component: AdminUserDetail,
-        meta: {
-          title: '用户详情'
-        }
-      },
-      {
-        path: 'users/:id/behavior',
-        name: 'AdminUserBehavior',
-        component: AdminUserBehavior,
-        meta: {
-          title: '用户行为'
-        }
-      },
-      {
-        path: 'points/records',
-        name: 'AdminPointsRecords',
-        component: AdminPointsRecords,
-        meta: {
-          title: '积分记录'
-        }
-      },
-      {
-        path: 'points/rules',
-        name: 'AdminPointsRules',
-        component: AdminPointsRules,
-        meta: {
-          title: '积分规则'
-        }
-      },
-      {
-        path: 'payment/orders',
-        name: 'AdminPaymentOrders',
-        component: AdminPaymentOrders,
-        meta: {
-          title: '订单管理'
-        }
-      },
-      {
-        path: 'payment/analysis',
-        name: 'AdminPaymentAnalysis',
-        component: AdminPaymentAnalysis,
-        meta: {
-          title: '充值分析'
-        }
-      },
-      {
-        path: 'payment/vip-packages',
-        name: 'AdminVipPackages',
-        component: AdminVipPackages,
-        meta: {
-          title: 'VIP套餐管理'
-        }
-      },
-      {
-        path: 'sms/config',
-        name: 'AdminSmsConfig',
-        component: AdminSmsConfig,
-        meta: {
-          title: '短信配置'
-        }
-      },
-      {
-        path: 'feedback/list',
-        name: 'AdminFeedbackList',
-        component: AdminFeedbackList,
-        meta: {
-          title: '反馈管理'
-        }
-      },
-      {
-        path: 'feedback/:id',
-        name: 'AdminFeedbackDetail',
-        component: AdminFeedbackDetail,
-        meta: {
-          title: '反馈详情'
-        }
-      },
-      {
-        path: 'bazi-manage',
-        name: 'AdminBaziManage',
-        component: AdminBaziManage,
-        meta: {
-          title: '八字管理'
-        }
-      },
-      {
-        path: 'tarot-manage',
-        name: 'AdminTarotManage',
-        component: AdminTarotManage,
-        meta: {
-          title: '塔罗管理'
-        }
-      },
-      {
-        path: 'almanac',
-        name: 'AdminAlmanacManage',
-        component: AdminAlmanacManage,
-        meta: {
-          title: '黄历管理'
-        }
-      },
-      {
-        path: 'daily',
-        name: 'AdminDailyManage',
-        component: AdminDailyManage,
-        meta: {
-          title: '每日运势管理'
-        }
-      },
-      {
-        path: 'shensha',
-        name: 'AdminShenshaManage',
-        component: AdminShenshaManage,
-        meta: {
-          title: '神煞管理'
-        }
-      },
-      {
-        path: 'seo',
-        name: 'AdminSeoManage',
-        component: AdminSeoManage,
-        meta: {
-          title: 'SEO管理'
-        }
-      },
-      {
-        path: 'tarot-cards',
-        name: 'AdminTarotCards',
-        component: AdminTarotCards,
-        meta: {
-          title: '塔罗牌管理'
-        }
-      },
-      {
-        path: 'log/operation',
-        name: 'AdminOperationLogs',
-        component: AdminOperationLogs,
-        meta: {
-          title: '操作日志'
-        }
-      },
-      {
-        path: 'log/login',
-        name: 'AdminLoginLogs',
-        component: AdminLoginLogs,
-        meta: {
-          title: '登录日志'
-        }
-      },
-      {
-        path: 'log/api',
-        name: 'AdminApiLogs',
-        component: AdminApiLogs,
-        meta: {
-          title: 'API日志'
-        }
-      },
-      {
-        path: 'system/notice',
-        name: 'AdminSystemNotice',
-        component: AdminSystemNotice,
-        meta: {
-          title: '系统公告'
-        }
-      },
-      {
-        path: 'ai/config',
-        name: 'AdminAiConfig',
-        component: AdminAiConfig,
-        meta: {
-          title: 'AI配置'
-        }
-      },
-      {
-        path: 'ai/prompts',
-        name: 'AdminAiPrompts',
-        component: AdminAiPrompts,
-        meta: {
-          title: 'AI提示词管理'
-        }
-      },
-      {
-        path: 'hehun-manage',
-        name: 'AdminHehunManage',
-        component: AdminHehunManage,
-        meta: {
-          title: '合婚管理'
-        }
-      },
-      {
-        path: 'liuyao-manage',
-        name: 'AdminLiuyaoManage',
-        component: AdminLiuyaoManage,
-        meta: {
-          title: '六爻管理'
-        }
-      },
-      {
-        path: 'qiming-manage',
-        name: 'AdminQimingManage',
-        component: AdminQimingManage,
-        meta: {
-          title: '取名管理'
-        }
-      },
-      {
-        path: 'yearly-fortune-manage',
-        name: 'AdminYearlyFortuneManage',
-        component: AdminYearlyFortuneManage,
-        meta: {
-          title: '流年运势管理'
-        }
-      },
-      {
-        path: 'system/config',
-        name: 'AdminSystemConfig',
-        component: AdminSystemConfig,
-        meta: {
-          title: '系统配置'
-        }
-      },
-      {
-        path: 'invites',
-        name: 'AdminInviteManage',
-        component: AdminInviteManage,
-        meta: {
-          title: '邀请管理'
-        }
-      }
-    ]
-  }
 ]
 
 const router = createRouter({
@@ -612,20 +308,6 @@ router.onError((error, to) => {
   window.location.reload()
 })
 
-// 检查用户是否为管理员
-function isAdmin() {
-  try {
-    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    // 检查用户角色，支持多种可能的字段名
-    return userInfo.role === 'admin' || 
-           userInfo.is_admin === true || 
-           userInfo.isAdmin === true ||
-           userInfo.type === 'admin'
-  } catch (e) {
-    return false
-  }
-}
-
 // 路由守卫 - SEO优化和权限验证
 /**
  * 解析 JWT payload（不验签，仅读取 exp 字段做前端过期检测）
@@ -649,21 +331,8 @@ function isTokenExpired(token) {
   return Date.now() / 1000 > payload.exp
 }
 
-/** 管理端访问频率限制（防暴力枚举，5分钟内超过20次拒绝访问） */
-const adminAccessLog = { count: 0, resetAt: 0 }
-function checkAdminRateLimit() {
-  const now = Date.now()
-  if (now > adminAccessLog.resetAt) {
-    adminAccessLog.count = 0
-    adminAccessLog.resetAt = now + 5 * 60 * 1000
-  }
-  adminAccessLog.count++
-  return adminAccessLog.count <= 20
-}
-
 router.beforeEach((to, from, next) => {
   let token = localStorage.getItem('token')
-  const isAdminPath = to.path.startsWith('/maodou')
 
   // 检测 Token 格式（防止 localStorage 被注入伪造数据）
   if (token && (typeof token !== 'string' || token.split('.').length !== 3)) {
@@ -687,12 +356,6 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 管理端路由：限制访问频率（防暴力枚举）
-  if (isAdminPath && !checkAdminRateLimit()) {
-    next({ name: 'Home' })
-    return
-  }
-
   // 需要登录的页面
   if (to.meta.requiresAuth && !isAuthenticated) {
     next({
@@ -700,19 +363,6 @@ router.beforeEach((to, from, next) => {
       query: { redirect: to.fullPath }
     })
     return
-  }
-
-  // 需要管理员权限的页面：未登录 → 登录页，已登录非管理员 → 首页
-  if (to.meta.requiresAdmin) {
-    if (!isAuthenticated) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
-      return
-    }
-    if (!isAdmin()) {
-      // 使用路由跳转到管理后台登录页而不是首页
-      next({ name: 'AdminLogin', query: { redirect: to.fullPath } })
-      return
-    }
   }
 
   next()
@@ -764,24 +414,6 @@ loadDbSeoConfigs()
 
 // 路由后置守卫 - 设置SEO
 router.afterEach((to) => {
-  const isAdminRoute = typeof to?.path === 'string' && to.path.startsWith('/maodou')
-  if (typeof document !== 'undefined' && document.body) {
-    document.body.classList.toggle('route-admin', isAdminRoute)
-    document.body.classList.toggle('route-frontend', !isAdminRoute)
-  }
-
-  // ⚠️ 管理后台路由：强制 noindex，禁止 canonical，不注入结构化数据
-  if (isAdminRoute) {
-    useSEO({
-      title: '管理后台',
-      description: '',
-      keywords: '',
-      robots: 'noindex, nofollow, noarchive',
-      canonical: '',   // 清空 canonical，防止 link rel=canonical 被爬虫收录
-    })
-    return
-  }
-
   // 获取页面SEO配置：数据库优先 → 路由meta静态配置 → 默认首页配置
   const dbConfig = getDbSeoConfig(to.path)
   const seoConfig = dbConfig || to.meta.seo || seoConfigs.home

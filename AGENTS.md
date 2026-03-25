@@ -58,7 +58,18 @@ taichu-unified/
 - 优先使用 `ref` 而非 `reactive`；`v-for` 必须搭配 `:key`，禁止与 `v-if` 同级
 - 样式必须加 `scoped`，深度选择器使用 `:deep()`
 - **前台页面三文件模式**：`views/Xxx/index.vue` + `style.css` + `useXxx.js`
-  - `index.vue` 只负责模板渲染，业务逻辑全部在 `useXxx.js` 中
+  - `index.vue` **只允许**：`import` 语句 + 调用一个 `useXxx()` 并解构其返回值，**禁止**在 `<script setup>` 里写任何 `ref`、`computed`、`watch`、`fetch`、`onMounted` 等业务逻辑
+  - 所有状态、计算属性、副作用、API 调用**必须**放在对应的 `useXxx.js` 中
+  - ✅ 正确示例（`index.vue` 的 `<script setup>`）：
+    ```js
+    import { useLiuyao } from './useLiuyao'
+    const { form, result, submitDivination, ... } = useLiuyao()
+    ```
+  - ❌ 错误示例（在 `index.vue` 里写逻辑）：
+    ```js
+    const list = ref([])
+    onMounted(() => { fetchList().then(r => list.value = r) })
+    ```
 - **后台**：列表用 `hooks/useTable.js`，表单用 `hooks/useForm.js`，弹窗用 `hooks/useDialog.js`
 
 ### 后端（ThinkPHP）
@@ -71,7 +82,10 @@ taichu-unified/
 ### 数据库
 
 - 表前缀 `tc_`，蛇形命名（如 `tc_bazi_records`）
-- 迁移文件放 `database/`，命名 `YYYYMMDD_描述.sql`，**SQL 必须幂等**（`IF NOT EXISTS` 等）
+- **`database/init.sql` 是唯一真相来源** — 它始终代表数据库的完整最新状态，新环境直接导入这一个文件即可
+- **修改表结构时必须同步更新 `init.sql`**，而不是新建 `YYYYMMDD_xxx.sql` 补丁文件
+- 上线后的增量变更（字段新增、索引调整）才放 `database/migrations/YYYYMMDD_描述.sql`，且 **SQL 必须幂等**（`IF NOT EXISTS`、`ON DUPLICATE KEY UPDATE` 等）
+- 禁止创建与现有表功能重复的新表（如 `tc_system_config` 与 `system_config` 并存），发现重复表先确认哪个是代码实际使用的，再删除废弃表并更新 `init.sql`
 
 ---
 
@@ -124,6 +138,7 @@ taichu-unified/
 5. **线上用 Swoole** — 后端运行在 Swoole `127.0.0.1:8080`，Nginx 做反向代理
 6. **不要猜测 API** — 查看 `route/app.php` 和 `route/admin.php` 获取实际路由
 7. **API 路径唯一真相来源** — 新增 API 时，以 `backend/route/admin.php` 为唯一路径真相来源，前端 `admin/src/api/` 对应文件必须同步更新，禁止在页面组件里硬编码路径。路径不一致是历史 Bug 的主要根因（如前端调 `/site/faqs`，后端注册的是 `/faqs`）。
+8. **数据库表唯一真相来源** — `database/init.sql` 是数据库的唯一真相来源。每次修改表结构（新增字段、新建表、删除废弃表）都必须同步更新 `init.sql`，而不是堆叠新的补丁文件。历史教训：19 个迁移文件叠加导致同一张表出现 2-3 个版本并存（如 `tc_system_config` vs `system_config`、`hehun_records` vs `tc_hehun_record`），最终需要全量重整。
 
 ---
 

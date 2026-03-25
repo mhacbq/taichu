@@ -199,19 +199,6 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/editor',
-    component: () => import('@/layout/index.vue'),
-    meta: { title: '页面编辑', icon: 'Edit', hidden: true, roles: ['admin', 'operator'] },
-    children: [
-      {
-        path: 'page/:id',
-        name: 'PageEditor',
-        component: () => import('@/views/editor/page-editor.vue'),
-        meta: { title: '编辑页面', hidden: true, roles: ['admin', 'operator'] }
-      }
-    ]
-  },
-  {
     path: '/points',
     component: () => import('@/layout/index.vue'),
     redirect: '/points/records',
