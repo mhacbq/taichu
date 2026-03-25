@@ -42,13 +42,21 @@ function openPointsDialog() {
 }
 
 async function handleAdjustPoints() {
-  if (!pointsForm.value.points) {
+  if (pointsForm.value.points === '' || pointsForm.value.points === null || pointsForm.value.points === undefined) {
     ElMessage.warning('请输入积分调整数量')
     return
   }
 
+  if (pointsForm.value.points === 0) {
+    ElMessage.warning('积分调整数量不能为0')
+    return
+  }
+
   try {
-    await adjustUserPoints(userId.value, pointsForm.value)
+    await adjustUserPoints(userId.value, {
+      points: pointsForm.value.points,
+      reason: pointsForm.value.reason
+    })
     ElMessage.success('积分调整成功')
     pointsDialogVisible.value = false
     fetchUserDetail()

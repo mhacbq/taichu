@@ -260,7 +260,8 @@ import { use, init as echartsInit } from 'echarts/core'
 import { PieChart, LineChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LinearGradient } from 'echarts/lib/util/graphic'
+import { graphic } from 'echarts/core'
+const { LinearGradient } = graphic
 import {
   ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
   Warning, InfoFilled, CircleCheck
@@ -313,37 +314,32 @@ const trendType = ref('indexed')
 async function loadStats() {
   loading.value = true
   try {
-    const params = {
-      page: pageCurrent.value,
-      pageSize: pageSize.value,
-      keyword: pageSearch.value || undefined
-    }
-    const res = await getSeoStats(params)
+    const res = await getSeoStats()
     const data = res?.data ?? res
     if (!data) return
 
-    // 统计卡片
-    if (data.stats) stats.value = data.stats
-
-    // 关键词列表
-    if (Array.isArray(data.keywords)) keywords.value = data.keywords
-
-    // 页面收录列表
-    if (data.pages) {
-      pages.value = data.pages.list ?? []
-      pageTotal.value = data.pages.total ?? 0
+    // 后端返回：{ total, active, inactive, unconfigured, unconfigured_count, coverage }
+    // 将后端数据映射到前端统计卡片
+    stats.value = {
+      baidu: { indexed: data.active ?? 0, trend: 0 },
+      bing: { indexed: data.total ?? 0, trend: 0 },
+      keywords: { total: data.total ?? 0, top10: data.active ?? 0 },
+      traffic: { organic: data.coverage ?? 0, trend: 0 }
     }
 
-    // 趋势图数据
-    if (data.trend) {
-      trendRawData.value = data.trend
-      updateTrendChart()
+    // 未配置页面作为优化建议
+    if (Array.isArray(data.unconfigured) && data.unconfigured.length > 0) {
+      suggestions.value = data.unconfigured.map(route => ({
+        priority: 'high',
+        title: `页面 ${route} 未配置SEO`,
+        description: '该页面尚未配置SEO信息，可能影响搜索引擎收录',
+        action: '去配置'
+      }))
+    } else {
+      suggestions.value = []
     }
 
-    // 优化建议
-    if (Array.isArray(data.suggestions)) suggestions.value = data.suggestions
-
-    // 更新饼图（用百度/必应收录量）
+    // 更新饼图（已启用 vs 未启用）
     updatePieChart()
   } catch {
     ElMessage.error('获取SEO统计数据失败')

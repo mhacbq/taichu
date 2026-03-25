@@ -175,15 +175,9 @@ export const asyncRoutes = [
   {
     path: '/site',
     component: () => import('@/layout/index.vue'),
-    redirect: '/site/content',
+    redirect: '/site/tarot-cards',
     meta: { title: '网站内容', icon: 'Monitor', roles: ['admin', 'operator'] },
     children: [
-      {
-        path: 'content',
-        name: 'ContentManager',
-        component: () => import('@/views/site-content/content-manager.vue'),
-        meta: { title: '页面管理', roles: ['admin', 'operator'] }
-      },
       {
         path: 'tarot-cards',
         name: 'TarotCards',
@@ -201,18 +195,6 @@ export const asyncRoutes = [
         name: 'KnowledgeBase',
         component: () => import('@/views/site-content/knowledge.vue'),
         meta: { title: '知识库', roles: ['admin', 'operator'] }
-      },
-      {
-        path: 'question-templates',
-        name: 'QuestionTemplates',
-        component: () => import('@/views/site-content/question-templates.vue'),
-        meta: { title: '问题模板', roles: ['admin', 'operator'] }
-      },
-      {
-        path: 'testimonials',
-        name: 'Testimonials',
-        component: () => import('@/views/site-content/testimonials.vue'),
-        meta: { title: '用户评价', roles: ['admin', 'operator'] }
       }
     ]
   },

@@ -123,6 +123,7 @@ taichu-unified/
 4. **前后台是独立 Vite 项目** — `frontend/` 和 `admin/` 各有独立 `package.json`，不要混淆
 5. **线上用 Swoole** — 后端运行在 Swoole `127.0.0.1:8080`，Nginx 做反向代理
 6. **不要猜测 API** — 查看 `route/app.php` 和 `route/admin.php` 获取实际路由
+7. **API 路径唯一真相来源** — 新增 API 时，以 `backend/route/admin.php` 为唯一路径真相来源，前端 `admin/src/api/` 对应文件必须同步更新，禁止在页面组件里硬编码路径。路径不一致是历史 Bug 的主要根因（如前端调 `/site/faqs`，后端注册的是 `/faqs`）。
 
 ---
 

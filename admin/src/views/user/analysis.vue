@@ -118,17 +118,26 @@ async function loadData() {
 
     const res = await getUserAnalysis(params)
     const data = res.data || {}
-    
+
+    // 后端返回: growth=[{date,count}], retention_rate=数字, source=[{source,count}]
+    const growthList = data.growth || []
+    const totalNew = growthList.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0)
+
     userStats.value = [
-      { label: '总用户数', value: data.total_users ?? 0, trend: data.total_users_trend ?? 0 },
-      { label: '新增用户', value: data.new_users ?? 0, trend: data.new_users_trend ?? 0 },
-      { label: '活跃用户', value: data.active_users ?? 0, trend: data.active_users_trend ?? 0 },
-      { label: '7日留存率', value: `${data.retention_rate ?? 0}%`, trend: 0 }
+      { label: '新增用户', value: totalNew, trend: 0 },
+      { label: '7日留存率', value: `${data.retention_rate ?? 0}%`, trend: 0 },
+      { label: '来源渠道数', value: (data.source || []).length, trend: 0 },
+      { label: '统计天数', value: growthList.length, trend: 0 }
     ]
-    
-    renderGrowthChart(data.growth || [])
-    renderSourceChart(data.source || [])
-    renderRetentionChart(data.retention || {})
+
+    renderGrowthChart(growthList)
+    // source 后端返回 [{source, count}]，转为 echarts 饼图格式 [{name, value}]
+    const sourceChartData = (data.source || []).map(item => ({
+      name: item.source || '未知',
+      value: parseInt(item.count) || 0
+    }))
+    renderSourceChart(sourceChartData)
+    renderRetentionChart({})
   } catch (error) {
     console.error('加载用户数据失败:', error)
   } finally {

@@ -79,6 +79,15 @@ export function adjustPoints(data, options = {}) {
   })
 }
 
+export function adjustUserPoints(id, data, options = {}) {
+  return request({
+    url: `/users/${id}/adjust-points`,
+    method: 'post',
+    data,
+    ...options
+  })
+}
+
 export function getUserBehavior(params) {
   return request({
     url: '/users/behavior',

@@ -194,19 +194,19 @@ export function deleteFaq(id) {
  */
 export function getTarotCardList(params) {
   return request({
-    url: '/site/tarot-cards',
+    url: '/tarot-cards',
     method: 'get',
     params
   })
 }
 
 /**
- * 保存塔罗牌
+ * 保存塔罗牌（更新）
  */
 export function saveTarotCard(data) {
   return request({
-    url: '/site/tarot-cards',
-    method: 'post',
+    url: `/tarot-cards/${data.id}`,
+    method: 'put',
     data
   })
 }

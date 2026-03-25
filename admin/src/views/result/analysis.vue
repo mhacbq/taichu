@@ -150,13 +150,17 @@ async function loadData() {
 }
 
 function renderTrendChart(data) {
+  // 后端返回 [{date, count}] 数组
+  const arr = Array.isArray(data) ? data : []
+  const dates = arr.map(item => item.date)
+  const values = arr.map(item => parseInt(item.count) || 0)
   const option = {
     tooltip: {
       trigger: 'axis'
     },
     xAxis: {
       type: 'category',
-      data: data?.dates || []
+      data: dates
     },
     yAxis: {
       type: 'value'
@@ -165,7 +169,7 @@ function renderTrendChart(data) {
       {
         name: '测算量',
         type: 'line',
-        data: data?.values || [],
+        data: values,
         smooth: true,
         areaStyle: {
           color: {
@@ -184,6 +188,11 @@ function renderTrendChart(data) {
 }
 
 function renderTypeRankChart(data) {
+  // 后端返回 [{type, count}] 数组
+  const arr = Array.isArray(data) ? data : []
+  const typeNameMap = { bazi: '八字', tarot: '塔罗', liuyao: '六爻', hehun: '合婚', qiming: '取名' }
+  const types = arr.map(item => typeNameMap[item.type] || item.type)
+  const counts = arr.map(item => parseInt(item.count) || 0)
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -202,13 +211,13 @@ function renderTypeRankChart(data) {
     },
     yAxis: {
       type: 'category',
-      data: data?.types || []
+      data: types
     },
     series: [
       {
         name: '测算次数',
         type: 'bar',
-        data: data?.counts || [],
+        data: counts,
         itemStyle: {
           color: '#409eff'
         }
@@ -219,6 +228,13 @@ function renderTypeRankChart(data) {
 }
 
 function renderTypeDistChart(data) {
+  // 后端返回 [{type, count}] 数组，转为饼图所需 [{name, value}]
+  const typeNameMap = { bazi: '八字', tarot: '塔罗', liuyao: '六爻', hehun: '合婚', qiming: '取名' }
+  const arr = Array.isArray(data) ? data : []
+  const pieData = arr.map(item => ({
+    name: typeNameMap[item.type] || item.type,
+    value: parseInt(item.count) || 0
+  }))
   const option = {
     tooltip: {
       trigger: 'item',
@@ -250,7 +266,7 @@ function renderTypeDistChart(data) {
             fontWeight: 'bold'
           }
         },
-        data: data || []
+        data: pieData
       }
     ]
   }

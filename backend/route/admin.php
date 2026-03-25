@@ -347,6 +347,11 @@ Route::group('api/maodou', function () {
         Route::post('tarot-cards/:id/toggle-status', 'admin.TarotCards/toggleStatus');
         Route::post('tarot-cards/batch-status', 'admin.TarotCards/batchStatus');
 
+        // FAQ管理
+        Route::get('site/faqs', 'admin.FaqManage/index');
+        Route::post('site/faqs', 'admin.FaqManage/save');
+        Route::delete('site/faqs/:id', 'admin.FaqManage/delete');
+
         // 黄历管理
         Route::get('almanac/list', 'admin.Almanac/almanacList');
         Route::get('almanac/detail', 'admin.Almanac/almanacDetail');

@@ -70,7 +70,7 @@ async function loadLogs() {
   loading.value = true
   try {
     const params = {
-      user_id: queryForm.userId,
+      id: queryForm.userId,
       type: queryForm.type,
       page: queryForm.page,
       limit: queryForm.pageSize
