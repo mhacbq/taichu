@@ -4379,7 +4379,7 @@ color: #5a4a38;
   box-shadow: none;
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
-  min-height: 38px;
+  min-height: 44px;
 }
 
 :deep(.time-entry-panel__control .el-input__wrapper:hover),

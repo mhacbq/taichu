@@ -1088,6 +1088,15 @@
     justify-items: center;
   }
 
+  /* 移动端牌面自适应列宽，最小高度200px */
+  .tarot-card {
+    width: 100%;
+    max-width: 160px;
+    min-height: 200px;
+    height: auto;
+    aspect-ratio: 160 / 260;
+  }
+
   .card-detail-dialog :deep(.el-dialog) {
     width: calc(100vw - 24px) !important;
     margin: 4vh auto;

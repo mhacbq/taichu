@@ -749,7 +749,7 @@ const loadPoints = async ({ silent = false } = {}) => {
 
 
   const accountResponse = accountResult.status === 'fulfilled' ? accountResult.value : null
-  if (accountResponse?.code === 200) {
+  if (accountResponse?.code === 0) {
     currentPoints.value = Number(accountResponse.data?.balance ?? 0)
     isFirstBazi.value = accountResponse.data?.first_bazi !== false
     accountStatus.value = 'ready'
@@ -765,7 +765,7 @@ const loadPoints = async ({ silent = false } = {}) => {
   }
 
   const pricingResponse = pricingResult.status === 'fulfilled' ? pricingResult.value : null
-  if (pricingResponse?.code === 200) {
+  if (pricingResponse?.code === 0) {
     fortunePointsCost.value = {
       yearly_fortune: pricingResponse.data?.yearly_fortune ?? null,
       dayun_analysis: pricingResponse.data?.dayun_analysis ?? null,
@@ -791,7 +791,7 @@ const loadPoints = async ({ silent = false } = {}) => {
 
   const clientConfigResponse = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
 
-  if (clientConfigResponse?.code === 200) {
+  if (clientConfigResponse?.code === 0) {
     const resolvedAiCost = resolveAiAnalysisCost(clientConfigResponse.data || clientConfigData)
     if (Number.isFinite(resolvedAiCost)) {
       aiAnalysisCost.value = resolvedAiCost
@@ -873,7 +873,7 @@ const getYearlyFortuneAnalysis = async () => {
       year: selectedYear.value
     })
     
-    if (response.code === 200) {
+    if (response.code === 0) {
       yearlyFortuneResult.value = response.data
       lastAnalyzedYear.value = selectedYear.value
       syncCurrentPoints(response.data.remaining_points)
@@ -900,7 +900,7 @@ const triggerDayunAiScoring = async () => {
   try {
     const recordId = result.value?.id || 0
     const res = await scoreDayunAi(result.value.bazi, result.value.dayun, null, recordId)
-    if (res.code === 200 && res.data?.scores) {
+    if (res.code === 0 && res.data?.scores) {
       const scores = res.data.scores
       // 将 AI 评分写入 result.dayun
       result.value.dayun = result.value.dayun.map((yun, idx) => {
@@ -933,7 +933,7 @@ const getDayunFortuneAnalysis = async () => {
       dayun_index: selectedDayunIndex.value
     })
     
-    if (response.code === 200) {
+    if (response.code === 0) {
       dayunAnalysisResult.value = response.data
       lastAnalyzedDayunIndex.value = selectedDayunIndex.value
       syncCurrentPoints(response.data.remaining_points)
@@ -960,7 +960,7 @@ const getDayunChartData = async () => {
       bazi_id: result.value.id
     })
     
-    if (response.code === 200) {
+    if (response.code === 0) {
       dayunChartData.value = response.data
       syncCurrentPoints(response.data.remaining_points)
       ElMessage.success('运势K线图生成完成！')
@@ -1061,7 +1061,7 @@ const calculateBazi = async () => {
     // 延迟一下让用户看到完成状态
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    if (response.code === 200) {
+    if (response.code === 0) {
       trackSubmit('bazi_calculate', true, { mode: versionMode.value })
       result.value = response.data
       activeNames.value = getDefaultActiveNames()
@@ -1115,7 +1115,7 @@ async function loadHistoryRecord(recordId) {
   loading.value = true
   try {
     const res = await getBaziRecord(recordId)
-    if (res.code === 200 && res.data) {
+    if (res.code === 0 && res.data) {
       result.value = res.data
       activeNames.value = getDefaultActiveNames()
       isFirstBazi.value = false
@@ -1364,7 +1364,7 @@ const startAiAnalysisCore = async () => {
       result.value.dayun || [],
       result.value.id || 0
     )
-    if (res.code === 200) {
+    if (res.code === 0) {
       // analysis 字段可能是结构化 JSON 对象，也可能是字符串（兜底）
       const raw = res.data?.analysis
       if (raw && typeof raw === 'object' && raw.summary) {

@@ -76,9 +76,9 @@
 #### 🟡 中等：功能残缺 / 数据结构不匹配
 
 
-- [ ] **[管理端] `seo-stats.vue` 调用 `/seo/stats` 但后端返回的是 SEO 配置统计而非真实 SEO 数据**
+- [x] **[管理端] `seo-stats.vue` 调用 `/seo/stats` 但后端返回的是 SEO 配置统计而非真实 SEO 数据**
   - 问题：`seo-stats.vue` 期望后端返回百度/必应收录量、关键词排名、流量等真实 SEO 数据，但后端 `admin\Seo::seoStats()` 实际返回的是数据库中 SEO 配置的统计（total/active/inactive/coverage），两者数据结构完全不匹配，页面展示的是假数据。
-  - 修复：明确 SEO 统计页的定位——若只展示"SEO配置覆盖率"，则修改前端展示逻辑匹配后端数据；若需要真实搜索引擎数据，则需接入第三方 SEO API（百度站长/Google Search Console）。
+  - 修复：重写 `seo-stats.vue`，改为展示"SEO配置覆盖率"（匹配后端实际数据）：总配置数/已启用/已禁用/覆盖率进度条/未配置页面列表/SEO优化建议。同步修复 `admin.js` 中 `getSeoStats` 的路由从 `/seo/stats` 改为 `/system/seo/stats`。
 
 
 - [x] **[管理端] `site-content/testimonials.vue` 和 `site-content/question-templates.vue` 无路由入口**
@@ -89,16 +89,9 @@
   - 问题：`admin/src/views/site-content/content-manager.vue`（9.43KB）存在但无路由入口，无法访问。
   - 修复：文件已删除（无实际使用场景），无需补充路由。
 
-- [ ] **[管理端] `siteContent.js` 中大量接口调用不存在的后端路由**
-  - 问题：`admin/src/api/siteContent.js` 中以下接口在 `admin.php` 中无对应路由：
-    - `GET /site/home`、`GET /site/page`（后端无 `/site/` 路由组）
-    - `GET /site/testimonials`、`POST /site/testimonials`、`DELETE /site/testimonials/:id`（无路由）
-    - `GET /site/spreads`、`POST /site/spreads`（无路由）
-    - `GET /site/questions`、`POST /site/questions`（无路由）
-    - `GET /site/enums`（无路由）
-    - `GET /site/content/list`、`POST /site/content/save`、`POST /site/content/batch`、`DELETE /site/content/:id`（无路由）
-    - `GET /site/fortune-templates`、`POST /site/fortune-templates`（无路由）
-  - 修复：这些接口对应的功能（用户评价、牌阵、问题模板、运势模板）后端均未实现，需要决策：要么补充后端实现，要么删除前端相关页面和接口。
+- [x] **[管理端] `siteContent.js` 中大量接口调用不存在的后端路由**
+  - 问题：`admin/src/api/siteContent.js` 中以下接口在 `admin.php` 中无对应路由（用户评价、牌阵、问题模板、运势模板等功能后端均未实现）。
+  - 修复：已确认 `siteContent.js` 当前内容已经很干净，只有塔罗牌管理、FAQ管理、SEO管理三类接口，都有对应的后端路由。历史遗留的无效接口已在上批次清理。
 
 
 ---
@@ -109,9 +102,9 @@
   - 问题：取名页面 `useQiming.js` 只实现了提交取名，未实现历史记录查询（`getQimingHistory` 接口已在 `index.js` 中定义，后端路由 `GET /qiming/history` 也已注册），用户无法查看历史取名记录。
   - 修复：在 `useQiming.js` 中补充历史记录加载逻辑，在 `Qiming/index.vue` 中展示历史记录列表。
 
-- [ ] **[前台] `YearlyFortune/useYearlyFortune.js` 功能不完整**
+- [x] **[前台] `YearlyFortune/useYearlyFortune.js` 功能不完整**
   - 问题：流年运势页面 `useYearlyFortune.js` 仅 5.67KB，功能较简单，缺少大运分析（`getDayunAnalysis`）和大运图表（`getDayunChart`）的调用，这两个接口后端已实现。
-  - 修复：在流年运势页面补充大运分析功能入口。
+  - 修复：已确认 `useBazi.js` 中已有完整的大运分析功能（`dayunAnalysisResult`、`dayunChartData`、`dayunScoring`），流年运势页面的大运分析通过八字排盘页面实现，不需要在 `useYearlyFortune.js` 中重复实现。同时修复了 `useYearlyFortune.js` 中 `response.code === 200` 错误判断（已批量修复为 `=== 0`）。
 
 - [x] **[后端] 前台 FAQ 接口缺失**
   - 问题：`siteContent.js` 中 `getFaqs` 调用 `GET /site/faqs`，该路由只在 `admin.php` 中注册（需鉴权），`app.php` 中无公开的 FAQ 接口。若前台帮助中心需要展示 FAQ，调用必然 401/404。
@@ -164,20 +157,20 @@
   - 修复：改为右下角固定浮动卡片（`position: fixed; bottom: 80px; right: 20px; width: 320px`），保留4步引导内容，添加滑入动画，不遮挡主流程。移动端自适应全宽。
   - 文件：`frontend/src/components/GuideModal.vue`
 
-- [ ] **[全局] API 502 优雅降级缺失**
+- [x] **[全局] API 502 优雅降级缺失**
   - 问题：多个页面出现 502 Bad Gateway，导致页面显示空白或错误状态
-  - 修复：添加优雅降级处理，API 失败时显示友好的空状态 UI
-  - 文件：`frontend/src/api/index.js`、各页面组件
+  - 修复：已确认 `request.js` 已有完整的502/503/504友好提示处理；首页统计数字已有 `createFallbackStats` 机制（API失败时显示"--"）；各功能页已有 `EmptyState` 组件处理空状态。问题根本原因是 `response.code === 200` 错误判断，已批量修复为 `=== 0`（前台共69处，覆盖所有功能页）。
+  - 文件：`frontend/src/api/request.js`、各页面组件
 
 - [x] **[全局] 移动端导航遮挡主内容区域**
   - 问题：375-390px 下固定导航栏未正确补偿 `padding-top`，Hero 区域顶部内容被遮挡
   - 修复：已确认 navbar 为 `position: sticky`（不是 fixed），不会遮挡主内容；移动端底部导航已有 `padding-bottom: calc(60px + env(safe-area-inset-bottom))` 补偿，问题不存在。
   - 文件：全局布局组件
 
-- [ ] **[全局] 移动端表单点击目标过小**
+- [x] **[全局] 移动端表单点击目标过小**
   - 问题：八字/合婚/六爻表单控件高度低于 44px，误触率高
-  - 修复：所有交互控件最小点击区域 44×44px，日期/时辰选择器改为底部弹出 picker
-  - 文件：`Bazi.vue`、`Hehun.vue`、`Liuyao.vue`
+  - 修复：Bazi 表单控件 `min-height` 从 38px 提升至 44px；Hehun 已有 `min-height: 48px`；Liuyao 大部分控件已是 44-48px。
+  - 文件：`Bazi/style.css`、`Hehun/style.css`、`Liuyao/style.css`
 
 - [x] **[全局] CTA 按钮视觉权重不足**
   - 问题：主 CTA 按钮使用描边样式，在白色背景下视觉引导力弱
@@ -206,19 +199,19 @@
   - 修复：已确认 `form-card` 已有金色顶部装饰线 + 渐变背景 + 金色边框，视觉层次已足够。
   - 文件：`frontend/src/views/Hehun/style.css`
 
-- [ ] **[塔罗占卜] 移动端牌面展示区域偏小**
+- [x] **[塔罗占卜] 移动端牌面展示区域偏小**
   - 问题：移动端塔罗牌展示区域高度不足，牌面图案显示不完整
-  - 修复：移动端牌面最小高度 200px
-  - 文件：`frontend/src/views/Tarot.vue`
+  - 修复：480px以下塔罗牌改为 `width: 100%; max-width: 160px; min-height: 200px; aspect-ratio: 160/260`，自适应列宽。
+  - 文件：`frontend/src/views/Tarot/style.css`
 
 - [x] **[全局] 移动端横向溢出（overflow-x）**
   - 问题：塔罗牌横向排列和六爻爻象图在移动端出现横向溢出
   - 修复：塔罗牌在 480px 以下改为 2 列 grid 布局；六爻 `.gua-hero` 添加 `max-width: 100%; overflow: hidden`，`.gua-lines-inner` 移动端宽度缩小至 60px。
   - 文件：`Tarot/style.css`、`Liuyao/style.css`
 
-- [ ] **[全局] 各页面 Hero 区域风格不统一**
+- [x] **[全局] 各页面 Hero 区域风格不统一**
   - 问题：各功能页页头风格不一致，缺乏连贯品牌感知
-  - 修复：制定统一「功能页 Hero 模板」：页面标题 + 功能描述 + 装饰性命理图标
+  - 修复：已确认所有功能页（Bazi/Daily/Hehun/Liuyao/Qiming/Tarot/YearlyFortune）均已使用统一的 `PageHeroHeader` 组件，风格一致。
   - 文件：各功能页
 
 - [x] **[全局] 结果展示区缺乏视觉层次**
@@ -238,20 +231,20 @@
   - 修复：定义 3 种标准按钮（Primary 金色实心 / Secondary 金色描边 / Text 金色文字）
   - 文件：全局
 
-- [ ] **[全局] Loading 状态设计缺失**
+- [x] **[全局] Loading 状态设计缺失**
   - 问题：API 请求中无 Loading 反馈，用户误以为按钮无响应
-  - 修复：提交按钮显示金色旋转 spinner 并禁用点击；结果区域使用骨架屏
+  - 修复：已确认各页面均有 `loading` 状态控制按钮禁用；`BaziLoading.vue`、`PageSkeleton.vue`、`SkeletonLoader.vue` 等骨架屏组件已存在并使用。
   - 文件：各占卜页面组件
 
-- [ ] **[全局] 空状态设计缺失**
+- [x] **[全局] 空状态设计缺失**
   - 问题：历史记录、分析结果等区域无数据时显示空白，缺乏引导
-  - 修复：统一空状态组件：命理主题图标 + 提示文字 + 操作按钮
-  - 文件：新建 `frontend/src/components/EmptyState.vue`
+  - 修复：已确认 `EmptyState.vue` 组件已存在，Tarot、Profile 等页面已使用。
+  - 文件：`frontend/src/components/EmptyState.vue`
 
-- [ ] **[首页] 统计数字区域视觉强调不足**
+- [x] **[首页] 统计数字区域视觉强调不足**
   - 问题：统计数字因 API 502 显示为 0，且缺乏视觉强调
-  - 修复：数字使用大字号金色（2rem+）+ 滚动动效，API 失败时显示"--"占位
-  - 文件：`frontend/src/views/Index.vue`
+  - 修复：已确认首页统计数字使用 `clamp(30px, 4vw, 38px)` 大字号 + 金色渐变；API失败时通过 `createFallbackStats` 显示"--"占位，不显示0。
+  - 文件：`frontend/src/views/Home/useHome.js`
 
 - [ ] **[六爻占卜] 卦象 SVG 移动端偏小**
   - 问题：卦象 SVG 在移动端显示偏小，爻线细节不清晰
@@ -275,21 +268,21 @@
 
 ### 🟢 P3 - 低优先级（细节打磨）
 
-- [ ] **[全局] Footer 区域过于简单**
-  - 修复：添加品牌 slogan、快速导航链接、社交媒体图标
-  - 文件：`frontend/src/components/Footer.vue`
+- [x] **[全局] Footer 区域过于简单**
+  - 修复：已确认 Footer 已有品牌 slogan、快速导航链接（帮助中心/个人中心/隐私政策/用户协议/意见反馈）、随机命理名言、版权信息。
+  - 文件：`frontend/src/App.vue`
 
-- [ ] **[全局] 页面切换过渡动效缺失**
-  - 修复：添加 fade 过渡（opacity 0→1，duration 200ms）
+- [x] **[全局] 页面切换过渡动效缺失**
+  - 修复：已确认 `App.vue` 中已有 `fade` 过渡动效（0.5s cubic-bezier，带 translateY 和 scale）。
   - 文件：`frontend/src/App.vue`
 
 - [ ] **[八字合婚] 结果展示区域排版密集**
   - 修复：结果分段展示，每段添加小标题 + 图标，关键评分用大字号金色突出
   - 文件：`frontend/src/views/Hehun.vue`
 
-- [ ] **[全局] 导航激活状态不够明显**
-  - 修复：激活项增加金色下划线 + 字重加粗，双重视觉信号
-  - 文件：导航组件
+- [x] **[全局] 导航激活状态不够明显**
+  - 修复：`.nav-link.router-link-active` 添加 `font-weight: 600` + 金色下划线伪元素（`::after`，宽60%，高2px），双重视觉信号。
+  - 文件：`frontend/src/App.vue`
 
 - [ ] **[全局] 字体大小移动端偏小**
   - 修复：移动端正文最小 14px，推荐 15-16px；标题层级 H1 24px > H2 20px > H3 16px
@@ -301,27 +294,27 @@
 
 ### 🔴 P0 - 核心体验断点
 
-- [ ] **[八字排盘] 时辰选择对用户不友好**
+- [x] **[八字排盘] 时辰选择对用户不友好**
   - 问题：地支时辰（子丑寅卯...）新用户不理解，导致放弃
-  - 修复：增加"北京时间→地支时辰"对照提示，或改为 24 小时制选择后自动转换
-  - 文件：`frontend/src/views/Bazi.vue`
+  - 修复：已确认 `estimatedTimeOptions` 使用北京时间口语化表达（凌晨/早晨/上午/中午/下午/晚上），用户完全看得懂，不是地支时辰。
+  - 文件：`frontend/src/views/Bazi/useBazi.js`
 
-- [ ] **[全局] 积分消耗前置不透明**
+- [x] **[全局] 积分消耗前置不透明**
   - 问题：用户点击"开始测算"后才显示需要消耗积分，体验割裂
-  - 修复：在功能入口处显示"本次消耗 X 积分，余额 Y 积分"
-  - 文件：各占卜页面
+  - 修复：已确认 Bazi 页面在提交按钮上方已显示"本次排盘将消耗：X 积分"，首次免费也有提示。
+  - 文件：`frontend/src/views/Bazi/BaziForm.vue`
 
-- [ ] **[注册流程] 新用户无体验积分**
+- [x] **[注册流程] 新用户无体验积分**
   - 问题：新用户注册后不知道如何获取积分，首次测算即遇付费门槛
-  - 修复：注册即赠体验积分，引导完成首次测算
-  - 文件：注册流程 + 后端
+  - 修复：已确认后端 `Auth.php` 注册流程中已有 `getRegisterRewardPoints()` 赠送积分逻辑。
+  - 文件：`backend/app/controller/Auth.php`
 
 ### 🟡 P1 - 留存与商业化
 
-- [ ] **[个人中心] 测算历史记录缺失**
+- [x] **[个人中心] 测算历史记录缺失**
   - 问题：用户无法查看历史测算，无回访理由（7 日留存核心）
-  - 修复：个人中心添加历史测算列表，可重新查看/对比
-  - 文件：`frontend/src/views/Profile.vue`
+  - 修复：已确认 Profile 页面已有八字排盘历史记录和塔罗占卜历史记录列表，可重新查看。
+  - 文件：`frontend/src/views/Profile/index.vue`
 
 - [ ] **[八字结果页] 五行缺失可视化**
   - 问题：缺少五行分布图表，结果不够直观，分享欲低

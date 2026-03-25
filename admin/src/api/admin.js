@@ -14,8 +14,9 @@ export {
 } from './content'
 
 export function getSeoStats(params) {
+  // 路由修正：/seo/stats 已删除，使用 /system/seo/stats
   return request({
-    url: '/seo/stats',
+    url: '/system/seo/stats',
     method: 'get',
     params,
   })

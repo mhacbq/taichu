@@ -155,7 +155,7 @@ const refreshPoints = async ({ silent = false } = {}) => {
 
   try {
     const response = await getPointsBalance()
-    if (response.code === 200) {
+    if (response.code === 0) {
       currentPoints.value = response.data.balance
       pointsError.value = false
       return true
@@ -446,7 +446,7 @@ const loadPoints = async () => {
 const loadClientConfig = async () => {
   try {
     const response = await getClientConfig()
-    if (response.code === 200) {
+    if (response.code === 0) {
       clientConfig.value = response.data
     }
   } catch (error) {
@@ -462,7 +462,7 @@ const interpretCurrentCards = async () => {
     spread: getCurrentTarotSpread(),
   })
 
-  if (interpretResponse.code === 200) {
+  if (interpretResponse.code === 0) {
     const raw = interpretResponse.data.interpretation
     // 后端返回结构化 JSON 对象，直接存入 aiAnalysisResult 供展示
     if (raw && typeof raw === 'object' && raw.summary) {
@@ -530,7 +530,7 @@ const performAiAnalysis = async () => {
       interpretation: interpretation.value,
     })
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       aiAnalysisResult.value = response.data.analysis
       ElMessage.success('AI 分析完成')
       await loadPoints()
@@ -620,7 +620,7 @@ const drawCards = async () => {
       question: lockedQuestion,
     })
 
-    if (drawResponse.code === 200) {
+    if (drawResponse.code === 0) {
       trackSubmit('tarot_draw', true, { spread: lockedSpread })
       cards.value = drawResponse.data.cards
       interpretation.value = ''
@@ -722,7 +722,7 @@ const saveTarotResult = async () => {
     })
 
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       savedRecordId.value = response.data.record_id
       savedShareCode.value = response.data.share_code
       sharePublicConfirmed.value = false
@@ -753,7 +753,7 @@ const updateTarotShareVisibility = async (isPublic, { silent = false } = {}) => 
 
   try {
     const response = await setTarotPublic({ id: savedRecordId.value, is_public: isPublic })
-    if (response.code === 200) {
+    if (response.code === 0) {
       savedShareCode.value = response.data.share_code || savedShareCode.value
       sharePublicConfirmed.value = isPublic
       return true

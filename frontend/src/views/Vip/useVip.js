@@ -41,7 +41,7 @@ export function useVip() {
   const loadVipStatus = async () => {
     try {
       const response = await getUserVipStatus()
-      if (response.code === 200 && response.data) {
+      if (response.code === 0 && response.data) {
         isVip.value = response.data.is_vip || false
         vipExpireTime.value = response.data.expire_time || ''
       }
@@ -56,7 +56,7 @@ export function useVip() {
   const loadVipPlans = async () => {
     try {
       const response = await getVipPackages()
-      if (response.code === 200 && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.code === 0 && Array.isArray(response.data) && response.data.length > 0) {
         vipPlans.value = response.data.map((pkg) => ({
           id: pkg.id,
           name: pkg.name,
@@ -80,7 +80,7 @@ export function useVip() {
   const loadPrivileges = async () => {
     try {
       const response = await getVipBenefits()
-      if (response.code === 200 && response.data?.features?.length > 0) {
+      if (response.code === 0 && response.data?.features?.length > 0) {
         privileges.value = response.data.features.map((item) => ({
           icon: iconMap[item.icon] || Star,
           title: item.title,
@@ -180,7 +180,7 @@ export function useVip() {
         payment_method: 'points', // 积分支付
       })
 
-      if (response.code === 200) {
+      if (response.code === 0) {
         ElMessage.success('🎉 恭喜！VIP 开通成功')
         isVip.value = true
         vipExpireTime.value = response.data?.expire_time || ''

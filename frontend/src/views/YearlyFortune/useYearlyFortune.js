@@ -60,7 +60,7 @@ const disabledDate = (time) => {
 const loadPointsConfig = async () => {
   try {
     const response = await getFortunePointsCost()
-    if (response.code === 200) {
+    if (response.code === 0) {
       pointsCost.value = response.data.yearly_fortune || response.data.yearly || 50
     }
   } catch (error) {
@@ -105,7 +105,7 @@ const handleCalculate = async () => {
       gender: gender.value
     })
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       result.value = response.data
       // 新提示词返回 monthly 数组，直接使用；兼容旧格式
       monthlyFortune.value = response.data.monthly || []

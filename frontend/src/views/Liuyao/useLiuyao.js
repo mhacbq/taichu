@@ -553,7 +553,7 @@ const loadPricing = async () => {
 
   try {
     const response = await getLiuyaoPricing()
-    if (response.code === 200) {
+    if (response.code === 0) {
       pricing.value = response.data || null
       return
     }
@@ -576,7 +576,7 @@ const loadHistory = async () => {
 
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 50 })
-    if (response.code === 200) {
+    if (response.code === 0) {
       history.value = (response.data.list || []).map((item) => normalizeResult(item, true))
       historyLoaded.value = true
       return
@@ -670,7 +670,7 @@ const submitDivination = async () => {
   try {
     const response = await liuyaoDivination(payload)
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       loadingStep.value = 3
       trackSubmit('liuyao_divination', true, { method: payload.method })
       trackLiuyaoSubmitSuccess({
@@ -748,7 +748,7 @@ const startAiAnalysis = async () => {
       divination_id: result.value.id
     })
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       // 更新result中的AI分析结果
       if (response.data?.ai_analysis) {
         result.value.ai_analysis = response.data.ai_analysis
@@ -936,7 +936,7 @@ const deleteRecord = async (id) => {
     })
 
     const response = await deleteLiuyaoRecord({ id })
-    if (response.code === 200) {
+    if (response.code === 0) {
       ElMessage.success('删除成功')
       await loadHistory()
       if (result.value?.id === id) {
@@ -967,7 +967,7 @@ async function loadRecordById(recordId) {
   isLoading.value = true
   try {
     const res = await getLiuyaoDetail({ id: recordId })
-    if (res.code === 200 && res.data) {
+    if (res.code === 0 && res.data) {
       result.value = normalizeResult(res.data, true)
     } else {
       ElMessage.warning('历史记录加载失败，请重新占卜')

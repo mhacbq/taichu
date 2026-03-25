@@ -161,7 +161,7 @@ const resolveFeedbackEnabled = (config = {}) => {
 const syncClientFeatureConfig = async () => {
   try {
     const response = await getClientConfig()
-    if (response?.code === 200) {
+    if (response?.code === 0) {
       feedbackEnabled.value = resolveFeedbackEnabled(response.data)
       if (!feedbackEnabled.value) {
         feedbackContent.value = ''
@@ -232,7 +232,7 @@ const getTarotCards = (record) => {
 const loadPointsRules = async () => {
   try {
     const res = await getPointsRules()
-    if (res.code === 200 && Array.isArray(res.data?.tasks)) {
+    if (res.code === 0 && Array.isArray(res.data?.tasks)) {
       pointsMethodsRaw.value = res.data.tasks.map((item, idx) => ({
         id: idx + 1,
         icon: item.icon || 'gift',
@@ -252,7 +252,7 @@ const loadInviteRecords = async (page = 1) => {
   inviteRecordsLoading.value = true
   try {
     const res = await getMyInvites({ page, limit: 10 })
-    if (res.code === 200) {
+    if (res.code === 0) {
       inviteRecords.value = res.data?.list || []
       inviteRecordsTotal.value = res.data?.total || 0
       inviteSuccessCount.value = res.data?.success_count || 0
@@ -274,7 +274,7 @@ const loadUserData = async () => {
       getPointsHistory(),
     ])
     
-    if (userRes.code === 200) {
+    if (userRes.code === 0) {
       userInfo.value = userRes.data
       // 使用后端返回的邀请码和统计
       inviteCode.value = userRes.data.invite_code || ''
@@ -284,13 +284,13 @@ const loadUserData = async () => {
       inviteLink.value = `${window.location.origin}/login?invite_code=${inviteCode.value}`
     }
     
-    if (pointsRes.code === 200) {
+    if (pointsRes.code === 0) {
       pointsBalance.value = pointsRes.data.balance
       baziCount.value = pointsRes.data.baziCount || 0
       tarotCount.value = pointsRes.data.tarotCount || 0
     }
     
-    if (historyRes.code === 200) {
+    if (historyRes.code === 0) {
       pointsHistory.value = historyRes.data?.list || historyRes.data || []
     }
 
@@ -325,7 +325,7 @@ const loadBaziHistory = async () => {
       page: baziCurrentPage.value,
       page_size: baziPageSize.value
     })
-    if (baziRes.code === 200) {
+    if (baziRes.code === 0) {
       baziHistory.value = baziRes.data.list || []
       baziTotal.value = baziRes.data.pagination?.total || 0
       baziStatus.value = baziHistory.value.length > 0 ? 'success' : 'empty'
@@ -346,7 +346,7 @@ const loadTarotHistory = async () => {
   tarotStatus.value = 'loading'
   try {
     const response = await getTarotHistory({ page: 1, page_size: 10 })
-    if (response.code === 200) {
+    if (response.code === 0) {
       const list = Array.isArray(response.data?.list) ? response.data.list : []
       tarotHistory.value = list.map(normalizeTarotRecord)
       tarotStatus.value = tarotHistory.value.length > 0 ? 'success' : 'empty'
@@ -368,7 +368,7 @@ const loadLiuyaoHistory = async () => {
   liuyaoStatus.value = 'loading'
   try {
     const response = await getLiuyaoHistory({ page: 1, page_size: 10 })
-    if (response.code === 200) {
+    if (response.code === 0) {
       liuyaoHistory.value = response.data?.list || []
       liuyaoCount.value = response.data?.pagination?.total || liuyaoHistory.value.length
       liuyaoStatus.value = liuyaoHistory.value.length > 0 ? 'success' : 'empty'
@@ -387,7 +387,7 @@ const loadHehunHistory = async () => {
   hehunStatus.value = 'loading'
   try {
     const response = await getHehunHistory({ page: 1, page_size: 10 })
-    if (response.code === 200) {
+    if (response.code === 0) {
       hehunHistory.value = response.data?.list || []
       hehunCount.value = response.data?.pagination?.total || hehunHistory.value.length
       hehunStatus.value = hehunHistory.value.length > 0 ? 'success' : 'empty'
@@ -439,7 +439,7 @@ const submitFeedbackForm = async () => {
       contact: contact,
     })
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       ElMessage.success('反馈提交成功，感谢您的建议！')
       feedbackContent.value = ''
       feedbackContact.value = ''

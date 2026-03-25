@@ -186,7 +186,7 @@ export function useHelp() {
   const loadHelpContent = async () => {
     try {
       const response = await getPageContent('help')
-      if (response.code === 200) {
+      if (response.code === 0) {
         pageContent.value = response.data || {}
       }
     } catch {
@@ -199,7 +199,7 @@ export function useHelp() {
       faqStatus.value = 'loading'
       faqError.value = null
       const response = await getFaqs()
-      if (response.code === 200) {
+      if (response.code === 0) {
         faqData.value = response.data.map((item) => ({ ...item, expanded: false }))
         faqStatus.value = faqData.value.length > 0 ? 'success' : 'empty'
       } else {

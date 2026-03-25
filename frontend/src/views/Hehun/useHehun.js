@@ -1215,7 +1215,7 @@ const loadPricing = async () => {
 
   try {
     const response = await getHehunPricing()
-    if (response.code === 200) {
+    if (response.code === 0) {
       pricing.value = response.data
       return
     }
@@ -1266,7 +1266,7 @@ const submitForm = async () => {
     })
     const response = await calculateHehun(payload)
 
-    if (response.code === 200) {
+    if (response.code === 0) {
       trackSubmit('hehun_calculate', true, { tier: 'free' })
       const normalizedFreeResult = normalizeFreeResultData(response.data)
       const localPreviewRecord = buildLocalFreePreviewRecord(normalizedFreeResult)
@@ -1346,7 +1346,7 @@ const unlockPremium = async () => {
     })
     const response = await calculateHehun(payload)
     
-    if (response.code === 200) {
+    if (response.code === 0) {
       trackSubmit('hehun_calculate', true, { tier: 'premium' })
       const normalizedPremiumResult = normalizePremiumResultData(response.data)
       clearLocalFreePreview()
@@ -1427,7 +1427,7 @@ const exportReport = async () => {
     })
 
     
-    if (response.code === 200) {
+    if (response.code === 0) {
       // 下载PDF
       const link = document.createElement('a')
       link.href = response.data.download_url
@@ -1454,7 +1454,7 @@ const loadHistory = async () => {
 
   try {
     const response = await getHehunHistory({ limit: 5 })
-    if (response.code === 200) {
+    if (response.code === 0) {
       const normalizedHistory = resolveHistoryList(response.data).map(normalizeHistoryItem)
       history.value = mergeLocalFreePreviewIntoHistory(normalizedHistory)
       if (activeHistoryId.value && !history.value.some((item) => item.id === activeHistoryId.value)) {
@@ -1669,7 +1669,7 @@ async function loadRecordById(recordId) {
   isLoading.value = true
   try {
     const res = await getHehunDetail(recordId)
-    if (res.code === 200 && res.data) {
+    if (res.code === 0 && res.data) {
       loadHistoryDetail(res.data)
     } else {
       ElMessage.warning('历史记录加载失败，请重新合婚')

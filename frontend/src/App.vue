@@ -532,7 +532,7 @@ const syncStoredPoints = (balance) => {
 const refreshPoints = async () => {
   try {
     const response = await getPointsBalance()
-    if (response.code === 200) {
+    if (response.code === 0) {
       syncStoredPoints(response.data.balance)
     }
   } catch (error) {
@@ -705,6 +705,20 @@ onBeforeUnmount(() => {
   color: var(--primary-color);
   background: var(--surface-strong);
   box-shadow: inset 0 0 0 1px var(--primary-light-20);
+  font-weight: 600;
+  position: relative;
+}
+
+.nav-link.router-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: var(--primary-color);
+  border-radius: 2px;
 }
 
 /* 用户操作区 */

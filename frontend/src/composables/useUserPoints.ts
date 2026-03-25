@@ -39,7 +39,7 @@ export function useUserPoints() {
     isLoggedIn.value = true
     try {
       const response = await getPointsBalance()
-      if (response.code === 200) {
+      if (response.code === 0) {
         userPoints.value = response.data.balance
         isFirstBaziEligible.value = resolveFirstBaziFlag(response.data?.first_bazi)
       } else {

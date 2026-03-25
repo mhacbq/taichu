@@ -94,7 +94,7 @@ onMounted(() => {
 const loadPointsBalance = async () => {
   try {
     const res = await getPointsBalance()
-    if (res.code === 200) {
+    if (res.code === 0) {
       pointsBalance.value = res.data.balance
     }
   } catch (error) {
@@ -106,7 +106,7 @@ const loadPointsBalance = async () => {
 const loadRechargeOptions = async () => {
   try {
     const res = await getRechargeOptions()
-    if (res.code === 200) {
+    if (res.code === 0) {
       // 过滤掉旧的100元选项，添加新的68元会员选项
       let options = res.data.options.filter(opt => opt.amount !== 100)
 
@@ -136,7 +136,7 @@ const loadRechargeOptions = async () => {
 const loadRechargeHistory = async () => {
   try {
     const res = await getRechargeHistory()
-    if (res.code === 200) {
+    if (res.code === 0) {
       rechargeHistory.value = res.data || []
     }
   } catch (error) {
@@ -239,7 +239,7 @@ const generateQRCode = async () => {
     }
 
     const data = await res.json()
-    if (data.code === 200 && data.data.qr_url) {
+    if (data.code === 0 && data.data.qr_url) {
       qrCodeUrl.value = data.data.qr_url
       return
     }
@@ -344,7 +344,7 @@ const checkPayStatus = async (silent = false) => {
   try {
     const res = await queryRechargeOrder({ order_no: currentOrderNo.value })
     
-    if (res.code === 200) {
+    if (res.code === 0) {
       if (res.data.status === 'paid') {
         stopQueryTimer()
         payDialogVisible.value = false

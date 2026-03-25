@@ -177,7 +177,7 @@ const calendarCells = computed(() => {
 const loadCheckinStatus = async () => {
   try {
     const response = await getCheckinStatus({ silent: true })
-    if (response.code === 200) {
+    if (response.code === 0) {
       statusUnavailable.value = false
       availabilityMessage.value = '签到功能暂时不可用，不影响查看今日运势'
       hasCheckedIn.value = Boolean(response.data?.checkedIn)
@@ -210,7 +210,7 @@ const handleCheckin = async () => {
   loading.value = true
   try {
     const response = await dailyCheckin()
-    if (response.code === 200) {
+    if (response.code === 0) {
       statusUnavailable.value = false
       hasCheckedIn.value = true
       consecutiveDays.value = response.data.consecutiveDays

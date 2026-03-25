@@ -116,7 +116,7 @@ export const createCachedAxios = (options = {}) => {
 
       const cacheKey = response.config?.cacheKey
       const url = response.config?.url || ''
-      if (cacheKey && response.data?.code === 200) {
+      if (cacheKey && response.data?.code === 0) {
         cache.set(cacheKey, response.data, getCacheTTL(url))
       }
 

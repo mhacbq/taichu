@@ -45,7 +45,7 @@ const createContentLoader = (action, request, applyData, buildExtra = () => ({})
 
     try {
       const res = await request()
-      if (res.code === 200) {
+      if (res.code === 0) {
         applyData(res.data)
       }
     } catch (err) {

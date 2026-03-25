@@ -94,7 +94,7 @@ export function useTarotShare() {
       const code = route.params.code
       const response = await getTarotShare({ code })
 
-      if (response.code === 200) {
+      if (response.code === 0) {
         shareRecord.value = response.data
         updateOGMeta(response.data)
         return

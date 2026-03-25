@@ -528,7 +528,7 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
 
   try {
     const response = await getDailyFortune()
-    if (response.code === 200) {
+    if (response.code === 0) {
       const data = response.data || {}
       fortune.value = {
         ...data,

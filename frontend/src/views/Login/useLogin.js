@@ -88,7 +88,7 @@ export function useLogin() {
     }
     try {
       const response = await sendSmsCode({ phone: phoneForm.value.phone })
-      if (response.code === 200) {
+      if (response.code === 0) {
         const testCode = response.data?.test_code
         if (testCode) {
           ElMessage.success(`测试模式验证码：${testCode}`)
@@ -123,7 +123,7 @@ export function useLogin() {
         code: phoneForm.value.code,
       })
 
-      if (response.code === 200) {
+      if (response.code === 0) {
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('userInfo', JSON.stringify(response.data.user))
 

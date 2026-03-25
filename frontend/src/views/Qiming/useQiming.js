@@ -84,7 +84,7 @@ export function useQiming() {
         taboos: form.value.taboos
       })
 
-      if (response.code === 200) {
+      if (response.code === 0) {
         result.value = response.data.result
         ElMessage.success('取名成功！')
       } else {
@@ -116,7 +116,7 @@ export function useQiming() {
         page: historyPage.value,
         page_size: historyPageSize.value
       })
-      if (response.code === 200) {
+      if (response.code === 0) {
         historyList.value = response.data.list || []
         historyTotal.value = response.data.total || 0
       }
@@ -148,7 +148,7 @@ export function useQiming() {
   const loadClientConfig = async () => {
     try {
       const response = await getClientConfig()
-      if (response.code === 200) {
+      if (response.code === 0) {
         clientConfig.value = response.data
       }
     } catch (error) {

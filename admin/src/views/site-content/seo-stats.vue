@@ -1,736 +1,279 @@
-<template>
-  <div class="seo-stats-page">
-    <div class="page-header">
-      <h1 class="page-title">SEO数据统计</h1>
-      <p class="page-desc">搜索引擎收录情况、关键词排名、流量分析</p>
-    </div>
-
-    <!-- 概览卡片 -->
-    <div class="stats-overview">
-      <el-card class="stat-card">
-        <div class="stat-icon baidu">
-          <span style="color: white; font-weight: bold; font-size: 14px;">百度</span>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.baidu.indexed }}</div>
-          <div class="stat-label">百度收录页面</div>
-          <div class="stat-trend" :class="stats.baidu.trend > 0 ? 'up' : 'down'">
-            <el-icon v-if="stats.baidu.trend > 0"><ArrowUp /></el-icon>
-            <el-icon v-else><ArrowDown /></el-icon>
-            {{ Math.abs(stats.baidu.trend) }}% 较上周
-          </div>
-        </div>
-      </el-card>
-
-      <el-card class="stat-card">
-        <div class="stat-icon bing">
-          <span style="color: white; font-weight: bold; font-size: 14px;">必应</span>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.bing.indexed }}</div>
-          <div class="stat-label">必应收录页面</div>
-          <div class="stat-trend" :class="stats.bing.trend > 0 ? 'up' : 'down'">
-            <el-icon v-if="stats.bing.trend > 0"><ArrowUp /></el-icon>
-            <el-icon v-else><ArrowDown /></el-icon>
-            {{ Math.abs(stats.bing.trend) }}% 较上周
-          </div>
-        </div>
-      </el-card>
-
-      <el-card class="stat-card">
-        <div class="stat-icon keywords">
-          <el-icon><TrendCharts /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.keywords.total }}</div>
-          <div class="stat-label">关键词排名</div>
-          <div class="stat-trend up">
-            <el-icon><ArrowUp /></el-icon>
-            前10页: {{ stats.keywords.top10 }}个
-          </div>
-        </div>
-      </el-card>
-
-      <el-card class="stat-card">
-        <div class="stat-icon traffic">
-          <el-icon><View /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.traffic.organic }}</div>
-          <div class="stat-label">自然搜索流量</div>
-          <div class="stat-trend" :class="stats.traffic.trend > 0 ? 'up' : 'down'">
-            <el-icon v-if="stats.traffic.trend > 0"><ArrowUp /></el-icon>
-            <el-icon v-else><ArrowDown /></el-icon>
-            {{ Math.abs(stats.traffic.trend) }}% 较上月
-          </div>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 关键词排名 -->
-    <el-row :gutter="24">
-      <el-col :xs="24" :lg="14">
-        <el-card class="keyword-card">
-          <template #header>
-            <div class="card-header">
-              <span>核心关键词排名</span>
-              <el-radio-group v-model="keywordFilter" size="small">
-                <el-radio-button label="all">全部</el-radio-button>
-                <el-radio-button label="top10">前10名</el-radio-button>
-                <el-radio-button label="top50">前50名</el-radio-button>
-              </el-radio-group>
-            </div>
-          </template>
-
-          <el-table :data="filteredKeywords" stripe>
-            <el-table-column type="index" width="50" />
-            <el-table-column prop="keyword" label="关键词" min-width="150">
-              <template #default="{ row }">
-                <div class="keyword-cell">
-                  <span class="keyword-text">{{ row.keyword }}</span>
-                  <el-tag size="small" :type="getKeywordType(row.category)">
-                    {{ row.category }}
-                  </el-tag>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="baiduRank" label="百度排名" width="100" align="center">
-              <template #default="{ row }">
-                <rank-badge :rank="row.baiduRank" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="bingRank" label="必应排名" width="100" align="center">
-              <template #default="{ row }">
-                <rank-badge :rank="row.bingRank" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="searchVolume" label="月搜索量" width="100" align="right">
-              <template #default="{ row }">
-                {{ formatNumber(row.searchVolume) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="trend" label="趋势" width="80" align="center">
-              <template #default="{ row }">
-                <el-icon :class="row.trend > 0 ? 'trend-up' : 'trend-down'">
-                  <ArrowUp v-if="row.trend > 0" />
-                  <ArrowDown v-else />
-                </el-icon>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :lg="10">
-        <el-card class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span>搜索引擎流量占比</span>
-            </div>
-          </template>
-          <div ref="pieChart" class="chart-container"></div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 收录趋势 -->
-    <el-card class="trend-card">
-      <template #header>
-        <div class="card-header">
-          <span>收录趋势（近30天）</span>
-          <el-radio-group v-model="trendType" size="small">
-            <el-radio-button label="indexed">收录量</el-radio-button>
-            <el-radio-button label="traffic">流量</el-radio-button>
-          </el-radio-group>
-        </div>
-      </template>
-      <div ref="trendChart" class="chart-container-large"></div>
-    </el-card>
-
-    <!-- 页面收录详情 -->
-    <el-card class="pages-card">
-      <template #header>
-        <div class="card-header">
-          <span>页面收录详情</span>
-          <el-input
-            v-model="pageSearch"
-            placeholder="搜索页面..."
-            prefix-icon="Search"
-            clearable
-            style="width: 200px"
-          />
-        </div>
-      </template>
-
-      <el-table :data="filteredPages" stripe>
-        <el-table-column prop="url" label="页面URL" min-width="200">
-          <template #default="{ row }">
-            <a :href="row.url" target="_blank" class="page-link">
-              {{ row.url }}
-              <el-icon><Link /></el-icon>
-            </a>
-          </template>
-        </el-table-column>
-        <el-table-column prop="title" label="页面标题" min-width="200" />
-        <el-table-column prop="baiduStatus" label="百度收录" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.baiduStatus === '已收录' ? 'success' : 'warning'" size="small">
-              {{ row.baiduStatus }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="bingStatus" label="必应收录" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.bingStatus === '已收录' ? 'success' : 'warning'" size="small">
-              {{ row.bingStatus }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="lastCrawl" label="最后抓取" width="150" align="center" />
-        <el-table-column prop="traffic" label="搜索流量" width="100" align="right">
-          <template #default="{ row }">
-            {{ formatNumber(row.traffic) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="refreshPage(row)">
-              刷新
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="pageCurrent"
-          v-model:page-size="pageSize"
-          :total="pageTotal"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-        />
-      </div>
-    </el-card>
-
-    <!-- SEO建议 -->
-    <el-card class="suggestions-card">
-      <template #header>
-        <div class="card-header">
-          <span>SEO优化建议</span>
-          <el-tag :type="suggestions.filter(s => s.priority === 'high').length > 0 ? 'danger' : 'success'">
-            {{ suggestions.filter(s => s.priority === 'high').length }} 项紧急
-          </el-tag>
-        </div>
-      </template>
-
-      <div class="suggestion-list">
-        <div
-          v-for="(item, index) in suggestions"
-          :key="index"
-          class="suggestion-item"
-          :class="item.priority"
-        >
-          <div class="suggestion-icon">
-            <el-icon v-if="item.priority === 'high'"><Warning /></el-icon>
-            <el-icon v-else-if="item.priority === 'medium'"><InfoFilled /></el-icon>
-            <el-icon v-else><CircleCheck /></el-icon>
-          </div>
-          <div class="suggestion-content">
-            <div class="suggestion-title">{{ item.title }}</div>
-            <div class="suggestion-desc">{{ item.description }}</div>
-          </div>
-          <el-button
-            :type="item.priority === 'high' ? 'primary' : 'default'"
-            size="small"
-            @click="handleSuggestion(item)"
-          >
-            {{ item.action }}
-          </el-button>
-        </div>
-      </div>
-    </el-card>
-  </div>
-</template>
-
 <script setup>
-import { ref, computed, h, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-// echarts 按需引入，减少打包体积
-import { use, init as echartsInit } from 'echarts/core'
-import { PieChart, LineChart } from 'echarts/charts'
-import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import { graphic } from 'echarts/core'
-const { LinearGradient } = graphic
-import {
-  ArrowUp, ArrowDown, TrendCharts, View, Search, Link,
-  Warning, InfoFilled, CircleCheck
-} from '@element-plus/icons-vue'
 import { getSeoStats } from '@/api/admin'
 
-// 注册 echarts 所需组件
-use([PieChart, LineChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
-
-// 图表实例
-let pieChartInstance = null
-let trendChartInstance = null
-
-// 图表DOM引用
-const pieChart = ref(null)
-const trendChart = ref(null)
-
-// 加载状态
+// 统计数据
 const loading = ref(false)
-
-// 统计数据（从API获取）
 const stats = ref({
-  baidu: { indexed: 0, trend: 0 },
-  bing: { indexed: 0, trend: 0 },
-  keywords: { total: 0, top10: 0 },
-  traffic: { organic: 0, trend: 0 }
+  total: 0,
+  active: 0,
+  inactive: 0,
+  coverage: 0,
+  unconfigured: [],
+  unconfigured_count: 0
 })
 
-// 关键词数据（从API获取）
-const keywordFilter = ref('all')
-const keywords = ref([])
+// 覆盖率颜色
+const coverageColor = computed(() => {
+  const c = stats.value.coverage
+  if (c >= 80) return '#67c23a'
+  if (c >= 50) return '#e6a23c'
+  return '#f56c6c'
+})
 
-// 页面数据（从API获取）
-const pageSearch = ref('')
-const pageCurrent = ref(1)
-const pageSize = ref(10)
-const pageTotal = ref(0)
-const pages = ref([])
+// 覆盖率状态文字
+const coverageStatus = computed(() => {
+  const c = stats.value.coverage
+  if (c >= 80) return '良好'
+  if (c >= 50) return '一般'
+  return '待完善'
+})
 
-// 建议数据（从API获取，降级为空数组）
-const suggestions = ref([])
-
-// 趋势图原始数据（从API获取）
-const trendRawData = ref({ trend: [], dates: [] })
-
-// 趋势图类型
-const trendType = ref('indexed')
-
-// ── 数据加载 ────────────────────────────────────────────────────
-async function loadStats() {
+// 加载统计数据
+const loadStats = async () => {
   loading.value = true
   try {
     const res = await getSeoStats()
-    const data = res?.data ?? res
-    if (!data) return
-
-    // 后端返回：{ total, active, inactive, unconfigured, unconfigured_count, coverage }
-    // 将后端数据映射到前端统计卡片
-    stats.value = {
-      baidu: { indexed: data.active ?? 0, trend: 0 },
-      bing: { indexed: data.total ?? 0, trend: 0 },
-      keywords: { total: data.total ?? 0, top10: data.active ?? 0 },
-      traffic: { organic: data.coverage ?? 0, trend: 0 }
-    }
-
-    // 未配置页面作为优化建议
-    if (Array.isArray(data.unconfigured) && data.unconfigured.length > 0) {
-      suggestions.value = data.unconfigured.map(route => ({
-        priority: 'high',
-        title: `页面 ${route} 未配置SEO`,
-        description: '该页面尚未配置SEO信息，可能影响搜索引擎收录',
-        action: '去配置'
-      }))
+    if (res.code === 0) {
+      stats.value = res.data
     } else {
-      suggestions.value = []
+      ElMessage.error(res.msg || '获取SEO统计失败')
     }
-
-    // 更新饼图（已启用 vs 未启用）
-    updatePieChart()
-  } catch {
-    ElMessage.error('获取SEO统计数据失败')
+  } catch (e) {
+    ElMessage.error('获取SEO统计失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
-// ── 计算属性 ─────────────────────────────────────────────────────
-const filteredKeywords = computed(() => {
-  let result = keywords.value
-  if (keywordFilter.value === 'top10') {
-    result = result.filter(k => (k.baidu_rank || k.baiduRank) <= 10 || (k.bing_rank || k.bingRank) <= 10)
-  } else if (keywordFilter.value === 'top50') {
-    result = result.filter(k => (k.baidu_rank || k.baiduRank) <= 50 || (k.bing_rank || k.bingRank) <= 50)
-  }
-  return result
-})
-
-const filteredPages = computed(() => {
-  if (!pageSearch.value) return pages.value
-  return pages.value.filter(p =>
-    p.url?.includes(pageSearch.value) ||
-    p.title?.includes(pageSearch.value)
-  )
-})
-
-// ── 工具方法 ─────────────────────────────────────────────────────
-const getKeywordType = (category) => {
-  const map = { '核心词': 'danger', '长尾词': 'success', '相关词': 'info', '特色词': 'warning' }
-  return map[category] || 'info'
-}
-
-const formatNumber = (num) => {
-  const n = Number(num) || 0
-  if (n >= 10000) return (n / 10000).toFixed(1) + '万'
-  return n.toLocaleString()
-}
-
-const refreshPage = (row) => {
-  ElMessage.success(`已刷新页面 ${row.url} 的收录状态`)
-}
-
-const handleSuggestion = (item) => {
-  ElMessage.info(`正在处理: ${item.title}`)
-}
-
-// 排名徽章组件
-const RankBadge = {
-  props: ['rank'],
-  setup(props) {
-    const type = computed(() => {
-      const r = Number(props.rank)
-      if (r <= 10) return 'success'
-      if (r <= 30) return 'warning'
-      return 'info'
-    })
-    return () => h('el-tag', { type: type.value, size: 'small' }, props.rank)
-  }
-}
-
-// ── 图表方法 ─────────────────────────────────────────────────────
-const updatePieChart = () => {
-  if (!pieChartInstance) return
-  const baiduVal = stats.value.baidu?.indexed ?? 0
-  const bingVal = stats.value.bing?.indexed ?? 0
-  pieChartInstance.setOption({
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    legend: { bottom: '0', left: 'center', textStyle: { color: '#8b8b8b' }, itemWidth: 10, itemHeight: 10 },
-    series: [{
-      name: '收录分布',
-      type: 'pie',
-      radius: ['40%', '70%'],
-      avoidLabelOverlap: false,
-      itemStyle: { borderRadius: 8, borderColor: 'transparent', borderWidth: 2 },
-      label: { show: false },
-      emphasis: { label: { show: true, fontSize: '14', fontWeight: 'bold' } },
-      data: [
-        { value: baiduVal, name: '百度', itemStyle: { color: '#2932e1' } },
-        { value: bingVal, name: '必应', itemStyle: { color: '#008373' } }
-      ]
-    }]
-  })
-}
-
-const initPieChart = () => {
-  if (!pieChart.value) return
-  pieChartInstance = echartsInit(pieChart.value)
-  updatePieChart()
-}
-
-const initTrendChart = () => {
-  if (!trendChart.value) return
-  trendChartInstance = echartsInit(trendChart.value)
-  updateTrendChart()
-}
-
-const updateTrendChart = () => {
-  if (!trendChartInstance) return
-  const isTraffic = trendType.value === 'traffic'
-  const raw = trendRawData.value
-  const dates = raw?.dates?.length ? raw.dates : Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - 29 + i)
-    return `${d.getMonth()+1}-${d.getDate()}`
-  })
-  const baiduData = isTraffic ? (raw?.baidu_traffic ?? []) : (raw?.baidu_indexed ?? [])
-  const bingData = isTraffic ? (raw?.bing_traffic ?? []) : (raw?.bing_indexed ?? [])
-
-  const option = {
-    tooltip: { trigger: 'axis' },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: dates,
-      axisLabel: { color: '#8b8b8b' }
-    },
-    yAxis: { type: 'value', axisLabel: { color: '#8b8b8b' } },
-    series: [
-      {
-        name: isTraffic ? '百度流量' : '百度收录',
-        type: 'line',
-        smooth: true,
-        data: baiduData,
-        itemStyle: { color: '#2932e1' },
-        areaStyle: { color: new LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(41, 50, 225, 0.2)' }, { offset: 1, color: 'rgba(41, 50, 225, 0)' }]) }
-      },
-      {
-        name: isTraffic ? '必应流量' : '必应收录',
-        type: 'line',
-        smooth: true,
-        data: bingData,
-        itemStyle: { color: '#008373' },
-        areaStyle: { color: new LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 131, 115, 0.2)' }, { offset: 1, color: 'rgba(0, 131, 115, 0)' }]) }
-      }
-    ]
-  }
-  trendChartInstance.setOption(option)
-}
-
-watch(trendType, updateTrendChart)
-watch(pageCurrent, loadStats)
-watch(pageSearch, () => { pageCurrent.value = 1; loadStats() })
-
-const handleResize = () => {
-  pieChartInstance?.resize()
-  trendChartInstance?.resize()
-}
-
-onMounted(async () => {
-  initPieChart()
-  initTrendChart()
-  await loadStats()
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  pieChartInstance?.dispose()
-  trendChartInstance?.dispose()
+onMounted(() => {
+  loadStats()
 })
 </script>
 
+<template>
+  <div class="seo-stats-page" v-loading="loading">
+    <div class="page-header">
+      <h1 class="page-title">SEO 配置覆盖率</h1>
+      <p class="page-desc">检查各页面 SEO 配置完整性，确保搜索引擎可正确收录</p>
+      <el-button type="primary" :icon="'Refresh'" @click="loadStats" :loading="loading" size="small">
+        刷新数据
+      </el-button>
+    </div>
+
+    <!-- 概览卡片 -->
+    <el-row :gutter="20" class="stats-overview">
+      <el-col :xs="12" :sm="6">
+        <el-card class="stat-card">
+          <div class="stat-number" style="color: #409eff">{{ stats.total }}</div>
+          <div class="stat-label">已配置页面总数</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card class="stat-card">
+          <div class="stat-number" style="color: #67c23a">{{ stats.active }}</div>
+          <div class="stat-label">已启用配置</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card class="stat-card">
+          <div class="stat-number" style="color: #e6a23c">{{ stats.inactive }}</div>
+          <div class="stat-label">已禁用配置</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card class="stat-card">
+          <div class="stat-number" :style="{ color: coverageColor }">{{ stats.coverage }}%</div>
+          <div class="stat-label">页面覆盖率 · {{ coverageStatus }}</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 覆盖率进度条 -->
+    <el-card class="coverage-card">
+      <template #header>
+        <span class="card-title">📊 SEO 覆盖率详情</span>
+      </template>
+      <div class="coverage-bar-wrap">
+        <div class="coverage-label">
+          <span>整体覆盖率</span>
+          <span :style="{ color: coverageColor, fontWeight: 600 }">{{ stats.coverage }}%</span>
+        </div>
+        <el-progress
+          :percentage="stats.coverage"
+          :color="coverageColor"
+          :stroke-width="16"
+          :show-text="false"
+        />
+        <div class="coverage-hint">
+          共 {{ stats.total + stats.unconfigured_count }} 个页面，已配置 {{ stats.total }} 个，未配置 {{ stats.unconfigured_count }} 个
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 未配置页面列表 -->
+    <el-card v-if="stats.unconfigured_count > 0" class="unconfigured-card">
+      <template #header>
+        <div class="card-header-row">
+          <span class="card-title">⚠️ 未配置 SEO 的页面（{{ stats.unconfigured_count }} 个）</span>
+          <el-tag type="warning" size="small">需要补充</el-tag>
+        </div>
+      </template>
+      <div class="unconfigured-list">
+        <el-tag
+          v-for="route in stats.unconfigured"
+          :key="route"
+          type="danger"
+          class="route-tag"
+          effect="plain"
+        >
+          {{ route }}
+        </el-tag>
+      </div>
+      <el-alert
+        title="建议前往「SEO配置」页面，为以上页面补充 title、description、keywords 等 SEO 信息，有助于提升搜索引擎收录效果。"
+        type="warning"
+        :closable="false"
+        show-icon
+        style="margin-top: 16px"
+      />
+    </el-card>
+
+    <!-- 全部覆盖时的提示 -->
+    <el-card v-else class="all-covered-card">
+      <el-result
+        icon="success"
+        title="所有页面均已配置 SEO"
+        sub-title="太棒了！所有页面都已完成 SEO 配置，搜索引擎可以正确收录您的网站。"
+      >
+        <template #extra>
+          <el-button type="primary" @click="$router.push('/seo/index')">查看 SEO 配置</el-button>
+        </template>
+      </el-result>
+    </el-card>
+
+    <!-- 说明 -->
+    <el-card class="tips-card">
+      <template #header>
+        <span class="card-title">💡 SEO 优化建议</span>
+      </template>
+      <ul class="tips-list">
+        <li>每个页面的 <strong>title</strong> 应包含核心关键词，长度建议 20-60 字符</li>
+        <li><strong>description</strong> 应简洁描述页面内容，长度建议 80-160 字符</li>
+        <li><strong>keywords</strong> 建议 3-8 个关键词，用英文逗号分隔</li>
+        <li>确保所有页面的 SEO 配置处于「启用」状态</li>
+        <li>定期检查 robots.txt 配置，确保搜索引擎可以正常抓取</li>
+        <li>提交站点地图（Sitemap）可加速搜索引擎收录</li>
+      </ul>
+    </el-card>
+  </div>
+</template>
+
 <style scoped>
 .seo-stats-page {
-  padding: 24px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 600;
-  margin: 0 0 8px;
-}
-
-.page-desc {
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.stats-overview {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
   padding: 20px;
 }
 
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+.page-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-right: 16px;
-  font-size: 28px;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.stat-icon.baidu {
-  background: #2932e1;
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
 }
 
-.stat-icon.bing {
-  background: #008373;
-}
-
-.stat-icon.keywords {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: var(--text-primary);
-}
-
-.stat-icon.traffic {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: var(--text-primary);
-}
-
-.stat-icon img {
-  width: 32px;
-  height: 32px;
-}
-
-.stat-content {
+.page-desc {
+  font-size: 14px;
+  color: #909399;
+  margin: 0;
   flex: 1;
 }
 
+.stats-overview {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 8px 0;
+}
+
 .stat-number {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 4px;
+  line-height: 1.2;
+  margin-bottom: 6px;
 }
 
 .stat-label {
   font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
+  color: #909399;
 }
 
-.stat-trend {
-  font-size: 12px;
+.coverage-card,
+.unconfigured-card,
+.all-covered-card,
+.tips-card {
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.card-header-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
 }
 
-.stat-trend.up {
-  color: #10b981;
+.coverage-bar-wrap {
+  padding: 8px 0;
 }
 
-.stat-trend.down {
-  color: #ef4444;
-}
-
-.card-header {
+.coverage-label {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #606266;
 }
 
-.keyword-card, .chart-card, .trend-card, .pages-card, .suggestions-card {
-  margin-bottom: 24px;
+.coverage-hint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #909399;
 }
 
-.keyword-cell {
+.unconfigured-list {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.keyword-text {
-  font-weight: 500;
-}
-
-.trend-up {
-  color: #10b981;
-}
-
-.trend-down {
-  color: #ef4444;
-}
-
-.chart-container {
-  height: 300px;
-}
-
-.chart-container-large {
-  height: 350px;
-}
-
-.page-link {
-  color: var(--primary-color);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.page-link:hover {
-  text-decoration: underline;
-}
-
-.pagination-wrapper {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.suggestion-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  border-radius: 8px;
-  background: #f8fafc;
-  gap: 12px;
-}
-
-.suggestion-item.high {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-}
-
-.suggestion-item.medium {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-}
-
-.suggestion-item.low {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-}
-
-.suggestion-icon {
-  font-size: 24px;
-}
-
-.suggestion-item.high .suggestion-icon {
-  color: #ef4444;
-}
-
-.suggestion-item.medium .suggestion-icon {
-  color: #f59e0b;
-}
-
-.suggestion-item.low .suggestion-icon {
-  color: #10b981;
-}
-
-.suggestion-content {
-  flex: 1;
-}
-
-.suggestion-title {
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.suggestion-desc {
+.route-tag {
   font-size: 13px;
-  color: var(--text-secondary);
 }
 
-@media (max-width: 960px) {
-  .stats-overview {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.tips-list {
+  padding-left: 20px;
+  margin: 0;
+  line-height: 2;
+  color: #606266;
+  font-size: 14px;
 }
 
-@media (max-width: 768px) {
-  .stats-overview {
-    grid-template-columns: 1fr;
-  }
-  
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
+.tips-list li {
+  margin-bottom: 4px;
 }
 </style>

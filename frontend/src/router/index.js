@@ -378,7 +378,7 @@ async function loadDbSeoConfigs() {
   dbSeoConfigLoading = true
   try {
     const res = await getActiveSeoConfigs()
-    if (res.data?.code === 200) {
+    if (res.data?.code === 0) {
       dbSeoConfigCache = res.data.data || {}
     }
   } catch (e) {
