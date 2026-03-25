@@ -47,6 +47,43 @@ class TarotCards extends BaseController
     }
 
     /**
+     * 新增塔罗牌
+     */
+    public function create()
+    {
+        try {
+            $data = $this->request->post();
+
+            $requiredFields = ['name', 'name_en'];
+            foreach ($requiredFields as $field) {
+                if (empty($data[$field])) {
+                    return $this->error("字段 {$field} 不能为空");
+                }
+            }
+
+            $allowedFields = [
+                'name', 'name_en', 'suit', 'number', 'is_major', 'is_enabled',
+                'image', 'keywords', 'meaning', 'reversed_meaning',
+                'love_meaning', 'love_reversed', 'career_meaning', 'career_reversed',
+                'health_meaning', 'health_reversed', 'wealth_meaning', 'wealth_reversed',
+            ];
+
+            $createData = [];
+            foreach ($allowedFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $createData[$field] = $data[$field];
+                }
+            }
+
+            $card = TarotCard::create($createData);
+            return $this->success($card->toArray(), '新增成功');
+        } catch (\Throwable $e) {
+            Log::error('新增塔罗牌失败: ' . $e->getMessage());
+            return $this->error('新增失败');
+        }
+    }
+
+    /**
      * 更新塔罗牌（仅允许编辑含义字段和启用状态）
      */
     public function update(int $id)

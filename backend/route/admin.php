@@ -101,12 +101,6 @@ Route::group('api/maodou', function () {
         Route::delete('yearly-fortune-manage/:id', 'admin.YearlyFortuneManage/delete');
 
         // 内容管理
-        Route::get('content/bazi', 'Admin/baziRecords');
-        Route::get('content/bazi/:id', 'Admin/baziDetail');
-        Route::delete('content/bazi/:id', 'Admin/deleteBaziRecord');
-        Route::get('content/tarot', 'Admin/tarotRecords');
-        Route::get('content/tarot/:id', 'Admin/tarotDetail');
-        Route::delete('content/tarot/:id', 'Admin/deleteTarotRecord');
         Route::get('content/daily', 'Admin/dailyFortuneList');
         Route::post('content/daily', 'Admin/createDailyFortune');
         Route::put('content/daily/:id', 'Admin/updateDailyFortune');
@@ -170,14 +164,6 @@ Route::group('api/maodou', function () {
         Route::get('order/packages', 'admin.Order/packages');
         Route::post('order/save-package', 'admin.Order/savePackage');
 
-        // 八字记录管理
-        Route::get('bazi-records', 'BaziRecordController/index');
-        Route::get('bazi-records/statistics', 'BaziRecordController/statistics');
-
-        // VIP记录管理
-        Route::get('vip-records', 'VipRecordController/index');
-        Route::get('vip-records/statistics', 'VipRecordController/statistics');
-
         // 短信管理
 
         Route::get('sms/config', 'admin.Sms/getConfig');
@@ -203,7 +189,6 @@ Route::group('api/maodou', function () {
         Route::post('feedback/:id/reply', 'admin.Feedback/reply');
         Route::put('feedback/:id/status', 'admin.Feedback/updateStatus');
         Route::delete('feedback/:id', 'admin.Feedback/delete');
-        Route::get('system/admin-list', 'admin.System/adminList');
         
         // 数据分析
         Route::get('analysis/payment', 'admin.Analysis/payment');
@@ -339,6 +324,7 @@ Route::group('api/maodou', function () {
         // 塔罗牌管理
         Route::get('tarot-cards/stats', 'admin.TarotCards/stats');
         Route::get('tarot-cards', 'admin.TarotCards/index');
+        Route::post('tarot-cards', 'admin.TarotCards/create');
         Route::get('tarot-cards/:id', 'admin.TarotCards/detail');
         Route::put('tarot-cards/:id', 'admin.TarotCards/update');
         Route::post('tarot-cards/:id/toggle-status', 'admin.TarotCards/toggleStatus');

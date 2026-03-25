@@ -13,9 +13,7 @@
 
 ### 严重问题（API 路径错误 / 功能完全不可用）
 
-- [ ] **[管理端] 管理员管理 API 路径错误**
-  - 问题：前端 `admin/src/api/system.js` 调用 `/system/admin-list`，但后端路由注册的是 `/system/admins`（GET/POST）和 `/system/admins/:id`（DELETE），路径不匹配导致接口 404。
-  - 修复：将 `system.js` 中所有 `/system/admin-list` 改为 `/system/admins`，删除操作路径改为 `/system/admins/:id`。
+- [x] **[管理端] 管理员管理 API 路径错误** — 已修复，`system.js` 中所有 `/system/admin-list` 统一改为 `/system/admins`，删除操作路径改为 `/system/admins/:id`。
 
 - [ ] **[管理端] 流年运势管理入口缺失**
   - 问题：后端已有完整的 `yearly-fortune-manage` CRUD 路由，但管理端路由文件和 `views/result/` 目录下均无对应页面，导致流年运势记录无法在管理端查看和管理。
@@ -79,9 +77,7 @@
 
 #### 🔴 严重：路由/控制器不一致
 
-- [ ] **[管理端] `system/admin-list` 路由与控制器双重混乱**
-  - 问题：`admin.php` 中同时存在两条路由：`Route::get('system/admin-list', 'admin.System/adminList')` 和 `Route::get('system/admins', 'Admin/getAdminUsers')`，前者指向 `admin\System::adminList()`（只读列表，无 CRUD），后者指向 `Admin::getAdminUsers()`（完整 CRUD）。前端 `system.js` 调用 `/system/admin-list`，实际命中的是只读接口，导致新增/删除操作全部 404。
-  - 修复：删除 `admin.php` 中 `system/admin-list` 这条冗余路由，前端 `system.js` 统一改为 `/system/admins`，并补全 POST/DELETE 方法调用。
+- [x] **[管理端] `system/admin-list` 路由与控制器双重混乱** — 已修复，删除 `admin.php` 中冗余的 `system/admin-list` 路由，前端 `system.js` 统一使用 `/system/admins`。
 
 - [x] **[前台] `index.js` 存在大量幽灵 API（路由不存在）**
   - 已删除：`/cultural/` 路由组全部函数（10个）、`/decision/` 路由组全部函数（两处共9个）、`/relationship/` 路由组全部函数（4个）、`wechatLogin`、`getMyTasks`、`calculateCultural`、`setCulturalSharePublic`
@@ -119,9 +115,7 @@
 
 - [x] **[管理端] `system/admin.vue` 与 `system/admins.vue` 功能重复** — 已删除废弃文件 `admin.vue`。
 
-- [ ] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳页面**
-  - 问题：`admin/src/views/content/bazi.vue`（1021B）和 `content/tarot.vue`（1.00KB）文件极小，疑似空壳或占位文件，但这两个路径未在 `admin/src/router/index.js` 中注册，属于无用文件。
-  - 修复：确认是否需要这两个页面，若无则删除。
+- [x] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳页面** — 已删除两个空壳文件。
 
 - [ ] **[管理端] `site-content/testimonials.vue` 和 `site-content/question-templates.vue` 无路由入口**
   - 问题：`admin/src/views/site-content/testimonials.vue`（9.05KB）和 `question-templates.vue`（8.00KB）存在于目录中，但 `admin/src/router/index.js` 的 `/site` 路由组中只有 `tarot-cards`、`faq`、`knowledge` 三个子路由，这两个页面无法访问。
@@ -142,9 +136,7 @@
     - `GET /site/fortune-templates`、`POST /site/fortune-templates`（无路由）
   - 修复：这些接口对应的功能（用户评价、牌阵、问题模板、运势模板）后端均未实现，需要决策：要么补充后端实现，要么删除前端相关页面和接口。
 
-- [ ] **[管理端] `tarot-cards.vue` 中"添加塔罗牌"按钮无实际新增功能**
-  - 问题：`site-content/tarot-cards.vue` 中点击"添加塔罗牌"会打开弹窗，但 `saveTarotCard` 调用 `PUT /tarot-cards/:id`，当 `form.id` 为 null 时 URL 变为 `/tarot-cards/null`，导致新增操作实际上是 PUT 请求到错误路径。
-  - 修复：`siteContent.js` 中 `saveTarotCard` 需区分新增（POST `/tarot-cards`）和编辑（PUT `/tarot-cards/:id`），后端也需补充 `POST /tarot-cards` 路由。
+- [x] **[管理端] `tarot-cards.vue` 中"添加塔罗牌"按钮无实际新增功能** — 已修复，`siteContent.js` 中 `saveTarotCard` 已区分新增（POST `/tarot-cards`）和编辑（PUT `/tarot-cards/:id`），后端 `admin.php` 补充了 `POST tarot-cards` 路由。
 
 ---
 
@@ -194,13 +186,9 @@
   - 问题：`points/rules.vue` 期望展示可编辑的积分规则（如签到得多少分、邀请得多少分），但后端 `getRules()` 实际上是从 `tc_points_record` 表中 `distinct` 出已有的 `type` 字段，返回的是历史记录中出现过的类型，而非真正的规则配置，且 `points` 字段硬编码为 0。
   - 修复：设计积分规则配置表（或使用 `tc_system_config`），`getRules()` 从配置中读取，`saveRules()` 写入配置。
 
-- [ ] **[管理端] `user/behavior.vue` 调用 `getUserBehavior` 但后端 `users/behavior` 接口返回数据结构未知**
-  - 问题：`user/behavior.vue` 调用 `GET /users/behavior`，后端 `admin\User::behavior()` 方法存在，但该接口返回的字段（`list/total`）与前端期望的 `username/type/content/ip` 等字段是否匹配未经验证，且前端未处理 `res.code !== 200` 的情况（直接解构 `res.data`）。
-  - 修复：验证后端 `behavior()` 方法返回的字段，确保与前端展示字段一致；补充前端错误处理。
+- [x] **[管理端] `user/behavior.vue` 调用 `getUserBehavior` 但后端 `users/behavior` 接口返回数据结构未知** — 已修复，`behavior.vue` 补充了 `res.code !== 200` 的错误处理，后端 `behavior()` 返回字段已与前端展示字段对齐。
 
-- [ ] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳文件但被路由引用**
-  - 问题：`content/bazi.vue`（1021B）和 `content/tarot.vue`（1.00KB）文件极小，内容为空壳，但 `admin.php` 中有 `GET content/bazi` 和 `GET content/tarot` 路由（指向旧的 `Admin` 控制器），这两个路由与新的 `BaziManage`/`TarotManage` 功能重复，造成混乱。
-  - 修复：确认 `content/bazi` 和 `content/tarot` 路由是否仍需要，若不需要则删除 `admin.php` 中对应路由和 `content/bazi.vue`、`content/tarot.vue` 文件。
+- [x] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳文件但被路由引用** — 已删除两个空壳文件（与上条合并处理）。
 
 ---
 
@@ -214,29 +202,21 @@
 
 - [x] **[后端] `Statistics.php` 使用无前缀表名，查询必然失败** — 已修复，所有 `Db::table()` 改为 `Db::name()`，自动加 `tc_` 前缀。
 
-- [ ] **[后端] `BaziRecordController.php` 的 `statistics()` 方法使用无前缀表名**
-  - 问题：`BaziRecordController::statistics()` 中 `Db::table('bazi_record')` 无前缀，会报表不存在；同时 `BaziRecord::count()` 依赖 Model 定义，需确认 `BaziRecord` Model 是否存在。
-  - 修复：将 `Db::table('bazi_record')` 改为 `Db::name('bazi_record')`，并确认 `BaziRecord` Model 的表名配置正确。
+- [x] **[后端] `BaziRecordController.php` 的 `statistics()` 方法使用无前缀表名** — 已修复，`Db::table('bazi_record')` 改为 `Db::name('bazi_record')`。
+
+- [x] **[后端] `admin.php` 中 `content/bazi` 和 `content/tarot` 6条孤儿路由** — 已删除，这些路由指向已删除的 `Admin` 控制器方法，现统一使用 `bazi-manage` / `tarot-manage` 路由组。
 
 ---
 
 #### 🟡 中等：孤儿文件 / 功能未接通
 
-- [ ] **[后端] `PointsController.php` 和 `UserController.php` 是孤儿控制器**
-  - 问题：`backend/app/controller/PointsController.php`（积分记录列表+统计）和 `UserController.php` 在 `admin.php` 和 `app.php` 中均无路由注册，是完全无法访问的废弃文件，与 `admin\Points.php`、`admin\User.php` 功能重复。
-  - 修复：确认这两个文件是否有保留价值，若无则删除，避免混淆。
+- [x] **[后端] `PointsController.php` 和 `UserController.php` 是孤儿控制器** — 已删除两个孤儿控制器文件。
 
-- [ ] **[管理端] `contentEditor.js` 中 4 个函数无对应后端路由**
-  - 问题：`admin/src/api/contentEditor.js` 中 `updateBlocks`（`PUT /content/page/:id/blocks`）、`updateBlock`（`PUT /content/page/:id/block/:blockId`）、`deleteBlock`（`DELETE /content/page/:id/block/:blockId`）、`sortBlocks`（`PUT /content/page/:id/sort`）在 `admin.php` 中无对应路由，调用必然 404。
-  - 修复：若内容编辑器功能需要这些操作，在 `admin.php` 中补充对应路由并在 `Content.php` 控制器中实现；若不需要，删除 `contentEditor.js` 中这 4 个函数。
+- [x] **[管理端] `contentEditor.js` 中 4 个函数无对应后端路由** — 已删除 `updateBlocks`、`updateBlock`、`deleteBlock`、`sortBlocks` 四个无路由函数。
 
-- [ ] **[管理端] `admin/src/api/ai.js` 接口路径需核对**
-  - 问题：`ai.js` 中调用 `/ai/config`（GET/POST）和 `/ai/test`，后端 `admin.php` 中有对应路由 `admin.Ai/getConfig`、`admin.Ai/saveConfig`、`admin.Ai/testConnection`，路径匹配；但 `admin.Ai` 控制器（`admin/Ai.php`）是否实现了这三个方法需确认。
-  - 修复：读取 `admin/Ai.php` 确认方法存在，若缺失则补充实现。
+- [x] **[管理端] `admin/src/api/ai.js` 接口路径需核对** — 已确认 `admin/Ai.php` 中 `getConfig`、`saveConfig`、`testConnection` 三个方法均已实现，路径匹配，此条目关闭。
 
-- [ ] **[后端] `Statistics.php` 与 `admin\Dashboard.php` 功能高度重叠**
-  - 问题：`admin.php` 中同时存在 `GET statistics/index`（→ `Statistics/index`）和 `GET dashboard/statistics`（→ `admin.Dashboard/index`），两者都返回平台统计数据，功能重叠，且 `Statistics.php` 还有表名 bug，前端 `dashboard.js` 只调用 `dashboard/statistics`，`statistics/index` 无前端调用方。
-  - 修复：删除 `statistics/index` 路由和 `Statistics.php` 控制器，统一使用 `admin\Dashboard` 提供统计数据。
+- [x] **[后端] `Statistics.php` 与 `admin\Dashboard.php` 功能高度重叠** — 已删除 `statistics/index` 路由和 `Statistics.php` 控制器，统一使用 `admin\Dashboard`。
 
 ---
 

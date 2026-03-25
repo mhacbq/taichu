@@ -145,6 +145,11 @@ taichu-unified/
 7. **API 路径唯一真相来源** — 新增 API 时，以 `backend/route/admin.php` 为唯一路径真相来源，前端 `admin/src/api/` 对应文件必须同步更新，禁止在页面组件里硬编码路径。路径不一致是历史 Bug 的主要根因（如前端调 `/site/faqs`，后端注册的是 `/faqs`）。
 9. **控制器实现了但路由没注册** — 历史遗留问题：后端 Controller 方法已写好，但 `route/app.php` 或 `route/admin.php` 中忘记注册对应路由，导致前端调用 404。已知案例：`tarot/ai-analysis`（`Tarot::aiAnalysis`）、`liuyao/ai-analysis`（`Liuyao::aiAnalysis`）、`PUT points/rules`（`admin\Points::saveRules`）、前台 `site/faqs` 公开接口。**每次新增 Controller 方法后，必须立即在路由文件中注册，两者必须同步提交。**
 8. **数据库表唯一真相来源** — `database/init.sql` 是数据库的唯一真相来源。每次修改表结构（新增字段、新建表、删除废弃表）都必须同步更新 `init.sql`，而不是堆叠新的补丁文件。历史教训：19 个迁移文件叠加导致同一张表出现 2-3 个版本并存（如 `tc_system_config` vs `system_config`、`hehun_records` vs `tc_hehun_record`），最终需要全量重整。
+10. **`Db::table()` vs `Db::name()`** — ThinkPHP 中 `Db::table('bazi_record')` 是完整表名（不加前缀），`Db::name('bazi_record')` 才会自动加 `tc_` 前缀。所有原生查询必须用 `Db::name()`，否则查询必然失败。已知案例：`Statistics.php`、`BaziRecordController.php` 的 `statistics()` 方法。
+11. **孤儿控制器** — 历史遗留问题：Controller 文件存在但 `route/app.php` 和 `route/admin.php` 均无路由注册，与 `admin/` 层功能重复。已知案例：`PointsController.php`、`UserController.php`。发现此类文件先确认无调用方后直接删除，避免混淆。
+12. **空壳页面文件** — 历史遗留问题：`.vue` 文件存在（体积极小 ≤ 1KB）但内容为空壳，且未在路由中注册。已知案例：`content/bazi.vue`、`content/tarot.vue`。发现此类文件直接删除，不要保留占位文件。
+13. **前端响应字段与后端返回不匹配** — 前端期望 `res.data.chart_data` 等字段，但后端实际未返回，导致图表渲染使用硬编码假数据。新增接口时必须对齐前后端字段，验证清单中已有对应检查项。
+14. **页面按钮无事件绑定** — 历史遗留问题：页面只有只读列表，新增/编辑/删除按钮存在于模板中但未绑定任何 `@click` 事件。已知案例：`vip-packages.vue`、`system/admins.vue`。新建管理页面时必须同步实现所有操作按钮的事件逻辑。
 
 ---
 

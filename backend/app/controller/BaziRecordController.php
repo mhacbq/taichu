@@ -25,7 +25,7 @@ class BaziRecordController extends BaseController
             $startDate = $request->get('start_date', '');
             $endDate = $request->get('end_date', '');
 
-            $query = Db::table('tc_bazi_record as br')
+            $query = Db::name('bazi_record')->alias('br')
                 ->leftJoin('tc_user as u', 'br.user_id', '=', 'u.id')
                 ->field('br.*, u.nickname, u.mobile');
 
