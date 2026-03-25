@@ -176,6 +176,7 @@ const emit = defineEmits([
           :summary="baziShareSummary"
           :tags="baziShareTags"
           :sharePath="`/bazi?id=${result.id}`"
+          :wuxingItems="wuxingDistributionItems"
         >
           <template #trigger>
             <el-button><el-icon><Share /></el-icon> 分享摘要</el-button>

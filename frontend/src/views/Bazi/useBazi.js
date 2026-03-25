@@ -292,6 +292,12 @@ const formatWuxingScore = (value) => {
 const wuxingDistributionItems = computed(() => {
   const wuxingOrder = ['金', '木', '水', '火', '土']
   const stats = result.value?.bazi?.wuxing_stats || {}
+  const strength = result.value?.bazi?.strength || {}
+  // 喜用五行列表（后端返回的数组，如 ['水', '木']）
+  const favoriteWuxing = strength.favorite_wuxing || []
+  // 日主强弱状态
+  const strengthStatus = strength.status || ''
+
   const normalizedStats = wuxingOrder.map((name) => {
     const numericValue = Number(stats[name] ?? 0)
     return {
@@ -300,16 +306,39 @@ const wuxingDistributionItems = computed(() => {
     }
   })
   const total = normalizedStats.reduce((sum, item) => sum + item.value, 0)
+  const avgValue = total / wuxingOrder.length
 
   return normalizedStats.map((item) => {
     const width = Math.min(100, (item.value / WUXING_WEIGHT_MAX) * 100)
     const share = total > 0 ? (item.value / total) * 100 : 0
+    const isFavorite = favoriteWuxing.includes(item.name)
+    // 缺失：值为0或极低（低于平均值的30%）
+    const isMissing = total > 0 && item.value < avgValue * 0.3
+    // 偏旺：值超过平均值的180%
+    const isDominant = total > 0 && item.value > avgValue * 1.8
+
+    // 标签优先级：喜用 > 缺失 > 偏旺 > 偏弱 > 无
+    let badge = null
+    if (isFavorite) {
+      badge = { text: '喜用', type: 'favorite' }
+    } else if (isMissing) {
+      badge = { text: '缺失', type: 'missing' }
+    } else if (isDominant) {
+      badge = { text: '偏旺', type: 'dominant' }
+    } else if (item.value < avgValue * 0.6) {
+      badge = { text: '偏弱', type: 'weak' }
+    }
 
     return {
       ...item,
       width: Number.isFinite(width) ? Number(width.toFixed(1)) : 0,
       displayValue: formatWuxingScore(item.value),
       shareText: total > 0 ? `占比 ${share.toFixed(1)}%` : '占比 0%',
+      isFavorite,
+      isMissing,
+      isDominant,
+      badge,
+      strengthStatus,
     }
   })
 })

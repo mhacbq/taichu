@@ -92,17 +92,40 @@ const props = defineProps({
         <h3>五行分布</h3>
         <p class="wuxing-caption">以下为加权值，综合了天干透出、地支藏干与月令司令权重，并非简单计数。</p>
       </div>
+      <!-- 日主强弱状态提示 -->
+      <div v-if="wuxingDistributionItems[0]?.strengthStatus" class="strength-status-bar">
+        <span class="strength-status-label">日主强弱：</span>
+        <span class="strength-status-value" :class="['身旺','中和偏旺'].includes(wuxingDistributionItems[0]?.strengthStatus) ? 'status--strong' : 'status--weak'">
+          {{ wuxingDistributionItems[0]?.strengthStatus }}
+        </span>
+        <span class="strength-status-hint">
+          {{ ['身旺','中和偏旺'].includes(wuxingDistributionItems[0]?.strengthStatus) ? '· 宜泄耗克制，以官杀食伤财星为喜' : '· 宜生扶助旺，以印星比劫为喜' }}
+        </span>
+      </div>
       <div class="wuxing-bars">
-        <div v-for="item in wuxingDistributionItems" :key="item.name" class="wuxing-bar-item" :class="'wx-' + item.name">
+        <div
+          v-for="item in wuxingDistributionItems"
+          :key="item.name"
+          class="wuxing-bar-item"
+          :class="['wx-' + item.name, { 'is-favorite': item.isFavorite, 'is-missing': item.isMissing }]"
+        >
           <div class="wuxing-bar-main">
             <span class="wuxing-name">
               <span class="wuxing-name__icon" :class="'icon-' + item.name">
                 {{ item.name === '金' ? '✨' : item.name === '木' ? '🌿' : item.name === '水' ? '💧' : item.name === '火' ? '🔥' : '⛰️' }}
               </span>
               <span class="wuxing-name__text">{{ item.name }}</span>
+              <!-- 状态 badge -->
+              <span v-if="item.badge" class="wuxing-badge-tag" :class="'badge-' + item.badge.type">
+                {{ item.badge.text }}
+              </span>
             </span>
             <div class="wuxing-bar">
-              <div class="wuxing-fill" :class="item.name" :style="{ width: `${item.width}%`, '--target-width': `${item.width}%` }"></div>
+              <div
+                class="wuxing-fill"
+                :class="[item.name, { 'fill--favorite': item.isFavorite, 'fill--missing': item.isMissing }]"
+                :style="{ width: `${item.width}%`, '--target-width': `${item.width}%` }"
+              ></div>
             </div>
           </div>
           <div class="wuxing-meta">
@@ -111,6 +134,145 @@ const props = defineProps({
           </div>
         </div>
       </div>
+      <!-- 图例说明 -->
+      <div class="wuxing-legend">
+        <span class="legend-item"><span class="legend-dot dot-favorite"></span>喜用（宜补充）</span>
+        <span class="legend-item"><span class="legend-dot dot-missing"></span>缺失（需留意）</span>
+        <span class="legend-item"><span class="legend-dot dot-dominant"></span>偏旺（宜克泄）</span>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 日主强弱状态栏 */
+.strength-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  background: rgba(212, 175, 55, 0.06);
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.strength-status-label {
+  color: var(--text-tertiary);
+}
+
+.strength-status-value {
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.status--strong {
+  color: #c0392b;
+  background: rgba(192, 57, 43, 0.1);
+}
+
+.status--weak {
+  color: #2980b9;
+  background: rgba(41, 128, 185, 0.1);
+}
+
+.strength-status-hint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+/* 五行条目 badge 标签 */
+.wuxing-badge-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+
+.badge-favorite {
+  background: rgba(212, 175, 55, 0.18);
+  color: #b8860b;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.badge-missing {
+  background: rgba(41, 128, 185, 0.12);
+  color: #1a6fa8;
+  border: 1px solid rgba(41, 128, 185, 0.3);
+}
+
+.badge-dominant {
+  background: rgba(192, 57, 43, 0.1);
+  color: #c0392b;
+  border: 1px solid rgba(192, 57, 43, 0.25);
+}
+
+.badge-weak {
+  background: rgba(127, 140, 141, 0.1);
+  color: #7f8c8d;
+  border: 1px solid rgba(127, 140, 141, 0.25);
+}
+
+/* 喜用条目高亮 */
+.wuxing-bar-item.is-favorite .wuxing-name__text {
+  color: #b8860b;
+  font-weight: 700;
+}
+
+.wuxing-bar-item.is-favorite .wuxing-fill {
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+}
+
+/* 缺失条目样式 */
+.wuxing-bar-item.is-missing .wuxing-name__text {
+  color: #1a6fa8;
+}
+
+.wuxing-bar-item.is-missing .wuxing-bar {
+  background: rgba(41, 128, 185, 0.08);
+}
+
+/* 图例 */
+.wuxing-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light, rgba(0,0,0,0.06));
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-tertiary, #999);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-favorite {
+  background: #D4AF37;
+}
+
+.dot-missing {
+  background: #2980b9;
+}
+
+.dot-dominant {
+  background: #c0392b;
+}
+</style>
