@@ -60,6 +60,9 @@ class Auth extends BaseController
             ->find();
 
         if (!$admin || !password_verify($password, (string) ($admin['password'] ?? ''))) {
+            // 写入登录失败日志
+            $failAdminId = $admin ? (int) $admin['id'] : 0;
+            $this->writeLoginLog($failAdminId, $username, $request, 0, '用户名或密码错误');
             return $this->error('用户名或密码错误', 401);
         }
 
@@ -85,6 +88,9 @@ class Auth extends BaseController
         }
 
         $adminId = (int) $admin['id'];
+
+        // 写入登录日志
+        $this->writeLoginLog($adminId, (string) ($admin['username'] ?? $username), $request, 1);
 
         // 登录时主动清除旧的权限缓存，确保获取到最新角色/权限
         AdminAuthService::clearPermissionCache($adminId);
@@ -208,6 +214,36 @@ class Auth extends BaseController
         }
 
         return $normalized;
+    }
+
+    /**
+     * 写入登录日志
+     */
+    private function writeLoginLog(int $adminId, string $username, Request $request, int $status, string $failReason = ''): void
+    {
+        try {
+            $tableExists = false;
+            try {
+                Db::table('tc_admin_login_log')->limit(1)->select();
+                $tableExists = true;
+            } catch (\Throwable $ignored) {}
+
+            if (!$tableExists) {
+                return;
+            }
+
+            Db::table('tc_admin_login_log')->insert([
+                'admin_id'    => $adminId,
+                'username'    => $username,
+                'ip'          => (string) $request->ip(),
+                'user_agent'  => (string) $request->header('User-Agent', ''),
+                'status'      => $status,
+                'fail_reason' => $failReason,
+                'created_at'  => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('写入登录日志失败', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

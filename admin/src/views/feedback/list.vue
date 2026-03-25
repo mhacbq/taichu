@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/stores/user'
 import { getFeedbackList, getFeedbackDetail, deleteFeedback } from '@/api/feedback'
-
-const router = useRouter()
-const userStore = useUserStore()
 
 const loading = ref(false)
 const pageLoading = ref(false)

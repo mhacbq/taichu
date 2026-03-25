@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import request from '@/api/request'
+import { getPointsRecords } from '@/api/points'
 
 const loading = ref(false)
 const recordsList = ref([])
@@ -18,14 +18,14 @@ onMounted(() => {
 async function fetchRecordsList() {
   loading.value = true
   try {
-    const res = await request.get('/points/records', {
-      params: {
-        page: pagination.value.current,
-        page_size: pagination.value.pageSize
-      }
+    const res = await getPointsRecords({
+      page: pagination.value.current,
+      page_size: pagination.value.pageSize
     })
-    recordsList.value = res.data.list
-    pagination.value.total = res.data.total
+    if (res.code === 200) {
+      recordsList.value = res.data.list || []
+      pagination.value.total = res.data.total || 0
+    }
   } catch (error) {
     ElMessage.error('获取积分记录失败')
   } finally {

@@ -228,12 +228,6 @@ export const asyncRoutes = [
         name: 'PointsRules',
         component: () => import('@/views/points/rules.vue'),
         meta: { title: '积分规则', roles: ['admin'] }
-      },
-      {
-        path: 'adjust',
-        name: 'PointsAdjust',
-        component: () => import('@/views/points/adjust.vue'),
-        meta: { title: '积分调整', roles: ['admin'] }
       }
     ]
   },
@@ -347,12 +341,6 @@ export const asyncRoutes = [
         name: 'SystemSettings',
         component: () => import('@/views/system/settings.vue'),
         meta: { title: '基础配置', roles: ['admin'] }
-      },
-      {
-        path: 'system-config',
-        name: 'SystemConfig',
-        component: () => import('@/views/system/systemConfig.vue'),
-        meta: { title: '系统配置', roles: ['admin'] }
       },
       {
         path: 'sensitive',

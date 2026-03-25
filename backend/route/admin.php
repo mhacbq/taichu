@@ -366,5 +366,6 @@ Route::group('api/maodou', function () {
     \app\middleware\Cors::class,
     \app\middleware\SensitiveDataFilter::class,
     \app\middleware\RateLimit::class,
+    \app\middleware\ApiLog::class,
 ]);
 

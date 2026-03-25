@@ -128,9 +128,40 @@ function promptRelogin() {
   })
 }
 
+/**
+ * 开发环境：反向检测 API 调用是否来自非 api 层（views / components / stores / pages）
+ * 只有调用栈中出现这些"非 api 层"帧时才触发警告，避免 utils 封装等场景误报
+ */
+const NON_API_LAYER_PATTERNS = [
+  '/src/views/',
+  '/src/components/',
+  '/src/stores/',
+  '/src/pages/',
+  '/src/layouts/',
+]
+
+function warnIfCalledOutsideApiLayer(url) {
+  if (!import.meta.env.DEV) return
+  try {
+    const stack = new Error().stack || ''
+    const calledFromNonApiLayer = NON_API_LAYER_PATTERNS.some(p => stack.includes(p))
+    if (calledFromNonApiLayer) {
+      console.warn(
+        `[admin-request] ⚠️ API 路径 "${url}" 在组件/页面/Store 中直接调用。\n` +
+        '请将请求封装到 admin/src/api/ 对应文件中，禁止在组件/页面里硬编码路径。\n' +
+        '参考 AGENTS.md 第 7 节「常见陷阱」第 7 条。',
+        stack
+      )
+    }
+  } catch {
+    // 忽略 stack 解析失败
+  }
+}
+
 // 请求拦截器
 service.interceptors.request.use(
   config => {
+    warnIfCalledOutsideApiLayer(config.url)
     const userStore = useUserStore()
     if (userStore.token) {
       config.headers.Authorization = 'Bearer ' + userStore.token

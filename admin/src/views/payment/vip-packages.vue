@@ -15,7 +15,7 @@ async function fetchPackagesList() {
   try {
     const res = await getVipPackages()
     if (res.code === 200) {
-      packagesList.value = res.data.list
+      packagesList.value = res.data?.list || []
     }
   } catch (error) {
     ElMessage.error('获取VIP套餐失败')

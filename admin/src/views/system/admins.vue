@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getAdminsList } from '@/api/system'
+import { getAdminUsers } from '@/api/system'
 
 const loading = ref(false)
 const adminsList = ref([])
@@ -13,7 +13,7 @@ onMounted(() => {
 async function fetchAdminsList() {
   loading.value = true
   try {
-    const res = await getAdminsList()
+    const res = await getAdminUsers()
     if (res.code === 200) {
       adminsList.value = res.data.list || []
     }

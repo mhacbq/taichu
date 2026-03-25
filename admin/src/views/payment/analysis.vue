@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
-import request from '@/api/request'
+import { getRechargeStats } from '@/api/payment'
 
 const loading = ref(false)
 const chartRef = ref(null)
@@ -22,9 +22,16 @@ onMounted(() => {
 async function fetchAnalysisData() {
   loading.value = true
   try {
-    const res = await request.get('/analysis/payment')
-    stats.value = res.data.stats
-    initChart(res.data.chart_data)
+    const res = await getRechargeStats()
+    if (res.code === 200) {
+      stats.value = {
+        total_amount: res.data.total_amount ?? 0,
+        order_count: res.data.order_count ?? 0,
+        vip_count: res.data.vip_count ?? 0,
+        recharge_count: res.data.recharge_count ?? 0
+      }
+      initChart(res.data.chart_data)
+    }
   } catch (error) {
     ElMessage.error('获取充值数据失败')
   } finally {
