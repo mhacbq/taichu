@@ -27,7 +27,7 @@ class Points extends BaseController
         $type = $params['type'] ?? '';
 
         try {
-            $query = Db::table('tc_points_record')
+            $query = Db::name('points_record')
                 ->alias('pr')
                 ->leftJoin('tc_user u', 'pr.user_id = u.id')
                 ->field('pr.*, u.username, u.nickname, u.phone');

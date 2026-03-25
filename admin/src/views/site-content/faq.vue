@@ -201,8 +201,8 @@ const loadData = async () => {
   try {
     const res = await getFaqList(queryForm)
     if (res.code === 200) {
-      tableData.value = res.data.list
-      total.value = res.data.total
+      tableData.value = res.data?.list || []
+      total.value = res.data?.total || 0
     }
   } catch (error) {
     ElMessage.error('加载数据失败')

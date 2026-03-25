@@ -28,6 +28,40 @@ export function saveTarotCard(data) {
   })
 }
 
+// ============ FAQ 管理接口 ============
+
+/**
+ * 获取FAQ列表（后台）
+ */
+export function getFaqList(params) {
+  return request({
+    url: '/site/faqs',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 保存FAQ（新增或更新）
+ */
+export function saveFaq(data) {
+  return request({
+    url: '/site/faqs',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 删除FAQ
+ */
+export function deleteFaq(id) {
+  return request({
+    url: `/site/faqs/${id}`,
+    method: 'delete'
+  })
+}
+
 // ============ SEO 管理接口 ============
 
 /**

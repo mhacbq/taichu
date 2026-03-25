@@ -13,13 +13,10 @@
 
 ### 严重问题（API 路径错误 / 功能完全不可用）
 
-- [x] **[管理端] 管理员管理 API 路径错误** — 已修复，`system.js` 中所有 `/system/admin-list` 统一改为 `/system/admins`，删除操作路径改为 `/system/admins/:id`。
 
 - [ ] **[管理端] 流年运势管理入口缺失**
   - 问题：后端已有完整的 `yearly-fortune-manage` CRUD 路由，但管理端路由文件和 `views/result/` 目录下均无对应页面，导致流年运势记录无法在管理端查看和管理。
   - 修复：在 `admin/src/views/result/` 下新建 `YearlyFortuneManage.vue`，并在 `admin/src/router/index.js` 的测算管理模块中添加对应路由。
-
-- [x] **[管理端] SEO 统计接口不存在** — 已确认后端 `admin.php` 有 `GET seo/stats` 路由，路径正常，此条目关闭。
 
 - [ ] **[管理端] SEO 路由别名混乱**
   - 问题：后端同时存在 `/system/seo/configs`、`/seo/configs`、`/seo/list` 三套路由（历史兼容别名堆叠），前端调用路径不统一。
@@ -34,22 +31,6 @@
 - [ ] **[管理端] 管理员管理页面按钮无事件绑定**
   - 问题：`admin/src/views/system/admins.vue` 只有只读列表，新增/编辑/重置密码/删除按钮未绑定任何事件，管理员无法通过界面管理。
   - 修复：补充新增弹窗、编辑弹窗、重置密码弹窗、删除确认逻辑，调用 `system.js` 中对应的 CRUD 接口（同步修复上方 API 路径问题后）。
-
-- [ ] **[管理端] 塔罗牌库页面报错**
-  - 问题：塔罗牌库管理页面加载报错（TODO 已记录）。
-  - 修复：排查报错原因（接口路径 / 数据结构 / 组件初始化），修复后确保列表正常加载。
-
-- [ ] **[管理端] FAQ 管理页面报错**
-  - 问题：FAQ 管理页面加载报错（TODO 已记录）。
-  - 修复：排查 `siteContent.js` 中 FAQ 接口路径是否与后端路由一致，修复不匹配项。
-
-- [ ] **[管理端] 积分记录页面报错**
-  - 问题：积分记录页面加载报错（TODO 已记录）。
-  - 修复：排查接口路径和响应数据结构，修复后确保积分记录列表正常展示。
-
-- [ ] **[管理端] 反馈列表页面报错**
-  - 问题：反馈列表页面加载报错（TODO 已记录）。
-  - 修复：排查接口路径，修复后确保用户反馈列表正常展示。
 
 - [ ] **[管理端] 行为日志 / 用户分析 / 测算统计 / 充值分析页面报错**
   - 问题：以上统计分析页面均报错（TODO 已记录）。
@@ -77,15 +58,6 @@
 
 #### 🔴 严重：路由/控制器不一致
 
-- [x] **[管理端] `system/admin-list` 路由与控制器双重混乱** — 已修复，删除 `admin.php` 中冗余的 `system/admin-list` 路由，前端 `system.js` 统一使用 `/system/admins`。
-
-- [x] **[前台] `index.js` 存在大量幽灵 API（路由不存在）**
-  - 已删除：`/cultural/` 路由组全部函数（10个）、`/decision/` 路由组全部函数（两处共9个）、`/relationship/` 路由组全部函数（4个）、`wechatLogin`、`getMyTasks`、`calculateCultural`、`setCulturalSharePublic`
-  - 保留：`analyzeLiuyaoAi`（useLiuyao.js 有调用）、`aiAnalyzeTarot`（useTarot.js 有调用）
-
-- [x] **[前台] `getBaziShare` 路径不一致** — 经验证路径原本正确：`/bazi/share` + baseURL `/api` = `/api/bazi/share`，与后端路由匹配。命名不统一属于风格问题，不是 bug，已回滚误改。
-
-- [x] **[前台] `wechatLogin` 调用不存在的路由** — 已从 `index.js` 删除
 
 - [ ] **[后端] 补充 `tarot/ai-analysis` 路由**
   - 问题：`useTarot.js` 第 526 行有实际调用 `aiAnalyzeTarot`（`POST /tarot/ai-analysis`），但后端 `app.php` 中 tarot 路由组无此路由，调用必然 404。
@@ -99,23 +71,15 @@
   - 问题：管理端 `points.js` 中 `savePointsRules` 调用 `PUT /points/rules`，但 `admin.php` 中积分规则路由只有 `GET /points/rules`，无 PUT 路由，导致积分规则保存功能 404。
   - 修复：在 `admin.php` 中补充 `Route::put('points/rules', 'admin.Points/saveRules')`，并在 `admin\Points` 控制器中实现 `saveRules` 方法。
 
-- [x] **[前台] `tasks/my-tasks` 路由不存在** — `getMyTasks` 无任何调用处，已从 `index.js` 删除
-
 ---
 
 #### 🟡 中等：功能残缺 / 数据结构不匹配
 
-- [x] **[管理端] `points.js` 中 `savePointsRules` 使用 PUT 但后端无对应路由** — 已移至「后端补路由」分组统一处理。
 
 - [ ] **[管理端] `seo-stats.vue` 调用 `/seo/stats` 但后端返回的是 SEO 配置统计而非真实 SEO 数据**
   - 问题：`seo-stats.vue` 期望后端返回百度/必应收录量、关键词排名、流量等真实 SEO 数据，但后端 `admin\Seo::seoStats()` 实际返回的是数据库中 SEO 配置的统计（total/active/inactive/coverage），两者数据结构完全不匹配，页面展示的是假数据。
   - 修复：明确 SEO 统计页的定位——若只展示"SEO配置覆盖率"，则修改前端展示逻辑匹配后端数据；若需要真实搜索引擎数据，则需接入第三方 SEO API（百度站长/Google Search Console）。
 
-- [x] **[管理端] `user/list-improved.vue` 存在但未被路由引用** — 已删除废弃文件。
-
-- [x] **[管理端] `system/admin.vue` 与 `system/admins.vue` 功能重复** — 已删除废弃文件 `admin.vue`。
-
-- [x] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳页面** — 已删除两个空壳文件。
 
 - [ ] **[管理端] `site-content/testimonials.vue` 和 `site-content/question-templates.vue` 无路由入口**
   - 问题：`admin/src/views/site-content/testimonials.vue`（9.05KB）和 `question-templates.vue`（8.00KB）存在于目录中，但 `admin/src/router/index.js` 的 `/site` 路由组中只有 `tarot-cards`、`faq`、`knowledge` 三个子路由，这两个页面无法访问。
@@ -136,7 +100,6 @@
     - `GET /site/fortune-templates`、`POST /site/fortune-templates`（无路由）
   - 修复：这些接口对应的功能（用户评价、牌阵、问题模板、运势模板）后端均未实现，需要决策：要么补充后端实现，要么删除前端相关页面和接口。
 
-- [x] **[管理端] `tarot-cards.vue` 中"添加塔罗牌"按钮无实际新增功能** — 已修复，`siteContent.js` 中 `saveTarotCard` 已区分新增（POST `/tarot-cards`）和编辑（PUT `/tarot-cards/:id`），后端 `admin.php` 补充了 `POST tarot-cards` 路由。
 
 ---
 
@@ -162,7 +125,6 @@
   - 问题：`admin.php` 中已有 `Route::put('points/rules', 'admin.Points/saveRules')` 路由（待补充），但 `Points.php` 控制器中只有 `getRules()`，完全没有 `saveRules()` 方法，即使路由补上也会 500。
   - 修复：在 `Points.php` 中实现 `saveRules()` 方法，将积分规则配置写入 `tc_system_config` 或专用配置表。
 
-- [x] **[管理端] `system.js` 中 `saveAdminUser` 和 `deleteAdminUser` 路径错误** — 已修复，统一改为 `/system/admins`。
 
 - [ ] **[管理端] `faq.vue` 调用 `getFaqList` → `siteContent.js` 中路径为 `/site/faqs`，与后端路由不匹配**
   - 问题：`faq.vue` 调用 `getFaqList`，该函数在 `siteContent.js` 中调用 `GET /site/faqs`；后端 `admin.php` 注册的是 `GET site/faqs`（在 `/api/maodou` 路由组内），实际完整路径是 `/api/maodou/site/faqs`，而 `siteContent.js` 的 request.js baseURL 是 `/api/maodou`，所以路径 `/site/faqs` 实际上是正确的。**但 `saveFaq` 调用 `POST /site/faqs`，后端路由也有 `POST site/faqs`，路径匹配。`deleteFaq` 调用 `DELETE /site/faqs/:id`，后端也有对应路由。** → FAQ 管理页面路径实际上是正确的，之前记录的"FAQ 管理页面报错"需要重新排查真实原因。
@@ -172,7 +134,6 @@
   - 问题：`payment/analysis.vue` 调用 `getRechargeStats`（`GET /payment/stats`），后端 `admin\Payment::getStats()` 返回的是 `total_amount/order_count/vip_count/recharge_count`，但前端还期望 `res.data.chart_data`（含 `dates/amounts/counts`），后端未返回该字段，导致图表渲染时使用硬编码的假数据（周一到周日）。
   - 修复：在 `admin\Payment::getStats()` 中补充 `chart_data` 字段，返回最近 7 天的充值趋势数据。
 
-- [x] **[管理端] `result/analysis.vue` 中 `renderUserRankChart` 函数从未被调用** — 已修复，在 `loadData()` 中补充了 `renderUserRankChart(data.user_ranking)` 调用。
 
 ---
 
@@ -186,39 +147,6 @@
   - 问题：`points/rules.vue` 期望展示可编辑的积分规则（如签到得多少分、邀请得多少分），但后端 `getRules()` 实际上是从 `tc_points_record` 表中 `distinct` 出已有的 `type` 字段，返回的是历史记录中出现过的类型，而非真正的规则配置，且 `points` 字段硬编码为 0。
   - 修复：设计积分规则配置表（或使用 `tc_system_config`），`getRules()` 从配置中读取，`saveRules()` 写入配置。
 
-- [x] **[管理端] `user/behavior.vue` 调用 `getUserBehavior` 但后端 `users/behavior` 接口返回数据结构未知** — 已修复，`behavior.vue` 补充了 `res.code !== 200` 的错误处理，后端 `behavior()` 返回字段已与前端展示字段对齐。
-
-- [x] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳文件但被路由引用** — 已删除两个空壳文件（与上条合并处理）。
-
----
-
----
-
-### 本轮深度检查新发现（第三轮）
-
----
-
-#### 🔴 严重：控制器 Bug / 表名错误
-
-- [x] **[后端] `Statistics.php` 使用无前缀表名，查询必然失败** — 已修复，所有 `Db::table()` 改为 `Db::name()`，自动加 `tc_` 前缀。
-
-- [x] **[后端] `BaziRecordController.php` 的 `statistics()` 方法使用无前缀表名** — 已修复，`Db::table('bazi_record')` 改为 `Db::name('bazi_record')`。
-
-- [x] **[后端] `admin.php` 中 `content/bazi` 和 `content/tarot` 6条孤儿路由** — 已删除，这些路由指向已删除的 `Admin` 控制器方法，现统一使用 `bazi-manage` / `tarot-manage` 路由组。
-
----
-
-#### 🟡 中等：孤儿文件 / 功能未接通
-
-- [x] **[后端] `PointsController.php` 和 `UserController.php` 是孤儿控制器** — 已删除两个孤儿控制器文件。
-
-- [x] **[管理端] `contentEditor.js` 中 4 个函数无对应后端路由** — 已删除 `updateBlocks`、`updateBlock`、`deleteBlock`、`sortBlocks` 四个无路由函数。
-
-- [x] **[管理端] `admin/src/api/ai.js` 接口路径需核对** — 已确认 `admin/Ai.php` 中 `getConfig`、`saveConfig`、`testConnection` 三个方法均已实现，路径匹配，此条目关闭。
-
-- [x] **[后端] `Statistics.php` 与 `admin\Dashboard.php` 功能高度重叠** — 已删除 `statistics/index` 路由和 `Statistics.php` 控制器，统一使用 `admin\Dashboard`。
-
----
 
 ### 产品体验 / 功能改造（非高频修复输入）
 
