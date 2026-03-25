@@ -124,6 +124,11 @@ taichu-unified/
 - [ ] 业务逻辑在 Service 层，API 返回统一格式
 - [ ] 涉及数据库变更时，创建了幂等的 `database/YYYYMMDD_xxx.sql`
 
+**新增接口**
+- [ ] 前端 `api/*.js` 中的请求路径与 `route/app.php` 或 `route/admin.php` 中注册的路由完全一致
+- [ ] 前端期望的响应字段（如 `res.data.xxx`）与后端实际返回的字段名称、层级、类型完全匹配
+- [ ] 后端返回的字段在前端模板/图表中均有对应消费，无"写了但没接通"的死字段
+
 **通用**
 - [ ] 改动最小化，无遗留 `console.log`，无硬编码密钥
 
@@ -138,6 +143,7 @@ taichu-unified/
 5. **线上用 Swoole** — 后端运行在 Swoole `127.0.0.1:8080`，Nginx 做反向代理
 6. **不要猜测 API** — 查看 `route/app.php` 和 `route/admin.php` 获取实际路由
 7. **API 路径唯一真相来源** — 新增 API 时，以 `backend/route/admin.php` 为唯一路径真相来源，前端 `admin/src/api/` 对应文件必须同步更新，禁止在页面组件里硬编码路径。路径不一致是历史 Bug 的主要根因（如前端调 `/site/faqs`，后端注册的是 `/faqs`）。
+9. **控制器实现了但路由没注册** — 历史遗留问题：后端 Controller 方法已写好，但 `route/app.php` 或 `route/admin.php` 中忘记注册对应路由，导致前端调用 404。已知案例：`tarot/ai-analysis`（`Tarot::aiAnalysis`）、`liuyao/ai-analysis`（`Liuyao::aiAnalysis`）、`PUT points/rules`（`admin\Points::saveRules`）、前台 `site/faqs` 公开接口。**每次新增 Controller 方法后，必须立即在路由文件中注册，两者必须同步提交。**
 8. **数据库表唯一真相来源** — `database/init.sql` 是数据库的唯一真相来源。每次修改表结构（新增字段、新建表、删除废弃表）都必须同步更新 `init.sql`，而不是堆叠新的补丁文件。历史教训：19 个迁移文件叠加导致同一张表出现 2-3 个版本并存（如 `tc_system_config` vs `system_config`、`hehun_records` vs `tc_hehun_record`），最终需要全量重整。
 
 ---
