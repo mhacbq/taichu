@@ -29,9 +29,6 @@ Route::group('api/maodou', function () {
         Route::get('todo/inactive-users', 'admin.Todo/inactiveUsers');
         Route::post('todo/:id/dismiss', 'admin.Todo/dismiss');
 
-        // 平台统计数据
-        Route::get('statistics/index', 'Statistics/index');
-        
         // 系统配置管理
         Route::get('config/features', 'admin.Config/features');
         Route::post('config/update-feature', 'admin.Config/updateFeature');

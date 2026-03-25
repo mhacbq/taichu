@@ -67,7 +67,7 @@ class BaziRecordController extends BaseController
             $stats = [
                 'total_records' => BaziRecord::count(),
                 'today_records' => BaziRecord::where('created_at', '>=', date('Y-m-d'))->count(),
-                'total_users' => Db::table('bazi_record')->distinct()->count('user_id'),
+                'total_users' => Db::name('bazi_record')->distinct()->count('user_id'),
                 'gender_stats' => BaziRecord::field('gender, COUNT(*) as count')
                     ->group('gender')
                     ->select(),

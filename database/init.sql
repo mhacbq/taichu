@@ -581,12 +581,13 @@ CREATE TABLE IF NOT EXISTS `tc_faq` (
     `category` VARCHAR(50) DEFAULT '' COMMENT '分类',
     `question` VARCHAR(500) NOT NULL COMMENT '问题',
     `answer` TEXT NOT NULL COMMENT '答案',
-    `sort` INT DEFAULT 0 COMMENT '排序',
-    `status` TINYINT DEFAULT 1 COMMENT '状态 0禁用 1启用',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '状态 0禁用 1启用',
+    `view_count` INT UNSIGNED DEFAULT 0 COMMENT '浏览次数',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_category` (`category`),
-    INDEX `idx_status` (`status`)
+    INDEX `idx_is_enabled` (`is_enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='FAQ表';
 
 CREATE TABLE IF NOT EXISTS `tc_ai_prompt` (
@@ -1192,7 +1193,7 @@ ON DUPLICATE KEY UPDATE
     `reversed_meaning` = VALUES(`reversed_meaning`);
 
 -- FAQ 初始数据
-INSERT INTO `tc_faq` (`category`, `question`, `answer`, `sort`, `status`) VALUES
+INSERT INTO `tc_faq` (`category`, `question`, `answer`, `sort_order`, `is_enabled`) VALUES
 ('general', '什么是八字？', '八字是中国传统命理学的重要组成部分，根据一个人出生的年、月、日、时四柱，每柱两个字，共八个字来推算命运。', 1, 1),
 ('general', '八字排盘准确吗？', '八字排盘是基于传统命理学的计算方法，具有一定的参考价值。但命运也受后天努力、环境等因素影响，仅供参考。', 2, 1),
 ('general', '需要提供哪些信息？', '进行八字排盘需要提供准确的出生年、月、日、时，以及出生地点（用于计算真太阳时）。', 3, 1),
