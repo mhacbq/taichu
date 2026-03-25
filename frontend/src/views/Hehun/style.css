@@ -2060,6 +2060,53 @@
     padding: 14px 16px;
   }
 
+  /* 结果区域移动端字体优化 */
+  .score-number {
+    font-size: 56px;
+  }
+
+  .score-label {
+    font-size: 14px;
+  }
+
+  .result-level {
+    font-size: 16px;
+    padding: 10px 20px;
+  }
+
+  .result-comment {
+    font-size: 15px;
+    line-height: 1.7;
+    text-align: left;
+  }
+
+  .result-card {
+    padding: 20px 16px;
+  }
+
+  .result-header h2 {
+    font-size: 17px;
+  }
+
+  .rich-content :deep(p) {
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .suggestion-list li {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .bazi-side h4 {
+    font-size: 13px;
+  }
+
+  .pillar {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
   .history-header {
     align-items: flex-start;
   }

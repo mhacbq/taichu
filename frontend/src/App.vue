@@ -964,11 +964,19 @@ onBeforeUnmount(() => {
   gap: 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 16px 28px;
-  font-size: var(--font-body);
+  padding: 0 28px;
+  min-height: 48px;
+  font-size: 16px;
   font-weight: var(--weight-medium);
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   border-left: 4px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.mobile-nav-link:active {
+  background: rgba(212, 175, 55, 0.18) !important;
+  transform: scale(0.98);
 }
 
 
@@ -1759,6 +1767,8 @@ body {
 
 .mobile-nav-link {
   color: rgba(212, 175, 55, 0.7);
+  min-height: 48px;
+  font-size: 16px;
 }
 
 .mobile-nav-link:hover,
@@ -1809,9 +1819,16 @@ body {
     padding: 6px 14px;
     color: rgba(212, 175, 55, 0.45);
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, transform 0.15s ease;
     min-width: 52px;
     flex: 1;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.9);
+    color: #D4AF37;
   }
 
   .bottom-icon {

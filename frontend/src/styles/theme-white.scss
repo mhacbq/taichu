@@ -247,12 +247,21 @@ body {
   color: var(--text-accent-contrast);
   border: 1px solid var(--border-gold);
   padding: 12px 28px;
+  min-height: 48px;
   border-radius: var(--radius-btn);
   font-weight: 600;
   box-shadow: var(--shadow-gold);
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: transform var(--transition-base), box-shadow var(--transition-base), filter var(--transition-fast), background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.btn-primary:active {
+  transform: scale(0.97) translateY(1px);
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.2);
+  filter: brightness(0.95);
 }
 
 /* 主按钮金属光泽 */
@@ -291,10 +300,18 @@ body {
   color: var(--text-primary);
   border: 1px solid var(--border-medium);
   padding: 12px 28px;
+  min-height: 48px;
   border-radius: var(--radius-btn);
   font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
   transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.btn-secondary:active {
+  transform: scale(0.97) translateY(1px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .btn-secondary:hover {
