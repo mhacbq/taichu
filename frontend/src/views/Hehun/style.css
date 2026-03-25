@@ -41,12 +41,25 @@
 
 /* 表单样式 */
 .form-card {
-  background: linear-gradient(180deg, var(--bg-card), rgba(var(--primary-rgb), 0.03));
+  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(var(--primary-rgb), 0.02) 100%);
   backdrop-filter: blur(10px);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: 40px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(var(--primary-rgb), 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-gradient);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .local-preview-recovery {
@@ -407,7 +420,9 @@
   display: block;
   color: var(--text-secondary);
   margin-bottom: 8px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .hehun-field-control {
@@ -870,6 +885,56 @@
   color: var(--text-tertiary);
   font-size: 13px;
   margin-top: 8px;
+}
+
+/* AI 积分提示 */
+.ai-pricing-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.04));
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.ai-pricing-notice__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  color: #fff;
+  font-size: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
+}
+
+.ai-pricing-notice__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-pricing-notice__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.ai-pricing-notice__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ai-pricing-notice__cost {
+  font-weight: 700;
+  color: var(--primary-dark);
 }
 
 .precision-summary-card {
@@ -2040,19 +2105,24 @@
 
 .form-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.1);
 }
 
 .form-header-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+  font-size: 44px;
+  margin-bottom: 14px;
   line-height: 1;
+  display: block;
 }
 
 .form-header h2 {
-  font-size: 24px;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 8px;
+  letter-spacing: -0.01em;
 }
 
 .form-intro {
@@ -2060,6 +2130,9 @@
   font-size: 14px;
   line-height: 1.7;
   margin: 0;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* 双方信息横排 */
@@ -2075,18 +2148,18 @@
   padding: 20px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
-  background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.03));
-  transition: border-color 0.25s ease;
+  background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.02));
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .person-card--male {
-  border-color: rgba(59, 130, 246, 0.2);
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.04), rgba(59, 130, 246, 0.02));
+  border-color: rgba(var(--primary-rgb), 0.18);
+  background: linear-gradient(160deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.02));
 }
 
 .person-card--female {
-  border-color: rgba(236, 72, 153, 0.2);
-  background: linear-gradient(180deg, rgba(236, 72, 153, 0.04), rgba(236, 72, 153, 0.02));
+  border-color: rgba(var(--primary-rgb), 0.18);
+  background: linear-gradient(160deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.02));
 }
 
 .person-card-header {
@@ -2109,13 +2182,13 @@
 }
 
 .male-avatar {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary-dark);
 }
 
 .female-avatar {
-  background: rgba(236, 72, 153, 0.15);
-  color: #ec4899;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary-dark);
 }
 
 .person-card-header h3 {
@@ -2154,17 +2227,22 @@
 /* 精度选择 */
 .precision-radio-group {
   width: 100%;
+  display: flex;
 }
 
 .precision-radio-group :deep(.el-radio-button) {
   flex: 1;
+  min-width: 0;
 }
 
 .precision-radio-group :deep(.el-radio-button__inner) {
   width: 100%;
   min-height: 32px;
   font-size: 12px;
-  padding: 0 8px;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 确认弹窗出生日期 */
@@ -2636,13 +2714,15 @@
   gap: 0;
   margin-bottom: 24px;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border-light);
-  background: linear-gradient(180deg, var(--surface-raised), rgba(var(--primary-rgb), 0.02));
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.03), rgba(var(--primary-rgb), 0.01));
   overflow: hidden;
 }
 
 .birth-block {
   padding: 20px;
+  min-width: 0; /* 防止flex/grid子项溢出 */
+  overflow: hidden;
 }
 
 .birth-block--male {
@@ -2664,9 +2744,10 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  letter-spacing: 0.02em;
 }
 
 .birth-block-dot {
@@ -2677,11 +2758,11 @@
 }
 
 .male-dot {
-  background: #3b82f6;
+  background: var(--primary-color);
 }
 
 .female-dot {
-  background: #ec4899;
+  background: var(--primary-dark);
 }
 
 /* 响应式 */

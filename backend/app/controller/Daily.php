@@ -58,30 +58,37 @@ class Daily extends BaseController
         
         // 获取用户八字信息，生成个性化运势
         $personalized = null;
+        $userId = $user ? (int)$user['sub'] : 0;
         if ($user) {
-            $personalized = $this->generatePersonalizedFortune($user['sub'], $fortune, $almanac);
+            $personalized = $this->generatePersonalizedFortune($userId, $fortune, $almanac);
         }
 
-        
+        // 对已登录用户做描述文字差异化（基于 userId + date 的稳定哈希选取变体）
+        $summary     = $this->variantText($fortune->summary,      $userId, $fortune->date, 'summary');
+        $careerDesc  = $this->variantText($fortune->career_desc,  $userId, $fortune->date, 'career');
+        $wealthDesc  = $this->variantText($fortune->wealth_desc,  $userId, $fortune->date, 'wealth');
+        $loveDesc    = $this->variantText($fortune->love_desc,    $userId, $fortune->date, 'love');
+        $healthDesc  = $this->variantText($fortune->health_desc,  $userId, $fortune->date, 'health');
+
         return $this->success([
             'date' => $fortune->date,
             'lunarDate' => $almanac['lunar_text'] ?? $fortune->lunar_date,
             'ganzhi' => $almanac['ganzhi'] ?? '',
             'overallScore' => $fortune->overall_score,
-            'summary' => $fortune->summary,
+            'summary' => $summary,
             'aspects' => [
-                ['name' => '事业运', 'icon' => '💼', 'score' => $fortune->career_score, 'description' => $fortune->career_desc],
-                ['name' => '财运', 'icon' => '💰', 'score' => $fortune->wealth_score, 'description' => $fortune->wealth_desc],
-                ['name' => '感情运', 'icon' => '💕', 'score' => $fortune->love_score, 'description' => $fortune->love_desc],
-                ['name' => '健康运', 'icon' => '🏃', 'score' => $fortune->health_score, 'description' => $fortune->health_desc],
+                ['name' => '事业运', 'icon' => '💼', 'score' => $fortune->career_score, 'description' => $careerDesc],
+                ['name' => '财运', 'icon' => '💰', 'score' => $fortune->wealth_score, 'description' => $wealthDesc],
+                ['name' => '感情运', 'icon' => '💕', 'score' => $fortune->love_score, 'description' => $loveDesc],
+                ['name' => '健康运', 'icon' => '🏃', 'score' => $fortune->health_score, 'description' => $healthDesc],
             ],
             'yi' => $yi,
             'ji' => $ji,
             'details' => [
-                'career' => $fortune->career_desc,
-                'wealth' => $fortune->wealth_desc,
-                'love' => $fortune->love_desc,
-                'health' => $fortune->health_desc,
+                'career' => $careerDesc,
+                'wealth' => $wealthDesc,
+                'love' => $loveDesc,
+                'health' => $healthDesc,
             ],
             'almanac' => [
                 'dayGanzhi' => $almanac['day_gan_zhi'] ?? '',
@@ -141,6 +148,66 @@ class Daily extends BaseController
         }
     }
     
+    /**
+     * 对运势描述文字做基于用户的差异化变体。
+     *
+     * 原理：将原始描述按中文句号/分号拆成若干句，
+     * 用 userId + date + salt 生成稳定哈希，
+     * 对每句话从同义句式池中选取一个变体拼接，
+     * 保证同一用户同一天结果稳定，不同用户结果不同。
+     */
+    protected function variantText(string $text, int $userId, string $date, string $salt): string
+    {
+        if ($userId <= 0 || trim($text) === '') {
+            return $text;
+        }
+
+        // 句式变体前缀池（按语气分组，每组 4 个，循环选取）
+        $prefixPool = [
+            'summary' => [
+                ['今日整体', '今天来看', '从今日盘面看', '综合来看'],
+            ],
+            'career' => [
+                ['事业方面', '工作层面', '职场上', '从事业角度看'],
+            ],
+            'wealth' => [
+                ['财运方面', '钱财层面', '财务上', '从财运角度看'],
+            ],
+            'love' => [
+                ['感情方面', '情感层面', '关系上', '从感情角度看'],
+            ],
+            'health' => [
+                ['健康方面', '身体层面', '体能上', '从健康角度看'],
+            ],
+        ];
+
+        // 句尾补充语池（增加个性化感知，每组 6 个）
+        $tailPool = [
+            '顺势而为即可。',
+            '保持节奏更重要。',
+            '稳中求进是关键。',
+            '量力而行效果更好。',
+            '把握节奏，事半功倍。',
+            '细心应对，收获自来。',
+        ];
+
+        $seed = (int) sprintf('%u', crc32($userId . '|' . $date . '|' . $salt));
+
+        // 选取前缀
+        $prefixes = $prefixPool[$salt] ?? $prefixPool['summary'];
+        $group = $prefixes[0];
+        $prefix = $group[$seed % count($group)];
+
+        // 选取句尾补充（仅在原文不以句号结尾时追加，避免重复）
+        $tail = $tailPool[($seed >> 4) % count($tailPool)];
+
+        // 拼接：前缀 + 原文（去掉开头可能重复的类别词）+ 句尾
+        $cleaned = preg_replace('/^(今日|今天|事业|财运|感情|健康|身体|工作)[，,：:]/u', '', trim($text));
+        $hasTail = mb_substr(rtrim($cleaned), -1) === '。';
+
+        return $prefix . '，' . $cleaned . ($hasTail ? '' : $tail);
+    }
+
     /**
      * 生成个性化运势
      */

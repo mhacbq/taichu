@@ -7,6 +7,15 @@
         :icon="Calendar"
       />
 
+      <!-- 顶部备注提示 -->
+      <div v-if="isLoggedIn" class="daily-notice">
+        <el-icon class="notice-icon"><InfoFilled /></el-icon>
+        <span>每日运势根据您的出生日期推算，如需切换生日，请前往
+          <router-link to="/profile" class="notice-link">个人中心</router-link>
+          重新设置
+        </span>
+      </div>
+
       <!-- 运势概览卡片 -->
       <AsyncState :status="dailyStatus" :error="errorMessage" loadingText="正在为您推算今日运势..." @retry="loadDailyFortune">
         <template #loading>
@@ -456,7 +465,7 @@ import AsyncState from '../../components/AsyncState.vue'
 import {
   MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled,
   Right, Compass, Briefcase, Money, Sunny, UserFilled,
-  RefreshRight, Calendar, Present, Sunrise, ArrowRight
+  RefreshRight, Calendar, Present, Sunrise, ArrowRight, InfoFilled
 } from '@element-plus/icons-vue'
 
 import { useDaily } from './useDaily'

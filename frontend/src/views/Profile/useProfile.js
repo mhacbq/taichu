@@ -291,7 +291,7 @@ const loadUserData = async () => {
     }
     
     if (historyRes.code === 200) {
-      pointsHistory.value = historyRes.data || []
+      pointsHistory.value = historyRes.data?.list || historyRes.data || []
     }
 
     await syncClientFeatureConfig()

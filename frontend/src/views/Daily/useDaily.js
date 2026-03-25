@@ -382,21 +382,36 @@ const defaultExpandedDetailNames = computed(() => {
   return detailSections.value.length ? [detailSections.value[0].key] : []
 })
 
-const DAILY_CACHE_KEY = 'daily_fortune_cache'
+const DAILY_CACHE_KEY_PREFIX = 'daily_fortune_cache'
 
 const getTodayDateStr = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// 获取当前用户的缓存 key，包含 userId 以隔离不同用户的缓存
+const getDailyCacheKey = () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return `${DAILY_CACHE_KEY_PREFIX}_guest`
+    // 从 JWT payload 中取 sub（userId），避免引入额外依赖
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const uid = payload?.sub || payload?.id || 'unknown'
+    return `${DAILY_CACHE_KEY_PREFIX}_${uid}`
+  } catch {
+    return `${DAILY_CACHE_KEY_PREFIX}_guest`
+  }
+}
+
 const readDailyCache = () => {
   try {
-    const raw = localStorage.getItem(DAILY_CACHE_KEY)
+    const cacheKey = getDailyCacheKey()
+    const raw = localStorage.getItem(cacheKey)
     if (!raw) return null
     const cached = JSON.parse(raw)
     if (cached.date === getTodayDateStr()) return cached.data
     // 日期已过，清除旧缓存
-    localStorage.removeItem(DAILY_CACHE_KEY)
+    localStorage.removeItem(cacheKey)
     return null
   } catch {
     return null
@@ -405,7 +420,7 @@ const readDailyCache = () => {
 
 const writeDailyCache = (data) => {
   try {
-    localStorage.setItem(DAILY_CACHE_KEY, JSON.stringify({ date: getTodayDateStr(), data }))
+    localStorage.setItem(getDailyCacheKey(), JSON.stringify({ date: getTodayDateStr(), data }))
   } catch {
     // 缓存写入失败不影响主流程
   }

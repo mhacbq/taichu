@@ -1,6 +1,7 @@
 <template>
   <div class="profile-page">
     <div class="container">
+      <div class="profile-hero-wrapper">
       <div class="profile-hero">
         <div class="profile-hero-left">
           <!-- 返回按钮 -->
@@ -60,6 +61,7 @@
           <CheckinCard />
         </div>
       </div>
+      </div><!-- end profile-hero-wrapper -->
 
       <div class="profile-layout">
         <!-- 左侧边栏 -->
@@ -130,12 +132,17 @@
             <h4><el-icon><Coin /></el-icon> 积分获取攻略</h4>
             <div class="guide-list">
               <div class="guide-item" v-for="method in pointsMethods" :key="method.id">
-                <div class="guide-icon">
+              <div class="guide-icon">
                   <el-icon v-if="method.icon === 'calendar'"><Calendar /></el-icon>
-                  <el-icon v-else-if="method.icon === 'present'"><Present /></el-icon>
+                  <el-icon v-else-if="method.icon === 'present' || method.icon === 'gift'"><Present /></el-icon>
                   <el-icon v-else-if="method.icon === 'user'"><UserFilled /></el-icon>
                   <el-icon v-else-if="method.icon === 'share'"><Share /></el-icon>
                   <el-icon v-else-if="method.icon === 'chat'"><ChatDotRound /></el-icon>
+                  <el-icon v-else-if="method.icon === 'star'"><Star /></el-icon>
+                  <el-icon v-else-if="method.icon === 'link'"><Link /></el-icon>
+                  <el-icon v-else-if="method.icon === 'bell'"><ChatDotRound /></el-icon>
+                  <el-icon v-else-if="method.icon === 'book'"><Document /></el-icon>
+                  <el-icon v-else><Coin /></el-icon>
                 </div>
                 <div class="guide-content">
                   <span class="guide-name">{{ method.name }}</span>
@@ -309,8 +316,8 @@
             <div class="points-list" v-if="pointsHistory.length > 0">
               <div v-for="record in pointsHistory" :key="record.id" class="points-row">
                 <div class="points-left">
-                  <span class="points-action">{{ record.action }}</span>
-                  <span class="points-time">{{ formatTime(record.createdAt) }}</span>
+                  <span class="points-action">{{ record.business_label || record.action || record.reason || '积分变动' }}</span>
+                  <span class="points-time">{{ formatTime(record.created_at || record.createdAt) }}</span>
                 </div>
                 <span class="points-amount" :class="{ positive: record.points > 0, negative: record.points < 0 }">
                   {{ record.points > 0 ? '+' : '' }}{{ record.points }}
@@ -365,7 +372,7 @@
 import CheckinCard from '../../components/CheckinCard.vue'
 import BackButton from '../../components/BackButton.vue'
 import AsyncState from '../../components/AsyncState.vue'
-import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, ArrowRight } from '@element-plus/icons-vue'
+import { Coin, Present, UserFilled, ChatDotRound, DocumentCopy, Share, Link, List, Calendar, ArrowRight, Star, Document } from '@element-plus/icons-vue'
 
 import { useProfile } from './useProfile'
 

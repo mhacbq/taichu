@@ -364,23 +364,19 @@
             </div>
           </div>
 
-          <!-- 分析选项 -->
-          <div class="options-section">
-            <div class="option-item">
-              <el-checkbox v-model="form.useAi" class="option-checkbox">
-                <span class="option-title">启用 AI 深度分析</span>
-                <span class="option-desc">解锁完整版时优先使用 AI，若服务不可用则自动切换为规则解读</span>
-              </el-checkbox>
+          <!-- AI分析积分提示 -->
+          <div class="ai-pricing-notice">
+            <div class="ai-pricing-notice__icon">
+              <el-icon><Cpu /></el-icon>
             </div>
-          </div>
-
-          <!-- 定价信息 -->
-          <div class="pricing-info" v-if="pricingLoading || normalizedPricing || pricingError">
-            <div class="pricing-row">
-              <span class="pricing-label">解锁完整版：</span>
-              <span class="pricing-value">{{ pricingDisplayText }}</span>
+            <div class="ai-pricing-notice__content">
+              <span class="ai-pricing-notice__title">AI 深度分析</span>
+              <span class="ai-pricing-notice__desc">本功能由 AI 驱动，解锁完整版将消耗
+                <span class="ai-pricing-notice__cost" v-if="normalizedPricing">{{ pricingDisplayText }}</span>
+                <span class="ai-pricing-notice__cost" v-else-if="pricingLoading">加载中...</span>
+                <span class="ai-pricing-notice__cost" v-else>积分</span>
+              </span>
             </div>
-            <p v-if="pricingStatusText" class="pricing-reason">{{ pricingStatusText }}</p>
           </div>
 
           <!-- 提交问题提示 -->
@@ -420,7 +416,7 @@
           </el-button>
 
           <p class="form-hint">
-            <el-icon><Collection /></el-icon> 首次查看基础分析免费；解锁完整版后可获得 AI 深度分析报告
+            <el-icon><Cpu /></el-icon> 首次查看基础分析免费；解锁完整版将由 AI 从多维度深度分析，消耗对应积分
           </p>
         </div>
       </div>
