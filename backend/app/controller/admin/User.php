@@ -9,10 +9,10 @@ use app\model\BaziRecord;
 use app\model\PointsRecord;
 use app\model\TarotRecord;
 use app\model\User as UserModel;
+use think\facade\Db;
 use app\service\AdminStatsService;
 use app\service\SchemaInspector;
 use think\Request;
-use think\facade\Db;
 
 /**
  * 后台用户管理控制器
@@ -586,6 +586,112 @@ class User extends BaseController
         }
 
         return preg_match('/^1[3-9]\d{9}$/', $normalizedUsername) === 1;
+    }
+
+    /**
+     * 获取用户行为日志
+     */
+    public function behavior()
+    {
+        if (!$this->hasAdminPermission('user_view')) {
+            return $this->error('无权限查看用户行为日志', 403);
+        }
+
+        $id = (int) ($this->request->get('id') ?? 0);
+        if ($id <= 0) {
+            return $this->error('用户ID无效', 400);
+        }
+
+        try {
+            $list = [];
+            // 从操作日志中查找该用户相关记录
+            if (SchemaInspector::tableExists('tc_admin_log')) {
+                $list = Db::table('tc_admin_log')
+                    ->where('target_id', $id)
+                    ->where('target_type', 'user')
+                    ->order('id', 'desc')
+                    ->limit(50)
+                    ->select()
+                    ->toArray();
+            }
+
+            return $this->success([
+                'list' => $list,
+                'total' => count($list),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('admin_user_behavior', $e, '获取用户行为日志失败', [
+                'user_id' => $id,
+            ]);
+        }
+    }
+
+    /**
+     * 调整单个用户积分（通过用户ID路由调用）
+     */
+    public function adjustPoints(int $id)
+    {
+        if (!$this->hasAdminPermission('points_adjust')) {
+            return $this->error('无权限调整用户积分', 403);
+        }
+
+        $data = $this->request->post();
+        $normalizedPoints = null;
+
+        try {
+            $normalizedPoints = $this->resolvePointsDelta($data);
+            if ($normalizedPoints === null) {
+                return $this->error('积分调整参数无效，请传入 points 或 type/amount', 400);
+            }
+            if ($normalizedPoints === 0) {
+                return $this->error('积分调整值不能为 0', 400);
+            }
+
+            $reason = mb_substr(trim((string) ($data['reason'] ?? '管理员调整')) ?: '管理员调整', 0, 255);
+
+            $user = UserModel::find($id);
+            if (!$user) {
+                return $this->error('用户不存在', 404);
+            }
+
+            $oldPoints = (int) ($user->points ?? 0);
+            $newPoints = $oldPoints + $normalizedPoints;
+            if ($newPoints < 0) {
+                return $this->error('积分不足', 400);
+            }
+
+            $user->points = $newPoints;
+            $user->save();
+
+            PointsRecord::create([
+                'user_id' => $id,
+                'type' => 'admin_adjust',
+                'amount' => $normalizedPoints,
+                'balance_after' => $newPoints,
+                'remark' => $reason,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->logOperation('adjust_points', 'user', [
+                'target_id' => $id,
+                'target_type' => 'user',
+                'detail' => sprintf('调整积分 %+d，原因：%s', $normalizedPoints, $reason),
+                'before_data' => ['points' => $oldPoints],
+                'after_data' => ['points' => $newPoints],
+            ]);
+
+            return $this->success([
+                'before_points' => $oldPoints,
+                'after_points' => $newPoints,
+                'delta' => $normalizedPoints,
+                'current_points' => $newPoints,
+            ], '积分调整成功');
+        } catch (\Throwable $e) {
+            return $this->respondSystemException('admin_adjust_points_by_id', $e, '调整积分失败，请稍后重试', [
+                'user_id' => $id,
+                'points' => $normalizedPoints,
+            ]);
+        }
     }
 
     /**

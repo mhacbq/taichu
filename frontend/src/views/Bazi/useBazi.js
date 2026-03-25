@@ -126,6 +126,19 @@ const aiLoadingTime = ref(0)
 const aiAbortController = ref(null)
 const aiLoadingTimer = ref(null)
 
+// AI 解盘等待状态的动态提示文字
+const AI_LOADING_HINTS = [
+  '正在分析日主强弱…',
+  '正在解读五行喜忌…',
+  '正在推演大运走势…',
+  '正在解读事业财运…',
+  '正在分析感情婚姻…',
+  '正在生成综合建议…',
+]
+const aiLoadingHintIndex = ref(0)
+const aiLoadingHint = computed(() => AI_LOADING_HINTS[aiLoadingHintIndex.value])
+const aiHintTimer = ref(null)
+
 const isUnauthorizedResult = (settledResult) => {
   if (!settledResult) {
     return false
@@ -1331,111 +1344,53 @@ const startAiAnalysisCore = async () => {
     return
   }
 
-
   if (currentPoints.value < aiAnalysisCost.value) {
     ElMessage.warning('积分不足，请先签到领取积分')
     return
   }
 
   aiAnalyzing.value = true
+  aiAnalysisResult.value = null
+  aiLoadingHintIndex.value = 0
+  aiHintTimer.value = setInterval(() => {
+    aiLoadingHintIndex.value = (aiLoadingHintIndex.value + 1) % AI_LOADING_HINTS.length
+  }, 3000)
 
-  aiStreamContent.value = ''
-  aiLoadingTime.value = 60
-  
-  // 创建AbortController用于取消请求
-  aiAbortController.value = new AbortController()
-  
-  // 启动倒计时
-  aiLoadingTimer.value = setInterval(() => {
-    if (aiLoadingTime.value > 0) {
-      aiLoadingTime.value--
-    } else {
-      clearInterval(aiLoadingTimer.value)
-    }
-  }, 1000)
-  
   try {
-    // 尝试使用流式API
-      const response = await analyzeBaziAiStream(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal, result.value.dayun || [], result.value.id || 0)
-    let streamRemainingPoints = null
-
-    if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
-      // 流式响应
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      
-      let fullContent = ''
-      
-      while (true) {
-        // 检查是否被取消
-        if (aiAbortController.value?.signal?.aborted) {
-          reader.cancel()
-          break
+    const res = await analyzeBaziAi(
+      result.value.bazi,
+      aiPrompt.value,
+      null,
+      result.value.dayun || [],
+      result.value.id || 0
+    )
+    if (res.code === 200) {
+      // analysis 字段可能是结构化 JSON 对象，也可能是字符串（兜底）
+      const raw = res.data?.analysis
+      if (raw && typeof raw === 'object' && raw.summary) {
+        aiAnalysisResult.value = raw
+      } else if (typeof raw === 'string') {
+        // 尝试解析 JSON 字符串
+        try {
+          const parsed = JSON.parse(raw)
+          aiAnalysisResult.value = parsed && parsed.summary ? parsed : { summary: raw }
+        } catch {
+          aiAnalysisResult.value = { summary: raw }
         }
-        
-        const { done, value } = await reader.read()
-        if (done) break
-        
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') continue
-            
-            try {
-              const parsed = JSON.parse(data)
-              const parsedRemainingPoints = Number(
-                parsed?.remaining_points ?? parsed?.data?.remaining_points ?? parsed?.result?.remaining_points
-              )
-              if (Number.isFinite(parsedRemainingPoints)) {
-                streamRemainingPoints = parsedRemainingPoints
-              }
-
-              if (parsed.choices?.[0]?.delta?.content) {
-                const content = parsed.choices[0].delta.content
-                fullContent += content
-                aiStreamContent.value = fullContent
-              }
-            } catch (e) {
-              // 忽略解析错误
-            }
-          }
-        }
-      }
-      
-      if (!aiAbortController.value?.signal?.aborted) {
-        aiAnalysisResult.value = {
-          analysis: fullContent,
-          model: 'AI'
-        }
-
-        syncCurrentPoints(streamRemainingPoints, aiAnalysisCost.value)
-      }
-    } else {
-      // 非流式响应
-      const res = await analyzeBaziAi(result.value.bazi, aiPrompt.value, aiAbortController.value?.signal, result.value.dayun || [], result.value.id || 0)
-      if (res.code === 200) {
-        aiAnalysisResult.value = res.data
-        syncCurrentPoints(res.data?.remaining_points, aiAnalysisCost.value)
       } else {
-
-
-        ElMessage.error(res.message || 'AI解盘失败')
+        aiAnalysisResult.value = res.data
       }
+      syncCurrentPoints(res.data?.remaining_points, aiAnalysisCost.value)
+      ElMessage.success('AI 解盘完成！')
+    } else {
+      ElMessage.error(res.message || 'AI 解盘失败')
     }
   } catch (error) {
-    if (error.name === 'AbortError') {
-      ElMessage.info('已取消AI分析')
-    } else {
-      ElMessage.error('AI解盘服务暂时不可用，请稍后重试')
-    }
+    ElMessage.error('AI 解盘服务暂时不可用，请稍后重试')
   } finally {
     aiAnalyzing.value = false
-    clearInterval(aiLoadingTimer.value)
-    aiLoadingTime.value = 0
-    aiAbortController.value = null
+    clearInterval(aiHintTimer.value)
+    aiHintTimer.value = null
   }
 }
 
@@ -1501,6 +1456,7 @@ return {
   aiPrompt,
   aiAnalyzing,
   aiAnalysisResult,
+  aiLoadingHint,
   aiStreamContent,
   aiLoadingTime,
 

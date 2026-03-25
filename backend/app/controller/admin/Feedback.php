@@ -13,6 +13,8 @@ use think\facade\Db;
  */
 class Feedback extends BaseController
 {
+    protected $middleware = [\app\middleware\AdminAuth::class];
+
     private const CATEGORY_FEEDBACK = 'feedback_category';
 
     /**

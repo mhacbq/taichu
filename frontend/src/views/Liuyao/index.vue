@@ -44,8 +44,9 @@
 
           <!-- 卦象主展示区：大图 + 卦名 + 卦辞 -->
           <div class="gua-hero">
-            <!-- 卦象爻线图 -->
+            <!-- 本卦爻线图 -->
             <div class="gua-lines-wrap">
+              <p class="gua-lines-label">本卦</p>
               <div class="gua-lines-inner">
                 <div
                   v-for="(yao, index) in [...result.yao_result].reverse()"
@@ -67,6 +68,32 @@
               </div>
             </div>
 
+            <!-- 变卦箭头 + 变卦爻线图 -->
+            <template v-if="result.bian_gua?.name">
+              <div class="gua-change-arrow">
+                <span class="gua-change-arrow__icon">→</span>
+                <span class="gua-change-arrow__label">变卦</span>
+              </div>
+              <div class="gua-lines-wrap gua-lines-wrap--bian">
+                <p class="gua-lines-label gua-lines-label--bian">变卦</p>
+                <div class="gua-lines-inner">
+                  <div
+                    v-for="(yao, index) in bianGuaYaoResult"
+                    :key="'bian-' + index"
+                    class="gua-yao"
+                    :class="{ 'gua-yao--bian-changed': result.bian_gua.dong_yao?.includes(6 - index) }"
+                  >
+                    <div v-if="isYangYao(yao)" class="gua-yao__bar gua-yao__bar--yang"></div>
+                    <div v-else class="gua-yao__bar gua-yao__bar--yin">
+                      <div class="gua-yao__half"></div>
+                      <div class="gua-yao__gap"></div>
+                      <div class="gua-yao__half"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
             <!-- 卦名 + 卦辞 -->
             <div class="gua-meta">
               <div class="gua-meta__names">
@@ -78,6 +105,11 @@
               </div>
               <p v-if="result.gua.gua_ci" class="gua-meta__ci">"{{ result.gua.gua_ci }}"</p>
               <p v-if="result.interpretation" class="gua-meta__interp">{{ result.interpretation }}</p>
+              <!-- 变卦说明 -->
+              <div v-if="result.bian_gua?.name" class="gua-meta__bian-info">
+                <span class="gua-meta__bian-badge">变卦</span>
+                <span class="gua-meta__bian-desc">有 {{ result.bian_gua.dong_yao?.length || 0 }} 爻动，卦象变为「{{ result.bian_gua.name }}」，需结合变卦综合判断</span>
+              </div>
             </div>
           </div>
 
@@ -85,9 +117,25 @@
           <div v-if="result.ai_analysis" class="ai-section">
             <div class="ai-section__label">
               <span class="ai-section__dot"></span>
-              AI 解卦
+              AI 深度解卦
             </div>
-            <div class="ai-section__content">{{ result.ai_analysis.content }}</div>
+            <!-- 结构化段落展示 -->
+            <div class="ai-section__body">
+              <template v-for="(para, idx) in aiAnalysisParagraphs" :key="idx">
+                <!-- 标题段落 -->
+                <div v-if="para.type === 'heading'" class="ai-para ai-para--heading">
+                  <span class="ai-para__heading-icon">◆</span>
+                  <span>{{ para.text }}</span>
+                </div>
+                <!-- 普通段落 -->
+                <p v-else-if="para.type === 'text'" class="ai-para ai-para--text">{{ para.text }}</p>
+                <!-- 要点列表项 -->
+                <div v-else-if="para.type === 'bullet'" class="ai-para ai-para--bullet">
+                  <span class="ai-para__bullet-dot">·</span>
+                  <span>{{ para.text }}</span>
+                </div>
+              </template>
+            </div>
           </div>
 
           <!-- 历史记录中无AI分析时的触发入口 -->
@@ -444,6 +492,7 @@ const {
   historyTriggerText,
   liuyaoResultHighlights, liuyaoResultActions, liuyaoRelatedRecommendations,
   liuyaoShareSummary, liuyaoShareTags,
+  aiAnalysisParagraphs, bianGuaYaoResult,
 
   // 方法
   handleSubmitIssue, openHistoryDialog,

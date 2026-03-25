@@ -84,7 +84,25 @@ class Logs extends BaseController
         $endDate = $params['end_date'] ?? '';
 
         try {
-            $query = Db::table('tc_admin_login_log')
+            // 登录日志表可能不存在，先检查
+            $loginLogTable = 'tc_admin_login_log';
+            $tableExists = false;
+            try {
+                Db::table($loginLogTable)->limit(1)->select();
+                $tableExists = true;
+            } catch (\Throwable $ignored) {}
+
+            if (!$tableExists) {
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                    'page' => $page,
+                    'page_size' => $pageSize,
+                    'notice' => '登录日志表尚未创建，请联系管理员初始化数据库'
+                ]);
+            }
+
+            $query = Db::table($loginLogTable)
                 ->alias('l')
                 ->leftJoin('tc_admin a', 'l.admin_id = a.id')
                 ->field('l.*, a.username as admin_username, a.nickname as admin_nickname');
@@ -138,7 +156,25 @@ class Logs extends BaseController
         $endDate = $params['end_date'] ?? '';
 
         try {
-            $query = Db::table('tc_api_log');
+            // API日志表可能不存在，先检查
+            $apiLogTable = 'tc_api_log';
+            $tableExists = false;
+            try {
+                Db::table($apiLogTable)->limit(1)->select();
+                $tableExists = true;
+            } catch (\Throwable $ignored) {}
+
+            if (!$tableExists) {
+                return $this->success([
+                    'list' => [],
+                    'total' => 0,
+                    'page' => $page,
+                    'page_size' => $pageSize,
+                    'notice' => 'API日志表尚未创建，请联系管理员初始化数据库'
+                ]);
+            }
+
+            $query = Db::table($apiLogTable);
 
             if ($path) {
                 $query->whereLike('path', '%' . $path . '%');

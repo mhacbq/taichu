@@ -877,7 +877,7 @@
 .gua-hero {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 20px;
   margin-bottom: 28px;
   padding: 28px 24px;
   background: linear-gradient(135deg,
@@ -885,12 +885,14 @@
     rgba(var(--primary-rgb), 0.02) 100%);
   border-radius: 20px;
   border: 1px solid rgba(var(--primary-rgb), 0.12);
+  flex-wrap: wrap;
 }
 
 /* 爻线图容器 */
 .gua-lines-wrap {
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -1013,6 +1015,84 @@
   margin: 0;
 }
 
+/* ===== 变卦展示 ===== */
+.gua-change-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.gua-change-arrow__icon {
+  font-size: 20px;
+  color: var(--primary-color);
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.gua-change-arrow__label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 1px;
+}
+
+.gua-lines-label {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 1px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.gua-lines-label--bian {
+  color: var(--primary-color);
+  opacity: 0.8;
+}
+
+.gua-lines-wrap--bian .gua-yao__bar--yang,
+.gua-lines-wrap--bian .gua-yao__half {
+  background: rgba(var(--primary-rgb), 0.5);
+}
+
+/* 变卦中发生变化的爻（高亮） */
+.gua-yao--bian-changed .gua-yao__bar--yang,
+.gua-yao--bian-changed .gua-yao__half {
+  background: var(--primary-color);
+  box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.5);
+}
+
+/* 变卦信息标签 */
+.gua-meta__bian-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.gua-meta__bian-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: rgba(var(--primary-rgb), 0.12);
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.gua-meta__bian-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 /* ===== AI 解卦区 ===== */
 .ai-section {
   margin-bottom: 24px;
@@ -1045,7 +1125,7 @@
   color: var(--primary-color);
   letter-spacing: 1px;
   text-transform: uppercase;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .ai-section__dot {
@@ -1062,11 +1142,63 @@
   50% { opacity: 0.5; transform: scale(0.8); }
 }
 
-.ai-section__content {
+/* AI 结构化段落 */
+.ai-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-para {
+  margin: 0;
+  line-height: 1.9;
+}
+
+/* 标题段落 */
+.ai-para--heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-color);
+  padding: 8px 12px;
+  background: rgba(var(--primary-rgb), 0.07);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color);
+  margin-top: 6px;
+}
+
+.ai-para__heading-icon {
+  font-size: 10px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* 普通段落 */
+.ai-para--text {
   font-size: 15px;
   color: var(--text-primary);
   line-height: 1.95;
-  white-space: pre-wrap;
+  padding: 0 2px;
+}
+
+/* 要点列表 */
+.ai-para--bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 4px 0 4px 8px;
+}
+
+.ai-para__bullet-dot {
+  color: var(--primary-color);
+  font-size: 20px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  font-weight: 700;
 }
 
 /* AI 解卦触发入口（历史记录无AI时） */
@@ -1417,10 +1549,25 @@
 
   /* 卦象展示区移动端 */
   .gua-hero {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
     padding: 20px 16px;
+    justify-content: center;
+  }
+
+  .gua-lines-wrap {
+    flex-shrink: 0;
+  }
+
+  .gua-change-arrow {
+    align-self: center;
+    padding: 0 2px;
+  }
+
+  .gua-change-arrow__icon {
+    font-size: 16px;
   }
 
   .gua-lines-inner {
@@ -1439,12 +1586,12 @@
 
   .gua-meta {
     width: 100%;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .gua-meta__names {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .gua-meta__main-name {
@@ -1455,6 +1602,15 @@
   .ai-section {
     padding: 18px 16px;
     border-radius: 16px;
+  }
+
+  .ai-para--text {
+    font-size: 14px;
+    line-height: 1.85;
+  }
+
+  .ai-para--heading {
+    font-size: 13px;
   }
 
   .ai-section__content {

@@ -1069,6 +1069,87 @@
         </div>
         </div> <!-- End of result sections -->
 
+        <!-- ===== AI 智能解盘 ===== -->
+        <div class="ai-section-wrapper" v-if="result.bazi">
+          <div class="section-divider"></div>
+          <div class="pane-title">
+            <el-icon class="title-icon"><MagicStick /></el-icon>
+            <span class="title-text">AI 智能解盘</span>
+            <span class="title-desc">结合四柱大运，深度解读命局走势</span>
+          </div>
+
+          <!-- 已有结果 -->
+          <div v-if="aiAnalysisResult && !aiAnalyzing" class="ai-result-panel">
+            <div v-if="aiAnalysisResult.summary" class="ai-block ai-block--summary">
+              <p class="ai-summary-text">{{ aiAnalysisResult.summary }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.riyuan_analysis" class="ai-block">
+              <h4 class="ai-block-title">日主分析</h4>
+              <p>{{ aiAnalysisResult.riyuan_analysis }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.personality" class="ai-block">
+              <h4 class="ai-block-title">性格特质</h4>
+              <p>{{ aiAnalysisResult.personality }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.career_wealth" class="ai-block">
+              <h4 class="ai-block-title">事业财运</h4>
+              <p>{{ aiAnalysisResult.career_wealth }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.relationship" class="ai-block">
+              <h4 class="ai-block-title">感情婚姻</h4>
+              <p>{{ aiAnalysisResult.relationship }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.health" class="ai-block">
+              <h4 class="ai-block-title">健康提醒</h4>
+              <p>{{ aiAnalysisResult.health }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.dayun_advice" class="ai-block ai-block--highlight">
+              <h4 class="ai-block-title">大运流年</h4>
+              <p>{{ aiAnalysisResult.dayun_advice }}</p>
+            </div>
+            <div v-if="aiAnalysisResult.suggestion" class="ai-block ai-block--suggestion">
+              <h4 class="ai-block-title">综合建议</h4>
+              <p>{{ aiAnalysisResult.suggestion }}</p>
+            </div>
+            <div class="ai-result-actions">
+              <el-button size="small" @click="clearAiResult">重新解盘</el-button>
+            </div>
+          </div>
+
+          <!-- 正在分析中 -->
+          <div v-else-if="aiAnalyzing" class="ai-analyzing-state">
+            <el-icon class="is-loading ai-loading-icon"><Loading /></el-icon>
+            <p class="ai-analyzing-text">{{ aiLoadingHint }}</p>
+            <p class="ai-analyzing-hint">通常需要 10-20 秒</p>
+          </div>
+
+          <!-- 未触发 -->
+          <div v-else class="ai-entry-panel">
+            <div class="ai-entry-features">
+              <div class="ai-entry-feature"><el-icon><Check /></el-icon><span>日主强弱与喜忌分析</span></div>
+              <div class="ai-entry-feature"><el-icon><Check /></el-icon><span>事业财运感情健康全面解读</span></div>
+              <div class="ai-entry-feature"><el-icon><Check /></el-icon><span>结合大运给出人生阶段建议</span></div>
+            </div>
+            <div v-if="aiNeedsAccountRecovery" class="ai-recovery-tip">
+              <p>{{ aiRecoveryText }}</p>
+              <el-button size="small" @click="loadPoints">重新获取</el-button>
+            </div>
+            <el-button
+              v-else
+              type="primary"
+              size="large"
+              :loading="aiAnalyzing"
+              :disabled="!canStartAiAnalysis"
+              @click="startAiAnalysis"
+              class="ai-start-btn"
+            >
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
+              {{ aiActionText }}
+              <span class="ai-cost-badge">{{ aiAnalysisCost }} 积分</span>
+            </el-button>
+          </div>
+        </div>
+
         <!-- 操作按钮 -->
         <div class="result-actions-wrap">
           <div class="result-actions-heading">
@@ -1166,6 +1247,20 @@ const {
   pointsConfirmType,
   pointsConfirmData,
 
+  // AI 解盘
+  aiPrompt,
+  aiAnalyzing,
+  aiAnalysisResult,
+  aiLoadingHint,
+  aiAnalysisCost,
+  aiPricingTagText,
+  canStartAiAnalysis,
+  aiActionText,
+  aiNeedsAccountRecovery,
+  aiRecoveryText,
+  startAiAnalysis,
+  clearAiResult,
+
   // 计算属性
   versionHint,
   resultModeLabel,
@@ -1196,6 +1291,7 @@ const {
   handleBaziIssue,
   openBaziHistoryCenter,
   continueBaziJourney,
+  loadPoints,
   getFortuneToolCost,
   getPointsConfirmTitle,
   getPointsConfirmCost,

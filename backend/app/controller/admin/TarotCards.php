@@ -12,6 +12,8 @@ use think\facade\Log;
  */
 class TarotCards extends BaseController
 {
+    protected $middleware = [\app\middleware\AdminAuth::class];
+
     /**
      * 获取塔罗牌列表（分页+筛选）
      */

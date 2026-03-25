@@ -91,102 +91,193 @@ class DeepSeekService
     
     /**
      * 六爻专用解读
-     * 
+     *
      * @param array $guaData 卦象数据
-     * @return string 解读内容
+     * @return array 结构化解读内容
      */
-    public static function interpretLiuyao(array $guaData): string
+    public static function interpretLiuyao(array $guaData): array
     {
         $systemPrompt = <<<PROMPT
 你是一位精通六爻占卜的大师，擅长《增删卜易》、《卜筮正宗》等经典。
-请根据卦象进行专业解读，包括：
-1. 卦象分析（本卦、变卦、互卦）
-2. 用神分析（用神旺衰、有无伤克）
-3. 动变分析（动爻变化、事情发展）
-4. 应期推断（事情发生时间）
-5. 具体建议
+请根据卦象进行专业解读，必须严格按照以下 JSON 格式返回，不要输出任何 JSON 以外的内容：
 
-请用专业但易懂的语言，避免过于晦涩的术语。
+{
+  "summary": "卦象总论，2-3句话，点明本卦核心卦义与整体走势",
+  "gua_analysis": "本卦、变卦、互卦的综合分析，说明三卦之间的关联与变化脉络，100-150字",
+  "yong_shen_analysis": "用神六亲的旺衰状态分析，是否受生扶、克害、冲合，当前处于何种力量格局，80-120字",
+  "moving_analysis": [
+    {
+      "yao": "第X爻",
+      "liuqin": "六亲名称",
+      "change": "变化描述（老阳变阴/老阴变阳）",
+      "meaning": "该动爻对所问事项的具体影响，30-50字"
+    }
+  ],
+  "qi_period": "应期推断：根据动爻五行、旺衰与日辰月建，推断事情发生或有结果的时间节点，50-80字",
+  "suggestion": "综合建议：结合卦象给出具体可操作的行动指引，语气积极务实，80-100字",
+  "warning": "注意事项：需要警惕或规避的风险点，若无明显凶险可留空字符串，30-60字"
+}
+
+要求：
+- 只输出合法 JSON，不要有任何前缀、后缀、markdown 代码块标记
+- 语言专业但易懂，避免过于晦涩的术语
+- moving_analysis 数组条目数量与实际动爻数量一致，无动爻时为空数组
 PROMPT;
-        
+
         $prompt = self::buildLiuyaoPrompt($guaData);
-        
-        return self::chat($prompt, [
+
+        $raw = self::chat($prompt, [
             'system_prompt' => $systemPrompt,
-            'temperature' => 0.8,
-            'max_tokens' => 2500,
+            'temperature'   => 0.8,
+            'max_tokens'    => 3000,
         ]);
+
+        // 尝试解析 JSON，失败则降级为纯文本包装
+        $raw = trim($raw);
+        // 去除可能的 markdown 代码块标记
+        $raw = preg_replace('/^```(?:json)?\s*/i', '', $raw);
+        $raw = preg_replace('/\s*```$/', '', $raw);
+
+        $parsed = json_decode($raw, true);
+        if (is_array($parsed) && isset($parsed['summary'])) {
+            return $parsed;
+        }
+
+        // 降级：将纯文本包装为结构化格式
+        return [
+            'summary'          => '',
+            'gua_analysis'     => '',
+            'yong_shen_analysis' => '',
+            'moving_analysis'  => [],
+            'qi_period'        => '',
+            'suggestion'       => '',
+            'warning'          => '',
+            'content'          => $raw, // 保留原始文本供前端兜底展示
+        ];
     }
     
     /**
      * 八字专用解读
-     * 
+     *
      * @param array $baziData 八字数据
-     * @return string 解读内容
+     * @return array 结构化解读内容
      */
-    public static function interpretBazi(array $baziData): string
+    public static function interpretBazi(array $baziData): array
     {
         $systemPrompt = <<<PROMPT
 你是一位精通八字命理的大师，擅长《滴天髓》、《子平真诠》等经典。
-请根据八字进行专业解读，包括：
-1. 命局分析（日主强弱、五行喜忌）
-2. 性格分析
-3. 事业财运
-4. 感情婚姻
-5. 健康提醒
-6. 大运流年简析
+请根据八字进行专业解读，必须严格按照以下 JSON 格式返回，不要输出任何 JSON 以外的内容：
 
-【写作风格要求 - 巴纳姆效应技巧】
-- 大量使用"你"开头，增强代入感
-- 描述内心矛盾：先说优点，再说"但有时候你也会..."，让人觉得被深度理解
-- 加入"潜力暗示"：你有未被完全发掘的潜力
-- 使用"往往"、"可能"、"有时候"等模糊词，增加普遍适用性
-- 将缺点转化为"成长空间"或"需要注意的地方"
-- 加入"这一点你自己心里其实清楚"类的共鸣句
+{
+  "summary": "命局总论，2-3句话，点明日主特质与整体命格走向",
+  "riyuan_analysis": "日主强弱分析：五行力量对比、喜用神与忌神判断，80-120字",
+  "personality": "性格特质：结合日主与十神，描述核心性格优势与成长空间，80-100字",
+  "career_wealth": "事业财运：官杀财星状态，适合方向与财运起伏规律，80-100字",
+  "relationship": "感情婚姻：夫妻宫与配偶星分析，感情模式与注意事项，60-80字",
+  "health": "健康提醒：五行偏枯对应的身体弱点，需要注意的方面，40-60字",
+  "dayun_advice": "大运流年：当前大运走势简析与近期建议，60-80字",
+  "suggestion": "综合建议：结合命局给出具体可操作的人生指引，语气积极务实，80-100字"
+}
 
-请用专业但易懂的语言，让每一句话都让人觉得"说的就是我"。
+要求：
+- 只输出合法 JSON，不要有任何前缀、后缀、markdown 代码块标记
+- 语言专业但易懂，多用"你"开头增强代入感
+- 将缺点转化为"成长空间"，语气温暖而不鸡汤
 PROMPT;
-        
+
         $prompt = self::buildBaziPrompt($baziData);
-        
-        return self::chat($prompt, [
+
+        $raw = self::chat($prompt, [
             'system_prompt' => $systemPrompt,
-            'temperature' => 0.8,
-            'max_tokens' => 3000,
+            'temperature'   => 0.8,
+            'max_tokens'    => 3000,
         ]);
+
+        $raw = trim($raw);
+        $raw = preg_replace('/^```(?:json)?\s*/i', '', $raw);
+        $raw = preg_replace('/\s*```$/', '', $raw);
+
+        $parsed = json_decode($raw, true);
+        if (is_array($parsed) && isset($parsed['summary'])) {
+            return $parsed;
+        }
+
+        // 降级：将纯文本包装为结构化格式
+        return [
+            'summary'         => '',
+            'riyuan_analysis' => '',
+            'personality'     => '',
+            'career_wealth'   => '',
+            'relationship'    => '',
+            'health'          => '',
+            'dayun_advice'    => '',
+            'suggestion'      => '',
+            'content'         => $raw,
+        ];
     }
-    
+
     /**
      * 塔罗专用解读
-     * 
+     *
      * @param array $tarotData 塔罗数据
-     * @return string 解读内容
+     * @return array 结构化解读内容
      */
-    public static function interpretTarot(array $tarotData): string
+    public static function interpretTarot(array $tarotData): array
     {
         $systemPrompt = <<<PROMPT
 你是一位精通韦特体系的塔罗解读者。
-请根据牌阵进行专业解读，包括：
-1. 单张牌义解读
-2. 牌阵整体分析
-3. 牌与牌之间的关联
-4. 具体建议
+请根据牌阵进行专业解读，必须严格按照以下 JSON 格式返回，不要输出任何 JSON 以外的内容：
+
+{
+  "summary": "牌阵总论，2-3句话，点明整体能量走向与核心信息",
+  "card_readings": [
+    {
+      "position": "牌位名称（如：过去/现在/未来）",
+      "card": "牌名",
+      "orientation": "正位或逆位",
+      "meaning": "该牌在此牌位的具体含义，结合正逆位与所问事项，40-60字"
+    }
+  ],
+  "energy_flow": "牌与牌之间的能量关联与流动分析，说明整体叙事脉络，80-100字",
+  "core_message": "核心信息：直接回答用户所问，不绕弯子，60-80字",
+  "suggestion": "具体建议：结合牌义给出可操作的行动指引，语气温暖务实，60-80字",
+  "warning": "需要注意的能量或风险点，若无明显警示可留空字符串，30-50字"
+}
 
 要求：
-- 只使用中文术语，不要输出 Enemy Dignity、Mutual Dignity、Neutral Dignity 等英文表达。
-- 若需讨论四元素互动，请使用“友好互动 / 需要协调 / 中等关系”等中文表述。
-- 综合结论必须紧扣提问、牌位与正逆位，不要使用“接受命运的指引”等空泛套话。
-- 语气可以温暖，但不要鸡汤化。
+- 只输出合法 JSON，不要有任何前缀、后缀、markdown 代码块标记
+- 只使用中文术语，不要输出英文占星/元素术语
+- 综合结论必须紧扣提问、牌位与正逆位，不要使用空泛套话
+- card_readings 数组条目数量与实际牌数一致
 PROMPT;
 
-        
         $prompt = self::buildTarotPrompt($tarotData);
-        
-        return self::chat($prompt, [
+
+        $raw = self::chat($prompt, [
             'system_prompt' => $systemPrompt,
-            'temperature' => 0.9,
-            'max_tokens' => 2500,
+            'temperature'   => 0.9,
+            'max_tokens'    => 2500,
         ]);
+
+        $raw = trim($raw);
+        $raw = preg_replace('/^```(?:json)?\s*/i', '', $raw);
+        $raw = preg_replace('/\s*```$/', '', $raw);
+
+        $parsed = json_decode($raw, true);
+        if (is_array($parsed) && isset($parsed['summary'])) {
+            return $parsed;
+        }
+
+        // 降级：将纯文本包装为结构化格式
+        return [
+            'summary'       => '',
+            'card_readings' => [],
+            'energy_flow'   => '',
+            'core_message'  => '',
+            'suggestion'    => '',
+            'warning'       => '',
+            'content'       => $raw,
+        ];
     }
     
     /**

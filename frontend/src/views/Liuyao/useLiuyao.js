@@ -776,6 +776,42 @@ const startAiAnalysis = async () => {
 }
 
 
+// AI分析内容结构化解析：将纯文本按段落/标题/要点拆分
+const aiAnalysisParagraphs = computed(() => {
+  const content = result.value?.ai_analysis?.content
+  if (!content) return []
+
+  const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
+  return lines.map(line => {
+    // 以【】或「」或数字+. 开头的视为标题段
+    if (/^[【「\d]/.test(line) && line.length < 30) {
+      return { type: 'heading', text: line.replace(/^[\d]+[.、]\s*/, '') }
+    }
+    // 以-、•、·、※ 开头的视为要点
+    if (/^[-•·※★✦]/.test(line)) {
+      return { type: 'bullet', text: line.replace(/^[-•·※★✦]\s*/, '') }
+    }
+    return { type: 'text', text: line }
+  })
+})
+
+// 变卦爻线图：根据本卦yao_result和动爻位置推算变卦爻
+const bianGuaYaoResult = computed(() => {
+  if (!result.value?.bian_gua?.name) return []
+  const yaoResult = result.value.yao_result
+  if (!yaoResult?.length) return []
+  const dongYao = result.value.bian_gua.dong_yao || []
+  // 从下到上（初爻=1），反转后展示（上爻在上）
+  return [...yaoResult].reverse().map((yao, reversedIdx) => {
+    const position = 6 - reversedIdx // 上爻=6, 初爻=1
+    if (dongYao.includes(position)) {
+      // 动爻：阴阳互换
+      return isYangYao(yao) ? 2 : 1 // 2=少阴(阴), 1=少阳(阳)
+    }
+    return yao
+  })
+})
+
 const shouldShowLiuyaoRechargeAction = computed(() => {
   const remaining = Number(result.value?.remaining_points)
   const cost = Number(pricing.value?.cost ?? 0)
@@ -983,6 +1019,7 @@ return {
   savedStatusText, historyTriggerText, shouldShowLiuyaoRechargeAction,
   liuyaoResultHighlights, liuyaoResultActions, liuyaoRelatedRecommendations,
   liuyaoShareSummary, liuyaoShareTags,
+  aiAnalysisParagraphs, bianGuaYaoResult,
 
   // 方法
   createDefaultForm, clearSubmitErrors, focusLiuyaoField, handleSubmitIssue,

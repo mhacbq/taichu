@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\PointsRecord;
 use app\model\TarotCard;
 use app\model\TarotRecord;
+use app\service\DeepSeekService;
 use app\service\TarotElementService;
 use think\facade\Db;
 use think\facade\Log;
@@ -226,7 +227,7 @@ class Tarot extends BaseController
     }
     
     /**
-     * 解读牌阵
+     * 解读牌阵（AI 结构化解读）
      */
     public function interpret()
     {
@@ -239,15 +240,23 @@ class Tarot extends BaseController
 
             $cards = $data['cards'];
             $question = $data['question'];
+            $spread = $data['spread'] ?? '';
 
-            $interpretation = $this->generateInterpretation($cards, $question);
+            // 调用 AI 结构化解读
+            $tarotData = [
+                'cards'    => $cards,
+                'question' => $question,
+                'spread_name' => $spread,
+            ];
+            $aiResult = DeepSeekService::interpretTarot($tarotData);
 
             return $this->success([
-                'interpretation' => $interpretation,
+                'interpretation' => $aiResult,
+                'ai_powered'     => true,
             ]);
         } catch (\Throwable $e) {
-            $this->logControllerException('执行塔罗解读', $e, [
-                'card_count' => is_array($cards ?? null) ? count($cards) : 0,
+            $this->logControllerException('执行塔罗 AI 解读', $e, [
+                'card_count'      => is_array($cards ?? null) ? count($cards) : 0,
                 'question_length' => mb_strlen((string) ($question ?? '')),
             ]);
             return $this->error('解读失败，请稍后重试', 500);

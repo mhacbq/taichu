@@ -7,6 +7,7 @@ use app\BaseController;
 use app\model\SystemConfig;
 use app\model\AiPrompt;
 use app\model\BaziRecord;
+use app\service\DeepSeekService;
 use think\Request;
 use think\facade\Config;
 use think\facade\Log;
@@ -297,41 +298,22 @@ class AiAnalysis extends BaseController
             return $this->error('AI解盘服务未配置', 500);
         }
 
-        // 获取提示词配置
-        $prompt = $this->getPrompt('bazi', $promptKey);
-        
-        if (!$prompt) {
-            // 使用默认构建的提示词（含大运数据）
-            $systemPrompt = $this->buildBaziSystemPrompt($baziData, is_array($dayunData) ? $dayunData : []);
-            $userPrompt = $customPrompt ?: '请为我详细解读这个八字命盘';
-        } else {
-            // 使用配置的提示词
-            $systemPrompt = $prompt->system_prompt;
-            $variables = $this->buildBaziVariables($baziData);
-            $userPrompt = $prompt->renderUserPrompt($variables);
-            
-            if ($customPrompt) {
-                $userPrompt .= "\n\n用户额外问题：" . $customPrompt;
-            }
-            
-            // 增加使用次数
-            $prompt->incrementUsage();
-        }
+        // 构建 interpretBazi 所需的标准数据结构
+        $interpretData = $this->buildInterpretBaziData($baziData, is_array($dayunData) ? $dayunData : [], $customPrompt);
 
         try {
-            // 调用AI API
-            $response = $this->callAiApi($systemPrompt, $userPrompt, $config);
+            // 使用 DeepSeekService::interpretBazi() 返回结构化 JSON
+            $result = DeepSeekService::interpretBazi($interpretData);
 
-            // 回写 AI 解盘结果到数据库
+            // 回写 AI 解盘结果到数据库（存储 JSON 字符串）
             if ($recordId > 0) {
                 $user = $request->user;
-                BaziRecord::saveAiAnalysis($recordId, (int) $user['sub'], $response);
+                BaziRecord::saveAiAnalysis($recordId, (int) $user['sub'], json_encode($result, JSON_UNESCAPED_UNICODE));
             }
 
             return $this->success([
-                'analysis' => $response,
-                'model' => $config['model'] ?? 'DeepSeek-V3.2',
-                'prompt_used' => $prompt ? $prompt->name : 'default'
+                'analysis' => $result,
+                'model'    => DeepSeekService::MODEL,
             ], 'AI解盘成功');
         } catch (\Exception $e) {
             return $this->respondSystemException(
@@ -340,12 +322,9 @@ class AiAnalysis extends BaseController
                 'AI解盘失败，请稍后重试',
                 $this->buildAiAnalysisLogContext($baziData, $promptKey, $customPrompt, $config, [
                     'mode' => 'sync',
-                    'prompt_source' => $prompt ? 'preset' : 'default',
                 ])
             );
         }
-
-
     }
 
     /**
@@ -379,28 +358,17 @@ class AiAnalysis extends BaseController
         }
 
         $config = $this->getAiConfig();
-        
+
         if (empty($config['api_key']) || empty($config['api_url'])) {
             return $this->error('AI解盘服务未配置', 500);
         }
 
-        // 获取提示词配置
-        $prompt = $this->getPrompt('bazi', $promptKey);
-        
-        if (!$prompt) {
-            $systemPrompt = $this->buildBaziSystemPrompt($baziData, is_array($dayunData) ? $dayunData : []);
-            $userPrompt = $customPrompt ?: '请为我详细解读这个八字命盘';
-        } else {
-            $systemPrompt = $prompt->system_prompt;
-            $variables = $this->buildBaziVariables($baziData);
-            $userPrompt = $prompt->renderUserPrompt($variables);
-            
-            if ($customPrompt) {
-                $userPrompt .= "\n\n用户额外问题：" . $customPrompt;
-            }
-            
-            $prompt->incrementUsage();
-        }
+        // 构建 interpretBazi 所需的标准数据结构（与同步版保持一致）
+        $interpretData = $this->buildInterpretBaziData($baziData, is_array($dayunData) ? $dayunData : [], $customPrompt);
+
+        // 从 interpretData 中提取 system/user prompt，复用 DeepSeekService 的 prompt 体系
+        $systemPrompt = $this->buildInterpretBaziSystemPrompt();
+        $userPrompt   = $this->buildInterpretBaziUserPrompt($interpretData);
 
         $this->prepareSseResponse();
 
@@ -409,11 +377,19 @@ class AiAnalysis extends BaseController
             $fullContent = $this->callAiApiStreamCapture($systemPrompt, $userPrompt, $config);
             $this->emitSseDone();
 
-            // 流式完成后回写 AI 分析结果到数据库
+            // 流式完成后解析 JSON 并回写到数据库
             if ($recordId > 0 && $fullContent !== '') {
                 try {
                     $user = $request->user;
-                    BaziRecord::saveAiAnalysis($recordId, (int) $user['sub'], $fullContent);
+                    // 尝试解析为结构化 JSON，失败则存原始文本
+                    $raw = trim($fullContent);
+                    $raw = preg_replace('/^```(?:json)?\s*/i', '', $raw);
+                    $raw = preg_replace('/\s*```$/', '', $raw);
+                    $parsed = json_decode($raw, true);
+                    $toSave = (is_array($parsed) && isset($parsed['summary']))
+                        ? json_encode($parsed, JSON_UNESCAPED_UNICODE)
+                        : $fullContent;
+                    BaziRecord::saveAiAnalysis($recordId, (int) $user['sub'], $toSave);
                 } catch (\Throwable $saveEx) {
                     Log::warning('AI分析结果回写失败', ['record_id' => $recordId, 'error' => $saveEx->getMessage()]);
                 }
@@ -424,16 +400,156 @@ class AiAnalysis extends BaseController
                 $e,
                 $this->buildAiAnalysisLogContext($baziData, $promptKey, $customPrompt, $config, [
                     'mode' => 'stream',
-                    'prompt_source' => $prompt ? 'preset' : 'default',
                 ]),
                 'error'
             );
             $this->emitSseError('AI流式解盘失败，请稍后重试');
         }
 
-
         exit;
+    }
 
+    /**
+     * 构建 DeepSeekService::interpretBazi() 所需的标准数据结构
+     * 将前端传来的 bazi + dayun 数据映射为 interpretBazi 期望的字段格式
+     */
+    private function buildInterpretBaziData(array $baziData, array $dayunData, string $customPrompt = ''): array
+    {
+        $year  = $baziData['year']  ?? [];
+        $month = $baziData['month'] ?? [];
+        $day   = $baziData['day']   ?? [];
+        $hour  = $baziData['hour']  ?? [];
+
+        // 四柱字符串
+        $yearZhu  = ($year['gan']  ?? '') . ($year['zhi']  ?? '');
+        $monthZhu = ($month['gan'] ?? '') . ($month['zhi'] ?? '');
+        $dayZhu   = ($day['gan']   ?? '') . ($day['zhi']   ?? '');
+        $hourZhu  = ($hour['gan']  ?? '') . ($hour['zhi']  ?? '');
+
+        // 十神汇总
+        $shishenParts = [];
+        foreach (['year' => '年柱', 'month' => '月柱', 'hour' => '时柱'] as $col => $label) {
+            $ss = $baziData[$col]['shishen'] ?? '';
+            if ($ss !== '') {
+                $shishenParts[] = "{$label}：{$ss}";
+            }
+        }
+        $shishen = implode('，', $shishenParts);
+
+        // 五行力量
+        $wuxingStats = $baziData['wuxing_stats'] ?? [];
+        $wuxingParts = [];
+        foreach ($wuxingStats as $wx => $cnt) {
+            $wuxingParts[] = "{$wx}：{$cnt}";
+        }
+        $wuxingPower = implode('，', $wuxingParts);
+
+        // 当前大运（取第一个 is_current=true 或 age_start 最近的）
+        $currentDayun = '';
+        if (!empty($dayunData)) {
+            foreach ($dayunData as $yun) {
+                if (!empty($yun['is_current'])) {
+                    $currentDayun = ($yun['gan'] ?? '') . ($yun['zhi'] ?? '');
+                    break;
+                }
+            }
+            if ($currentDayun === '') {
+                $first = $dayunData[0];
+                $currentDayun = ($first['gan'] ?? '') . ($first['zhi'] ?? '');
+            }
+        }
+
+        // 大运列表文本（附加到 dayun_advice 字段供 prompt 使用）
+        $dayunLines = [];
+        foreach ($dayunData as $yun) {
+            $ageStart = $yun['age_start'] ?? $yun['start_age'] ?? '';
+            $ageEnd   = $yun['age_end']   ?? $yun['end_age']   ?? '';
+            $gan      = $yun['gan'] ?? '';
+            $zhi      = $yun['zhi'] ?? '';
+            $dayunLines[] = "{$ageStart}-{$ageEnd}岁：{$gan}{$zhi}";
+        }
+
+        $data = [
+            'year_zhu'      => $yearZhu,
+            'month_zhu'     => $monthZhu,
+            'day_zhu'       => $dayZhu,
+            'hour_zhu'      => $hourZhu,
+            'day_master'    => $baziData['day_master'] ?? '',
+            'shishen'       => $shishen,
+            'wuxing_power'  => $wuxingPower,
+            'dayun'         => implode('\n', $dayunLines),
+        ];
+
+        if ($customPrompt !== '') {
+            $data['custom_question'] = $customPrompt;
+        }
+
+        return $data;
+    }
+
+    /**
+     * 构建 interpretBazi 的 system prompt（与 DeepSeekService 保持一致）
+     */
+    private function buildInterpretBaziSystemPrompt(): string
+    {
+        return <<<PROMPT
+你是一位精通八字命理的大师，擅长《滴天髓》、《子平真诠》等经典。
+请根据八字进行专业解读，必须严格按照以下 JSON 格式返回，不要输出任何 JSON 以外的内容：
+
+{
+  "summary": "命局总论，2-3句话，点明日主特质与整体命格走向",
+  "riyuan_analysis": "日主强弱分析：五行力量对比、喜用神与忌神判断，80-120字",
+  "personality": "性格特质：结合日主与十神，描述核心性格优势与成长空间，80-100字",
+  "career_wealth": "事业财运：官杀财星状态，适合方向与财运起伏规律，80-100字",
+  "relationship": "感情婚姻：夫妻宫与配偶星分析，感情模式与注意事项，60-80字",
+  "health": "健康提醒：五行偏枯对应的身体弱点，需要注意的方面，40-60字",
+  "dayun_advice": "大运流年：当前大运走势简析与近期建议，60-80字",
+  "suggestion": "综合建议：结合命局给出具体可操作的人生指引，语气积极务实，80-100字"
+}
+
+要求：
+- 只输出合法 JSON，不要有任何前缀、后缀、markdown 代码块标记
+- 语言专业但易懂，多用"你"开头增强代入感
+- 将缺点转化为"成长空间"，语气温暖而不鸡汤
+PROMPT;
+    }
+
+    /**
+     * 构建 interpretBazi 的 user prompt
+     */
+    private function buildInterpretBaziUserPrompt(array $data): string
+    {
+        $lines = [];
+        $lines[] = "【八字信息】";
+        $lines[] = "年柱：" . ($data['year_zhu'] ?? '');
+        $lines[] = "月柱：" . ($data['month_zhu'] ?? '');
+        $lines[] = "日柱：" . ($data['day_zhu'] ?? '');
+        $lines[] = "时柱：" . ($data['hour_zhu'] ?? '');
+        $lines[] = "";
+        $lines[] = "【日主】" . ($data['day_master'] ?? '');
+        $lines[] = "";
+        $lines[] = "【十神】";
+        $lines[] = $data['shishen'] ?? '';
+        $lines[] = "";
+        $lines[] = "【五行力量】";
+        $lines[] = $data['wuxing_power'] ?? '';
+
+        if (!empty($data['dayun'])) {
+            $lines[] = "";
+            $lines[] = "【大运列表】";
+            $lines[] = $data['dayun'];
+        }
+
+        if (!empty($data['custom_question'])) {
+            $lines[] = "";
+            $lines[] = "【用户额外问题】";
+            $lines[] = $data['custom_question'];
+        }
+
+        $lines[] = "";
+        $lines[] = "请进行详细解读。";
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -482,12 +598,12 @@ class AiAnalysis extends BaseController
         $yongshen = $baziData['yongshen'] ?? '';
         $xishen = $baziData['xishen'] ?? '';
 
-        $prompt = "你是一位擅长用通俗语言解读命理的老师。你的读者是完全不懂命理知识的普通人，他们看不懂"日主"、"十神"、"纳音"、"喜用神"等专业术语。\n\n";
+        $prompt = '你是一位擅长用通俗语言解读命理的老师。你的读者是完全不懂命理知识的普通人，他们看不懂"日主"、"十神"、"纳音"、"喜用神"等专业术语。' . "\n\n";
         $prompt .= "【重要写作要求】\n";
         $prompt .= "1. 禁止直接使用命理专业术语（如日主、十神、纳音、喜用神、忌神、食神、伤官、七杀、正官、偏财等），如必须提及，请立即用括号加上通俗解释。\n";
         $prompt .= "2. 用讲故事、聊天的口吻写作，像朋友之间的对话，温暖而真诚。\n";
-        $prompt .= "3. 每个结论都要落地到具体的生活场景，比如"适合做销售、教师、创业"而不是"事业宫旺"。\n";
-        $prompt .= "4. 建议要实用可操作，比如"建议多接触水边环境、多喝水、从事与水相关的行业"而不是"五行补水"。\n";
+        $prompt .= '3. 每个结论都要落地到具体的生活场景，比如"适合做销售、教师、创业"而不是"事业宫旺"。' . "\n";
+        $prompt .= '4. 建议要实用可操作，比如"建议多接触水边环境、多喝水、从事与水相关的行业"而不是"五行补水"。' . "\n";
         $prompt .= "5. 语气积极正向，即使有不利因素也要给出应对方法，不要让人感到恐惧或绝望。\n\n";
 
         $prompt .= "【命主八字信息】\n";
@@ -542,7 +658,7 @@ class AiAnalysis extends BaseController
         $prompt .= "3. **事业与财富** — 适合的行业方向、赚钱方式、职场中的注意事项\n";
         $prompt .= "4. **感情与婚姻** — 感情模式、理想伴侣特质、婚姻中需要注意的地方\n";
         $prompt .= "5. **健康与生活** — 需要关注的身体部位、适合的生活方式和习惯\n";
-        $prompt .= "6. **人生各阶段** — 结合大运数据，用"20多岁时..."、"30-40岁..."这样的方式描述每个人生阶段的特点和建议\n\n";
+        $prompt .= '6. **人生各阶段** — 结合大运数据，用"20多岁时..."、"30-40岁..."这样的方式描述每个人生阶段的特点和建议' . "\n\n";
         $prompt .= "最后用一段温暖的话总结，给命主一些鼓励和人生方向上的建议。";
 
         return $prompt;

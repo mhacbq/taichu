@@ -12,25 +12,23 @@ class SeoConfig extends Model
     protected $updateTime = 'updated_at';
 
     protected $type = [
-        'status' => 'integer',
-        'is_deleted' => 'integer',
-        'sort_order' => 'integer'
+        'is_active' => 'integer',
+        'priority'  => 'float',
     ];
 
     // 允许批量赋值的字段
     protected $field = [
-        'page_type', 'route_path', 'title', 'keywords', 'description',
-        'og_image', 'robots', 'structured_data', 'status', 'is_deleted', 'sort_order'
+        'route', 'title', 'description', 'keywords', 'image',
+        'robots', 'og_type', 'canonical', 'priority', 'changefreq', 'is_active',
     ];
 
     /**
-     * 获取页面SEO配置
+     * 获取页面SEO配置（按路由查询）
      */
-    public static function getPageSeo($pageType)
+    public static function getPageSeo($route)
     {
-        return self::where('page_type', $pageType)
-            ->where('status', 1)
-            ->where('is_deleted', 0)
+        return self::where('route', $route)
+            ->where('is_active', 1)
             ->find();
     }
 
@@ -39,8 +37,7 @@ class SeoConfig extends Model
      */
     public static function getActiveConfigs()
     {
-        return self::where('status', 1)
-            ->where('is_deleted', 0)
+        return self::where('is_active', 1)
             ->select();
     }
 }

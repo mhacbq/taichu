@@ -206,9 +206,7 @@ class Seo extends BaseController
         }
 
         try {
-            $list = SeoConfig::where('is_deleted', 0)
-                ->order('sort_order', 'asc')
-                ->order('id', 'asc')
+            $list = SeoConfig::order('id', 'asc')
                 ->select()
                 ->toArray();
 
@@ -232,36 +230,32 @@ class Seo extends BaseController
 
         $data = $this->request->post();
         $id = $data['id'] ?? 0;
-        $pageType = $data['page_type'] ?? '';
+        $route = trim((string) ($data['route'] ?? $data['route_path'] ?? ''));
 
-        if (empty($pageType) && empty($id)) {
-            return $this->error('页面类型不能为空');
+        if (empty($route) && empty($id)) {
+            return $this->error('页面路由不能为空');
         }
 
         try {
-            // 检查page_type是否重复（排除当前记录）
-            if ($pageType) {
-                $exists = SeoConfig::where('page_type', $pageType)
-                    ->where('is_deleted', 0);
+            // 检查route是否重复（排除当前记录）
+            if ($route) {
+                $exists = SeoConfig::where('route', $route);
                 if ($id) {
                     $exists->where('id', '<>', $id);
                 }
                 if ($exists->find()) {
-                    return $this->error('该页面类型的SEO配置已存在');
+                    return $this->error('该路由的SEO配置已存在');
                 }
             }
 
             $saveData = [
-                'page_type' => $data['page_type'] ?? '',
-                'route_path' => $data['route_path'] ?? '',
-                'title' => $data['title'] ?? '',
-                'keywords' => $data['keywords'] ?? '',
+                'route'       => $route,
+                'title'       => $data['title'] ?? '',
+                'keywords'    => is_array($data['keywords'] ?? null) ? json_encode($data['keywords'], JSON_UNESCAPED_UNICODE) : ($data['keywords'] ?? '[]'),
                 'description' => $data['description'] ?? '',
-                'og_image' => $data['og_image'] ?? '',
-                'robots' => $data['robots'] ?? 'index,follow',
-                'structured_data' => $data['structured_data'] ?? null,
-                'status' => (int)($data['status'] ?? 1),
-                'sort_order' => (int)($data['sort_order'] ?? 0),
+                'image'       => $data['og_image'] ?? $data['image'] ?? '',
+                'robots'      => $data['robots'] ?? 'index,follow',
+                'is_active'   => (int) ($data['status'] ?? $data['is_active'] ?? 1),
             ];
 
             if ($id) {
@@ -276,7 +270,7 @@ class Seo extends BaseController
 
             $this->logOperation('save_seo_config', 'seo', [
                 'config_id' => $config->id,
-                'page_type' => $config->page_type
+                'route'     => $config->route,
             ]);
 
             return $this->success($config, '保存成功');
@@ -300,12 +294,11 @@ class Seo extends BaseController
                 return $this->error('SEO配置不存在', 404);
             }
 
-            $config->is_deleted = 1;
-            $config->save();
+            $config->delete();
 
             $this->logOperation('delete_seo_config', 'seo', [
                 'config_id' => $id,
-                'page_type' => $config->page_type
+                'route'     => $config->route,
             ]);
 
             return $this->success([], '删除成功');
@@ -329,19 +322,15 @@ class Seo extends BaseController
         }
 
         try {
-            $config = SeoConfig::where('route_path', $route)
-                ->where('is_deleted', 0)
-                ->find();
+            $config = SeoConfig::where('route', $route)->find();
             if (!$config) {
                 return $this->error('SEO配置不存在', 404);
             }
 
-            $config->is_deleted = 1;
-            $config->save();
+            $config->delete();
 
             $this->logOperation('delete_seo_config_by_route', 'seo', [
                 'route' => $route,
-                'page_type' => $config->page_type
             ]);
 
             return $this->success([], '删除成功');
@@ -360,24 +349,23 @@ class Seo extends BaseController
         }
 
         try {
-            $total = SeoConfig::where('is_deleted', 0)->count();
-            $active = SeoConfig::where('is_deleted', 0)->where('status', 1)->count();
-            $inactive = SeoConfig::where('is_deleted', 0)->where('status', 0)->count();
+            $total  = SeoConfig::count();
+            $active = SeoConfig::where('is_active', 1)->count();
+            $inactive = $total - $active;
 
             // 检查哪些页面还没有配置SEO
-            $configuredTypes = SeoConfig::where('is_deleted', 0)
-                ->column('page_type');
+            $configuredRoutes = SeoConfig::column('route');
 
-            $allTypes = ['home', 'bazi', 'tarot', 'daily', 'hehun', 'liuyao', 'qiming', 'yearly-fortune', 'help', 'recharge', 'vip', 'agreement', 'privacy'];
-            $unconfigured = array_values(array_diff($allTypes, $configuredTypes));
+            $allRoutes = ['/', '/bazi', '/tarot', '/daily', '/hehun', '/liuyao', '/qiming', '/yearly-fortune', '/help', '/recharge', '/vip', '/legal/agreement', '/legal/privacy'];
+            $unconfigured = array_values(array_diff($allRoutes, $configuredRoutes));
 
             return $this->success([
-                'total' => $total,
-                'active' => $active,
-                'inactive' => $inactive,
-                'unconfigured' => $unconfigured,
-                'unconfigured_count' => count($unconfigured),
-                'coverage' => $total > 0 ? round(count($configuredTypes) / count($allTypes) * 100, 1) : 0
+                'total'             => $total,
+                'active'            => $active,
+                'inactive'          => $inactive,
+                'unconfigured'      => $unconfigured,
+                'unconfigured_count'=> count($unconfigured),
+                'coverage'          => count($allRoutes) > 0 ? round(count($configuredRoutes) / count($allRoutes) * 100, 1) : 0,
             ]);
         } catch (\Throwable $e) {
             return $this->respondSystemException('admin_seo_stats', $e, '获取SEO统计失败');

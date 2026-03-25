@@ -1866,3 +1866,98 @@
   height: 44px;
   font-size: 15px;
 }
+
+/* ===== 结构化 AI 解读样式 ===== */
+.ai-section {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 160, 62, 0.15);
+}
+
+.ai-section--summary {
+  background: linear-gradient(135deg, rgba(212, 160, 62, 0.08), rgba(255, 254, 251, 0.95));
+  border-color: rgba(212, 160, 62, 0.25);
+}
+
+.ai-section--highlight {
+  background: linear-gradient(135deg, rgba(94, 67, 24, 0.06), rgba(255, 254, 251, 0.95));
+  border-left: 3px solid #d4a03e;
+}
+
+.ai-section--warning {
+  background: rgba(255, 248, 235, 0.9);
+  border-color: rgba(212, 160, 62, 0.3);
+}
+
+.ai-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5e4318;
+  margin: 0 0 10px;
+  letter-spacing: 0.5px;
+}
+
+.ai-summary {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #5e4318;
+  font-weight: 500;
+  margin: 0;
+}
+
+.ai-section p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #6b5a3e;
+  margin: 0;
+}
+
+.ai-card-reading {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(212, 160, 62, 0.1);
+}
+
+.ai-card-reading:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.ai-card-reading__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.ai-card-reading__position {
+  font-size: 12px;
+  color: #d4a03e;
+  background: rgba(212, 160, 62, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.ai-card-reading__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5e4318;
+}
+
+.ai-card-reading__orientation {
+  font-size: 12px;
+  color: #8b7355;
+  background: rgba(94, 67, 24, 0.06);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ai-card-reading__meaning {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #6b5a3e;
+  margin: 0;
+}

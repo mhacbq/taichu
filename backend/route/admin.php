@@ -56,14 +56,13 @@ Route::group('api/maodou', function () {
 
         // 用户管理
         Route::get('users/export', 'Admin/exportUsers');
-        Route::get('users/behavior', 'Admin/userBehavior');
+        Route::get('users/behavior', 'admin.User/behavior');
         Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
         Route::get('users', 'admin.User/index');
         Route::put('users/:id/status', 'admin.User/toggleStatus');
         Route::put('users/:id', 'admin.User/updateProfile');
         Route::get('users/:id', 'admin.User/detail');
-        Route::post('users/:id/adjust-points', 'UserController/adjustPoints');
-        Route::get('users/:id/detail', 'UserController/show');
+        Route::post('users/:id/adjust-points', 'admin.User/adjustPoints');
         
         // 测算结果管理
         Route::get('bazi-manage', 'admin.BaziManage/index');
@@ -321,11 +320,11 @@ Route::group('api/maodou', function () {
         Route::get('seo/page-types', 'admin.Seo/getPageTypes');
 
         // 日志管理
-        Route::get('logs/operation', 'Admin/operationLogs');
-        Route::get('logs/login', 'Admin/loginLogs');
-        Route::get('logs/api', 'Admin/apiLogs');
-        Route::delete('logs/:type/clear', 'Admin/clearLogs');
-        Route::get('logs/:type/export', 'Admin/exportLogs');
+        Route::get('logs/operation', 'admin.Logs/getOperationLogs');
+        Route::get('logs/login', 'admin.Logs/getLoginLogs');
+        Route::get('logs/api', 'admin.Logs/getApiLogs');
+        Route::delete('logs/:type/clear', 'admin.Logs/clearLogs');
+        Route::get('logs/:type/export', 'admin.Logs/exportLogs');
         
         // 任务调度
         Route::get('tasks', 'Admin/taskList');

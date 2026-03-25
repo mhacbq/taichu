@@ -68,6 +68,7 @@ class Liuyao extends BaseController
             $data['user_id'] = (int) $userModel->id;
             $coreResult = $this->buildDivinationCore($data);
             $interpretation = $this->buildInterpretation($coreResult);
+            /** @var array|null $aiContent */
             $aiContent = null;
 
             if (!empty($data['useAi'])) {
@@ -75,7 +76,7 @@ class Liuyao extends BaseController
                     // 构建更详细的AI分析载荷，包含更多专业信息
                     $aiPayload = $this->buildEnhancedAiPayload($coreResult, $data);
                     $aiContent = DeepSeekService::interpretLiuyao($aiPayload);
-                    
+
                     // 记录AI分析的使用情况，用于优化积分消耗
                     $this->logAiAnalysisUsage($userModel->id, $aiContent);
                 } catch (\Throwable $aiError) {
@@ -83,8 +84,8 @@ class Liuyao extends BaseController
                         'user_id' => (int) $userModel->id,
                         'message' => $aiError->getMessage(),
                     ]);
-                    
-                    // 降级方案：生成基础AI分析
+
+                    // 降级方案：生成基础结构化分析
                     $aiContent = $this->generateFallbackAiAnalysis($coreResult, $data);
                 }
             }
@@ -345,34 +346,38 @@ class Liuyao extends BaseController
     
 
     /**
-     * 获取AI解读
+     * 获取AI解读（结构化 JSON 版本）
      */
     public function aiInterpretation()
     {
         try {
             $data = $this->request->post();
-            
-            if (empty($data['yao_code']) || empty($data['question'])) {
+
+            if (empty($data['question'])) {
                 return $this->error('参数错误', 400);
             }
-            
-            // 构建提示词
-            $prompt = $this->buildAiPrompt($data);
-            
-            // 调用DeepSeek API
-            $interpretation = DeepSeekService::chat($prompt);
-            
+
+            // 构建 interpretLiuyao 所需的载荷
+            $aiPayload = $this->buildEnhancedAiPayload(
+                $this->buildDivinationCoreFromRequest($data),
+                $data
+            );
+
+            // 调用结构化 AI 解读
+            $aiContent = DeepSeekService::interpretLiuyao($aiPayload);
+
             // 更新记录
             if (!empty($data['record_id'])) {
                 $table = $this->resolveLiuyaoRecordTable();
                 $columns = $this->getLiuyaoRecordColumns();
                 $updateData = [];
+                $serialized = json_encode($aiContent, JSON_UNESCAPED_UNICODE);
 
                 if (isset($columns['ai_interpretation'])) {
-                    $updateData['ai_interpretation'] = $interpretation;
+                    $updateData['ai_interpretation'] = $serialized;
                 }
                 if (isset($columns['ai_analysis'])) {
-                    $updateData['ai_analysis'] = $interpretation;
+                    $updateData['ai_analysis'] = $serialized;
                 }
                 if (isset($columns['is_ai_analysis'])) {
                     $updateData['is_ai_analysis'] = 1;
@@ -388,15 +393,32 @@ class Liuyao extends BaseController
                 }
             }
 
-
-            
-            return $this->success(['interpretation' => $interpretation]);
+            return $this->success(['ai_content' => $aiContent]);
         } catch (\Exception $e) {
             return $this->respondSystemException('六爻 AI 解读', $e, 'AI解读失败，请稍后重试', [
                 'record_id' => (int) ($data['record_id'] ?? 0),
                 'question_length' => mb_strlen((string) ($data['question'] ?? '')),
             ]);
         }
+    }
+
+    /**
+     * 从请求数据中构建卦象核心数据（供 aiInterpretation 复用）
+     */
+    private function buildDivinationCoreFromRequest(array $data): array
+    {
+        return [
+            'main_gua'  => $data['main_gua'] ?? '',
+            'bian_gua'  => $data['bian_gua'] ?? '',
+            'hu_gua'    => $data['hu_gua'] ?? '',
+            'yao_info'  => $data['yao_info'] ?? ($data['yao_code'] ?? ''),
+            'dong_yao'  => $data['dong_yao'] ?? '',
+            'liu_shen'  => $data['liu_shen'] ?? '',
+            'yong_shen' => $data['yong_shen'] ?? '',
+            'ri_chen'   => $data['ri_chen'] ?? '',
+            'yue_jian'  => $data['yue_jian'] ?? '',
+            'xun_kong'  => $data['xun_kong'] ?? '',
+        ];
     }
     
     /**
@@ -833,7 +855,7 @@ PROMPT;
      *
      * @return array{0:int,1:int}
      */
-    private function persistDivinationOutcome(User $userModel, array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): array
+    private function persistDivinationOutcome(User $userModel, array $data, array $coreResult, string $interpretation, ?array $aiContent, int $pointsCost): array
     {
         if ($pointsCost <= 0) {
             $recordId = $this->storeDivinationRecord($data, $coreResult, $interpretation, $aiContent, $pointsCost);
@@ -901,7 +923,7 @@ PROMPT;
     /**
      * 生成前端所需的占卜结果结构
      */
-    private function buildFrontendDivinationResult(?int $recordId, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost, int $remainingPoints, bool $isFirst): array
+    private function buildFrontendDivinationResult(?int $recordId, array $coreResult, string $interpretation, ?array $aiContent, int $pointsCost, int $remainingPoints, bool $isFirst): array
     {
         $guaCi = $coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? '';
         $createdAt = date('Y-m-d H:i:s');
@@ -939,7 +961,7 @@ PROMPT;
             'yao_result' => $coreResult['yao_result'],
             'yao_names' => $coreResult['yao_names'],
             'interpretation' => $interpretation,
-            'ai_analysis' => $aiContent ? ['content' => $aiContent] : null,
+            'ai_analysis' => $aiContent ?: null,
             'points_cost' => $pointsCost,
             'remaining_points' => $remainingPoints,
             'is_first' => $isFirst,
@@ -1005,12 +1027,12 @@ PROMPT;
     /**
      * 记录AI分析使用情况
      */
-    private function logAiAnalysisUsage(int $userId, ?string $aiContent): void
+    private function logAiAnalysisUsage(int $userId, ?array $aiContent): void
     {
         try {
             Log::info('六爻AI分析使用', [
                 'user_id' => $userId,
-                'ai_content_length' => $aiContent ? mb_strlen($aiContent) : 0,
+                'ai_content_length' => $aiContent ? mb_strlen(json_encode($aiContent)) : 0,
                 'has_content' => !empty($aiContent),
             ]);
         } catch (\Throwable $e) {
@@ -1022,55 +1044,49 @@ PROMPT;
     }
 
     /**
-     * 生成降级AI分析
+     * 生成降级AI分析（结构化数组）
      */
-    private function generateFallbackAiAnalysis(array $coreResult, array $data): string
+    private function generateFallbackAiAnalysis(array $coreResult, array $data): array
     {
-        $segments = [];
-        
-        $segments[] = "【卦象概要】";
-        $segments[] = sprintf(
-            "本卦为《%s》，变卦为《%s》，互卦为《%s》。",
-            $coreResult['main_gua'] ?? '未知',
-            $coreResult['bian_gua']['bian_name'] ?? '未知',
-            $coreResult['hu_gua']['hu_name'] ?? '未知'
-        );
-        
-        if (!empty($coreResult['bian_gua']['dong_yao'])) {
-            $segments[] = sprintf(
-                "动爻位置：%s。",
-                implode('、', array_map(fn($v) => "第{$v}爻", $coreResult['bian_gua']['dong_yao']))
-            );
-        }
-        
-        $segments[] = "";
-        $segments[] = "【用神分析】";
+        $mainGua  = $coreResult['main_gua'] ?? '未知';
+        $bianGua  = $coreResult['bian_gua']['bian_name'] ?? '未知';
+        $huGua    = $coreResult['hu_gua']['hu_name'] ?? '未知';
         $yongShen = $coreResult['yong_shen'] ?? [];
+        $riChen   = $coreResult['time_info']['ri_chen'] ?? '未知';
+        $yueJian  = $coreResult['time_info']['yue_jian'] ?? '未知';
+
+        $summary = sprintf('本卦为《%s》，变卦为《%s》，互卦为《%s》。', $mainGua, $bianGua, $huGua);
+
+        $yongShenText = '';
         if (!empty($yongShen['liuqin'])) {
-            $segments[] = sprintf("用神为：%s", $yongShen['liuqin']);
+            $yongShenText = sprintf('用神为%s', $yongShen['liuqin']);
             if (!empty($yongShen['description'])) {
-                $segments[] .= $yongShen['description'];
+                $yongShenText .= '，' . $yongShen['description'];
             }
         }
-        
-        $segments[] = "";
-        $segments[] = "【时间信息】";
-        $segments[] = sprintf(
-            "日辰：%s，月建：%s。",
-            $coreResult['time_info']['ri_chen'] ?? '未知',
-            $coreResult['time_info']['yue_jian'] ?? '未知'
-        );
-        
-        if (!empty($coreResult['time_info']['xunkong'])) {
-            $segments[] .= sprintf("旬空：%s。", implode('、', $coreResult['time_info']['xunkong']));
+
+        $movingAnalysis = [];
+        if (!empty($coreResult['bian_gua']['dong_yao'])) {
+            foreach ($coreResult['bian_gua']['dong_yao'] as $yaoPos) {
+                $liuqin = $coreResult['liuqin'][$yaoPos] ?? '';
+                $movingAnalysis[] = [
+                    'yao'     => "第{$yaoPos}爻",
+                    'liuqin'  => $liuqin,
+                    'change'  => '',
+                    'meaning' => "第{$yaoPos}爻动，事情正在发生变化，请结合用神状态综合判断。",
+                ];
+            }
         }
-        
-        $segments[] = "";
-        $segments[] = "【建议】";
-        $segments[] .= "当前AI服务暂时繁忙，以上为基础卦象分析。";
-        $segments[] .= "建议稍后重试获取更详细的AI深度解读。";
-        
-        return implode("\n", $segments);
+
+        return [
+            'summary'            => $summary,
+            'gua_analysis'       => sprintf('本卦《%s》变《%s》，互卦为《%s》，日辰%s，月建%s。当前AI服务繁忙，以上为基础卦象信息，建议稍后重试获取深度解读。', $mainGua, $bianGua, $huGua, $riChen, $yueJian),
+            'yong_shen_analysis' => $yongShenText,
+            'moving_analysis'    => $movingAnalysis,
+            'qi_period'          => '',
+            'suggestion'         => '当前AI服务暂时繁忙，以上为基础卦象分析，建议稍后重试获取更详细的AI深度解读。',
+            'warning'            => '',
+        ];
     }
 
     /**
@@ -1106,7 +1122,7 @@ PROMPT;
     /**
      * 保存前端兼容结果
      */
-    private function storeDivinationRecord(array $data, array $coreResult, string $interpretation, ?string $aiContent, int $pointsCost): int
+    private function storeDivinationRecord(array $data, array $coreResult, string $interpretation, ?array $aiContent, int $pointsCost): int
     {
         $table = $this->resolveLiuyaoRecordTable();
         $columns = $this->getLiuyaoRecordColumns();
@@ -1130,7 +1146,7 @@ PROMPT;
                 'lines' => json_encode($this->buildLineSnapshots($coreResult), JSON_UNESCAPED_UNICODE),
                 'moving_lines' => json_encode($coreResult['bian_gua']['dong_yao'] ?? [], JSON_UNESCAPED_UNICODE),
                 'analysis' => $interpretation,
-                'ai_analysis' => $aiContent ?? '',
+                'ai_analysis' => $aiContent ? json_encode($aiContent, JSON_UNESCAPED_UNICODE) : '',
                 'points_used' => $pointsCost,
                 'is_free' => $pointsCost === 0 ? 1 : 0,
                 'is_public' => 0,
@@ -1160,7 +1176,7 @@ PROMPT;
                 'yuejian' => (string) ($coreResult['time_info']['yue_jian'] ?? ''),
                 'rigan' => (string) ($coreResult['time_info']['ri_chen'] ?? (($coreResult['time_info']['ri_gan'] ?? '') . ($coreResult['time_info']['ri_zhi'] ?? ''))),
                 'interpretation' => $interpretation,
-                'ai_interpretation' => $aiContent ?? '',
+                'ai_interpretation' => $aiContent ? json_encode($aiContent, JSON_UNESCAPED_UNICODE) : '',
                 'updated_at' => $createdAt,
                 'created_at' => $createdAt,
             ];
@@ -1175,7 +1191,7 @@ PROMPT;
                 'gua_ci' => (string) ($coreResult['gua_info']['main']['gua_ci'] ?? $coreResult['gua_info']['main']['general_meaning'] ?? ''),
                 'yao_ci' => '',
                 'interpretation' => $interpretation,
-                'ai_analysis' => $aiContent ?? '',
+                'ai_analysis' => $aiContent ? json_encode($aiContent, JSON_UNESCAPED_UNICODE) : '',
                 'is_ai_analysis' => $aiContent ? 1 : 0,
                 'consumed_points' => $pointsCost,
                 'created_at' => $createdAt,
@@ -1230,7 +1246,13 @@ PROMPT;
 
         $guaInfo = $this->getGuaInfo($mainGuaName, $bianGuaName);
         $method = $this->resolveMethodByCode($record['method'] ?? 1);
-        $aiContent = (string) ($record['ai_interpretation'] ?? $record['ai_analysis'] ?? '');
+        // 从数据库读取时反序列化 JSON 字符串为结构化数组
+        $aiRaw = (string) ($record['ai_interpretation'] ?? $record['ai_analysis'] ?? '');
+        $aiContent = null;
+        if ($aiRaw !== '') {
+            $decoded = json_decode($aiRaw, true);
+            $aiContent = is_array($decoded) ? $decoded : ['content' => $aiRaw];
+        }
         $guaCi = (string) ($record['gua_ci'] ?? $originalGua['gua_ci'] ?? $guaInfo['main']['gua_ci'] ?? $guaInfo['main']['general_meaning'] ?? '');
         $interpretation = (string) ($record['interpretation'] ?? $record['analysis'] ?? '');
         $consumedPoints = (int) ($record['consumed_points'] ?? $record['points_used'] ?? 0);
@@ -1352,7 +1374,7 @@ PROMPT;
             'line_details' => $lineDetails,
             'moving_line_details' => $this->buildMovingLineDetails($lineDetails),
             'interpretation' => $interpretation,
-            'ai_analysis' => $aiContent !== '' ? ['content' => $aiContent] : null,
+            'ai_analysis' => $aiContent,
             'consumed_points' => $consumedPoints,
             'created_at' => $createdAt,
             'fushen' => $fushenDisplay,

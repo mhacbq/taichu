@@ -10,41 +10,8 @@ use think\facade\Db;
 
 class Analysis extends BaseController
 {
-    /**
-     * 初始化
-     */
-    public function initialize()
-    {
-        parent::initialize();
-        
-        // 从JWT token中获取管理员信息
-        $adminUser = $this->request->adminUser ?? [];
-        $this->adminId = $adminUser['id'] ?? 0;
-    }
-    
-    /**
-     * 检查权限
-     */
-    protected function hasAdminPermission(string $permissionCode): bool
-    {
-        if ($this->adminId === 0) {
-            return false;
-        }
-        
-        // 如果是超级管理员，直接返回true
-        $adminUser = $this->request->adminUser ?? [];
-        $roles = $adminUser['roles'] ?? [];
-        if (in_array('admin', $roles)) {
-            return true;
-        }
-        
-        // 操作员只能查看数据
-        if (in_array('operator', $roles)) {
-            return in_array($permissionCode, ['payment_view', 'user_view', 'result_view']);
-        }
-        
-        return false;
-    }
+    protected $middleware = [\app\middleware\AdminAuth::class];
+
     /**
      * 充值数据分析
      */
@@ -58,8 +25,25 @@ class Analysis extends BaseController
         $endDate = $request->get('end_date', date('Y-m-d'));
 
         try {
+            // 优先查 tc_recharge_order，兼容 tc_payment
+            $payTable = null;
+            foreach (['tc_recharge_order', 'tc_payment'] as $t) {
+                try {
+                    Db::table($t)->limit(1)->select();
+                    $payTable = $t;
+                    break;
+                } catch (\Throwable $ignored) {}
+            }
+
+            if ($payTable === null) {
+                return $this->success([
+                    'stats' => ['total_amount' => 0, 'order_count' => 0, 'vip_count' => 0, 'recharge_count' => 0],
+                    'chart_data' => ['dates' => [], 'amounts' => [], 'counts' => []],
+                ], '暂无充值数据');
+            }
+
             // 充值趋势（按日期）
-            $trendData = Db::table('tc_payment')
+            $trendData = Db::table($payTable)
                 ->field('DATE(created_at) as date, COUNT(*) as count, SUM(amount) as total_amount')
                 ->where('status', 'success')
                 ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
@@ -69,32 +53,26 @@ class Analysis extends BaseController
                 ->toArray();
 
             // 统计数据
-            $stats = Db::table('tc_payment')
-                ->field([
-                    'COUNT(*) as order_count',
-                    'SUM(CASE WHEN type = "vip" THEN 1 ELSE 0 END) as vip_count',
-                    'SUM(CASE WHEN type = "recharge" THEN 1 ELSE 0 END) as recharge_count',
-                    'SUM(amount) as total_amount'
-                ])
+            $stats = Db::table($payTable)
+                ->field('COUNT(*) as order_count, SUM(amount) as total_amount')
                 ->where('status', 'success')
                 ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
                 ->find();
 
-            // 图表数据
             $chartData = [
-                'dates' => array_column($trendData, 'date'),
+                'dates'   => array_column($trendData, 'date'),
                 'amounts' => array_column($trendData, 'total_amount'),
-                'counts' => array_column($trendData, 'count')
+                'counts'  => array_column($trendData, 'count'),
             ];
 
             return $this->success([
                 'stats' => [
-                    'total_amount' => $stats['total_amount'] ?? 0,
-                    'order_count' => $stats['order_count'] ?? 0,
-                    'vip_count' => $stats['vip_count'] ?? 0,
-                    'recharge_count' => $stats['recharge_count'] ?? 0
+                    'total_amount'   => $stats['total_amount'] ?? 0,
+                    'order_count'    => $stats['order_count'] ?? 0,
+                    'vip_count'      => 0,
+                    'recharge_count' => $stats['order_count'] ?? 0,
                 ],
-                'chart_data' => $chartData
+                'chart_data' => $chartData,
             ], '获取成功');
         } catch (\Throwable $e) {
             return $this->respondSystemException('analysis_payment', $e, '获取充值数据失败');
@@ -170,37 +148,48 @@ class Analysis extends BaseController
         $endDate = $request->get('end_date', date('Y-m-d'));
 
         try {
-            // 测算量趋势
-            $trendData = Db::table('tc_result')
-                ->field('DATE(created_at) as date, COUNT(*) as count')
-                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('DATE(created_at)')
-                ->order('date', 'asc')
-                ->select()
-                ->toArray();
+            $tables = [
+                'bazi'   => 'tc_bazi_record',
+                'tarot'  => 'tc_tarot_record',
+                'liuyao' => 'tc_liuyao_record',
+            ];
 
-            // 热门测算类型排行
-            $typeRanking = Db::table('tc_result')
-                ->field('type, COUNT(*) as count')
-                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('type')
-                ->order('count', 'desc')
-                ->limit(10)
-                ->select()
-                ->toArray();
+            $typeStats = [];
+            $trendMap = [];
 
-            // 类型分布
-            $typeDistribution = Db::table('tc_result')
-                ->field('type, COUNT(*) as count')
-                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('type')
-                ->select()
-                ->toArray();
+            foreach ($tables as $type => $table) {
+                try {
+                    $count = Db::table($table)
+                        ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
+                        ->count();
+                    $typeStats[] = ['type' => $type, 'count' => $count];
+
+                    // 趋势数据
+                    $rows = Db::table($table)
+                        ->field('DATE(created_at) as date, COUNT(*) as count')
+                        ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
+                        ->group('DATE(created_at)')
+                        ->select()
+                        ->toArray();
+                    foreach ($rows as $row) {
+                        $trendMap[$row['date']] = ($trendMap[$row['date']] ?? 0) + (int) $row['count'];
+                    }
+                } catch (\Throwable $ignored) {
+                    // 表不存在时跳过
+                }
+            }
+
+            ksort($trendMap);
+            $trendData = array_map(
+                fn($date, $count) => ['date' => $date, 'count' => $count],
+                array_keys($trendMap),
+                array_values($trendMap)
+            );
 
             return $this->success([
                 'trend' => $trendData,
-                'type_ranking' => $typeRanking,
-                'type_distribution' => $typeDistribution,
+                'type_ranking' => $typeStats,
+                'type_distribution' => $typeStats,
             ], '获取成功');
         } catch (\Throwable $e) {
             return $this->respondSystemException('analysis_result', $e, '获取测算数据失败');

@@ -459,10 +459,21 @@ const interpretCurrentCards = async () => {
   const interpretResponse = await interpretTarot({
     cards: cards.value,
     question: interpretQuestion,
+    spread: getCurrentTarotSpread(),
   })
 
   if (interpretResponse.code === 200) {
-    interpretation.value = interpretResponse.data.interpretation
+    const raw = interpretResponse.data.interpretation
+    // 后端返回结构化 JSON 对象，直接存入 aiAnalysisResult 供展示
+    if (raw && typeof raw === 'object' && raw.summary) {
+      aiAnalysisResult.value = raw
+      // interpretation 存摘要文本，用于保存记录和分享
+      interpretation.value = raw.summary || ''
+    } else {
+      // 降级：纯文本兜底
+      interpretation.value = typeof raw === 'string' ? raw : JSON.stringify(raw)
+      aiAnalysisResult.value = null
+    }
     clearFlowError()
     ElMessage.success('抽牌成功')
     return true
@@ -707,7 +718,7 @@ const saveTarotResult = async () => {
       question: getCurrentTarotQuestion(),
       cards: cards.value,
       interpretation: interpretation.value,
-      ai_analysis: ''
+      ai_analysis: aiAnalysisResult.value ? JSON.stringify(aiAnalysisResult.value) : ''
     })
 
 
