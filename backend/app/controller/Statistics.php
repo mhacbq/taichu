@@ -20,52 +20,52 @@ class Statistics extends BaseController
         try {
             $stats = [
                 'user_stats' => [
-                    'total_users' => Db::table('user')->count(),
-                    'today_users' => Db::table('user')
+                'total_users' => Db::name('user')->count(),
+                    'today_users' => Db::name('user')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->count(),
-                    'active_users' => Db::table('user')
+                    'active_users' => Db::name('user')
                         ->where('last_login_time', '>=', date('Y-m-d'))
                         ->count(),
                 ],
                 'content_stats' => [
-                    'total_bazi' => Db::table('bazi_record')->count(),
-                    'today_bazi' => Db::table('bazi_record')
+                'total_bazi' => Db::name('bazi_record')->count(),
+                    'today_bazi' => Db::name('bazi_record')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->count(),
-                    'total_tarot' => Db::table('tarot_record')->count(),
-                    'today_tarot' => Db::table('tarot_record')
+                    'total_tarot' => Db::name('tarot_record')->count(),
+                    'today_tarot' => Db::name('tarot_record')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->count(),
                 ],
                 'vip_stats' => [
-                    'total_vip_users' => Db::table('vip_record')
+                'total_vip_users' => Db::name('vip_record')
                         ->where('expire_time', '>', date('Y-m-d H:i:s'))
                         ->distinct()
                         ->count('user_id'),
-                    'today_vip_orders' => Db::table('vip_record')
+                    'today_vip_orders' => Db::name('vip_record')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->count(),
                 ],
                 'points_stats' => [
-                    'total_points' => Db::table('user')->sum('points'),
-                    'today_points_records' => Db::table('points_record')
+                'total_points' => Db::name('user')->sum('points'),
+                    'today_points_records' => Db::name('points_record')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->count(),
                 ],
                 'order_stats' => [
-                    'total_orders' => Db::table('vip_record')->count(),
-                    'total_amount' => Db::table('vip_record')->sum('amount'),
-                    'today_orders' => Db::table('vip_record')
+                'total_orders' => Db::name('vip_record')->count(),
+                    'total_amount' => Db::name('vip_record')->sum('amount'),
+                    'today_orders' => Db::name('vip_record')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->count(),
-                    'today_amount' => Db::table('vip_record')
+                    'today_amount' => Db::name('vip_record')
                         ->where('created_at', '>=', date('Y-m-d'))
                         ->sum('amount'),
                 ],
                 'feedback_stats' => [
-                    'total_feedback' => Db::table('feedback')->count(),
-                    'pending_feedback' => Db::table('feedback')
+                'total_feedback' => Db::name('feedback')->count(),
+                    'pending_feedback' => Db::name('feedback')
                         ->where('status', 'pending')
                         ->count(),
                 ],

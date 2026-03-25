@@ -142,6 +142,7 @@ async function loadData() {
     renderTrendChart(data.trend)
     renderTypeRankChart(data.type_ranking)
     renderTypeDistChart(data.type_distribution)
+    renderUserRankChart(data.user_ranking)
   } catch (error) {
     console.error('加载测算数据失败:', error)
   } finally {

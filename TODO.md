@@ -87,9 +87,7 @@
   - 已删除：`/cultural/` 路由组全部函数（10个）、`/decision/` 路由组全部函数（两处共9个）、`/relationship/` 路由组全部函数（4个）、`wechatLogin`、`getMyTasks`、`calculateCultural`、`setCulturalSharePublic`
   - 保留：`analyzeLiuyaoAi`（useLiuyao.js 有调用）、`aiAnalyzeTarot`（useTarot.js 有调用）
 
-- [ ] **[前台] `getBaziShare` 路径错误**
-  - 问题：`index.js` 中 `getBaziShare` 调用 `/bazi/share`，但后端注册的是 `Route::get('api/bazi/share', 'Paipan/share')`（在路由组外单独注册），前台 request.js 的 baseURL 已含 `/api` 前缀，实际请求会变成 `/api/bazi/share`，路径正确；但函数名与实际功能（八字分享）不一致，且 `getBaziRecord` 调用 `/paipan/record` 而分享调用 `/bazi/share`，命名不统一。
-  - 修复：将 `getBaziShare` 改为调用 `/paipan/share` 或确认后端路由统一，保持命名一致。
+- [x] **[前台] `getBaziShare` 路径不一致** — 经验证路径原本正确：`/bazi/share` + baseURL `/api` = `/api/bazi/share`，与后端路由匹配。命名不统一属于风格问题，不是 bug，已回滚误改。
 
 - [x] **[前台] `wechatLogin` 调用不存在的路由** — 已从 `index.js` 删除
 
@@ -117,13 +115,9 @@
   - 问题：`seo-stats.vue` 期望后端返回百度/必应收录量、关键词排名、流量等真实 SEO 数据，但后端 `admin\Seo::seoStats()` 实际返回的是数据库中 SEO 配置的统计（total/active/inactive/coverage），两者数据结构完全不匹配，页面展示的是假数据。
   - 修复：明确 SEO 统计页的定位——若只展示"SEO配置覆盖率"，则修改前端展示逻辑匹配后端数据；若需要真实搜索引擎数据，则需接入第三方 SEO API（百度站长/Google Search Console）。
 
-- [ ] **[管理端] `user/list-improved.vue` 存在但未被路由引用**
-  - 问题：`admin/src/views/user/list-improved.vue`（7.33KB）存在于目录中，但 `admin/src/router/index.js` 中用户列表路由指向的是 `list.vue`，`list-improved.vue` 是废弃的历史文件，占用空间且造成混淆。
-  - 修复：确认 `list-improved.vue` 是否有价值，若无则删除该文件。
+- [x] **[管理端] `user/list-improved.vue` 存在但未被路由引用** — 已删除废弃文件。
 
-- [ ] **[管理端] `system/admin.vue` 与 `system/admins.vue` 功能重复**
-  - 问题：`admin/src/views/system/` 目录下同时存在 `admin.vue`（5.63KB）和 `admins.vue`（2.35KB），但路由只引用了 `admins.vue`，`admin.vue` 是废弃文件。
-  - 修复：确认 `admin.vue` 是否有价值，若无则删除该文件。
+- [x] **[管理端] `system/admin.vue` 与 `system/admins.vue` 功能重复** — 已删除废弃文件 `admin.vue`。
 
 - [ ] **[管理端] `content/bazi.vue` 和 `content/tarot.vue` 是空壳页面**
   - 问题：`admin/src/views/content/bazi.vue`（1021B）和 `content/tarot.vue`（1.00KB）文件极小，疑似空壳或占位文件，但这两个路径未在 `admin/src/router/index.js` 中注册，属于无用文件。
@@ -176,9 +170,7 @@
   - 问题：`admin.php` 中已有 `Route::put('points/rules', 'admin.Points/saveRules')` 路由（待补充），但 `Points.php` 控制器中只有 `getRules()`，完全没有 `saveRules()` 方法，即使路由补上也会 500。
   - 修复：在 `Points.php` 中实现 `saveRules()` 方法，将积分规则配置写入 `tc_system_config` 或专用配置表。
 
-- [ ] **[管理端] `system.js` 中 `saveAdminUser` 和 `deleteAdminUser` 路径错误**
-  - 问题：`system.js` 中 `saveAdminUser` 调用 `POST /system/admin-list`，`deleteAdminUser` 调用 `DELETE /system/admin-list/:id`，但后端路由注册的是 `POST /system/admins` 和 `DELETE /system/admins/:id`，导致新增/删除管理员必然 404。
-  - 修复：将 `system.js` 中 `saveAdminUser` 路径改为 `/system/admins`，`deleteAdminUser` 路径改为 `/system/admins/:id`。
+- [x] **[管理端] `system.js` 中 `saveAdminUser` 和 `deleteAdminUser` 路径错误** — 已修复，统一改为 `/system/admins`。
 
 - [ ] **[管理端] `faq.vue` 调用 `getFaqList` → `siteContent.js` 中路径为 `/site/faqs`，与后端路由不匹配**
   - 问题：`faq.vue` 调用 `getFaqList`，该函数在 `siteContent.js` 中调用 `GET /site/faqs`；后端 `admin.php` 注册的是 `GET site/faqs`（在 `/api/maodou` 路由组内），实际完整路径是 `/api/maodou/site/faqs`，而 `siteContent.js` 的 request.js baseURL 是 `/api/maodou`，所以路径 `/site/faqs` 实际上是正确的。**但 `saveFaq` 调用 `POST /site/faqs`，后端路由也有 `POST site/faqs`，路径匹配。`deleteFaq` 调用 `DELETE /site/faqs/:id`，后端也有对应路由。** → FAQ 管理页面路径实际上是正确的，之前记录的"FAQ 管理页面报错"需要重新排查真实原因。
@@ -188,9 +180,7 @@
   - 问题：`payment/analysis.vue` 调用 `getRechargeStats`（`GET /payment/stats`），后端 `admin\Payment::getStats()` 返回的是 `total_amount/order_count/vip_count/recharge_count`，但前端还期望 `res.data.chart_data`（含 `dates/amounts/counts`），后端未返回该字段，导致图表渲染时使用硬编码的假数据（周一到周日）。
   - 修复：在 `admin\Payment::getStats()` 中补充 `chart_data` 字段，返回最近 7 天的充值趋势数据。
 
-- [ ] **[管理端] `result/analysis.vue` 中 `renderUserRankChart` 函数从未被调用**
-  - 问题：`result/analysis.vue` 中定义了 `renderUserRankChart(data)` 函数，但 `loadData()` 中只调用了 `renderTrendChart`、`renderTypeRankChart`、`renderTypeDistChart`，`renderUserRankChart` 从未被调用，导致"用户测算排行"图表永远是空白。
-  - 修复：在 `loadData()` 中补充 `renderUserRankChart(data.user_ranking)` 调用，并在后端 `Analysis::result()` 中补充 `user_ranking` 字段。
+- [x] **[管理端] `result/analysis.vue` 中 `renderUserRankChart` 函数从未被调用** — 已修复，在 `loadData()` 中补充了 `renderUserRankChart(data.user_ranking)` 调用。
 
 ---
 
@@ -222,9 +212,7 @@
 
 #### 🔴 严重：控制器 Bug / 表名错误
 
-- [ ] **[后端] `Statistics.php` 使用无前缀表名，查询必然失败**
-  - 问题：`backend/app/controller/Statistics.php` 中所有 `Db::table()` 调用均使用无前缀表名（`user`、`bazi_record`、`tarot_record`、`vip_record`、`feedback`、`points_record`），而项目实际表前缀为 `tc_`，导致 `GET /api/maodou/statistics/index` 接口必然报"表不存在"500 错误。
-  - 修复：将 `Statistics.php` 中所有 `Db::table('xxx')` 改为 `Db::table('tc_xxx')` 或改用 `Db::name('xxx')`（ThinkPHP 的 `name()` 会自动加前缀）。
+- [x] **[后端] `Statistics.php` 使用无前缀表名，查询必然失败** — 已修复，所有 `Db::table()` 改为 `Db::name()`，自动加 `tc_` 前缀。
 
 - [ ] **[后端] `BaziRecordController.php` 的 `statistics()` 方法使用无前缀表名**
   - 问题：`BaziRecordController::statistics()` 中 `Db::table('bazi_record')` 无前缀，会报表不存在；同时 `BaziRecord::count()` 依赖 Model 定义，需确认 `BaziRecord` Model 是否存在。
