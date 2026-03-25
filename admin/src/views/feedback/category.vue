@@ -69,7 +69,7 @@ async function loadCategories() {
   loading.value = true
   try {
     const res = await getFeedbackCategories()
-    if (res.code === 200) {
+    if (res.code === 0) {
       categoryList.value = res.data
     }
   } catch (error) {
@@ -97,7 +97,7 @@ async function handleDelete(row) {
   try {
     await ElMessageBox.confirm('确定要删除该分类吗？', '提示', { type: 'warning' })
     const res = await deleteFeedbackCategory(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       loadCategories()
     }
@@ -116,7 +116,7 @@ async function submitForm() {
 
   try {
     const res = await saveFeedbackCategory(dialog.form)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('保存成功')
       dialog.visible = false
       loadCategories()

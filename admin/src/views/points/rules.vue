@@ -25,7 +25,7 @@ async function fetchRulesList() {
   loading.value = true
   try {
     const res = await getPointsRules()
-    if (res.code === 200) {
+    if (res.code === 0) {
       rulesList.value = res.data.list || []
     }
   } catch (error) {
@@ -67,7 +67,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     const res = await savePointsRules({ ...dialogForm })
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success(isEdit.value ? '更新成功' : '新增成功')
       dialogVisible.value = false
       fetchRulesList()

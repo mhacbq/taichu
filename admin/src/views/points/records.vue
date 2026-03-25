@@ -22,7 +22,7 @@ async function fetchRecordsList() {
       page: pagination.value.current,
       page_size: pagination.value.pageSize
     })
-    if (res.code === 200) {
+    if (res.code === 0) {
       recordsList.value = res.data.list || []
       pagination.value.total = res.data.total || 0
     }

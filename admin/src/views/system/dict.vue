@@ -162,7 +162,7 @@ const loadDictTypes = async () => {
   loading.value = true
   try {
     const res = await getDictTypes()
-    if (res.code === 200) {
+    if (res.code === 0) {
       dictTypes.value = res.data
       if (dictTypes.value.length > 0 && !selectedType.value) {
         handleTypeSelect(dictTypes.value[0])
@@ -190,7 +190,7 @@ function handleTypeSelect(row) {
 const loadDataList = async (typeCode) => {
   try {
     const res = await getDictData(typeCode)
-    if (res.code === 200) {
+    if (res.code === 0) {
       dictData.value = res.data
     }
   } catch (error) {
@@ -212,7 +212,7 @@ async function submitType() {
       ? await updateDictType(typeDialog.form.id, typeDialog.form)
       : await createDictType(typeDialog.form)
       
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success(typeDialog.isEdit ? '修改成功' : '新增成功')
       typeDialog.visible = false
       loadDictTypes()
@@ -241,7 +241,7 @@ async function handleDeleteData(row) {
   try {
     await ElMessageBox.confirm('确定删除该字典数据吗？', '提示', { type: 'warning' })
     const res = await deleteDictData(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       if (selectedType.value) {
         loadDataList(selectedType.value.type)
@@ -259,7 +259,7 @@ async function submitData() {
   try {
     const data = { ...dataDialog.form, dict_type: selectedType.value?.type }
     const res = await saveDictData(data)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success(dataDialog.isEdit ? '修改成功' : '新增成功')
       dataDialog.visible = false
       if (selectedType.value) {

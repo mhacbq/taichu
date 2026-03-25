@@ -1510,6 +1510,17 @@
     padding-right: max(12px, env(safe-area-inset-right));
   }
 
+  /* 爻象图移动端防溢出 */
+  .gua-hero {
+    max-width: 100%;
+    overflow: hidden;
+    gap: 12px;
+  }
+
+  .gua-lines-inner {
+    width: 60px;
+  }
+
   .page-header {
     align-items: stretch;
   }

@@ -755,9 +755,12 @@ color: #5f5548;
 
 
 .bazi-form {
-
   max-width: 600px;
   margin: 0 auto 40px;
+  background: rgba(212, 160, 62, 0.03);
+  border: 1px solid rgba(212, 160, 62, 0.12);
+  border-radius: 16px;
+  padding: 24px;
 }
 
 .points-hint {
@@ -5015,6 +5018,7 @@ color: #5a4a38;
 .ai-block {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(212, 160, 62, 0.15);
+  border-left: 3px solid rgba(212, 160, 62, 0.4);
   border-radius: 12px;
   padding: 16px 20px;
 }

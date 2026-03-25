@@ -185,7 +185,7 @@ const loadList = async () => {
     delete params.dateRange
 
     const res = await request.get('/yearly-fortune-manage', { params })
-    if (res.code === 200) {
+    if (res.code === 0) {
       dataList.value = res.data.list || []
       total.value = res.data.total || 0
     }
@@ -199,7 +199,7 @@ const loadList = async () => {
 const loadStats = async () => {
   try {
     const res = await request.get('/yearly-fortune-manage/stats')
-    if (res.code === 200) {
+    if (res.code === 0) {
       Object.assign(stats, res.data)
     }
   } catch (error) {
@@ -244,7 +244,7 @@ const handleDelete = (row) => {
   }).then(async () => {
     try {
       const res = await request.delete(`/yearly-fortune-manage/${row.id}`)
-      if (res.code === 200) {
+      if (res.code === 0) {
         ElMessage.success('删除成功')
         loadList()
         loadStats()
@@ -262,7 +262,7 @@ const handleBatchDelete = () => {
   }).then(async () => {
     try {
       const res = await request.post('/yearly-fortune-manage/batch-delete', { ids })
-      if (res.code === 200) {
+      if (res.code === 0) {
         ElMessage.success('批量删除成功')
         loadList()
         loadStats()

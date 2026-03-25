@@ -26,7 +26,7 @@ async function fetchFeedbackList() {
       page: pagination.value.current,
       page_size: pagination.value.pageSize
     })
-    if (res.code === 200) {
+    if (res.code === 0) {
       feedbackList.value = res.data.list || []
       pagination.value.total = res.data.total || 0
     } else {
@@ -43,7 +43,7 @@ async function handleView(row) {
   pageLoading.value = true
   try {
     const res = await getFeedbackDetail(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       currentFeedback.value = res.data
       detailDialogVisible.value = true
     } else {
@@ -62,7 +62,7 @@ async function handleDelete(row) {
       type: 'warning'
     })
     const res = await deleteFeedback(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       fetchFeedbackList()
     } else {

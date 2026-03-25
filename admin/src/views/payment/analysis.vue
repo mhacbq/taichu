@@ -23,7 +23,7 @@ async function fetchAnalysisData() {
   loading.value = true
   try {
     const res = await getRechargeStats()
-    if (res.code === 200) {
+    if (res.code === 0) {
       stats.value = {
         total_amount: res.data.total_amount ?? 0,
         order_count: res.data.order_count ?? 0,

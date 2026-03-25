@@ -22,7 +22,7 @@ async function fetchLoginLogs() {
       page: pagination.value.current,
       limit: pagination.value.pageSize
     })
-    if (res.code === 200) {
+    if (res.code === 0) {
       loginLogs.value = res.data.list || []
       pagination.value.total = res.data.total || 0
     }

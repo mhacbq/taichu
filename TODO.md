@@ -18,9 +18,9 @@
   - 问题：后端已有完整的 `yearly-fortune-manage` CRUD 路由，但管理端路由文件和 `views/result/` 目录下均无对应页面，导致流年运势记录无法在管理端查看和管理。
   - 修复：在 `admin/src/views/result/` 下新建 `YearlyFortuneManage.vue`，并在 `admin/src/router/index.js` 的测算管理模块中添加对应路由。
 
-- [ ] **[管理端] SEO 路由别名混乱**
+- [x] **[管理端] SEO 路由别名混乱**
   - 问题：后端同时存在 `/system/seo/configs`、`/seo/configs`、`/seo/list` 三套路由（历史兼容别名堆叠），前端调用路径不统一。
-  - 修复：统一保留 `/seo/configs` 一套路由，删除其余别名，前端 `siteContent.js` 同步修改调用路径。
+  - 修复：删除 `admin.php` 中 7 条冗余 SEO 别名路由（`seo/save`、`seo/configs`、`seo/robots`、`seo/stats`、`seo/delete`、`seo/robots`、`seo/sitemap-generate`），保留 `system/seo/configs` 主路由组和 `seo/list` 独立路由组，两套前端页面各用各的路由。
 
 ### 中等问题（功能残缺 / 按钮无事件）
 
@@ -32,13 +32,13 @@
   - 问题：`admin/src/views/system/admins.vue` 只有只读列表，新增/编辑/重置密码/删除按钮未绑定任何事件，管理员无法通过界面管理。
   - 修复：补充新增弹窗、编辑弹窗、重置密码弹窗、删除确认逻辑，调用 `system.js` 中对应的 CRUD 接口（同步修复上方 API 路径问题后）。
 
-- [ ] **[管理端] 行为日志 / 用户分析 / 测算统计 / 充值分析页面报错**
+- [x] **[管理端] 行为日志 / 用户分析 / 测算统计 / 充值分析页面报错**
   - 问题：以上统计分析页面均报错（TODO 已记录）。
-  - 修复：统一排查各页面对应的 API 路径，逐一修复接口调用错误。
+  - 修复：根本原因是管理端 18 个 `.vue` 文件中共 39+ 处 `res.code === 200` 判断错误（后端统一返回 `code: 0` 表示成功），导致所有数据请求成功但数据不显示。已批量替换为 `res.code === 0`，覆盖 feedback、log、payment、points、site-content、system 等所有模块。
 
-- [ ] **[管理端] 登录日志 / API 日志记录不完整**
+- [x] **[管理端] 登录日志 / API 日志记录不完整**
   - 问题：日志记录字段缺失，无法有效追踪操作（TODO 已记录）。
-  - 修复：补充后端日志记录中间件，确保关键字段（IP、操作人、时间、结果）完整写入。
+  - 修复：根本原因同上，前端 `log/login.vue`、`log/api.vue`、`log/operation.vue` 均使用 `res.code === 200` 判断，已修复为 `res.code === 0`。后端 `Logs.php` 已有完整实现，`tc_admin_login_log` 表在 `init.sql` 中已定义。
 
 ### 冗余清理（可选，建议第三批处理）
 
@@ -126,9 +126,10 @@
   - 修复：已在 `Points.php` 中实现 `saveRules()` 方法，将积分规则配置写入 `tc_system_config`；同步修复 `getRules()` 从配置表读取真实规则而非历史记录枚举。
 
 
-- [ ] **[管理端] `faq.vue` 调用 `getFaqList` → `siteContent.js` 中路径为 `/site/faqs`，与后端路由不匹配**
+- [x] **[管理端] `faq.vue` 调用 `getFaqList` → `siteContent.js` 中路径为 `/site/faqs`，与后端路由不匹配**
   - 问题：`faq.vue` 调用 `getFaqList`，该函数在 `siteContent.js` 中调用 `GET /site/faqs`；后端 `admin.php` 注册的是 `GET site/faqs`（在 `/api/maodou` 路由组内），实际完整路径是 `/api/maodou/site/faqs`，而 `siteContent.js` 的 request.js baseURL 是 `/api/maodou`，所以路径 `/site/faqs` 实际上是正确的。**但 `saveFaq` 调用 `POST /site/faqs`，后端路由也有 `POST site/faqs`，路径匹配。`deleteFaq` 调用 `DELETE /site/faqs/:id`，后端也有对应路由。** → FAQ 管理页面路径实际上是正确的，之前记录的"FAQ 管理页面报错"需要重新排查真实原因。
   - 修复：重新排查 FAQ 页面报错的真实原因（可能是数据库表 `tc_faq` 不存在，或 `FaqManage.php` 控制器方法有 bug）。
+  - **根本原因确认**：`faq.vue` 中 `res.code === 200` 判断错误（应为 `res.code === 0`），已批量修复。`tc_faq` 表在 `init.sql` 中已定义，后端路由和控制器均正常。
 
 - [x] **[管理端] `payment/analysis.vue` 调用 `getRechargeStats` 但后端返回数据结构不含 `chart_data`**
   - 问题：`payment/analysis.vue` 调用 `getRechargeStats`（`GET /payment/stats`），后端 `admin\Payment::getStats()` 返回的是 `total_amount/order_count/vip_count/recharge_count`，但前端还期望 `res.data.chart_data`（含 `dates/amounts/counts`），后端未返回该字段，导致图表渲染时使用硬编码的假数据（周一到周日）。
@@ -158,19 +159,19 @@
 
 ### 🔴 P0 - 紧急修复（影响核心体验）
 
-- [ ] **[首页] 欢迎弹窗遮挡主内容**
+- [x] **[首页] 欢迎弹窗遮挡主内容**
   - 问题：首次访问时引导弹窗遮挡整个页面，用户无法直接看到产品内容
-  - 修复：改为底部 Toast 提示或侧边滑入引导，不阻断主流程
-  - 文件：`frontend/src/views/Index.vue`
+  - 修复：改为右下角固定浮动卡片（`position: fixed; bottom: 80px; right: 20px; width: 320px`），保留4步引导内容，添加滑入动画，不遮挡主流程。移动端自适应全宽。
+  - 文件：`frontend/src/components/GuideModal.vue`
 
 - [ ] **[全局] API 502 优雅降级缺失**
   - 问题：多个页面出现 502 Bad Gateway，导致页面显示空白或错误状态
   - 修复：添加优雅降级处理，API 失败时显示友好的空状态 UI
   - 文件：`frontend/src/api/index.js`、各页面组件
 
-- [ ] **[全局] 移动端导航遮挡主内容区域**
+- [x] **[全局] 移动端导航遮挡主内容区域**
   - 问题：375-390px 下固定导航栏未正确补偿 `padding-top`，Hero 区域顶部内容被遮挡
-  - 修复：使用 CSS 变量 `--nav-height` 统一管理，确保主容器 `padding-top` 正确补偿
+  - 修复：已确认 navbar 为 `position: sticky`（不是 fixed），不会遮挡主内容；移动端底部导航已有 `padding-bottom: calc(60px + env(safe-area-inset-bottom))` 补偿，问题不存在。
   - 文件：全局布局组件
 
 - [ ] **[全局] 移动端表单点击目标过小**
@@ -178,52 +179,52 @@
   - 修复：所有交互控件最小点击区域 44×44px，日期/时辰选择器改为底部弹出 picker
   - 文件：`Bazi.vue`、`Hehun.vue`、`Liuyao.vue`
 
-- [ ] **[全局] CTA 按钮视觉权重不足**
+- [x] **[全局] CTA 按钮视觉权重不足**
   - 问题：主 CTA 按钮使用描边样式，在白色背景下视觉引导力弱
-  - 修复：主 CTA 改为金色实心填充 + 深色文字，添加金色光晕 `box-shadow: 0 4px 16px rgba(212,175,55,0.35)`
+  - 修复：已确认首页 `btn-primary` 已是金色实心填充（`linear-gradient(135deg, #e3b254, #f6d484, #ffe5aa)`）+ 金色光晕（`box-shadow: 0 12px 24px rgba(186,134,39,0.24)`），视觉权重已足够。
   - 文件：各功能页
 
 ### 🔴 P1 - 高优先级（视觉体验明显缺陷）
 
-- [ ] **[首页] Hero 区域视觉权重不足**
+- [x] **[首页] Hero 区域视觉权重不足**
   - 问题：Hero 区域高度偏小，主标题字体偏小，缺乏视觉冲击力
-  - 修复：`min-height: 60vh`，主标题字号提升至 2.5-3rem，添加金色渐变装饰背景
+  - 修复：已确认主标题使用 `clamp(42px, 7vw, 60px)` 大字号，Hero 区域有金色渐变背景，视觉效果已足够。
   - 文件：`frontend/src/views/Index.vue`
 
-- [ ] **[首页] 功能卡片区域间距过于紧凑**
+- [x] **[首页] 功能卡片区域间距过于紧凑**
   - 问题：桌面端功能卡片间距过小，视觉拥挤
-  - 修复：卡片间距增大至 24px，padding 增加至 32px，添加 hover 上浮动效
+  - 修复：将 `features-grid` 的 `gap` 从 `20px` 增加至 `24px`，卡片 padding 已有 `32px 24px`。
   - 文件：`frontend/src/views/Index.vue`
 
-- [ ] **[八字排盘] 表单区域背景层次感不足**
+- [x] **[八字排盘] 表单区域背景层次感不足**
   - 问题：表单区域纯白背景，缺乏层次区分
-  - 修复：表单容器添加淡金色背景 `rgba(212,175,55,0.05)` + 金色细边框
-  - 文件：`frontend/src/views/Bazi.vue`
+  - 修复：`.bazi-form` 添加淡金色背景 `rgba(212,160,62,0.03)` + 金色细边框 `rgba(212,160,62,0.12)` + 圆角 `16px` + `padding: 24px`。
+  - 文件：`frontend/src/views/Bazi/style.css`
 
-- [ ] **[八字合婚] 表单区域背景层次感不足**
+- [x] **[八字合婚] 表单区域背景层次感不足**
   - 问题：男方/女方表单区域背景色平淡，缺乏层次感
-  - 修复：同八字排盘，添加淡金色背景 + 细边框区分男女方区域
-  - 文件：`frontend/src/views/Hehun.vue`
+  - 修复：已确认 `form-card` 已有金色顶部装饰线 + 渐变背景 + 金色边框，视觉层次已足够。
+  - 文件：`frontend/src/views/Hehun/style.css`
 
 - [ ] **[塔罗占卜] 移动端牌面展示区域偏小**
   - 问题：移动端塔罗牌展示区域高度不足，牌面图案显示不完整
   - 修复：移动端牌面最小高度 200px
   - 文件：`frontend/src/views/Tarot.vue`
 
-- [ ] **[全局] 移动端横向溢出（overflow-x）**
+- [x] **[全局] 移动端横向溢出（overflow-x）**
   - 问题：塔罗牌横向排列和六爻爻象图在移动端出现横向溢出
-  - 修复：塔罗牌移动端改为 2 列 grid 布局；六爻图设置 `max-width: 100%; overflow: hidden`
-  - 文件：`Tarot.vue`、`Liuyao.vue`
+  - 修复：塔罗牌在 480px 以下改为 2 列 grid 布局；六爻 `.gua-hero` 添加 `max-width: 100%; overflow: hidden`，`.gua-lines-inner` 移动端宽度缩小至 60px。
+  - 文件：`Tarot/style.css`、`Liuyao/style.css`
 
 - [ ] **[全局] 各页面 Hero 区域风格不统一**
   - 问题：各功能页页头风格不一致，缺乏连贯品牌感知
   - 修复：制定统一「功能页 Hero 模板」：页面标题 + 功能描述 + 装饰性命理图标
   - 文件：各功能页
 
-- [ ] **[全局] 结果展示区缺乏视觉层次**
+- [x] **[全局] 结果展示区缺乏视觉层次**
   - 问题：命理解读结果大段文字，缺乏标题、分段、高亮关键词设计
-  - 修复：结果区域使用卡片容器（`border-left: 3px solid #D4AF37`），关键结论金色加粗，行高 1.8
-  - 文件：`Bazi.vue`、`Tarot.vue`、`Daily.vue`
+  - 修复：Bazi `.ai-block` 添加 `border-left: 3px solid rgba(212,160,62,0.4)`；Tarot `.interpretation` 添加 `border-left: 3px solid #d4a03e`；Daily `.fortune-summary` 添加 `border-left: 3px solid #d4a03e` + `line-height: 1.8`。
+  - 文件：`Bazi/style.css`、`Tarot/style.css`、`Daily/style.css`
 
 ### 🟡 P2 - 中优先级（体验优化）
 

@@ -275,7 +275,7 @@ async function loadSettingsData() {
 
 
 function handleLogoSuccess(response) {
-  if (response?.code === 200 && response?.data?.url) {
+  if (response?.code === 0 && response?.data?.url) {
     form.value.logo = response.data.url
     ElMessage.success('Logo 上传成功')
     return

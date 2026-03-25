@@ -200,7 +200,7 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getFaqList(queryForm)
-    if (res.code === 200) {
+    if (res.code === 0) {
       tableData.value = res.data?.list || []
       total.value = res.data?.total || 0
     }
@@ -256,7 +256,7 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
     const res = await deleteFaq(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       loadData()
     }
@@ -275,7 +275,7 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     const res = await saveFaq(form)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('保存成功')
       dialogVisible.value = false
       loadData()

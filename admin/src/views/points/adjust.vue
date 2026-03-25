@@ -106,7 +106,7 @@ async function handleSubmit() {
 
     const res = await adjustPoints(submitData)
     
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('批量调整任务已提交后台处理')
       resetForm()
       // 可以考虑刷新下方的最近调整记录（如果API支持获取列表的话）

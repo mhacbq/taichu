@@ -265,14 +265,6 @@ Route::group('api/maodou', function () {
         Route::post('shensha/save', 'admin.Shensha/save');
         Route::post('shensha/delete/:id', 'admin.Shensha/delete');
         Route::post('shensha/toggle-status', 'admin.Shensha/toggleStatus');
-        // SEO别名路由（兼容前端admin.js调用）
-        Route::post('seo/save', 'admin.Seo/saveSeoConfig');
-        Route::get('seo/configs', 'admin.Seo/seoConfigList');
-        Route::get('seo/robots', 'admin.Seo/seoRobots');
-        Route::get('seo/stats', 'admin.Seo/seoStats');
-        Route::post('seo/delete', 'admin.Seo/deleteSeoConfigByRoute');
-        Route::post('seo/robots', 'admin.Seo/saveSeoRobots');
-        Route::post('seo/sitemap-generate', 'admin.Seo/generateSitemap');
         Route::get('system/admins', 'Admin/getAdminUsers');
         Route::post('system/admins', 'Admin/saveAdminUser');
         Route::delete('system/admins/:id', 'Admin/deleteAdminUser');

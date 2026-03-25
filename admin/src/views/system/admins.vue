@@ -49,7 +49,7 @@ async function fetchAdminsList() {
   loading.value = true
   try {
     const res = await getAdminUsers()
-    if (res.code === 200) {
+    if (res.code === 0) {
       adminsList.value = res.data.list || []
     }
   } catch (error) {
@@ -99,7 +99,7 @@ async function handleSubmit() {
       const submitData = { ...form }
       if (!submitData.password) delete submitData.password
       const res = await saveAdminUser(submitData)
-      if (res.code === 200) {
+      if (res.code === 0) {
         ElMessage.success(form.id ? '更新成功' : '创建成功')
         dialogVisible.value = false
         fetchAdminsList()
@@ -135,7 +135,7 @@ async function handleResetPwdSubmit() {
   resetPwdLoading.value = true
   try {
     const res = await resetAdminPassword(resetPwdForm.id, resetPwdForm.new_password)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('密码重置成功')
       resetPwdVisible.value = false
     } else {
@@ -153,7 +153,7 @@ async function handleDelete(row) {
   try {
     await ElMessageBox.confirm(`确定要删除管理员"${row.username}"吗？此操作不可恢复！`, '警告', { type: 'warning' })
     const res = await deleteAdminUser(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       fetchAdminsList()
     } else {

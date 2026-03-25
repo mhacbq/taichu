@@ -1,14 +1,12 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    :title="currentStep === 1 ? '欢迎来到太初命理' : '新手指引'"
-    width="520px"
-    :show-close="true"
-    :close-on-click-modal="true"
-    :close-on-press-escape="true"
-    class="guide-dialog"
-    @close="handleDialogClose"
-  >
+  <!-- 右下角浮动引导卡片，不遮挡主内容 -->
+  <transition name="guide-slide">
+    <div v-if="visible" class="guide-float-card" role="dialog" aria-label="新手引导">
+      <!-- 卡片头部 -->
+      <div class="guide-float-header">
+        <span class="guide-float-title">{{ currentStep === 1 ? '👋 欢迎来到太初命理' : `新手指引 ${currentStep}/${totalSteps}` }}</span>
+        <button class="guide-float-close" @click="snoozeGuide" aria-label="关闭">×</button>
+      </div>
     <div class="guide-content">
       <!-- 步骤指示器 -->
       <div class="step-indicator">
@@ -143,35 +141,23 @@
       </div>
     </div>
 
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button text @click="snoozeGuide" class="footer-btn footer-btn--text">
-          {{ currentStep < totalSteps ? '稍后再看' : '先自己逛逛' }}
-        </el-button>
-        <div class="footer-actions">
-          <el-button v-if="currentStep > 1" @click="prevStep" class="footer-btn">
-            上一步
-          </el-button>
-          <el-button
-            v-if="currentStep < totalSteps"
-            type="primary"
-            @click="nextStep"
-            class="footer-btn primary"
-          >
-            {{ currentStep === 1 ? '告诉我更多' : '下一步' }}
-          </el-button>
-          <el-button
-            v-else
-            type="primary"
-            @click="finish"
-            class="footer-btn primary"
-          >
-            开始探索
-          </el-button>
-        </div>
+    <!-- 卡片底部操作 -->
+    <div class="guide-float-footer">
+      <button class="guide-btn guide-btn--text" @click="snoozeGuide">
+        {{ currentStep < totalSteps ? '稍后再看' : '先自己逛逛' }}
+      </button>
+      <div class="guide-float-actions">
+        <button v-if="currentStep > 1" class="guide-btn guide-btn--secondary" @click="prevStep">上一步</button>
+        <button
+          v-if="currentStep < totalSteps"
+          class="guide-btn guide-btn--primary"
+          @click="nextStep"
+        >{{ currentStep === 1 ? '告诉我更多' : '下一步' }}</button>
+        <button v-else class="guide-btn guide-btn--primary" @click="finish">开始探索</button>
       </div>
-    </template>
-  </el-dialog>
+    </div>
+  </div>
+  </transition>
 </template>
 
 <script setup>
@@ -285,27 +271,154 @@ onMounted(() => {
   background-clip: text;
 }
 
-.guide-dialog :deep(.el-dialog__body) {
-  padding: 20px 30px;
+/* 浮动卡片容器 */
+.guide-float-card {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: #fffefb;
+  border: 1px solid rgba(212, 160, 62, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(94, 67, 24, 0.15), 0 2px 8px rgba(212, 160, 62, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
 }
 
-.guide-dialog :deep(.el-dialog__footer) {
-  text-align: center;
-  padding: 20px 30px 30px;
+/* 浮动卡片头部 */
+.guide-float-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(212, 160, 62, 0.15);
+  background: linear-gradient(135deg, rgba(212, 160, 62, 0.08), rgba(212, 160, 62, 0.03));
+  border-radius: 12px 12px 0 0;
+}
+
+.guide-float-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5e4318;
+}
+
+.guide-float-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #999;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.2s;
+}
+
+.guide-float-close:hover {
+  color: #5e4318;
+}
+
+/* 浮动卡片底部 */
+.guide-float-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(212, 160, 62, 0.15);
+  background: rgba(212, 160, 62, 0.03);
+  border-radius: 0 0 12px 12px;
+  gap: 8px;
+}
+
+.guide-float-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 按钮样式 */
+.guide-btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 6px 12px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.guide-btn--text {
+  background: none;
+  color: #999;
+  padding: 6px 4px;
+}
+
+.guide-btn--text:hover {
+  color: #5e4318;
+}
+
+.guide-btn--secondary {
+  background: rgba(212, 160, 62, 0.1);
+  color: #5e4318;
+  border: 1px solid rgba(212, 160, 62, 0.3);
+}
+
+.guide-btn--secondary:hover {
+  background: rgba(212, 160, 62, 0.2);
+}
+
+.guide-btn--primary {
+  background: #d4a03e;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(212, 160, 62, 0.35);
+}
+
+.guide-btn--primary:hover {
+  background: #c49030;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 160, 62, 0.45);
+}
+
+/* 滑入动画 */
+.guide-slide-enter-active,
+.guide-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.guide-slide-enter-from,
+.guide-slide-leave-to {
+  opacity: 0;
+  transform: translateX(100%) translateY(20px);
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+  .guide-float-card {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: 72px;
+  }
+}
+
+.guide-content {
+  padding: 12px 16px;
+  flex: 1;
 }
 
 .step-indicator {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .step-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--text-muted);
+  background: var(--text-muted, #ccc);
   transition: all 0.3s ease;
 }
 
@@ -320,8 +433,8 @@ onMounted(() => {
 }
 
 .step-illustration {
-  font-size: 60px;
-  margin-bottom: 20px;
+  font-size: 36px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -329,8 +442,8 @@ onMounted(() => {
 }
 
 .large-icon {
-  font-size: 60px;
-  color: var(--primary-color);
+  font-size: 36px;
+  color: var(--primary-color, #d4a03e);
 }
 
 @keyframes float {
@@ -348,22 +461,22 @@ onMounted(() => {
 }
 
 .step-content h3 {
-  font-size: 24px;
-  color: var(--text-primary);
-  margin-bottom: 20px;
+  font-size: 16px;
+  color: var(--text-primary, #5e4318);
+  margin-bottom: 10px;
   font-weight: 600;
 }
 
 .warm-text {
-  color: var(--text-secondary) !important;
-  line-height: 1.8;
-  margin-bottom: 15px;
-  font-size: 15px;
+  color: var(--text-secondary, #666) !important;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  font-size: 13px;
 }
 
 .sub-text {
-  color: var(--primary-light) !important;
-  margin-top: 20px;
+  color: var(--primary-light, #d4a03e) !important;
+  margin-top: 10px;
   font-size: 14px;
 }
 

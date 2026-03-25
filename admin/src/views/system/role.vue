@@ -126,7 +126,7 @@ const loadRoleList = async () => {
   loading.value = true
   try {
     const res = await getRoles()
-    if (res.code === 200) {
+    if (res.code === 0) {
       roleList.value = res.data
       if (roleList.value.length > 0 && !selectedRole.value) {
         handleRoleSelect(roleList.value[0].id.toString())
@@ -145,7 +145,7 @@ const loadRoleList = async () => {
 const loadPermissionTree = async () => {
   try {
     const res = await getPermissions()
-    if (res.code === 200) {
+    if (res.code === 0) {
       permissionTree.value = res.data
     }
   } catch (error) {
@@ -190,7 +190,7 @@ async function handleRoleSelect(index) {
 const loadRolePermissions = async (roleId) => {
   try {
     const res = await getRolePermissions(roleId)
-    if (res.code === 200) {
+    if (res.code === 0) {
       selectedPermissions.value = res.data
       treeRef.value?.setCheckedKeys(res.data)
     }
@@ -222,7 +222,7 @@ async function handleDeleteRole(role) {
   try {
     await ElMessageBox.confirm(`确定要删除角色 ${role.name} 吗？`, '提示', { type: 'warning' })
     const res = await deleteRole(role.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       if (selectedRole.value?.id === role.id) {
         selectedRole.value = null
@@ -248,7 +248,7 @@ async function submitRole() {
       ? await updateRole(dialog.form.id, dialog.form)
       : await createRole(dialog.form)
       
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success(dialog.isEdit ? '修改成功' : '新增成功')
       dialog.visible = false
       loadRoleList()
@@ -286,7 +286,7 @@ async function handleSavePermission() {
 
   try {
     const res = await updateRolePermissions(selectedRole.value.id, allKeys)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('权限保存成功')
     }
   } catch (error) {

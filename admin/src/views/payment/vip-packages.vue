@@ -35,7 +35,7 @@ async function fetchPackagesList() {
   loading.value = true
   try {
     const res = await getVipPackages()
-    if (res.code === 200) {
+    if (res.code === 0) {
       packagesList.value = res.data?.list || []
     }
   } catch (error) {
@@ -90,7 +90,7 @@ async function handleToggleStatus(row) {
   try {
     await ElMessageBox.confirm(`确定要${action}套餐"${row.name}"吗？`, '提示', { type: 'warning' })
     const res = await batchUpdateVipPackageStatus({ ids: [row.id], status: newStatus })
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success(`${action}成功`)
       fetchPackagesList()
     }
@@ -104,7 +104,7 @@ async function handleDelete(row) {
   try {
     await ElMessageBox.confirm(`确定要删除套餐"${row.name}"吗？此操作不可恢复！`, '警告', { type: 'warning' })
     const res = await deleteVipPackage(row.id)
-    if (res.code === 200) {
+    if (res.code === 0) {
       ElMessage.success('删除成功')
       fetchPackagesList()
     }
@@ -121,7 +121,7 @@ async function handleSubmit() {
     formLoading.value = true
     try {
       const res = await saveVipPackage({ ...form })
-      if (res.code === 200) {
+      if (res.code === 0) {
         ElMessage.success(form.id ? '更新成功' : '创建成功')
         dialogVisible.value = false
         fetchPackagesList()
