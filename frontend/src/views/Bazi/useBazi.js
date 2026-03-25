@@ -89,38 +89,7 @@ const estimatedModeHint = computed(() => {
   return `当前按“${selectedEstimatedTimeOption.value.label}”估算时刻，结果页会同步标记为估算模式。`
 })
 
-const baziStrategyExpanded = ref(false)
 const baziSubmitIssues = ref([])
-
-const baziStrategySummary = computed(() => {
-  const modeText = versionMode.value === 'pro' ? '专业版' : '简化版'
-  const accuracyText = birthTimeAccuracy.value === 'exact' ? '精确时刻' : '估算时刻'
-  return `先用${modeText} + ${accuracyText}完成一次排盘，再按结果决定是否继续深入。`
-})
-
-const baziStrategyDetails = computed(() => ([
-  {
-    key: 'mode',
-    title: versionMode.value === 'pro' ? '当前选择：专业版' : '当前选择：简化版',
-    description: versionMode.value === 'pro'
-      ? '会补充出生地、进阶结构和后续分析入口，适合已经确定要看更完整结论时使用。'
-      : '先看命局轮廓与核心提示，适合第一次体验或只想快速确认整体方向。'
-  },
-  {
-    key: 'accuracy',
-    title: birthTimeAccuracy.value === 'exact' ? '当前时间策略：精确到分钟' : '当前时间策略：估算时刻 / 未知时辰',
-    description: birthTimeAccuracy.value === 'exact'
-      ? '精确时间更适合看时柱、起运点和后续流年细节；如果暂时记不清，再切换估算模式即可。'
-      : '估算模式适合先拿到方向参考，结果页会明确提示当前精度，避免把估算口径误读成精确结论。'
-  },
-  {
-    key: 'pricing',
-    title: '提交节奏',
-    description: isFirstBazi.value
-      ? '当前仍保留首次免费资格；填写完再提交，系统会在关键步骤前再次确认。'
-      : '当前按单次排盘计费；若你想先确认投入节奏，可先保存结果、回看记录，再决定是否继续深入解读。'
-  }
-]))
 
 const baziSubmitSummaryText = computed(() => {
   if (!baziSubmitIssues.value.length) {
@@ -1513,10 +1482,7 @@ return {
   birthDate,
   estimatedModeHint,
   estimatedTimeOptions,
-  baziStrategyExpanded,
   baziSubmitIssues,
-  baziStrategySummary,
-  baziStrategyDetails,
   baziSubmitSummaryText,
   gender,
   loading,
