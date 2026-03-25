@@ -131,6 +131,7 @@ Route::group('api/maodou', function () {
         Route::post('points/adjust', 'admin.Points/adjust');
         Route::post('points/batch-adjust', 'admin.Points/batchAdjust');
         Route::get('points/rules', 'admin.Points/getRules');
+        Route::put('points/rules', 'admin.Points/saveRules');  // 保存积分规则配置
         Route::get('points/stats', 'admin.Points/getStats');
 
         // VIP套餐管理

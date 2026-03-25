@@ -637,6 +637,21 @@ class Payment extends BaseController
             $this->applyRechargeOrderStatusFilter($pendingBaseQuery, 'pending');
             $pendingCount = (int) $pendingBaseQuery->count();
 
+            // 补充最近7天充值趋势图表数据
+            $chartDates = [];
+            $chartAmounts = [];
+            $chartCounts = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = date('Y-m-d', strtotime("-{$i} days"));
+                $dayQuery = Db::table($rechargeOrderTable)
+                    ->where('pay_time', '>=', $date . ' 00:00:00')
+                    ->where('pay_time', '<=', $date . ' 23:59:59');
+                $this->applyRechargeOrderStatusFilter($dayQuery, 'paid');
+                $chartDates[]   = $date;
+                $chartAmounts[] = round((float) ((clone $dayQuery)->sum('amount') ?? 0), 2);
+                $chartCounts[]  = (int) (clone $dayQuery)->count();
+            }
+
             return $this->success([
                 'total_amount' => round($totalAmount, 2),
                 'total_points' => $totalPoints,
@@ -644,6 +659,11 @@ class Payment extends BaseController
                 'user_count' => $userCount,
                 'pending_count' => $pendingCount,
                 'avg_amount' => $orderCount > 0 ? round($totalAmount / $orderCount, 2) : 0,
+                'chart_data' => [
+                    'dates'   => $chartDates,
+                    'amounts' => $chartAmounts,
+                    'counts'  => $chartCounts,
+                ],
             ]);
         } catch (\Throwable $e) {
             return $this->respondSystemException('admin_payment_stats', $e, '获取充值统计失败，请稍后重试', [

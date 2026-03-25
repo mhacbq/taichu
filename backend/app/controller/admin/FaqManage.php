@@ -84,4 +84,23 @@ class FaqManage extends BaseController
             return $this->error('删除失败');
         }
     }
+
+    /**
+     * 前台公开接口：获取已启用的FAQ列表（无需鉴权）
+     */
+    public function publicList()
+    {
+        try {
+            $category = $this->request->get('category', '');
+            $query = Faq::where('is_enabled', 1)->order('sort_order', 'asc')->order('id', 'asc');
+            if ($category !== '') {
+                $query->where('category', $category);
+            }
+            $list = $query->select()->toArray();
+            return $this->success(['list' => $list, 'total' => count($list)]);
+        } catch (\Throwable $e) {
+            Log::error('获取公开FAQ列表失败: ' . $e->getMessage());
+            return $this->error('获取失败');
+        }
+    }
 }

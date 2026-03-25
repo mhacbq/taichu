@@ -1225,6 +1225,52 @@ class Tarot extends BaseController
     }
     
     /**
+     * AI 深度分析（对已有塔罗记录进行深度解读）
+     */
+    public function aiAnalysis()
+    {
+        try {
+            $data = $this->request->post();
+
+            if (empty($data['cards']) || empty($data['question'])) {
+                return $this->error('缺少必要参数');
+            }
+
+            $tarotData = [
+                'cards'       => $data['cards'],
+                'question'    => $data['question'],
+                'spread_name' => $data['spread'] ?? '',
+            ];
+            $aiResult = DeepSeekService::interpretTarot($tarotData);
+
+            // 如果传入了 record_id，更新记录的 ai_analysis 字段
+            if (!empty($data['record_id'])) {
+                $user = $this->request->user;
+                $record = TarotRecord::where('id', (int) $data['record_id'])
+                    ->where('user_id', $user['sub'])
+                    ->find();
+                if ($record) {
+                    $record->ai_analysis = is_array($aiResult)
+                        ? json_encode($aiResult, JSON_UNESCAPED_UNICODE)
+                        : $aiResult;
+                    $record->save();
+                }
+            }
+
+            return $this->success([
+                'ai_analysis' => $aiResult,
+                'ai_powered'  => true,
+            ]);
+        } catch (\Throwable $e) {
+            $this->logControllerException('塔罗 AI 深度分析', $e, [
+                'record_id'       => (int) ($data['record_id'] ?? 0),
+                'question_length' => mb_strlen((string) ($data['question'] ?? '')),
+            ]);
+            return $this->error('AI 分析失败，请稍后重试', 500);
+        }
+    }
+
+    /**
      * 通过分享码查看塔罗记录（无需登录）
      */
     public function share()

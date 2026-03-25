@@ -346,6 +346,15 @@ class Liuyao extends BaseController
     
 
     /**
+     * AI 深度分析（路由别名，供 POST liuyao/ai-analysis 调用）
+     * 内部复用 aiInterpretation 逻辑
+     */
+    public function aiAnalysis()
+    {
+        return $this->aiInterpretation();
+    }
+
+    /**
      * 获取AI解读（结构化 JSON 版本）
      */
     public function aiInterpretation()

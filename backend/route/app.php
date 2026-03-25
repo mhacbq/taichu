@@ -63,6 +63,7 @@ Route::group('api', function () {
     Route::group('tarot', function () {
         Route::post('draw', 'Tarot/draw');
         Route::post('interpret', 'Tarot/interpret');
+        Route::post('ai-analysis', 'Tarot/aiAnalysis');  // AI深度分析
         Route::post('save-record', 'Tarot/saveRecord');
         Route::get('history', 'Tarot/history');
         Route::get('detail', 'Tarot/detail');
@@ -125,6 +126,9 @@ Route::group('api', function () {
     // SEO配置（公开接口，供前端路由守卫读取）
     Route::get('seo/active-configs', 'admin.Seo/getActiveSeoConfigs');
     
+    // FAQ公开接口（前台帮助中心展示已启用的FAQ）
+    Route::get('site/faqs', 'admin.FaqManage/publicList');
+    
     // AI分析
     Route::group('ai', function () {
         Route::post('analyze', 'AiAnalysis/analyze');
@@ -175,6 +179,7 @@ Route::group('api', function () {
     Route::group('liuyao', function () {
         Route::get('pricing', 'Liuyao/getPricing');      // 获取定价
         Route::post('divination', 'Liuyao/divination');  // 执行占卜
+        Route::post('ai-analysis', 'Liuyao/aiAnalysis'); // AI深度分析
         Route::get('history', 'Liuyao/history');         // 历史记录
         Route::get('detail', 'Liuyao/detail');           // 记录详情
         Route::post('delete', 'Liuyao/delete');          // 删除记录

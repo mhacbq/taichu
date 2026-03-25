@@ -59,15 +59,15 @@
 #### 🔴 严重：路由/控制器不一致
 
 
-- [ ] **[后端] 补充 `tarot/ai-analysis` 路由**
+- [x] **[后端] 补充 `tarot/ai-analysis` 路由**
   - 问题：`useTarot.js` 第 526 行有实际调用 `aiAnalyzeTarot`（`POST /tarot/ai-analysis`），但后端 `app.php` 中 tarot 路由组无此路由，调用必然 404。
-  - 修复：在 `app.php` 的 tarot 路由组中补充 `Route::post('ai-analysis', 'Tarot/aiAnalysis')`，并在 `Tarot` 控制器中实现 `aiAnalysis` 方法（可复用 `AiAnalysis` 服务）。
+  - 修复：在 `app.php` 的 tarot 路由组中补充 `Route::post('ai-analysis', 'Tarot/aiAnalysis')`，并在 `Tarot` 控制器中实现 `aiAnalysis` 方法。
 
-- [ ] **[后端] 补充 `liuyao/ai-analysis` 路由**
+- [x] **[后端] 补充 `liuyao/ai-analysis` 路由**
   - 问题：`useLiuyao.js` 第 747 行有实际调用 `analyzeLiuyaoAi`（`POST /liuyao/ai-analysis`），但后端 `app.php` 中 liuyao 路由组无此路由，调用必然 404。
   - 修复：在 `app.php` 的 liuyao 路由组中补充 `Route::post('ai-analysis', 'Liuyao/aiAnalysis')`，并在 `Liuyao` 控制器中实现 `aiAnalysis` 方法。
 
-- [ ] **[后端] 补充 `points/rules` PUT 路由**
+- [x] **[后端] 补充 `points/rules` PUT 路由**
   - 问题：管理端 `points.js` 中 `savePointsRules` 调用 `PUT /points/rules`，但 `admin.php` 中积分规则路由只有 `GET /points/rules`，无 PUT 路由，导致积分规则保存功能 404。
   - 修复：在 `admin.php` 中补充 `Route::put('points/rules', 'admin.Points/saveRules')`，并在 `admin\Points` 控制器中实现 `saveRules` 方法。
 
@@ -81,13 +81,13 @@
   - 修复：明确 SEO 统计页的定位——若只展示"SEO配置覆盖率"，则修改前端展示逻辑匹配后端数据；若需要真实搜索引擎数据，则需接入第三方 SEO API（百度站长/Google Search Console）。
 
 
-- [ ] **[管理端] `site-content/testimonials.vue` 和 `site-content/question-templates.vue` 无路由入口**
+- [x] **[管理端] `site-content/testimonials.vue` 和 `site-content/question-templates.vue` 无路由入口**
   - 问题：`admin/src/views/site-content/testimonials.vue`（9.05KB）和 `question-templates.vue`（8.00KB）存在于目录中，但 `admin/src/router/index.js` 的 `/site` 路由组中只有 `tarot-cards`、`faq`、`knowledge` 三个子路由，这两个页面无法访问。
-  - 修复：若需要这两个功能，在路由中补充入口；若不需要，删除文件。
+  - 修复：文件已删除（无实际使用场景），无需补充路由。
 
-- [ ] **[管理端] `site-content/content-manager.vue` 无路由入口**
+- [x] **[管理端] `site-content/content-manager.vue` 无路由入口**
   - 问题：`admin/src/views/site-content/content-manager.vue`（9.43KB）存在但无路由入口，无法访问。
-  - 修复：同上，确认是否需要，决定补路由或删除文件。
+  - 修复：文件已删除（无实际使用场景），无需补充路由。
 
 - [ ] **[管理端] `siteContent.js` 中大量接口调用不存在的后端路由**
   - 问题：`admin/src/api/siteContent.js` 中以下接口在 `admin.php` 中无对应路由：
@@ -113,26 +113,26 @@
   - 问题：流年运势页面 `useYearlyFortune.js` 仅 5.67KB，功能较简单，缺少大运分析（`getDayunAnalysis`）和大运图表（`getDayunChart`）的调用，这两个接口后端已实现。
   - 修复：在流年运势页面补充大运分析功能入口。
 
-- [ ] **[后端] 前台 FAQ 接口缺失**
+- [x] **[后端] 前台 FAQ 接口缺失**
   - 问题：`siteContent.js` 中 `getFaqs` 调用 `GET /site/faqs`，该路由只在 `admin.php` 中注册（需鉴权），`app.php` 中无公开的 FAQ 接口。若前台帮助中心需要展示 FAQ，调用必然 401/404。
-  - 修复：在 `app.php` 中补充 `Route::get('site/faqs', 'admin.FaqManage/publicList')` 公开路由（或新建 `Faq` 控制器），只返回已启用的 FAQ 数据。
+  - 修复：已在 `app.php` 中补充 `Route::get('site/faqs', 'admin.FaqManage/publicList')` 公开路由，并在 `FaqManage` 控制器中实现 `publicList()` 方法，只返回已启用的 FAQ 数据。
 
 ---
 
 #### 🔴 严重：本轮新发现
 
-- [ ] **[管理端] `Points.php` 控制器缺少 `saveRules` 方法**
+- [x] **[管理端] `Points.php` 控制器缺少 `saveRules` 方法**
   - 问题：`admin.php` 中已有 `Route::put('points/rules', 'admin.Points/saveRules')` 路由（待补充），但 `Points.php` 控制器中只有 `getRules()`，完全没有 `saveRules()` 方法，即使路由补上也会 500。
-  - 修复：在 `Points.php` 中实现 `saveRules()` 方法，将积分规则配置写入 `tc_system_config` 或专用配置表。
+  - 修复：已在 `Points.php` 中实现 `saveRules()` 方法，将积分规则配置写入 `tc_system_config`；同步修复 `getRules()` 从配置表读取真实规则而非历史记录枚举。
 
 
 - [ ] **[管理端] `faq.vue` 调用 `getFaqList` → `siteContent.js` 中路径为 `/site/faqs`，与后端路由不匹配**
   - 问题：`faq.vue` 调用 `getFaqList`，该函数在 `siteContent.js` 中调用 `GET /site/faqs`；后端 `admin.php` 注册的是 `GET site/faqs`（在 `/api/maodou` 路由组内），实际完整路径是 `/api/maodou/site/faqs`，而 `siteContent.js` 的 request.js baseURL 是 `/api/maodou`，所以路径 `/site/faqs` 实际上是正确的。**但 `saveFaq` 调用 `POST /site/faqs`，后端路由也有 `POST site/faqs`，路径匹配。`deleteFaq` 调用 `DELETE /site/faqs/:id`，后端也有对应路由。** → FAQ 管理页面路径实际上是正确的，之前记录的"FAQ 管理页面报错"需要重新排查真实原因。
   - 修复：重新排查 FAQ 页面报错的真实原因（可能是数据库表 `tc_faq` 不存在，或 `FaqManage.php` 控制器方法有 bug）。
 
-- [ ] **[管理端] `payment/analysis.vue` 调用 `getRechargeStats` 但后端返回数据结构不含 `chart_data`**
+- [x] **[管理端] `payment/analysis.vue` 调用 `getRechargeStats` 但后端返回数据结构不含 `chart_data`**
   - 问题：`payment/analysis.vue` 调用 `getRechargeStats`（`GET /payment/stats`），后端 `admin\Payment::getStats()` 返回的是 `total_amount/order_count/vip_count/recharge_count`，但前端还期望 `res.data.chart_data`（含 `dates/amounts/counts`），后端未返回该字段，导致图表渲染时使用硬编码的假数据（周一到周日）。
-  - 修复：在 `admin\Payment::getStats()` 中补充 `chart_data` 字段，返回最近 7 天的充值趋势数据。
+  - 修复：已在 `admin\Payment::getStats()` 中补充 `chart_data` 字段，返回最近 7 天的充值趋势数据。
 
 
 ---
@@ -143,9 +143,9 @@
   - 问题：`vip-packages.vue` 中"新增套餐"按钮无 `@click` 事件，操作列的"编辑"、"上架/下架"、"删除"按钮也均无 `@click` 事件，VIP 套餐完全无法通过界面管理。（已在 TODO 中有记录，但本轮确认了具体代码位置）
   - 修复：补充所有按钮的事件绑定，调用 `payment.js` 中 `saveVipPackage`、`deleteVipPackage`、`batchUpdateVipPackageStatus` 接口。
 
-- [ ] **[管理端] `Points.php::getRules()` 返回的是积分记录类型枚举，而非可配置的积分规则**
+- [x] **[管理端] `Points.php::getRules()` 返回的是积分记录类型枚举，而非可配置的积分规则**
   - 问题：`points/rules.vue` 期望展示可编辑的积分规则（如签到得多少分、邀请得多少分），但后端 `getRules()` 实际上是从 `tc_points_record` 表中 `distinct` 出已有的 `type` 字段，返回的是历史记录中出现过的类型，而非真正的规则配置，且 `points` 字段硬编码为 0。
-  - 修复：设计积分规则配置表（或使用 `tc_system_config`），`getRules()` 从配置中读取，`saveRules()` 写入配置。
+  - 修复：已重写 `getRules()`，从 `tc_system_config` 读取真实规则配置，`saveRules()` 写入配置。
 
 
 ### 产品体验 / 功能改造（非高频修复输入）

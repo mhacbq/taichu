@@ -291,7 +291,27 @@ class Points extends BaseController
     }
 
     /**
-     * 获取积分规则（从数据库获取）
+     * 积分规则配置的 system_config key 前缀
+     */
+    private const POINTS_RULE_PREFIX = 'points_rule_';
+
+    /**
+     * 默认积分规则定义
+     */
+    private function getDefaultRules(): array
+    {
+        return [
+            ['type' => 'sign_in',          'rule_name' => '每日签到',   'points' => 5,   'description' => '每日签到获得积分奖励'],
+            ['type' => 'complete_profile',  'rule_name' => '完善资料',   'points' => 20,  'description' => '首次完善个人资料获得积分'],
+            ['type' => 'invite_friend',     'rule_name' => '邀请好友',   'points' => 50,  'description' => '邀请好友注册获得积分'],
+            ['type' => 'paid_order',        'rule_name' => '付费订单',   'points' => 10,  'description' => '完成付费订单获得积分'],
+            ['type' => 'vip_purchase',      'rule_name' => '购买VIP',    'points' => 100, 'description' => '购买VIP套餐获得积分'],
+            ['type' => 'consumption',       'rule_name' => '积分消费',   'points' => -1,  'description' => '使用积分购买服务（每次消耗量）'],
+        ];
+    }
+
+    /**
+     * 获取积分规则（从 system_config 读取可配置规则）
      */
     public function getRules()
     {
@@ -300,21 +320,95 @@ class Points extends BaseController
         }
 
         try {
-            $rules = PointsRecord::distinct()->column('type');
+            $defaults = $this->getDefaultRules();
+            $list = [];
+
+            foreach ($defaults as $idx => $rule) {
+                $configKey = self::POINTS_RULE_PREFIX . $rule['type'];
+                $saved = Db::name('system_config')
+                    ->where('config_key', $configKey)
+                    ->find();
+
+                $points = $saved ? (int) $saved['config_value'] : $rule['points'];
+                $list[] = [
+                    'id'          => $idx + 1,
+                    'type'        => $rule['type'],
+                    'rule_name'   => $rule['rule_name'],
+                    'points'      => $points,
+                    'description' => $rule['description'],
+                    'status'      => 1,
+                ];
+            }
+
             return $this->success([
-                'list' => array_map(function($type) {
-                    return [
-                        'id' => $type,
-                        'rule_name' => $this->getRuleName($type),
-                        'points' => 0,
-                        'description' => $this->getRuleDescription($type),
-                        'status' => 1
-                    ];
-                }, $rules),
-                'total' => count($rules)
+                'list'  => $list,
+                'total' => count($list),
             ]);
         } catch (\Throwable $e) {
             return $this->respondSystemException('admin_points_rules', $e, '获取积分规则失败');
+        }
+    }
+
+    /**
+     * 保存积分规则配置（写入 system_config）
+     */
+    public function saveRules()
+    {
+        if (!$this->hasAdminPermission('points_edit')) {
+            return $this->error('无权限修改积分规则', 403);
+        }
+
+        $data = $this->request->post();
+        $rules = $data['rules'] ?? [];
+
+        if (empty($rules) || !is_array($rules)) {
+            return $this->error('规则数据不能为空');
+        }
+
+        $allowedTypes = array_column($this->getDefaultRules(), 'type');
+
+        try {
+            Db::startTrans();
+
+            foreach ($rules as $rule) {
+                $type   = $rule['type'] ?? '';
+                $points = isset($rule['points']) ? (int) $rule['points'] : null;
+
+                if (!in_array($type, $allowedTypes, true) || $points === null) {
+                    continue;
+                }
+
+                $configKey = self::POINTS_RULE_PREFIX . $type;
+                $existing  = Db::name('system_config')
+                    ->where('config_key', $configKey)
+                    ->find();
+
+                if ($existing) {
+                    Db::name('system_config')
+                        ->where('config_key', $configKey)
+                        ->update([
+                            'config_value' => (string) $points,
+                            'updated_at'   => date('Y-m-d H:i:s'),
+                        ]);
+                } else {
+                    Db::name('system_config')->insert([
+                        'config_key'   => $configKey,
+                        'config_value' => (string) $points,
+                        'config_type'  => 'points',
+                        'description'  => '积分规则：' . $type,
+                        'created_at'   => date('Y-m-d H:i:s'),
+                        'updated_at'   => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+
+            $this->logOperation('save_points_rules', 'points', ['rules' => $rules]);
+            Db::commit();
+
+            return $this->success(null, '积分规则保存成功');
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return $this->respondSystemException('admin_points_save_rules', $e, '保存积分规则失败');
         }
     }
 
