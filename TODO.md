@@ -14,7 +14,7 @@
 ### 严重问题（API 路径错误 / 功能完全不可用）
 
 
-- [ ] **[管理端] 流年运势管理入口缺失**
+- [x] **[管理端] 流年运势管理入口缺失**
   - 问题：后端已有完整的 `yearly-fortune-manage` CRUD 路由，但管理端路由文件和 `views/result/` 目录下均无对应页面，导致流年运势记录无法在管理端查看和管理。
   - 修复：在 `admin/src/views/result/` 下新建 `YearlyFortuneManage.vue`，并在 `admin/src/router/index.js` 的测算管理模块中添加对应路由。
 
@@ -24,11 +24,11 @@
 
 ### 中等问题（功能残缺 / 按钮无事件）
 
-- [ ] **[管理端] VIP 套餐页面按钮无事件绑定**
+- [x] **[管理端] VIP 套餐页面按钮无事件绑定**
   - 问题：`admin/src/views/payment/vip-packages.vue` 只有只读列表，新增/编辑/删除按钮未绑定任何事件，VIP 套餐无法通过界面管理。
   - 修复：补充新增弹窗、编辑弹窗、删除确认逻辑，调用 `payment.js` 中对应的 CRUD 接口。
 
-- [ ] **[管理端] 管理员管理页面按钮无事件绑定**
+- [x] **[管理端] 管理员管理页面按钮无事件绑定**
   - 问题：`admin/src/views/system/admins.vue` 只有只读列表，新增/编辑/重置密码/删除按钮未绑定任何事件，管理员无法通过界面管理。
   - 修复：补充新增弹窗、编辑弹窗、重置密码弹窗、删除确认逻辑，调用 `system.js` 中对应的 CRUD 接口（同步修复上方 API 路径问题后）。
 
@@ -105,7 +105,7 @@
 
 #### 🟢 低优先级：前台功能检查
 
-- [ ] **[前台] `Qiming/useQiming.js` 缺少历史记录功能**
+- [x] **[前台] `Qiming/useQiming.js` 缺少历史记录功能**
   - 问题：取名页面 `useQiming.js` 只实现了提交取名，未实现历史记录查询（`getQimingHistory` 接口已在 `index.js` 中定义，后端路由 `GET /qiming/history` 也已注册），用户无法查看历史取名记录。
   - 修复：在 `useQiming.js` 中补充历史记录加载逻辑，在 `Qiming/index.vue` 中展示历史记录列表。
 
@@ -139,7 +139,7 @@
 
 #### 🟡 中等：本轮新发现
 
-- [ ] **[管理端] `vip-packages.vue` 中"新增套餐"、"编辑"、"上下架"、"删除"按钮均无事件绑定**
+- [x] **[管理端] `vip-packages.vue` 中"新增套餐"、"编辑"、"上下架"、"删除"按钮均无事件绑定**
   - 问题：`vip-packages.vue` 中"新增套餐"按钮无 `@click` 事件，操作列的"编辑"、"上架/下架"、"删除"按钮也均无 `@click` 事件，VIP 套餐完全无法通过界面管理。（已在 TODO 中有记录，但本轮确认了具体代码位置）
   - 修复：补充所有按钮的事件绑定，调用 `payment.js` 中 `saveVipPackage`、`deleteVipPackage`、`batchUpdateVipPackageStatus` 接口。
 
