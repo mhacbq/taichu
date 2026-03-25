@@ -296,3 +296,100 @@
     margin: 16px 12px 0;
   }
 }
+
+/* 历史记录 */
+.qiming-history {
+  margin-top: 20px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.history-header:hover {
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.history-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #5e4318;
+  font-size: 15px;
+}
+
+.arrow-up {
+  transform: rotate(180deg);
+  transition: transform 0.3s;
+  color: #d4a03e;
+}
+
+.arrow-down {
+  transition: transform 0.3s;
+  color: #d4a03e;
+}
+
+.history-content {
+  padding: 0 20px 16px;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.history-loading {
+  padding: 16px 0;
+}
+
+.history-empty {
+  padding: 20px 0;
+  text-align: center;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.history-item:last-of-type {
+  border-bottom: none;
+}
+
+.history-item:hover {
+  background: rgba(212, 175, 55, 0.04);
+}
+
+.history-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-surname {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.history-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.history-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+

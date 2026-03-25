@@ -105,6 +105,12 @@ export const asyncRoutes = [
         meta: { title: '取名测算', roles: ['admin', 'operator'] }
       },
       {
+        path: 'yearly-fortune',
+        name: 'YearlyFortuneManage',
+        component: () => import('@/views/result/YearlyFortuneManage.vue'),
+        meta: { title: '流年运势', roles: ['admin', 'operator'] }
+      },
+      {
         path: 'analysis',
         name: 'ResultAnalysis',
         component: () => import('@/views/result/analysis.vue'),

@@ -132,6 +132,14 @@ export function deleteAdminUser(id) {
   })
 }
 
+export function resetAdminPassword(id, newPassword) {
+  return request({
+    url: `/system/admins/${id}/reset-password`,
+    method: 'post',
+    data: { new_password: newPassword }
+  })
+}
+
 // 角色管理
 export function getRoles() {
   return request({

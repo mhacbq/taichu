@@ -276,6 +276,7 @@ Route::group('api/maodou', function () {
         Route::get('system/admins', 'Admin/getAdminUsers');
         Route::post('system/admins', 'Admin/saveAdminUser');
         Route::delete('system/admins/:id', 'Admin/deleteAdminUser');
+        Route::post('system/admins/:id/reset-password', 'Admin/resetAdminPassword');
         
         // 角色和字典管理
         Route::get('system/roles', 'admin.System/getRoles');

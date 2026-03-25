@@ -49,7 +49,7 @@ const emit = defineEmits([
     <div class="dayun-section" v-if="result?.dayun?.length > 0">
       <div class="section-title-with-tip">
         <h3>大运走势</h3>
-        <el-tooltip content="大运是每10年一个阶段的人生运势，就像人生的"季节"，每个阶段都有不同的机遇和挑战" placement="top">
+        <el-tooltip content="大运是每10年一个阶段的人生运势，就像人生的季节，每个阶段都有不同的机遇和挑战" placement="top">
           <span class="help-icon"><el-icon><QuestionFilled /></el-icon></span>
         </el-tooltip>
       </div>

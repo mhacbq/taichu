@@ -2016,6 +2016,57 @@ class Admin extends BaseController
     }
 
     /**
+     * 重置管理员密码
+     */
+    public function resetAdminPassword($id)
+    {
+        if (!$this->checkPermission('config_manage')) {
+            return $this->error('无权限重置管理员密码', 403);
+        }
+
+        $id = (int) $id;
+        if ($id <= 0) {
+            return $this->error('管理员ID无效', 422);
+        }
+
+        $newPassword = $this->request->post('new_password', '');
+        if (empty($newPassword)) {
+            return $this->error('新密码不能为空', 422);
+        }
+        if (strlen($newPassword) < 6) {
+            return $this->error('密码长度不能少于6位', 422);
+        }
+
+        $adminTable = $this->resolveCompatibleTable(['tc_admin', 'admin'], 'tc_admin');
+        if (!$this->tableExists($adminTable)) {
+            return $this->error('管理员账号表不存在', 500);
+        }
+
+        $admin = Db::table($adminTable)->where('id', $id)->find();
+        if (!$admin) {
+            return $this->error('管理员不存在', 404);
+        }
+
+        try {
+            Db::table($adminTable)->where('id', $id)->update([
+                'password' => password_hash($newPassword, PASSWORD_DEFAULT),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->logOperation('update', 'system', [
+                'target_id' => $id,
+                'target_type' => 'admin',
+                'detail' => '重置管理员密码：' . (string) ($admin['username'] ?? $id),
+            ]);
+
+            return $this->success(null, '密码重置成功');
+        } catch (\Throwable $e) {
+            Log::error('重置管理员密码失败: ' . $e->getMessage());
+            return $this->error('重置密码失败，请稍后重试', 500);
+        }
+    }
+
+    /**
      * 获取积分统计
      */
     public function pointsStats(Request $request)

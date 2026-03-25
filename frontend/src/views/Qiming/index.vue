@@ -96,6 +96,49 @@
         <div class="result-content rich-content" v-html="formattedResult"></div>
       </div>
 
+      <!-- 历史记录 -->
+      <div class="qiming-history card" v-if="!result">
+        <div class="history-header" @click="toggleHistory">
+          <span class="history-title">
+            <el-icon><Clock /></el-icon>
+            历史取名记录
+          </span>
+          <el-icon :class="showHistory ? 'arrow-up' : 'arrow-down'"><ArrowDown /></el-icon>
+        </div>
+        <div v-if="showHistory" class="history-content">
+          <div v-if="historyLoading" class="history-loading">
+            <el-skeleton :rows="3" animated />
+          </div>
+          <div v-else-if="historyList.length === 0" class="history-empty">
+            <el-empty description="暂无历史记录" :image-size="60" />
+          </div>
+          <div v-else>
+            <div
+              v-for="item in historyList"
+              :key="item.id"
+              class="history-item"
+              @click="viewHistoryResult(item)"
+            >
+              <div class="history-item-info">
+                <span class="history-surname">{{ item.surname }}姓 · {{ item.gender === 'male' ? '男孩' : '女孩' }}</span>
+                <span class="history-date">{{ item.created_at }}</span>
+              </div>
+              <el-button link type="primary" size="small">查看结果</el-button>
+            </div>
+            <div class="history-pagination">
+              <el-pagination
+                v-model:current-page="historyPage"
+                :page-size="historyPageSize"
+                :total="historyTotal"
+                layout="prev, pager, next"
+                small
+                @current-change="handleHistoryPageChange"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 温馨提示 -->
       <div class="qiming-tips" v-if="!result">
         <p class="tips-title">💡 取名小贴士</p>
@@ -110,7 +153,7 @@
 </template>
 
 <script setup>
-import { EditPen, Checked, RefreshRight } from '@element-plus/icons-vue'
+import { EditPen, Checked, RefreshRight, Clock, ArrowDown } from '@element-plus/icons-vue'
 import PageHeroHeader from '../../components/PageHeroHeader.vue'
 import { useQiming } from './useQiming'
 
@@ -124,6 +167,15 @@ const {
   formattedResult,
   submitForm,
   resetForm,
+  historyList,
+  historyLoading,
+  historyTotal,
+  historyPage,
+  historyPageSize,
+  showHistory,
+  toggleHistory,
+  handleHistoryPageChange,
+  viewHistoryResult,
 } = useQiming()
 </script>
 

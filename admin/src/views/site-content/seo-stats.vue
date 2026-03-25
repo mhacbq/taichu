@@ -9,7 +9,7 @@
     <div class="stats-overview">
       <el-card class="stat-card">
         <div class="stat-icon baidu">
-          <img src="/icons/baidu.svg" alt="百度" />
+          <span style="color: white; font-weight: bold; font-size: 14px;">百度</span>
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.baidu.indexed }}</div>
@@ -24,7 +24,7 @@
 
       <el-card class="stat-card">
         <div class="stat-icon bing">
-          <img src="/icons/bing.svg" alt="必应" />
+          <span style="color: white; font-weight: bold; font-size: 14px;">必应</span>
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ stats.bing.indexed }}</div>

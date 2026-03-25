@@ -1,6 +1,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { suggestNames, getClientConfig } from '../../api'
+import { suggestNames, getQimingHistory, getClientConfig } from '../../api'
 import { sanitizeHtml } from '../../utils/sanitize'
 
 export function useQiming() {
@@ -101,6 +101,49 @@ export function useQiming() {
     result.value = null
   }
 
+  // 历史记录
+  const historyList = ref([])
+  const historyLoading = ref(false)
+  const historyTotal = ref(0)
+  const historyPage = ref(1)
+  const historyPageSize = ref(10)
+  const showHistory = ref(false)
+
+  const loadHistory = async () => {
+    historyLoading.value = true
+    try {
+      const response = await getQimingHistory({
+        page: historyPage.value,
+        page_size: historyPageSize.value
+      })
+      if (response.code === 200) {
+        historyList.value = response.data.list || []
+        historyTotal.value = response.data.total || 0
+      }
+    } catch (error) {
+      ElMessage.error('获取历史记录失败')
+    } finally {
+      historyLoading.value = false
+    }
+  }
+
+  const toggleHistory = () => {
+    showHistory.value = !showHistory.value
+    if (showHistory.value && historyList.value.length === 0) {
+      loadHistory()
+    }
+  }
+
+  const handleHistoryPageChange = (page) => {
+    historyPage.value = page
+    loadHistory()
+  }
+
+  const viewHistoryResult = (item) => {
+    result.value = item.name_suggestions || item.result || ''
+    showHistory.value = false
+  }
+
   // 加载客户端配置
   const loadClientConfig = async () => {
     try {
@@ -126,5 +169,15 @@ export function useQiming() {
     formattedResult,
     submitForm,
     resetForm,
+    historyList,
+    historyLoading,
+    historyTotal,
+    historyPage,
+    historyPageSize,
+    showHistory,
+    loadHistory,
+    toggleHistory,
+    handleHistoryPageChange,
+    viewHistoryResult,
   }
 }
