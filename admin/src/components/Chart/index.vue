@@ -4,7 +4,14 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, BarChart, PieChart, ScatterChart } from 'echarts/charts'
+import { TitleComponent, TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import * as echarts from 'echarts'
+
+// 按需注册echarts组件
+use([CanvasRenderer, LineChart, BarChart, PieChart, ScatterChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
 const props = defineProps({
   option: { type: Object, required: true },

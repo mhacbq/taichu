@@ -242,9 +242,25 @@ const loadPointsRules = async () => {
         action: item.action || null,
         actionText: item.actionText || '',
       }))
+    } else {
+      // 后端返回失败时，显示默认积分获取规则
+      pointsMethodsRaw.value = [
+        { id: 1, icon: 'calendar', name: '每日签到', points: 10, action: 'checkin', actionText: '去签到' },
+        { id: 2, icon: 'share', name: '邀请好友', points: 50, action: 'invite', actionText: '去邀请' },
+        { id: 3, icon: 'chat', name: '提交反馈', points: 20, action: 'feedback', actionText: '去反馈' },
+        { id: 4, icon: 'star', name: '完成新手任务', points: 100, action: 'task', actionText: '去完成' },
+        { id: 5, icon: 'book', name: '使用八字排盘', points: 5, action: 'bazi', actionText: '去排盘' }
+      ]
     }
   } catch (e) {
-    // 加载失败时静默处理，不影响页面
+    // 加载失败时显示默认规则，确保用户能看到积分获取方式
+    pointsMethodsRaw.value = [
+      { id: 1, icon: 'calendar', name: '每日签到', points: 10, action: 'checkin', actionText: '去签到' },
+      { id: 2, icon: 'share', name: '邀请好友', points: 50, action: 'invite', actionText: '去邀请' },
+      { id: 3, icon: 'chat', name: '提交反馈', points: 20, action: 'feedback', actionText: '去反馈' },
+      { id: 4, icon: 'star', name: '完成新手任务', points: 100, action: 'task', actionText: '去完成' },
+      { id: 5, icon: 'book', name: '使用八字排盘', points: 5, action: 'bazi', actionText: '去排盘' }
+    ]
   }
 }
 

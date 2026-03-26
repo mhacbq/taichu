@@ -1515,17 +1515,17 @@ body {
 /* 2026-03 UI polish: global shell refresh */
 .navbar {
   padding: 0;
-  background: rgba(8, 8, 20, 0.88);
+  background: var(--bg-overlay);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-bottom: 1px solid rgba(184, 134, 11, 0.2);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-md);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .navbar.scrolled {
-  background: rgba(6, 6, 16, 0.97);
-  border-bottom-color: rgba(212, 175, 55, 0.35);
+  background: var(--bg-primary);
+  border-bottom-color: var(--border-focus);
 }
 
 .nav-container {
@@ -1547,7 +1547,7 @@ body {
 }
 
 .nav-link {
-  color: rgba(212, 175, 55, 0.75);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   padding: 8px 14px;
@@ -1561,16 +1561,16 @@ body {
 }
 
 .nav-link:hover {
-  color: #D4AF37;
-  background: rgba(212, 175, 55, 0.1);
+  color: var(--primary-color);
+  background: var(--surface-hover);
   box-shadow: none;
 }
 
 .nav-link.router-link-active {
-  color: #D4AF37;
-  background: rgba(212, 175, 55, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.2);
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  color: var(--primary-color);
+  background: var(--surface-strong);
+  box-shadow: inset 0 0 0 1px var(--border-gold);
+  text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.4);
 }
 
 
@@ -1756,26 +1756,26 @@ body {
 
 /* 移动端侧滑导航 */
 .mobile-nav {
-  background: rgba(8, 8, 20, 0.97);
-  border-left: 1px solid rgba(184, 134, 11, 0.2);
-  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 254, 251, 0.97);
+  border-left: 1px solid rgba(212, 160, 62, 0.2);
+  box-shadow: -20px 0 48px rgba(94, 67, 24, 0.12);
 }
 
 .mobile-nav-title {
-  color: #D4AF37;
+  color: #5e4318;
 }
 
 .mobile-nav-link {
-  color: rgba(212, 175, 55, 0.7);
+  color: rgba(94, 67, 24, 0.7);
   min-height: 48px;
   font-size: 16px;
 }
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
-  color: #D4AF37;
-  background: linear-gradient(90deg, rgba(212, 175, 55, 0.12), transparent 85%);
-  border-left-color: #D4AF37;
+  color: #d4a03e;
+  background: linear-gradient(90deg, rgba(212, 160, 62, 0.1), transparent 85%);
+  border-left-color: #d4a03e;
   padding-left: 34px;
 }
 
@@ -1800,11 +1800,11 @@ body {
     right: 0;
     height: 60px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: rgba(8, 8, 20, 0.97);
+    background: rgba(255, 254, 251, 0.97);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(184, 134, 11, 0.25);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+    border-top: 1px solid rgba(212, 160, 62, 0.2);
+    box-shadow: 0 -4px 24px rgba(94, 67, 24, 0.08);
     justify-content: space-around;
     align-items: center;
     z-index: 1000;
@@ -1817,7 +1817,7 @@ body {
     justify-content: center;
     gap: 3px;
     padding: 6px 14px;
-    color: rgba(212, 175, 55, 0.45);
+    color: rgba(94, 67, 24, 0.5);
     text-decoration: none;
     transition: color 0.2s ease, transform 0.15s ease;
     min-width: 52px;
@@ -1828,7 +1828,7 @@ body {
 
   .bottom-nav-item:active {
     transform: scale(0.9);
-    color: #D4AF37;
+    color: #d4a03e;
   }
 
   .bottom-icon {
@@ -1842,12 +1842,12 @@ body {
   }
 
   .bottom-nav-item.active {
-    color: #D4AF37;
+    color: #d4a03e;
   }
 
   .bottom-nav-item.active .bottom-icon {
     transform: translateY(-2px);
-    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
+    filter: drop-shadow(0 0 6px rgba(212, 160, 62, 0.4));
   }
 
   /* 中间主功能按钮（八字排盘） */

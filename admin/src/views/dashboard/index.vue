@@ -175,7 +175,14 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, BarChart } from 'echarts/charts'
+import { TitleComponent, TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import * as echarts from 'echarts'
+
+// 按需注册echarts组件
+use([CanvasRenderer, LineChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 import { Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import TodoWidget from '@/components/TodoWidget.vue'
