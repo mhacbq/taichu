@@ -1,7 +1,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Briefcase, Money, Sunny, StarFilled } from '@element-plus/icons-vue'
-import { getDailyFortune } from '../../api'
+import { getDailyFortune, updateProfile } from '../../api'
 
 export function useDaily() {
 const solarDate = ref('')
@@ -460,9 +460,20 @@ const saveBirthDate = async () => {
 
   birthdayLoading.value = true
   try {
-    // 这里需要调用API保存生日
-    // 暂时只保存在本地存储，实际项目需要调用后端API
+    // 始终先保存到本地，保证离线/未登录场景可用
     localStorage.setItem('user_birth_date', userBirthDate.value)
+
+    // 登录状态下同步持久化到后端
+    if (isLoggedIn.value) {
+      const res = await updateProfile({ birth_date: userBirthDate.value })
+      if (res?.code !== 0) {
+        ElMessage.warning('生日已保存到本地，但同步到服务器失败，换设备后可能需要重新设置')
+        showBirthdayDialog.value = false
+        loadDailyFortune()
+        return
+      }
+    }
+
     ElMessage.success('出生日期设置成功')
     showBirthdayDialog.value = false
     // 设置生日后重新加载运势

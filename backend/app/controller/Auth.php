@@ -453,7 +453,7 @@ class Auth extends BaseController
             return $this->error('用户不存在', 404);
         }
         
-        $allowFields = ['nickname', 'avatar', 'gender', 'phone'];
+        $allowFields = ['nickname', 'avatar', 'gender', 'phone', 'birth_date'];
         $updateData = [];
         
         foreach ($allowFields as $field) {
@@ -483,6 +483,14 @@ class Auth extends BaseController
                 if (!preg_match('/^1[3-9]\d{9}$/', $value)) {
                     return $this->error('手机号格式不正确');
                 }
+            }
+
+            if ($field === 'birth_date') {
+                $value = trim((string) $value);
+                if ($value !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                    return $this->error('出生日期格式不正确，请使用 YYYY-MM-DD 格式');
+                }
+                $value = $value === '' ? null : $value;
             }
                 
             $updateData[$field] = $value;

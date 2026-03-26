@@ -217,7 +217,7 @@ const beforeUpload = (file) => {
 
 // 上传成功
 const handleUploadSuccess = (response) => {
-  if (response.code === 200) {
+  if (response.code === 0) {
     imageUrl.value = response.data.url
     ElMessage.success('上传成功')
   } else {
