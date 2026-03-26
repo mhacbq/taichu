@@ -255,7 +255,7 @@ export const CITY_LONGITUDE_LIST = [
   { label: '东莞', value: '东莞', longitude: 113.7 },
   { label: '中山', value: '中山', longitude: 113.4 },
   { label: '潮州', value: '潮州', longitude: 116.6 },
-  { label: '揭州', value: '揭州', longitude: 116.4 },
+{ label: '揭阳', value: '揭阳', longitude: 116.4 },
   { label: '云浮', value: '云浮', longitude: 112.0 },
 
   // ── 广西壮族自治区 ──
@@ -455,7 +455,7 @@ export const CITY_LONGITUDE_BY_PROVINCE = [
   { label: '河南省', options: CITY_LONGITUDE_LIST.filter(c => ['郑州','开封','洛阳','平顶山','安阳','鹤壁','新乡','焦作','濮阳','许昌','漯河','三门峡','南阳','商丘','信阳','周口','驻马店','济源'].includes(c.value)) },
   { label: '湖北省', options: CITY_LONGITUDE_LIST.filter(c => ['武汉','黄石','十堰','宜昌','襄阳','鄂州','荆门','孝感','荆州','黄冈','咸宁','随州','恩施','仙桃','潜江','天门','神农架'].includes(c.value)) },
   { label: '湖南省', options: CITY_LONGITUDE_LIST.filter(c => ['长沙','株洲','湘潭','衡阳','邵阳','岳阳','常德','张家界','益阳','郴州','永州','怀化','娄底','湘西'].includes(c.value)) },
-  { label: '广东省', options: CITY_LONGITUDE_LIST.filter(c => ['广州','韶关','深圳','珠海','汕头','佛山','江门','湛江','茂名','肇庆','惠州','梅州','汕尾','河源','阳江','清远','东莞','中山','潮州','揭州','云浮'].includes(c.value)) },
+  { label: '广东省', options: CITY_LONGITUDE_LIST.filter(c => ['广州','韶关','深圳','珠海','汕头','佛山','江门','湛江','茂名','肇庆','惠州','梅州','汕尾','河源','阳江','清远','东莞','中山','潮州','揭阳','云浮'].includes(c.value)) },
   { label: '广西省', options: CITY_LONGITUDE_LIST.filter(c => ['南宁','柳州','桂林','梧州','北海','防城港','钦州','贵港','玉林','百色','贺州','河池','来宾','崇左'].includes(c.value)) },
   { label: '海南省', options: CITY_LONGITUDE_LIST.filter(c => ['海口','三亚','三沙','儋州','五指山','琼海','文昌','万宁','东方','定安','屯昌','澄迈','临高','白沙','昌江','乐东','陵水','保亭','琼中'].includes(c.value)) },
   { label: '四川省', options: CITY_LONGITUDE_LIST.filter(c => ['成都','自贡','攀枝花','泸州','德阳','绵阳','广元','遂宁','内江','乐山','南充','眉山','宜宾','广安','达州','雅安','巴中','资阳','阿坝','甘孜','凉山'].includes(c.value)) },
