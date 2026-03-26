@@ -106,8 +106,8 @@
 - [ ] **[P0][功能]** 积分体系配置硬编码 — [未复现] 八字调用 `getClientConfig()` 动态获取，六爻调用 `getLiuyaoPricing()` 动态获取，合婚从后端返回 `points_cost` 字段；硬编码值仅作兜底默认值，非主流程，无需处理
 
 ### 业务逻辑优化
-- [ ] **[P1][业务]** 积分调整接口缺少用户信息关联 — 记录可读性差，需关联用户表显示用户名
-- [ ] **[P1][业务]** 积分充值功能缺失 — 用户无法主动充值积分，需实现充值功能
+- [x] **[P1][业务]** 积分调整接口缺少用户信息关联 — [设计如此] `Points.php` `getRecords()` 已 `leftJoin tc_user` 并返回 `username/nickname/phone`，功能完整，无需处理
+- [x] **[P1][业务]** 积分充值功能缺失 — [设计如此] 充值前端页面（`views/Recharge/`）、前台路由（`/recharge`）、后端路由（`/api/payment/*`）均已完整实现，功能可用
 
 ### 数据库优化
 - [x] **[P1][数据库]** 缺少积分调整配置项 — [已修复] 已在 `init.sql` 的 `points_cost` 分类中补充 `points_cost_liuyao_basic`（15）和 `points_cost_liuyao_professional`（50）两条初始数据
@@ -132,6 +132,9 @@
 
 ## ✅ D. 最近已完成 / 已确认
 
+- [x] [P0][后端] `app.php` health 接口响应码不一致 — `code: 200` 已修复为 `code: 0`，`message` 字段统一为 `msg`，与项目 API 约定对齐。
+- [x] [P0][安全] 支付宝路由缺少 JWT 鉴权 — `api/alipay/create-order`、`api/alipay/create-mobile-order`、`api/alipay/query-order` 三个路由均已补充 `JwtAuth` 中间件，修复未登录用户可发起支付订单的安全漏洞。
+- [x] [P0][前端] `code !== 200` 漏网之鱼修复 — 全量扫描发现 4 处遗漏：`useRecharge.js`（微信/支付宝创建订单判断，2处）、`useHomeStats.ts`（首页统计数据加载）、`useHome.js`（首页统计数据加载）、`admin/src/api/request.js`（后台 axios 拦截器）均已修复为 `code !== 0`，修复后充值下单静默失败、首页统计不显示等问题解决。
 - [x] [后台前端] 用户详情页补齐加载失败只读态、积分调整数值校验与最近积分记录回读，避免接口异常时继续展示假可操作按钮，也让积分调整成功后可直接回读结果。
 - [x] [P0][后端] `analysis/user` 接口 500 错误 — `tc_user` 表无 `source` 字段，已改为通过 `invited_by` 字段统计邀请来源 vs 直接注册。
 - [x] [P0][前端] `seo/index.vue` 删除接口路径不匹配 — `POST /seo/delete` 已修复为 `DELETE /seo/:id`，与后端 RESTful 路由一致。

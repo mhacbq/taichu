@@ -165,7 +165,7 @@ const handleRecharge = async () => {
         amount: selectedAmount.value
       })
 
-      if (res.code !== 200) {
+      if (res.code !== 0) {
         trackSubmit('recharge_order', false, { amount: selectedAmount.value, method: 'wechat', error: res.message })
         showCreateOrderError(res.message)
         return
@@ -190,7 +190,7 @@ const handleRecharge = async () => {
         amount: selectedAmount.value
       })
 
-      if (res.code !== 200) {
+      if (res.code !== 0) {
         trackSubmit('recharge_order', false, { amount: selectedAmount.value, method: 'alipay', error: res.message })
         showCreateOrderError(res.message)
         return
@@ -411,4 +411,4 @@ return {
   checkPayStatus, cancelPay, handlePayDialogClose,
   getStatusText, formatDate,
 }
-} // end useRecharge
+} // end useRecharge

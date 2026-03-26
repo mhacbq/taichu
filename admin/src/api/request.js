@@ -191,7 +191,7 @@ service.interceptors.response.use(
   response => {
     const res = response.data
 
-    if (res.code !== 200) {
+    if (res.code !== 0) {
       const requestId = response.headers?.['x-request-id'] || res?.request_id || ''
       const businessCode = Number(res.code) || 0
       const isLoginRequest = isAuthLoginRequest(response.config)

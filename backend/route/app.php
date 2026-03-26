@@ -8,8 +8,8 @@ Route::group('api', function () {
     // 健康检查
     Route::get('health', function() {
         return json([
-            'code' => 200,
-            'message' => 'success',
+            'code' => 0,
+            'msg' => 'success',
             'data' => [
                 'status' => 'ok',
                 'time' => date('Y-m-d H:i:s'),
@@ -211,14 +211,17 @@ Route::get('api/alipay/return', 'Alipay/return');
 // 支付宝主动发起支付接口（需要鉴权，在middleware包裹下）
 Route::post('api/alipay/create-order', 'Alipay/createOrder')->middleware([
     \app\middleware\Cors::class,
+    \app\middleware\JwtAuth::class,
     \app\middleware\RateLimit::class,
 ]);
 Route::post('api/alipay/create-mobile-order', 'Alipay/createMobileOrder')->middleware([
     \app\middleware\Cors::class,
+    \app\middleware\JwtAuth::class,
     \app\middleware\RateLimit::class,
 ]);
 Route::get('api/alipay/query-order', 'Alipay/queryOrder')->middleware([
     \app\middleware\Cors::class,
+    \app\middleware\JwtAuth::class,
 ]);
 
 // 公开分享接口

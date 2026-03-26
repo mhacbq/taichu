@@ -55,7 +55,7 @@ export function useHomeStats() {
     try {
       const response = await getHomeStats()
       
-      if (response.code !== 200) {
+      if (response.code !== 0) {
         throw new Error(response.message || '加载统计数据失败')
       }
 
