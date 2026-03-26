@@ -430,7 +430,7 @@ CREATE TABLE IF NOT EXISTS `tc_feedback` (
 CREATE TABLE IF NOT EXISTS `system_config` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `config_key` VARCHAR(100) NOT NULL COMMENT '配置键',
-    `config_value` TEXT NOT NULL DEFAULT '' COMMENT '配置值',
+    `config_value` TEXT NOT NULL COMMENT '配置值',
     `config_type` VARCHAR(20) NOT NULL DEFAULT 'string' COMMENT '值类型: string/int/float/bool/json',
     `description` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '配置说明',
     `category` VARCHAR(50) NOT NULL DEFAULT 'general' COMMENT '分类',
@@ -1205,8 +1205,8 @@ INSERT INTO `tc_faq` (`category`, `question`, `answer`, `sort_order`, `is_enable
 ('vip', 'VIP到期后会怎样？', 'VIP到期后将恢复普通用户权限，已解锁的内容仍然可以查看，但新排盘将受相应限制。', 3, 1)
 ON DUPLICATE KEY UPDATE
     `answer` = VALUES(`answer`),
-    `sort` = VALUES(`sort`),
-    `status` = VALUES(`status`);
+    `sort_order` = VALUES(`sort_order`),
+    `is_enabled` = VALUES(`is_enabled`);
 
 -- AI 提示词初始数据
 INSERT INTO `tc_ai_prompt` (`name`, `type`, `prompt`, `variables`, `status`) VALUES
