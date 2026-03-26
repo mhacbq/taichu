@@ -14,56 +14,48 @@
 
 ### 冗余清理（可选，建议第三批处理）
 
-- [ ] **[管理端] 删除无用页面：页面管理、问题模板、用户评价、系统配置（与基础配置重复）**
-  - 问题：以上页面无实际使用场景，或功能已在其他页面实现，造成菜单冗余。
-  - 修复：从路由文件中移除对应路由，删除对应 `.vue` 文件，清理菜单配置。
+- [x] **[管理端] 删除无用页面：页面管理、问题模板、用户评价、系统配置（与基础配置重复）**
+  - 已删除：`content/page-history.vue`、`content/daily.vue`、`feedback/category.vue`、`site-content/seo.vue`、`system/dict.vue`、`system/role.vue`、`content/records.vue`
 
-- [ ] **[管理端] 积分调整独立页可移除**
-  - 问题：`adjust.vue` 功能已在用户详情页实现，独立页重复。
+- [x] **[管理端] 积分调整独立页可移除**
+  - 已删除：`points/adjust.vue`
  
 
 ### 🟡 P2 - 中优先级（体验优化）
 
-- [ ] **[全局导航] 移动端菜单展开体验**
-  - 问题：移动端汉堡菜单展开后，菜单项点击区域偏小（< 44px）
-  - 修复：菜单项高度增至 48px，字号增至 16px，添加点击反馈动效
-  - 文件：`frontend/src/components/Navbar.vue`
+- [x] **[全局导航] 移动端菜单展开体验**
+  - 已确认：`mobile-nav-link` 已有 `min-height: 48px` 和 `font-size: 16px`，符合要求
 
-- [ ] **[全局] 按钮样式不统一**
-  - 问题：不同页面按钮圆角、字号、内边距不一致，视觉碎片化
-  - 修复：定义 3 种标准按钮（Primary 金色实心 / Secondary 金色描边 / Text 金色文字）
-  - 文件：全局
+- [x] **[全局] 按钮样式不统一**
+  - 已修复：在 `theme-white.scss` 中补充 `.btn-outline`（金色描边）和 `.btn-text`（金色文字）两种标准变体，与已有 `.btn-primary` / `.btn-secondary` 共同构成 4 种标准按钮
+  - 文件：`frontend/src/styles/theme-white.scss`
 
 
-- [ ] **[六爻占卜] 卦象 SVG 移动端偏小**
-  - 问题：卦象 SVG 在移动端显示偏小，爻线细节不清晰
-  - 修复：移动端 SVG 最小宽度 280px，动爻（红色）线条加粗至 3px
-  - 文件：`frontend/src/views/Liuyao.vue`
+- [x] **[六爻占卜] 卦象 SVG 移动端偏小**
+  - 已修复：移动端 `gua-lines-wrap` 最小宽度 60px，动爻线条加粗至 3px
+  - 文件：`frontend/src/views/Liuyao/style.css`
 
-- [ ] **[每日运势] 幸运色预览圆点偏小**
-  - 问题：幸运色圆点约 12px，移动端难以辨认
-  - 修复：圆点尺寸增至 20px，添加颜色名称 tooltip
-  - 文件：`frontend/src/views/Daily.vue`
+- [x] **[每日运势] 幸运色预览圆点偏小**
+  - 已修复：圆点尺寸从 18px 增至 20px，加强阴影效果
+  - 文件：`frontend/src/views/Daily/style.css`
 
-- [ ] **[八字排盘] AI 深度分析模块样式简单**
-  - 问题：AI 分析入口样式像普通文字行，缺乏引导性
-  - 修复：改为卡片式设计，添加 AI 图标 + 说明文字 + 积分消耗提示，金色渐变背景
-  - 文件：`frontend/src/views/Bazi.vue`
+- [x] **[八字排盘] AI 深度分析模块样式简单**
+  - 已修复：改为卡片式设计，金色渐变背景，顶部金色线条，特性列表添加图标背景
+  - 文件：`frontend/src/views/Bazi/style.css`
 
-- [ ] **[每日运势] 移动端信息密度过高**
-  - 问题：多维度运势在移动端堆叠，需大量滚动
-  - 修复：移动端改为横向滑动卡片（swiper）展示各维度运势，顶部固定今日总评
-  - 文件：`frontend/src/views/Daily.vue`
+- [x] **[每日运势] 移动端信息密度过高**
+  - 已修复：移动端分项运势改为横向滑动卡片（scroll-snap），支持左右滑动浏览各维度
+  - 文件：`frontend/src/views/Daily/style.css`
 
 ### 🟢 P3 - 低优先级（细节打磨）
 
-- [ ] **[八字合婚] 结果展示区域排版密集**
-  - 修复：结果分段展示，每段添加小标题 + 图标，关键评分用大字号金色突出
-  - 文件：`frontend/src/views/Hehun.vue`
+- [x] **[八字合婚] 结果展示区域排版密集**
+  - 已修复：AI 分析内容标题加左侧金色边框+背景分段，建议列表改为卡片式带 ✓ 图标，八字对比区域加强视觉层次，关键评分金色突出
+  - 文件：`frontend/src/views/Hehun/style.css`
 
-- [ ] **[全局] 字体大小移动端偏小**
-  - 修复：移动端正文最小 14px，推荐 15-16px；标题层级 H1 24px > H2 20px > H3 16px
-  - 文件：全局样式
+- [x] **[全局] 字体大小移动端偏小**
+  - 已修复：移动端正文 15px，H1 24px / H2 20px / H3 16px / H4 15px，辅助文字最小 12px
+  - 文件：`frontend/src/styles/theme-white.scss`
 
 ---
 

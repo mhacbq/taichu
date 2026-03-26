@@ -944,6 +944,11 @@
 .gua-yao--moving .gua-yao__half {
   background: #e74c3c;
   box-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+  height: 3px;
+}
+
+.gua-yao--moving {
+  height: 3px;
 }
 
 .gua-yao__dot {
@@ -1515,6 +1520,11 @@
     max-width: 100%;
     overflow: hidden;
     gap: 12px;
+    min-width: 0;
+  }
+
+  .gua-lines-wrap {
+    min-width: 60px;
   }
 
   .gua-lines-inner {
@@ -1584,6 +1594,7 @@
   .gua-lines-inner {
     width: 72px;
     gap: 10px;
+    min-width: 72px;
   }
 
   .gua-yao__bar--yang,

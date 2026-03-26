@@ -322,6 +322,56 @@ body {
   box-shadow: 0 14px 26px rgba(184, 134, 11, 0.12);
 }
 
+/* 描边按钮（金色描边 / Secondary Outline） */
+.btn-outline {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1.5px solid var(--primary-color);
+  padding: 10px 24px;
+  min-height: 44px;
+  border-radius: var(--radius-btn);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.btn-outline:active {
+  transform: scale(0.97) translateY(1px);
+}
+
+.btn-outline:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-dark);
+  color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(184, 134, 11, 0.15);
+}
+
+/* 文字按钮（金色文字 / Text） */
+.btn-text {
+  background: transparent;
+  color: var(--primary-color);
+  border: none;
+  padding: 8px 16px;
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.btn-text:hover {
+  color: var(--primary-dark);
+  background: var(--surface-hover);
+}
+
+.btn-text:active {
+  color: var(--primary-dark);
+  background: var(--surface-strong);
+}
+
 /* 输入框 */
 .input-field {
   background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-primary) 100%);
@@ -510,5 +560,33 @@ body::after {
   
   .card {
     margin: 0 var(--spacing-sm);
+  }
+
+  /* 移动端字体规范：正文最小 14px，标题层级 H1>H2>H3 */
+  body {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  h1, .h1 { font-size: 24px; font-weight: 700; }
+  h2, .h2 { font-size: 20px; font-weight: 700; }
+  h3, .h3 { font-size: 16px; font-weight: 600; }
+  h4, .h4 { font-size: 15px; font-weight: 600; }
+
+  p, li, span, label {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* 辅助文字最小 12px */
+  small, .text-sm, .caption {
+    font-size: 12px;
+  }
+
+  /* 按钮移动端全宽 */
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline {
+    min-height: 48px;
   }
 }
