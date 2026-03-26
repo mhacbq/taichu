@@ -14,6 +14,31 @@
 
 ---
 
+## 🟠 B. 前台功能 Bug 修复队列（P0/P1）
+
+> 来源：2026-03-26 全站巡检
+
+- [ ] **[P0][后端]** `updateProfile` 接口不支持 `birth_date` 字段 — `backend/app/controller/Auth.php` 的 `allowFields` 只有 `['nickname','avatar','gender','phone']`，缺少 `birth_date`，导致每日运势生日无法持久化到服务器
+- [ ] **[P0][前端]** 每日运势生日只存 `localStorage`，未调用后端 API — `Daily/useDaily.js` 注释"暂时只保存在本地存储"，换设备/清缓存后生日丢失，需在 P0-后端接口完成后同步对接
+- [ ] **[P0][管理端]** `EditableImage.vue` 仍有 `response.code === 200` 错误判断 — `admin/src/components/VisualEditor/EditableImage.vue:220`，图片上传功能可能静默失败
+- [ ] **[P0][前端]** 用户反馈功能被硬编码关闭 — `Profile/useProfile.js` 显示"反馈功能暂时关闭"，但后端 `feature_feedback_enabled` 默认为 `true`，逻辑异常，需排查是数据库配置问题还是代码 Bug
+- [ ] **[P1][前端]** 流年运势页面未调用大运分析 API — `getDayunAnalysis`、`getDayunChart`、`getYearlyFortune2026Trend` 已在 `api/index.js` 定义，后端路由也存在，但 `useYearlyFortune.js` 完全没有调用，页面数据为空
+- [ ] **[P1][前端]** 移动端底部导航缺少塔罗、每日运势入口 — 底部导航只有 4 项（首页/排盘/六爻/我的），塔罗和每日运势是高频功能，只能通过汉堡菜单访问，建议扩展为 5 Tab
+
+---
+
+## 🟡 C. 产品优化 / 低频专项
+
+> 来源：2026-03-26 全站巡检
+
+- [ ] **[P1][性能]** 管理端 echarts chunk 超 1000kB — `admin/vite.config.js` 未对 echarts 做懒加载，构建有 `(!) Some chunks are larger than 1000 kB` 警告，建议按需引入或动态 import
+- [ ] **[P1][代码质量]** 前端 14 个文件 / 管理端 14 个文件仍有 `console.log` 残留 — 生产环境会暴露调试信息，建议统一清理
+- [ ] **[P2][产品]** 积分消耗在提交前不透明显示 — 用户不知道点击"开始测算"需要多少积分，只有积分不足时才弹提示，建议在按钮旁显示消耗数量
+- [ ] **[P2][产品]** 新用户无免费体验机会 — 竞品普遍支持"无需注册免费体验"，太初全程需积分，新用户激活率低，建议新注册用户赠送首次免费体验
+- [ ] **[P2][UI]** 移动端底部导航背景色为深色（`rgba(8,8,20,0.97)`）— 与白色主题不符，需改为白色背景 + 金色强调，与整体风格一致
+
+---
+
 
 ## ✅ D. 最近已完成 / 已确认
 
