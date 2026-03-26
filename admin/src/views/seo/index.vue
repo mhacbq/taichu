@@ -101,7 +101,7 @@ async function handleDelete(row: any) {
       type: 'warning'
     })
     
-    await request.post('/seo/delete', { id: row.id })
+    await request.delete(`/seo/${row.id}`)
     ElMessage.success('删除成功')
     fetchList()
   } catch (error) {

@@ -116,14 +116,19 @@ class Analysis extends BaseController
                 ? round(($retainedUsers / count($newUsersSevenDaysAgo)) * 100, 2) 
                 : 0;
 
-            // 用户来源分析
-            $sourceData = Db::table('tc_user')
-                ->field('source, COUNT(*) as count')
-                ->whereNotNull('source')
+            // 用户来源分析（通过邀请人字段区分：邀请注册 vs 直接注册）
+            $invitedCount = Db::table('tc_user')
+                ->where('invited_by', '>', 0)
                 ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
-                ->group('source')
-                ->select()
-                ->toArray();
+                ->count();
+            $directCount = Db::table('tc_user')
+                ->where('invited_by', 0)
+                ->whereBetweenTime('created_at', $startDate . ' 00:00:00', $endDate . ' 23:59:59')
+                ->count();
+            $sourceData = [
+                ['source' => '邀请注册', 'count' => $invitedCount],
+                ['source' => '直接注册', 'count' => $directCount],
+            ];
 
             return $this->success([
                 'growth' => $growthData,
