@@ -606,6 +606,41 @@ const handleStorageChange = (e) => {
   }
 }
 
+// 软键盘弹起时，将底部导航上移，避免被遮挡（iOS Safari 专项处理）
+let viewportResizeHandler = null
+
+const setupViewportKeyboardHandler = () => {
+  if (!window.visualViewport) return
+
+  const bottomNav = document.querySelector('.mobile-bottom-nav')
+  if (!bottomNav) return
+
+  viewportResizeHandler = () => {
+    const viewport = window.visualViewport
+    const windowHeight = window.innerHeight
+    const viewportHeight = viewport.height
+    // 键盘高度 = 窗口高度 - 可视区域高度（考虑偏移）
+    const keyboardHeight = Math.max(0, windowHeight - viewportHeight - viewport.offsetTop)
+    if (keyboardHeight > 100) {
+      // 键盘弹起：底部导航上移，避免被遮挡
+      bottomNav.style.transform = `translateY(-${keyboardHeight}px)`
+    } else {
+      // 键盘收起：恢复原位
+      bottomNav.style.transform = ''
+    }
+  }
+
+  window.visualViewport.addEventListener('resize', viewportResizeHandler)
+  window.visualViewport.addEventListener('scroll', viewportResizeHandler)
+}
+
+const teardownViewportKeyboardHandler = () => {
+  if (!window.visualViewport || !viewportResizeHandler) return
+  window.visualViewport.removeEventListener('resize', viewportResizeHandler)
+  window.visualViewport.removeEventListener('scroll', viewportResizeHandler)
+  viewportResizeHandler = null
+}
+
 onMounted(() => {
   checkLoginStatus()
   window.addEventListener('points-updated', handlePointsUpdated)
@@ -616,12 +651,15 @@ onMounted(() => {
     if (navbar) navbar.classList.toggle('scrolled', window.scrollY > 20)
   }
   window.addEventListener('scroll', handleScroll, { passive: true })
+  // 软键盘适配（仅移动端）
+  setupViewportKeyboardHandler()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('points-updated', handlePointsUpdated)
   window.removeEventListener('storage', handleStorageChange)
   unlockPageScroll()
+  teardownViewportKeyboardHandler()
 })
 
 </script>
@@ -1808,6 +1846,7 @@ body {
     justify-content: space-around;
     align-items: center;
     z-index: 1000;
+    transition: transform 0.2s ease;
   }
 
   .bottom-nav-item {

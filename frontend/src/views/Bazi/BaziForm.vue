@@ -9,6 +9,8 @@ const props = defineProps({
   estimatedTimeOptions: { type: Array, default: () => [] },
   estimatedModeHint: { type: String, default: '' },
   gender: { type: String, required: true },
+  birthCity: { type: String, default: '' },
+  cityOptions: { type: Array, default: () => [] },
   baziSubmitIssues: { type: Array, default: () => [] },
   baziSubmitSummaryText: { type: String, default: '' },
   currentPoints: { type: Number, default: 0 },
@@ -32,6 +34,7 @@ const emit = defineEmits([
   'update:estimatedBirthDate',
   'update:estimatedTimeSlot',
   'update:gender',
+  'update:birthCity',
   'update:confirmVisible',
   'update:pointsConfirmVisible',
   'handleBaziIssue',
@@ -148,6 +151,33 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
             <el-icon><Warning /></el-icon> {{ estimatedModeHint }}
           </p>
         </template>
+      </div>
+
+      <!-- 出生地（真太阳时修正） -->
+      <div class="birth-city-row">
+        <span class="birth-city-label">出生地</span>
+        <el-select
+          :model-value="birthCity"
+          @update:model-value="emit('update:birthCity', $event)"
+          placeholder="选择城市（可空，用于真太阳时修正）"
+          clearable
+          filterable
+          class="birth-city-select"
+        >
+        <el-option-group
+            v-for="group in cityOptions"
+            :key="group.label"
+            :label="group.label"
+          >
+            <el-option
+              v-for="city in group.options"
+              :key="city.value"
+              :label="city.label"
+              :value="city.value"
+            />
+          </el-option-group>
+        </el-select>
+        <span class="birth-city-hint">{{ birthCity ? '已启用真太阳时修正' : '不填则使用北京时间' }}</span>
       </div>
 
       <!-- 性别选择 -->

@@ -15,6 +15,10 @@ import {
 import { analyzeBaziAi, analyzeBaziAiStream, scoreDayunAi, getAiRecord } from '../../api/ai'
 import { sanitizeHtml } from '../../utils/sanitize'
 import { trackPageView, trackEvent, trackSubmit, trackError } from '../../utils/tracker'
+import { CITY_LONGITUDE_LIST, CITY_LONGITUDE_BY_PROVINCE } from '../../data/cityLongitude'
+
+// 城市经度数据（从独立数据文件导入，覆盖全国约340个地级市）
+// CITY_LONGITUDE_LIST 和 CITY_LONGITUDE_BY_PROVINCE 已从 cityLongitude.js 导入
 
 export function useBazi() {
 const router = useRouter()
@@ -53,6 +57,16 @@ const resolveEstimatedTimeSlotByClock = (clock = '') => {
 }
 
 const calendarType = ref('solar') // 历法类型：solar公历, lunar农历
+
+// 出生地（真太阳时修正）
+const birthCity = ref('') // 城市名称
+const birthLongitude = computed(() => {
+  if (!birthCity.value) return null
+  const city = CITY_LONGITUDE_LIST.find(c => c.value === birthCity.value)
+  return city ? city.longitude : null
+})
+// 真太阳时调整信息（后端返回）
+const trueSolarTimeInfo = ref(null)
 
 const birthTimeAccuracy = ref('exact')
 const exactBirthDate = ref('')
@@ -236,6 +250,7 @@ const resetDerivedAnalysisState = () => {
 const resetCurrentResult = () => {
   resetDerivedAnalysisState()
   result.value = null
+  trueSolarTimeInfo.value = null
   activeTab.value = 'chart'
 }
 
@@ -1075,13 +1090,17 @@ const calculateBazi = async () => {
   }, 400)
   
   try {
-    const response = await calculateBaziApi({
+    const payload = {
       birthDate: birthDate.value,
       gender: gender.value,
-      location: '',
+      location: birthCity.value || '',
       mode: versionMode.value,
       calendarType: calendarType.value,
-    })
+    }
+    if (birthLongitude.value !== null) {
+      payload.longitude = birthLongitude.value
+    }
+    const response = await calculateBaziApi(payload)
     
     clearInterval(stepIntervalRef.value)
     stepIntervalRef.value = null
@@ -1093,6 +1112,7 @@ const calculateBazi = async () => {
     if (response.code === 0) {
       trackSubmit('bazi_calculate', true, { mode: versionMode.value })
       result.value = response.data
+      trueSolarTimeInfo.value = response.data.true_solar_time || null
       activeNames.value = getDefaultActiveNames()
       syncCurrentPoints(response.data.remaining_points)
       isFirstBazi.value = false
@@ -1457,6 +1477,10 @@ return {
   // 状态
   activeTab,
   calendarType,
+  birthCity,
+  birthLongitude,
+  trueSolarTimeInfo,
+  CITY_LONGITUDE_BY_PROVINCE,
   birthTimeAccuracy,
   exactBirthDate,
   estimatedBirthDate,

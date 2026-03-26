@@ -15,10 +15,12 @@
         v-model:estimatedBirthDate="estimatedBirthDate"
         v-model:estimatedTimeSlot="estimatedTimeSlot"
         v-model:gender="gender"
+        v-model:birthCity="birthCity"
         v-model:confirmVisible="confirmVisible"
         v-model:pointsConfirmVisible="pointsConfirmVisible"
         :estimatedTimeOptions="estimatedTimeOptions"
         :estimatedModeHint="estimatedModeHint"
+        :cityOptions="CITY_LONGITUDE_BY_PROVINCE"
         :baziSubmitIssues="baziSubmitIssues"
         :baziSubmitSummaryText="baziSubmitSummaryText"
         :currentPoints="currentPoints"
@@ -134,6 +136,7 @@ const {
   estimatedTimeOptions, estimatedModeHint, baziSubmitIssues, baziSubmitSummaryText,
   gender, loading, result, currentPoints, accountStatus, aiAnalysisCost,
   confirmVisible, saving, isFirstBazi, loadingStep,
+  birthCity, CITY_LONGITUDE_BY_PROVINCE,
   fortunePointsCost, selectedYear, yearlyFortuneResult, yearlyFortuneLoading,
   isCompactViewport, selectedDayunIndex, dayunAnalysisResult, dayunAnalysisLoading,
   dayunChartData, dayunChartLoading, dayunScoring, pointsConfirmVisible, pointsConfirmType,

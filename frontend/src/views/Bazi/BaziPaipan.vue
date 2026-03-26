@@ -5,6 +5,7 @@ const props = defineProps({
   bazi: { type: Object, default: null },
   wuxingDistributionItems: { type: Array, default: () => [] },
   getShishenClass: { type: Function, default: () => '' },
+  trueSolarTimeInfo: { type: Object, default: null },
 })
 </script>
 
@@ -14,6 +15,17 @@ const props = defineProps({
       <el-icon class="title-icon"><Grid /></el-icon>
       <span class="title-text">命盘核心数据</span>
       <span class="title-desc">日主、八字、五行分布</span>
+    </div>
+
+    <!-- 真太阳时调整提示 -->
+    <div v-if="trueSolarTimeInfo?.adjusted" class="true-solar-notice">
+      <el-alert
+        title="☀️ 真太阳时已修正"
+        type="success"
+        :description="trueSolarTimeInfo.adjustment_desc"
+        show-icon
+        :closable="false"
+      />
     </div>
 
     <!-- 日主信息 -->
@@ -145,6 +157,11 @@ const props = defineProps({
 </template>
 
 <style scoped>
+/* 真太阳时提示 */
+.true-solar-notice {
+  margin-bottom: 16px;
+}
+
 /* 日主强弱状态栏 */
 .strength-status-bar {
   display: flex;

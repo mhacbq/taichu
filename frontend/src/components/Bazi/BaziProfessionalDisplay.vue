@@ -184,6 +184,17 @@
       </div>
     </div>
 
+    <!-- 真太阳时调整提示 -->
+    <div class="true-solar-notice" v-if="trueSolarTimeInfo && trueSolarTimeInfo.adjusted">
+      <el-alert
+        title="☀️ 真太阳时已修正"
+        type="success"
+        :description="trueSolarTimeInfo.adjustment_desc"
+        show-icon
+        :closable="false"
+      />
+    </div>
+
     <!-- 节气提示 -->
     <div class="jieqi-notice" v-if="isNearJieqi">
       <el-alert
@@ -258,6 +269,9 @@ const props = defineProps({
   shengruo: { type: Object, default: null },
   xiyongshen: { type: String, default: '' },
   jishen: { type: String, default: '' },
+  
+  // 真太阳时
+  trueSolarTimeInfo: { type: Object, default: null },
   
   // 提示
   showShichenNotice: { type: Boolean, default: true },

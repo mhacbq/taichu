@@ -109,6 +109,7 @@ const emit = defineEmits([
         :bazi="result.bazi"
         :wuxing-distribution-items="wuxingDistributionItems"
         :get-shishen-class="getShishenClass"
+        :true-solar-time-info="result.true_solar_time || null"
       />
     </div>
 
