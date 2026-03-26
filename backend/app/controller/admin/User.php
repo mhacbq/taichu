@@ -604,15 +604,34 @@ class User extends BaseController
 
         try {
             $list = [];
-            // 从操作日志中查找该用户相关记录
+            // 从操作日志中查找该用户相关记录，关联用户表获取用户名
             if (SchemaInspector::tableExists('tc_admin_log')) {
-                $list = Db::table('tc_admin_log')
-                    ->where('target_id', $id)
-                    ->where('target_type', 'user')
-                    ->order('id', 'desc')
+                $rows = Db::table('tc_admin_log')
+                    ->alias('al')
+                    ->leftJoin('tc_user u', 'al.target_id = u.id')
+                    ->field('al.*, u.username, u.nickname, u.phone')
+                    ->where('al.target_id', $id)
+                    ->where('al.target_type', 'user')
+                    ->order('al.id', 'desc')
                     ->limit(50)
                     ->select()
                     ->toArray();
+
+                // 格式化用户名显示
+                foreach ($rows as &$row) {
+                    $nickname = trim((string) ($row['nickname'] ?? ''));
+                    $username = trim((string) ($row['username'] ?? ''));
+                    $phone = trim((string) ($row['phone'] ?? ''));
+                    if ($username !== '' && $username !== $phone) {
+                        $row['display_name'] = $username;
+                    } elseif ($nickname !== '' && $nickname !== $phone) {
+                        $row['display_name'] = $nickname;
+                    } else {
+                        $row['display_name'] = '用户#' . $id;
+                    }
+                }
+                unset($row);
+                $list = $rows;
             }
 
             return $this->success([

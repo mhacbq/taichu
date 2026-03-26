@@ -6,7 +6,7 @@
 -- 包含内容:
 --   [1] 用户相关表 (tc_user, tc_user_profile)
 --   [2] 积分相关表 (tc_points_record, tc_points_task, tc_points_rule)
---   [3] VIP & 充值表 (tc_vip_order, tc_recharge_order, tc_payment_config)
+--   [3] VIP & 充值表 (tc_vip_package, tc_vip_order, tc_recharge_order, tc_payment_config)
 --   [4] 业务功能表 (八字/合婚/取名/每日运势/流年/塔罗/六爻)
 --   [5] 短信 & 邀请 & 反馈表
 --   [6] 系统配置表 (system_config, tc_feature_switch)
@@ -136,6 +136,25 @@ CREATE TABLE IF NOT EXISTS `tc_points_rule` (
 -- =============================================================
 -- [3] VIP & 充值表
 -- =============================================================
+
+CREATE TABLE IF NOT EXISTS `tc_vip_package` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL COMMENT '套餐名称',
+    `price` DECIMAL(10, 2) NOT NULL COMMENT '售价',
+    `original_price` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '原价',
+    `points` INT NOT NULL DEFAULT 0 COMMENT '赠送积分',
+    `duration` INT NOT NULL DEFAULT 0 COMMENT '有效期(天)，0表示永久',
+    `description` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '套餐描述',
+    `is_hot` TINYINT NOT NULL DEFAULT 0 COMMENT '是否热门 0否 1是',
+    `is_recommend` TINYINT NOT NULL DEFAULT 0 COMMENT '是否推荐 0否 1是',
+    `sort` INT NOT NULL DEFAULT 0 COMMENT '排序，越小越靠前',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态 0下架 1上架',
+    `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_status` (`status`),
+    INDEX `idx_sort` (`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='VIP套餐表';
 
 CREATE TABLE IF NOT EXISTS `tc_vip_order` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1059,9 +1078,11 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 ('points_cost_bazi_ai',      '50',   'int',    '八字AI深度解盘积分消耗',     'points_cost', 1, 2),
 ('points_cost_tarot',        '20',   'int',    '塔罗占卜基础积分消耗',       'points_cost', 1, 3),
 ('points_cost_tarot_ai',     '40',   'int',    '塔罗AI解读积分消耗',         'points_cost', 1, 4),
-('points_cost_liuyao',       '25',   'int',    '六爻占卜积分消耗',           'points_cost', 1, 5),
-('points_cost_hehun',        '80',   'int',    '八字合婚基础积分消耗',       'points_cost', 1, 6),
-('points_cost_hehun_export', '30',   'int',    '合婚导出报告积分消耗',       'points_cost', 1, 7),
+('points_cost_liuyao',              '25',   'int',    '六爻占卜积分消耗',           'points_cost', 1, 5),
+('points_cost_liuyao_basic',        '15',   'int',    '六爻基础占卜积分消耗',       'points_cost', 1, 6),
+('points_cost_liuyao_professional', '50',   'int',    '六爻专业占卜积分消耗',       'points_cost', 1, 7),
+('points_cost_hehun',        '80',   'int',    '八字合婚基础积分消耗',       'points_cost', 1, 8),
+('points_cost_hehun_export', '30',   'int',    '合婚导出报告积分消耗',       'points_cost', 1, 9),
 -- 新用户优惠
 ('points_free_bazi_first',   '1',    'bool',   '新用户首次八字是否免费',     'new_user',    1, 1),
 ('points_free_tarot_first',  '1',    'bool',   '新用户首次塔罗是否免费',     'new_user',    1, 2),

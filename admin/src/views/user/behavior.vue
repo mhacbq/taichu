@@ -23,7 +23,11 @@
       <el-table :data="logList" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="user_id" label="用户ID" width="100" />
-        <el-table-column prop="username" label="用户名" width="120" />
+        <el-table-column prop="display_name" label="用户名" width="120">
+          <template #default="{ row }">
+            {{ row.display_name || row.username || row.nickname || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="type" label="类型" width="100" />
         <el-table-column prop="content" label="详情" min-width="200" />
         <el-table-column prop="ip" label="IP地址" width="140" />
@@ -76,7 +80,7 @@ async function loadLogs() {
       limit: queryForm.pageSize
     }
     const res = await getUserBehavior(params)
-    if (res.code !== 200) {
+    if (res.code !== 0) {
       ElMessage.error(res.message || '加载日志失败')
       return
     }
