@@ -293,7 +293,7 @@ const loadInviteRecords = async (page = 1) => {
 }
 
 const loadUserData = async () => {
-
+  profileStatus.value = 'loading'
   try {
     const [userRes, pointsRes, historyRes] = await Promise.all([
       getUserInfo(),
@@ -336,9 +336,11 @@ const loadUserData = async () => {
     await loadLiuyaoHistory()
     // 加载合婚历史
     await loadHehunHistory()
+
+    // 所有数据加载完成，更新状态
+    profileStatus.value = 'success'
   } catch (error) {
-
-
+    profileStatus.value = 'error'
     reportProfileError('load_user_data_failed', error)
   }
 }
