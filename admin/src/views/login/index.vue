@@ -8,36 +8,7 @@
         </div>
         <div class="overview-copy">
           <h1>太初管理后台</h1>
-          <p>
-            把账号错误、服务异常、代理故障拆开说明，再补上排障线索，运营登录页终于不再让人靠猜。
-          </p>
-        </div>
-
-        <div class="status-grid">
-          <article
-            v-for="item in statusCards"
-            :key="item.key"
-            class="status-card"
-            :class="{ 'is-active': item.active }"
-          >
-            <div class="status-card__icon">
-              <el-icon>
-                <component :is="item.icon" />
-              </el-icon>
-            </div>
-            <div class="status-card__body">
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.description }}</p>
-            </div>
-          </article>
-        </div>
-
-        <div class="overview-tip">
-          <el-icon><Tools /></el-icon>
-          <div>
-            <strong>建议先看这三处</strong>
-            <p>先确认账号凭证，再访问 /api/health，最后查看 backend 第一条报错，排障路径会清晰很多。</p>
-          </div>
+          <p>集中管理内容、用户、订单与系统配置。</p>
         </div>
       </section>
 
@@ -52,18 +23,6 @@
         >
           <div class="title-container">
             <h3 class="title">登录管理后台</h3>
-            <p class="subtitle">统一圆角、阴影、触达尺寸和错误层级，让登录页在桌面端和移动端都更顺手。</p>
-          </div>
-
-          <div class="meta-row">
-            <span class="meta-chip">
-              <el-icon><CircleCheckFilled /></el-icon>
-              区分账号 / 服务 / 代理问题
-            </span>
-            <span class="meta-chip">
-              <el-icon><Connection /></el-icon>
-              触摸区域不小于 44px
-            </span>
           </div>
 
           <el-form-item prop="username">
@@ -125,10 +84,6 @@
             {{ submitButtonText }}
           </el-button>
 
-          <p class="login-helper">
-            登录失败时会保留已输入内容，方便直接修正账号信息或排查服务状态后重试。
-          </p>
-
           <section
             v-if="loginError.visible"
             class="login-feedback"
@@ -180,13 +135,10 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  CircleCheckFilled,
-  Connection,
   Hide,
   InfoFilled,
   Lock,
   Monitor,
-  Tools,
   User,
   View,
   WarningFilled
@@ -227,33 +179,7 @@ const submitButtonText = computed(() => (
   loading.value ? '正在验证并连接后台…' : '登录后台'
 ))
 
-const statusCards = computed(() => {
-  const activeScene = loginError.visible ? loginError.scene : ''
 
-  return [
-    {
-      key: 'auth',
-      title: '账号校验',
-      description: '账号或密码错误会单独提示，不再和系统故障混成一锅。',
-      icon: User,
-      active: activeScene === 'auth' || activeScene === 'form'
-    },
-    {
-      key: 'service',
-      title: '服务状态',
-      description: '500、业务异常和超时会直接指向 backend 或数据库问题。',
-      icon: Monitor,
-      active: activeScene === 'service' || activeScene === 'timeout'
-    },
-    {
-      key: 'proxy',
-      title: '代理连通',
-      description: '网络失败、502/503/504 会明确提醒检查代理和端口映射。',
-      icon: Connection,
-      active: activeScene === 'proxy'
-    }
-  ]
-})
 
 function resetLoginError() {
   loginError.visible = false
@@ -562,89 +488,6 @@ async function handleLogin() {
   }
 }
 
-.status-grid {
-  display: grid;
-  gap: 14px;
-  margin-top: 28px;
-}
-
-.status-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(15, 23, 42, 0.22);
-  border: 1px solid rgba(191, 219, 254, 0.12);
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-
-  &.is-active {
-    transform: translateY(-2px);
-    background: rgba(59, 130, 246, 0.18);
-    border-color: rgba(191, 219, 254, 0.4);
-    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
-  }
-}
-
-.status-card__icon {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #bfdbfe;
-  font-size: 20px;
-}
-
-.status-card__body {
-  strong {
-    display: block;
-    font-size: 15px;
-    font-weight: 600;
-    color: #f8fafc;
-  }
-
-  p {
-    margin: 6px 0 0;
-    color: rgba(226, 232, 240, 0.82);
-    font-size: 13px;
-    line-height: 1.65;
-  }
-}
-
-.overview-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-top: 26px;
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(239, 246, 255, 0.1);
-  border: 1px solid rgba(191, 219, 254, 0.18);
-
-  .el-icon {
-    margin-top: 2px;
-    color: #bfdbfe;
-    font-size: 18px;
-  }
-
-  strong {
-    display: block;
-    font-size: 14px;
-    color: #f8fafc;
-  }
-
-  p {
-    margin: 6px 0 0;
-    color: rgba(226, 232, 240, 0.84);
-    font-size: 13px;
-    line-height: 1.65;
-  }
-}
-
 .login-panel {
   padding: clamp(24px, 4vw, 36px);
   background: rgba(255, 255, 255, 0.96);
@@ -664,33 +507,6 @@ async function handleLogin() {
     font-weight: 700;
     color: #0f172a;
   }
-
-  .subtitle {
-    margin: 10px 0 0;
-    color: #64748b;
-    font-size: 14px;
-    line-height: 1.7;
-  }
-}
-
-.meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 600;
 }
 
 :deep(.el-form-item) {
@@ -763,10 +579,7 @@ async function handleLogin() {
 }
 
 .login-helper {
-  margin-top: 14px;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.7;
+  display: none;
 }
 
 .login-feedback {
@@ -908,13 +721,8 @@ async function handleLogin() {
   }
 
   .status-card,
-  .overview-tip,
   .login-feedback {
     border-radius: 18px;
-  }
-
-  .status-card {
-    padding: 16px;
   }
 
   .login-feedback__header {
