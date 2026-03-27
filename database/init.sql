@@ -1187,8 +1187,6 @@ SET
     `meaning`    = COALESCE(NULLIF(`meaning`, ''), `upright_meaning`)
 WHERE `meaning` IS NULL OR `meaning` = '';
 -- 维度含义数据（感情/事业/健康/财运）见独立文件：
--- database/tarot_dimension_meanings.sql
--- 执行顺序：先执行本文件，再执行 tarot_dimension_meanings.sql
 
 
 -- FAQ 初始数据
