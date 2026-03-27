@@ -187,6 +187,7 @@ CREATE TABLE IF NOT EXISTS `tc_recharge_order` (
     `pay_no` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '第三方支付单号',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态 0待支付 1已支付 2已取消 3已退款',
     `paid_at` DATETIME NULL COMMENT '支付时间',
+    `expire_time` DATETIME NULL COMMENT '订单过期时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uk_order_no` (`order_no`),
@@ -386,7 +387,7 @@ CREATE TABLE IF NOT EXISTS `tc_sms_code` (
     `code` VARCHAR(10) NOT NULL COMMENT '验证码',
     `type` VARCHAR(20) NOT NULL DEFAULT 'login' COMMENT '类型 login/register/reset',
     `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT '发送IP',
-    `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用',
+    `used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用',
     `expired_at` DATETIME NOT NULL COMMENT '过期时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_phone` (`phone`),
@@ -411,9 +412,10 @@ CREATE TABLE IF NOT EXISTS `tc_sms_config` (
 CREATE TABLE IF NOT EXISTS `tc_invite_record` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `inviter_id` INT UNSIGNED NOT NULL COMMENT '邀请人ID',
-    `invitee_id` INT UNSIGNED NOT NULL COMMENT '被邀请人ID',
+    `invite_code` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '使用的邀请码',
+    `invitee_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '被邀请人ID',
     `invitee_phone` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '被邀请人手机号',
-    `points_reward` INT NOT NULL DEFAULT 0 COMMENT '奖励积分',
+    `reward_points` INT NOT NULL DEFAULT 0 COMMENT '奖励积分',
     `reward_time` DATETIME NULL COMMENT '奖励发放时间',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态 0待奖励 1已奖励',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -598,10 +600,14 @@ CREATE TABLE IF NOT EXISTS `tc_faq` (
 CREATE TABLE IF NOT EXISTS `tc_ai_prompt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) NOT NULL COMMENT '提示词名称',
+    `title` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '提示词标题（前台展示名）',
     `type` VARCHAR(50) NOT NULL COMMENT '类型 bazi/fortune/tarot/etc',
     `prompt` TEXT NOT NULL COMMENT '提示词内容',
+    `content` TEXT NULL COMMENT '提示词内容（扩展字段）',
     `variables` JSON NULL COMMENT '变量列表',
     `status` TINYINT DEFAULT 1 COMMENT '状态 0禁用 1启用',
+    `is_default` TINYINT NOT NULL DEFAULT 0 COMMENT '是否默认提示词',
+    `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已删除',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uk_name` (`name`),
@@ -963,18 +969,33 @@ CREATE TABLE IF NOT EXISTS `tc_tarot_card` (
     `name` VARCHAR(50) NOT NULL COMMENT '牌名',
     `name_en` VARCHAR(100) DEFAULT '' COMMENT '英文名',
     `type` VARCHAR(20) NOT NULL COMMENT '类型 major/minor',
+    `is_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用',
+    `is_major` TINYINT NOT NULL DEFAULT 0 COMMENT '是否大阿卡纳',
+    `sort` INT NOT NULL DEFAULT 0 COMMENT '排序',
+    `emoji` VARCHAR(10) DEFAULT '' COMMENT '表情符号',
+    `color` VARCHAR(20) DEFAULT '' COMMENT '主题色',
+    `meaning` TEXT COMMENT '正位含义（主字段）',
+    `love_meaning` TEXT COMMENT '爱情正位含义',
+    `love_reversed` TEXT COMMENT '爱情逆位含义',
+    `career_meaning` TEXT COMMENT '事业正位含义',
+    `career_reversed` TEXT COMMENT '事业逆位含义',
+    `health_meaning` TEXT COMMENT '健康正位含义',
+    `health_reversed` TEXT COMMENT '健康逆位含义',
+    `wealth_meaning` TEXT COMMENT '财运正位含义',
+    `wealth_reversed` TEXT COMMENT '财运逆位含义',
     `suit` VARCHAR(20) DEFAULT '' COMMENT '花色 cups/wands/swords/pentacles',
     `number` INT DEFAULT 0 COMMENT '数字',
     `image` VARCHAR(500) DEFAULT '' COMMENT '图片',
-    `upright_meaning` TEXT COMMENT '正位含义',
-    `reversed_meaning` TEXT COMMENT '逆位含义',
+    `upright_meaning` TEXT COMMENT '正位含义（兼容旧字段）',
+    `reversed_meaning` TEXT COMMENT '逆位含义（兼容旧字段）',
     `keywords` VARCHAR(500) DEFAULT '' COMMENT '关键词',
     `element` VARCHAR(20) DEFAULT '' COMMENT '元素',
     `planet` VARCHAR(20) DEFAULT '' COMMENT '行星',
     `zodiac` VARCHAR(20) DEFAULT '' COMMENT '星座',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_type` (`type`),
-    INDEX `idx_suit` (`suit`)
+    INDEX `idx_suit` (`suit`),
+    INDEX `idx_is_enabled` (`is_enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='塔罗牌表';
 
 -- =============================================================
@@ -1156,6 +1177,15 @@ ON DUPLICATE KEY UPDATE
     `keywords` = VALUES(`keywords`),
     `upright_meaning` = VALUES(`upright_meaning`),
     `reversed_meaning` = VALUES(`reversed_meaning`);
+
+-- 同步 is_enabled / is_major / sort / meaning 字段（幂等）
+UPDATE `tc_tarot_card`
+SET
+    `is_enabled` = 1,
+    `is_major`   = IF(`type` = 'major', 1, 0),
+    `sort`       = `id`,
+    `meaning`    = COALESCE(NULLIF(`meaning`, ''), `upright_meaning`)
+WHERE `meaning` IS NULL OR `meaning` = '';
 
 -- FAQ 初始数据
 INSERT INTO `tc_faq` (`category`, `question`, `answer`, `sort_order`, `is_enabled`) VALUES
