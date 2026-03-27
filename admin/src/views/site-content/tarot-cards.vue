@@ -130,6 +130,30 @@
             placeholder="逆位时的含义"
           />
         </el-form-item>
+        <el-form-item label="感情正位">
+          <el-input v-model="form.love_meaning" type="textarea" :rows="2" placeholder="感情方面正位含义" />
+        </el-form-item>
+        <el-form-item label="感情逆位">
+          <el-input v-model="form.love_reversed" type="textarea" :rows="2" placeholder="感情方面逆位含义" />
+        </el-form-item>
+        <el-form-item label="事业正位">
+          <el-input v-model="form.career_meaning" type="textarea" :rows="2" placeholder="事业方面正位含义" />
+        </el-form-item>
+        <el-form-item label="事业逆位">
+          <el-input v-model="form.career_reversed" type="textarea" :rows="2" placeholder="事业方面逆位含义" />
+        </el-form-item>
+        <el-form-item label="健康正位">
+          <el-input v-model="form.health_meaning" type="textarea" :rows="2" placeholder="健康方面正位含义" />
+        </el-form-item>
+        <el-form-item label="健康逆位">
+          <el-input v-model="form.health_reversed" type="textarea" :rows="2" placeholder="健康方面逆位含义" />
+        </el-form-item>
+        <el-form-item label="财运正位">
+          <el-input v-model="form.wealth_meaning" type="textarea" :rows="2" placeholder="财运方面正位含义" />
+        </el-form-item>
+        <el-form-item label="财运逆位">
+          <el-input v-model="form.wealth_reversed" type="textarea" :rows="2" placeholder="财运方面逆位含义" />
+        </el-form-item>
         <el-form-item label="详细描述">
           <el-input
             v-model="form.description"
@@ -191,6 +215,14 @@ const form = reactive({
   is_major: 1,
   upright_meaning: '',
   reversed_meaning: '',
+  love_meaning: '',
+  love_reversed: '',
+  career_meaning: '',
+  career_reversed: '',
+  health_meaning: '',
+  health_reversed: '',
+  wealth_meaning: '',
+  wealth_reversed: '',
   keywords: '',
   description: '',
   is_enabled: 1
@@ -245,6 +277,14 @@ const handleAdd = () => {
     is_major: 1,
     upright_meaning: '',
     reversed_meaning: '',
+    love_meaning: '',
+    love_reversed: '',
+    career_meaning: '',
+    career_reversed: '',
+    health_meaning: '',
+    health_reversed: '',
+    wealth_meaning: '',
+    wealth_reversed: '',
     keywords: '',
     description: '',
     is_enabled: 1

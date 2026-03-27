@@ -1,4 +1,4 @@
--- =============================================================
+﻿-- =============================================================
 -- 太初命理系统 - 全量初始化脚本 (init.sql)
 -- 生成时间: 2026-03-25
 -- 用途: 全新环境一键导入，直接替换 full_import_for_navicat.sql
@@ -1186,6 +1186,10 @@ SET
     `sort`       = `id`,
     `meaning`    = COALESCE(NULLIF(`meaning`, ''), `upright_meaning`)
 WHERE `meaning` IS NULL OR `meaning` = '';
+-- 维度含义数据（感情/事业/健康/财运）见独立文件：
+-- database/tarot_dimension_meanings.sql
+-- 执行顺序：先执行本文件，再执行 tarot_dimension_meanings.sql
+
 
 -- FAQ 初始数据
 INSERT INTO `tc_faq` (`category`, `question`, `answer`, `sort_order`, `is_enabled`) VALUES
@@ -1591,3 +1595,4 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 SELECT '🎉 太初命理数据库初始化完成' AS result;
 SELECT CONCAT('共创建表: ', COUNT(*), ' 张') AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'taichu';
+

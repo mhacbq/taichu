@@ -431,8 +431,12 @@ PROMPT;
     {
         $isReversed = (bool)($card['reversed'] ?? false);
         $orientation = $card['orientation'] ?? ($isReversed ? '逆位' : '正位');
-        $orientationMeaning = $card['orientation_meaning']
-            ?? ($isReversed ? ($card['reversed_meaning'] ?? '') : ($card['meaning'] ?? ''));
+
+        // 按维度优先选择含义字段，为空时降级到通用 meaning/reversed_meaning
+        $topic = $card['topic'] ?? '';
+        $dimensionMeaning = self::resolveDimensionMeaning($card, $topic, $isReversed);
+
+        $orientationMeaning = $card['orientation_meaning'] ?? $dimensionMeaning;
         $keywords = $card['keywords'] ?? str_replace('，', '、', $orientationMeaning !== '' ? $orientationMeaning : ($card['meaning'] ?? ''));
 
         $element = TarotElementService::resolveCardElement($card);
@@ -445,7 +449,38 @@ PROMPT;
             'keywords' => $keywords,
             'element' => $element !== '' ? $element : '未知',
         ];
+    }
 
+    /**
+     * 根据问题维度选择对应含义字段，为空时降级到通用含义。
+     * topic 对应前端传入的问题话题：love/career/health/wealth，其余均用通用含义。
+     */
+    private static function resolveDimensionMeaning(array $card, string $topic, bool $isReversed): string
+    {
+        // 维度字段映射：topic => [正位字段, 逆位字段]
+        $dimensionMap = [
+            'love'    => ['love_meaning',   'love_reversed'],
+            'career'  => ['career_meaning', 'career_reversed'],
+            'health'  => ['health_meaning', 'health_reversed'],
+            'wealth'  => ['wealth_meaning', 'wealth_reversed'],
+        ];
+
+        if (isset($dimensionMap[$topic])) {
+            [$uprightField, $reversedField] = $dimensionMap[$topic];
+            $dimensionValue = $isReversed
+                ? ($card[$reversedField] ?? '')
+                : ($card[$uprightField] ?? '');
+
+            // 维度字段有值则直接返回，否则降级到通用含义
+            if ($dimensionValue !== '') {
+                return $dimensionValue;
+            }
+        }
+
+        // 降级：使用通用正/逆位含义
+        return $isReversed
+            ? ($card['reversed_meaning'] ?? '')
+            : ($card['meaning'] ?? '');
     }
 
     /**

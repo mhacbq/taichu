@@ -456,8 +456,13 @@ const loadClientConfig = async () => {
 
 const interpretCurrentCards = async () => {
   const interpretQuestion = getCurrentTarotQuestion()
+  // 将当前选中的话题维度注入到每张牌，后端据此选择对应维度含义字段
+  const topic = selectedTopic.value || ''
+  const cardsWithTopic = topic
+    ? cards.value.map((card) => ({ ...card, topic }))
+    : cards.value
   const interpretResponse = await interpretTarot({
-    cards: cards.value,
+    cards: cardsWithTopic,
     question: interpretQuestion,
     spread: getCurrentTarotSpread(),
   })

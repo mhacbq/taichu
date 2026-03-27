@@ -401,8 +401,17 @@ class SiteContent extends BaseController
         $data = $request->only([
             'name', 'name_en', 'image_url', 'is_major',
             'upright_meaning', 'reversed_meaning',
+            'love_meaning', 'love_reversed',
+            'career_meaning', 'career_reversed',
+            'health_meaning', 'health_reversed',
+            'wealth_meaning', 'wealth_reversed',
             'keywords', 'description', 'is_enabled'
         ]);
+
+        // 同步 meaning 主字段，确保抽牌逻辑读取到最新数据
+        if (isset($data['upright_meaning'])) {
+            $data['meaning'] = $data['upright_meaning'];
+        }
         
         try {
             $response = $this->saveManagedRecord(
