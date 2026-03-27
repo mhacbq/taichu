@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'taichu/backend',
-        'pretty_version' => 'dev-master',
-        'version' => 'dev-master',
-        'reference' => 'ebde8f392e826b07efd078fa0e11c82cd253f616',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => NULL,
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -173,9 +173,9 @@
             'dev_requirement' => false,
         ),
         'taichu/backend' => array(
-            'pretty_version' => 'dev-master',
-            'version' => 'dev-master',
-            'reference' => 'ebde8f392e826b07efd078fa0e11c82cd253f616',
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => NULL,
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
