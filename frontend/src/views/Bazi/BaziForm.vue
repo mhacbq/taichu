@@ -299,36 +299,34 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 </template>
 
 <style scoped>
-/* =============================================
-   八字表单组件样式（BaziForm.vue）
-   ============================================= */
+/* ===== 八字表单组件（BaziForm.vue）===== */
 
 /* 暖心提示 */
 .warm-tip {
-  max-width: 920px;
-  margin: 0 auto 22px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 18px;
+  max-width: 760px;
+  margin: 0 auto 20px;
+  display: flex;
   align-items: center;
-  padding: 22px 24px;
-  border-radius: 26px;
-  background: linear-gradient(135deg, rgba(255, 250, 239, 0.98), rgba(255, 255, 255, 0.96));
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
+  gap: 16px;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 4px 16px rgba(145, 103, 34, 0.06);
 }
 
 .tip-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 22px;
   color: #9a6612;
-  background: linear-gradient(135deg, rgba(245, 196, 103, 0.28), rgba(255, 243, 214, 0.92));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  flex-shrink: 0;
 }
 
 .tip-content {
@@ -336,33 +334,33 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 }
 
 .tip-title {
-  margin-bottom: 6px;
-  font-size: 18px;
+  margin-bottom: 4px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .tip-desc {
-  color: #5c5143;
-  line-height: 1.7;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* 表单卡片 */
 .bazi-form {
-  max-width: 920px;
-  margin: 0 auto 40px;
-  padding: 30px;
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(var(--primary-rgb), 0.05);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  max-width: 760px;
+  margin: 0 auto 32px;
+  padding: 28px 32px;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  box-shadow: 0 8px 24px rgba(145, 103, 34, 0.08);
 }
 
 /* 版本标识 */
 .version-select-section {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .version-badge-pro {
@@ -371,17 +369,15 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   gap: 14px;
   padding: 14px 18px;
   border-radius: 14px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  position: relative;
-  overflow: hidden;
+  background: rgba(255, 250, 241, 0.8);
+  border: 1px solid rgba(227, 184, 104, 0.2);
 }
 
 .version-badge-pro__icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(245, 196, 103, 0.08));
+  background: rgba(212, 175, 55, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -394,55 +390,53 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
 .version-badge-pro__name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: 0.01em;
 }
 
 .version-badge-pro__desc {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .version-badge-pro__pts {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #8a5c16;
   white-space: nowrap;
   flex-shrink: 0;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: 20px;
   background: rgba(212, 175, 55, 0.1);
   border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 /* 表单组 */
 .form-group {
-  margin-bottom: 30px;
-  padding: 22px 22px 20px;
-  border-radius: 22px;
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.92));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  background: rgba(255, 250, 241, 0.6);
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .form-group--time {
-  margin-bottom: 34px;
+  margin-bottom: 24px;
 }
 
 .form-group__header--time {
@@ -476,13 +470,12 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 16px;
-  padding: 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.92));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .time-accuracy-switch__copy {
@@ -495,13 +488,14 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 .switch-label {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
+  min-height: 28px;
   padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.1);
+  border-radius: 20px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   color: #8d5f1c;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
 }
 
 .time-accuracy-switch__hint {
@@ -534,22 +528,21 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 
 /* 时间输入面板 */
 .time-entry-panel {
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 246, 232, 0.94));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .time-entry-panel--exact {
-  border-color: rgba(64, 158, 255, 0.22);
-  background: rgba(248, 251, 255, 0.98);
+  border-color: rgba(59, 130, 246, 0.2);
+  background: rgba(248, 251, 255, 0.95);
 }
 
 .time-entry-panel--estimated {
   border-color: rgba(212, 175, 55, 0.2);
-  background: rgba(255, 252, 245, 0.98);
+  background: rgba(255, 252, 245, 0.95);
 }
 
 .time-entry-panel__header {
@@ -563,12 +556,13 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 .time-entry-panel__badge {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.1);
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 16px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   color: #8d5f1c;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -665,10 +659,10 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   align-items: center;
   gap: 12px;
   margin-top: 12px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
+  background: rgba(255, 250, 241, 0.7);
+  border: 1px solid rgba(227, 184, 104, 0.15);
   flex-wrap: wrap;
 }
 
@@ -695,11 +689,11 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-top: 16px;
-  padding: 12px 16px;
+  margin-top: 12px;
+  padding: 10px 14px;
   border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
+  background: rgba(255, 250, 241, 0.7);
+  border: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .gender-inline__label {
@@ -719,9 +713,9 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   align-items: center;
   gap: 6px;
   padding: 7px 18px;
-  border-radius: 999px;
-  border: 1.5px solid var(--border-light);
-  background: var(--bg-primary);
+  border-radius: 20px;
+  border: 1.5px solid rgba(227, 184, 104, 0.2);
+  background: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
@@ -732,12 +726,12 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 
 .gender-option:hover {
   border-color: rgba(212, 175, 55, 0.4);
-  color: var(--text-primary);
+  color: #7a5c1e;
 }
 
 .gender-option.active {
-  border-color: var(--primary-color);
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(245, 196, 103, 0.06));
+  border-color: rgba(212, 175, 55, 0.5);
+  background: linear-gradient(135deg, rgba(226, 175, 79, 0.15), rgba(243, 200, 111, 0.1));
   color: #8a5c16;
   box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
 }
@@ -754,13 +748,12 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 
 /* 提交校验卡片 */
 .submit-summary-card {
-  max-width: 920px;
-  margin: 0 auto 24px;
-  padding: 18px 20px;
-  border-radius: 18px;
-  border: 1px solid rgba(230, 162, 60, 0.24);
-  background: linear-gradient(135deg, rgba(255, 250, 242, 0.98), rgba(255, 245, 228, 0.98));
-  box-shadow: 0 14px 28px rgba(149, 111, 45, 0.08);
+  max-width: 760px;
+  margin: 0 auto 20px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(255, 243, 224, 0.9);
 }
 
 .submit-summary-card__header {
@@ -835,11 +828,11 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 
 /* 费用确认区域 */
 .cost-confirm-section {
-  margin-top: 28px;
+  margin-top: 24px;
   padding: 20px;
   border-radius: 14px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-secondary);
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  background: rgba(255, 250, 241, 0.7);
 }
 
 .cost-confirm-section__header {
@@ -861,10 +854,10 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px 5px 10px;
-  border-radius: 999px;
-  background: rgba(184, 134, 11, 0.1);
-  border: 1px solid rgba(184, 134, 11, 0.22);
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   font-size: 13px;
   color: #8c641f;
   font-weight: 600;
@@ -925,21 +918,20 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
 
 .cost-confirm-section__btn {
   width: 100%;
-  height: 54px;
+  height: 52px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #c8960c, #d4af37) !important;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #e2af4f 0%, #f3c86f 100%) !important;
   border: none !important;
-  color: #fff !important;
-  letter-spacing: 0.06em;
-  box-shadow: 0 4px 16px rgba(184, 134, 11, 0.28);
-  transition: opacity 0.18s, box-shadow 0.18s;
+  color: #5a3f17 !important;
+  box-shadow: 0 4px 16px rgba(186, 135, 41, 0.2);
+  transition: all 0.3s ease;
 }
 
 .cost-confirm-section__btn:hover:not(:disabled) {
-  opacity: 0.92;
-  box-shadow: 0 6px 22px rgba(184, 134, 11, 0.36);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(186, 135, 41, 0.3);
 }
 
 /* 积分不足 */
@@ -947,13 +939,13 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 18px;
-  padding: 12px;
+  margin-top: 14px;
+  padding: 10px 14px;
   font-size: 13px;
   color: var(--text-secondary);
-  border-radius: 18px;
-  border: 1px solid rgba(217, 119, 6, 0.18);
-  background: rgba(255, 247, 237, 0.92);
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: rgba(255, 243, 224, 0.8);
 }
 
 .insufficient-points .el-icon {
@@ -1054,9 +1046,8 @@ const baziCost = typeof props.BAZI_BASE_COST === 'object' ? props.BAZI_BASE_COST
   }
 
   .bazi-form {
-    padding: 22px 18px;
-    border-radius: var(--radius-xl);
-    padding-bottom: 30vh;
+    padding: 20px 16px;
+    border-radius: 18px;
   }
 
   .form-group,

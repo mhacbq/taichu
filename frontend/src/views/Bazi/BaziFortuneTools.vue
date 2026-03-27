@@ -330,9 +330,7 @@ const emit = defineEmits([
 </template>
 
 <style scoped>
-/* =============================================
-   大运流年工具组件样式（BaziFortuneTools.vue）
-   ============================================= */
+/* ===== 大运流年工具组件（BaziFortuneTools.vue）===== */
 
 /* 分区标题 */
 .pane-title {
@@ -341,25 +339,27 @@ const emit = defineEmits([
   gap: 10px;
   margin-bottom: 20px;
   padding: 14px 18px;
-  border-radius: 12px;
-  background: var(--bg-secondary);
-  border-left: 3px solid var(--primary-color);
+  border-radius: 14px;
+  background: rgba(255, 250, 241, 0.9);
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  border-left: 3px solid rgba(212, 175, 55, 0.6);
 }
 
 .pane-title .title-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(245, 196, 103, 0.06));
+  background: rgba(212, 175, 55, 0.12);
   color: #9a6612;
-  font-size: 18px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .pane-title .title-text {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -372,93 +372,81 @@ const emit = defineEmits([
 
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
-  margin: 32px 0;
+  background: linear-gradient(90deg, transparent, rgba(227, 184, 104, 0.3), transparent);
+  margin: 28px 0;
 }
 
 .section-title-with-tip,
 .section-title-with-tag {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.section-title-with-tip h3,
+.section-title-with-tag h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 .help-icon {
   cursor: help;
-  color: var(--primary-color);
-  opacity: 0.8;
+  color: rgba(212, 175, 55, 0.7);
 }
 
-/* 大运区域 */
+/* ===== 大运区域 ===== */
 .dayun-section {
-  margin-top: 28px;
-  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 249, 237, 0.95));
-  border-radius: 20px;
-  padding: 26px;
-  border: 1px solid rgba(212, 175, 55, 0.1);
-  box-shadow: 0 8px 24px rgba(149, 111, 45, 0.04);
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
 }
 
 .dayun-scoring-tip {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  margin-bottom: 16px;
-  background: linear-gradient(90deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.04));
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: rgba(255, 250, 241, 0.9);
   border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 10px;
-  color: #b8860b;
+  color: #8a6012;
   font-size: 13px;
-}
-
-.dayun-scoring-tip .el-icon {
-  font-size: 16px;
-  color: #D4AF37;
 }
 
 .dayun-timeline {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
+  gap: 12px;
 }
 
 .dayun-item {
-  background: rgba(255, 250, 241, 0.5);
+  background: rgba(255, 250, 241, 0.6);
   border-radius: 12px;
-  padding: 15px;
+  padding: 14px 10px;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(212, 175, 55, 0.08);
+  transition: all 0.25s ease;
+  border: 1px solid rgba(227, 184, 104, 0.15);
   position: relative;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.dayun-item:nth-child(1) { animation-delay: 0.1s; }
-.dayun-item:nth-child(2) { animation-delay: 0.15s; }
-.dayun-item:nth-child(3) { animation-delay: 0.2s; }
-.dayun-item:nth-child(4) { animation-delay: 0.25s; }
-.dayun-item:nth-child(5) { animation-delay: 0.3s; }
-.dayun-item:nth-child(6) { animation-delay: 0.35s; }
-.dayun-item:nth-child(7) { animation-delay: 0.4s; }
-.dayun-item:nth-child(8) { animation-delay: 0.45s; }
-
 .dayun-item:hover {
-  background: rgba(255, 248, 230, 0.7);
-  border-color: rgba(212, 175, 55, 0.15);
-  box-shadow: 0 8px 24px rgba(149, 111, 45, 0.08);
+  background: rgba(255, 248, 230, 0.9);
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 16px rgba(145, 103, 34, 0.08);
+  transform: translateY(-2px);
 }
 
 .dayun-item.current {
-  border-color: rgba(212, 175, 55, 0.3);
-  background: linear-gradient(135deg, rgba(255, 248, 228, 0.9), rgba(255, 243, 214, 0.7));
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.12);
-  animation: pulse 2s ease-in-out infinite;
+  border-color: rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, rgba(255, 248, 228, 0.95), rgba(255, 243, 214, 0.8));
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.15);
 }
 
 .dayun-item.current::after {
@@ -466,41 +454,27 @@ const emit = defineEmits([
   position: absolute;
   top: 0;
   right: 0;
-  background: var(--primary-color);
-  color: #000;
+  background: linear-gradient(135deg, #e2af4f, #f3c86f);
+  color: #5a3f17;
   font-size: 10px;
   padding: 2px 8px;
-  font-weight: bold;
+  font-weight: 700;
   border-bottom-left-radius: 8px;
 }
 
-.dayun-item.level-positive {
-  border-color: rgba(82, 196, 26, 0.2);
-}
-
-.dayun-item.level-cautious {
-  border-color: rgba(250, 140, 22, 0.2);
-}
+.dayun-item.level-positive { border-color: rgba(82, 196, 26, 0.2); }
+.dayun-item.level-cautious { border-color: rgba(250, 140, 22, 0.2); }
 
 .dayun-score-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.dayun-score-icon .score-star {
-  font-size: 14px;
-  line-height: 1;
-}
-
-.dayun-score-icon .score-num {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  margin-left: 4px;
-}
+.dayun-score-icon .score-star { font-size: 13px; line-height: 1; }
+.dayun-score-icon .score-num { font-size: 12px; font-weight: 700; margin-left: 3px; }
 
 .dayun-score-icon.score-positive .score-star,
 .dayun-score-icon.score-positive .score-num { color: #52c41a; }
@@ -510,187 +484,190 @@ const emit = defineEmits([
 .dayun-score-icon.score-cautious .score-num { color: #fa8c16; }
 
 .dayun-age {
-  font-size: 14px;
-  color: #5a4a38;
-  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
   font-weight: 500;
 }
 
 .dayun-pillar {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .dayun-pillar .gan,
 .dayun-pillar .zhi {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
-  color: var(--text-primary);
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  color: #5e4318;
 }
 
 .dayun-shishen {
-  font-size: 13px;
-  color: var(--primary-light);
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: #9a6612;
+  margin-bottom: 6px;
   font-weight: 600;
 }
 
 .dayun-luck {
   display: inline-block;
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  padding: 3px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .dayun-luck.吉,
-.dayun-luck.positive { background: var(--success-gradient); color: #fff; box-shadow: 0 2px 8px rgba(103, 194, 58, 0.4); }
+.dayun-luck.positive {
+  background: rgba(82, 196, 26, 0.12);
+  color: #3a8a0a;
+  border: 1px solid rgba(82, 196, 26, 0.25);
+}
 .dayun-luck.凶,
-.dayun-luck.cautious { background: var(--danger-gradient); color: #fff; box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4); }
+.dayun-luck.cautious {
+  background: rgba(245, 108, 108, 0.12);
+  color: #c0392b;
+  border: 1px solid rgba(245, 108, 108, 0.25);
+}
 .dayun-luck.平,
-.dayun-luck.neutral { background: var(--white-20); color: #3a2a10; }
+.dayun-luck.neutral {
+  background: rgba(212, 175, 55, 0.1);
+  color: #8a6012;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
 
 .dayun-desc {
-  font-size: 12px;
-  color: #5f5548;
+  font-size: 11px;
+  color: var(--text-secondary);
   line-height: 1.5;
-  margin-bottom: 10px;
-  padding: 0 5px;
+  margin-bottom: 6px;
 }
 
 .dayun-nayin {
-  font-size: 11px;
-  color: var(--primary-light);
-  font-style: italic;
-  opacity: 0.9;
+  font-size: 10px;
+  color: #9a6612;
+  opacity: 0.8;
 }
 
-/* 流年区域 */
+/* ===== 流年区域 ===== */
 .liunian-section {
-  margin-top: 36px;
-  background: linear-gradient(180deg, rgba(255, 252, 244, 0.98), rgba(255, 248, 232, 0.95));
-  border-radius: 22px;
-  padding: 28px;
-  border: 1px solid rgba(212, 175, 55, 0.06);
-  box-shadow: 0 8px 24px rgba(149, 111, 45, 0.04);
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
 }
 
 .liunian-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 15px;
+  gap: 10px;
 }
 
 .liunian-item {
-  background: rgba(255, 250, 241, 0.5);
-  border-radius: 14px;
-  padding: 18px 12px;
+  background: rgba(255, 250, 241, 0.6);
+  border-radius: 12px;
+  padding: 14px 8px;
   text-align: center;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(212, 175, 55, 0.08);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(227, 184, 104, 0.15);
   position: relative;
 }
 
 .liunian-item:hover {
-  background: rgba(255, 248, 230, 0.7);
-  border-color: rgba(212, 175, 55, 0.12);
-  transform: scale(1.02);
+  background: rgba(255, 248, 230, 0.9);
+  border-color: rgba(212, 175, 55, 0.3);
+  transform: translateY(-2px);
 }
 
 .liunian-item.current {
-  border-color: rgba(212, 175, 55, 0.25);
-  background: linear-gradient(135deg, rgba(255, 248, 228, 0.9), rgba(255, 243, 214, 0.7));
-  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.1);
-  z-index: 1;
-  animation: pulse 2s ease-in-out infinite;
+  border-color: rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, rgba(255, 248, 228, 0.95), rgba(255, 243, 214, 0.8));
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.12);
 }
 
 .liunian-item.current::before {
   content: '今年';
   position: absolute;
-  top: -10px;
+  top: -9px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--primary-gradient);
-  color: #000;
+  background: linear-gradient(135deg, #e2af4f, #f3c86f);
+  color: #5a3f17;
   font-size: 10px;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-weight: 700;
 }
 
 .liunian-year {
-  font-size: 15px;
+  font-size: 13px;
   color: #3a2a10;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-weight: 700;
 }
 
 .liunian-pillar {
   display: flex;
   justify-content: center;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 3px;
+  margin-bottom: 8px;
 }
 
 .liunian-pillar .gan,
 .liunian-pillar .zhi {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #5e4318;
 }
 
 .liunian-wuxing {
   display: flex;
   justify-content: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .liunian-wuxing .badge {
   font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-weight: bold;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 700;
 }
 
-.liunian-wuxing .badge.金 { background: rgba(218, 165, 32, 0.2); color: #e8c56e; }
-.liunian-wuxing .badge.木 { background: rgba(34, 139, 34, 0.2); color: #5dba5d; }
-.liunian-wuxing .badge.水 { background: rgba(30, 144, 255, 0.2); color: #5aabf0; }
-.liunian-wuxing .badge.火 { background: rgba(220, 20, 60, 0.2); color: #f06080; }
-.liunian-wuxing .badge.土 { background: rgba(180, 120, 60, 0.2); color: #c8956a; }
+.liunian-wuxing .badge.金 { background: rgba(218, 165, 32, 0.15); color: #b8860b; }
+.liunian-wuxing .badge.木 { background: rgba(34, 139, 34, 0.15); color: #2e7d32; }
+.liunian-wuxing .badge.水 { background: rgba(30, 144, 255, 0.15); color: #1565c0; }
+.liunian-wuxing .badge.火 { background: rgba(220, 20, 60, 0.15); color: #c62828; }
+.liunian-wuxing .badge.土 { background: rgba(180, 120, 60, 0.15); color: #8d5524; }
 
 .liunian-nayin {
-  font-size: 11px;
-  color: var(--primary-light);
+  font-size: 10px;
+  color: #9a6612;
   opacity: 0.8;
 }
 
-/* 流年运势分析 */
+/* ===== 流年运势分析 ===== */
 .yearly-fortune-section {
-  margin-top: 28px;
-  background: linear-gradient(135deg, rgba(255, 248, 228, 0.7), rgba(255, 243, 214, 0.4));
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  border-radius: 22px;
-  padding: 28px;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  border-radius: 16px;
+  padding: 20px;
 }
 
 .year-selector {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 25px;
-  padding: 20px;
-  background: rgba(255, 253, 248, 0.9);
-  border-radius: 16px;
-  border: 1px solid rgba(212, 175, 55, 0.08);
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(255, 250, 241, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .year-selector__header {
@@ -703,331 +680,350 @@ const emit = defineEmits([
 .year-selector__meta {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  gap: 4px;
 }
 
 .selector-label {
   color: var(--text-secondary);
-  font-size: 14px;
-  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .selector-hint {
   color: var(--text-tertiary);
   font-size: 12px;
-  line-height: 1.6;
 }
 
-.year-slider {
-  width: 100%;
-}
+.year-slider { width: 100%; }
 
 .selected-year {
-  color: var(--primary-color);
+  color: #8a5c16;
   font-size: 18px;
-  font-weight: bold;
-  min-width: 70px;
+  font-weight: 700;
+  min-width: 64px;
   text-align: right;
 }
 
 /* 流年分析结果 */
-.yearly-result {
-  animation: fadeInUp 0.5s ease;
-}
+.yearly-result { animation: fadeInUp 0.4s ease; }
 
 .yearly-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding: 20px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
   background: rgba(255, 250, 241, 0.9);
-  border-radius: 18px;
-  border: 1px solid rgba(212, 175, 55, 0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
 }
 
 .year-info {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .year-number {
-  font-size: 36px;
-  font-weight: bold;
-  color: var(--primary-color);
+  font-size: 32px;
+  font-weight: 800;
+  color: #8a5c16;
 }
 
 .year-ganzhi {
-  font-size: 20px;
+  font-size: 18px;
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 .year-nayin {
-  font-size: 14px;
-  color: var(--primary-light);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .score-display {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .score-circle {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 3px solid;
-  background: rgba(255, 250, 241, 0.6);
+  border: 2.5px solid;
+  background: rgba(255, 250, 241, 0.8);
 }
 
-.score-circle.excellent { border-color: var(--success-color); }
-.score-circle.good { border-color: var(--warning-color); }
-.score-circle.average { border-color: var(--danger-color); }
-.score-circle.poor { border-color: var(--info-color); }
+.score-circle.excellent { border-color: #52c41a; }
+.score-circle.good { border-color: #e6a817; }
+.score-circle.average { border-color: #fa8c16; }
+.score-circle.poor { border-color: #909399; }
 
 .score-value {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--text-primary);
+  line-height: 1;
 }
 
 .score-label {
-  font-size: 12px;
-  color: #5f5548;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
 }
 
 .rating-badge {
-  padding: 8px 20px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
 }
 
-.rating-badge.excellent { background: var(--success-gradient); }
-.rating-badge.good { background: var(--warning-gradient); }
-.rating-badge.average { background: var(--danger-gradient); }
-.rating-badge.poor { background: linear-gradient(135deg, var(--info-color), #a6a9ad); }
+.rating-badge.excellent { background: linear-gradient(135deg, #52c41a, #73d13d); }
+.rating-badge.good { background: linear-gradient(135deg, #e2af4f, #f3c86f); color: #5a3f17; }
+.rating-badge.average { background: linear-gradient(135deg, #fa8c16, #ffa940); }
+.rating-badge.poor { background: linear-gradient(135deg, #909399, #b0b3b8); }
 
 /* 分析卡片 */
 .yearly-analysis {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
 .analysis-card {
-  background: rgba(255, 253, 248, 0.9);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid rgba(212, 175, 55, 0.06);
+  background: rgba(255, 250, 241, 0.7);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .analysis-card h4 {
   color: var(--text-primary);
-  font-size: 16px;
-  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .analysis-card p {
   color: var(--text-secondary);
   line-height: 1.8;
-  font-size: 14px;
+  font-size: 13px;
+  margin: 0;
 }
 
 .analysis-card.overall {
-  background: linear-gradient(135deg, rgba(255, 248, 228, 0.7), rgba(255, 243, 214, 0.5));
-  border: 1px solid rgba(212, 175, 55, 0.12);
+  background: linear-gradient(135deg, rgba(255, 248, 228, 0.8), rgba(255, 243, 214, 0.6));
+  border-color: rgba(212, 175, 55, 0.2);
 }
 
 .analysis-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 12px;
 }
 
 .analysis-card.advice {
-  background: linear-gradient(135deg, rgba(240, 255, 240, 0.6), rgba(230, 250, 230, 0.4));
-  border: 1px solid rgba(34, 139, 34, 0.1);
+  background: rgba(240, 255, 240, 0.7);
+  border-color: rgba(82, 196, 26, 0.15);
 }
 
 /* 幸运信息 */
 .lucky-info {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-top: 15px;
-  padding: 20px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98));
-  border-radius: 20px;
-  border: 1px solid rgba(184, 134, 11, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(184, 134, 11, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 250, 241, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
 }
 
 .lucky-section h5 {
-  color: var(--text-primary);
-  font-size: 15px;
-  margin-bottom: 12px;
-  font-weight: 600;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #8a5c16;
+  font-size: 13px;
+  margin-bottom: 10px;
+  font-weight: 700;
 }
 
 .lucky-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
 }
 
 .lucky-tag {
-  padding: 6px 14px;
-  border-radius: 18px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
   border: 1px solid transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
 }
 
-.lucky-tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
+.lucky-tag:hover { transform: translateY(-1px); }
 
-.lucky-tag.good { background: linear-gradient(135deg, rgba(103, 194, 58, 0.4), rgba(103, 194, 58, 0.2)); color: #67c23a; border-color: rgba(103, 194, 58, 0.3); }
-.lucky-tag.bad { background: linear-gradient(135deg, rgba(245, 108, 108, 0.4), rgba(245, 108, 108, 0.2)); color: #f56c6c; border-color: rgba(245, 108, 108, 0.3); }
-.lucky-tag.color { background: linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 215, 0, 0.2)); color: var(--star-color); border-color: rgba(255, 215, 0, 0.3); }
-.lucky-tag.number { background: linear-gradient(135deg, rgba(64, 158, 255, 0.4), rgba(64, 158, 255, 0.2)); color: #409eff; border-color: rgba(64, 158, 255, 0.3); }
+.lucky-tag.good { background: rgba(82, 196, 26, 0.1); color: #3a8a0a; border-color: rgba(82, 196, 26, 0.2); }
+.lucky-tag.bad { background: rgba(245, 108, 108, 0.1); color: #c0392b; border-color: rgba(245, 108, 108, 0.2); }
+.lucky-tag.color { background: rgba(212, 175, 55, 0.1); color: #8a5c16; border-color: rgba(212, 175, 55, 0.2); }
+.lucky-tag.number { background: rgba(64, 158, 255, 0.1); color: #1565c0; border-color: rgba(64, 158, 255, 0.2); }
 
-/* 大运运势分析 */
+/* ===== 大运运势分析 ===== */
 .dayun-fortune-section {
-  margin-top: 28px;
-  background: linear-gradient(135deg, rgba(240, 247, 255, 0.7), rgba(230, 240, 255, 0.4));
-  border: 1px solid rgba(64, 158, 255, 0.12);
-  border-radius: 22px;
-  padding: 28px;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  border-radius: 16px;
+  padding: 20px;
 }
 
 .dayun-selector {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  padding: 15px 20px;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
   background: rgba(255, 250, 241, 0.8);
   border-radius: 12px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
   flex-wrap: wrap;
 }
 
-.dayun-analysis-result {
-  animation: fadeInUp 0.5s ease;
+.selector-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
+
+.dayun-analysis-result { animation: fadeInUp 0.4s ease; }
 
 .dayun-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding: 20px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
   background: rgba(255, 250, 241, 0.9);
-  border-radius: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 184, 104, 0.2);
 }
 
 .dayun-info {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .dayun-name {
-  font-size: 32px;
-  font-weight: bold;
-  color: #409eff;
+  font-size: 28px;
+  font-weight: 800;
+  color: #5e4318;
+}
+
+.dayun-shishen {
+  font-size: 13px;
+  color: #9a6612;
+  font-weight: 600;
+}
+
+.dayun-age {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .dayun-level-badge {
-  padding: 10px 25px;
-  border-radius: 25px;
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--text-primary);
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.dayun-level-badge.excellent { background: var(--success-gradient); }
-.dayun-level-badge.good { background: var(--warning-gradient); }
-.dayun-level-badge.average { background: var(--danger-gradient); }
-.dayun-level-badge.poor { background: linear-gradient(135deg, var(--info-color), #a6a9ad); }
+.dayun-level-badge.excellent { background: rgba(82, 196, 26, 0.12); color: #3a8a0a; border: 1px solid rgba(82, 196, 26, 0.25); }
+.dayun-level-badge.good { background: rgba(212, 175, 55, 0.12); color: #8a5c16; border: 1px solid rgba(212, 175, 55, 0.25); }
+.dayun-level-badge.average { background: rgba(250, 140, 22, 0.12); color: #a05c00; border: 1px solid rgba(250, 140, 22, 0.25); }
+.dayun-level-badge.poor { background: rgba(144, 147, 153, 0.12); color: #606266; border: 1px solid rgba(144, 147, 153, 0.25); }
 
 .dayun-scores {
   background: rgba(255, 250, 241, 0.8);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 25px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .score-item {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.score-item:last-child {
-  margin-bottom: 0;
-}
+.score-item:last-child { margin-bottom: 0; }
 
 .score-name {
-  width: 50px;
-  color: #5a4a38;
-  font-size: 14px;
+  width: 44px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
-.score-progress {
-  flex: 1;
+.score-progress { flex: 1; }
+
+.score-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a5c16;
+  width: 28px;
+  text-align: right;
 }
 
 .dayun-analysis-text {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 25px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .text-card {
-  background: rgba(255, 250, 241, 0.5);
+  background: rgba(255, 250, 241, 0.7);
   border-radius: 10px;
-  padding: 15px;
+  padding: 14px;
+  border: 1px solid rgba(227, 184, 104, 0.12);
 }
 
 .text-card p {
-  color: #4a3c2e;
+  color: var(--text-secondary);
   line-height: 1.8;
-  font-size: 14px;
+  font-size: 13px;
+  margin: 0;
 }
 
 .key-suggestions {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 193, 7, 0.05));
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(255, 248, 228, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
 }
 
 .key-suggestions h4 {
-  color: var(--star-color);
-  margin-bottom: 15px;
-  font-size: 16px;
+  color: #8a5c16;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .key-suggestions ul {
@@ -1037,260 +1033,229 @@ const emit = defineEmits([
 }
 
 .key-suggestions li {
-  color: #4a3c2e;
-  padding: 8px 0;
-  padding-left: 20px;
+  color: var(--text-secondary);
+  padding: 6px 0 6px 18px;
   position: relative;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .key-suggestions li::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 14px;
-  width: 6px;
-  height: 6px;
-  background: var(--primary-color);
+  top: 13px;
+  width: 5px;
+  height: 5px;
+  background: rgba(212, 175, 55, 0.6);
   border-radius: 50%;
 }
 
-/* 运势K线图 */
+/* ===== 运势K线图 ===== */
 .fortune-chart-section {
-  margin-top: 28px;
-  background: linear-gradient(135deg, rgba(240, 255, 240, 0.7), rgba(230, 250, 230, 0.4));
-  border: 1px solid rgba(103, 194, 58, 0.1);
-  border-radius: 22px;
-  padding: 28px;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(227, 184, 104, 0.2);
+  border-radius: 16px;
+  padding: 20px;
 }
 
-.chart-result {
-  animation: fadeInUp 0.5s ease;
-}
+.chart-result { animation: fadeInUp 0.4s ease; }
 
 .chart-summary {
   background: rgba(255, 250, 241, 0.8);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 25px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .chart-summary p {
-  color: #4a3c2e;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
   margin-bottom: 10px;
 }
 
 .best-period {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(212, 175, 55, 0.08);
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .best-label {
-  color: #5f5548;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .best-value {
-  color: #67c23a;
-  font-weight: bold;
-  font-size: 16px;
+  color: #3a8a0a;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .chart-container {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
 }
 
 .chart-dayun {
   background: rgba(255, 250, 241, 0.8);
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
+  border: 1px solid rgba(227, 184, 104, 0.15);
 }
 
 .chart-dayun-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .dayun-title {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 .dayun-score {
-  padding: 5px 12px;
-  border-radius: 15px;
-  font-size: 14px;
-  font-weight: bold;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.dayun-score.excellent { background: var(--success-light); color: var(--success-color); }
-.dayun-score.good { background: var(--warning-light); color: var(--warning-color); }
-.dayun-score.average { background: var(--danger-light); color: var(--danger-color); }
-.dayun-score.poor { background: rgba(144, 147, 153, 0.2); color: var(--info-color); }
+.dayun-score.excellent { background: rgba(82, 196, 26, 0.1); color: #3a8a0a; }
+.dayun-score.good { background: rgba(212, 175, 55, 0.1); color: #8a5c16; }
+.dayun-score.average { background: rgba(250, 140, 22, 0.1); color: #a05c00; }
+.dayun-score.poor { background: rgba(144, 147, 153, 0.1); color: #606266; }
 
 .dayun-trend {
   margin-left: auto;
-  color: #5f5548;
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .chart-years {
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  height: 150px;
-  padding: 10px 0;
-  margin-bottom: 10px;
+  gap: 3px;
+  height: 120px;
+  padding: 8px 0;
+  margin-bottom: 8px;
 }
 
 .chart-year-bar {
   flex: 1;
-  min-width: 20px;
-  background: var(--success-gradient);
-  border-radius: 4px 4px 0 0;
+  min-width: 18px;
+  background: linear-gradient(to top, rgba(212, 175, 55, 0.5), rgba(212, 175, 55, 0.2));
+  border-radius: 3px 3px 0 0;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 5px;
-  transition: all 0.3s ease;
+  padding-bottom: 4px;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .chart-year-bar:hover {
-  opacity: 0.8;
-  transform: scaleX(1.1);
+  background: linear-gradient(to top, rgba(212, 175, 55, 0.7), rgba(212, 175, 55, 0.4));
 }
 
 .chart-year-bar.current {
-  background: linear-gradient(to top, var(--star-color), #ffec8b);
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  background: linear-gradient(to top, #e2af4f, #f3c86f);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
 }
 
 .year-label {
   position: absolute;
-  bottom: -20px;
-  font-size: 10px;
-  color: #5f5548;
+  bottom: -18px;
+  font-size: 9px;
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
 
 .year-score {
-  font-size: 10px;
-  color: rgba(0, 0, 0, 0.7);
-  font-weight: bold;
+  font-size: 9px;
+  color: #5e4318;
+  font-weight: 700;
 }
 
 .chart-legend {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 25px;
-  border-top: 1px solid rgba(212, 175, 55, 0.08);
-  font-size: 14px;
-  color: #5f5548;
+  padding-top: 22px;
+  border-top: 1px solid rgba(227, 184, 104, 0.15);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-/* 分析按钮区域 */
+/* ===== 分析按钮区域 ===== */
 .analysis-actions {
   text-align: center;
-  padding: 30px;
+  padding: 24px 16px;
 }
 
 .analysis-desc {
-  color: #6b5a3e;
-  margin-bottom: 20px;
-  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-/* 动画 */
+/* ===== 动画 ===== */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-/* 响应式 */
+/* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .dayun-timeline {
     display: flex;
     overflow-x: auto;
-    gap: 15px;
-    padding: 10px 5px 20px;
+    gap: 10px;
+    padding: 4px 2px 16px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
 
-  .dayun-timeline::-webkit-scrollbar {
-    height: 4px;
-  }
-
+  .dayun-timeline::-webkit-scrollbar { height: 3px; }
   .dayun-timeline::-webkit-scrollbar-thumb {
-    background: var(--primary-light-30);
+    background: rgba(212, 175, 55, 0.3);
     border-radius: 2px;
   }
 
   .dayun-item {
-    flex: 0 0 220px;
+    flex: 0 0 160px;
     scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    gap: 10px;
-    padding: 16px;
-  }
-
-  .dayun-pillar {
-    justify-content: flex-start;
-  }
-
-  .dayun-pillar .gan, .dayun-pillar .zhi {
-    font-size: 20px;
   }
 
   .liunian-grid {
     display: flex;
     overflow-x: auto;
-    gap: 12px;
-    padding: 10px 5px 20px;
+    gap: 8px;
+    padding: 4px 2px 16px;
     scroll-snap-type: x mandatory;
   }
 
-  .liunian-grid::-webkit-scrollbar {
-    height: 4px;
-  }
-
+  .liunian-grid::-webkit-scrollbar { height: 3px; }
   .liunian-grid::-webkit-scrollbar-thumb {
-    background: var(--primary-light-30);
+    background: rgba(212, 175, 55, 0.3);
     border-radius: 2px;
   }
 
   .liunian-item {
-    flex: 0 0 100px;
+    flex: 0 0 90px;
     scroll-snap-align: start;
-    padding: 12px;
-  }
-
-  .liunian-year {
-    font-size: 12px;
-    margin-bottom: 5px;
-  }
-
-  .liunian-pillar .gan, .liunian-pillar .zhi {
-    font-size: 18px;
+    padding: 10px 6px;
   }
 
   .year-selector__header {
@@ -1303,16 +1268,18 @@ const emit = defineEmits([
     min-width: auto;
   }
 
-  .selector-hint {
-    font-size: 11px;
-  }
-
   .lucky-info {
     grid-template-columns: repeat(2, 1fr);
   }
 
   .analysis-grid {
     grid-template-columns: 1fr;
+  }
+
+  .yearly-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 </style>

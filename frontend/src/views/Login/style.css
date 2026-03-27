@@ -1,9 +1,10 @@
+/* ===== 登录页面 ===== */
 .login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
+  background: linear-gradient(180deg, #fffaf1 0%, #fff7ee 100%);
   padding: 20px;
 }
 
@@ -13,166 +14,74 @@
 }
 
 .login-box {
-  background: var(--bg-card);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-xl);
   padding: 40px;
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  box-shadow: 0 16px 40px rgba(145, 103, 34, 0.1);
 }
 
+/* ===== 头部 ===== */
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 }
 
 .logo {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: bold;
   color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .logo-icon {
-  font-size: 36px;
+  font-size: 34px;
   color: var(--primary-color);
 }
 
 .logo-icon svg {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
 }
 
 .login-header h2 {
   color: var(--text-primary);
-  font-size: 24px;
-  margin-bottom: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 .login-header p {
   color: var(--text-secondary);
   font-size: 14px;
+  margin: 0;
 }
 
-.intent-tip {
+intent-tip {
   margin-top: 12px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(var(--primary-rgb), 0.08);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   color: var(--text-primary) !important;
+  font-size: 13px;
   line-height: 1.6;
 }
 
-.login-methods {
-  margin-bottom: 30px;
-}
-
-.login-tips {
-  text-align: center;
-}
-
-.login-tips p {
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin: 8px 0;
-}
-
-.agreement-tip {
-  margin-top: 15px;
-  font-size: 12px !important;
-}
-
-/* 手机号登录表单 */
-.phone-login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.login-input :deep(.el-input__wrapper) {
-  background: var(--bg-secondary);
-  box-shadow: none;
-  border: 1px solid var(--border-color);
-}
-
-.login-input :deep(.el-input__inner) {
-  color: var(--text-primary);
-}
-
-.code-input-row {
-  display: flex;
-  gap: 10px;
-}
-
-.code-input {
-  flex: 1;
-}
-
-.send-code-btn {
-  width: 120px;
-  font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.send-code-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-}
-
-.send-code-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.2);
-}
-
-.send-code-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--bg-tertiary);
-}
-
-.login-submit-btn {
-  width: 100%;
-  min-height: 48px;
-  height: auto;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  border: none;
-}
-
-.login-submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
-  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
-}
-
-.login-submit-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
-}
-
-.login-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--bg-tertiary);
-}
-
-/* 注册福利展示区 */
+/* ===== 注册福利 ===== */
 .login-benefits {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 20px;
   padding: 14px;
-  background: rgba(184, 134, 11, 0.06);
-  border: 1px solid rgba(184, 134, 11, 0.14);
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(245, 196, 103, 0.1), rgba(212, 175, 55, 0.06));
+  border: 1px solid rgba(227, 184, 104, 0.25);
+  border-radius: 14px;
 }
 
 .benefit-item {
@@ -203,6 +112,111 @@
   color: #9b8060;
 }
 
+/* ===== 表单 ===== */
+.login-methods {
+  margin-bottom: 24px;
+}
+
+.phone-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-input :deep(.el-input__wrapper) {
+  background: rgba(255, 250, 241, 0.8);
+  box-shadow: none;
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  border-radius: 10px;
+  transition: border-color 0.2s;
+}
+
+.login-input :deep(.el-input__wrapper:hover),
+.login-input :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.login-input :deep(.el-input__inner) {
+  color: var(--text-primary);
+}
+
+.code-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.code-input {
+  flex: 1;
+}
+
+/* ===== 获取验证码按钮 ===== */
+.send-code-btn {
+  width: 120px;
+  font-weight: 500;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(245, 196, 103, 0.12);
+  color: #7a5c1e;
+  transition: all 0.3s ease;
+}
+
+.send-code-btn:hover:not(:disabled) {
+  background: rgba(245, 196, 103, 0.25);
+  border-color: rgba(212, 175, 55, 0.6);
+  transform: translateY(-1px);
+}
+
+.send-code-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== 提交按钮 ===== */
+.login-submit-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #e2af4f 0%, #f3c86f 100%);
+  border: none;
+  color: #5a3f17;
+  transition: all 0.3s ease;
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(186, 135, 41, 0.3);
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(212, 175, 55, 0.3);
+}
+
+/* ===== 底部提示 ===== */
+.login-tips {
+  text-align: center;
+}
+
+.login-tips p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.agreement-tip {
+  margin-top: 12px;
+  font-size: 12px !important;
+  display: block !important;
+}
+
+/* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .login-benefits {
     grid-template-columns: 1fr;
@@ -212,7 +226,7 @@
 
 @media (max-width: 480px) {
   .login-box {
-    padding: 30px 20px;
+    padding: 28px 20px;
   }
 
   .code-input-row {
@@ -221,6 +235,5 @@
 
   .send-code-btn {
     width: 100%;
-    padding: 0 10px;
   }
 }

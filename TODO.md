@@ -16,9 +16,10 @@
 9. 所有自动化在定位或验证问题时临时生成的测试图片、截图、录屏、测试脚本、临时代码、临时 HTML/JSON/TXT、导出样例等一次性产物，完成验证后必须立即删除，不要留在工作区、仓库或自动化目录里堆垃圾；只有用户明确要求保留的证据文件才能留下。
 10. 设计规范：参考首页的色调——白色背景 #fffefb，金色强调 #d4a03e，深棕文字 #5e4318，保持一致。
 ## 🔴 A. 管理端功能修复队列
+
 1.导航栏选中又有边框,又有下划线,样式不对,去掉边框吧
 2.六爻占卜的结果页,没有显示当前是什么卦到什么卦,比如乾为天变卦雷天大有,还有AI解析的结果也没有展示
-3.每日运势的运势概览卡片,设计排版完全错乱,太丑了,可以重新设计吗
+3.个人页直接重新设计,重做,按照你的思路
 4.api/fortune/yearly流年运势,提示运势分析失败，请稍后重试
 5.api/hehun/calculate提示app\\model\\HehunRecord::buildAnalysisText(): Argument #1 ($result) must be of type array, string given, called in C:\\Users\\v_boqchen\\WorkBuddy\\Claw\\taichu-unified\\backend\\app\\model\\HehunRecord.php on line 169
 6.api/auth/userinfo提示SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '0' for key 'uk_invitee

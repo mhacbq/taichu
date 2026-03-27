@@ -1458,27 +1458,27 @@ body {
   .desktop-nav {
     display: none;
   }
-  
+
   .user-actions {
     display: none;
   }
-  
+
   .mobile-menu-btn {
     display: flex;
   }
-  
+
   .mobile-nav {
     display: flex;
   }
-  
+
   .nav-container {
     height: 60px;
   }
-  
+
   .logo {
     font-size: 20px;
   }
-  
+
   .floating-companion {
     bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px);
     right: 20px;
@@ -1492,7 +1492,7 @@ body {
   .companion-icon {
     font-size: 28px;
   }
-  
+
   .companion-content {
     width: 280px;
     right: 0;
@@ -1527,14 +1527,14 @@ body {
     padding: 12px 14px;
     font-size: 13px;
   }
-  
+
   .footer {
   }
-  
+
   .footer-links {
     gap: 20px;
   }
-  
+
   .footer-quote {
     margin: 0 16px 24px;
   }
@@ -1544,7 +1544,7 @@ body {
   .mobile-nav {
     display: none !important;
   }
-  
+
   .mobile-overlay {
     display: none !important;
   }

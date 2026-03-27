@@ -301,47 +301,36 @@ const props = defineProps({
 .day-master-info {
   display: flex;
   justify-content: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .day-master-card {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 20px 40px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255, 252, 244, 0.98), rgba(255, 248, 230, 0.95));
-  border: 1px solid rgba(212, 175, 55, 0.18);
-  box-shadow: 0 12px 32px rgba(149, 111, 45, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  animation: float 4s ease-in-out infinite;
+  gap: 16px;
+  padding: 16px 32px;
+  border-radius: 20px;
+  background: rgba(255, 250, 241, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 4px 16px rgba(145, 103, 34, 0.08);
 }
 
 .day-master-card__ring {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5ecd3, #faf3e0);
-  border: 3px solid rgba(212, 175, 55, 0.3);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.15), inset 0 2px 6px rgba(255, 255, 255, 0.6);
-  position: relative;
-}
-
-.day-master-card__ring::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 1px dashed rgba(212, 175, 55, 0.15);
+  background: rgba(255, 248, 228, 0.9);
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.12);
 }
 
 .day-master-card__char {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 800;
   color: #6b4a12;
-  text-shadow: 0 2px 4px rgba(107, 74, 18, 0.1);
 }
 
 .day-master-card__meta {
@@ -361,21 +350,23 @@ const props = defineProps({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 16px;
-  border-radius: 12px;
-  font-size: 15px;
+  padding: 3px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: #8a5c16;
 }
 
 /* 排盘表 */
 .bazi-paipan {
-  background: #1c1408;
+  background: #1e1508;
   border-radius: 16px;
-  padding: 18px 16px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(212, 175, 55, 0.1);
+  padding: 16px 14px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(212, 175, 55, 0.12);
   position: relative;
   overflow: hidden;
 }
@@ -427,17 +418,17 @@ const props = defineProps({
 .paipan-cell {
   flex: 1;
   text-align: center;
-  padding: 16px 10px;
-  font-size: 24px;
+  padding: 12px 8px;
+  font-size: 22px;
   font-weight: bold;
-  color: rgba(232, 197, 110, 0.85);
+  color: rgba(232, 197, 110, 0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 16px;
+  transition: background 0.2s ease;
+  border-radius: 12px;
 }
 
 .paipan-cell:hover {
@@ -634,24 +625,12 @@ const props = defineProps({
 
 /* 五行统计 */
 .wuxing-stats {
-  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 249, 237, 0.95));
-  border-radius: 24px;
-  padding: 32px;
-  margin: 36px 0;
-  border: 1px solid rgba(212, 175, 55, 0.12);
-  box-shadow: 0 16px 40px rgba(149, 111, 45, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  position: relative;
-  overflow: hidden;
-}
-
-.wuxing-stats::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 24px;
+  margin: 24px 0;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 4px 16px rgba(145, 103, 34, 0.06);
 }
 
 .wuxing-header {
@@ -667,11 +646,10 @@ const props = defineProps({
 }
 
 .wuxing-stats h3 {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: #3a2a10;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: 0.02em;
 }
 
 .wuxing-caption {
@@ -692,18 +670,16 @@ const props = defineProps({
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.6);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(212, 175, 55, 0.06);
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 250, 241, 0.7);
+  transition: border-color 0.2s ease;
+  border: 1px solid rgba(212, 175, 55, 0.1);
 }
 
 .wuxing-bar-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(149, 111, 45, 0.08);
-  border-color: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.25);
 }
 
 .wuxing-bar-item.wx-金 { border-left: 3px solid #daa520; }

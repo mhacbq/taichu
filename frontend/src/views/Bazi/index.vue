@@ -154,54 +154,46 @@ const {
 </script>
 
 <style scoped>
-/* =============================================
-   八字排盘页 - 页面级样式（index.vue）
-   ============================================= */
-
-/* 页面容器 */
+/* ===== 八字排盘页 ===== */
 .bazi-page {
-  padding: 10px 0 78px;
-  animation: fadeInUp 0.6s ease;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(var(--primary-rgb), 0.14), transparent 34%),
-    radial-gradient(circle at 100% 12%, rgba(245, 196, 103, 0.18), transparent 26%),
-    linear-gradient(180deg, #fffdf8 0%, #fff9f1 46%, #fff7ee 100%);
+  padding: 60px 0 80px;
+  background: linear-gradient(180deg, #fffaf1 0%, #fff7ee 100%);
 }
 
-/* 加载状态 */
+/* ===== 加载状态 ===== */
 .loading-state {
-  max-width: 600px;
+  max-width: 560px;
   margin: 0 auto;
   text-align: center;
-  padding: 60px 40px;
-  background: var(--bg-card);
-  border-radius: 20px;
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-lg);
+  padding: 52px 36px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 24px rgba(145, 103, 34, 0.08);
 }
 
 .loading-animation {
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 }
 
 /* 太极图加载动画 */
 .loading-taiji {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   margin: 0 auto;
   border-radius: 50%;
-  background: linear-gradient(to bottom, #fff 50%, #000 50%);
+  background: linear-gradient(to bottom, #fff 50%, #5e4318 50%);
   position: relative;
-  animation: yinYangRotate 2s linear infinite;
-  box-shadow: 0 0 30px rgba(184, 134, 11, 0.3);
+  animation: yinYangRotate 2.4s linear infinite;
+  box-shadow: 0 0 24px rgba(212, 175, 55, 0.25);
 }
 
 .loading-taiji::before,
 .loading-taiji::after {
   content: '';
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   left: 50%;
   transform: translateX(-50%);
@@ -210,25 +202,27 @@ const {
 .loading-taiji::before {
   background: #fff;
   top: 0;
-  box-shadow: 0 0 0 12px #000 inset;
+  box-shadow: 0 0 0 10px #5e4318 inset;
 }
 
 .loading-taiji::after {
-  background: #000;
+  background: #5e4318;
   bottom: 0;
-  box-shadow: 0 0 0 12px #fff inset;
+  box-shadow: 0 0 0 10px #fff inset;
 }
 
 .loading-state h3 {
   color: var(--text-primary);
-  font-size: 24px;
-  margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 .loading-text {
   color: var(--text-secondary);
-  font-size: 14px;
-  margin-bottom: 40px;
+  font-size: 13px;
+  margin-bottom: 32px;
+  line-height: 1.6;
 }
 
 /* 加载步骤 */
@@ -236,81 +230,73 @@ const {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  opacity: 0.4;
+  gap: 6px;
+  opacity: 0.35;
   transition: all 0.3s ease;
 }
 
-.step.active {
-  opacity: 1;
-}
-
-.step.done {
-  opacity: 0.7;
-}
+.step.active { opacity: 1; }
+.step.done { opacity: 0.65; }
 
 .step-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--bg-tertiary);
+  background: rgba(255, 250, 241, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  color: var(--text-secondary);
-  border: 2px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  border: 1.5px solid rgba(227, 184, 104, 0.2);
   transition: all 0.3s ease;
 }
 
 .step.active .step-icon {
-  background: rgba(184, 134, 11, 0.1);
-  border-color: var(--primary-color);
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.5);
   color: var(--primary-color);
-  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
 }
 
 .step.done .step-icon {
-  background: rgba(103, 194, 58, 0.3);
-  border-color: #67c23a;
-  color: #67c23a;
+  background: rgba(103, 194, 58, 0.12);
+  border-color: rgba(103, 194, 58, 0.4);
+  color: #3d9a1a;
 }
 
 .step-text {
-  font-size: 12px;
-  color: #5f5548;
+  font-size: 11px;
+  color: var(--text-tertiary);
   transition: all 0.3s ease;
 }
 
 .step.active .step-text {
   color: var(--primary-color);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .step-line {
-  width: 40px;
+  width: 36px;
   height: 2px;
-  background: var(--border-color);
+  background: rgba(227, 184, 104, 0.15);
+  border-radius: 1px;
   transition: all 0.3s ease;
+  margin-bottom: 20px;
 }
 
 .step-line.active {
-  background: linear-gradient(90deg, #67c23a, #D4AF37);
+  background: linear-gradient(90deg, rgba(103, 194, 58, 0.5), rgba(212, 175, 55, 0.5));
 }
 
 /* 动画 */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 @keyframes yinYangRotate {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -318,7 +304,12 @@ const {
 
 @media (max-width: 768px) {
   .bazi-page {
-    padding: 0 0 56px;
+    padding: 0 0 60px;
+  }
+
+  .loading-state {
+    padding: 36px 20px;
+    border-radius: 18px;
   }
 }
 </style>

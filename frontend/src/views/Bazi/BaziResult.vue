@@ -193,20 +193,17 @@ const emit = defineEmits([
 </template>
 
 <style scoped>
-/* =============================================
-   八字结果页组件样式（BaziResult.vue）
-   ============================================= */
+/* ===== 八字结果页组件（BaziResult.vue）===== */
 
 /* 结果容器 */
 .bazi-result {
-  max-width: 920px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 30px;
-  border-radius: 30px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 241, 0.95));
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: 0 24px 52px rgba(15, 23, 42, 0.06), 0 12px 30px rgba(var(--primary-rgb), 0.04);
-  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 28px 32px;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(227, 184, 104, 0.3);
+  box-shadow: 0 8px 24px rgba(145, 103, 34, 0.08);
   position: relative;
   overflow: hidden;
 }
@@ -217,20 +214,20 @@ const emit = defineEmits([
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
+  width: 160px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5), transparent);
 }
 
 /* 结果页顶部英雄区域 */
 .result-hero {
   text-align: center;
-  padding: 36px 24px 28px;
-  margin: -30px -30px 28px;
-  border-radius: 30px 30px 0 0;
+  padding: 32px 24px 24px;
+  margin: -28px -32px 24px;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 175, 55, 0.18), transparent),
-    linear-gradient(180deg, rgba(255, 248, 228, 0.98) 0%, rgba(255, 255, 255, 0) 100%);
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 175, 55, 0.14), transparent),
+    linear-gradient(180deg, rgba(255, 248, 228, 0.95) 0%, rgba(255, 255, 255, 0) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -262,28 +259,23 @@ const emit = defineEmits([
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 18px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.18), rgba(245, 196, 103, 0.12));
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  padding: 4px 16px;
+  border-radius: 20px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.25);
   color: #8d5f1c;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  margin-bottom: 14px;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
   position: relative;
 }
 
 .result-hero__title {
-  font-size: clamp(26px, 3.5vw, 36px);
+  font-size: 28px;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: #5e4318;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #3a2a10, #8d5f1c, #c8960c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   position: relative;
 }
 
@@ -340,24 +332,23 @@ const emit = defineEmits([
 
 /* 上下文说明 */
 .result-context-note {
-  margin: 0 0 24px;
-  padding: 14px 16px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 240, 0.92));
-  border: 1px solid rgba(var(--primary-rgb), 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 250, 241, 0.8);
+  border: 1px solid rgba(227, 184, 104, 0.2);
   color: var(--text-secondary);
+  font-size: 13px;
   line-height: 1.7;
 }
 
 /* 当前流年速览 */
 .current-fortune-brief {
-  margin: 0 0 28px;
-  padding: 20px 24px;
-  border-radius: 20px;
+  margin: 0 0 24px;
+  padding: 18px 20px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(255, 248, 228, 0.95), rgba(255, 243, 214, 0.85));
-  border: 1px solid rgba(212, 175, 55, 0.18);
-  box-shadow: 0 8px 24px rgba(149, 111, 45, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .fortune-brief__header {
@@ -483,7 +474,7 @@ const emit = defineEmits([
 
 /* 操作按钮区域 */
 .result-actions-wrap {
-  margin-top: 36px;
+  margin-top: 28px;
 }
 
 .result-actions-heading {
@@ -503,15 +494,15 @@ const emit = defineEmits([
 .result-actions-heading__eyebrow {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(245, 196, 103, 0.06));
-  border: 1px solid rgba(212, 175, 55, 0.12);
+  min-height: 26px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   color: #8d5f1c;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   margin-bottom: 8px;
 }
 
@@ -539,13 +530,13 @@ const emit = defineEmits([
 /* 响应式 */
 @media (max-width: 768px) {
   .bazi-result {
-    padding: 22px 18px;
-    border-radius: var(--radius-xl);
+    padding: 20px 16px;
+    border-radius: 18px;
   }
 
   .result-hero {
-    margin: -22px -18px 22px;
-    padding: 30px 18px 22px;
+    margin: -20px -16px 20px;
+    padding: 28px 16px 20px;
   }
 
   .result-meta {
