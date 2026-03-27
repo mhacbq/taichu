@@ -1,308 +1,243 @@
 <template>
   <div class="profile-page">
     <div class="container">
-      <PageHeroHeader
-        title="个人中心"
-        subtitle="管理您的账户信息、查看历史记录和积分明细"
-        :icon="UserFilled"
-      />
+      <!-- 个人信息头部 -->
+      <div class="profile-hero" v-if="profileStatus !== 'loading'">
+        <div class="hero-main">
+          <div class="hero-avatar">
+            <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="用户头像">
+            <span v-else class="avatar-fallback">{{ userInfo.nickname?.[0] || '用' }}</span>
+            <div v-if="isVip" class="vip-crown">👑</div>
+          </div>
+          <div class="hero-info">
+            <div class="info-header">
+              <h2 class="nickname">{{ userInfo.nickname || '欢迎回来' }}</h2>
+              <span class="uid">ID: {{ userInfo.id || '--' }}</span>
+            </div>
+            <div class="level-section">
+              <div class="level-badge">
+                <el-icon><Medal /></el-icon>
+                <span>{{ pointsLevelName }}</span>
+              </div>
+              <div class="level-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: pointsPercentage + '%' }"></div>
+                </div>
+                <span class="progress-text">{{ pointsToNextLevel > 0 ? `再${pointsToNextLevel}分升级` : '已达最高等级' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-points">
+          <div class="points-card-mini">
+            <div class="points-icon-bg">
+              <el-icon><Coin /></el-icon>
+            </div>
+            <div class="points-content">
+              <span class="points-number">{{ pointsBalance }}</span>
+              <span class="points-label">我的积分</span>
+            </div>
+            <router-link to="/recharge" class="recharge-btn">
+              <el-icon><Plus /></el-icon>
+            </router-link>
+          </div>
+          <div v-if="isVip" class="vip-expire">
+            <el-icon><Calendar /></el-icon>
+            <span>VIP 到期: {{ vipExpireTime }}</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 加载骨架屏 -->
       <div v-if="profileStatus === 'loading'" class="profile-skeleton">
-        <div class="skeleton-status"></div>
-        <div class="skeleton-grid">
-          <div class="skeleton-card" v-for="i in 4" :key="i"></div>
-        </div>
+        <div class="skeleton-hero"></div>
+        <div class="skeleton-stats"></div>
+        <div class="skeleton-grid"></div>
         <div class="skeleton-history"></div>
       </div>
 
       <div v-else class="profile-content">
-        <!-- 用户信息卡片 -->
-        <div class="user-status card card-hover">
-          <div class="status-header">
-            <div class="status-avatar">
-              <img v-if="userInfo.avatar" :src="userInfo.avatar" alt="用户头像" class="avatar-img">
-              <span v-else class="avatar-placeholder">{{ userInfo.nickname?.[0] || '用' }}</span>
-            </div>
-            <div class="status-info">
-              <h3>{{ userInfo.nickname || '欢迎回来' }}</h3>
-              <p class="status-id">ID: {{ userInfo.id || '--' }}</p>
-              <div class="status-badges">
-                <span class="level-badge">{{ pointsLevelName }}</span>
-                <span v-if="isVip" class="vip-badge">
-                  <el-icon><Trophy /></el-icon> VIP
-                </span>
-              </div>
-            </div>
-            <div class="status-points">
-              <div class="points-display">
-                <el-icon class="points-icon"><Coin /></el-icon>
-                <div class="points-info">
-                  <span class="points-value">{{ pointsBalance }}</span>
-                  <span class="points-label">当前积分</span>
-                </div>
-              </div>
-              <router-link to="/recharge" class="recharge-link">
-                <el-button type="primary" size="small">
-                  <el-icon><Plus /></el-icon> 充值
-                </el-button>
-              </router-link>
-            </div>
+        <!-- 快捷统计 -->
+        <div class="stats-bar">
+          <div class="stat-box" v-for="stat in quickStats" :key="stat.key" @click="$router.push(stat.path)">
+            <span class="stat-num">{{ stat.value }}</span>
+            <span class="stat-name">{{ stat.label }}</span>
           </div>
-          
-          <!-- 快捷统计 -->
-          <div class="quick-stats">
-            <div class="stat-item" v-for="stat in quickStats" :key="stat.key">
-              <span class="stat-value">{{ stat.value }}</span>
-              <span class="stat-label">{{ stat.label }}</span>
+        </div>
+
+        <!-- 功能入口网格 -->
+        <div class="feature-section">
+          <h3 class="section-title">常用功能</h3>
+          <div class="feature-grid">
+            <div 
+              class="feature-item" 
+              :class="{ 'checked': item.checked, 'loading': item.loading }"
+              v-for="item in featureList" 
+              :key="item.key"
+              @click="handleFeatureClick(item)"
+            >
+              <div class="feature-icon-box" :class="item.key">
+                <el-icon v-if="!item.loading"><component :is="item.icon" /></el-icon>
+                <el-icon v-else class="is-loading"><Loading /></el-icon>
+              </div>
+              <span class="feature-name">{{ item.title }}</span>
+              <span class="feature-badge" v-if="item.badge">{{ item.badge }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 功能卡片网格 -->
-        <div class="feature-grid">
-          <div 
-            class="feature-card card card-hover" 
-            :class="{ 'checkin-checked': card.checked, 'checkin-loading': card.key === 'checkin' && checkinLoading }"
-            v-for="card in featureCards" 
-            :key="card.key"
-            @click="handleCardClick(card)"
-          >
-            <div class="feature-icon-wrapper">
-              <el-icon class="feature-icon"><component :is="card.icon" /></el-icon>
-            </div>
-            <h4 class="feature-title">{{ card.title }}</h4>
-            <p class="feature-desc">{{ card.desc }}</p>
-            <div class="feature-action">
-              <span v-if="card.key === 'checkin' && checkinLoading">签到中...</span>
-              <span v-else-if="card.checked">已完成</span>
-              <span v-else>查看详情</span>
-              <el-icon v-if="!(card.key === 'checkin' && checkinLoading)"><ArrowRight /></el-icon>
-              <el-icon v-else class="is-loading"><Loading /></el-icon>
-            </div>
-          </div>
-        </div>
-
-        <!-- 历史记录卡片 -->
-        <div class="history-section card card-hover">
+        <!-- 历史记录 -->
+        <div class="history-section">
           <div class="section-header">
-            <h3><el-icon><Clock /></el-icon> 历史记录</h3>
-            <el-radio-group v-model="activeHistoryTab" size="small">
-              <el-radio-button label="bazi">八字排盘</el-radio-button>
-              <el-radio-button label="tarot">塔罗占卜</el-radio-button>
-              <el-radio-button label="liuyao">六爻占卜</el-radio-button>
-              <el-radio-button label="hehun">八字合婚</el-radio-button>
-            </el-radio-group>
+            <h3 class="section-title">历史记录</h3>
+            <div class="history-tabs">
+              <button 
+                v-for="tab in historyTabs" 
+                :key="tab.key"
+                :class="['tab-btn', { active: activeHistoryTab === tab.key }]"
+                @click="activeHistoryTab = tab.key"
+              >
+                <el-icon><component :is="tab.icon" /></el-icon>
+                <span>{{ tab.label }}</span>
+              </button>
+            </div>
           </div>
           
           <div class="history-content">
-            <!-- 八字排盘 -->
-            <div v-show="activeHistoryTab === 'bazi'" class="history-list">
-              <AsyncState :status="baziStatus" loadingText="正在加载排盘记录..." @retry="loadBaziHistory">
-                <template v-if="baziHistory.length > 0">
+            <AsyncState 
+              :status="currentHistoryStatus" 
+              :loadingText="'加载中...'" 
+              @retry="loadCurrentHistory"
+            >
+              <template v-if="currentHistoryList.length > 0">
+                <div class="history-list">
                   <div 
-                    v-for="record in baziHistory.slice(0, 5)" 
-                    :key="record.id" 
-                    class="history-item"
-                    @click="viewDetail(record)"
+                    v-for="record in currentHistoryList.slice(0, 6)" 
+                    :key="record.id || record.date" 
+                    class="history-card"
+                    @click="viewCurrentDetail(record)"
                   >
-                    <div class="item-icon bazi-icon">
-                      <el-icon><Clock /></el-icon>
+                    <div class="card-icon" :class="activeHistoryTab">
+                      <el-icon v-if="activeHistoryTab === 'bazi'"><Clock /></el-icon>
+                      <span v-else-if="activeHistoryTab === 'tarot'">🃏</span>
+                      <span v-else-if="activeHistoryTab === 'liuyao'">☯</span>
+                      <span v-else>💕</span>
                     </div>
-                    <div class="item-main">
-                      <span class="item-title">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
-                      <span class="item-subtitle">{{ record.yearGan }}{{ record.yearZhi }} {{ record.dayGan }}{{ record.dayZhi }}</span>
+                    <div class="card-body">
+                      <h4 class="card-title">{{ getRecordTitle(record) }}</h4>
+                      <p class="card-subtitle">{{ getRecordSubtitle(record) }}</p>
                     </div>
-                    <div class="item-meta">
-                      <span class="item-time">{{ formatTime(record.createdAt) }}</span>
-                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    <div class="card-meta">
+                      <span class="card-time">{{ formatTime(record.createdAt || record.created_at || record.date) }}</span>
+                      <el-icon class="card-arrow"><ArrowRight /></el-icon>
                     </div>
                   </div>
-                  <div v-if="baziHistory.length > 5" class="view-more" @click="$router.push('/bazi')">
-                    查看全部 {{ baziHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
-                  </div>
-                </template>
-                <el-empty v-else description="暂无排盘记录">
-                  <el-button type="primary" size="small" @click="$router.push('/bazi')">去排盘</el-button>
+                </div>
+                <div v-if="currentHistoryList.length > 6" class="view-all" @click="goToHistoryPage">
+                  查看全部 {{ currentHistoryList.length }} 条记录
+                  <el-icon><ArrowRight /></el-icon>
+                </div>
+              </template>
+              <div v-else class="empty-history">
+                <el-empty :description="`暂无${currentTabLabel}记录`">
+                  <el-button type="primary" @click="goToHistoryPage">去体验</el-button>
                 </el-empty>
-              </AsyncState>
-            </div>
-
-            <!-- 塔罗占卜 -->
-            <div v-show="activeHistoryTab === 'tarot'" class="history-list">
-              <AsyncState :status="tarotStatus" loadingText="正在加载占卜记录..." @retry="loadTarotHistory">
-                <template v-if="tarotHistory.length > 0">
-                  <div 
-                    v-for="(record, index) in tarotHistory.slice(0, 5)" 
-                    :key="index" 
-                    class="history-item"
-                    @click="viewTarotDetail(record)"
-                  >
-                    <div class="item-icon tarot-icon">
-                      <span class="icon-emoji">🃏</span>
-                    </div>
-                    <div class="item-main">
-                      <span class="item-title">{{ record.spreadName }}</span>
-                      <span class="item-subtitle">{{ record.cards?.length || 0 }}张牌 · {{ record.cards?.[0]?.name }}{{ record.cards?.[0]?.reversed ? '(逆)' : '' }}</span>
-                    </div>
-                    <div class="item-meta">
-                      <span class="item-time">{{ formatTime(record.date) }}</span>
-                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
-                    </div>
-                  </div>
-                  <div v-if="tarotHistory.length > 5" class="view-more" @click="$router.push('/tarot')">
-                    查看全部 {{ tarotHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
-                  </div>
-                </template>
-                <el-empty v-else description="暂无占卜记录">
-                  <el-button type="primary" size="small" @click="$router.push('/tarot')">去占卜</el-button>
-                </el-empty>
-              </AsyncState>
-            </div>
-
-            <!-- 六爻占卜 -->
-            <div v-show="activeHistoryTab === 'liuyao'" class="history-list">
-              <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
-                <template v-if="liuyaoHistory.length > 0">
-                  <div 
-                    v-for="record in liuyaoHistory.slice(0, 5)" 
-                    :key="record.id" 
-                    class="history-item"
-                    @click="viewLiuyaoDetail(record)"
-                  >
-                    <div class="item-icon liuyao-icon">
-                      <span class="icon-emoji">☯</span>
-                    </div>
-                    <div class="item-main">
-                      <span class="item-title">{{ record.question || '六爻占卜' }}</span>
-                      <span class="item-subtitle">{{ record.method_name || '铜钱起卦' }}</span>
-                    </div>
-                    <div class="item-meta">
-                      <span class="item-time">{{ formatTime(record.created_at) }}</span>
-                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
-                    </div>
-                  </div>
-                  <div v-if="liuyaoHistory.length > 5" class="view-more" @click="$router.push('/liuyao')">
-                    查看全部 {{ liuyaoHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
-                  </div>
-                </template>
-                <el-empty v-else description="暂无六爻记录">
-                  <el-button type="primary" size="small" @click="$router.push('/liuyao')">去占卜</el-button>
-                </el-empty>
-              </AsyncState>
-            </div>
-
-            <!-- 八字合婚 -->
-            <div v-show="activeHistoryTab === 'hehun'" class="history-list">
-              <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
-                <template v-if="hehunHistory.length > 0">
-                  <div 
-                    v-for="record in hehunHistory.slice(0, 5)" 
-                    :key="record.id" 
-                    class="history-item"
-                    @click="viewHehunDetail(record)"
-                  >
-                    <div class="item-icon hehun-icon">
-                      <span class="icon-emoji">💕</span>
-                    </div>
-                    <div class="item-main">
-                      <span class="item-title">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
-                      <span v-if="record.total_score" class="item-subtitle score-tag">{{ record.total_score }}分</span>
-                    </div>
-                    <div class="item-meta">
-                      <span class="item-time">{{ formatTime(record.created_at) }}</span>
-                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
-                    </div>
-                  </div>
-                  <div v-if="hehunHistory.length > 5" class="view-more" @click="$router.push('/hehun')">
-                    查看全部 {{ hehunHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
-                  </div>
-                </template>
-                <el-empty v-else description="暂无合婚记录">
-                  <el-button type="primary" size="small" @click="$router.push('/hehun')">去合婚</el-button>
-                </el-empty>
-              </AsyncState>
-            </div>
+              </div>
+            </AsyncState>
           </div>
         </div>
 
-        <!-- 积分明细与邀请 -->
-        <div class="bottom-grid">
+        <!-- 底部两栏 -->
+        <div class="bottom-section">
           <!-- 积分明细 -->
-          <div class="points-card card card-hover">
-            <div class="section-header">
-              <h3><el-icon><Coin /></el-icon> 积分明细</h3>
-              <router-link to="/recharge" class="header-link">
+          <div class="points-detail">
+            <div class="section-header compact">
+              <h3 class="section-title">积分明细</h3>
+              <router-link to="/recharge" class="link-more">
                 去充值 <el-icon><ArrowRight /></el-icon>
               </router-link>
             </div>
             <div class="points-list" v-if="pointsHistory.length > 0">
-              <div v-for="record in pointsHistory.slice(0, 5)" :key="record.id" class="points-item">
-                <div class="points-info">
-                  <span class="points-action">{{ record.business_label || record.action || record.reason || '积分变动' }}</span>
-                  <span class="points-time">{{ formatTime(record.created_at || record.createdAt) }}</span>
+              <div 
+                v-for="record in pointsHistory.slice(0, 5)" 
+                :key="record.id" 
+                class="points-row"
+              >
+                <div class="row-info">
+                  <span class="row-action">{{ record.business_label || record.action || '积分变动' }}</span>
+                  <span class="row-time">{{ formatTime(record.created_at || record.createdAt) }}</span>
                 </div>
-                <span class="points-amount" :class="{ positive: record.points > 0, negative: record.points < 0 }">
+                <span class="row-amount" :class="{ plus: record.points > 0, minus: record.points < 0 }">
                   {{ record.points > 0 ? '+' : '' }}{{ record.points }}
                 </span>
               </div>
             </div>
-            <el-empty v-else description="暂无积分记录" />
+            <el-empty v-else description="暂无积分记录" :image-size="80" />
           </div>
 
           <!-- 邀请好友 -->
-          <div class="invite-card card card-hover">
-            <div class="section-header">
-              <h3><el-icon><Present /></el-icon> 邀请好友</h3>
+          <div class="invite-section">
+            <div class="section-header compact">
+              <h3 class="section-title">邀请好友</h3>
             </div>
             <div class="invite-content">
-              <p class="invite-desc">每邀请一位好友消费，双方各得 <strong>{{ invitePoints || 20 }} 积分</strong></p>
-              <div class="invite-stats-row">
-                <div class="invite-stat">
-                  <span class="stat-num">{{ inviteCount }}</span>
-                  <span class="stat-label">已邀请</span>
+              <p class="invite-text">每邀请一位好友消费，双方各得 <strong>{{ invitePointsReward }} 积分</strong></p>
+              <div class="invite-data">
+                <div class="data-item">
+                  <span class="data-value">{{ inviteCount }}</span>
+                  <span class="data-label">已邀请</span>
                 </div>
-                <div class="invite-stat">
-                  <span class="stat-num">{{ inviteSuccessCount }}</span>
-                  <span class="stat-label">已消费</span>
+                <div class="data-item">
+                  <span class="data-value">{{ inviteSuccessCount }}</span>
+                  <span class="data-label">已消费</span>
                 </div>
-                <div class="invite-stat">
-                  <span class="stat-num">{{ invitePoints }}</span>
-                  <span class="stat-label">获积分</span>
+                <div class="data-item highlight">
+                  <span class="data-value">{{ invitePoints }}</span>
+                  <span class="data-label">获积分</span>
                 </div>
               </div>
               <div class="invite-actions">
-                <el-button type="primary" @click="copyInviteCode" class="invite-btn">
+                <el-button type="primary" @click="copyInviteCode" class="btn-main">
                   <el-icon><DocumentCopy /></el-icon> 复制邀请码
                 </el-button>
                 <el-button @click="copyInviteLink">
-                  <el-icon><Link /></el-icon> 分享链接
+                  <el-icon><Share /></el-icon> 分享链接
                 </el-button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 其他功能 -->
-        <div class="more-section card card-hover">
-          <div class="section-header">
-            <h3><el-icon><Setting /></el-icon> 其他功能</h3>
-          </div>
-          <div class="more-grid">
+        <!-- 更多功能 -->
+        <div class="more-section">
+          <h3 class="section-title">更多</h3>
+          <div class="more-list">
             <div class="more-item" @click="restartTourGuide">
-              <el-icon><Guide /></el-icon>
-              <span>重新查看引导</span>
-              <el-icon class="more-arrow"><ArrowRight /></el-icon>
+              <div class="item-left">
+                <div class="item-icon guide">
+                  <el-icon><Guide /></el-icon>
+                </div>
+                <span>重新查看引导</span>
+              </div>
+              <el-icon><ArrowRight /></el-icon>
             </div>
             <div class="more-item" @click="showFeedback = true">
-              <el-icon><ChatDotRound /></el-icon>
-              <span>反馈建议</span>
-              <el-icon class="more-arrow"><ArrowRight /></el-icon>
+              <div class="item-left">
+                <div class="item-icon feedback">
+                  <el-icon><ChatDotRound /></el-icon>
+                </div>
+                <span>反馈建议</span>
+              </div>
+              <el-icon><ArrowRight /></el-icon>
             </div>
             <div class="more-item" @click="handleLogout">
-              <el-icon><SwitchButton /></el-icon>
-              <span>退出登录</span>
-              <el-icon class="more-arrow"><ArrowRight /></el-icon>
+              <div class="item-left">
+                <div class="item-icon logout">
+                  <el-icon><SwitchButton /></el-icon>
+                </div>
+                <span>退出登录</span>
+              </div>
+              <el-icon><ArrowRight /></el-icon>
             </div>
           </div>
         </div>
@@ -313,19 +248,20 @@
     <el-dialog
       v-model="showFeedback"
       title="反馈建议"
-      width="500px"
+      width="460px"
       :close-on-click-modal="false"
+      class="feedback-dialog"
     >
       <div class="feedback-form">
         <el-input
           v-model="feedbackContent"
           type="textarea"
           :rows="4"
-          placeholder="请输入您的意见或建议..."
+          placeholder="请输入您的意见或建议，我们会认真听取..."
         />
         <el-input
           v-model="feedbackContact"
-          placeholder="手机号或邮箱（选填）"
+          placeholder="手机号或邮箱（选填，方便我们联系您）"
           class="feedback-contact"
         />
       </div>
@@ -343,11 +279,11 @@
 import { ref, computed } from 'vue'
 import { 
   UserFilled, Coin, Trophy, ArrowRight, Clock, 
-  Present, DocumentCopy, Link, Setting, Guide, 
+  Present, DocumentCopy, Share, Guide, 
   ChatDotRound, SwitchButton, Plus, Calendar,
-  Star, Link as LinkIcon, Loading
+  Star, Link, Loading, Medal, Compass,
+  Magic, HeartFilled
 } from '@element-plus/icons-vue'
-import PageHeroHeader from '../../components/PageHeroHeader.vue'
 import AsyncState from '../../components/AsyncState.vue'
 import { useProfile } from './useProfile'
 
@@ -359,11 +295,11 @@ const {
   activeHistoryTab, isVip, vipExpireTime,
   profileStatus,
   baziStatus, tarotStatus, liuyaoStatus, hehunStatus,
-  inviteCount, invitePoints, inviteLink, inviteSuccessCount,
+  inviteCount, invitePoints, inviteSuccessCount, inviteLink,
   checkinStatus, checkinLoading,
 
   // 计算属性
-  pointsLevelName,
+  pointsLevelName, pointsPercentage, pointsToNextLevel,
 
   // 方法
   formatTime, formatDate,
@@ -374,70 +310,150 @@ const {
   copyInviteCode, copyInviteLink, handleLogout, doCheckin,
 } = useProfile()
 
+// 邀请奖励积分（从配置读取，这里用默认值）
+const invitePointsReward = ref(20)
+
+// 历史记录标签
+const historyTabs = [
+  { key: 'bazi', label: '八字排盘', icon: Clock },
+  { key: 'tarot', label: '塔罗占卜', icon: Magic },
+  { key: 'liuyao', label: '六爻占卜', icon: Compass },
+  { key: 'hehun', label: '八字合婚', icon: HeartFilled },
+]
+
+// 当前标签标签名
+const currentTabLabel = computed(() => {
+  const tab = historyTabs.find(t => t.key === activeHistoryTab.value)
+  return tab?.label || ''
+})
+
+// 当前历史记录状态
+const currentHistoryStatus = computed(() => {
+  const statusMap = { bazi: baziStatus, tarot: tarotStatus, liuyao: liuyaoStatus, hehun: hehunStatus }
+  return statusMap[activeHistoryTab.value]?.value || 'loading'
+})
+
+// 当前历史记录列表
+const currentHistoryList = computed(() => {
+  const listMap = { bazi: baziHistory, tarot: tarotHistory, liuyao: liuyaoHistory, hehun: hehunHistory }
+  return listMap[activeHistoryTab.value]?.value || []
+})
+
+// 加载当前历史记录
+const loadCurrentHistory = () => {
+  const loaders = {
+    bazi: loadBaziHistory,
+    tarot: loadTarotHistory,
+    liuyao: loadLiuyaoHistory,
+    hehun: loadHehunHistory
+  }
+  loaders[activeHistoryTab.value]?.()
+}
+
+// 查看当前详情
+const viewCurrentDetail = (record) => {
+  const viewers = {
+    bazi: viewDetail,
+    tarot: viewTarotDetail,
+    liuyao: viewLiuyaoDetail,
+    hehun: viewHehunDetail
+  }
+  viewers[activeHistoryTab.value]?.(record)
+}
+
+// 获取记录标题
+const getRecordTitle = (record) => {
+  switch (activeHistoryTab.value) {
+    case 'bazi':
+      return `${formatDate(record.birthDate)} · ${record.gender === 'male' ? '男' : '女'}`
+    case 'tarot':
+      return record.spreadName || '塔罗占卜'
+    case 'liuyao':
+      return record.question || '六爻占卜'
+    case 'hehun':
+      return `${record.male_name || '男方'} × ${record.female_name || '女方'}`
+    default:
+      return '记录'
+  }
+}
+
+// 获取记录副标题
+const getRecordSubtitle = (record) => {
+  switch (activeHistoryTab.value) {
+    case 'bazi':
+      return `${record.yearGan}${record.yearZhi} ${record.dayGan}${record.dayZhi}`
+    case 'tarot':
+      return `${record.cards?.length || 0}张牌 · ${record.cards?.[0]?.name || ''}`
+    case 'liuyao':
+      return record.method_name || '铜钱起卦'
+    case 'hehun':
+      return record.total_score ? `${record.total_score}分` : '八字合婚'
+    default:
+      return ''
+  }
+}
+
+// 跳转到历史记录页面
+const goToHistoryPage = () => {
+  const pathMap = {
+    bazi: '/bazi',
+    tarot: '/tarot',
+    liuyao: '/liuyao',
+    hehun: '/hehun'
+  }
+  window.location.href = pathMap[activeHistoryTab.value] || '/'
+}
+
 // 快捷统计
 const quickStats = computed(() => [
-  { key: 'bazi', value: baziCount.value, label: '排盘' },
-  { key: 'tarot', value: tarotCount.value, label: '塔罗' },
-  { key: 'liuyao', value: liuyaoCount.value, label: '六爻' },
-  { key: 'hehun', value: hehunCount.value, label: '合婚' },
+  { key: 'bazi', value: baziCount.value, label: '八字排盘', path: '/bazi' },
+  { key: 'tarot', value: tarotCount.value, label: '塔罗占卜', path: '/tarot' },
+  { key: 'liuyao', value: liuyaoCount.value, label: '六爻占卜', path: '/liuyao' },
+  { key: 'hehun', value: hehunCount.value, label: '八字合婚', path: '/hehun' },
 ])
 
-// 功能卡片
-const featureCards = computed(() => [
+// 功能列表
+const featureList = computed(() => [
   { 
     key: 'checkin', 
-    title: checkinStatus.value.today_checkin ? '今日已签到' : '每日签到', 
-    desc: checkinStatus.value.today_checkin 
-      ? `连续签到 ${checkinStatus.value.consecutive_days} 天，明天继续！` 
-      : '签到领积分，连续签到奖励更多',
+    title: checkinStatus.value.today_checkin ? '已签到' : '每日签到', 
     icon: Calendar,
-    path: null,
-    action: 'checkin',
-    checked: checkinStatus.value.today_checkin
+    checked: checkinStatus.value.today_checkin,
+    loading: checkinLoading.value,
+    badge: checkinStatus.value.today_checkin ? `连续${checkinStatus.value.consecutive_days}天` : null
   },
-  { 
-    key: 'vip', 
-    title: 'VIP会员', 
-    desc: isVip.value ? `到期时间: ${vipExpireTime.value}` : '开通VIP享受更多特权',
-    icon: Trophy,
-    path: '/vip'
-  },
-  { 
-    key: 'points', 
-    title: '积分攻略', 
-    desc: '了解如何获取更多积分',
-    icon: Star,
-    path: null,
-    action: 'guide'
-  },
-  { 
-    key: 'invite', 
-    title: '邀请好友', 
-    desc: `已邀请 ${inviteCount.value} 人，获得 ${invitePoints.value} 积分`,
-    icon: LinkIcon,
-    path: null,
-    action: 'invite'
-  },
+  { key: 'vip', title: isVip.value ? 'VIP会员' : '开通VIP', icon: Trophy },
+  { key: 'points', title: '积分攻略', icon: Star },
+  { key: 'invite', title: '邀请好友', icon: Link, badge: inviteCount.value > 0 ? `${inviteCount.value}人` : null },
+  { key: 'bazi', title: '八字排盘', icon: Clock },
+  { key: 'tarot', title: '塔罗占卜', icon: Magic },
+  { key: 'liuyao', title: '六爻占卜', icon: Compass },
+  { key: 'hehun', title: '八字合婚', icon: HeartFilled },
 ])
+
+// 处理功能点击
+const handleFeatureClick = async (item) => {
+  const paths = {
+    vip: '/vip',
+    bazi: '/bazi',
+    tarot: '/tarot',
+    liuyao: '/liuyao',
+    hehun: '/hehun'
+  }
+  
+  if (item.key === 'checkin') {
+    await doCheckin()
+  } else if (item.key === 'points') {
+    ElMessage.info('积分攻略：每日签到+10分，邀请好友+50分，充值更划算！')
+  } else if (item.key === 'invite') {
+    copyInviteCode()
+  } else if (paths[item.key]) {
+    window.location.href = paths[item.key]
+  }
+}
 
 // 控制反馈弹窗
 const showFeedback = ref(false)
-
-// 处理卡片点击
-const handleCardClick = async (card) => {
-  if (card.path) {
-    // 使用原生跳转
-    window.location.href = card.path
-  } else if (card.action === 'checkin') {
-    // 执行签到
-    await doCheckin()
-  } else if (card.action === 'invite') {
-    copyInviteCode()
-  } else if (card.action === 'guide') {
-    // 显示积分攻略
-    ElMessage.info('积分攻略：每日签到、邀请好友、充值均可获得积分')
-  }
-}
 </script>
 
 <style scoped>
