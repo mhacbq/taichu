@@ -1204,29 +1204,11 @@ onUnmounted(() => {
   }
 })
 
-// 保存结果
+// 保存结果（八字排盘已自动保存到云端，此函数仅作提示）
 const saveResult = async () => {
-  saving.value = true
-  try {
-    // 保存到本地存储
-    const savedResults = JSON.parse(localStorage.getItem('bazi_saved') || '[]')
-    savedResults.unshift({
-      id: result.value.id,
-      date: new Date().toISOString(),
-      bazi: result.value.bazi,
-      analysis: result.value.analysis
-    })
-    // 最多保存50条
-    if (savedResults.length > 50) {
-      savedResults.pop()
-    }
-    localStorage.setItem('bazi_saved', JSON.stringify(savedResults))
-    ElMessage.success('已保存到当前设备；云端历史请以个人中心记录为准')
-  } catch (error) {
-    ElMessage.error('保存失败')
-  } finally {
-    saving.value = false
-  }
+  // 八字排盘结果已在服务器自动保存，无需本地存储
+  // 统一使用服务端存储，确保数据一致性和跨设备同步
+  ElMessage.success('排盘结果已自动保存到云端，可在个人中心查看历史记录')
 }
 
 // 判断是否当前大运（根据出生日期计算当前年龄）

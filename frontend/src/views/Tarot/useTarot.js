@@ -481,6 +481,8 @@ const interpretCurrentCards = async () => {
     }
     clearFlowError()
     ElMessage.success('抽牌成功')
+    // 自动保存到云端，确保数据一致性
+    await saveTarotResult()
     return true
   }
 
