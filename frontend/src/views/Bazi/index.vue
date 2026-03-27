@@ -154,5 +154,171 @@ const {
 </script>
 
 <style scoped>
-@import './style.css';
+/* =============================================
+   八字排盘页 - 页面级样式（index.vue）
+   ============================================= */
+
+/* 页面容器 */
+.bazi-page {
+  padding: 10px 0 78px;
+  animation: fadeInUp 0.6s ease;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(var(--primary-rgb), 0.14), transparent 34%),
+    radial-gradient(circle at 100% 12%, rgba(245, 196, 103, 0.18), transparent 26%),
+    linear-gradient(180deg, #fffdf8 0%, #fff9f1 46%, #fff7ee 100%);
+}
+
+/* 加载状态 */
+.loading-state {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
+}
+
+.loading-animation {
+  margin-bottom: 30px;
+}
+
+/* 太极图加载动画 */
+.loading-taiji {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #fff 50%, #000 50%);
+  position: relative;
+  animation: yinYangRotate 2s linear infinite;
+  box-shadow: 0 0 30px rgba(184, 134, 11, 0.3);
+}
+
+.loading-taiji::before,
+.loading-taiji::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.loading-taiji::before {
+  background: #fff;
+  top: 0;
+  box-shadow: 0 0 0 12px #000 inset;
+}
+
+.loading-taiji::after {
+  background: #000;
+  bottom: 0;
+  box-shadow: 0 0 0 12px #fff inset;
+}
+
+.loading-state h3 {
+  color: var(--text-primary);
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 40px;
+}
+
+/* 加载步骤 */
+.loading-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.done {
+  opacity: 0.7;
+}
+
+.step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.step.active .step-icon {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(184, 134, 11, 0.3);
+}
+
+.step.done .step-icon {
+  background: rgba(103, 194, 58, 0.3);
+  border-color: #67c23a;
+  color: #67c23a;
+}
+
+.step-text {
+  font-size: 12px;
+  color: #5f5548;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-text {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.step-line {
+  width: 40px;
+  height: 2px;
+  background: var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.step-line.active {
+  background: linear-gradient(90deg, #67c23a, #D4AF37);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes yinYangRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .bazi-page {
+    padding: 0 0 56px;
+  }
+}
 </style>

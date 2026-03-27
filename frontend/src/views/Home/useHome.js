@@ -107,8 +107,8 @@ const stats = ref(createFallbackStats('统计同步中'))
 const statsLoading = ref(true)
 const statsError = ref(false)
 
-const isLoggedIn = ref(false)
-const userPoints = ref(null)
+const isLoggedIn = ref(!!localStorage.getItem('token'))
+const userPoints = ref(getStoredPoints())
 const userCount = ref(null)
 const isFirstBaziEligible = ref(null)
 

@@ -93,7 +93,7 @@ class Points extends BaseController
         $userModel = \app\model\User::find($user['sub']);
         
         if (!$userModel) {
-            return $this->error('用户不存在', 404);
+            return $this->error('用户不存在，请重新登录', 401);
         }
         
         $userId = (int) $user['sub'];
