@@ -606,14 +606,12 @@ const viewHehunDetail = (record) => {
 }
 
 const viewTarotDetail = (record) => {
-  const cards = getTarotCards(record)
-  if (!cards.length) {
-    ElMessage.warning('该记录缺少塔罗牌数据')
+  if (!record?.id) {
+    ElMessage.warning('记录数据异常，无法查看详情')
     return
   }
-
-  const cardNames = cards.map(card => `${card.name}${card.reversed ? '(逆位)' : '(正位)'}`).join('、')
-  ElMessage.info(`塔罗牌：${cardNames}`)
+  // 跳转到塔罗结果页
+  router.push(`/tarot?record_id=${record.id}`)
 }
 
 

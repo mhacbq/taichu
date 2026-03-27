@@ -97,7 +97,7 @@
           
           <div class="history-content">
             <!-- 八字排盘 -->
-            <div v-if="activeHistoryTab === 'bazi'" class="history-list">
+            <div v-show="activeHistoryTab === 'bazi'" class="history-list">
               <AsyncState :status="baziStatus" loadingText="正在加载排盘记录..." @retry="loadBaziHistory">
                 <template v-if="baziHistory.length > 0">
                   <div 
@@ -106,23 +106,30 @@
                     class="history-item"
                     @click="viewDetail(record)"
                   >
+                    <div class="item-icon bazi-icon">
+                      <el-icon><Clock /></el-icon>
+                    </div>
                     <div class="item-main">
                       <span class="item-title">{{ formatDate(record.birthDate) }} · {{ record.gender === 'male' ? '男' : '女' }}</span>
                       <span class="item-subtitle">{{ record.yearGan }}{{ record.yearZhi }} {{ record.dayGan }}{{ record.dayZhi }}</span>
                     </div>
-                    <span class="item-time">{{ formatTime(record.createdAt) }}</span>
-                    <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    <div class="item-meta">
+                      <span class="item-time">{{ formatTime(record.createdAt) }}</span>
+                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    </div>
                   </div>
-                  <div v-if="baziHistory.length > 5" class="view-more" @click="activeHistoryTab = 'bazi'">
+                  <div v-if="baziHistory.length > 5" class="view-more" @click="$router.push('/bazi')">
                     查看全部 {{ baziHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
                   </div>
                 </template>
-                <el-empty v-else description="暂无排盘记录" />
+                <el-empty v-else description="暂无排盘记录">
+                  <el-button type="primary" size="small" @click="$router.push('/bazi')">去排盘</el-button>
+                </el-empty>
               </AsyncState>
             </div>
 
             <!-- 塔罗占卜 -->
-            <div v-if="activeHistoryTab === 'tarot'" class="history-list">
+            <div v-show="activeHistoryTab === 'tarot'" class="history-list">
               <AsyncState :status="tarotStatus" loadingText="正在加载占卜记录..." @retry="loadTarotHistory">
                 <template v-if="tarotHistory.length > 0">
                   <div 
@@ -131,20 +138,30 @@
                     class="history-item"
                     @click="viewTarotDetail(record)"
                   >
+                    <div class="item-icon tarot-icon">
+                      <span class="icon-emoji">🃏</span>
+                    </div>
                     <div class="item-main">
                       <span class="item-title">{{ record.spreadName }}</span>
-                      <span class="item-subtitle">{{ record.cards[0]?.name }}{{ record.cards[0]?.reversed ? '(逆)' : '' }}</span>
+                      <span class="item-subtitle">{{ record.cards?.length || 0 }}张牌 · {{ record.cards?.[0]?.name }}{{ record.cards?.[0]?.reversed ? '(逆)' : '' }}</span>
                     </div>
-                    <span class="item-time">{{ formatTime(record.date) }}</span>
-                    <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    <div class="item-meta">
+                      <span class="item-time">{{ formatTime(record.date) }}</span>
+                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    </div>
+                  </div>
+                  <div v-if="tarotHistory.length > 5" class="view-more" @click="$router.push('/tarot')">
+                    查看全部 {{ tarotHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
                   </div>
                 </template>
-                <el-empty v-else description="暂无占卜记录" />
+                <el-empty v-else description="暂无占卜记录">
+                  <el-button type="primary" size="small" @click="$router.push('/tarot')">去占卜</el-button>
+                </el-empty>
               </AsyncState>
             </div>
 
             <!-- 六爻占卜 -->
-            <div v-if="activeHistoryTab === 'liuyao'" class="history-list">
+            <div v-show="activeHistoryTab === 'liuyao'" class="history-list">
               <AsyncState :status="liuyaoStatus" loadingText="正在加载六爻记录..." @retry="loadLiuyaoHistory">
                 <template v-if="liuyaoHistory.length > 0">
                   <div 
@@ -153,20 +170,30 @@
                     class="history-item"
                     @click="viewLiuyaoDetail(record)"
                   >
+                    <div class="item-icon liuyao-icon">
+                      <span class="icon-emoji">☯</span>
+                    </div>
                     <div class="item-main">
                       <span class="item-title">{{ record.question || '六爻占卜' }}</span>
                       <span class="item-subtitle">{{ record.method_name || '铜钱起卦' }}</span>
                     </div>
-                    <span class="item-time">{{ formatTime(record.created_at) }}</span>
-                    <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    <div class="item-meta">
+                      <span class="item-time">{{ formatTime(record.created_at) }}</span>
+                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    </div>
+                  </div>
+                  <div v-if="liuyaoHistory.length > 5" class="view-more" @click="$router.push('/liuyao')">
+                    查看全部 {{ liuyaoHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
                   </div>
                 </template>
-                <el-empty v-else description="暂无六爻记录" />
+                <el-empty v-else description="暂无六爻记录">
+                  <el-button type="primary" size="small" @click="$router.push('/liuyao')">去占卜</el-button>
+                </el-empty>
               </AsyncState>
             </div>
 
             <!-- 八字合婚 -->
-            <div v-if="activeHistoryTab === 'hehun'" class="history-list">
+            <div v-show="activeHistoryTab === 'hehun'" class="history-list">
               <AsyncState :status="hehunStatus" loadingText="正在加载合婚记录..." @retry="loadHehunHistory">
                 <template v-if="hehunHistory.length > 0">
                   <div 
@@ -175,15 +202,25 @@
                     class="history-item"
                     @click="viewHehunDetail(record)"
                   >
+                    <div class="item-icon hehun-icon">
+                      <span class="icon-emoji">💕</span>
+                    </div>
                     <div class="item-main">
                       <span class="item-title">{{ record.male_name || '男方' }} × {{ record.female_name || '女方' }}</span>
-                      <span v-if="record.total_score" class="item-subtitle">{{ record.total_score }}分</span>
+                      <span v-if="record.total_score" class="item-subtitle score-tag">{{ record.total_score }}分</span>
                     </div>
-                    <span class="item-time">{{ formatTime(record.created_at) }}</span>
-                    <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    <div class="item-meta">
+                      <span class="item-time">{{ formatTime(record.created_at) }}</span>
+                      <el-icon class="item-arrow"><ArrowRight /></el-icon>
+                    </div>
+                  </div>
+                  <div v-if="hehunHistory.length > 5" class="view-more" @click="$router.push('/hehun')">
+                    查看全部 {{ hehunHistory.length }} 条记录 <el-icon><ArrowRight /></el-icon>
                   </div>
                 </template>
-                <el-empty v-else description="暂无合婚记录" />
+                <el-empty v-else description="暂无合婚记录">
+                  <el-button type="primary" size="small" @click="$router.push('/hehun')">去合婚</el-button>
+                </el-empty>
               </AsyncState>
             </div>
           </div>

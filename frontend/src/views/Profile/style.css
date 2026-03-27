@@ -266,6 +266,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .section-header h3 {
@@ -290,42 +292,113 @@
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  min-height: 200px;
 }
 
 .history-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px;
   background: rgba(255, 250, 241, 0.7);
   border: 1px solid rgba(227, 184, 104, 0.15);
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
 }
 
 .history-item:hover {
-  border-color: rgba(212, 175, 55, 0.35);
+  border-color: rgba(212, 175, 55, 0.4);
   background: rgba(255, 252, 245, 0.95);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
+}
+
+/* 类型图标 */
+.item-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.item-icon .el-icon {
+  font-size: 22px;
+}
+
+.icon-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bazi-icon {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+  color: var(--primary-color);
+}
+
+.tarot-icon {
+  background: linear-gradient(135deg, rgba(144, 99, 205, 0.15), rgba(144, 99, 205, 0.05));
+  color: #9063cd;
+}
+
+.liuyao-icon {
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15), rgba(64, 158, 255, 0.05));
+  color: #409eff;
+}
+
+.hehun-icon {
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.15), rgba(245, 108, 108, 0.05));
+  color: #f56c6c;
 }
 
 .item-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .item-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item-subtitle {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-subtitle.score-tag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 10px;
+  background: linear-gradient(135deg, #e2af4f, #f3c86f);
+  color: #5a3f17;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .item-time {
@@ -336,25 +409,48 @@
 
 .item-arrow {
   color: var(--text-tertiary);
-  font-size: 14px;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+
+.history-item:hover .item-arrow {
+  transform: translateX(4px);
+  color: var(--primary-color);
 }
 
 .view-more {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 12px;
+  gap: 6px;
+  padding: 14px;
   color: var(--primary-color);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.2s;
+  border: 1px dashed rgba(212, 175, 55, 0.3);
+  margin-top: 4px;
 }
 
 .view-more:hover {
   background: rgba(212, 175, 55, 0.1);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* 空状态优化 */
+:deep(.el-empty) {
+  padding: 40px 0;
+}
+
+:deep(.el-empty__description) {
+  margin-top: 16px;
+  color: var(--text-secondary);
+}
+
+:deep(.el-empty .el-button) {
+  margin-top: 20px;
 }
 
 /* ===== 底部网格 ===== */
@@ -634,11 +730,36 @@
   }
 
   .history-item {
-    flex-wrap: wrap;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .item-icon .el-icon,
+  .icon-emoji {
+    font-size: 18px;
+  }
+
+  .item-title {
+    font-size: 14px;
+  }
+
+  .item-subtitle {
+    font-size: 12px;
+  }
+
+  .item-meta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
   }
 
   .item-time {
-    width: 100%;
-    margin-top: 4px;
+    font-size: 11px;
   }
 }
