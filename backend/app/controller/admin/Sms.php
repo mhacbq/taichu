@@ -185,7 +185,7 @@ class Sms extends BaseController
         // 成功次数（5分钟内被使用的）
         $successCount = \app\model\SmsCode::where('created_at', '>=', $startDate . ' 00:00:00')
             ->where('created_at', '<=', $endDate . ' 23:59:59')
-            ->where('is_used', 1)
+            ->where('used', 1)
             ->count();
         
         // 今日发送次数

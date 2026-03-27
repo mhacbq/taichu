@@ -10,4 +10,4 @@ export const createRechargeOrder = (data) => request.post('/payment/create-order
 export const queryRechargeOrder = (params) => request.get('/payment/query-order', { params })
 
 // 获取充值记录
-export const getRechargeHistory = () => request.get('/payment/history')
+export const getRechargeHistory = (params) => request.get('/payment/history', { params })

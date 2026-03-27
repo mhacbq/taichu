@@ -1,7 +1,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Briefcase, Money, Sunny, StarFilled } from '@element-plus/icons-vue'
-import { getDailyFortune, updateProfile } from '../../api'
+import { getDailyFortune, updateProfile, dailyCheckin, getCheckinStatus } from '../../api'
 
 export function useDaily() {
 const solarDate = ref('')
@@ -18,6 +18,12 @@ const dailyLoginRoute = { path: '/login', query: { redirect: '/daily' } }
 const showBirthdayDialog = ref(false)
 const userBirthDate = ref('')
 const birthdayLoading = ref(false)
+
+// 签到相关
+const checkedIn = ref(false)
+const consecutiveDays = ref(0)
+const todayCheckinPoints = ref(0)
+const checkinLoading = ref(false)
 
 const dailyStatus = computed(() => {
   if (isLoading.value) return 'loading'
@@ -37,9 +43,16 @@ const checkTomorrowPreview = () => {
   // 18:00 后显示明日预告
   if (hour >= 18) {
     showTomorrowPreview.value = true
-    // 模拟明日运势数据，实际应从后端获取
-    tomorrowStarCount.value = Math.floor(Math.random() * 3) + 3 // 3-5星
-    tomorrowSummary.value = '明日运势平稳，适合按部就班推进计划，注意劳逸结合。'
+    // 基于明天日期生成稳定的星级（同一天内刷新不变）
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const dateStr = `${tomorrow.getFullYear()}${tomorrow.getMonth()}${tomorrow.getDate()}`
+    let hash = 0
+    for (let i = 0; i < dateStr.length; i++) {
+      hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0
+    }
+    tomorrowStarCount.value = (hash % 3) + 3 // 3-5星，同一天稳定
+    tomorrowSummary.value = '明日运势已生成，点击下方按钮提前查看详情。'
   } else {
     showTomorrowPreview.value = false
   }
@@ -486,9 +499,8 @@ const saveBirthDate = async () => {
 }
 
 const loadDailyFortune = async ({ userInitiated = false } = {}) => {
-  // 检查是否登录
+  // 检查是否登录，未登录时引导去登录页，不弹生日弹窗
   if (!isLoggedIn.value) {
-    showBirthdayDialog.value = true
     isLoading.value = false
     return
   }
@@ -589,6 +601,46 @@ const loadDailyFortune = async ({ userInitiated = false } = {}) => {
 
 
 
+const loadCheckinStatus = async () => {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await getCheckinStatus()
+    if (res?.code === 0) {
+      checkedIn.value = res.data.checkedIn
+      consecutiveDays.value = res.data.consecutiveDays
+      todayCheckinPoints.value = res.data.todayPoints
+    }
+  } catch {
+    // 签到状态加载失败不影响主流程
+  }
+}
+
+const handleCheckin = async () => {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录后再签到')
+    return
+  }
+  if (checkedIn.value) {
+    ElMessage.info('今天已经签到过了，明天再来吧！')
+    return
+  }
+  checkinLoading.value = true
+  try {
+    const res = await dailyCheckin()
+    if (res?.code === 0) {
+      checkedIn.value = true
+      consecutiveDays.value = res.data.consecutiveDays
+      ElMessage.success(res.data.message || `签到成功！获得 ${res.data.points} 积分`)
+    } else {
+      ElMessage.error(res?.msg || '签到失败，请稍后重试')
+    }
+  } catch {
+    ElMessage.error('签到失败，请稍后重试')
+  } finally {
+    checkinLoading.value = false
+  }
+}
+
 const handleVisibilityChange = () => {
   if (document.visibilityState === 'visible') {
     syncLoginState()
@@ -598,6 +650,7 @@ const handleVisibilityChange = () => {
 onMounted(() => {
   syncLoginState()
   loadDailyFortune()
+  loadCheckinStatus()
   checkTomorrowPreview()
   window.addEventListener('storage', syncLoginState)
   document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -617,9 +670,11 @@ return {
   hasAspectCards, hasYiItems, hasJiItems, hasLuckySection, detailSections,
   almanac, hasAlmanac, ganzhiText, shichenList, hasShichen, currentShichenIndex,
   wuxingIconMap, luckLevelConfig,
+  // 签到相关
+  checkedIn, consecutiveDays, todayCheckinPoints, checkinLoading,
   getScoreColor, getScoreClass, getAspectIcon, getColorCode,
   zhiriTagType, zhiriDesc,
-  loadDailyFortune, loadTomorrowFortune, addToCalendar, saveBirthDate,
+  loadDailyFortune, loadTomorrowFortune, addToCalendar, saveBirthDate, handleCheckin,
 }
 } // end useDaily
 

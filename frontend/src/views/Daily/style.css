@@ -789,6 +789,16 @@
   border-bottom: 1px solid rgba(212, 160, 62, 0.2);
 }
 
+.overview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkin-btn {
+  font-size: 13px;
+}
+
 .date-display {
   display: flex;
   align-items: center;

@@ -36,7 +36,7 @@
         <div v-if="fortune" class="fortune-content">
           <!-- 重新设计的运势概览卡片 -->
           <div class="fortune-overview card">
-            <!-- 顶部日期和刷新 -->
+          <!-- 顶部日期和刷新 -->
             <div class="overview-header">
               <div class="date-display">
                 <div class="date-main">
@@ -47,11 +47,29 @@
                   <span class="day-badge">今日</span>
                 </div>
               </div>
-              <el-tooltip content="刷新运势" placement="top">
-                <button class="refresh-btn" :class="{ loading: isLoading }" @click="loadDailyFortune({ userInitiated: true })">
-                  <el-icon><RefreshRight /></el-icon>
-                </button>
-              </el-tooltip>
+              <div class="overview-header-actions">
+                <!-- 签到按钮 -->
+                <el-tooltip :content="checkedIn ? '今日已签到' : `签到得 ${todayCheckinPoints} 积分`" placement="top">
+                  <el-button
+                    :type="checkedIn ? 'success' : 'primary'"
+                    :plain="checkedIn"
+                    size="small"
+                    :loading="checkinLoading"
+                    :disabled="checkedIn"
+                    @click="handleCheckin"
+                    class="checkin-btn"
+                  >
+                    <el-icon v-if="checkedIn"><Select /></el-icon>
+                    <el-icon v-else><Present /></el-icon>
+                    {{ checkedIn ? `已签到 · ${consecutiveDays}天` : '每日签到' }}
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="刷新运势" placement="top">
+                  <button class="refresh-btn" :class="{ loading: isLoading }" @click="loadDailyFortune({ userInitiated: true })">
+                    <el-icon><RefreshRight /></el-icon>
+                  </button>
+                </el-tooltip>
+              </div>
             </div>
 
             <!-- 主体内容 -->
@@ -465,7 +483,7 @@ import AsyncState from '../../components/AsyncState.vue'
 import {
   MagicStick, QuestionFilled, Collection, WarningFilled, StarFilled,
   Right, Compass, Briefcase, Money, Sunny, UserFilled,
-  RefreshRight, Calendar, Present, Sunrise, ArrowRight, InfoFilled
+  RefreshRight, Calendar, Present, Sunrise, ArrowRight, InfoFilled, Select
 } from '@element-plus/icons-vue'
 
 import { useDaily } from './useDaily'
@@ -513,6 +531,12 @@ const {
   wuxingIconMap,
   luckLevelConfig,
 
+  // 签到相关
+  checkedIn,
+  consecutiveDays,
+  todayCheckinPoints,
+  checkinLoading,
+
   // 方法
   getScoreColor,
   getScoreClass,
@@ -524,6 +548,7 @@ const {
   loadTomorrowFortune,
   addToCalendar,
   saveBirthDate,
+  handleCheckin,
 } = useDaily()
 </script>
 
