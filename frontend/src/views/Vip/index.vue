@@ -47,7 +47,7 @@
             </div>
             <div class="plan-points">
               <el-icon><Coin /></el-icon>
-              <span>消耗 {{ plan.price }} 积分</span>
+              <span>{{ plan.pointsPrice }} 积分兑换</span>
             </div>
             <ul class="plan-features">
               <li v-for="(feature, index) in plan.features" :key="index">

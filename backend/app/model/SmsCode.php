@@ -40,7 +40,7 @@ class SmsCode extends Model
         'code' => 'string',
         'type' => 'string',
         'expire_time' => 'datetime',
-        'is_used' => 'boolean',
+        'used' => 'boolean',
         'ip' => 'string',
         'created_at' => 'datetime',
     ];
@@ -61,8 +61,8 @@ class SmsCode extends Model
         // 将同类型的旧验证码标记为已使用
         self::where('phone', $phone)
             ->where('type', $type)
-            ->where('is_used', 0)
-            ->update(['is_used' => 1]);
+            ->where('used', 0)
+            ->update(['used' => 1]);
         
         $code = self::generateCode();
 
@@ -72,7 +72,7 @@ class SmsCode extends Model
             'code' => $code,
             'type' => $type,
             'expire_time' => date('Y-m-d H:i:s', strtotime("+{$expireMinutes} minutes")),
-            'is_used' => 0,
+            'used' => 0,
             'ip' => $ip,
         ]);
 
@@ -88,7 +88,7 @@ class SmsCode extends Model
         $record = self::where('phone', $phone)
             ->where('code', $code)
             ->where('type', $type)
-            ->where('is_used', 0)
+            ->where('used', 0)
             ->where('expire_time', '>', date('Y-m-d H:i:s'))
             ->order('id', 'desc')
             ->find();
@@ -98,7 +98,7 @@ class SmsCode extends Model
         }
         
         // 标记为已使用
-        $record->is_used = 1;
+        $record->used = 1;
         $record->save();
         
         return true;
@@ -139,8 +139,8 @@ class SmsCode extends Model
     public static function clearExpired(): int
     {
         return self::where('expire_time', '<', date('Y-m-d H:i:s'))
-            ->where('is_used', 0)
-            ->update(['is_used' => 1]);
+            ->where('used', 0)
+            ->update(['used' => 1]);
     }
 
     /**

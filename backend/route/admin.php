@@ -17,10 +17,10 @@ Route::group('api/maodou', function () {
         Route::get('dashboard/statistics', 'admin.Dashboard/index');
         Route::get('dashboard/trend', 'admin.Dashboard/trend');
         Route::post('dashboard/refresh-stats', 'admin.Dashboard/updateStats');
-        Route::get('dashboard/chart/:type', 'Admin/chartData');
+        Route::get('dashboard/chart/:type', 'admin.Dashboard/chartData');
 
-        Route::get('dashboard/realtime', 'Admin/realtime');
-        Route::get('dashboard/export-realtime', 'Admin/exportRealtime');
+        Route::get('dashboard/realtime', 'admin.Dashboard/realtime');
+        Route::get('dashboard/export-realtime', 'admin.Dashboard/exportRealtime');
         Route::get('dashboard/pending-feedback', 'admin.Feedback/pendingSummary');
 
         // 待办事项
@@ -45,14 +45,14 @@ Route::group('api/maodou', function () {
         Route::post('config/update-batch', 'admin.Config/updateBatch');
 
         // 统一系统配置管理
-        Route::get('system-config', 'admin.SystemConfigController/index');
-        Route::post('system-config/save', 'admin.SystemConfigController/save');
-        Route::post('system-config/test-payment', 'admin.SystemConfigController/testPayment');
-        Route::post('system-config/test-ai', 'admin.SystemConfigController/testAI');
-        Route::get('system-config/export', 'admin.SystemConfigController/export');
+        Route::get('system-config', 'admin.SystemConfig/index');
+        Route::post('system-config/save', 'admin.SystemConfig/save');
+        Route::post('system-config/test-payment', 'admin.SystemConfig/testPayment');
+        Route::post('system-config/test-ai', 'admin.SystemConfig/testAI');
+        Route::get('system-config/export', 'admin.SystemConfig/export');
 
         // 用户管理
-        Route::get('users/export', 'Admin/exportUsers');
+        Route::get('users/export', 'admin.User/export');
         Route::get('users/behavior', 'admin.User/behavior');
         Route::put('users/batch-status', 'admin.User/batchUpdateStatus');
         Route::get('users', 'admin.User/index');
@@ -101,10 +101,10 @@ Route::group('api/maodou', function () {
         Route::delete('yearly-fortune-manage/:id', 'admin.YearlyFortuneManage/delete');
 
         // 内容管理
-        Route::get('content/daily', 'Admin/dailyFortuneList');
-        Route::post('content/daily', 'Admin/createDailyFortune');
-        Route::put('content/daily/:id', 'Admin/updateDailyFortune');
-        Route::delete('content/daily/:id', 'Admin/deleteDailyFortune');
+        Route::get('content/daily', 'admin.DailyFortuneManage/list');
+        Route::post('content/daily', 'admin.DailyFortuneManage/create');
+        Route::put('content/daily/:id', 'admin.DailyFortuneManage/update');
+        Route::delete('content/daily/:id', 'admin.DailyFortuneManage/delete');
         Route::get('content/almanac', 'admin.Almanac/almanacList');
         Route::post('content/almanac', 'admin.Almanac/saveAlmanac');
         Route::put('content/almanac/:id', 'admin.Almanac/updateAlmanac');
@@ -221,19 +221,19 @@ Route::group('api/maodou', function () {
 
         
         // 反作弊系统
-        Route::get('anticheat/events', 'Admin/riskEvents');
-        Route::get('anticheat/events/:id', 'Admin/riskEventDetail');
-        Route::put('anticheat/events/:id/handle', 'Admin/handleRiskEvent');
-        Route::get('anticheat/rules', 'Admin/riskRules');
-        Route::post('anticheat/rules', 'Admin/saveRiskRule');
-        Route::put('anticheat/rules/:id', 'Admin/updateRiskRule');
-        Route::delete('anticheat/rules/:id', 'Admin/deleteRiskRule');
-        Route::get('anticheat/devices', 'Admin/deviceFingerprints');
-        Route::put('anticheat/devices/:id/block', 'Admin/blockDevice');
+        Route::get('anticheat/events', 'admin.Anticheat/riskEvents');
+        Route::get('anticheat/events/:id', 'admin.Anticheat/riskEventDetail');
+        Route::put('anticheat/events/:id/handle', 'admin.Anticheat/handleRiskEvent');
+        Route::get('anticheat/rules', 'admin.Anticheat/riskRules');
+        Route::post('anticheat/rules', 'admin.Anticheat/saveRiskRule');
+        Route::put('anticheat/rules/:id', 'admin.Anticheat/updateRiskRule');
+        Route::delete('anticheat/rules/:id', 'admin.Anticheat/deleteRiskRule');
+        Route::get('anticheat/devices', 'admin.Anticheat/deviceFingerprints');
+        Route::put('anticheat/devices/:id/block', 'admin.Anticheat/blockDevice');
         
         // 系统设置
-        Route::get('system/settings', 'Admin/getSettings');
-        Route::put('system/settings', 'Admin/saveSettings');
+        Route::get('system/settings', 'admin.SystemSettings/getSettings');
+        Route::put('system/settings', 'admin.SystemSettings/saveSettings');
         Route::get('system/sensitive', 'admin.SensitiveWord/index');
         Route::post('system/sensitive', 'admin.SensitiveWord/create');
         Route::put('system/sensitive/:id', 'admin.SensitiveWord/update');
@@ -265,10 +265,10 @@ Route::group('api/maodou', function () {
         Route::post('shensha/save', 'admin.Shensha/save');
         Route::post('shensha/delete/:id', 'admin.Shensha/delete');
         Route::post('shensha/toggle-status', 'admin.Shensha/toggleStatus');
-        Route::get('system/admins', 'Admin/getAdminUsers');
-        Route::post('system/admins', 'Admin/saveAdminUser');
-        Route::delete('system/admins/:id', 'Admin/deleteAdminUser');
-        Route::post('system/admins/:id/reset-password', 'Admin/resetAdminPassword');
+        Route::get('system/admins', 'admin.AdminUser/getAdminUsers');
+        Route::post('system/admins', 'admin.AdminUser/saveAdminUser');
+        Route::delete('system/admins/:id', 'admin.AdminUser/deleteAdminUser');
+        Route::post('system/admins/:id/reset-password', 'admin.AdminUser/resetAdminPassword');
         
         // 角色和字典管理
         Route::get('system/roles', 'admin.System/getRoles');
@@ -303,17 +303,17 @@ Route::group('api/maodou', function () {
         Route::get('logs/:type/export', 'admin.Logs/exportLogs');
         
         // 任务调度
-        Route::get('tasks', 'Admin/taskList');
-        Route::get('tasks/logs', 'Admin/taskLogs');
-        Route::get('tasks/scripts', 'Admin/getTaskScripts');
-        Route::post('tasks/scripts', 'Admin/saveTaskScript');
-        Route::delete('tasks/scripts/:id', 'Admin/deleteTaskScript');
-        Route::post('tasks', 'Admin/createTask');
-        Route::get('tasks/:id', 'Admin/taskDetail');
-        Route::put('tasks/:id', 'Admin/updateTask');
-        Route::delete('tasks/:id', 'Admin/deleteTask');
-        Route::post('tasks/:id/run', 'Admin/runTask');
-        Route::put('tasks/:id/status', 'Admin/toggleTaskStatus');
+        Route::get('tasks', 'admin.Task/taskList');
+        Route::get('tasks/logs', 'admin.Task/taskLogs');
+        Route::get('tasks/scripts', 'admin.Task/getTaskScripts');
+        Route::post('tasks/scripts', 'admin.Task/saveTaskScript');
+        Route::delete('tasks/scripts/:id', 'admin.Task/deleteTaskScript');
+        Route::post('tasks', 'admin.Task/createTask');
+        Route::get('tasks/:id', 'admin.Task/taskDetail');
+        Route::put('tasks/:id', 'admin.Task/updateTask');
+        Route::delete('tasks/:id', 'admin.Task/deleteTask');
+        Route::post('tasks/:id/run', 'admin.Task/runTask');
+        Route::put('tasks/:id/status', 'admin.Task/toggleTaskStatus');
         
         // 塔罗牌管理
         Route::get('tarot-cards/stats', 'admin.TarotCards/stats');

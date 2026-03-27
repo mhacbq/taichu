@@ -646,74 +646,6 @@ class User extends BaseController
     }
 
     /**
-     * 调整单个用户积分（通过用户ID路由调用）
-     */
-    public function adjustPoints(int $id)
-    {
-        if (!$this->hasAdminPermission('points_adjust')) {
-            return $this->error('无权限调整用户积分', 403);
-        }
-
-        $data = $this->request->post();
-        $normalizedPoints = null;
-
-        try {
-            $normalizedPoints = $this->resolvePointsDelta($data);
-            if ($normalizedPoints === null) {
-                return $this->error('积分调整参数无效，请传入 points 或 type/amount', 400);
-            }
-            if ($normalizedPoints === 0) {
-                return $this->error('积分调整值不能为 0', 400);
-            }
-
-            $reason = mb_substr(trim((string) ($data['reason'] ?? '管理员调整')) ?: '管理员调整', 0, 255);
-
-            $user = UserModel::find($id);
-            if (!$user) {
-                return $this->error('用户不存在', 404);
-            }
-
-            $oldPoints = (int) ($user->points ?? 0);
-            $newPoints = $oldPoints + $normalizedPoints;
-            if ($newPoints < 0) {
-                return $this->error('积分不足', 400);
-            }
-
-            $user->points = $newPoints;
-            $user->save();
-
-            PointsRecord::create([
-                'user_id' => $id,
-                'type' => 'admin_adjust',
-                'amount' => $normalizedPoints,
-                'balance_after' => $newPoints,
-                'remark' => $reason,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-
-            $this->logOperation('adjust_points', 'user', [
-                'target_id' => $id,
-                'target_type' => 'user',
-                'detail' => sprintf('调整积分 %+d，原因：%s', $normalizedPoints, $reason),
-                'before_data' => ['points' => $oldPoints],
-                'after_data' => ['points' => $newPoints],
-            ]);
-
-            return $this->success([
-                'before_points' => $oldPoints,
-                'after_points' => $newPoints,
-                'delta' => $normalizedPoints,
-                'current_points' => $newPoints,
-            ], '积分调整成功');
-        } catch (\Throwable $e) {
-            return $this->respondSystemException('admin_adjust_points_by_id', $e, '调整积分失败，请稍后重试', [
-                'user_id' => $id,
-                'points' => $normalizedPoints,
-            ]);
-        }
-    }
-
-    /**
      * 返回首个存在的数据表名
      */
     protected function resolveFirstExistingTable(array $tables): ?string
@@ -725,5 +657,105 @@ class User extends BaseController
         }
 
         return null;
+    }
+
+    /**
+     * 导出用户数据（CSV）
+     */
+    public function export()
+    {
+        if (!$this->hasAdminPermission('user_view')) {
+            return $this->error('无权限导出用户数据', 403);
+        }
+
+        try {
+            $params = $this->request->get();
+            $query = UserModel::order('id', 'desc');
+            $username = trim((string) ($params['username'] ?? ($params['keyword'] ?? '')));
+            $phone = trim((string) ($params['phone'] ?? ''));
+            $status = $params['status'] ?? '';
+            $dateRange = $params['dateRange'] ?? [];
+            $startDate = trim((string) ($params['startDate'] ?? ((is_array($dateRange) && isset($dateRange[0])) ? $dateRange[0] : '')));
+            $endDate = trim((string) ($params['endDate'] ?? ((is_array($dateRange) && isset($dateRange[1])) ? $dateRange[1] : '')));
+
+            if ($username !== '') {
+                $safeUsername = preg_replace('/[%_\\\\]/', '', $username) ?: '';
+                $query->whereLike('username|nickname', '%' . $safeUsername . '%');
+            }
+            if ($phone !== '') {
+                $safePhone = preg_replace('/[%_\\\\]/', '', $phone) ?: '';
+                $query->whereLike('phone', '%' . $safePhone . '%');
+            }
+            if ($status !== '') {
+                $status = (int) $status;
+                if (!in_array($status, [0, 1, 2], true)) {
+                    return $this->error('用户状态参数无效', 400);
+                }
+                $query->where('status', $status);
+            }
+            if ($startDate !== '') {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) !== 1) {
+                    return $this->error('开始日期格式无效', 400);
+                }
+                $query->where('created_at', '>=', $startDate . ' 00:00:00');
+            }
+            if ($endDate !== '') {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) !== 1) {
+                    return $this->error('结束日期格式无效', 400);
+                }
+                $query->where('created_at', '<=', $endDate . ' 23:59:59');
+            }
+
+            $users = $query->select()->toArray();
+            $headers = ['ID', '昵称', '手机号', '积分', 'VIP等级', '状态', '注册时间', '最后登录'];
+            $csv = implode(',', $headers) . "\n";
+
+            foreach ($users as $user) {
+                $row = [
+                    $user['id'],
+                    $this->escapeCsv((string) ($user['nickname'] ?? '')),
+                    $user['phone'] ?? '',
+                    $user['points'] ?? 0,
+                    $user['vip_level'] ?? 0,
+                    (int) ($user['status'] ?? 0) === 1 ? '正常' : ((int) ($user['status'] ?? 0) === 0 ? '禁用' : '待验证'),
+                    $user['created_at'] ?? '',
+                    $user['last_login_at'] ?? '',
+                ];
+                $csv .= implode(',', $row) . "\n";
+            }
+
+            $csv = "\xEF\xBB\xBF" . $csv;
+
+            $this->logOperation('export', 'user', [
+                'target_id' => 0,
+                'detail'    => '导出用户数据，共' . count($users) . '条记录',
+                'after_data' => [
+                    'count'   => count($users),
+                    'filters' => [
+                        'username'  => $username,
+                        'phone'     => $phone,
+                        'status'    => $status,
+                        'startDate' => $startDate,
+                        'endDate'   => $endDate,
+                    ],
+                ],
+            ]);
+
+            return response($csv, 200, [
+                'Content-Type'        => 'text/csv; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="users_' . date('YmdHis') . '.csv"',
+            ]);
+        } catch (\Exception $e) {
+            return $this->error('导出失败，请稍后重试', 500);
+        }
+    }
+
+    private function escapeCsv(string $field): string
+    {
+        $field = str_replace('"', '""', $field);
+        if (strpos($field, ',') !== false || strpos($field, '"') !== false || strpos($field, "\n") !== false) {
+            $field = '"' . $field . '"';
+        }
+        return $field;
     }
 }

@@ -325,7 +325,7 @@ class Points extends BaseController
 
             foreach ($defaults as $idx => $rule) {
                 $configKey = self::POINTS_RULE_PREFIX . $rule['type'];
-                $saved = Db::name('system_config')
+                $saved = Db::name('tc_system_configs')
                     ->where('config_key', $configKey)
                     ->find();
 

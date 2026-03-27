@@ -61,6 +61,7 @@ export function useVip() {
           id: pkg.id,
           name: pkg.name,
           price: pkg.price,
+          pointsPrice: pkg.points_price || 0,
           duration: formatDuration(pkg.duration),
           points: pkg.points || 0,
           features: parseFeatures(pkg.features || pkg.description),
@@ -121,6 +122,7 @@ export function useVip() {
       id: 'month',
       name: '连续包月',
       price: '29',
+      pointsPrice: 500,
       duration: formatDuration(1),
       points: 500,
       features: ['每月赠送 500 积分', '解锁深度解读', '塔罗专属牌阵', '优先客服响应'],
@@ -130,6 +132,7 @@ export function useVip() {
       id: 'quarter',
       name: '连续包季',
       price: '68',
+      pointsPrice: 1200,
       duration: formatDuration(3),
       points: 1800,
       features: ['每季赠送 1800 积分', '解锁深度解读', '塔罗专属牌阵', '优先客服响应', '专属身份标识'],
@@ -139,6 +142,7 @@ export function useVip() {
       id: 'year',
       name: '连续包年',
       price: '198',
+      pointsPrice: 3600,
       duration: formatDuration(12),
       points: 8000,
       features: ['每年赠送 8000 积分', '解锁深度解读', '塔罗专属牌阵', '优先客服响应', '专属身份标识', '新功能优先体验'],
@@ -165,9 +169,9 @@ export function useVip() {
 
     try {
       await ElMessageBox.confirm(
-        `确认开通「${plan.name}」？将消耗 ${plan.price} 积分`,
-        '确认开通',
-        { confirmButtonText: '确认开通', cancelButtonText: '取消', type: 'info' }
+        `确认开通「${plan.name}」？将消耗 ${plan.pointsPrice} 积分`,
+        '积分兑换 VIP',
+        { confirmButtonText: '确认兑换', cancelButtonText: '取消', type: 'info' }
       )
     } catch {
       return // 用户取消
@@ -177,14 +181,26 @@ export function useVip() {
     try {
       const response = await purchaseVip({
         package_id: plan.id,
-        payment_method: 'points', // 积分支付
+        payment_method: 'points',
       })
 
       if (response.code === 0) {
         ElMessage.success('🎉 恭喜！VIP 开通成功')
         isVip.value = true
         vipExpireTime.value = response.data?.expire_time || ''
-        // 刷新本地用户信息
+        // 同步本地积分余额
+        if (response.data?.balance !== undefined) {
+          const stored = localStorage.getItem('userInfo')
+          if (stored) {
+            try {
+              const info = JSON.parse(stored)
+              info.points = response.data.balance
+              localStorage.setItem('userInfo', JSON.stringify(info))
+              userInfo.value = info
+            } catch { /* noop */ }
+          }
+        }
+        // 刷新 VIP 状态
         await loadVipStatus()
       } else {
         ElMessage.error(response.message || '开通失败，请稍后重试')

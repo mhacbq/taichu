@@ -7,6 +7,7 @@ use think\facade\Db;
 use app\model\UserVip;
 use app\model\VipOrder;
 use app\service\ConfigService;
+use app\service\PointsService;
 
 /**
  * VIP服务类
@@ -119,7 +120,7 @@ class VipService
     }
     
     /**
-     * 获取VIP价格配置
+     * 获取VIP价格配置（人民币，单位：元）
      */
     public static function getVipPrices(): array
     {
@@ -128,6 +129,95 @@ class VipService
             'quarter' => ConfigService::get('vip_quarter_price', VipOrder::PRICE_QUARTER),
             'year' => ConfigService::get('vip_year_price', VipOrder::PRICE_YEAR),
         ];
+    }
+
+    /**
+     * 获取VIP积分兑换价格配置（积分）
+     */
+    public static function getVipPointsPrices(): array
+    {
+        return [
+            'month'   => (int) ConfigService::get('vip_month_points',   500),
+            'quarter' => (int) ConfigService::get('vip_quarter_points', 1200),
+            'year'    => (int) ConfigService::get('vip_year_points',    3600),
+        ];
+    }
+
+    /**
+     * 积分兑换VIP（原子事务：扣积分 + 激活VIP）
+     *
+     * @param int    $userId  用户ID
+     * @param string $vipType 套餐类型：month / quarter / year
+     * @return array [success, message, expire_time, balance]
+     * @throws \Exception
+     */
+    public static function purchaseWithPoints(int $userId, string $vipType): array
+    {
+        if (!in_array($vipType, ['month', 'quarter', 'year'], true)) {
+            return ['success' => false, 'message' => '无效的套餐类型'];
+        }
+
+        $prices = self::getVipPointsPrices();
+        $cost   = $prices[$vipType];
+
+        Db::startTrans();
+        try {
+            // 1. 行锁检查积分
+            $userData = Db::name('tc_user')
+                ->where('id', $userId)
+                ->where('status', 1)
+                ->lock(true)
+                ->find();
+
+            if (!$userData) {
+                Db::rollback();
+                return ['success' => false, 'message' => '用户不存在'];
+            }
+
+            if ((int) $userData['points'] < $cost) {
+                Db::rollback();
+                return [
+                    'success' => false,
+                    'message' => "积分不足，需要 {$cost} 积分，当前余额 {$userData['points']} 积分",
+                    'balance' => (int) $userData['points'],
+                ];
+            }
+
+            // 2. 扣除积分
+            Db::name('tc_user')->where('id', $userId)->dec('points', $cost)->update();
+            $newBalance = (int) $userData['points'] - $cost;
+
+            // 3. 写积分流水
+            $pointsService = new PointsService();
+            $vipTypeNames  = ['month' => '月度VIP', 'quarter' => '季度VIP', 'year' => '年度VIP'];
+            $recordPayload = \app\model\PointsRecord::buildRecordPayload(
+                $userId,
+                '兑换' . ($vipTypeNames[$vipType] ?? 'VIP'),
+                -$cost,
+                'vip_exchange',
+                0,
+                "积分兑换{$vipTypeNames[$vipType]}",
+                ['balance' => $newBalance]
+            );
+            Db::name('tc_points_record')->insert($recordPayload);
+
+            // 4. 激活 VIP（续费或新开）
+            $duration = VipOrder::getVipDuration($vipType);
+            $vip      = UserVip::activateVip($userId, $vipType, $duration);
+
+            Db::commit();
+
+            return [
+                'success'     => true,
+                'message'     => 'VIP 开通成功',
+                'expire_time' => $vip->end_time,
+                'balance'     => $newBalance,
+            ];
+
+        } catch (\Exception $e) {
+            Db::rollback();
+            throw $e;
+        }
     }
     
     /**

@@ -26,7 +26,7 @@ class AiPrompt extends BaseController
         $keyword = $params['keyword'] ?? '';
 
         try {
-            $query = AiPrompt::where('is_deleted', 0);
+            $query = AiPrompt::where('1', '1');
 
             if ($type) {
                 $query->where('type', $type);
@@ -213,8 +213,7 @@ class AiPrompt extends BaseController
     public function getTypes()
     {
         try {
-            $types = AiPrompt::where('is_deleted', 0)
-                ->field('type, COUNT(*) as count')
+            $types = AiPrompt::field('type, COUNT(*) as count')
                 ->group('type')
                 ->select()
                 ->toArray();

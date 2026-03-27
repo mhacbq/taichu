@@ -70,7 +70,7 @@ class InviteRecord extends Model
     public static function getInviteStats(int $userId): array
     {
         $inviteCount = self::where('inviter_id', $userId)->count();
-        $totalPoints = self::where('inviter_id', $userId)->sum('points_reward');
+        $totalPoints = self::where('inviter_id', $userId)->sum('reward_points');
         
         return [
             'invite_count' => (int)$inviteCount,
@@ -165,7 +165,7 @@ class InviteRecord extends Model
                 'u.nickname',
                 'u.avatar',
                 'COUNT(ir.id) as invite_count',
-                'SUM(ir.points_reward) as total_points',
+                'SUM(ir.reward_points) as total_points',
                 'MAX(ir.created_at) as last_invite_time'
             ])
             ->join('tc_user u', 'ir.inviter_id = u.id')

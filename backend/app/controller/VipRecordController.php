@@ -76,11 +76,17 @@ class VipRecordController extends BaseController
                     ->where('status', 1)
                     ->where('end_time', '>', date('Y-m-d H:i:s'))
                     ->distinct()
-                    ->count('user_id'),
+                    ->count('user_id') ?: Db::table('tc_user')
+                    ->where('vip_level', '>', 0)
+                    ->where('vip_expire_at', '>', date('Y-m-d H:i:s'))
+                    ->count(),
                 'expired_users' => Db::table('tc_user_vip')
                     ->where('status', 2)
                     ->distinct()
-                    ->count('user_id'),
+                    ->count('user_id') ?: Db::table('tc_user')
+                    ->where('vip_level', '>', 0)
+                    ->where('vip_expire_at', '<', date('Y-m-d H:i:s'))
+                    ->count(),
                 'total_amount' => VipOrder::where('status', 'paid')->sum('amount'),
                 'today_amount' => VipOrder::where('created_at', '>=', date('Y-m-d'))
                     ->where('status', 'paid')

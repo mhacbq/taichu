@@ -386,7 +386,7 @@ CREATE TABLE IF NOT EXISTS `tc_sms_code` (
     `code` VARCHAR(10) NOT NULL COMMENT '验证码',
     `type` VARCHAR(20) NOT NULL DEFAULT 'login' COMMENT '类型 login/register/reset',
     `ip` VARCHAR(45) NOT NULL DEFAULT '' COMMENT '发送IP',
-    `used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用',
+    `is_used` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已使用',
     `expired_at` DATETIME NOT NULL COMMENT '过期时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_phone` (`phone`),
@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS `tc_invite_record` (
     `inviter_id` INT UNSIGNED NOT NULL COMMENT '邀请人ID',
     `invitee_id` INT UNSIGNED NOT NULL COMMENT '被邀请人ID',
     `invitee_phone` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '被邀请人手机号',
-    `reward_points` INT NOT NULL DEFAULT 0 COMMENT '奖励积分',
+    `points_reward` INT NOT NULL DEFAULT 0 COMMENT '奖励积分',
     `reward_time` DATETIME NULL COMMENT '奖励发放时间',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态 0待奖励 1已奖励',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -1459,6 +1459,9 @@ INSERT INTO `tc_system_configs` (`config_group`, `config_key`, `config_value`, `
 ('vip', 'vip_price_quarter', '168', 'int',     0, 0, 'VIP季度价格（元）',     2, 1),
 ('vip', 'vip_price_year',    '498', 'int',     0, 0, 'VIP年度价格（元）',     3, 1),
 ('vip', 'vip_unlock_hehun',  '1',   'boolean', 0, 0, 'VIP是否解锁合婚功能',  4, 1),
+('vip', 'vip_month_points',   '500',  'int', 0, 0, 'VIP月度积分兑换价格',  5, 1),
+('vip', 'vip_quarter_points', '1200', 'int', 0, 0, 'VIP季度积分兑换价格',  6, 1),
+('vip', 'vip_year_points',    '3600', 'int', 0, 0, 'VIP年度积分兑换价格',  7, 1),
 -- 积分充值档位
 ('recharge', 'points_recharge_tiers', '[{"points":100,"price":10},{"points":300,"price":28},{"points":600,"price":50},{"points":1000,"price":78}]', 'json', 0, 0, '积分充值档位配置', 1, 1),
 -- 站点信息
@@ -1496,6 +1499,60 @@ CREATE TABLE IF NOT EXISTS `tc_dict_data` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_dict_type` (`dict_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典数据表';
+
+-- =============================================================
+-- VIP会员表（任务4：tc_user_vip 表不存在修复）
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_user_vip` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `vip_type` VARCHAR(20) NOT NULL DEFAULT 'month' COMMENT 'VIP类型：month/quarter/year',
+    `start_time` DATETIME NOT NULL COMMENT '开始时间',
+    `end_time` DATETIME NOT NULL COMMENT '到期时间',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：1有效 2已过期',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uniq_user` (`user_id`),
+    INDEX `idx_status_end` (`status`, `end_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户VIP会员表';
+
+-- =============================================================
+-- 任务日志表（任务5：tc_task_log 表不存在修复）
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_task_log` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `task_id` VARCHAR(50) NOT NULL COMMENT '任务ID',
+    `task_type` VARCHAR(20) NOT NULL DEFAULT 'daily' COMMENT '任务类型：daily/once/unlimited',
+    `points` INT NOT NULL DEFAULT 0 COMMENT '获得积分',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_user_task` (`user_id`, `task_id`),
+    INDEX `idx_user_created` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务完成日志表';
+
+-- =============================================================
+-- 签到记录表（任务6：checkin_record / tc_checkin_record 表不存在修复）
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_checkin_record` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `date` DATE NOT NULL COMMENT '签到日期',
+    `consecutive_days` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '连续签到天数',
+    `points` INT NOT NULL DEFAULT 0 COMMENT '获得积分',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uniq_user_date` (`user_id`, `date`),
+    INDEX `idx_user_date` (`user_id`, `date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日签到记录表';
+
+-- Task.php 中的签到使用 tc_checkin_log 表名，同步补充
+CREATE TABLE IF NOT EXISTS `tc_checkin_log` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `consecutive_days` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '连续签到天数',
+    `points` INT NOT NULL DEFAULT 0 COMMENT '获得积分',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_user_created` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='签到日志表（Task控制器使用）';
 
 -- =============================================================
 -- 收尾

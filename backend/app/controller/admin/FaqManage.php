@@ -12,7 +12,9 @@ use think\facade\Log;
  */
 class FaqManage extends BaseController
 {
-    protected $middleware = [\app\middleware\AdminAuth::class];
+    protected $middleware = [
+        [\app\middleware\AdminAuth::class, 'except' => ['publicList']],
+    ];
 
     /**
      * 获取FAQ列表

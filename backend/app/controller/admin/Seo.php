@@ -501,9 +501,8 @@ class Seo extends BaseController
     public function getActiveSeoConfigs()
     {
         try {
-            $configs = SeoConfig::where('is_deleted', 0)
-                ->where('status', 1)
-                ->field('page_type,route_path,title,keywords,description,og_image,robots,structured_data')
+            $configs = SeoConfig::where('is_active', 1)
+                ->field('route,title,keywords,description,robots')
                 ->order('sort_order', 'asc')
                 ->select()
                 ->toArray();
