@@ -195,6 +195,24 @@
   border-color: rgba(212, 175, 55, 0.4);
 }
 
+.feature-card.checkin-checked {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.08), rgba(103, 194, 58, 0.03));
+  border-color: rgba(103, 194, 58, 0.3);
+}
+
+.feature-card.checkin-checked .feature-icon-wrapper {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.2), rgba(103, 194, 58, 0.1));
+}
+
+.feature-card.checkin-checked .feature-icon {
+  color: #67c23a;
+}
+
+.feature-card.checkin-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
 .feature-icon-wrapper {
   width: 56px;
   height: 56px;
