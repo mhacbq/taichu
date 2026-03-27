@@ -5,6 +5,8 @@ namespace app\service;
 
 use app\model\PointsRecord;
 use app\service\ConfigService;
+use app\service\PointsService;
+use think\facade\Config;
 use think\facade\Db;
 use think\facade\Log;
 

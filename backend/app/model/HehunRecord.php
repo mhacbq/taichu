@@ -166,7 +166,12 @@ class HehunRecord extends Model
             $insert['result'] = json_encode($payload['result'] ?? [], JSON_UNESCAPED_UNICODE);
         }
         if (isset($columns['analysis'])) {
-            $insert['analysis'] = self::buildAnalysisText($payload['result'] ?? [], $payload['ai_analysis'] ?? null);
+            $resultForAnalysis = $payload['result'] ?? [];
+            if (is_string($resultForAnalysis)) {
+                $decoded = json_decode($resultForAnalysis, true);
+                $resultForAnalysis = is_array($decoded) ? $decoded : [];
+            }
+            $insert['analysis'] = self::buildAnalysisText($resultForAnalysis, $payload['ai_analysis'] ?? null);
         }
         if (isset($columns['score'])) {
             $insert['score'] = (int)($payload['score'] ?? ($payload['result']['score'] ?? 0));

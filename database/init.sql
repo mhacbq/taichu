@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS `tc_invite_record` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `inviter_id` INT UNSIGNED NOT NULL COMMENT '邀请人ID',
     `invite_code` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '使用的邀请码',
-    `invitee_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '被邀请人ID',
+    `invitee_id` INT UNSIGNED NULL DEFAULT NULL COMMENT '被邀请人ID（邀请码记录时为NULL，实际邀请后填写）',
     `invitee_phone` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '被邀请人手机号',
     `reward_points` INT NOT NULL DEFAULT 0 COMMENT '奖励积分',
     `reward_time` DATETIME NULL COMMENT '奖励发放时间',

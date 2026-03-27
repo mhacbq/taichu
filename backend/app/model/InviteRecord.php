@@ -92,13 +92,14 @@ class InviteRecord extends Model
             return $record['invite_code'];
         }
         
-        // 创建新邀请码
+        // 创建新邀请码（邀请码记录属于邀请人，invitee_id 留 NULL，由实际邀请时填写）
         $code = self::generateInviteCode($userId);
         
         self::create([
-            'inviter_id' => $userId,
+            'inviter_id'  => $userId,
             'invite_code' => $code,
-            'status' => 1,
+            'invitee_id'  => null,
+            'status'      => 1,
         ]);
         
         return $code;

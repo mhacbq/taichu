@@ -145,3 +145,22 @@ html, body, #app {
   background: rgba(64, 158, 255, 0.08);
 }
 
+// 侧边栏菜单选中样式修复：去掉选中时的边框，只保留文字颜色高亮
+.el-menu-item.is-active {
+  border-right: none !important;
+  border-left: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+  text-decoration: none !important;
+}
+
+.el-menu-item:focus,
+.el-menu-item:focus-visible {
+  outline: none !important;
+}
+
+.el-menu--vertical .el-menu-item.is-active {
+  border-right: none !important;
+}
+
