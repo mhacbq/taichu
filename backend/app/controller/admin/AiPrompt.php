@@ -2,7 +2,7 @@
 namespace app\controller\admin;
 
 use app\BaseController;
-use app\model\AiPrompt;
+use app\model\AiPrompt as AiPromptModel;
 use think\Request;
 use think\facade\Db;
 
@@ -26,7 +26,7 @@ class AiPrompt extends BaseController
         $keyword = $params['keyword'] ?? '';
 
         try {
-            $query = AiPrompt::where('1', '1');
+            $query = AiPromptModel::where('is_deleted', 0);
 
             if ($type) {
                 $query->where('type', $type);
@@ -64,7 +64,7 @@ class AiPrompt extends BaseController
         }
 
         try {
-            $prompt = AiPrompt::find($id);
+            $prompt = AiPromptModel::find($id);
             if (!$prompt) {
                 return $this->error('提示词不存在', 404);
             }
@@ -89,13 +89,13 @@ class AiPrompt extends BaseController
 
         try {
             if ($id) {
-                $prompt = AiPrompt::find($id);
+                $prompt = AiPromptModel::find($id);
                 if (!$prompt) {
                     return $this->error('提示词不存在', 404);
                 }
                 $prompt->save($data);
             } else {
-                $prompt = AiPrompt::create($data);
+                $prompt = AiPromptModel::create($data);
             }
 
             return $this->success($prompt, '保存成功');
@@ -114,7 +114,7 @@ class AiPrompt extends BaseController
         }
 
         try {
-            $prompt = AiPrompt::find($id);
+            $prompt = AiPromptModel::find($id);
             if (!$prompt) {
                 return $this->error('提示词不存在', 404);
             }
@@ -138,12 +138,12 @@ class AiPrompt extends BaseController
         }
 
         try {
-            $prompt = AiPrompt::find($id);
+            $prompt = AiPromptModel::find($id);
             if (!$prompt) {
                 return $this->error('提示词不存在', 404);
             }
 
-            AiPrompt::where('type', $prompt->type)->update(['is_default' => 0]);
+            AiPromptModel::where('type', $prompt->type)->update(['is_default' => 0]);
             $prompt->is_default = 1;
             $prompt->save();
 
@@ -163,7 +163,7 @@ class AiPrompt extends BaseController
         }
 
         try {
-            $prompt = AiPrompt::find($id);
+            $prompt = AiPromptModel::find($id);
             if (!$prompt) {
                 return $this->error('提示词不存在', 404);
             }
@@ -189,7 +189,7 @@ class AiPrompt extends BaseController
         }
 
         try {
-            $prompt = AiPrompt::find($id);
+            $prompt = AiPromptModel::find($id);
             if (!$prompt) {
                 return $this->error('提示词不存在', 404);
             }
@@ -199,7 +199,7 @@ class AiPrompt extends BaseController
             $newPrompt['title'] = $newPrompt['title'] . ' (副本)';
             $newPrompt['is_default'] = 0;
 
-            $created = AiPrompt::create($newPrompt);
+            $created = AiPromptModel::create($newPrompt);
 
             return $this->success($created, '复制成功');
         } catch (\Throwable $e) {
@@ -213,7 +213,7 @@ class AiPrompt extends BaseController
     public function getTypes()
     {
         try {
-            $types = AiPrompt::field('type, COUNT(*) as count')
+            $types = AiPromptModel::field('type, COUNT(*) as count')
                 ->group('type')
                 ->select()
                 ->toArray();

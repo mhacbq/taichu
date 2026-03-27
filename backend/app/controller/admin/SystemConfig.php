@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
-use app\model\SystemConfig;
+use app\model\SystemConfig as SystemConfigModel;
 use think\facade\Db;
 use think\facade\Log;
 use think\Response;
@@ -13,7 +13,7 @@ use think\Response;
  * 系统配置管理控制器
  * 用于管理支付、AI、推送、短信等系统配置
  */
-class SystemConfigController extends BaseController
+class SystemConfig extends BaseController
 {
     /**
      * 获取配置列表
@@ -28,7 +28,7 @@ class SystemConfigController extends BaseController
         }
 
         try {
-            $configs = SystemConfig::getSafeConfigs($group);
+            $configs = SystemConfigModel::getSafeConfigs($group);
 
             $groupNames = [
                 'payment' => '支付配置',
@@ -74,7 +74,7 @@ class SystemConfigController extends BaseController
         Db::startTrans();
         try {
             foreach ($configs as $key => $value) {
-                $config = \app\model\SystemConfig::where('config_group', $group)
+                $config = SystemConfigModel::where('config_group', $group)
                     ->where('config_key', $key)
                     ->find();
 
@@ -122,7 +122,7 @@ class SystemConfigController extends BaseController
 
         try {
             if ($type === 'wechat') {
-                $config = SystemConfig::getPaymentConfig('wechat');
+                $config = SystemConfigModel::getPaymentConfig('wechat');
 
                 if (!$config || !$config['is_enabled']) {
                     return $this->error('微信支付未启用或配置不完整');
@@ -143,7 +143,7 @@ class SystemConfigController extends BaseController
             }
 
             if ($type === 'alipay') {
-                $config = SystemConfig::getPaymentConfig('alipay');
+                $config = SystemConfigModel::getPaymentConfig('alipay');
 
                 if (!$config || !$config['is_enabled']) {
                     return $this->error('支付宝支付未启用或配置不完整');
@@ -180,7 +180,7 @@ class SystemConfigController extends BaseController
         }
 
         try {
-            $config = SystemConfig::getAIConfig();
+            $config = SystemConfigModel::getAIConfig();
 
             if (empty($config['ai_api_key'])) {
                 return $this->error('AI API密钥未配置');
@@ -222,7 +222,7 @@ class SystemConfigController extends BaseController
         }
 
         try {
-            $configs = SystemConfig::getSafeConfigs($group);
+            $configs = SystemConfigModel::getSafeConfigs($group);
 
             // 转换为JSON格式
             $exportData = [

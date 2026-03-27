@@ -6,16 +6,16 @@ namespace app\model;
 use think\Model;
 
 /**
- * 塔罗牌模�?
+ * 塔罗牌模�?
  */
 class TarotCard extends Model
 {
     protected $table = 'tc_tarot_card';
     
-    // 自动写入时间�?
+    // 自动写入时间戳
     protected $autoWriteTimestamp = true;
-    protected $createTime = 'create_time';
-    protected $updateTime = 'update_time';
+    protected $createTime = 'created_at';
+    protected $updateTime = false;
     
     // 字段类型转换
     protected $type = [
@@ -67,7 +67,7 @@ class TarotCard extends Model
     }
     
     /**
-     * 获取所有启用的牌（用于抽牌逻辑�?
+     * 获取所有启用的牌（用于抽牌逻辑�?
      */
     public static function getAllEnabled(): array
     {

@@ -503,14 +503,14 @@ class Seo extends BaseController
         try {
             $configs = SeoConfig::where('is_active', 1)
                 ->field('route,title,keywords,description,robots')
-                ->order('sort_order', 'asc')
+                ->order('id', 'asc')
                 ->select()
                 ->toArray();
 
-            // 转换为以route_path为key的映射，方便前端快速查找
+            // 转换为以route为key的映射，方便前端快速查找
             $map = [];
             foreach ($configs as $config) {
-                $key = $config['route_path'] ?: $config['page_type'];
+                $key = $config['route'];
                 $map[$key] = $config;
             }
 

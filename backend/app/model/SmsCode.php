@@ -39,7 +39,7 @@ class SmsCode extends Model
         'phone' => 'string',
         'code' => 'string',
         'type' => 'string',
-        'expire_time' => 'datetime',
+        'expired_at' => 'datetime',
         'used' => 'boolean',
         'ip' => 'string',
         'created_at' => 'datetime',
@@ -71,7 +71,7 @@ class SmsCode extends Model
             'phone' => $phone,
             'code' => $code,
             'type' => $type,
-            'expire_time' => date('Y-m-d H:i:s', strtotime("+{$expireMinutes} minutes")),
+            'expired_at' => date('Y-m-d H:i:s', strtotime("+{$expireMinutes} minutes")),
             'used' => 0,
             'ip' => $ip,
         ]);
@@ -89,7 +89,7 @@ class SmsCode extends Model
             ->where('code', $code)
             ->where('type', $type)
             ->where('used', 0)
-            ->where('expire_time', '>', date('Y-m-d H:i:s'))
+            ->where('expired_at', '>', date('Y-m-d H:i:s'))
             ->order('id', 'desc')
             ->find();
         
@@ -138,7 +138,7 @@ class SmsCode extends Model
      */
     public static function clearExpired(): int
     {
-        return self::where('expire_time', '<', date('Y-m-d H:i:s'))
+        return self::where('expired_at', '<', date('Y-m-d H:i:s'))
             ->where('used', 0)
             ->update(['used' => 1]);
     }
@@ -151,7 +151,7 @@ class SmsCode extends Model
         $retentionDays = max(0, $retentionDays);
         $deadline = date('Y-m-d H:i:s', strtotime(sprintf('-%d days', $retentionDays)));
 
-        return self::where('expire_time', '<', $deadline)->delete();
+        return self::where('expired_at', '<', $deadline)->delete();
     }
 
     protected static function resolveTableName(): string

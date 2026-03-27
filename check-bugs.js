@@ -229,9 +229,8 @@ async function testCoreFeatures() {
 
   // 八字排盘（真实请求）
   await checkApi('八字排盘 /api/paipan/bazi', 'POST', '/api/paipan/bazi', {
-    name: '测试用户', gender: 1,
-    birth_year: 1990, birth_month: 6, birth_day: 15, birth_hour: 12,
-    birth_minute: 0, calendar_type: 'solar'
+    birthDate: '1990-06-15 12:00', gender: 'male',
+    location: '', calendarType: 'solar'
   }, userToken, d => d ? true : 'data 为空');
 
   // 合婚定价
@@ -245,7 +244,7 @@ async function testCoreFeatures() {
 
   // 塔罗抽牌
   await checkApi('塔罗抽牌 /api/tarot/draw', 'POST', '/api/tarot/draw',
-    { spread_type: 'single' }, userToken);
+    { spread: 'single' }, userToken);
 }
 
 async function testAdminApis() {

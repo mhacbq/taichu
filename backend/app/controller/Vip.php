@@ -40,7 +40,7 @@ class Vip extends BaseController
      * packages/info/benefits 为公开接口，无需登录
      */
     protected $middleware = [
-        [\app\middleware\Auth::class, 'except' => ['packages', 'info', 'benefits']],
+        \app\middleware\Auth::class => ['except' => ['packages', 'info', 'benefits']],
     ];
     
     /**

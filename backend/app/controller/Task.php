@@ -126,7 +126,8 @@ class Task extends BaseController
 
         $completedToday = Db::name('tc_task_log')
             ->where('user_id', $userId)
-            ->whereDate('created_at', $today)
+            ->where('created_at', '>=', $today . ' 00:00:00')
+            ->where('created_at', '<=', $today . ' 23:59:59')
             ->distinct(true)
             ->count('task_id');
 
@@ -278,7 +279,8 @@ class Task extends BaseController
             $todayCount = Db::name('tc_task_log')
                 ->where('user_id', $userId)
                 ->where('task_id', $taskId)
-                ->whereDate('created_at', $today)
+                ->where('created_at', '>=', $today . ' 00:00:00')
+                ->where('created_at', '<=', $today . ' 23:59:59')
                 ->count();
             
             if ($todayCount >= $taskConfig['max_times']) {
@@ -314,7 +316,8 @@ class Task extends BaseController
         // 检查今日是否已签到
         $todayCheckin = Db::name('tc_checkin_log')
             ->where('user_id', $userId)
-            ->whereDate('created_at', $today)
+            ->where('created_at', '>=', $today . ' 00:00:00')
+            ->where('created_at', '<=', $today . ' 23:59:59')
             ->find();
         
         if ($todayCheckin) {
@@ -408,7 +411,8 @@ class Task extends BaseController
         $consecutiveDays = $this->getConsecutiveCheckinDays($userId);
         $todayCheckin = Db::name('tc_checkin_log')
             ->where('user_id', $userId)
-            ->whereDate('created_at', date('Y-m-d'))
+            ->where('created_at', '>=', date('Y-m-d') . ' 00:00:00')
+            ->where('created_at', '<=', date('Y-m-d') . ' 23:59:59')
             ->find();
         
         return $this->success([
@@ -445,7 +449,8 @@ class Task extends BaseController
             $count = Db::name('tc_task_log')
                 ->where('user_id', $userId)
                 ->where('task_id', $taskId)
-                ->whereDate('created_at', $today)
+                ->where('created_at', '>=', $today . ' 00:00:00')
+                ->where('created_at', '<=', $today . ' 23:59:59')
                 ->count();
             
             $lastClaimed = Db::name('tc_task_log')

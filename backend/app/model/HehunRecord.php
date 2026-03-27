@@ -594,13 +594,13 @@ class HehunRecord extends Model
         $sections = [];
 
         if (!empty($result['comment'])) {
-            $sections[] = '综合评语�? . $result['comment'];
+            $sections[] = '综合评语：' . $result['comment'];
         }
         if (!empty($result['suggestions']) && is_array($result['suggestions'])) {
-            $sections[] = '建议�? . implode('�?, $result['suggestions']);
+            $sections[] = '建议：' . implode('；', $result['suggestions']);
         }
         if (!empty($aiAnalysis)) {
-            $sections[] = 'AI补充�? . (is_string($aiAnalysis) ? $aiAnalysis : json_encode($aiAnalysis, JSON_UNESCAPED_UNICODE));
+            $sections[] = 'AI补充：' . (is_string($aiAnalysis) ? $aiAnalysis : json_encode($aiAnalysis, JSON_UNESCAPED_UNICODE));
         }
 
         return implode("\n", $sections);

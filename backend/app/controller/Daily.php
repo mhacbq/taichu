@@ -430,24 +430,26 @@ class Daily extends BaseController
             return $this->checkinStorage;
         }
 
-        foreach (['checkin_record', 'tc_checkin_record'] as $table) {
+        foreach (['tc_checkin_record', 'checkin_record'] as $table) {
+            // DB_PREFIX 为空，Db::name() 不加前缀，直接使用实际表名
             if (!$this->tableExists($table)) {
                 continue;
             }
+            $nameForQuery = $table;
 
-            $columns = $this->getTableColumns($table);
+            $columns = $this->getTableColumns($nameForQuery);
             $dateColumn = isset($columns['date']) ? 'date' : (isset($columns['checkin_date']) ? 'checkin_date' : 'date');
             $consecutiveColumn = isset($columns['consecutive_days']) ? 'consecutive_days' : (isset($columns['continuous_days']) ? 'continuous_days' : 'consecutive_days');
 
             return $this->checkinStorage = [
-                'table' => $table,
+                'table' => $nameForQuery,
                 'date_column' => $dateColumn,
                 'consecutive_column' => $consecutiveColumn,
             ];
         }
 
         return $this->checkinStorage = [
-            'table' => 'checkin_record',
+            'table' => 'tc_checkin_record',
             'date_column' => 'date',
             'consecutive_column' => 'consecutive_days',
         ];

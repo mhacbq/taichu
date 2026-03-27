@@ -13,7 +13,7 @@ use think\facade\Log;
 class FaqManage extends BaseController
 {
     protected $middleware = [
-        [\app\middleware\AdminAuth::class, 'except' => ['publicList']],
+        \app\middleware\AdminAuth::class => ['except' => ['publicList']],
     ];
 
     /**
