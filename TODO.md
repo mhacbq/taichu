@@ -17,13 +17,17 @@
 10. 设计规范：参考首页的色调——白色背景 #fffefb，金色强调 #d4a03e，深棕文字 #5e4318，保持一致。
 ## 🔴 A. 管理端功能修复队列
 
-1.导航栏选中又有边框,又有下划线,样式不对,去掉边框吧
-2.六爻占卜的结果页,没有显示当前是什么卦到什么卦,比如乾为天变卦雷天大有,还有AI解析的结果也没有展示
-3.个人页直接重新设计,重做,按照你的思路
-4.api/fortune/yearly流年运势,提示运势分析失败，请稍后重试
-5.api/hehun/calculate提示app\\model\\HehunRecord::buildAnalysisText(): Argument #1 ($result) must be of type array, string given, called in C:\\Users\\v_boqchen\\WorkBuddy\\Claw\\taichu-unified\\backend\\app\\model\\HehunRecord.php on line 169
-6.api/auth/userinfo提示SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '0' for key 'uk_invitee
+1. [已验证] 导航栏选中又有边框,又有下划线,样式不对,去掉边框吧 → **已修复**：在 `admin/src/styles/index.scss` 中覆盖 el-menu-item 选中时的默认边框样式
+2. [待确认] 六爻占卜的结果页,没有显示当前是什么卦到什么卦,比如乾为天变卦雷天大有,还有AI解析的结果也没有展示 → 后端返回结构正确（gua.name/bian_gua.name/ai_analysis），前端展示逻辑存在，需实际测试复现
+3. 个人页直接重新设计,重做,按照你的思路
+4. [已验证] api/fortune/yearly流年运势,提示运势分析失败，请稍后重试 → **已修复**：`YearlyFortuneService.php` 缺少 `use think\facade\Config` 和 `use app\service\PointsService` 导入
+5. [已验证] api/hehun/calculate提示app\\model\\HehunRecord::buildAnalysisText(): Argument #1 ($result) must be of type array, string given → **已修复**：`HehunRecord.php` 调用 `buildAnalysisText` 前先将 JSON 字符串解码为 array
+6. [已验证] api/auth/userinfo提示SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '0' for key 'uk_invitee → **已修复**：`InviteRecord::getOrCreateInviteCode` 创建邀请码时 `invitee_id` 设为 NULL；数据库迁移文件 `20260327_fix_invite_record_invitee_id_nullable.sql` 已创建，**需手动执行**
 
 ## ✅ D. 最近已完成 / 已确认
 
 - [x] [后台前端] 用户详情页补齐加载失败只读态、积分调整数值校验与最近积分记录回读，避免接口异常时继续展示假可操作按钮，也让积分调整成功后可直接回读结果。
+- [x] [后端] 修复 `api/hehun/calculate` 类型错误：`HehunRecord::buildAnalysisText()` 调用前先将 JSON 字符串解码为 array（commit: a7d71704）
+- [x] [后端] 修复 `api/auth/userinfo` uk_invitee 唯一键冲突：`InviteRecord::getOrCreateInviteCode` 创建邀请码时 `invitee_id` 设为 NULL，迁移文件 `20260327_fix_invite_record_invitee_id_nullable.sql` 需手动执行（commit: a7d71704）
+- [x] [后端] 修复 `api/fortune/yearly` 流年运势报错：`YearlyFortuneService.php` 补充缺失的 `use think\facade\Config` 和 `use app\service\PointsService` 导入（commit: a7d71704）
+- [x] [管理端] 修复导航栏选中时同时出现边框和下划线：在 `admin/src/styles/index.scss` 覆盖 el-menu-item 选中态默认边框（commit: a7d71704）
