@@ -63,8 +63,8 @@ const loadPointsConfig = async () => {
     if (response.code === 0) {
       pointsCost.value = response.data.yearly_fortune || response.data.yearly || 50
     }
-  } catch (error) {
-    console.error('加载积分配置失败:', error)
+  } catch {
+    // 加载失败时使用默认积分值，静默处理
   }
 }
 
@@ -137,7 +137,6 @@ const handleCalculate = async () => {
     } else {
       ElMessage.error('解析失败，请重试')
     }
-    console.error(error)
   } finally {
     calculating.value = false
   }

@@ -10,7 +10,7 @@ use think\Model;
  */
 class OperationLog extends Model
 {
-    protected $table = 'operation_logs';
+    protected $table = 'tc_operation_logs';
     
     protected $autoWriteTimestamp = false;
     

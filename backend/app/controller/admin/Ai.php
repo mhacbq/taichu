@@ -23,13 +23,13 @@ class Ai extends BaseController
             $configs = SystemConfig::getAIConfig();
             
             $displayConfigs = [
-                'ai_is_enabled' => $configs['ai_is_enabled'] ?? false,
-                'ai_api_url' => $configs['ai_api_url'] ?? '',
-                'ai_api_key' => $configs['ai_api_key'] ?? '',
-                'ai_model' => $configs['ai_model'] ?? 'gpt-3.5-turbo',
-                'ai_max_tokens' => $configs['ai_max_tokens'] ?? 2000,
+                'ai_is_enabled'  => $configs['ai_is_enabled'] ?? false,
+                'ai_api_url'     => $configs['ai_api_url'] ?? '',
+                'ai_api_key'     => $configs['ai_api_key'] ?? '',
+                'ai_model'       => $configs['ai_model'] ?? 'DeepSeek-V3.2',
+                'ai_max_tokens'  => $configs['ai_max_tokens'] ?? 4096,
                 'ai_temperature' => $configs['ai_temperature'] ?? 0.7,
-                'ai_timeout' => $configs['ai_timeout'] ?? 30,
+                'ai_timeout'     => $configs['ai_timeout'] ?? 60,
                 'ai_retry_times' => $configs['ai_retry_times'] ?? 3,
             ];
 
@@ -59,7 +59,7 @@ class Ai extends BaseController
                 'ai_max_tokens',
                 'ai_temperature',
                 'ai_timeout',
-                'ai_retry_times'
+                'ai_retry_times',
             ];
 
             foreach ($allowedFields as $field) {
@@ -113,35 +113,55 @@ class Ai extends BaseController
                 return $this->error('AI配置不完整，请先配置API地址和密钥');
             }
 
-            $client = new \GuzzleHttp\Client([
-                'timeout' => 10,
-                'verify' => false
-            ]);
-
-            $response = $client->post($apiUrl, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type' => 'application/json'
-                ],
-                'json' => [
-                    'model' => $configs['ai_model'] ?? 'gpt-3.5-turbo',
+            $body = json_encode([
+                'model' => $configs['ai_model'] ?? 'DeepSeek-V3.2',
+                'input' => [
                     'messages' => [
-                        ['role' => 'user', 'content' => 'Hello']
+                        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+                        ['role' => 'user',   'content' => 'Hello'],
                     ],
-                    'max_tokens' => 10
-                ]
+                ],
+                'parameters' => [
+                    'result_format' => 'message',
+                    'max_tokens'    => 10,
+                ],
             ]);
 
-            $result = json_decode((string) $response->getBody(), true);
+            // 同时支持 OpenAI 式接口（messages 在顶层）
+            // 如果是标准 OpenAI 式，就用如下格式；阿里云等将 messages 放在 input 中
+            // 这里统一发送，具体层由 AI 服务商处理差异
 
-            if ($response->getStatusCode() === 200) {
+            $ch = curl_init($apiUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $body,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $apiKey,
+                    'Content-Type: application/json',
+                    'Content-Length: ' . strlen($body),
+                ],
+            ]);
+            $responseBody = curl_exec($ch);
+            $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError    = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                return $this->error('AI服务连接失败: ' . $curlError);
+            }
+
+            $result = json_decode($responseBody, true);
+
+            if ($httpCode === 200) {
                 return $this->success([
-                    'status' => 'success',
+                    'status'  => 'success',
                     'message' => 'AI服务连接成功',
-                    'response_time' => $response->getHeaderLine('X-Response-Time') ?: '未知'
                 ]);
             } else {
-                return $this->error('AI服务返回错误: ' . ($result['error']['message'] ?? '未知错误'));
+                return $this->error('AI服务返回错误: ' . ($result['error']['message'] ?? ('HTTP ' . $httpCode)));
             }
         } catch (\Throwable $e) {
             Log::error('测试AI连接失败: ' . $e->getMessage());

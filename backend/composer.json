@@ -8,7 +8,8 @@
     "topthink/think-orm": "^3.0",
     "firebase/php-jwt": "^6.10",
     "topthink/think-filesystem": "^2.0",
-    "ext-mbstring": "*"
+    "ext-mbstring": "*",
+    "guzzlehttp/guzzle": "^7.10"
   },
   "autoload": {
     "psr-4": {

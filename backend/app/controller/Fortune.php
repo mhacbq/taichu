@@ -51,11 +51,31 @@ class Fortune extends BaseController
 
         // 如果未提供 bazi_id，尝试自动查找或基于用户出生信息创建
         if (!$baziId) {
-            $autoResult = $this->resolveOrCreateBaziRecord($userId);
-            if ($autoResult['error'] ?? false) {
-                return $this->error($autoResult['message'], $autoResult['code'] ?? 400);
+            // 优先使用前端直接传入的出生日期时间（birthDateTime 参数）
+            $birthDateTime = trim((string) $request->param('birthDateTime', ''));
+            $genderParam = trim((string) $request->param('gender', ''));
+
+            if ($birthDateTime !== '') {
+                // 前端直接传入了出生日期，自动排盘并创建八字记录
+                $genderText = in_array(strtolower($genderParam), ['female', '女', '2'], true) ? '女' : '男';
+                try {
+                    $autoResult = $this->autoCreateBaziRecord($userId, $birthDateTime, $genderText, '');
+                } catch (\Throwable $e) {
+                    Log::error('流年运势自动排盘失败: ' . $e->getMessage(), [
+                        'user_id' => $userId,
+                        'birth_date' => $birthDateTime,
+                    ]);
+                    return $this->error('自动排盘失败，请前往八字排盘页面手动排盘后再查看流年运势', 500);
+                }
+                $baziId = $autoResult['bazi_id'];
+            } else {
+                // 没有传入出生日期，尝试从用户历史记录或 profile 中获取
+                $autoResult = $this->resolveOrCreateBaziRecord($userId);
+                if ($autoResult['error'] ?? false) {
+                    return $this->error($autoResult['message'], $autoResult['code'] ?? 400);
+                }
+                $baziId = $autoResult['bazi_id'];
             }
-            $baziId = $autoResult['bazi_id'];
         }
 
         // 获取八字记录

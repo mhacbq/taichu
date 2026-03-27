@@ -36,7 +36,7 @@ class FeedbackAssign
             ]);
         
         return json([
-            'code' => 200,
+            'code' => 0,
             'message' => '获取成功',
             'data' => [
                 'list' => $list->items(),
@@ -87,7 +87,7 @@ class FeedbackAssign
             ]);
             
             Db::commit();
-            return json(['code' => 200, 'message' => '分配成功']);
+            return json(['code' => 0, 'message' => '分配成功']);
         } catch (\Exception $e) {
             Db::rollback();
             return json(['code' => 500, 'message' => '分配失败：' . $e->getMessage()]);
@@ -133,7 +133,7 @@ class FeedbackAssign
             ]);
             
             Db::commit();
-            return json(['code' => 200, 'message' => '更新成功']);
+            return json(['code' => 0, 'message' => '更新成功']);
         } catch (\Exception $e) {
             Db::rollback();
             return json(['code' => 500, 'message' => '更新失败：' . $e->getMessage()]);
@@ -155,7 +155,7 @@ class FeedbackAssign
             ->select();
         
         return json([
-            'code' => 200,
+            'code' => 0,
             'message' => '获取成功',
             'data' => $list
         ]);

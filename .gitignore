@@ -55,3 +55,4 @@ Desktop.ini
 /.browser-tools/
 /.playwright-cli/
 /.playwright/
+/backend/vendor/

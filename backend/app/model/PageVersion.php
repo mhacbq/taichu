@@ -10,7 +10,7 @@ use think\Model;
  */
 class PageVersion extends Model
 {
-    protected $table = 'page_versions';
+    protected $table = 'tc_page_versions';
     
     protected $autoWriteTimestamp = true;
     
@@ -27,7 +27,7 @@ class PageVersion extends Model
     protected $jsonAssoc = true;
     
     /**
-     * 获取页面的版本历史
+     * 获取页面的版本历�?
      */
     public static function getVersionsByPageId($pageId, $params = [])
     {
@@ -38,7 +38,7 @@ class PageVersion extends Model
     }
     
     /**
-     * 创建新版本
+     * 创建新版�?
      */
     public static function createVersion($pageId, $data)
     {

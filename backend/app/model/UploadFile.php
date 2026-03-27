@@ -10,7 +10,7 @@ use think\Model;
  */
 class UploadFile extends Model
 {
-    protected $table = 'upload_files';
+    protected $table = 'tc_upload_file';
     
     protected $autoWriteTimestamp = true;
     
@@ -56,7 +56,7 @@ class UploadFile extends Model
     }
     
     /**
-     * 软删除
+     * 软删�?
      */
     public function softDelete()
     {

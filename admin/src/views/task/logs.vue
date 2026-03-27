@@ -35,8 +35,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getTaskLogs } from '@/api/task'
 
+const route = useRoute()
 const loading = ref(false)
 const logList = ref([])
 const queryForm = reactive({
@@ -48,13 +52,32 @@ function handleSearch() {
   loadLogs()
 }
 
-function loadLogs() {
+async function loadLogs() {
   loading.value = true
-  setTimeout(() => {
-    logList.value = []
+  try {
+    const params = {}
+    if (queryForm.taskId) params.task_id = queryForm.taskId
+    if (queryForm.status) params.status = queryForm.status
+    const res = await getTaskLogs(params)
+    if (res.code === 0) {
+      logList.value = res.data?.list || []
+    } else {
+      ElMessage.error(res.msg || '加载日志失败')
+    }
+  } catch {
+    ElMessage.error('加载日志失败，请重试')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
+
+onMounted(() => {
+  // 支持从列表页"日志"按钮跳转时携带 script_id 参数
+  if (route.query.script_id) {
+    queryForm.taskId = route.query.script_id
+  }
+  loadLogs()
+})
 </script>
 
 <style scoped>

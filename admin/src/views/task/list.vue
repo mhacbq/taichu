@@ -146,9 +146,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTaskList, createTask, updateTask, deleteTask, runTask, toggleTaskStatus, getTaskScripts, saveTaskScript } from '@/api/task'
 import { reportAdminUiError } from '@/utils/dev-error'
+
+const router = useRouter()
 
 const loading = ref(false)
 const taskList = ref([])
@@ -295,7 +298,7 @@ async function submitScript() {
 }
 
 function handleViewLog(row) {
-  // 跳转到日志页面
+  router.push({ path: '/task/logs', query: { script_id: row.id } })
 }
 </script>
 

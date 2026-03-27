@@ -10,7 +10,7 @@ use think\Model;
  */
 class Page extends Model
 {
-    protected $table = 'pages';
+    protected $table = 'tc_pages';
     
     protected $autoWriteTimestamp = true;
     
@@ -53,7 +53,7 @@ class Page extends Model
     }
     
     /**
-     * 创建或更新
+     * 创建或更�?
      */
     public static function updateOrCreate(array $conditions, array $data)
     {

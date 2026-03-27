@@ -10,9 +10,9 @@ use think\Model;
  */
 class SiteContent extends Model
 {
-    protected $table = 'site_contents';
+    protected $table = 'tc_site_contents';
     
-    // 自动写入时间戳
+    // 自动写入时间�?
     protected $autoWriteTimestamp = true;
     
     // 字段类型转换
@@ -60,7 +60,7 @@ class SiteContent extends Model
                 'is_enabled' => 1,
             ];
             
-            // 检查是否存在
+            // 检查是否存�?
             $exists = self::where('key', $key)->where('page', $page)->find();
             if ($exists) {
                 $exists->save($data);

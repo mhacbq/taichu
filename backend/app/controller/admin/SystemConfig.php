@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace app\controller\admin;
 
-use app\controller\admin\Base;
+use app\BaseController;
 use app\model\SystemConfig;
 use think\facade\Db;
 use think\facade\Log;
@@ -13,7 +13,7 @@ use think\Response;
  * 系统配置管理控制器
  * 用于管理支付、AI、推送、短信等系统配置
  */
-class SystemConfigController extends Base
+class SystemConfigController extends BaseController
 {
     /**
      * 获取配置列表
@@ -54,7 +54,7 @@ class SystemConfigController extends Base
      */
     public function save(): Response
     {
-        if (!$this->checkPermission('system_config', 'edit')) {
+        if (!$this->hasAdminPermission('system_config_edit')) {
             return $this->error('无权限修改系统配置');
         }
 
@@ -96,9 +96,8 @@ class SystemConfigController extends Base
             }
 
             // 记录操作日志
-            $this->logOperation('修改系统配置', [
-                'group' => $group,
-                'keys' => array_keys($configs),
+            $this->logOperation('修改系统配置', 'system', [
+                'detail' => '修改系统配置分组: ' . $group,
             ]);
 
             Db::commit();
@@ -115,7 +114,7 @@ class SystemConfigController extends Base
      */
     public function testPayment(): Response
     {
-        if (!$this->checkPermission('system_config', 'view')) {
+        if (!$this->hasAdminPermission('system_config_view')) {
             return $this->error('无权限测试配置');
         }
 
@@ -176,7 +175,7 @@ class SystemConfigController extends Base
      */
     public function testAI(): Response
     {
-        if (!$this->checkPermission('system_config', 'view')) {
+        if (!$this->hasAdminPermission('system_config_view')) {
             return $this->error('无权限测试配置');
         }
 
@@ -211,7 +210,7 @@ class SystemConfigController extends Base
      */
     public function export(): Response
     {
-        if (!$this->checkPermission('system_config', 'view')) {
+        if (!$this->hasAdminPermission('system_config_view')) {
             return $this->error('无权限导出配置');
         }
 
@@ -252,26 +251,4 @@ class SystemConfigController extends Base
         }
     }
 
-    protected function checkPermission(string $permission, string $action): bool
-    {
-        // 如果是超级管理员，直接返回true
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        // 这里的权限检查逻辑取决于你的后台权限设计
-        // 暂时简单实现或调用BaseController的方法
-        if (method_exists($this, 'hasAdminPermission')) {
-            return $this->hasAdminPermission($permission . '_' . $action) || $this->hasAdminPermission($permission);
-        }
-
-        return true; 
-    }
-
-    protected function isAdmin(): bool
-    {
-        // 简单判断角色
-        $roles = $this->request->adminRoles ?? [];
-        return in_array('admin', $roles);
-    }
 }

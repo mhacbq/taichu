@@ -10,7 +10,7 @@ use think\Model;
  */
 class PageDraft extends Model
 {
-    protected $table = 'page_drafts';
+    protected $table = 'tc_page_drafts';
     
     protected $autoWriteTimestamp = true;
     
@@ -26,7 +26,7 @@ class PageDraft extends Model
     protected $jsonAssoc = true;
     
     /**
-     * 获取用户的草稿
+     * 获取用户的草�?
      */
     public static function getDraft($pageId, $adminId)
     {

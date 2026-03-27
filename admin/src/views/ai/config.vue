@@ -8,16 +8,19 @@ const testing = ref(false)
 
 // 预设模型列表
 const modelPresets = [
-  { name: 'GPT-3.5 Turbo', model: 'gpt-3.5-turbo', provider: 'OpenAI', icon: '🤖' },
-  { name: 'GPT-4', model: 'gpt-4', provider: 'OpenAI', icon: '🧠' },
-  { name: 'GPT-4 Turbo', model: 'gpt-4-turbo', provider: 'OpenAI', icon: '⚡' },
-  { name: 'Claude 3 Sonnet', model: 'claude-3-sonnet-20240229', provider: 'Anthropic', icon: '🎭' },
-  { name: 'Claude 3 Opus', model: 'claude-3-opus-20240229', provider: 'Anthropic', icon: '💎' },
-  { name: '通义千问-Turbo', model: 'qwen-turbo', provider: '阿里云', icon: '☁️' },
-  { name: '通义千问-Plus', model: 'qwen-plus', provider: '阿里云', icon: '🌟' },
-  { name: '文心一言', model: 'ernie-bot', provider: '百度', icon: '📝' },
-  { name: '智谱GLM-4', model: 'glm-4', provider: '智谱AI', icon: '🎯' },
-  { name: 'DeepSeek-V2', model: 'deepseek-chat', provider: 'DeepSeek', icon: '🔮' }
+  { name: 'GPT-3.5 Turbo',    model: 'gpt-3.5-turbo',              provider: 'OpenAI',   icon: '🤖' },
+  { name: 'GPT-4',            model: 'gpt-4',                      provider: 'OpenAI',   icon: '🧠' },
+  { name: 'GPT-4 Turbo',      model: 'gpt-4-turbo',                provider: 'OpenAI',   icon: '⚡' },
+  { name: 'Claude 3 Sonnet',  model: 'claude-3-sonnet-20240229',   provider: 'Anthropic', icon: '🎭' },
+  { name: 'Claude 3 Opus',    model: 'claude-3-opus-20240229',     provider: 'Anthropic', icon: '💎' },
+  { name: '通义千问-Turbo',   model: 'qwen-turbo',                 provider: '阿里云',   icon: '☁️' },
+  { name: '通义千问-Plus',    model: 'qwen-plus',                  provider: '阿里云',   icon: '🌟' },
+  { name: '通义千问-Max',     model: 'qwen-max',                   provider: '阿里云',   icon: '🔥' },
+  { name: 'DeepSeek-V3',      model: 'deepseek-chat',              provider: 'DeepSeek', icon: '🔮' },
+  { name: 'DeepSeek-V3.2',    model: 'DeepSeek-V3.2',              provider: 'DeepSeek', icon: '🔮' },
+  { name: 'DeepSeek-R1',      model: 'deepseek-reasoner',          provider: 'DeepSeek', icon: '🧩' },
+  { name: '文心一言 4.0',     model: 'ernie-4.0-8k',               provider: '百度',     icon: '📝' },
+  { name: '智谱GLM-4',        model: 'glm-4',                      provider: '智谱AI',   icon: '🎯' },
 ]
 
 // 自定义模型列表
@@ -27,10 +30,10 @@ const form = ref({
   ai_is_enabled: false,
   ai_api_url: '',
   ai_api_key: '',
-  ai_model: 'gpt-3.5-turbo',
-  ai_max_tokens: 2000,
+  ai_model: 'DeepSeek-V3.2',
+  ai_max_tokens: 4096,
   ai_temperature: 0.7,
-  ai_timeout: 30,
+  ai_timeout: 60,
   ai_retry_times: 3
 })
 
@@ -218,8 +221,14 @@ async function handleTest() {
           />
         </el-form-item>
 
-        <el-form-item label="当前模型">
-          <el-tag type="primary" size="large">{{ form.ai_model }}</el-tag>
+        <el-form-item label="当前模型" required>
+          <el-input
+            v-model="form.ai_model"
+            placeholder="请输入模型名称，如 qwen-plus、DeepSeek-V3.2"
+          >
+            <template #prepend>model</template>
+          </el-input>
+          <div style="font-size:12px;color:#909399;margin-top:4px">点击上方预设模型可快速填入，也可手动输入自定义模型名称</div>
         </el-form-item>
 
         <el-form-item label="最大Token数">

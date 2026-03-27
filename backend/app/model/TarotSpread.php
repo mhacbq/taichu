@@ -10,9 +10,9 @@ use think\Model;
  */
 class TarotSpread extends Model
 {
-    protected $table = 'tarot_spreads';
+    protected $table = 'tc_tarot_spreads';
     
-    // 自动写入时间戳
+    // 自动写入时间�?
     protected $autoWriteTimestamp = true;
     
     // 字段类型转换
@@ -31,15 +31,15 @@ class TarotSpread extends Model
     const TYPE_CAREER = 'career';
     
     const SPREAD_TYPES = [
-        self::TYPE_SINGLE => '单张牌',
-        self::TYPE_THREE => '三张牌',
-        self::TYPE_CELTIC => '凯尔特十字',
+        self::TYPE_SINGLE => '单张�?,
+        self::TYPE_THREE => '三张�?,
+        self::TYPE_CELTIC => '凯尔特十�?,
         self::TYPE_LOVE => '爱情牌阵',
         self::TYPE_CAREER => '事业牌阵',
     ];
     
     /**
-     * 获取启用的牌阵列表
+     * 获取启用的牌阵列�?
      */
     public static function getEnabledList(): array
     {
@@ -70,7 +70,7 @@ class TarotSpread extends Model
     }
     
     /**
-     * 获取位置详情（JSON解码）
+     * 获取位置详情（JSON解码�?
      */
     public function getPositionsAttr($value): array
     {

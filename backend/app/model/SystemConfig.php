@@ -15,12 +15,6 @@ class SystemConfig extends Model
 {
     protected $table = 'tc_system_configs';
 
-    private const GROUPED_TABLE = 'tc_system_configs';
-    private const LEGACY_TABLE = 'system_config';
-    private const LEGACY_TC_TABLE = 'tc_system_config';
-
-    private static ?string $legacyConfigTable = null;
-
     protected $autoWriteTimestamp = true;
 
     protected $schema = [
@@ -235,32 +229,10 @@ class SystemConfig extends Model
     }
 
     /**
-     * 兼容旧配置服务：按 key 获取配置值
+     * 按 key 获取配置值（跨分组查找）
      */
     public static function getByKey(string $key, $default = null)
     {
-        $legacyTable = self::resolveLegacyConfigTable();
-        if ($legacyTable !== null) {
-            try {
-                $keyField = $legacyTable === self::LEGACY_TABLE ? 'config_key' : 'key';
-                $valueField = $legacyTable === self::LEGACY_TABLE ? 'config_value' : 'value';
-                $typeField = $legacyTable === self::LEGACY_TABLE ? 'config_type' : 'type';
-
-                $config = Db::table($legacyTable)
-                    ->where($keyField, $key)
-                    ->find();
-
-                if ($config) {
-                    return self::parseConfigValue(
-                        (string) ($config[$valueField] ?? ''),
-                        (string) ($config[$typeField] ?? 'string'),
-                        false
-                    );
-                }
-            } catch (\Throwable) {
-            }
-        }
-
         try {
             $config = self::where('config_key', $key)
                 ->where('is_enabled', 1)
@@ -281,39 +253,10 @@ class SystemConfig extends Model
     }
 
     /**
-     * 兼容旧配置服务：按分类获取配置
+     * 按分类获取配置（等同于 getGroupConfig）
      */
     public static function getByCategory(string $category): array
     {
-        $legacyTable = self::resolveLegacyConfigTable();
-        if ($legacyTable !== null) {
-            try {
-                $groupField = $legacyTable === self::LEGACY_TABLE ? 'category' : 'group';
-                $keyField = $legacyTable === self::LEGACY_TABLE ? 'config_key' : 'key';
-                $valueField = $legacyTable === self::LEGACY_TABLE ? 'config_value' : 'value';
-                $typeField = $legacyTable === self::LEGACY_TABLE ? 'config_type' : 'type';
-                $sortField = $legacyTable === self::LEGACY_TABLE ? 'sort_order' : 'sort';
-
-                $rows = Db::table($legacyTable)
-                    ->where($groupField, $category)
-                    ->order($sortField, 'asc')
-                    ->select()
-                    ->toArray();
-
-                $result = [];
-                foreach ($rows as $row) {
-                    $result[$row[$keyField]] = self::parseConfigValue(
-                        (string) ($row[$valueField] ?? ''),
-                        (string) ($row[$typeField] ?? 'string'),
-                        false
-                    );
-                }
-
-                return $result;
-            } catch (\Throwable) {
-            }
-        }
-
         return self::getGroupConfig($category);
     }
 
@@ -331,40 +274,10 @@ class SystemConfig extends Model
     }
 
     /**
-     * 兼容旧配置服务：获取所有配置并按组返回
+     * 获取所有配置并按组返回
      */
     public static function getAllGrouped(): array
     {
-        $legacyTable = self::resolveLegacyConfigTable();
-        if ($legacyTable !== null) {
-            try {
-                $groupField = $legacyTable === self::LEGACY_TABLE ? 'category' : 'group';
-                $keyField = $legacyTable === self::LEGACY_TABLE ? 'config_key' : 'key';
-                $valueField = $legacyTable === self::LEGACY_TABLE ? 'config_value' : 'value';
-                $typeField = $legacyTable === self::LEGACY_TABLE ? 'config_type' : 'type';
-                $sortField = $legacyTable === self::LEGACY_TABLE ? 'sort_order' : 'sort';
-
-                $rows = Db::table($legacyTable)
-                    ->order($groupField, 'asc')
-                    ->order($sortField, 'asc')
-                    ->select()
-                    ->toArray();
-
-                $result = [];
-                foreach ($rows as $row) {
-                    $group = (string) ($row[$groupField] ?? 'general');
-                    $result[$group][$row[$keyField]] = self::parseConfigValue(
-                        (string) ($row[$valueField] ?? ''),
-                        (string) ($row[$typeField] ?? 'string'),
-                        false
-                    );
-                }
-
-                return $result;
-            } catch (\Throwable) {
-            }
-        }
-
         $rows = self::order('config_group', 'asc')
             ->order('sort_order', 'asc')
             ->select()
@@ -444,70 +357,8 @@ class SystemConfig extends Model
         };
     }
 
-    protected static function resolveLegacyConfigTable(): ?string
-    {
-        if (self::$legacyConfigTable !== null) {
-            return self::$legacyConfigTable;
-        }
-
-        foreach ([self::LEGACY_TABLE, self::LEGACY_TC_TABLE] as $table) {
-            if (self::tableExists($table)) {
-                self::$legacyConfigTable = $table;
-                return self::$legacyConfigTable;
-            }
-        }
-
-        self::$legacyConfigTable = '';
-        return null;
-    }
-
-    protected static function tableExists(string $table): bool
-    {
-        $escaped = addslashes($table);
-
-        try {
-            return !empty(Db::query("SHOW TABLES LIKE '{$escaped}'"));
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
     protected static function setByKey(string $key, $value): bool
     {
-        $legacyTable = self::resolveLegacyConfigTable();
-        if ($legacyTable !== null) {
-            try {
-                $keyField = $legacyTable === self::LEGACY_TABLE ? 'config_key' : 'key';
-                $valueField = $legacyTable === self::LEGACY_TABLE ? 'config_value' : 'value';
-                $typeField = $legacyTable === self::LEGACY_TABLE ? 'config_type' : 'type';
-                $groupField = $legacyTable === self::LEGACY_TABLE ? 'category' : 'group';
-                $sortField = $legacyTable === self::LEGACY_TABLE ? 'sort_order' : 'sort';
-                $editableField = $legacyTable === self::LEGACY_TABLE ? 'is_editable' : 'is_public';
-
-                $existing = Db::table($legacyTable)->where($keyField, $key)->find();
-                $payload = [
-                    $keyField => $key,
-                    $valueField => self::normalizeValue($value),
-                    $typeField => self::detectConfigType($value),
-                    $groupField => $existing[$groupField] ?? self::guessConfigGroup($key),
-                    'description' => $existing['description'] ?? $key,
-                    $sortField => (int) ($existing[$sortField] ?? 0),
-                    $editableField => (int) ($existing[$editableField] ?? 1),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ];
-
-                if ($existing) {
-                    return Db::table($legacyTable)
-                        ->where('id', (int) $existing['id'])
-                        ->update($payload) !== false;
-                }
-
-                $payload['created_at'] = date('Y-m-d H:i:s');
-                return Db::table($legacyTable)->insert($payload) > 0;
-            } catch (\Throwable) {
-            }
-        }
-
         $existing = self::where('config_key', $key)->find();
         if ($existing) {
             $existing->config_value = self::normalizeValue($value);

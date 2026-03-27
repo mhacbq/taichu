@@ -9,14 +9,14 @@
 --   [3] VIP & 充值表 (tc_vip_package, tc_vip_order, tc_recharge_order, tc_payment_config)
 --   [4] 业务功能表 (八字/合婚/取名/每日运势/流年/塔罗/六爻)
 --   [5] 短信 & 邀请 & 反馈表
---   [6] 系统配置表 (system_config, tc_feature_switch)
+--   [6] 系统配置表 (tc_system_config, tc_feature_switch)
 --   [7] 管理员相关表 (tc_admin, 角色, 权限, 日志)
 --   [8] 日志表 (tc_admin_login_log, tc_api_log)
 --   [9] 内容管理表 (tc_faq, tc_ai_prompt, tc_article*)
 --   [10] 通知推送表 (tc_notification, tc_notification_setting, tc_push_device)
 --   [11] 黄历 & 神煞表 (tc_almanac, tc_shensha)
 --   [12] SEO 相关表
---   [13] 统计表 (site_daily_stats)
+--   [13] 统计表 (tc_site_daily_stats)
 --   [14] 反作弊表
 --   [15] 文件上传表 (tc_upload_file)
 --   [16] 塔罗牌库表 (tc_tarot_card)
@@ -445,21 +445,7 @@ CREATE TABLE IF NOT EXISTS `tc_feedback` (
 -- [6] 系统配置表
 -- =============================================================
 
--- 主配置表（统一使用 system_config，不再使用 tc_system_config）
-CREATE TABLE IF NOT EXISTS `system_config` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `config_key` VARCHAR(100) NOT NULL COMMENT '配置键',
-    `config_value` TEXT NOT NULL COMMENT '配置值',
-    `config_type` VARCHAR(20) NOT NULL DEFAULT 'string' COMMENT '值类型: string/int/float/bool/json',
-    `description` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '配置说明',
-    `category` VARCHAR(50) NOT NULL DEFAULT 'general' COMMENT '分类',
-    `is_editable` TINYINT NOT NULL DEFAULT 1 COMMENT '是否允许后台编辑',
-    `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序',
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY `uk_config_key` (`config_key`),
-    KEY `idx_category` (`category`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
+-- tc_system_config 已合并到 tc_system_configs（见 [21] 节），此处不再单独建表
 
 CREATE TABLE IF NOT EXISTS `tc_feature_switch` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -875,7 +861,7 @@ CREATE TABLE IF NOT EXISTS `tc_seo_robots` (
 -- [13] 统计表
 -- =============================================================
 
-CREATE TABLE IF NOT EXISTS `site_daily_stats` (
+CREATE TABLE IF NOT EXISTS `tc_site_daily_stats` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `stat_date` DATE NOT NULL COMMENT '统计日期',
     `new_users` INT NOT NULL DEFAULT 0 COMMENT '新增用户数',
@@ -1071,49 +1057,7 @@ ON DUPLICATE KEY UPDATE
     `enabled` = VALUES(`enabled`),
     `description` = VALUES(`description`);
 
--- 系统配置
-INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `description`, `category`, `is_editable`, `sort_order`) VALUES
--- 积分消耗配置
-('points_cost_bazi',         '30',   'int',    '八字排盘基础积分消耗',       'points_cost', 1, 1),
-('points_cost_bazi_ai',      '50',   'int',    '八字AI深度解盘积分消耗',     'points_cost', 1, 2),
-('points_cost_tarot',        '20',   'int',    '塔罗占卜基础积分消耗',       'points_cost', 1, 3),
-('points_cost_tarot_ai',     '40',   'int',    '塔罗AI解读积分消耗',         'points_cost', 1, 4),
-('points_cost_liuyao',              '25',   'int',    '六爻占卜积分消耗',           'points_cost', 1, 5),
-('points_cost_liuyao_basic',        '15',   'int',    '六爻基础占卜积分消耗',       'points_cost', 1, 6),
-('points_cost_liuyao_professional', '50',   'int',    '六爻专业占卜积分消耗',       'points_cost', 1, 7),
-('points_cost_hehun',        '80',   'int',    '八字合婚基础积分消耗',       'points_cost', 1, 8),
-('points_cost_hehun_export', '30',   'int',    '合婚导出报告积分消耗',       'points_cost', 1, 9),
--- 新用户优惠
-('points_free_bazi_first',   '1',    'bool',   '新用户首次八字是否免费',     'new_user',    1, 1),
-('points_free_tarot_first',  '1',    'bool',   '新用户首次塔罗是否免费',     'new_user',    1, 2),
-('new_user_offer_enabled',   '1',    'bool',   '新用户优惠开关',             'new_user',    1, 3),
-('new_user_discount',        '50',   'int',    '新用户折扣（百分比）',       'new_user',    1, 4),
--- 功能开关
-('feature_bazi_enabled',     '1',    'bool',   '八字功能开关',               'feature',     1, 1),
-('feature_tarot_enabled',    '1',    'bool',   '塔罗功能开关',               'feature',     1, 2),
-('feature_liuyao_enabled',   '1',    'bool',   '六爻功能开关',               'feature',     1, 3),
-('feature_hehun_enabled',    '1',    'bool',   '合婚功能开关',               'feature',     1, 4),
-('feature_daily_enabled',    '1',    'bool',   '每日运势功能开关',           'feature',     1, 5),
--- VIP配置
-('vip_price_month',          '68',   'int',    'VIP月度价格（元）',          'vip',         1, 1),
-('vip_price_quarter',        '168',  'int',    'VIP季度价格（元）',          'vip',         1, 2),
-('vip_price_year',           '498',  'int',    'VIP年度价格（元）',          'vip',         1, 3),
-('vip_unlock_hehun',         '1',    'bool',   'VIP是否解锁合婚功能',        'vip',         1, 4),
--- 积分充值档位
-('points_recharge_tiers',    '[{"points":100,"price":10},{"points":300,"price":28},{"points":600,"price":50},{"points":1000,"price":78}]', 'json', '积分充值档位配置', 'recharge', 1, 1),
--- 站点信息
-('site_name',                '太初命理',  'string', '站点名称',              'site',        1, 1),
-('site_domain',              'taichu.chat', 'string', '站点域名',           'site',        0, 2),
-('site_icp',                 '',          'string', 'ICP备案号',            'site',        1, 3),
-('site_copyright',           '© 2026 太初命理', 'string', '版权信息',       'site',        1, 4),
--- 联系方式
-('contact_wechat',           '',    'string',   '客服微信号',               'contact',     1, 1),
-('contact_email',            '',    'string',   '客服邮箱',                 'contact',     1, 2)
-ON DUPLICATE KEY UPDATE
-    `description` = VALUES(`description`),
-    `category` = VALUES(`category`),
-    `is_editable` = VALUES(`is_editable`),
-    `sort_order` = VALUES(`sort_order`);
+-- 通用系统配置（已迁移至 tc_system_configs，见 [21] 节）
 
 -- 积分规则初始数据
 INSERT INTO `tc_points_rule` (`type`, `rule_name`, `points`, `description`, `status`) VALUES
@@ -1268,6 +1212,290 @@ ON DUPLICATE KEY UPDATE
     `prompt` = VALUES(`prompt`),
     `variables` = VALUES(`variables`),
     `status` = VALUES(`status`);
+
+-- =============================================================
+-- [18] 已废弃（原别名兼容表，现已统一使用 tc_ 前缀，此节保留为空）
+-- =============================================================
+
+-- =============================================================
+-- [19] 内容管理相关表
+-- =============================================================
+
+-- 每日运势模板表
+CREATE TABLE IF NOT EXISTS `tc_daily_fortune_templates` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `type` VARCHAR(30) NOT NULL COMMENT '类型: overall/love/career/wealth/health/advice/lucky',
+    `level` TINYINT NOT NULL COMMENT '等级: 1-5',
+    `content` TEXT NOT NULL COMMENT '模板内容',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_type_level` (`type`, `level`),
+    INDEX `idx_is_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日运势模板表';
+
+-- 操作日志表（管理端操作记录）
+CREATE TABLE IF NOT EXISTS `tc_operation_logs` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `admin_id` INT UNSIGNED DEFAULT 0 COMMENT '管理员ID',
+    `action` VARCHAR(100) DEFAULT '' COMMENT '操作类型',
+    `description` TEXT COMMENT '操作描述',
+    `ip` VARCHAR(50) DEFAULT '' COMMENT 'IP地址',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_admin_id` (`admin_id`),
+    INDEX `idx_action` (`action`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
+
+-- 页面管理表
+CREATE TABLE IF NOT EXISTS `tc_pages` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `page_id` VARCHAR(100) NOT NULL COMMENT '页面唯一标识',
+    `title` VARCHAR(200) DEFAULT '' COMMENT '页面标题',
+    `content` JSON COMMENT '页面内容(JSON)',
+    `settings` JSON COMMENT '页面设置(JSON)',
+    `status` VARCHAR(20) DEFAULT 'draft' COMMENT '状态: draft/published',
+    `version` INT DEFAULT 1 COMMENT '版本号',
+    `updated_by` INT UNSIGNED DEFAULT 0 COMMENT '最后更新人',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_page_id` (`page_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='页面管理表';
+
+-- 页面草稿表
+CREATE TABLE IF NOT EXISTS `tc_page_drafts` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `page_id` VARCHAR(100) NOT NULL COMMENT '页面标识',
+    `admin_id` INT UNSIGNED DEFAULT 0 COMMENT '管理员ID',
+    `content` JSON COMMENT '草稿内容(JSON)',
+    `settings` JSON COMMENT '草稿设置(JSON)',
+    `auto_save` TINYINT DEFAULT 1 COMMENT '是否自动保存',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_page_admin` (`page_id`, `admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='页面草稿表';
+
+-- 页面回收站表
+CREATE TABLE IF NOT EXISTS `tc_page_recycle` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `page_id` VARCHAR(100) NOT NULL COMMENT '页面标识',
+    `title` VARCHAR(200) DEFAULT '' COMMENT '页面标题',
+    `content` JSON COMMENT '页面内容(JSON)',
+    `settings` JSON COMMENT '页面设置(JSON)',
+    `version` INT DEFAULT 1 COMMENT '版本号',
+    `deleted_by` INT UNSIGNED DEFAULT 0 COMMENT '删除人',
+    `deleted_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
+    INDEX `idx_page_id` (`page_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='页面回收站表';
+
+-- 页面版本历史表
+CREATE TABLE IF NOT EXISTS `tc_page_versions` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `page_id` VARCHAR(100) NOT NULL COMMENT '页面标识',
+    `content` JSON COMMENT '版本内容(JSON)',
+    `settings` JSON COMMENT '版本设置(JSON)',
+    `version` INT DEFAULT 1 COMMENT '版本号',
+    `author_id` INT UNSIGNED DEFAULT 0 COMMENT '作者ID',
+    `author_name` VARCHAR(50) DEFAULT '' COMMENT '作者名称',
+    `description` VARCHAR(255) DEFAULT '' COMMENT '版本描述',
+    `auto_save` TINYINT DEFAULT 0 COMMENT '是否自动保存',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_page_id` (`page_id`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='页面版本历史表';
+
+-- 塔罗问题模板表
+CREATE TABLE IF NOT EXISTS `tc_question_templates` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `category` VARCHAR(30) DEFAULT 'life' COMMENT '分类: love/career/study/life/choice',
+    `question` VARCHAR(500) NOT NULL COMMENT '问题内容',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `use_count` INT DEFAULT 0 COMMENT '使用次数',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_category` (`category`),
+    INDEX `idx_is_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='塔罗问题模板表';
+
+-- 网站内容表
+CREATE TABLE IF NOT EXISTS `tc_site_contents` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `page` VARCHAR(50) NOT NULL COMMENT '所属页面: home/about/etc',
+    `key` VARCHAR(100) NOT NULL COMMENT '内容键名',
+    `value` LONGTEXT COMMENT '内容值',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
+    `created_by` INT UNSIGNED DEFAULT 0 COMMENT '创建人',
+    `updated_by` INT UNSIGNED DEFAULT 0 COMMENT '更新人',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_page_key` (`page`, `key`),
+    INDEX `idx_page` (`page`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='网站内容表';
+
+-- 塔罗牌阵表
+CREATE TABLE IF NOT EXISTS `tc_tarot_spreads` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL COMMENT '牌阵名称',
+    `type` VARCHAR(30) DEFAULT 'single' COMMENT '类型: single/three/celtic/love/career',
+    `description` TEXT COMMENT '牌阵描述',
+    `card_count` INT DEFAULT 1 COMMENT '牌数',
+    `positions` JSON COMMENT '位置定义(JSON)',
+    `is_free` TINYINT DEFAULT 0 COMMENT '是否免费',
+    `points_required` INT DEFAULT 0 COMMENT '所需积分',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_type` (`type`),
+    INDEX `idx_is_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='塔罗牌阵表';
+
+-- 用户评价表
+CREATE TABLE IF NOT EXISTS `tc_testimonials` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_name` VARCHAR(50) DEFAULT '' COMMENT '用户名称',
+    `avatar` VARCHAR(500) DEFAULT '' COMMENT '头像',
+    `service_type` VARCHAR(30) DEFAULT 'bazi' COMMENT '服务类型: bazi/tarot/daily',
+    `content` TEXT NOT NULL COMMENT '评价内容',
+    `rating` TINYINT DEFAULT 5 COMMENT '评分(1-5)',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_service_type` (`service_type`),
+    INDEX `idx_is_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户评价表';
+
+-- =============================================================
+-- [20] 反馈关联表
+-- =============================================================
+
+-- 反馈分配表
+CREATE TABLE IF NOT EXISTS `tc_feedback_assign` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `feedback_id` INT UNSIGNED NOT NULL COMMENT '反馈ID',
+    `assigned_by` INT UNSIGNED DEFAULT 0 COMMENT '分配人ID',
+    `assigned_to` INT UNSIGNED DEFAULT 0 COMMENT '被分配人ID',
+    `note` TEXT COMMENT '分配备注',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_feedback_id` (`feedback_id`),
+    INDEX `idx_assigned_to` (`assigned_to`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='反馈分配表';
+
+-- 反馈操作日志表
+CREATE TABLE IF NOT EXISTS `tc_feedback_log` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `feedback_id` INT UNSIGNED NOT NULL COMMENT '反馈ID',
+    `admin_id` INT UNSIGNED DEFAULT 0 COMMENT '操作管理员ID',
+    `action` VARCHAR(50) DEFAULT '' COMMENT '操作类型: assign/reply/status/note',
+    `content` TEXT COMMENT '操作内容',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_feedback_id` (`feedback_id`),
+    INDEX `idx_admin_id` (`admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='反馈操作日志表';
+
+-- =============================================================
+-- [21] 系统统一配置表（AI/支付/短信/推送等）
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS `tc_system_configs` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `config_group` VARCHAR(50) NOT NULL COMMENT '配置分组(ai/payment/sms/push)',
+    `config_key` VARCHAR(100) NOT NULL COMMENT '配置键',
+    `config_value` TEXT COMMENT '配置值',
+    `config_type` VARCHAR(20) DEFAULT 'string' COMMENT '值类型: string/int/boolean/json',
+    `is_encrypted` TINYINT DEFAULT 0 COMMENT '是否加密存储',
+    `is_sensitive` TINYINT DEFAULT 0 COMMENT '是否敏感信息',
+    `description` VARCHAR(255) DEFAULT '' COMMENT '描述',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `is_enabled` TINYINT DEFAULT 1 COMMENT '是否启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_group_key` (`config_group`, `config_key`),
+    INDEX `idx_group` (`config_group`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统统一配置表';
+
+-- AI 配置初始数据
+INSERT INTO `tc_system_configs` (`config_group`, `config_key`, `config_value`, `config_type`, `is_encrypted`, `is_sensitive`, `description`, `sort_order`, `is_enabled`) VALUES
+('ai', 'ai_is_enabled', '0', 'boolean', 0, 0, '是否启用AI服务', 1, 1),
+('ai', 'ai_api_url', 'https://aiping.cn/api/v1/chat/completions', 'string', 0, 0, 'AI服务API地址', 2, 1),
+('ai', 'ai_api_key', '', 'string', 1, 1, 'AI服务API密钥', 3, 1),
+('ai', 'ai_model', 'DeepSeek-V3.2', 'string', 0, 0, 'AI模型名称', 4, 1),
+('ai', 'ai_max_tokens', '4096', 'int', 0, 0, '最大生成token数', 5, 1),
+('ai', 'ai_temperature', '0.7', 'string', 0, 0, '温度参数(0-2)', 6, 1),
+('ai', 'ai_timeout', '60', 'int', 0, 0, '请求超时时间(秒)', 7, 1),
+('ai', 'ai_retry_times', '3', 'int', 0, 0, '失败重试次数', 8, 1),
+('ai', 'ai_enable_streaming', '1', 'boolean', 0, 0, '是否启用流式输出', 9, 1),
+('ai', 'ai_enable_thinking', '0', 'boolean', 0, 0, '是否启用思维链', 10, 1),
+('ai', 'ai_enable_bazi', '1', 'boolean', 0, 0, '是否启用八字分析', 11, 1),
+('ai', 'ai_enable_tarot', '1', 'boolean', 0, 0, '是否启用塔罗分析', 12, 1),
+('ai', 'ai_cost_points', '30', 'int', 0, 0, 'AI解盘消耗积分', 13, 1),
+-- 积分消耗配置
+('points_cost', 'points_cost_bazi',         '30',   'int',    0, 0, '八字排盘基础积分消耗',       1, 1),
+('points_cost', 'points_cost_bazi_ai',      '50',   'int',    0, 0, '八字AI深度解盘积分消耗',     2, 1),
+('points_cost', 'points_cost_tarot',        '20',   'int',    0, 0, '塔罗占卜基础积分消耗',       3, 1),
+('points_cost', 'points_cost_tarot_ai',     '40',   'int',    0, 0, '塔罗AI解读积分消耗',         4, 1),
+('points_cost', 'points_cost_liuyao',       '25',   'int',    0, 0, '六爻占卜积分消耗',           5, 1),
+('points_cost', 'points_cost_liuyao_basic', '15',   'int',    0, 0, '六爻基础占卜积分消耗',       6, 1),
+('points_cost', 'points_cost_liuyao_professional', '50', 'int', 0, 0, '六爻专业占卜积分消耗',    7, 1),
+('points_cost', 'points_cost_hehun',        '80',   'int',    0, 0, '八字合婚基础积分消耗',       8, 1),
+('points_cost', 'points_cost_hehun_export', '30',   'int',    0, 0, '合婚导出报告积分消耗',       9, 1),
+-- 新用户优惠
+('new_user', 'points_free_bazi_first',  '1',  'boolean', 0, 0, '新用户首次八字是否免费', 1, 1),
+('new_user', 'points_free_tarot_first', '1',  'boolean', 0, 0, '新用户首次塔罗是否免费', 2, 1),
+('new_user', 'new_user_offer_enabled',  '1',  'boolean', 0, 0, '新用户优惠开关',         3, 1),
+('new_user', 'new_user_discount',       '50', 'int',     0, 0, '新用户折扣（百分比）',   4, 1),
+-- 功能开关
+('feature', 'feature_bazi_enabled',    '1', 'boolean', 0, 0, '八字功能开关',     1, 1),
+('feature', 'feature_tarot_enabled',   '1', 'boolean', 0, 0, '塔罗功能开关',     2, 1),
+('feature', 'feature_liuyao_enabled',  '1', 'boolean', 0, 0, '六爻功能开关',     3, 1),
+('feature', 'feature_hehun_enabled',   '1', 'boolean', 0, 0, '合婚功能开关',     4, 1),
+('feature', 'feature_daily_enabled',   '1', 'boolean', 0, 0, '每日运势功能开关', 5, 1),
+-- VIP配置
+('vip', 'vip_price_month',   '68',  'int',     0, 0, 'VIP月度价格（元）',     1, 1),
+('vip', 'vip_price_quarter', '168', 'int',     0, 0, 'VIP季度价格（元）',     2, 1),
+('vip', 'vip_price_year',    '498', 'int',     0, 0, 'VIP年度价格（元）',     3, 1),
+('vip', 'vip_unlock_hehun',  '1',   'boolean', 0, 0, 'VIP是否解锁合婚功能',  4, 1),
+-- 积分充值档位
+('recharge', 'points_recharge_tiers', '[{"points":100,"price":10},{"points":300,"price":28},{"points":600,"price":50},{"points":1000,"price":78}]', 'json', 0, 0, '积分充值档位配置', 1, 1),
+-- 站点信息
+('site', 'site_name',      '太初命理',          'string', 0, 0, '站点名称',   1, 1),
+('site', 'site_domain',    'taichu.chat',       'string', 0, 0, '站点域名',   2, 1),
+('site', 'site_icp',       '',                  'string', 0, 0, 'ICP备案号',  3, 1),
+('site', 'site_copyright', '© 2026 太初命理',   'string', 0, 0, '版权信息',   4, 1),
+-- 联系方式
+('contact', 'contact_wechat', '', 'string', 0, 0, '客服微信号', 1, 1),
+('contact', 'contact_email',  '', 'string', 0, 0, '客服邮箱',   2, 1)
+ON DUPLICATE KEY UPDATE
+    `config_value` = VALUES(`config_value`),
+    `description` = VALUES(`description`),
+    `sort_order` = VALUES(`sort_order`);
+
+-- =============================================================
+-- 字典管理表
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `tc_dict_type` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL COMMENT '字典名称',
+    `type` VARCHAR(100) NOT NULL UNIQUE COMMENT '字典类型标识',
+    `remark` VARCHAR(255) DEFAULT '' COMMENT '备注',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典类型表';
+
+CREATE TABLE IF NOT EXISTS `tc_dict_data` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `dict_type` VARCHAR(100) NOT NULL COMMENT '字典类型标识',
+    `label` VARCHAR(100) NOT NULL COMMENT '字典标签',
+    `value` VARCHAR(100) NOT NULL COMMENT '字典值',
+    `sort` INT DEFAULT 0 COMMENT '排序',
+    `remark` VARCHAR(255) DEFAULT '' COMMENT '备注',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_dict_type` (`dict_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典数据表';
 
 -- =============================================================
 -- 收尾

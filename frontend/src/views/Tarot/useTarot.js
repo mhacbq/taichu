@@ -449,8 +449,8 @@ const loadClientConfig = async () => {
     if (response.code === 0) {
       clientConfig.value = response.data
     }
-  } catch (error) {
-    console.error('加载客户端配置失败:', error)
+  } catch {
+    // 加载失败时使用默认配置，静默处理
   }
 }
 

@@ -9,10 +9,6 @@
             最近更新时间：{{ lastUpdatedText }}
             <span class="meta-divider">|</span>
             近 15 分钟活跃用户：{{ onlineUsersText }}
-            <template v-if="rechargeSummaryText">
-              <span class="meta-divider">|</span>
-              {{ rechargeSummaryText }}
-            </template>
           </div>
         </div>
         <div class="header-actions">
@@ -81,22 +77,6 @@
           </el-card>
         </el-col>
       </el-row>
-
-      <el-alert
-        v-if="rechargeStatsNotice"
-        class="recharge-stats-notice"
-        type="warning"
-        :closable="false"
-        show-icon
-      >
-        <template #title>充值口径提示</template>
-        <template #default>
-          <div class="recharge-notice-content">
-            <span>{{ rechargeStatsNotice }}</span>
-            <el-button link type="primary" @click="goTo('/payment/orders')">查看充值订单</el-button>
-          </div>
-        </template>
-      </el-alert>
 
       <el-row :gutter="20" class="section-row">
         <el-col :xs="24" :lg="16">
@@ -228,13 +208,13 @@ const quickActionDefinitions = [
   {
     title: '八字记录',
     description: '查看用户八字测算记录。',
-    path: '/content/bazi',
+    path: '/result/bazi',
     roles: ['admin', 'operator']
   },
   {
     title: '塔罗记录',
     description: '查看用户塔罗测算记录。',
-    path: '/content/tarot',
+    path: '/result/tarot',
     roles: ['admin', 'operator']
   },
   {
@@ -258,7 +238,7 @@ const quickActionDefinitions = [
   {
     title: 'SEO管理',
     description: '更新页面 SEO、Robots 与收录提交。',
-    path: '/site/seo',
+    path: '/seo/index',
     roles: ['admin']
   },
   {
@@ -276,32 +256,7 @@ const readonlyMode = computed(() => Boolean(dashboardError.value))
 const quickActions = computed(() => quickActionDefinitions.filter(item => hasRoutePermission(currentRoles.value, item.roles)))
 const lastUpdatedText = computed(() => (readonlyMode.value ? '加载失败' : (realtimeMeta.value.timestamp || '尚未加载')))
 const onlineUsersText = computed(() => (readonlyMode.value ? '--' : realtimeMeta.value.onlineUsers))
-const rechargeSummaryText = computed(() => {
-  if (readonlyMode.value || !rechargeOverview.value.loaded) {
-    return ''
-  }
 
-  if (!rechargeOverview.value.orderCount && !rechargeOverview.value.totalAmount) {
-    return '累计充值：暂无流水'
-  }
-
-  return `累计充值：${rechargeOverview.value.orderCount} 单 / ¥${formatCurrency(rechargeOverview.value.totalAmount)}`
-})
-const rechargeStatsNotice = computed(() => {
-  if (readonlyMode.value || !rechargeOverview.value.loaded) {
-    return ''
-  }
-
-  if (rechargeOverview.value.orderCount <= 0) {
-    return ''
-  }
-
-  if (rechargeOverview.value.monthPaidOrders !== 0 || rechargeOverview.value.monthRevenue !== 0) {
-    return ''
-  }
-
-  return `订单中心已有累计 ${rechargeOverview.value.orderCount} 单充值、累计 ¥${formatCurrency(rechargeOverview.value.totalAmount)}；当前看板卡片仍按本月快照展示，所以这里可能是 0。若要核对历史流水或处理退款，请以充值订单页为准。`
-})
 
 onMounted(() => {
   initCharts()
@@ -321,8 +276,8 @@ function createInitialStatistics() {
     { title: '今日新增', value: 0, valueType: 'number', trend: 0, trendType: 'flat', color: '#67c23a', icon: 'User' },
     { title: '今日支付订单', value: 0, valueType: 'number', trend: 0, trendType: 'flat', color: '#7c6cff', icon: 'Tickets' },
     { title: '今日实收', value: 0, valueType: 'currency', trend: 0, trendType: 'flat', color: '#f56c6c', icon: 'Money' },
-    { title: '本月支付订单', value: 0, valueType: 'number', trend: 0, trendType: 'flat', trendText: '月度快照加载中', color: '#e6a23c', icon: 'ShoppingCart' },
-    { title: '本月实收', value: 0, valueType: 'currency', trend: 0, trendType: 'flat', trendText: '累计摘要加载中', color: '#13ce66', icon: 'Coin' }
+    { title: '本月支付订单', value: 0, valueType: 'number', trend: 0, trendType: 'flat', color: '#e6a23c', icon: 'ShoppingCart' },
+    { title: '本月实收', value: 0, valueType: 'currency', trend: 0, trendType: 'flat', color: '#13ce66', icon: 'Coin' }
   ]
 }
 
@@ -681,8 +636,7 @@ function downloadBlob(blob, fileName) {
 
 .dashboard-header-card,
 .quick-actions-card,
-.dashboard-error-card,
-.recharge-stats-notice {
+.dashboard-error-card {
   margin-bottom: 20px;
 }
 
@@ -872,8 +826,7 @@ function downloadBlob(blob, fileName) {
 
 @media (max-width: 768px) {
   .dashboard-header,
-  .card-header,
-  .recharge-notice-content {
+  .card-header {
     flex-direction: column;
     align-items: flex-start;
   }

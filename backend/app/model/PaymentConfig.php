@@ -15,7 +15,7 @@ class PaymentConfig extends Model
 {
     protected const ENCRYPTED_FIELDS = ['mch_id', 'api_key', 'api_cert', 'api_key_pem'];
 
-    protected $table = 'payment_configs';
+    protected $table = 'tc_payment_config';
 
     protected $autoWriteTimestamp = true;
 
@@ -56,7 +56,7 @@ class PaymentConfig extends Model
     }
 
     /**
-     * 获取后台展示的配置（隐藏敏感信息）
+     * 获取后台展示的配置（隐藏敏感信息�?
      */
     public static function getSafeConfig(): ?array
     {
@@ -84,7 +84,7 @@ class PaymentConfig extends Model
     }
 
     /**
-     * 保存或更新配置
+     * 保存或更新配�?
      */
     public static function saveConfig(array $data): bool
     {
@@ -147,13 +147,13 @@ class PaymentConfig extends Model
 
     protected static function resolveTable(): string
     {
-        foreach (['payment_configs', 'tc_payment_config'] as $table) {
+        foreach (['tc_payment_config', 'tc_payment_config'] as $table) {
             if (SchemaInspector::tableExists($table)) {
                 return $table;
             }
         }
 
-        return 'payment_configs';
+        return 'tc_payment_config';
     }
 
     protected static function decryptSensitiveValues(array $config, bool $strict): array

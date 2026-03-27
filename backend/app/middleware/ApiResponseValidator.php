@@ -142,7 +142,7 @@ class ApiResponseValidator
         
         // 包装为标准格式
         return [
-            'code' => 200,
+            'code' => 0,
             'data' => $data,
             'message' => 'success',
         ];
