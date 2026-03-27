@@ -1,7 +1,7 @@
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig, getMyInvites, getPointsRules } from '../../api'
+import { getUserInfo, getPointsBalance, getPointsHistory, getBaziHistory, getTarotHistory, getLiuyaoHistory, getHehunHistory, submitFeedback, getClientConfig, getMyInvites, getPointsRules, dailyCheckin, getCheckinStatus } from '../../api'
 import { useTourGuide } from '../../composables/useTourGuide'
 import { formatTime, formatDate } from '../../utils/format'
 
@@ -44,6 +44,13 @@ const activeHistoryTab = ref('bazi')
 
 // 生日相关
 const userBirthDate = ref('')
+
+// 签到相关
+const checkinStatus = ref({
+  today_checkin: false,
+  consecutive_days: 0
+})
+const checkinLoading = ref(false)
 
 // 状态管理
 const profileStatus = ref('loading')
@@ -521,6 +528,57 @@ const saveBirthDate = async (value) => {
   }
 }
 
+// 获取签到状态
+const loadCheckinStatus = async () => {
+  try {
+    const res = await getCheckinStatus()
+    if (res.code === 0) {
+      checkinStatus.value = {
+        today_checkin: res.data?.today_checkin || false,
+        consecutive_days: res.data?.consecutive_days || 0
+      }
+    }
+  } catch (error) {
+    console.error('获取签到状态失败:', error)
+  }
+}
+
+// 执行签到
+const doCheckin = async () => {
+  if (checkinLoading.value) return
+  if (checkinStatus.value.today_checkin) {
+    ElMessage.info('今天已经签到过了，明天再来吧！')
+    return
+  }
+
+  checkinLoading.value = true
+  try {
+    const res = await dailyCheckin()
+    if (res.code === 0) {
+      const data = res.data
+      // 更新签到状态
+      checkinStatus.value.today_checkin = true
+      checkinStatus.value.consecutive_days = data.consecutive_days || 0
+      // 更新积分余额
+      pointsBalance.value = data.total_points || pointsBalance.value
+      // 显示成功消息
+      const message = data.bonus_points > 0
+        ? `签到成功！获得 ${data.points_earned} 积分（连续${data.consecutive_days}天额外奖励${data.bonus_points}积分）`
+        : `签到成功！获得 ${data.points_earned} 积分`
+      ElMessage.success(message)
+      // 刷新积分历史
+      await loadPointsHistory()
+    } else {
+      ElMessage.error(res.message || '签到失败，请稍后重试')
+    }
+  } catch (error) {
+    console.error('签到失败:', error)
+    ElMessage.error('签到失败，请稍后重试')
+  } finally {
+    checkinLoading.value = false
+  }
+}
+
 const viewDetail = (record) => {
   if (!record?.id) {
     ElMessage.warning('记录数据异常，无法查看详情')
@@ -624,6 +682,7 @@ ${inviteLink.value}`
 onMounted(() => {
   loadUserData()
   loadUserBirthDate()
+  loadCheckinStatus()
   window.addEventListener('tarot-history-updated', handleTarotHistoryUpdated)
 })
 
@@ -644,6 +703,7 @@ return {
   inviteCode, inviteCount, invitePoints, inviteLink,
   inviteRecords, inviteRecordsTotal, inviteSuccessCount,
   inviteRecordsPage, inviteRecordsLoading,
+  checkinStatus, checkinLoading,
 
   // 计算属性
   currentPointsLevel, pointsLevelName, pointsPercentage,
@@ -661,5 +721,6 @@ return {
   submitFeedbackForm, saveBirthDate,
   viewDetail, viewTarotDetail, viewLiuyaoDetail, viewHehunDetail,
   handleMethodAction, copyInviteCode, copyInviteLink, shareToWechat,
+  loadCheckinStatus, doCheckin,
 }
 } // end useProfile

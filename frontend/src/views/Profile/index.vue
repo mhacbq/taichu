@@ -63,6 +63,7 @@
         <div class="feature-grid">
           <div 
             class="feature-card card card-hover" 
+            :class="{ 'checkin-checked': card.checked, 'checkin-loading': card.key === 'checkin' && checkinLoading }"
             v-for="card in featureCards" 
             :key="card.key"
             @click="handleCardClick(card)"
@@ -73,8 +74,11 @@
             <h4 class="feature-title">{{ card.title }}</h4>
             <p class="feature-desc">{{ card.desc }}</p>
             <div class="feature-action">
-              <span>查看详情</span>
-              <el-icon><ArrowRight /></el-icon>
+              <span v-if="card.key === 'checkin' && checkinLoading">签到中...</span>
+              <span v-else-if="card.checked">已完成</span>
+              <span v-else>查看详情</span>
+              <el-icon v-if="!(card.key === 'checkin' && checkinLoading)"><ArrowRight /></el-icon>
+              <el-icon v-else class="is-loading"><Loading /></el-icon>
             </div>
           </div>
         </div>
@@ -304,7 +308,7 @@ import {
   UserFilled, Coin, Trophy, ArrowRight, Clock, 
   Present, DocumentCopy, Link, Setting, Guide, 
   ChatDotRound, SwitchButton, Plus, Calendar,
-  Star, Magic, Link as LinkIcon
+  Star, Link as LinkIcon, Loading
 } from '@element-plus/icons-vue'
 import PageHeroHeader from '../../components/PageHeroHeader.vue'
 import AsyncState from '../../components/AsyncState.vue'
@@ -319,6 +323,7 @@ const {
   profileStatus,
   baziStatus, tarotStatus, liuyaoStatus, hehunStatus,
   inviteCount, invitePoints, inviteLink, inviteSuccessCount,
+  checkinStatus, checkinLoading,
 
   // 计算属性
   pointsLevelName,
@@ -329,7 +334,7 @@ const {
   loadBaziHistory, loadTarotHistory, loadLiuyaoHistory, loadHehunHistory,
   submitFeedbackForm,
   viewDetail, viewTarotDetail, viewLiuyaoDetail, viewHehunDetail,
-  copyInviteCode, copyInviteLink, handleLogout,
+  copyInviteCode, copyInviteLink, handleLogout, doCheckin,
 } = useProfile()
 
 // 快捷统计
@@ -341,14 +346,17 @@ const quickStats = computed(() => [
 ])
 
 // 功能卡片
-const featureCards = [
+const featureCards = computed(() => [
   { 
     key: 'checkin', 
-    title: '每日签到', 
-    desc: '签到领积分，连续签到奖励更多',
+    title: checkinStatus.value.today_checkin ? '今日已签到' : '每日签到', 
+    desc: checkinStatus.value.today_checkin 
+      ? `连续签到 ${checkinStatus.value.consecutive_days} 天，明天继续！` 
+      : '签到领积分，连续签到奖励更多',
     icon: Calendar,
     path: null,
-    action: 'checkin'
+    action: 'checkin',
+    checked: checkinStatus.value.today_checkin
   },
   { 
     key: 'vip', 
@@ -373,23 +381,24 @@ const featureCards = [
     path: null,
     action: 'invite'
   },
-]
+])
 
 // 控制反馈弹窗
 const showFeedback = ref(false)
 
 // 处理卡片点击
-const handleCardClick = (card) => {
+const handleCardClick = async (card) => {
   if (card.path) {
     // 使用原生跳转
     window.location.href = card.path
   } else if (card.action === 'checkin') {
-    // 触发签到
-    // 可以滚动到签到区域或打开签到弹窗
+    // 执行签到
+    await doCheckin()
   } else if (card.action === 'invite') {
     copyInviteCode()
   } else if (card.action === 'guide') {
     // 显示积分攻略
+    ElMessage.info('积分攻略：每日签到、邀请好友、充值均可获得积分')
   }
 }
 </script>
