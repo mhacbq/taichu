@@ -73,6 +73,10 @@ const currentPointsLevel = computed(() => {
 
 const pointsLevelName = computed(() => currentPointsLevel.value.name)
 
+// VIP 相关
+const isVip = computed(() => userInfo.value?.is_vip || false)
+const vipExpireTime = computed(() => userInfo.value?.vip_expire_time || '')
+
 const pointsPercentage = computed(() => {
   const level = currentPointsLevel.value
   if (level.max === Infinity) return 100
@@ -644,6 +648,7 @@ return {
   // 计算属性
   currentPointsLevel, pointsLevelName, pointsPercentage,
   pointsProgressColor, pointsToNextLevel, pointsMethods,
+  isVip, vipExpireTime,
 
   // 常量
   pointsLevels,
