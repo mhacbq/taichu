@@ -112,7 +112,7 @@ class Feedback extends BaseController
             // 记录反馈操作日志
             \app\model\FeedbackLog::create([
                 'feedback_id' => $id,
-                'admin_id' => $request->user['id'],
+                'admin_id' => $this->getAdminId(),
                 'action' => 'reply',
                 'content' => '回复用户反馈：' . mb_substr($reply, 0, 50) . (mb_strlen($reply) > 50 ? '...' : ''),
             ]);
@@ -167,7 +167,7 @@ class Feedback extends BaseController
             // 记录状态变更日志
             \app\model\FeedbackLog::create([
                 'feedback_id' => $id,
-                'admin_id' => $request->user['id'],
+                'admin_id' => $this->getAdminId(),
                 'action' => 'status',
                 'content' => '更新反馈状态',
                 'old_value' => $oldStatus,

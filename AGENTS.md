@@ -159,6 +159,23 @@ taichu-unified/
     - 体验优化类（按钮尺寸、间距调整等）不属于 Bug，应单独开迭代，不得混入 Bug 修复队列
     - **写入 TODO.md 前必须先读取文件头的「📝 条目格式模板」章节，按模板格式填写**（包含复现步骤、来源、预期行为三个字段），不符合模板格式的条目不得写入
 
+17. **`admin.php` 路由顺序：静态路由必须在动态路由之前** — ThinkPHP 路由按定义顺序匹配，同一前缀下若动态路由（`/:id`）定义在静态路由（`/list`、`/types`、`/packages`）之前，静态路由的路径段会被当作 `:id` 参数捕获，导致接口永远 404 或返回错误数据。**强制规则**：
+    - 同一前缀下，所有静态路由（路径中无 `:` 参数的路由）必须定义在动态路由之前
+    - 新增路由时，检查同前缀下是否已有 `/:id` 等动态路由，若有则将新静态路由插入到动态路由之前
+    - 已知历史案例：`order/packages` 被 `order/:id` 拦截、`seo/page-types` 被 `seo/:id` 拦截、`ai-prompts/types` 被 `ai-prompts/:id` 拦截（均已修复，2026-03-27）
+    - ✅ 正确顺序示例：
+      ```php
+      Route::get('order', 'admin.Order/index');
+      Route::post('order/refund', 'admin.Order/refund');   // 静态路由在前
+      Route::get('order/packages', 'admin.Order/packages'); // 静态路由在前
+      Route::get('order/:id', 'admin.Order/detail');        // 动态路由在后
+      ```
+    - ❌ 错误顺序示例：
+      ```php
+      Route::get('order/:id', 'admin.Order/detail');        // 动态路由在前 ← 会拦截下面所有静态路由
+      Route::get('order/packages', 'admin.Order/packages'); // 永远不会匹配！
+      ```
+
 ---
 
 ## 8. 文件索引（快速定位）

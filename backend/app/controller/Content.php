@@ -81,8 +81,8 @@ class Content extends BaseController
                     'content' => $oldPage->content,
                     'settings' => $oldPage->settings,
                     'version' => $oldPage->version,
-                    'author_id' => $request->adminId,
-                    'author_name' => $request->adminName,
+                    'author_id' => $this->getAdminId(),
+                    'author_name' => (string) ($this->request->adminUser['username'] ?? ''),
                     'description' => $data['description'] ?? '自动保存'
                 ]);
             }
@@ -95,7 +95,7 @@ class Content extends BaseController
                     'content' => json_encode($data['blocks']),
                     'settings' => json_encode($data['settings'] ?? []),
                     'version' => $oldPage ? $oldPage->version + 1 : 1,
-                    'updated_by' => $request->adminId
+                    'updated_by' => $this->getAdminId()
                 ]
             );
             
@@ -125,7 +125,7 @@ class Content extends BaseController
             
             // 保存到草稿表
             PageDraft::updateOrCreate(
-                ['page_id' => $pageId, 'admin_id' => $request->adminId],
+                ['page_id' => $pageId, 'admin_id' => $this->getAdminId()],
                 [
                     'content' => json_encode($data['blocks'] ?? []),
                     'settings' => json_encode($data['settings'] ?? []),
@@ -146,7 +146,7 @@ class Content extends BaseController
     {
         try {
             $draft = PageDraft::where('page_id', $pageId)
-                ->where('admin_id', $request->adminId)
+                ->where('admin_id', $this->getAdminId())
                 ->order('updated_at', 'desc')
                 ->find();
             
@@ -209,8 +209,8 @@ class Content extends BaseController
                     'content' => $currentPage->content,
                     'settings' => $currentPage->settings,
                     'version' => $currentPage->version,
-                    'author_id' => $request->adminId,
-                    'author_name' => $request->adminName,
+                    'author_id' => $this->getAdminId(),
+                    'author_name' => (string) ($this->request->adminUser['username'] ?? ''),
                     'description' => '恢复版本前的备份'
                 ]);
             }
@@ -222,7 +222,7 @@ class Content extends BaseController
                     'content' => $version->content,
                     'settings' => $version->settings,
                     'version' => ($currentPage->version ?? 0) + 1,
-                    'updated_by' => $request->adminId
+                    'updated_by' => $this->getAdminId()
                 ]
             );
             
@@ -314,7 +314,7 @@ class Content extends BaseController
                     'content' => json_encode($data['content']),
                     'settings' => json_encode($data['settings'] ?? []),
                     'version' => ($exists->version ?? 0) + 1,
-                    'updated_by' => $request->adminId
+                    'updated_by' => $this->getAdminId()
                 ]
             );
             
@@ -388,7 +388,7 @@ class Content extends BaseController
                 'content' => $page->content,
                 'settings' => $page->settings,
                 'version' => $page->version,
-                'deleted_by' => $request->adminId,
+                'deleted_by' => $this->getAdminId(),
                 'deleted_at' => date('Y-m-d H:i:s')
             ]);
             

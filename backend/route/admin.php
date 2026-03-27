@@ -160,10 +160,10 @@ Route::group('api/maodou', function () {
 
         // VIP订单管理
         Route::get('order', 'admin.Order/index');
-        Route::get('order/:id', 'admin.Order/detail');
         Route::post('order/refund', 'admin.Order/refund');
         Route::get('order/packages', 'admin.Order/packages');
         Route::post('order/save-package', 'admin.Order/savePackage');
+        Route::get('order/:id', 'admin.Order/detail');
 
         // 短信管理
 
@@ -201,13 +201,13 @@ Route::group('api/maodou', function () {
         Route::post('ai/config', 'admin.Ai/saveConfig');
         Route::post('ai/test', 'admin.Ai/testConnection');
         Route::get('ai-prompts/list', 'admin.AiPrompt/getList');
-        Route::get('ai-prompts/detail/:id', 'admin.AiPrompt/getDetail');
+        Route::get('ai-prompts/types', 'admin.AiPrompt/getTypes');
         Route::post('ai-prompts/save', 'admin.AiPrompt/save');
+        Route::get('ai-prompts/detail/:id', 'admin.AiPrompt/getDetail');
         Route::delete('ai-prompts/:id', 'admin.AiPrompt/delete');
         Route::post('ai-prompts/:id/default', 'admin.AiPrompt/setDefault');
         Route::post('ai-prompts/:id/preview', 'admin.AiPrompt/preview');
         Route::post('ai-prompts/:id/duplicate', 'admin.AiPrompt/duplicate');
-        Route::get('ai-prompts/types', 'admin.AiPrompt/getTypes');
         
         // 知识库管理
         Route::get('knowledge/articles', 'admin.Knowledge/articleList');
@@ -289,11 +289,11 @@ Route::group('api/maodou', function () {
 
         // SEO管理
         Route::get('seo/list', 'admin.Seo/getList');
-        Route::get('seo/:id', 'admin.Seo/getDetail');
         Route::post('seo/save', 'admin.Seo/save');
-        Route::delete('seo/:id', 'admin.Seo/delete');
         Route::post('seo/batch-status', 'admin.Seo/batchUpdateStatus');
         Route::get('seo/page-types', 'admin.Seo/getPageTypes');
+        Route::get('seo/:id', 'admin.Seo/getDetail');
+        Route::delete('seo/:id', 'admin.Seo/delete');
 
         // 日志管理
         Route::get('logs/operation', 'admin.Logs/getOperationLogs');
