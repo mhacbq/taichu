@@ -1606,9 +1606,7 @@ body {
 
 .nav-link.router-link-active {
   color: var(--primary-color);
-  background: var(--surface-strong);
   border-bottom: 2px solid var(--primary-color);
-  border-radius: 8px 8px 0 0;
   text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.4);
 }
 
